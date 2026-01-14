@@ -3,13 +3,13 @@
 #include <iostream>
 
 #include "ast/nodes/function_definition.h"
+#include "ast/nodes/function_invocation.h"
 #include "ast/nodes/import_node.h"
 
 using namespace stride::ast;
 
 std::unique_ptr<AstNode> AstBlockNode::try_parse(const Scope& scope, const std::unique_ptr<TokenSet>& tokens)
 {
-    std::cout << "Parsing block\n";
     std::vector<std::unique_ptr<AstNode>> nodes = {};
 
     while (tokens->has_next())
@@ -22,9 +22,13 @@ std::unique_ptr<AstNode> AstBlockNode::try_parse(const Scope& scope, const std::
         {
             nodes.push_back(AstFunctionDefinitionNode::try_parse(scope, tokens));
         }
+        else if (AstFunctionInvocation::can_parse(*tokens))
+        {
+            nodes.push_back(AstFunctionInvocation::try_parse(scope, *tokens));
+        }
         else
         {
-            tokens->except("Unexpected token at root level");
+            tokens->except("Unexpected token");
         }
     }
 
@@ -53,13 +57,13 @@ std::unique_ptr<AstNode> AstBlockNode::try_parse_block(const Scope& scope, const
 
     for (long int level = 1, offset = 0; level > 0 && offset < tokens->size(); offset++)
     {
-        if (tokens->peak_next().type == TokenType::LBRACE)
+        if (const auto next = tokens->peak(offset); next.type == TokenType::LBRACE)
         {
-            ++level;
+            level++;
         }
-        else if (tokens->peak_next().type == TokenType::RBRACE)
+        else if (next.type == TokenType::RBRACE)
         {
-            --level;
+            level--;
         }
 
         if (level == 0)

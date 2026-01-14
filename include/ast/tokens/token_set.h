@@ -59,6 +59,11 @@ namespace stride::ast
             return this->at(this->_cursor);
         }
 
+        [[nodiscard]] bool peak_next_eq(const TokenType type) const
+        {
+            return this->peak_next().type == type;
+        }
+
         /**
          * Optionally skip the provided token and peak forward
          */

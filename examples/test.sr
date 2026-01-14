@@ -6,7 +6,5 @@ fn main(): i32 {
     return
 }
 
-
-
 fn test(first: i8, second: i32 first2: i8): i8 {}
 gg

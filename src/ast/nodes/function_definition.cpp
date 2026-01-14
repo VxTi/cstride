@@ -34,7 +34,7 @@ llvm::Value* AstFunctionDefinitionNode::codegen()
 
 bool AstFunctionDefinitionNode::can_parse(const TokenSet& tokens)
 {
-    return tokens.peak_next() == TokenType::KEYWORD_FN;
+    return tokens.peak_next_eq(TokenType::KEYWORD_FN);
 }
 
 std::unique_ptr<AstFunctionParameterNode> AstFunctionParameterNode::try_parse(
@@ -64,11 +64,16 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
     tokens->expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters = {};
 
-    while (tokens->peak_next() != TokenType::RPAREN)
+    while (!tokens->peak_next_eq(TokenType::RPAREN))
     {
-        do
+        auto initial = AstFunctionParameterNode::try_parse(scope, tokens);
+        parameters.push_back(std::move(initial));
+
+        while (tokens->peak_next_eq(TokenType::COMMA))
         {
+            tokens->expect(TokenType::COMMA);
             const auto next = tokens->peak_next();
+
             auto param = AstFunctionParameterNode::try_parse(scope, tokens);
 
             if (std::ranges::find_if(parameters, [&](const std::unique_ptr<AstFunctionParameterNode>& p)
@@ -87,7 +92,6 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
 
             parameters.push_back(std::move(param));
         }
-        while (tokens->skip_optional(TokenType::COMMA));
     }
 
     tokens->expect(TokenType::RPAREN);
