@@ -29,13 +29,12 @@ namespace stride::ast
         llvm::Value* codegen() override;
 
         static std::unique_ptr<AstFunctionParameterNode> try_parse(
-        const Scope& scope,
+            const Scope& scope,
             const std::unique_ptr<TokenSet>& tokens);
     };
 
     class AstFunctionDefinitionNode : public AstNode
     {
-    private:
         const std::unique_ptr<AstNode> body_;
         const Symbol name_;
         const std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters_;
@@ -62,7 +61,8 @@ namespace stride::ast
         static bool can_parse(const TokenSet& tokens);
 
         static std::unique_ptr<AstFunctionDefinitionNode> try_parse(
-        const Scope& scope,
-            const std::unique_ptr<TokenSet>& tokens);
+            const Scope& scope,
+            const std::unique_ptr<TokenSet>& tokens
+        );
     };
 }

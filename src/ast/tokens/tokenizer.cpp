@@ -5,13 +5,15 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<TokenSet> tokenizer::tokenize(const std::string& source)
+std::unique_ptr<TokenSet> tokenizer::tokenize(const SourceFile& source_file)
 {
     auto tokens = std::vector<Token>();
 
-    for (std::size_t i = 0; i < source.length();) // Note: `i` is incremented manually
+    const auto src = source_file.source;
+
+    for (std::size_t i = 0; i < src.length();) // Note: `i` is incremented manually
     {
-        if (isWhitespace(source[i]))
+        if (isWhitespace(src[i]))
         {
             i++;
             continue;
@@ -21,8 +23,8 @@ std::unique_ptr<TokenSet> tokenizer::tokenize(const std::string& source)
         for (const auto& tokenDefinition : tokenTypes)
         {
             // Define the search range starting from the current index i
-            const auto searchStart = source.cbegin() + i;
-            const auto searchEnd = source.cend();
+            const auto searchStart = src.cbegin() + i;
+            const auto searchEnd = src.cend();
 
             // Use match_continuous to ensure the regex matches exactly at searchStart
             if (std::smatch match; std::regex_search(
@@ -45,7 +47,7 @@ std::unique_ptr<TokenSet> tokenizer::tokenize(const std::string& source)
         {
             throw parsing_error(
                 make_source_error(
-                    source,
+                    source_file,
                     ErrorType::SYNTAX_ERROR,
                     "Unexpected character encountered",
                     i, 1
@@ -54,5 +56,5 @@ std::unique_ptr<TokenSet> tokenizer::tokenize(const std::string& source)
         }
     }
 
-    return std::make_unique<TokenSet>(TokenSet(source, tokens));
+    return std::make_unique<TokenSet>(TokenSet(source_file, tokens));
 }

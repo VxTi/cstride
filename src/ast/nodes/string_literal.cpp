@@ -7,13 +7,17 @@ llvm::Value* StringLiteral::codegen()
     return nullptr;
 }
 
-std::unique_ptr<AstNode> StringLiteral::try_parse(const Scope& scope, TokenSet& tokens)
+std::optional<std::unique_ptr<AstNode>> StringLiteral::try_parse(Scope, TokenSet& tokens)
 {
-    const auto sym = tokens.expect(TokenType::STRING_LITERAL);
+    if (tokens.peak_next_eq(TokenType::STRING_LITERAL))
+    {
+        const auto sym = tokens.next();
 
-    const auto concatenated = sym.lexeme.substr(1, sym.lexeme.size() - 2);
+        const auto concatenated = sym.lexeme.substr(1, sym.lexeme.size() - 2);
 
-    return std::make_unique<StringLiteral>(StringLiteral(concatenated));
+        return std::make_unique<StringLiteral>(StringLiteral(concatenated));
+    }
+    return std::nullopt;
 }
 
 std::string StringLiteral::to_string()

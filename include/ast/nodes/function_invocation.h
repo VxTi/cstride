@@ -19,7 +19,7 @@ namespace stride::ast
 
         static bool can_parse(const TokenSet& tokens);
 
-        static std::unique_ptr<AstFunctionInvocation> try_parse(const Scope& scope, TokenSet& tokens);
+        static std::unique_ptr<AstFunctionInvocation> try_parse(Scope, TokenSet& tokens);
 
         std::string to_string() override;
 

@@ -5,7 +5,7 @@
 #include <ostream>
 #include <sstream>
 
-#include "ast/nodes/import_node.h"
+#include "ast/nodes/import.h"
 #include "ast/nodes/root_node.h"
 #include "ast/tokens/tokenizer.h"
 
@@ -23,7 +23,9 @@ parser::Parser::Parser(const std::string& source_path) : position(0), source_pat
     buffer << file.rdbuf();
     std::string source = buffer.str();
 
-    this->tokens = std::move(tokenizer::tokenize(source));
+    const auto source_file = SourceFile(source_path, source);
+
+    this->tokens = std::move(tokenizer::tokenize(source_file));
 }
 
 std::unique_ptr<AstNode> parser::Parser::parse() const

@@ -2,9 +2,8 @@ use std::fs::{ File, Reader, Writer };
 use std::io::{ Stream };
 
 fn main(): i32 {
-    fs::print("Hello World!");
-    return
-}
+  // Should error
+  // use std::io::{Reader};
 
+}
 fn test(first: i8, second: i32 first2: i8): i8 {}
-gg

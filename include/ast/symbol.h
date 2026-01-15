@@ -28,12 +28,6 @@ namespace stride::ast
             return symbol;
         }
 
-        std::string to_string() const { return value; }
+        [[nodiscard]] std::string to_string() const { return value; }
     } Symbol;
-
-    extern std::vector<Symbol> symbol_registry;
-
-    bool is_symbol_defined(const Symbol& symbol);
-
-    void define_symbol(const Symbol& symbol);
 }

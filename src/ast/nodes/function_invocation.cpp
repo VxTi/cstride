@@ -32,7 +32,7 @@ Symbol consume_function_name(TokenSet& tokens)
     return Symbol::from_segments(function_segments);
 }
 
-std::unique_ptr<AstFunctionInvocation> AstFunctionInvocation::try_parse(const Scope& scope,TokenSet& tokens)
+std::unique_ptr<AstFunctionInvocation> AstFunctionInvocation::try_parse(Scope,TokenSet& tokens)
 {
     const auto function_name = consume_function_name(tokens);
     tokens.expect(TokenType::LPAREN);

@@ -127,6 +127,21 @@ namespace stride::ast
         BOOLEAN_LITERAL, // true, false
     };
 
+    static bool is_literal(TokenType type)
+    {
+        switch (type)
+        {
+            case TokenType::INTEGER_LITERAL:
+            case TokenType::FLOAT_LITERAL:
+            case TokenType::STRING_LITERAL:
+            case TokenType::CHAR_LITERAL:
+            case TokenType::BOOLEAN_LITERAL:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     static std::string token_type_to_str(TokenType type)
     {
         switch (type)

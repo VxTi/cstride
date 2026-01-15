@@ -3,6 +3,7 @@
 #include <sstream>
 #include <utility>
 
+#include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/symbol.h"
 #include "ast/tokens/token_set.h"
@@ -34,8 +35,6 @@ namespace stride::ast
 
         static bool can_parse(const TokenSet& tokens);
 
-        static unique_ptr<AstImportNode> try_parse(TokenSet& tokens);
+        static unique_ptr<AstImportNode> try_parse(Scope, TokenSet& tokens);
     };
-
-
 }

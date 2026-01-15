@@ -1,8 +1,6 @@
-#include "ast/nodes/import_node.h"
-
-#include <numeric>
 #include <sstream>
 
+#include "ast/nodes/import.h"
 #include "errors.h"
 
 using namespace stride::ast;
@@ -84,8 +82,13 @@ vector<Symbol> consume_import_list(TokenSet& tokens)
 /**
  * Attempts to parse an import expression from the given TokenSet.
  */
-unique_ptr<AstImportNode> AstImportNode::try_parse(TokenSet& tokens)
+unique_ptr<AstImportNode> AstImportNode::try_parse(Scope, TokenSet& tokens)
 {
+    if (scope.type != ScopeType::GLOBAL)
+    {
+        tokens.except(std::format("Import statements are only allowed in global scope, but was found in {}",
+                                  scope_type_to_str(scope.type)));
+    }
     tokens.expect(TokenType::KEYWORD_USE);
 
     const auto import_module = consume_import_module(tokens);
