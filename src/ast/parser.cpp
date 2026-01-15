@@ -8,7 +8,7 @@ using namespace stride::ast;
 
 std::unique_ptr<AstNode> parser::parse(const std::string& source_path)
 {
-    const auto source_file = stride::read_file(source_path);
+    const auto source_file = read_file(source_path);
     const auto tokens = tokenizer::tokenize(source_file);
     const auto scope_global = Scope(ScopeType::GLOBAL);
 

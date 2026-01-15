@@ -83,8 +83,9 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
 {
     tokens->expect(TokenType::KEYWORD_FN);
 
-    const auto fn_name = Symbol(tokens->expect(TokenType::IDENTIFIER).lexeme);
-    scope.try_define_symbol(*tokens->source(), tokens->position(), fn_name);
+    const auto fn_name_tok = tokens->expect(TokenType::IDENTIFIER);
+    const auto fn_name = Symbol(fn_name_tok.lexeme);
+    scope.try_define_symbol(*tokens->source(), fn_name_tok, fn_name);
 
     tokens->expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters = {};

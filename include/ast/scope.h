@@ -4,6 +4,7 @@
 
 #include "files.h"
 #include "symbol.h"
+#include "tokens/token.h"
 
 namespace stride::ast
 {
@@ -62,7 +63,7 @@ namespace stride::ast
         {
         }
 
-        void try_define_symbol(const SourceFile& source, size_t source_offset, const Symbol& symbol) const;
+        void try_define_symbol(const SourceFile& source, const Token &token, const Symbol& symbol) const;
 
         [[nodiscard]] bool is_symbol_defined(const Symbol& symbol) const;
     };

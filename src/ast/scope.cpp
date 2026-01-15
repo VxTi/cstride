@@ -2,7 +2,6 @@
 
 #include "ast/scope.h"
 #include "errors.h"
-#include "ast/tokens/token.h"
 
 namespace stride::ast
 {
@@ -14,7 +13,7 @@ namespace stride::ast
         }) != this->symbols->end();
     }
 
-    void Scope::try_define_symbol(const SourceFile& source, const size_t source_offset, const Symbol& symbol) const
+    void Scope::try_define_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const
     {
         if (this->is_symbol_defined(symbol))
         {
@@ -23,7 +22,7 @@ namespace stride::ast
                     source,
                     ErrorType::SEMANTIC_ERROR,
                     "Symbol already defined in this scope",
-                    source_offset,
+                    token.offset,
                     symbol.value.size()
                 )
             );

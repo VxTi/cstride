@@ -13,13 +13,14 @@ std::shared_ptr<SourceFile> stride::read_file(const std::string& path)
     {
         throw parsing_error("Failed to open file: " + path);
     }
+
     std::stringstream buffer;
     buffer << file.rdbuf();
 
-    const auto content = buffer.str();
+    auto content = buffer.str();
 
     return std::make_shared<SourceFile>(
         path,
-        content
+        std::move(content)
     );
 }
