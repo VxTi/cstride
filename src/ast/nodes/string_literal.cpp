@@ -7,7 +7,8 @@ llvm::Value* StringLiteral::codegen()
     return nullptr;
 }
 
-std::optional<std::unique_ptr<AstNode>> StringLiteral::try_parse(Scope, TokenSet& tokens)
+std::optional<std::unique_ptr<AstNode>> StringLiteral::try_parse_optional(
+    [[maybe_unused]] const Scope& scope, TokenSet& tokens)
 {
     if (tokens.peak_next_eq(TokenType::STRING_LITERAL))
     {

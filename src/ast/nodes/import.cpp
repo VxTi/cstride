@@ -82,7 +82,7 @@ vector<Symbol> consume_import_list(TokenSet& tokens)
 /**
  * Attempts to parse an import expression from the given TokenSet.
  */
-unique_ptr<AstImportNode> AstImportNode::try_parse(Scope, TokenSet& tokens)
+unique_ptr<AstImportNode> AstImportNode::try_parse(const Scope& scope, TokenSet& tokens)
 {
     if (scope.type != ScopeType::GLOBAL)
     {

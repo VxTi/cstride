@@ -35,6 +35,6 @@ namespace stride::ast
 
         static bool can_parse(const TokenSet& tokens);
 
-        static unique_ptr<AstImportNode> try_parse(Scope, TokenSet& tokens);
+        static unique_ptr<AstImportNode> try_parse(const Scope& scope, TokenSet& tokens);
     };
 }

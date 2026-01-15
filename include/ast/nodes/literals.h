@@ -22,7 +22,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        static std::optional<std::unique_ptr<AstNode>> try_parse(Scope, TokenSet& tokens);
+        static std::optional<std::unique_ptr<AstNode>> try_parse_optional(const Scope& scope, TokenSet& tokens);
     };
 
     class IntegerLiteral : public AstNode
@@ -38,7 +38,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        static std::optional<std::unique_ptr<AstNode>> try_parse(Scope, TokenSet& tokens);
+        static std::optional<std::unique_ptr<AstNode>> try_parse_optional(const Scope& scope, TokenSet& tokens);
     };
 
     static std::optional<std::unique_ptr<AstNode>> try_parse_literal(const Scope& scope, TokenSet& tokens);

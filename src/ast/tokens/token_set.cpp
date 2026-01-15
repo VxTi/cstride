@@ -104,7 +104,7 @@ Token TokenSet::next()
     return this->remaining() > 0;
 }
 
-[[nodiscard]] stride::SourceFile TokenSet::source() const
+[[nodiscard]] std::shared_ptr<stride::SourceFile> TokenSet::source() const
 {
     return this->_source;
 }
@@ -113,7 +113,7 @@ Token TokenSet::next()
 {
     throw parsing_error(
         make_source_error(
-            this->source(),
+            *this->source(),
             error_type,
             message,
             token.offset,

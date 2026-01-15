@@ -5,6 +5,7 @@
 #pragma once
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include "errors.h"
@@ -14,7 +15,7 @@ namespace stride::ast
 {
     class TokenSet
     {
-        const SourceFile& _source;
+        std::shared_ptr<SourceFile> _source;
 
         size_t _cursor;
         size_t _size;
@@ -22,8 +23,8 @@ namespace stride::ast
         std::vector<Token> _tokens;
 
     public:
-        explicit TokenSet(const SourceFile& source, std::vector<Token>& tokens) :
-            _source(source),
+        explicit TokenSet(std::shared_ptr<SourceFile> source, std::vector<Token>& tokens) :
+            _source(std::move(source)),
             _cursor(0),
             _size(tokens.size()),
             _tokens(std::move(tokens))
@@ -54,7 +55,7 @@ namespace stride::ast
 
         [[nodiscard]] bool has_next() const;
 
-        [[nodiscard]] SourceFile source() const;
+        [[nodiscard]] std::shared_ptr<SourceFile> source() const;
 
         [[noreturn]] void except(const Token& token, ErrorType error_type, const std::string& message) const;
 

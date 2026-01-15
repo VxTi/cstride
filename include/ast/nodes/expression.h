@@ -21,6 +21,6 @@ namespace stride::ast
 
         static bool can_parse(const TokenSet& tokens);
 
-        static std::unique_ptr<AstExpression> try_parse(Scope, TokenSet& tokens);
+        static std::unique_ptr<AstExpression> try_parse(const Scope& scope, TokenSet& tokens);
     };
 }

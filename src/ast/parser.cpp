@@ -1,36 +1,16 @@
+#include "files.h"
 #include "ast/parser.h"
-
-#include <fstream>
-#include <iostream>
-#include <ostream>
-#include <sstream>
-
 #include "ast/nodes/import.h"
 #include "ast/nodes/root_node.h"
 #include "ast/tokens/tokenizer.h"
 
 using namespace stride::ast;
 
-parser::Parser::Parser(const std::string& source_path) : position(0), source_path(source_path)
+std::unique_ptr<AstNode> parser::parse(const std::string& source_path)
 {
-    const std::ifstream file(source_path);
+    const auto source_file = stride::read_file(source_path);
+    const auto tokens = tokenizer::tokenize(source_file);
+    const auto scope_global = Scope(ScopeType::GLOBAL);
 
-    if (!file)
-    {
-        throw parsing_error("Failed to open file: " + source_path);
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string source = buffer.str();
-
-    const auto source_file = SourceFile(source_path, source);
-
-    this->tokens = std::move(tokenizer::tokenize(source_file));
-}
-
-std::unique_ptr<AstNode> parser::Parser::parse() const
-{
-    const auto global_scope = Scope(ScopeType::GLOBAL);
-
-    return AstBlockNode::try_parse(global_scope, tokens);
+    return AstBlockNode::try_parse(scope_global, tokens);
 }

@@ -10,5 +10,5 @@ namespace stride::ast::tokenizer
         return c == ' ' || c == '\t' || c == '\n' || c == '\r';
     }
 
-    std::unique_ptr<TokenSet> tokenize(const SourceFile& source_file);
+    std::unique_ptr<TokenSet> tokenize(const std::shared_ptr<SourceFile>& source_file);
 }

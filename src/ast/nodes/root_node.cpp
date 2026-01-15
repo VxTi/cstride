@@ -20,7 +20,7 @@ bool should_skip_token(TokenType type)
     }
 }
 
-std::unique_ptr<AstNode> AstBlockNode::try_parse(Scope, const std::unique_ptr<TokenSet>& tokens)
+std::unique_ptr<AstNode> AstBlockNode::try_parse(const Scope& scope, const std::unique_ptr<TokenSet>& tokens)
 {
     std::vector<std::unique_ptr<AstNode>> nodes = {};
 

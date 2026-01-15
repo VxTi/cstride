@@ -14,7 +14,7 @@ namespace stride::ast
         }) != this->symbols->end();
     }
 
-    void Scope::try_define_symbol(const SourceFile& source, const size_t source_offset, Symbol symbol) const
+    void Scope::try_define_symbol(const SourceFile& source, const size_t source_offset, const Symbol& symbol) const
     {
         if (this->is_symbol_defined(symbol))
         {

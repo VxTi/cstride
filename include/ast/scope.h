@@ -53,11 +53,16 @@ namespace stride::ast
         }
 
         explicit Scope(const Scope& parent, const ScopeType scope)
-            : Scope(std::make_shared<Scope>(parent), scope)
+            : Scope(
+                std::shared_ptr<Scope>(const_cast<Scope*>(&parent), [](Scope*)
+                {
+                }),
+                scope
+            )
         {
         }
 
-        void try_define_symbol(const SourceFile& source, size_t source_offset, Symbol symbol) const;
+        void try_define_symbol(const SourceFile& source, size_t source_offset, const Symbol& symbol) const;
 
         [[nodiscard]] bool is_symbol_defined(const Symbol& symbol) const;
     };

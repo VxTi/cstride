@@ -5,11 +5,11 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<TokenSet> tokenizer::tokenize(const SourceFile& source_file)
+std::unique_ptr<TokenSet> tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
 {
     auto tokens = std::vector<Token>();
 
-    const auto src = source_file.source;
+    const auto src = source_file->source;
 
     for (std::size_t i = 0; i < src.length();) // Note: `i` is incremented manually
     {
@@ -47,7 +47,7 @@ std::unique_ptr<TokenSet> tokenizer::tokenize(const SourceFile& source_file)
         {
             throw parsing_error(
                 make_source_error(
-                    source_file,
+                    *source_file,
                     ErrorType::SYNTAX_ERROR,
                     "Unexpected character encountered",
                     i, 1
@@ -56,5 +56,5 @@ std::unique_ptr<TokenSet> tokenizer::tokenize(const SourceFile& source_file)
         }
     }
 
-    return std::make_unique<TokenSet>(TokenSet(source_file, tokens));
+    return std::make_unique<TokenSet>(source_file, tokens);
 }

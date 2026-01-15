@@ -14,7 +14,7 @@ namespace stride
         SEMANTIC_ERROR = 4
     };
 
-    inline std::string error_type_to_string(ErrorType error_type)
+    inline std::string error_type_to_string(const ErrorType error_type)
     {
         switch (error_type)
         {
@@ -39,7 +39,7 @@ namespace stride
         if (offset >= source_file.source.length())
         {
             return std::format(
-                "┃ {}\n┃ {} \n┃ \x1b[31m {}\x1b[0m\n┃\n┃",
+                "┃ in {}\n┃ {}\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
                 source_file.path,
                 error_type_str,
                 error

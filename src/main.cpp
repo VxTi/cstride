@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-using namespace stride::ast::parser;
+using namespace stride::ast;
 
 int main(const int argc, char* argv[])
 {
@@ -18,10 +18,9 @@ int main(const int argc, char* argv[])
 
     try
     {
-        const Parser parser(argv[1]);
-        const auto result = parser.parse();
+        const auto result = parser::parse(argv[1]);
 
-        auto nodes = result->to_string();
+        const auto nodes = result->to_string();
 
         std::cout << "Stride compilation completed: " << nodes << std::endl;
     }

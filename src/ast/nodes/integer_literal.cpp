@@ -2,7 +2,7 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstNode>> IntegerLiteral::try_parse(Scope, TokenSet& tokens)
+std::optional<std::unique_ptr<AstNode>> IntegerLiteral::try_parse_optional(const Scope& scope, TokenSet& tokens)
 {
     if (tokens.peak_next_eq(TokenType::INTEGER_LITERAL))
     {

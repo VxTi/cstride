@@ -50,7 +50,7 @@ std::string AstExpression::to_string()
     return std::format("Expression({})", children_str.substr(0, children_str.length() - 2));
 }
 
-std::unique_ptr<AstExpression> AstExpression::try_parse(Scope, TokenSet& tokens)
+std::unique_ptr<AstExpression> AstExpression::try_parse(const Scope& scope, TokenSet& tokens)
 {
     const auto type = tokens.peak_next().type;
     tokens.next();
