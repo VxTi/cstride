@@ -2,7 +2,7 @@
 #include <utility>
 
 #include "ast_node.h"
-#include "type.h"
+#include "primitive_type.h"
 #include "ast/scope.h"
 #include "ast/symbol.h"
 #include "ast/tokens/token_set.h"

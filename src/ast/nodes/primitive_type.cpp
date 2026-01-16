@@ -1,4 +1,4 @@
-#include "ast/nodes/type.h"
+#include "ast/nodes/primitive_type.h"
 
 #include "ast/tokens/token_set.h"
 

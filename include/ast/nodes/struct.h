@@ -1,5 +1,5 @@
 #pragma once
-#include "type.h"
+#include "primitive_type.h"
 #include "ast_node.h"
 #include "ast/scope.h"
 #include "ast/symbol.h"
