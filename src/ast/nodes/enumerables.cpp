@@ -25,9 +25,10 @@ llvm::Value* AstEnumerableMember::codegen()
  */
 std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const Scope& scope, TokenSet& tokens)
 {
-    auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
+    const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
     auto member_sym = Symbol(member_name_tok.lexeme);
-    scope.try_define_symbol(*tokens.source(), member_name_tok, member_sym);
+
+    scope.try_define_symbol_isolated(*tokens.source(), member_name_tok, member_sym);
 
     tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
 
@@ -74,9 +75,12 @@ std::string AstEnumerable::to_string()
 std::unique_ptr<AstEnumerable> AstEnumerable::try_parse(const Scope& scope, TokenSet& tokens)
 {
     tokens.expect(TokenType::KEYWORD_ENUM);
-    auto enumerable_name = tokens.expect(TokenType::IDENTIFIER);
+    const auto enumerable_name = tokens.expect(TokenType::IDENTIFIER);
+    const auto enumerable_sym = Symbol(enumerable_name.lexeme);
 
-    auto opt_enum_body_subset = AstBlockNode::collect_block(tokens);
+    scope.try_define_symbol(*tokens.source(), enumerable_name, enumerable_sym);
+
+    const auto opt_enum_body_subset = AstBlockNode::collect_block(tokens);
 
     if (!opt_enum_body_subset.has_value())
     {
@@ -85,7 +89,7 @@ std::unique_ptr<AstEnumerable> AstEnumerable::try_parse(const Scope& scope, Toke
 
     std::vector<std::unique_ptr<AstEnumerableMember>> members = {};
 
-    auto nested_scope = Scope(scope, ScopeType::BLOCK);
+    const auto nested_scope = Scope(scope, ScopeType::BLOCK);
     auto enum_body_subset = opt_enum_body_subset.value();
 
     while (enum_body_subset.has_next())

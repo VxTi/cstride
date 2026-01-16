@@ -6,7 +6,7 @@ namespace stride::ast
 {
     typedef struct Symbol
     {
-        std::string value;
+        const std::string &value;
 
         bool operator==(const Symbol& other) const
         {
@@ -15,17 +15,16 @@ namespace stride::ast
 
         static Symbol from_segments(const std::vector<std::string>& segments)
         {
-            Symbol symbol;
-            symbol.value = "";
-            for (size_t i = 0; i < segments.size(); i++)
+            std::string initial = "";
+            for (const auto& segment : segments)
             {
-                symbol.value += segments[i];
-                if (i < segments.size() - 1)
+                initial += segment;
+                if (&segment != &segments.back())
                 {
-                    symbol.value += "_";
+                    initial += "_";
                 }
             }
-            return symbol;
+            return Symbol{ initial };
         }
 
         [[nodiscard]] std::string to_string() const { return value; }

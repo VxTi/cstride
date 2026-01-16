@@ -10,17 +10,6 @@
 
 using namespace stride::ast;
 
-bool should_skip_token(TokenType type)
-{
-    switch (type)
-    {
-    case TokenType::COMMENT:
-    case TokenType::COMMENT_MULTILINE:
-    case TokenType::END_OF_FILE: return true;
-    default: return false;
-    }
-}
-
 std::unique_ptr<AstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
 {
     if (AstImportNode::can_parse(tokens))
@@ -54,7 +43,7 @@ std::unique_ptr<AstNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& t
 
     while (tokens.has_next())
     {
-        if (should_skip_token(tokens.peak_next().type))
+        if (TokenSet::should_skip_token(tokens.peak_next().type))
         {
             tokens.next();
             continue;

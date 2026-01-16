@@ -31,6 +31,8 @@ namespace stride::ast
         {
         }
 
+        static bool should_skip_token(TokenType type);
+
         [[nodiscard]] TokenSet create_subset(size_t offset, size_t length) const;
 
         [[nodiscard]] Token at(size_t index) const;
@@ -38,6 +40,8 @@ namespace stride::ast
         [[nodiscard]] Token peak(size_t offset) const;
 
         [[nodiscard]] Token peak_next() const;
+
+        [[nodiscard]] TokenType peak_next_type() const;
 
         [[nodiscard]] bool peak_next_eq(TokenType type) const;
 

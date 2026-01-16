@@ -23,7 +23,7 @@ TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
     return std::move(TokenSet(this->_source, copied_tokens));
 }
 
-[[nodiscard]] Token TokenSet::at(const size_t index) const
+Token TokenSet::at(const size_t index) const
 {
     if (this->size() == 0)
     {
@@ -38,17 +38,22 @@ TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
     return this->_tokens[index];
 }
 
-[[nodiscard]] Token TokenSet::peak(const size_t offset) const
+Token TokenSet::peak(const size_t offset) const
 {
     return this->at(this->position() + offset);
 }
 
-[[nodiscard]] Token TokenSet::peak_next() const
+TokenType TokenSet::peak_next_type() const
+{
+    return this->peak_next().type;
+}
+
+Token TokenSet::peak_next() const
 {
     return this->at(this->_cursor);
 }
 
-[[nodiscard]] bool TokenSet::peak_next_eq(const TokenType type) const
+bool TokenSet::peak_next_eq(const TokenType type) const
 {
     return this->peak_next().type == type;
 }
@@ -65,14 +70,18 @@ Token TokenSet::expect(const TokenType type)
         throw parsing_error("No more tokens available");
     }
 
-    if (const auto next = this->peak_next(); next.type != type)
+    if (const auto next_type = this->peak_next().type; next_type != type)
     {
+        if (should_skip_token(next_type))
+        {
+            return this->next();
+        }
         this->except(
             ErrorType::SYNTAX_ERROR,
             std::format(
                 "Expected '{}' but found '{}'",
                 token_type_to_str(type),
-                token_type_to_str(next.type)
+                token_type_to_str(next_type)
             )
         );
     }
@@ -80,14 +89,14 @@ Token TokenSet::expect(const TokenType type)
     return this->next();
 }
 
-Token TokenSet::expect(TokenType type, const std::string& message)
+Token TokenSet::expect(const TokenType type, const std::string& message)
 {
     if (!this->has_next())
     {
         throw parsing_error("No more tokens available");
     }
 
-    if (const auto next = this->peak_next(); next.type != type)
+    if (const auto next_type = this->peak_next().type; next_type != type)
     {
         this->except(ErrorType::SYNTAX_ERROR, message);
     }
@@ -104,27 +113,29 @@ Token TokenSet::next()
     return this->_tokens[this->_cursor++];
 }
 
-[[nodiscard]] size_t TokenSet::size() const
+size_t TokenSet::size() const
 {
     return this->_size;
 }
 
-[[nodiscard]] size_t TokenSet::position() const
+size_t TokenSet::position() const
 {
     return this->_cursor;
 }
 
-[[nodiscard]] size_t TokenSet::remaining() const
+size_t TokenSet::remaining() const
 {
     return this->size() - this->position();
 }
 
-[[nodiscard]] bool TokenSet::has_next() const
+bool TokenSet::has_next() const
 {
-    return this->remaining() > 0;
+    return this->remaining() > 0
+        && this->peak_next_type() != TokenType::END_OF_FILE
+        && !should_skip_token(this->peak_next_type());
 }
 
-[[nodiscard]] std::shared_ptr<stride::SourceFile> TokenSet::source() const
+std::shared_ptr<stride::SourceFile> TokenSet::source() const
 {
     return this->_source;
 }
@@ -142,7 +153,6 @@ Token TokenSet::next()
     );
 }
 
-
 [[noreturn]] void TokenSet::except(const ErrorType error_type, const std::string& message) const
 {
     this->except(this->at(this->position()), error_type, message);
@@ -151,4 +161,16 @@ Token TokenSet::next()
 [[noreturn]] void TokenSet::except(const std::string& message) const
 {
     this->except(ErrorType::SYNTAX_ERROR, message);
+}
+
+
+bool TokenSet::should_skip_token(const TokenType type)
+{
+    switch (type)
+    {
+    case TokenType::COMMENT:
+    case TokenType::COMMENT_MULTILINE:
+    case TokenType::END_OF_FILE: return true;
+    default: return false;
+    }
 }
