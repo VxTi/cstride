@@ -1,5 +1,11 @@
-use std::fs::{ File, Reader, Writer };
-use std::io::{ Stream };
+mod test;
+
+use std::fs::{
+  File,
+  Reader,
+  Writer
+};
+use std::io::{Stream};
 
 
 enum Test {
@@ -9,10 +15,10 @@ enum Test {
 
 fn main(): i32 {
   // Should error
-   use std::io::{Reader};
-
+  //   use std::io::{Reader};
 }
-fn test(first: i8, first3: i32, second: i32, first2: i8): i8 {}
+
+fn test(first: i8, first3: i32, second: i32 first2: i8): i8 {}
 
 
 // fn test() {}

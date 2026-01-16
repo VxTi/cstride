@@ -131,8 +131,7 @@ size_t TokenSet::remaining() const
 bool TokenSet::has_next() const
 {
     return this->remaining() > 0
-        && this->peak_next_type() != TokenType::END_OF_FILE
-        && !should_skip_token(this->peak_next_type());
+        && this->peak_next_type() != TokenType::END_OF_FILE;
 }
 
 std::shared_ptr<stride::SourceFile> TokenSet::source() const

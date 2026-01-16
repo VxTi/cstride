@@ -86,8 +86,12 @@ std::unique_ptr<AstImportNode> AstImportNode::try_parse(const Scope& scope, Toke
 {
     if (scope.type != ScopeType::GLOBAL)
     {
-        tokens.except(std::format("Import statements are only allowed in global scope, but was found in {}",
-                                  scope_type_to_str(scope.type)));
+        tokens.except(
+            std::format(
+                "Import statements are only allowed in global scope, but was found in {} scope",
+                scope_type_to_str(scope.type)
+            )
+        );
     }
     tokens.expect(TokenType::KEYWORD_USE);
 

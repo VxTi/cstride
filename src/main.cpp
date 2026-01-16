@@ -1,8 +1,8 @@
-#include "../include/ast/tokens/tokenizer.h"
-#include "../include/ast/parser.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
+#include "program.h"
 
 using namespace stride::ast;
 
@@ -18,15 +18,17 @@ int main(const int argc, char* argv[])
 
     try
     {
-        const auto result = parser::parse(argv[1]);
+        auto program = stride::Program({argv[1]});
 
-        const auto nodes = result->to_string();
-
-        std::cout << "Stride compilation completed: " << nodes << std::endl;
+        for (const auto& node : program.nodes())
+        {
+            const auto nodes = node.root()->to_string();
+            std::cout << "Stride compilation completed: " << nodes << std::endl;
+        }
     }
     catch (const std::exception& e)
     {
-        std::cerr  << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
         return 1;
     }
 

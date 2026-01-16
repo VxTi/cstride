@@ -7,11 +7,17 @@
 #include "ast/nodes/function_signature.h"
 #include "ast/nodes/function_invocation.h"
 #include "ast/nodes/import.h"
+#include "ast/nodes/module.h"
 
 using namespace stride::ast;
 
 std::unique_ptr<AstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
 {
+    if (AstModule::can_parse(tokens))
+    {
+        return AstModule::try_parse(scope, tokens);
+    }
+
     if (AstImportNode::can_parse(tokens))
     {
         return AstImportNode::try_parse(scope, tokens);
@@ -21,14 +27,17 @@ std::unique_ptr<AstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
     {
         return AstFunctionDefinitionNode::try_parse(scope, tokens);
     }
+
     if (AstFunctionInvocation::can_parse(tokens))
     {
         return AstFunctionInvocation::try_parse(scope, tokens);
     }
+
     if (AstExpression::can_parse(tokens))
     {
         return AstExpression::try_parse(scope, tokens);
     }
+
     if (AstEnumerable::can_parse(tokens))
     {
         return AstEnumerable::try_parse(scope, tokens);
