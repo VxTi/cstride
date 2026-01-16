@@ -53,9 +53,16 @@ Token TokenSet::peak_next() const
     return this->at(this->_cursor);
 }
 
+
+
 bool TokenSet::peak_next_eq(const TokenType type) const
 {
-    return this->peak_next().type == type;
+    return this->peak_eq(type, 0);
+}
+
+bool TokenSet::peak_eq(const TokenType type, const size_t offset) const
+{
+    return this->peak(offset).type == type;
 }
 
 void TokenSet::skip(const size_t amount)

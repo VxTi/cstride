@@ -21,7 +21,7 @@ std::string AstBinaryOp::to_string()
     return std::format(
         "BinaryOp({}, {}, {})",
         left->to_string(),
-        static_cast<int>(op),
+        token_type_to_str(op),
         right->to_string()
     );
 }

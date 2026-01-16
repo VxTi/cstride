@@ -38,17 +38,12 @@ std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens
         return AstFunctionInvocation::try_parse(scope, tokens);
     }
 
-    if (AstExpression::can_parse(tokens))
-    {
-        return AstExpression::try_parse(scope, tokens);
-    }
-
     if (AstEnumerable::can_parse(tokens))
     {
         return AstEnumerable::try_parse(scope, tokens);
     }
 
-    tokens.throw_error("Unexpected token");
+    return AstExpression::try_parse(scope, tokens);
 }
 
 std::unique_ptr<AstBlockNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& tokens)
@@ -88,17 +83,17 @@ std::string AstBlockNode::to_string()
     return result.str();
 }
 
-std::optional<TokenSet> AstBlockNode::collect_block(TokenSet& set)
+std::optional<TokenSet> AstBlockNode::collect_block_until(TokenSet& set, const TokenType start_token,
+                                                          const TokenType end_token)
 {
-    set.expect(TokenType::LBRACE);
-
+    set.expect(start_token);
     for (int64_t level = 1, offset = 0; level > 0 && offset < set.size(); ++offset)
     {
-        if (const auto next = set.peak(offset); next.type == TokenType::LBRACE)
+        if (const auto next = set.peak(offset); next.type == start_token)
         {
             level++;
         }
-        else if (next.type == TokenType::RBRACE)
+        else if (next.type == end_token)
         {
             level--;
         }
@@ -121,7 +116,12 @@ std::optional<TokenSet> AstBlockNode::collect_block(TokenSet& set)
             return block;
         }
     }
-    set.throw_error("Unmatched closing bracket");
+    set.throw_error(std::format("Unmatched closing {}", token_type_to_str(end_token)));
+}
+
+std::optional<TokenSet> AstBlockNode::collect_block(TokenSet& set)
+{
+    return collect_block_until(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
 std::unique_ptr<AstBlockNode> AstBlockNode::try_parse_block(const Scope& scope, TokenSet& set)

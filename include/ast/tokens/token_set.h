@@ -45,6 +45,8 @@ namespace stride::ast
 
         [[nodiscard]] bool peak_next_eq(TokenType type) const;
 
+        [[nodiscard]] bool peak_eq(TokenType type, size_t offset) const;
+
         void skip(size_t amount);
 
         Token expect(TokenType type);

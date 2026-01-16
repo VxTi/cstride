@@ -25,6 +25,8 @@ namespace stride::ast
 
         static std::optional<TokenSet> collect_block(TokenSet& set);
 
+        static std::optional<TokenSet> collect_block_until(TokenSet& set, TokenType start_token, TokenType end_token);
+
         static std::unique_ptr<AstBlockNode> try_parse(const Scope& scope, TokenSet& set);
 
         static std::unique_ptr<AstBlockNode> try_parse_block(const Scope& scope, TokenSet& set);

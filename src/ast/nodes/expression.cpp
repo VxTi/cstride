@@ -110,9 +110,17 @@ std::string AstExpression::to_string()
 
 bool is_variable_declaration(const TokenSet& set)
 {
-    return (set.peak_next_eq(TokenType::IDENTIFIER) || is_primitive(set.peak_next_type()))
-        && set.peak(1).type == TokenType::IDENTIFIER
-        && set.peak(2).type == TokenType::EQUALS;
+    // let k: i8 = 123
+    return (
+        set.peak_eq(TokenType::KEYWORD_LET, 0) &&
+        set.peak_eq(TokenType::IDENTIFIER, 1) &&
+        set.peak_eq(TokenType::COLON, 2) &&
+        (
+            // Type can be either a primitive or a user-defined identifier
+            set.peak_eq(TokenType::IDENTIFIER, 3) || is_primitive(set.peak(3).type)
+        )
+        && set.peak_eq(TokenType::EQUALS, 4)
+    );
 }
 
 int get_precedence(TokenType type)
@@ -206,14 +214,16 @@ std::unique_ptr<AstExpression> AstExpression::try_parse_expression(
 {
     if (is_variable_declaration(set))
     {
-        if ((expression_type_flags & EXPRESSION_VARIABLE_DECLARATION) != 0)
+        if ((expression_type_flags & EXPRESSION_VARIABLE_DECLARATION) == 0)
         {
             set.throw_error("Variable declarations are not allowed in this context");
         }
 
-        auto type = types::try_parse_type(set);
+        set.expect(TokenType::KEYWORD_LET);
         auto variable_name_tok = set.expect(TokenType::IDENTIFIER);
         Symbol variable_name(variable_name_tok.lexeme);
+        set.expect(TokenType::COLON);
+        auto type = types::try_parse_type(set);
 
         set.expect(TokenType::EQUALS);
 
@@ -221,6 +231,8 @@ std::unique_ptr<AstExpression> AstExpression::try_parse_expression(
             EXPRESSION_VARIABLE_ASSIGNATION,
             scope, set
         );
+
+        set.expect(TokenType::SEMICOLON);
 
         scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name);
 
@@ -234,7 +246,7 @@ std::unique_ptr<AstExpression> AstExpression::try_parse_expression(
     auto lhs = parse_primary(scope, set);
     if (!lhs)
     {
-        return nullptr;
+        set.throw_error("Unexpected token");
     }
 
     return parse_binary_op(
