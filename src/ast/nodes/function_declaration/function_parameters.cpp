@@ -2,6 +2,39 @@
 
 using namespace stride::ast;
 
+
+void AstFunctionParameterNode::try_parse_subsequent_parameters(
+    const Scope& scope,
+    TokenSet& tokens,
+    std::vector<std::unique_ptr<AstFunctionParameterNode>>& parameters
+)
+{
+    while (tokens.peak_next_eq(TokenType::COMMA))
+    {
+        tokens.next();
+        const auto next = tokens.peak_next();
+
+        auto param = try_parse(scope, tokens);
+
+        if (std::ranges::find_if(
+            parameters, [&](const std::unique_ptr<AstFunctionParameterNode>& p)
+            {
+                return p->name == param->name;
+            }) != parameters.end())
+        {
+            tokens.except(
+                next,
+                stride::ErrorType::SEMANTIC_ERROR,
+                std::format(
+                    "Duplicate parameter name \"{}\" in function definition",
+                    param->name.value)
+            );
+        }
+
+        parameters.push_back(std::move(param));
+    }
+}
+
 std::string AstFunctionParameterNode::to_string()
 {
     return name.value;

@@ -36,36 +36,6 @@ bool AstFunctionDefinitionNode::can_parse(const TokenSet& tokens)
     return tokens.peak_next_eq(TokenType::KEYWORD_FN);
 }
 
-void traverse_subsequent_parameters(
-    const Scope& scope,
-    TokenSet& tokens,
-    std::vector<std::unique_ptr<AstFunctionParameterNode>>& parameters
-)
-{
-    while (tokens.peak_next_eq(TokenType::COMMA))
-    {
-        tokens.expect(TokenType::COMMA);
-        const auto next = tokens.peak_next();
-
-        auto param = AstFunctionParameterNode::try_parse(scope, tokens);
-
-        if (std::ranges::find_if(parameters, [&](const std::unique_ptr<AstFunctionParameterNode>& p)
-        {
-            return p->name == param->name;
-        }) != parameters.end())
-        {
-            tokens.except(
-                next,
-                stride::ErrorType::SEMANTIC_ERROR,
-                std::format(
-                    "Duplicate parameter name \"{}\" in function definition",
-                    param->name.value)
-            );
-        }
-
-        parameters.push_back(std::move(param));
-    }
-}
 
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
@@ -84,12 +54,12 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
     tokens.expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters = {};
 
-    while (!tokens.peak_next_eq(TokenType::RPAREN))
+    if (!tokens.peak_next_eq(TokenType::RPAREN))
     {
         auto initial = AstFunctionParameterNode::try_parse(scope, tokens);
         parameters.push_back(std::move(initial));
 
-        traverse_subsequent_parameters(scope, tokens, parameters);
+        AstFunctionParameterNode::try_parse_subsequent_parameters(scope, tokens, parameters);
     }
 
     tokens.expect(TokenType::RPAREN);

@@ -30,6 +30,12 @@ namespace stride::ast
             const Scope& scope,
             TokenSet& tokens
         );
+
+        static void try_parse_subsequent_parameters(
+            const Scope& scope,
+            TokenSet& tokens,
+            std::vector<std::unique_ptr<AstFunctionParameterNode>>& parameters
+        );
     };
 
     class AstFunctionDefinitionNode :

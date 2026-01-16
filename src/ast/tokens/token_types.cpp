@@ -138,5 +138,5 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::BOOLEAN_LITERAL, R"(\b(true|false)\b)"),
     TOKEN(TokenType::FLOAT_LITERAL, R"(\d+\.\d+)"),
     TOKEN(TokenType::INTEGER_LITERAL, R"(\d+)"),
-    TOKEN(TokenType::IDENTIFIER, R"(\b[a-zA-Z_$][a-zA-Z0-9_$]*\b)"),
+    TOKEN(TokenType::IDENTIFIER, R"([$a-zA-Z_][$a-zA-Z0-9_]*)"),
 };

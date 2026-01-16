@@ -33,12 +33,12 @@ namespace stride::ast
         // Whether this struct references another one
         // This can be used for declaring a type with the data layout
         // of another
-        std::optional<std::unique_ptr<AstStruct>> _reference;
+        std::optional<std::unique_ptr<AstType>> _reference;
 
     public:
         AstStruct(
             const Symbol& name,
-            std::unique_ptr<AstStruct> reference
+            std::unique_ptr<AstType> reference
         ) : _name(name), _reference(std::move(reference))
         {
         }
@@ -55,6 +55,8 @@ namespace stride::ast
         }
 
         bool is_reference() const { return _reference.has_value(); }
+
+        AstType* reference() const { return _reference->get(); }
 
         std::string to_string() override;
 

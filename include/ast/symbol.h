@@ -4,6 +4,8 @@
 
 namespace stride::ast
 {
+#define MODULE_DELIMITER ("__")
+
     typedef struct Symbol
     {
         // Previously: const std::string &value;
@@ -24,7 +26,7 @@ namespace stride::ast
                 initial += segment;
                 if (&segment != &segments.back())
                 {
-                    initial += "_";
+                    initial += MODULE_DELIMITER;
                 }
             }
             return Symbol{ std::move(initial) };

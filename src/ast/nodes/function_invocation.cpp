@@ -24,7 +24,7 @@ Symbol consume_function_name(TokenSet& tokens)
 
     while (tokens.peak_next_eq(TokenType::DOUBLE_COLON))
     {
-        tokens.expect(TokenType::DOUBLE_COLON);
+        tokens.next();
         const auto next = tokens.expect(TokenType::IDENTIFIER, "Expected function name segment").lexeme;
         function_segments.push_back(next);
     }

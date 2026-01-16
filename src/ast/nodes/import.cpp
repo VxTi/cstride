@@ -10,8 +10,6 @@ bool AstImportNode::can_parse(const TokenSet& tokens)
     return tokens.peak_next().type == TokenType::KEYWORD_USE;
 }
 
-auto delimiter = "__";
-
 /**
  * Will consume the import module parts from the token set.
  * This will convert the following example into the below given
@@ -39,7 +37,7 @@ Symbol consume_import_module_base(TokenSet& tokens)
     imploded << parts[0];
     for (size_t i = 1; i < parts.size(); ++i)
     {
-        imploded << delimiter << parts[i];
+        imploded << MODULE_DELIMITER << parts[i];
     }
 
     return Symbol(imploded.str());

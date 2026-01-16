@@ -1,15 +1,18 @@
-mod test;
-use std::fs::{
-  File,
-  Reader,
-  Writer
-};
-use std::io::{Stream};
+mod test::tes2;
+
+use std::fs::{ File, Reader, Writer };
+use std::io::{ Stream };
 
 
 struct Hello {
     test: i8;
+    $test: i8;
 }
+
+
+struct Ref = i8;
+
+struct Forward = Ref;
 
 enum Test {
     HELLO2: "test",
@@ -21,7 +24,7 @@ fn main(): i32 {
   //   use std::io::{Reader};
 }
 
-fn test(first: i8, first3: i32, second: i32 first2: i8): i8 {}
+fn test(first: i8, first3: i32, second: i32, first2: i8): i8 {}
 
 
 // fn test() {}

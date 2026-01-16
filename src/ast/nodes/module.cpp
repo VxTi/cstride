@@ -29,12 +29,24 @@ std::unique_ptr<AstModule> AstModule::try_parse(
         );
     }
 
+
     const auto module_name_token = tokens.expect(
         TokenType::IDENTIFIER,
         "Expected module name after 'mod' keyword"
     );
+    std::vector segments = {module_name_token.lexeme};
+
+    while (tokens.peak_next_eq(TokenType::DOUBLE_COLON))
+    {
+        tokens.next();
+        const auto next = tokens.expect(TokenType::IDENTIFIER, "Expected module name segment");
+
+        segments.push_back(next.lexeme);
+    }
+
     tokens.expect(TokenType::SEMICOLON);
-    const auto module_name = Symbol(module_name_token.lexeme);
+
+    const auto module_name = Symbol::from_segments(segments);
 
     return std::make_unique<AstModule>(module_name);
 }
