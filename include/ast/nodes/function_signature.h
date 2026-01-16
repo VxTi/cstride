@@ -30,15 +30,16 @@ namespace stride::ast
 
         static std::unique_ptr<AstFunctionParameterNode> try_parse(
             const Scope& scope,
-            const std::unique_ptr<TokenSet>& tokens);
+            TokenSet& tokens
+        );
     };
 
     class AstFunctionDefinitionNode : public AstNode
     {
-        const std::unique_ptr<AstNode> body_;
-        const Symbol name_;
-        const std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters_;
-        const std::unique_ptr<AstType> return_type_;
+        const std::unique_ptr<AstNode> _body;
+        const Symbol _name;
+        const std::vector<std::unique_ptr<AstFunctionParameterNode>> _parameters;
+        const std::unique_ptr<AstType> _return_type;
 
     public:
         AstFunctionDefinitionNode(
@@ -47,10 +48,10 @@ namespace stride::ast
             std::unique_ptr<AstType> return_type,
             std::unique_ptr<AstNode> body
         )
-            : body_(std::move(body)),
-              name_(std::move(name)),
-              parameters_(std::move(parameters)),
-              return_type_(std::move(return_type))
+            : _body(std::move(body)),
+              _name(std::move(name)),
+              _parameters(std::move(parameters)),
+              _return_type(std::move(return_type))
         {
         }
 
@@ -58,11 +59,22 @@ namespace stride::ast
 
         llvm::Value* codegen() override;
 
+        [[nodiscard]] Symbol name() const { return this->_name; }
+
+        [[nodiscard]] AstNode* body() const { return this->_body.get(); }
+
+        [[nodiscard]] const std::vector<std::unique_ptr<AstFunctionParameterNode>>& parameters() const
+        {
+            return this->_parameters;
+        }
+
+        [[nodiscard]] const std::unique_ptr<AstType>& return_type() const { return this->_return_type; }
+
         static bool can_parse(const TokenSet& tokens);
 
         static std::unique_ptr<AstFunctionDefinitionNode> try_parse(
             const Scope& scope,
-            const std::unique_ptr<TokenSet>& tokens
+            TokenSet& tokens
         );
     };
 }

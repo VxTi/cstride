@@ -24,7 +24,7 @@ auto delimiter = "__";
 Symbol consume_import_module(TokenSet& tokens)
 {
     const auto base = tokens.expect(TokenType::IDENTIFIER);
-    vector parts = {base.lexeme};
+    std::vector parts = {base.lexeme};
 
     while (tokens.peak(0) == TokenType::DOUBLE_COLON && tokens.peak(1) == TokenType::IDENTIFIER)
     {
@@ -34,7 +34,7 @@ Symbol consume_import_module(TokenSet& tokens)
         parts.push_back(part.lexeme);
     }
 
-    ostringstream imploded;
+    std::ostringstream imploded;
 
     imploded << parts[0];
     for (size_t i = 1; i < parts.size(); ++i)
@@ -51,13 +51,13 @@ Symbol consume_import_module(TokenSet& tokens)
  * This function expects a double colon (::) followed by one or more identifiers.
  * It parses the identifiers and returns them as a vector of Symbol objects.
  */
-vector<Symbol> consume_import_list(TokenSet& tokens)
+std::vector<Symbol> consume_import_list(TokenSet& tokens)
 {
     tokens.expect(TokenType::DOUBLE_COLON);
     tokens.expect(TokenType::LBRACE);
     const auto first = tokens.expect(TokenType::IDENTIFIER);
 
-    vector symbols = {Symbol(first.lexeme)};
+    std::vector<Symbol> symbols = {Symbol(first.lexeme)};
 
     while (tokens.peak(0) == TokenType::COMMA && tokens.peak(1) == TokenType::IDENTIFIER)
     {
@@ -82,7 +82,7 @@ vector<Symbol> consume_import_list(TokenSet& tokens)
 /**
  * Attempts to parse an import expression from the given TokenSet.
  */
-unique_ptr<AstImportNode> AstImportNode::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstImportNode> AstImportNode::try_parse(const Scope& scope, TokenSet& tokens)
 {
     if (scope.type != ScopeType::GLOBAL)
     {
@@ -97,7 +97,7 @@ unique_ptr<AstImportNode> AstImportNode::try_parse(const Scope& scope, TokenSet&
     tokens.expect(TokenType::SEMICOLON);
 
 
-    return make_unique<AstImportNode>(AstImportNode(import_module, import_list));
+    return std::make_unique<AstImportNode>(AstImportNode(import_module, import_list));
 }
 
 llvm::Value* AstImportNode::codegen()

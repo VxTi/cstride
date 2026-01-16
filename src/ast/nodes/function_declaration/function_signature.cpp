@@ -1,4 +1,4 @@
-#include "ast/nodes/signature.h"
+#include "ast/nodes/function_signature.h"
 
 #include "ast/nodes/root_node.h"
 
@@ -7,18 +7,18 @@ using namespace stride::ast;
 std::string AstFunctionDefinitionNode::to_string()
 {
     std::string params;
-    for (const auto& param : parameters_)
+    for (const auto& param : this->parameters())
     {
         if (!params.empty())
             params += ", ";
         params += param->to_string();
     }
 
-    const auto body_str = this->body_ == nullptr ? "EMPTY" : this->body_->to_string();
+    const auto body_str = this->body() == nullptr ? "EMPTY" : this->body()->to_string();
 
     return std::format(
         "FunctionDefinition(name: {}, parameters: [ {} ], body: {})",
-        this->name_.value,
+        this->name().value,
         params,
         body_str
     );
@@ -44,14 +44,14 @@ bool AstFunctionDefinitionNode::can_parse(const TokenSet& tokens)
 
 void traverse_subsequent_parameters(
     const Scope& scope,
-    const std::unique_ptr<TokenSet>& tokens,
+    TokenSet& tokens,
     std::vector<std::unique_ptr<AstFunctionParameterNode>>& parameters
 )
 {
-    while (tokens->peak_next_eq(TokenType::COMMA))
+    while (tokens.peak_next_eq(TokenType::COMMA))
     {
-        tokens->expect(TokenType::COMMA);
-        const auto next = tokens->peak_next();
+        tokens.expect(TokenType::COMMA);
+        const auto next = tokens.peak_next();
 
         auto param = AstFunctionParameterNode::try_parse(scope, tokens);
 
@@ -60,7 +60,7 @@ void traverse_subsequent_parameters(
             return p->name == param->name;
         }) != parameters.end())
         {
-            tokens->except(
+            tokens.except(
                 next,
                 stride::ErrorType::SEMANTIC_ERROR,
                 std::format(
@@ -78,19 +78,19 @@ void traverse_subsequent_parameters(
  */
 std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
     const Scope& scope,
-    const std::unique_ptr<TokenSet>& tokens
+    TokenSet& tokens
 )
 {
-    tokens->expect(TokenType::KEYWORD_FN);
+    tokens.expect(TokenType::KEYWORD_FN);
 
-    const auto fn_name_tok = tokens->expect(TokenType::IDENTIFIER);
+    const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
     const auto fn_name = Symbol(fn_name_tok.lexeme);
-    scope.try_define_symbol(*tokens->source(), fn_name_tok, fn_name);
+    // scope.try_define_symbol(*tokens.source(), fn_name_tok, fn_name);
 
-    tokens->expect(TokenType::LPAREN);
+    tokens.expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters = {};
 
-    while (!tokens->peak_next_eq(TokenType::RPAREN))
+    while (!tokens.peak_next_eq(TokenType::RPAREN))
     {
         auto initial = AstFunctionParameterNode::try_parse(scope, tokens);
         parameters.push_back(std::move(initial));
@@ -98,18 +98,18 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
         traverse_subsequent_parameters(scope, tokens, parameters);
     }
 
-    tokens->expect(TokenType::RPAREN);
-    tokens->expect(TokenType::COLON);
+    tokens.expect(TokenType::RPAREN);
+    tokens.expect(TokenType::COLON);
 
     const Scope function_scope(scope, ScopeType::FUNCTION);
 
     std::unique_ptr<AstType> return_type = try_parse_type(tokens);
     std::unique_ptr<AstNode> body = AstBlockNode::try_parse_block(function_scope, tokens);
 
-    return std::make_unique<AstFunctionDefinitionNode>(
+    return std::move(std::make_unique<AstFunctionDefinitionNode>(
         fn_name,
         std::move(parameters),
         std::move(return_type),
         std::move(body)
-    );
+    ));
 }

@@ -2,12 +2,12 @@
 
 using namespace stride::ast;
 
-llvm::Value* StringLiteral::codegen()
+llvm::Value* AstStringLiteral::codegen()
 {
     return nullptr;
 }
 
-std::optional<std::unique_ptr<AstNode>> StringLiteral::try_parse_optional(
+std::optional<std::unique_ptr<AstLiteral>> AstStringLiteral::try_parse_optional(
     [[maybe_unused]] const Scope& scope, TokenSet& tokens)
 {
     if (tokens.peak_next_eq(TokenType::STRING_LITERAL))
@@ -16,12 +16,12 @@ std::optional<std::unique_ptr<AstNode>> StringLiteral::try_parse_optional(
 
         const auto concatenated = sym.lexeme.substr(1, sym.lexeme.size() - 2);
 
-        return std::make_unique<StringLiteral>(StringLiteral(concatenated));
+        return std::make_unique<AstStringLiteral>(AstStringLiteral(concatenated));
     }
     return std::nullopt;
 }
 
-std::string StringLiteral::to_string()
+std::string AstStringLiteral::to_string()
 {
     return std::format("StringLiteral({})", value);
 }

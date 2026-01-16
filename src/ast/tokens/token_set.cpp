@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<TokenSet> TokenSet::create_subset(const size_t offset, const size_t length) const
+TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
 {
     const auto start = offset;
     const auto end = offset + length - 1;
@@ -20,7 +20,7 @@ std::unique_ptr<TokenSet> TokenSet::create_subset(const size_t offset, const siz
                               this->_tokens.begin() + static_cast<std::ptrdiff_t>(offset +
                                   length));
 
-    return std::make_unique<TokenSet>(TokenSet(this->_source, copied_tokens));
+    return std::move(TokenSet(this->_source, copied_tokens));
 }
 
 [[nodiscard]] Token TokenSet::at(const size_t index) const
@@ -70,6 +70,21 @@ Token TokenSet::expect(const TokenType type)
                 token_type_to_str(next.type)
             )
         );
+    }
+
+    return this->next();
+}
+
+Token TokenSet::expect(TokenType type, const std::string& message)
+{
+    if (!this->has_next())
+    {
+        throw parsing_error("No more tokens available");
+    }
+
+    if (const auto next = this->peak_next(); next.type != type)
+    {
+        this->except(ErrorType::SYNTAX_ERROR, message);
     }
 
     return this->next();

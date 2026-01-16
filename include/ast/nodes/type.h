@@ -25,7 +25,7 @@ namespace stride::ast
         {
         }
 
-        static std::optional<std::unique_ptr<AstPrimitiveType>> try_parse(const std::unique_ptr<TokenSet>& set);
+        static std::optional<std::unique_ptr<AstPrimitiveType>> try_parse(TokenSet& set);
     };
 
     class AstCustomType : public AstType
@@ -37,8 +37,8 @@ namespace stride::ast
         {
         }
 
-        static std::optional<std::unique_ptr<AstCustomType>> try_parse(const std::unique_ptr<TokenSet>& set);
+        static std::optional<std::unique_ptr<AstCustomType>> try_parse(TokenSet& set);
     };
 
-    std::unique_ptr<AstType> try_parse_type(const std::unique_ptr<TokenSet>& set);
+    std::unique_ptr<AstType> try_parse_type(TokenSet& set);
 }

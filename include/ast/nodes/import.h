@@ -8,14 +8,12 @@
 #include "ast/symbol.h"
 #include "ast/tokens/token_set.h"
 
-using namespace std;
-
 namespace stride::ast
 {
     class AstImportNode : public AstNode
     {
         Symbol module;
-        const vector<Symbol> dependencies;
+        const std::vector<Symbol> dependencies;
 
     public:
         explicit AstImportNode(Symbol module, const Symbol& dependency) :
@@ -24,7 +22,7 @@ namespace stride::ast
         {
         }
 
-        explicit AstImportNode(Symbol module, const vector<Symbol>& dependencies) : module(std::move(module)),
+        explicit AstImportNode(Symbol module, const std::vector<Symbol>& dependencies) : module(std::move(module)),
             dependencies(dependencies)
         {
         }
@@ -35,6 +33,6 @@ namespace stride::ast
 
         static bool can_parse(const TokenSet& tokens);
 
-        static unique_ptr<AstImportNode> try_parse(const Scope& scope, TokenSet& tokens);
+        static std::unique_ptr<AstImportNode> try_parse(const Scope& scope, TokenSet& tokens);
     };
 }

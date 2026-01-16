@@ -4,10 +4,10 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(const std::unique_ptr<TokenSet>& set)
+std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(TokenSet& set)
 {
     std::optional<std::unique_ptr<AstPrimitiveType>> result = std::nullopt;
-    switch (set->peak_next().type)
+    switch (set.peak_next().type)
     {
     case TokenType::PRIMITIVE_INT8:
         {
@@ -60,25 +60,25 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(con
 
     if (result.has_value())
     {
-        set->next();
+        set.next();
     }
 
     return result;
 }
 
-std::optional<std::unique_ptr<AstCustomType>> AstCustomType::try_parse(const std::unique_ptr<TokenSet>& set)
+std::optional<std::unique_ptr<AstCustomType>> AstCustomType::try_parse(TokenSet& set)
 {
     // Custom types are identifiers in type position.
-    if (set->peak_next().type != TokenType::IDENTIFIER)
+    if (set.peak_next().type != TokenType::IDENTIFIER)
     {
         return std::nullopt;
     }
 
-    const auto name = set->next().lexeme;
-    return std::make_unique<AstCustomType>(AstCustomType(name));
+    const auto name = set.next().lexeme;
+    return std::move(std::make_unique<AstCustomType>(AstCustomType(name)));
 }
 
-std::unique_ptr<AstType> stride::ast::try_parse_type(const std::unique_ptr<TokenSet>& tokens)
+std::unique_ptr<AstType> stride::ast::try_parse_type(TokenSet& tokens)
 {
     std::unique_ptr<AstType> type_ptr;
 
@@ -92,8 +92,8 @@ std::unique_ptr<AstType> stride::ast::try_parse_type(const std::unique_ptr<Token
     }
     else
     {
-        tokens->except("Expected a type in function parameter declaration");
+        tokens.except("Expected a type in function parameter declaration");
     }
 
-    return type_ptr;
+    return std::move(type_ptr);
 }

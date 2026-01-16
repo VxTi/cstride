@@ -31,7 +31,7 @@ namespace stride::ast
         {
         }
 
-        [[nodiscard]] std::unique_ptr<TokenSet> create_subset(size_t offset, size_t length) const;
+        [[nodiscard]] TokenSet create_subset(size_t offset, size_t length) const;
 
         [[nodiscard]] Token at(size_t index) const;
 
@@ -44,6 +44,8 @@ namespace stride::ast
         void skip(size_t amount);
 
         Token expect(TokenType type);
+
+        Token expect(TokenType type, const std::string &message);
 
         Token next();
 

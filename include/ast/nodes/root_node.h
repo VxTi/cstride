@@ -21,9 +21,11 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        static std::unique_ptr<AstNode> try_parse(const Scope& scope, const std::unique_ptr<TokenSet>& tokens);
+        static std::optional<TokenSet> collect_block(TokenSet &set);
 
-        static std::unique_ptr<AstNode> try_parse_block(const Scope& scope, const std::unique_ptr<TokenSet>& tokens);
+        static std::unique_ptr<AstNode> try_parse(const Scope& scope, TokenSet& set);
+
+        static std::unique_ptr<AstNode> try_parse_block(const Scope& scope, TokenSet& set);
     };
 
 }

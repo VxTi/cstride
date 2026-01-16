@@ -5,7 +5,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<TokenSet> tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
+TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
 {
     auto tokens = std::vector<Token>();
 
@@ -56,5 +56,5 @@ std::unique_ptr<TokenSet> tokenizer::tokenize(const std::shared_ptr<SourceFile>&
         }
     }
 
-    return std::make_unique<TokenSet>(source_file, tokens);
+    return TokenSet(source_file, tokens);
 }

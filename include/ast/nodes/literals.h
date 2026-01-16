@@ -6,31 +6,39 @@
 
 namespace stride::ast
 {
-    class StringLiteral : public AstNode
+    class AstLiteral : public AstNode
+    {
+    public:
+        std::string to_string() override = 0;
+
+        static std::optional<std::unique_ptr<AstLiteral>> try_parse(const Scope& scope, TokenSet& tokens);
+    };
+
+    class AstStringLiteral : public AstLiteral
     {
     public:
         const std::string value;
 
-        explicit StringLiteral(std::string val) : value(std::move(val))
+        explicit AstStringLiteral(std::string val) : value(std::move(val))
         {
         }
 
-        ~StringLiteral() override = default;
+        ~AstStringLiteral() override = default;
 
 
         llvm::Value* codegen() override;
 
         std::string to_string() override;
 
-        static std::optional<std::unique_ptr<AstNode>> try_parse_optional(const Scope& scope, TokenSet& tokens);
+        static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
     };
 
-    class IntegerLiteral : public AstNode
+    class AstIntegerLiteral : public AstLiteral
     {
     public:
         const int value;
 
-        explicit IntegerLiteral(const int value) : value(value)
+        explicit AstIntegerLiteral(const int value) : value(value)
         {
         }
 
@@ -38,8 +46,20 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        static std::optional<std::unique_ptr<AstNode>> try_parse_optional(const Scope& scope, TokenSet& tokens);
+        static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
     };
 
-    static std::optional<std::unique_ptr<AstNode>> try_parse_literal(const Scope& scope, TokenSet& tokens);
+    class AstFloatLiteral : public AstLiteral
+    {
+        const float _value;
+
+    public :
+        explicit AstFloatLiteral(const float value) : _value(value)
+        {
+        }
+
+        [[nodiscard]] float value() const { return this->_value; }
+
+        static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
+    };
 }
