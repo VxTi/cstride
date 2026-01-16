@@ -9,11 +9,9 @@ std::optional<std::unique_ptr<AstLiteral>> AstStringLiteral::try_parse_optional(
 {
     if (tokens.peak_next_eq(TokenType::STRING_LITERAL))
     {
-        const auto sym = tokens.next();
+        const auto str_tok = tokens.next();
 
-        const auto concatenated = sym.lexeme.substr(1, sym.lexeme.size() - 2);
-
-        return std::make_unique<AstStringLiteral>(concatenated);
+        return std::make_unique<AstStringLiteral>(str_tok.lexeme);
     }
     return std::nullopt;
 }
