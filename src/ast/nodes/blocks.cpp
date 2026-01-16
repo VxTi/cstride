@@ -1,73 +1,11 @@
-#include "ast/nodes/blocks.h"
-
 #include <iostream>
 
+#include "ast/nodes/blocks.h"
 #include "ast/nodes/enumerables.h"
-#include "ast/nodes/expression.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/import.h"
-#include "ast/nodes/module.h"
-#include "ast/nodes/return.h"
-#include "ast/nodes/struct.h"
 
 using namespace stride::ast;
-
-std::unique_ptr<IAstNode> parse_next_statement(const Scope& scope, TokenSet& tokens)
-{
-    if (is_module_statement(tokens))
-    {
-        return parse_module_statement(scope, tokens);
-    }
-
-    if (is_import_statement(tokens))
-    {
-        return parse_import_statement(scope, tokens);
-    }
-
-    if (is_fn_declaration(tokens))
-    {
-        return parse_fn_declaration(scope, tokens);
-    }
-
-    if (is_struct_declaration(tokens))
-    {
-        return parse_struct_declaration(scope, tokens);
-    }
-
-
-    if (is_enumerable_declaration(tokens))
-    {
-        return parse_enumerable_declaration(scope, tokens);
-    }
-
-    if (is_return_statement(tokens))
-    {
-        return parse_return_statement(scope, tokens);
-    }
-
-    return try_parse_expression(scope, tokens);
-}
-
-std::unique_ptr<AstBlock> stride::ast::parse_sequential(const Scope& scope, TokenSet& tokens)
-{
-    std::vector<std::unique_ptr<IAstNode>> nodes = {};
-
-    while (tokens.has_next())
-    {
-        if (TokenSet::should_skip_token(tokens.peak_next().type))
-        {
-            tokens.next();
-            continue;
-        }
-
-        if (auto result = parse_next_statement(scope, tokens))
-        {
-            nodes.push_back(std::move(result));
-        }
-    }
-
-    return std::make_unique<AstBlock>(AstBlock(std::move(nodes)));
-}
 
 llvm::Value* AstBlock::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
@@ -98,6 +36,27 @@ std::string AstBlock::to_string()
         result << "\n  " << child->to_string();
     }
     return result.str();
+}
+
+std::optional<TokenSet> stride::ast::collect_until_token(TokenSet& set, TokenType token)
+{
+    const int64_t initial_offset = set.position();
+
+    for (int64_t relative_offset = 0; set.has_next(); relative_offset++)
+    {
+        if (const auto next = set.next(); next.type == token)
+        {
+            // If we immediately find the requested token,
+            // then there's no point in creating a new subset
+            if (relative_offset == 0)
+            {
+                return std::nullopt;
+            }
+
+            return set.create_subset(initial_offset, relative_offset);
+        }
+    }
+    return std::nullopt;
 }
 
 std::optional<TokenSet> stride::ast::collect_token_subset(

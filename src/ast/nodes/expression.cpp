@@ -6,6 +6,7 @@
 #include "ast/nodes/binary_op.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literals.h"
+#include "ast/nodes/logical_op.h"
 #include "ast/nodes/primitive_type.h"
 
 using namespace stride::ast;
@@ -34,21 +35,21 @@ bool stride::ast::can_parse_expression(const TokenSet& tokens)
 
     switch (type)
     {
-    case TokenType::IDENTIFIER: // <something>
-    case TokenType::LPAREN: // (
-    case TokenType::RPAREN: // )
-    case TokenType::BANG: // !
-    case TokenType::MINUS: // -
-    case TokenType::PLUS: // +
-    case TokenType::TILDE: // ~
-    case TokenType::CARET: // ^
+    case TokenType::IDENTIFIER:      // <something>
+    case TokenType::LPAREN:          // (
+    case TokenType::RPAREN:          // )
+    case TokenType::BANG:            // !
+    case TokenType::MINUS:           // -
+    case TokenType::PLUS:            // +
+    case TokenType::TILDE:           // ~
+    case TokenType::CARET:           // ^
     case TokenType::LSQUARE_BRACKET: // [
     case TokenType::RSQUARE_BRACKET: // ]
-    case TokenType::STAR: // *
-    case TokenType::AMPERSAND: // &
-    case TokenType::DOUBLE_MINUS: // --
-    case TokenType::DOUBLE_PLUS: // ++
-    case TokenType::KEYWORD_NIL: // nil
+    case TokenType::STAR:            // *
+    case TokenType::AMPERSAND:       // &
+    case TokenType::DOUBLE_MINUS:    // --
+    case TokenType::DOUBLE_PLUS:     // ++
+    case TokenType::KEYWORD_NIL:     // nil
         return true;
     default: break;
     }
@@ -65,6 +66,16 @@ std::string AstExpression::to_string()
     }
 
     return std::format("Expression({})", children_str.substr(0, children_str.length() - 2));
+}
+
+bool stride::ast::is_logical_operator(const TokenType type)
+{
+    return type == TokenType::DOUBLE_AMPERSAND
+        || type == TokenType::DOUBLE_PIPE
+        || type == TokenType::LEQUALS
+        || type == TokenType::GEQUALS
+        || type == TokenType::NOT_EQUALS
+        || type == TokenType::BANG_EQUALS;
 }
 
 int stride::ast::operator_precedence(const TokenType type)
@@ -92,7 +103,7 @@ std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& set)
     if (set.peak_next_eq(TokenType::LPAREN))
     {
         set.next();
-        auto expr = try_parse_expression_ext(0, scope, set);
+        auto expr = parse_expression_ext(0, scope, set);
         set.expect(TokenType::RPAREN);
         return expr;
     }
@@ -110,7 +121,7 @@ std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& set)
             if (function_parameter_set.has_value())
             {
                 auto subset = function_parameter_set.value();
-                auto initial_arg = try_parse_expression_ext(-1, scope, subset);
+                auto initial_arg = parse_expression_ext(-1, scope, subset);
                 function_parameter_nodes.push_back(std::move(initial_arg));
 
                 while (subset.has_next())
@@ -139,10 +150,10 @@ std::unique_ptr<AstExpression> parse_binary_op(
 {
     while (true)
     {
-        auto op = tokens.peak_next().type;
-        int prec = operator_precedence(op);
+        const auto op = tokens.peak_next_type();
+        const int precedence = operator_precedence(op);
 
-        if (prec < min_prec)
+        if (precedence < min_prec)
         {
             return lhs;
         }
@@ -155,19 +166,26 @@ std::unique_ptr<AstExpression> parse_binary_op(
             return nullptr;
         }
 
-        auto next_op = tokens.peak_next().type;
-        int next_prec = operator_precedence(next_op);
+        const auto next_op = tokens.peak_next().type;
 
-        if (prec < next_prec)
+        if (const int next_precedence = operator_precedence(next_op);
+            precedence < next_precedence)
         {
-            rhs = parse_binary_op(scope, tokens, std::move(rhs), prec + 1);
+            rhs = parse_binary_op(scope, tokens, std::move(rhs), precedence + 1);
         }
 
-        lhs = std::make_unique<AstBinaryOp>(std::move(lhs), op, std::move(rhs));
+        if (is_logical_operator(op))
+        {
+            lhs = std::make_unique<AstLogicalOp>(std::move(lhs), op, std::move(rhs));
+        }
+        else
+        {
+            lhs = std::make_unique<AstBinaryOp>(std::move(lhs), op, std::move(rhs));
+        }
     }
 }
 
-std::unique_ptr<AstExpression> stride::ast::try_parse_expression_ext(
+std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
     const int expression_type_flags,
     const Scope& scope,
     TokenSet& set
@@ -175,7 +193,7 @@ std::unique_ptr<AstExpression> stride::ast::try_parse_expression_ext(
 {
     if (is_variable_declaration(set))
     {
-        if ((expression_type_flags & EXPRESSION_VARIABLE_DECLARATION) == 0)
+        if ((expression_type_flags & EXPRESSION_ALLOW_VARIABLE_DECLARATION) == 0)
         {
             set.throw_error("Variable declarations are not allowed in this context");
         }
@@ -188,12 +206,17 @@ std::unique_ptr<AstExpression> stride::ast::try_parse_expression_ext(
 
         set.expect(TokenType::EQUALS);
 
-        auto value = try_parse_expression_ext(
+        auto value = parse_expression_ext(
             EXPRESSION_VARIABLE_ASSIGNATION,
             scope, set
         );
 
-        set.expect(TokenType::SEMICOLON);
+        // If it's not an inline variable declaration (e.g., in a for loop),
+        // we expect a semicolon at the end.
+        if ((expression_type_flags & EXPRESSION_INLINE_VARIABLE_DECLARATION) == 0)
+        {
+            set.expect(TokenType::SEMICOLON);
+        }
 
         scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name);
 
@@ -218,11 +241,10 @@ std::unique_ptr<AstExpression> stride::ast::try_parse_expression_ext(
     );
 }
 
-std::unique_ptr<AstExpression> stride::ast::try_parse_expression(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstExpression> stride::ast::parse_expression(const Scope& scope, TokenSet& tokens)
 {
-    return try_parse_expression_ext(
-        EXPRESSION_VARIABLE_DECLARATION |
-        EXPRESSION_INLINE_VARIABLE_DECLARATION,
+    return parse_expression_ext(
+        EXPRESSION_ALLOW_VARIABLE_DECLARATION,
         scope,
         tokens
     );

@@ -5,6 +5,7 @@ use std::io::{ Stream };
 
 extern fn printf(format: string): i32;
 
+/*
 extern fn fopen(filename: string, mode: string): ptr;
 extern fn fclose(file: ptr): i32;
 extern fn fread(ptr: ptr, size: usize, count: usize, stream: ptr): usize;
@@ -29,16 +30,19 @@ fn file_write(ptr: ptr, size: usize, count: usize, stream: ptr): usize {
 
 fn program_exit(status: i32): void {
     exit(status);
-}
+} */
 
-fn test(): i32 {
-    return 10 + 10;
+fn test(): string {
+    return "test";
 }
 
 fn main(): void {
 
     let val: i8 = test();
+    printf(val)
 
-    printf("Hello world!")
+    // for (let i: i32 = 0; i < 10; i++) {
+    // }
+
     return;
 }

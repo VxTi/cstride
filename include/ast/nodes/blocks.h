@@ -31,4 +31,6 @@ namespace stride::ast
     std::optional<TokenSet> collect_block(TokenSet& set);
 
     std::optional<TokenSet> collect_token_subset(TokenSet& set, TokenType start_token, TokenType end_token);
+
+    std::optional<TokenSet> collect_until_token(TokenSet& set, TokenType token);
 }

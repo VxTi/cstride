@@ -7,7 +7,7 @@
 
 namespace stride::ast
 {
-#define EXPRESSION_VARIABLE_DECLARATION        1
+#define EXPRESSION_ALLOW_VARIABLE_DECLARATION  1
 #define EXPRESSION_INLINE_VARIABLE_DECLARATION 2 // Variables declared after initial one
 #define EXPRESSION_VARIABLE_ASSIGNATION        4
 
@@ -18,9 +18,7 @@ namespace stride::ast
     public:
         const std::vector<std::unique_ptr<IAstNode>> children;
 
-        explicit AstExpression(std::vector<std::unique_ptr<IAstNode>> children) : children(std::move(children))
-        {
-        };
+        explicit AstExpression(std::vector<std::unique_ptr<IAstNode>> children) : children(std::move(children)) {};
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -34,9 +32,7 @@ namespace stride::ast
 
         explicit AstIdentifier(Symbol name) :
             AstExpression({}),
-            name(std::move(name))
-        {
-        }
+            name(std::move(name)) {}
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -53,9 +49,7 @@ namespace stride::ast
 
         explicit AstFunctionInvocation(Symbol function_name) :
             AstExpression({}),
-            function_name(std::move(function_name))
-        {
-        }
+            function_name(std::move(function_name)) {}
 
         explicit AstFunctionInvocation(
             Symbol function_name,
@@ -63,9 +57,7 @@ namespace stride::ast
         ) :
             AstExpression({}),
             arguments(std::move(arguments)),
-            function_name(std::move(function_name))
-        {
-        }
+            function_name(std::move(function_name)) {}
 
         std::string to_string() override;
 
@@ -85,9 +77,7 @@ namespace stride::ast
             AstExpression({}),
             variable_name(std::move(variable_name)),
             variable_type(std::move(variable_type)),
-            initial_value(std::move(initial_value))
-        {
-        }
+            initial_value(std::move(initial_value)) {}
 
         std::string to_string() override;
 
@@ -111,9 +101,9 @@ namespace stride::ast
 
     bool is_variable_declaration(const TokenSet& set);
 
-    std::unique_ptr<AstExpression> try_parse_expression(const Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstExpression> parse_expression(const Scope& scope, TokenSet& tokens);
 
-    std::unique_ptr<AstExpression> try_parse_expression_ext(
+    std::unique_ptr<AstExpression> parse_expression_ext(
         int expression_type_flags,
         const Scope& scope,
         TokenSet& set
@@ -122,4 +112,6 @@ namespace stride::ast
     bool can_parse_expression(const TokenSet& tokens);
 
     int operator_precedence(TokenType type);
+
+    bool is_logical_operator(TokenType type);
 }

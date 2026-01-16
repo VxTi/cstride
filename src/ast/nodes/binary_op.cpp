@@ -36,14 +36,16 @@ llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& conte
 
     llvm::IRBuilder<> builder(context);
 
+    llvm::Instruction* instruction;
+
     // Attempt to locate insertion point
-    if (auto* inst = llvm::dyn_cast<llvm::Instruction>(l))
+    if ((instruction = llvm::dyn_cast<llvm::Instruction>(l)))
     {
-        builder.SetInsertPoint(inst->getParent());
+        builder.SetInsertPoint(instruction->getParent());
     }
-    else if (auto* inst = llvm::dyn_cast<llvm::Instruction>(r))
+    else if ((instruction = llvm::dyn_cast<llvm::Instruction>(r)))
     {
-        builder.SetInsertPoint(inst->getParent());
+        builder.SetInsertPoint(instruction->getParent());
     }
 
     bool is_float = l->getType()->isFloatingPointTy();

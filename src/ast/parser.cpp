@@ -1,7 +1,8 @@
-#include "files.h"
 #include "ast/parser.h"
-#include "ast/nodes/import.h"
+#include "files.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/import.h"
+#include "ast/nodes/loops.h"
 #include "ast/tokens/tokenizer.h"
 
 using namespace stride::ast;
@@ -14,4 +15,70 @@ std::unique_ptr<IAstNode> parser::parse(const std::string& source_path)
     auto tokens = tokenizer::tokenize(source_file);
 
     return parse_sequential(scope_global, tokens);
+}
+
+std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, TokenSet& tokens)
+{
+    if (is_module_statement(tokens))
+    {
+        return parse_module_statement(scope, tokens);
+    }
+
+    if (is_import_statement(tokens))
+    {
+        return parse_import_statement(scope, tokens);
+    }
+
+    if (is_fn_declaration(tokens))
+    {
+        return parse_fn_declaration(scope, tokens);
+    }
+
+    if (is_struct_declaration(tokens))
+    {
+        return parse_struct_declaration(scope, tokens);
+    }
+
+    if (is_enumerable_declaration(tokens))
+    {
+        return parse_enumerable_declaration(scope, tokens);
+    }
+
+    if (is_return_statement(tokens))
+    {
+        return parse_return_statement(scope, tokens);
+    }
+
+    if (is_for_loop_statement(tokens))
+    {
+        return parse_for_loop_statement(scope, tokens);
+    }
+
+    if (is_while_loop_statement(tokens))
+    {
+        return parse_while_loop_statement(scope, tokens);
+    }
+
+    return parse_expression(scope, tokens);
+}
+
+std::unique_ptr<AstBlock> stride::ast::parse_sequential(const Scope& scope, TokenSet& tokens)
+{
+    std::vector<std::unique_ptr<IAstNode>> nodes = {};
+
+    while (tokens.has_next())
+    {
+        if (TokenSet::should_skip_token(tokens.peak_next().type))
+        {
+            tokens.next();
+            continue;
+        }
+
+        if (auto result = parse_next_statement(scope, tokens))
+        {
+            nodes.push_back(std::move(result));
+        }
+    }
+
+    return std::make_unique<AstBlock>(std::move(nodes));
 }

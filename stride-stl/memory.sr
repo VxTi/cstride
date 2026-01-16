@@ -1,9 +1,10 @@
+mod stl::memory;
+
 /**
  * Stride Standard Library
  * Memory Management
  */
 
-mod stl::memory;
 
 extern fn malloc(size: usize): ptr;
 extern fn free(ptr: ptr): void;
