@@ -4,6 +4,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include "ast/nodes/binary_op.h"
+#include "ast/nodes/blocks.h"
 #include "ast/nodes/literals.h"
 #include "ast/nodes/primitive_type.h"
 
@@ -138,31 +139,49 @@ int get_precedence(TokenType type)
     }
 }
 
-std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& set)
 {
-    if (auto lit = AstLiteral::try_parse(scope, tokens))
+    if (auto lit = AstLiteral::try_parse(scope, set))
     {
         return std::move(*lit);
     }
 
-    if (tokens.peak_next_eq(TokenType::LPAREN))
+    if (set.peak_next_eq(TokenType::LPAREN))
     {
-        tokens.next();
-        auto expr = AstExpression::try_parse_expression(0, scope, tokens);
-        tokens.expect(TokenType::RPAREN);
+        set.next();
+        auto expr = AstExpression::try_parse_expression(0, scope, set);
+        set.expect(TokenType::RPAREN);
         return expr;
     }
 
-    if (tokens.peak_next_eq(TokenType::IDENTIFIER))
+    if (set.peak_next_eq(TokenType::IDENTIFIER))
     {
-        if (tokens.peak(1).type == TokenType::LPAREN)
+        if (set.peak(1).type == TokenType::LPAREN)
         {
-            auto name = tokens.next().lexeme;
-            tokens.expect(TokenType::LPAREN);
-            tokens.expect(TokenType::RPAREN);
-            return std::make_unique<AstFunctionInvocation>(Symbol(name));
+            auto name = set.next().lexeme;
+            auto function_parameter_set = AstBlockNode::collect_block_until(set, TokenType::LPAREN, TokenType::RPAREN);
+
+            std::vector<std::unique_ptr<IAstNode>> function_parameter_nodes = {};
+
+            // Parsing function parameter values
+            if (function_parameter_set.has_value())
+            {
+                auto subset = function_parameter_set.value();
+                auto initial_arg = AstExpression::try_parse_expression(-1, scope, subset);
+                function_parameter_nodes.push_back(std::move(initial_arg));
+
+                while (subset.has_next())
+                {
+                    subset.expect(TokenType::COMMA);
+                    auto next_arg = parse_primary(scope, subset);
+                    function_parameter_nodes.push_back(std::move(next_arg));
+                }
+
+            }
+
+            return std::make_unique<AstFunctionInvocation>(Symbol(name), std::move(function_parameter_nodes));
         }
-        auto tok = tokens.next();
+        auto tok = set.next();
         return std::make_unique<AstIdentifier>(Symbol(tok.lexeme));
     }
 

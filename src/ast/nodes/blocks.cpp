@@ -83,8 +83,10 @@ std::string AstBlockNode::to_string()
     return result.str();
 }
 
-std::optional<TokenSet> AstBlockNode::collect_block_until(TokenSet& set, const TokenType start_token,
-                                                          const TokenType end_token)
+std::optional<TokenSet> AstBlockNode::collect_block_until(
+    TokenSet& set, const TokenType start_token,
+    const TokenType end_token
+)
 {
     set.expect(start_token);
     for (int64_t level = 1, offset = 0; level > 0 && offset < set.size(); ++offset)
@@ -116,6 +118,7 @@ std::optional<TokenSet> AstBlockNode::collect_block_until(TokenSet& set, const T
             return block;
         }
     }
+    set.skip(-1); // Ensure we don't point to a random next token that's unrelated
     set.throw_error(std::format("Unmatched closing {}", token_type_to_str(end_token)));
 }
 

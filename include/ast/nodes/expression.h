@@ -56,11 +56,23 @@ namespace stride::ast
     class AstFunctionInvocation :
         public AstExpression
     {
+        std::vector<std::unique_ptr<IAstNode>> arguments;
+
     public:
         const Symbol function_name;
 
         explicit AstFunctionInvocation(Symbol function_name) :
             AstExpression({}),
+            function_name(std::move(function_name))
+        {
+        }
+
+        explicit AstFunctionInvocation(
+            Symbol function_name,
+            std::vector<std::unique_ptr<IAstNode>> arguments
+        ) :
+            AstExpression({}),
+            arguments(std::move(arguments)),
             function_name(std::move(function_name))
         {
         }
