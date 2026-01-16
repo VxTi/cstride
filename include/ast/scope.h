@@ -39,9 +39,7 @@ namespace stride::ast
             const Symbol& symbol,
             const Token& reference_token
         ) : symbol(symbol),
-            reference_token(reference_token)
-        {
-        }
+            reference_token(reference_token) {}
     };
 
 
@@ -60,24 +58,16 @@ namespace stride::ast
         )
             : type(type),
               parent_scope(std::move(parent)),
-              symbols(std::make_unique<std::vector<SymbolDefinition>>())
-        {
-        }
+              symbols(std::make_unique<std::vector<SymbolDefinition>>()) {}
 
         explicit Scope(const ScopeType type)
-            : Scope(nullptr, type)
-        {
-        }
+            : Scope(nullptr, type) {}
 
         explicit Scope(const Scope& parent, const ScopeType scope)
             : Scope(
-                std::shared_ptr<Scope>(const_cast<Scope*>(&parent), [](Scope*)
-                {
-                }),
+                std::shared_ptr<Scope>(const_cast<Scope*>(&parent), [](Scope*) {}),
                 scope
-            )
-        {
-        }
+            ) {}
 
         std::optional<SymbolDefinition> try_get_symbol_globally(const Symbol& symbol) const;
 

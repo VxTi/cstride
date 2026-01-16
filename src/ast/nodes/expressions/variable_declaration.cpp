@@ -20,7 +20,8 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
     );
 }
 
-llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
+llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMContext& context,
+                                             llvm::IRBuilder<>* irbuilder)
 {
     // Generate code for the initial value
     llvm::Value* init_value = nullptr;

@@ -12,9 +12,7 @@ AstBinaryOp::AstBinaryOp(
     AstExpression({}),
     left(std::move(left)),
     op(op),
-    right(std::move(right))
-{
-}
+    right(std::move(right)) {}
 
 std::string AstBinaryOp::to_string()
 {
@@ -64,4 +62,3 @@ llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& conte
         return nullptr;
     }
 }
-

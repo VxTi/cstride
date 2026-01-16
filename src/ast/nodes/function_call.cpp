@@ -24,7 +24,8 @@ std::string AstFunctionInvocation::to_string()
     return std::format("FunctionInvocation({} {})", function_name.to_string(), oss.str());
 }
 
-llvm::Value* AstFunctionInvocation::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstFunctionInvocation::codegen(llvm::Module* module, llvm::LLVMContext& context,
+                                            llvm::IRBuilder<>* builder)
 {
     llvm::Function* callee = module->getFunction(function_name.value);
     if (!callee)
@@ -33,7 +34,8 @@ llvm::Value* AstFunctionInvocation::codegen(llvm::Module* module, llvm::LLVMCont
         return nullptr;
     }
 
-    if (callee->arg_size() != arguments.size()) {
+    if (callee->arg_size() != arguments.size())
+    {
         std::cerr << "Incorrect arguments passed for function " << function_name.value << std::endl;
         return nullptr;
     }

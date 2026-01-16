@@ -119,7 +119,6 @@ std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& set)
                     auto next_arg = parse_primary(scope, subset);
                     function_parameter_nodes.push_back(std::move(next_arg));
                 }
-
             }
 
             return std::make_unique<AstFunctionInvocation>(Symbol(name), std::move(function_parameter_nodes));

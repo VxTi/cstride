@@ -80,16 +80,17 @@ void Program::execute() const
         return;
     }
 
-    if(llvm::verifyModule(*module, &llvm::errs())) {
+    if (llvm::verifyModule(*module, &llvm::errs()))
+    {
         std::cerr << "Module verification failed!" << std::endl;
         return;
     }
 
     std::string error;
     llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))
-        .setErrorStr(&error)
-        .setEngineKind(llvm::EngineKind::Interpreter)
-        .create();
+                                   .setErrorStr(&error)
+                                   .setEngineKind(llvm::EngineKind::Interpreter)
+                                   .create();
 
     if (!engine)
     {

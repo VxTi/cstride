@@ -54,7 +54,6 @@ Token TokenSet::peak_next() const
 }
 
 
-
 bool TokenSet::peak_next_eq(const TokenType type) const
 {
     return this->peak_eq(type, 0);
@@ -152,7 +151,8 @@ std::shared_ptr<stride::SourceFile> TokenSet::source() const
     return this->_source;
 }
 
-[[noreturn]] void TokenSet::throw_error(const Token& token, const ErrorType error_type, const std::string& message) const
+[[noreturn]] void TokenSet::throw_error(const Token& token, const ErrorType error_type,
+                                        const std::string& message) const
 {
     throw parsing_error(
         make_source_error(
