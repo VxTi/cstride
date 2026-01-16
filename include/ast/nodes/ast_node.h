@@ -8,7 +8,9 @@ namespace stride::ast
     {
     public:
         virtual ~ISynthesisable() = default;
-        virtual llvm::Value* codegen() = 0;
+        virtual llvm::Value* codegen(
+            llvm::Module* module, llvm::LLVMContext& context
+        ) = 0;
     };
 
     class IAstNode

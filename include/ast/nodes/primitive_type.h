@@ -6,15 +6,18 @@
 #include "ast/tokens/token_set.h"
 #include "ast/tokens/token.h"
 
-namespace stride::ast
+namespace stride::ast::types
 {
     class AstType : public IAstNode
     {
     };
 
+    llvm::Type* ast_type_to_llvm(AstType* type, llvm::LLVMContext& context);
+
     class AstPrimitiveType : public AstType
     {
         const TokenType _type;
+
     public:
         size_t byte_size;
 
@@ -34,8 +37,8 @@ namespace stride::ast
     class AstCustomType : public AstType
     {
         std::string _name;
-    public:
 
+    public:
         std::string to_string() override;
 
         explicit AstCustomType(std::string name) : _name(std::move(name))

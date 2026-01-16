@@ -6,6 +6,9 @@
 
 namespace stride::ast
 {
+#define EXPRESSION_VARIABLE_DECLARATION        1
+#define EXPRESSION_INLINE_VARIABLE_DECLARATION 2 // Variables declared after initial one
+
     class AstExpression :
         public virtual IAstNode,
         public virtual ISynthesisable
@@ -17,12 +20,18 @@ namespace stride::ast
         {
         };
 
-        llvm::Value* codegen() override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
 
         std::string to_string() override;
 
         static bool can_parse(const TokenSet& tokens);
 
         static std::unique_ptr<AstExpression> try_parse(const Scope& scope, TokenSet& tokens);
+
+        static std::unique_ptr<AstExpression> try_parse_expression(
+            int expression_type_flags,
+            const Scope& scope,
+            const TokenSet& tokens
+        );
     };
 }

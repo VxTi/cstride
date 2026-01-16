@@ -258,6 +258,26 @@ namespace stride::ast
         }
     }
 
+    static bool is_primitive(const TokenType type)
+    {
+        switch (type)
+        {
+        case TokenType::PRIMITIVE_INT8:
+        case TokenType::PRIMITIVE_INT16:
+        case TokenType::PRIMITIVE_INT32:
+        case TokenType::PRIMITIVE_INT64:
+        case TokenType::PRIMITIVE_FLOAT32:
+        case TokenType::PRIMITIVE_FLOAT64:
+        case TokenType::PRIMITIVE_BOOL:
+        case TokenType::PRIMITIVE_CHAR:
+        case TokenType::PRIMITIVE_STRING:
+        case TokenType::PRIMITIVE_VOID:
+            return true;
+        default:
+            return false;
+        }
+    }
+
     extern std::vector<TokenType> operatorPrecedence;
 
     bool precedes(TokenType lhs, TokenType rhs);

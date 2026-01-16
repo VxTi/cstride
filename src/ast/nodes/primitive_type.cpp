@@ -1,8 +1,11 @@
 #include "ast/nodes/primitive_type.h"
 
 #include "ast/tokens/token_set.h"
+#include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/LLVMContext.h>
 
-using namespace stride::ast;
+using namespace stride::ast::types;
 
 std::string AstPrimitiveType::to_string()
 {
@@ -61,7 +64,12 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(Tok
         break;
     case TokenType::PRIMITIVE_STRING:
         {
-            result =  std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_STRING, 1));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_STRING, 1));
+        }
+        break;
+    case TokenType::PRIMITIVE_VOID:
+        {
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_VOID, 0));
         }
         break;
     default:
@@ -88,7 +96,7 @@ std::optional<std::unique_ptr<AstCustomType>> AstCustomType::try_parse(TokenSet&
     return std::move(std::make_unique<AstCustomType>(AstCustomType(name)));
 }
 
-std::unique_ptr<AstType> stride::ast::try_parse_type(TokenSet& tokens)
+std::unique_ptr<AstType> stride::ast::types::try_parse_type(TokenSet& tokens)
 {
     std::unique_ptr<AstType> type_ptr;
 
@@ -106,4 +114,42 @@ std::unique_ptr<AstType> stride::ast::try_parse_type(TokenSet& tokens)
     }
 
     return std::move(type_ptr);
+}
+
+llvm::Type* stride::ast::types::ast_type_to_llvm(AstType* type, llvm::LLVMContext& context)
+{
+    if (const auto* primitive = dynamic_cast<AstPrimitiveType*>(type))
+    {
+        switch (primitive->type())
+        {
+        case TokenType::PRIMITIVE_INT8:
+            return llvm::Type::getInt8Ty(context);
+        case TokenType::PRIMITIVE_INT16:
+            return llvm::Type::getInt16Ty(context);
+        case TokenType::PRIMITIVE_INT32:
+            return llvm::Type::getInt32Ty(context);
+        case TokenType::PRIMITIVE_INT64:
+            return llvm::Type::getInt64Ty(context);
+        case TokenType::PRIMITIVE_FLOAT32:
+            return llvm::Type::getFloatTy(context);
+        case TokenType::PRIMITIVE_FLOAT64:
+            return llvm::Type::getDoubleTy(context);
+        case TokenType::PRIMITIVE_BOOL:
+            return llvm::Type::getInt1Ty(context);
+        case TokenType::PRIMITIVE_CHAR:
+            return llvm::Type::getInt8Ty(context);
+        case TokenType::PRIMITIVE_STRING:
+            return llvm::PointerType::getInt1Ty(context);
+        default:
+            return nullptr;
+        }
+    }
+
+    if (auto* custom = dynamic_cast<AstCustomType*>(type))
+    {
+        // TODO: Implement custom type resolution
+        return nullptr;
+    }
+
+    return nullptr;
 }

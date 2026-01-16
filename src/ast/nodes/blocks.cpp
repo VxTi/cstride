@@ -73,7 +73,7 @@ std::unique_ptr<IAstNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& 
     return std::make_unique<AstBlockNode>(AstBlockNode(std::move(nodes)));
 }
 
-llvm::Value* AstBlockNode::codegen()
+llvm::Value* AstBlockNode::codegen(llvm::Module* module, llvm::LLVMContext& context)
 {
     return nullptr;
 }

@@ -21,7 +21,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen() override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
 
         static std::optional<TokenSet> collect_block(TokenSet& set);
 

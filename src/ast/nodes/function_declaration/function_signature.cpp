@@ -1,6 +1,11 @@
 #include "ast/nodes/function_signature.h"
 
 #include "ast/nodes/blocks.h"
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/IRBuilder.h>
+
 
 using namespace stride::ast;
 
@@ -22,13 +27,6 @@ std::string AstFunctionDefinitionNode::to_string()
         params,
         body_str
     );
-}
-
-
-// TODO
-llvm::Value* AstFunctionDefinitionNode::codegen()
-{
-    return nullptr;
 }
 
 bool AstFunctionDefinitionNode::can_parse(const TokenSet& tokens)
@@ -67,7 +65,7 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
 
     const Scope function_scope(scope, ScopeType::FUNCTION);
 
-    std::unique_ptr<AstType> return_type = try_parse_type(tokens);
+    std::unique_ptr<types::AstType> return_type = types::try_parse_type(tokens);
     std::unique_ptr<IAstNode> body = AstBlockNode::try_parse_block(function_scope, tokens);
 
     return std::move(std::make_unique<AstFunctionDefinitionNode>(
@@ -76,4 +74,60 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
         std::move(return_type),
         std::move(body)
     ));
+}
+
+
+llvm::Value* AstFunctionDefinitionNode::codegen(llvm::Module* module, llvm::LLVMContext& context)
+{
+    // Create parameter types vector
+    std::vector<llvm::Type*> param_types;
+    for (const auto& param : this->parameters())
+    {
+        auto llvm_type = types::ast_type_to_llvm(param->type.get(), context);
+        param_types.push_back(llvm_type);
+    }
+
+    // Create function type
+    llvm::Type* return_type = types::ast_type_to_llvm(this->return_type().get(), context);
+    llvm::FunctionType* function_type = llvm::FunctionType::get(
+        return_type,
+        param_types,
+        false // is not variadic
+    );
+
+    // Create the function
+    llvm::Function* function = llvm::Function::Create(
+        function_type,
+        llvm::Function::ExternalLinkage,
+        this->name().value,
+        module
+    );
+
+    // Create entry basic block (already appended to function by passing function as 3rd arg)
+    llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(
+        context,
+        "entry",
+        function
+    );
+
+    // Set up IR builder
+    llvm::IRBuilder builder(context);
+    builder.SetInsertPoint(entry_block);
+
+    // Generate body code
+    if (this->body() != nullptr)
+    {
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
+        {
+            synthesisable->codegen(module, context);
+        }
+    }
+
+    // Add default return if needed (void functions or missing return)
+    if (return_type->isVoidTy())
+    {
+        builder.CreateRetVoid();
+    }
+
+    return function;
 }

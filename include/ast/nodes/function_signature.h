@@ -13,11 +13,11 @@ namespace stride::ast
     {
     public:
         const Symbol name;
-        const std::unique_ptr<AstType> type;
+        const std::unique_ptr<types::AstType> type;
 
         explicit AstFunctionParameterNode(
             Symbol param_name,
-            std::unique_ptr<AstType> param_type
+            std::unique_ptr<types::AstType> param_type
         ) :
             name(std::move(param_name)),
             type(std::move(param_type))
@@ -45,13 +45,13 @@ namespace stride::ast
         const std::unique_ptr<IAstNode> _body;
         const Symbol _name;
         const std::vector<std::unique_ptr<AstFunctionParameterNode>> _parameters;
-        const std::unique_ptr<AstType> _return_type;
+        const std::unique_ptr<types::AstType> _return_type;
 
     public:
         AstFunctionDefinitionNode(
             Symbol name,
             std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters,
-            std::unique_ptr<AstType> return_type,
+            std::unique_ptr<types::AstType> return_type,
             std::unique_ptr<IAstNode> body
         )
             : _body(std::move(body)),
@@ -63,7 +63,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen() override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
 
         [[nodiscard]] Symbol name() const { return this->_name; }
 
@@ -74,7 +74,7 @@ namespace stride::ast
             return this->_parameters;
         }
 
-        [[nodiscard]] const std::unique_ptr<AstType>& return_type() const { return this->_return_type; }
+        [[nodiscard]] const std::unique_ptr<types::AstType>& return_type() const { return this->_return_type; }
 
         static bool can_parse(const TokenSet& tokens);
 

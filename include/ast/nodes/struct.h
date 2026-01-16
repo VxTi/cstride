@@ -9,10 +9,10 @@ namespace stride::ast
     class AstStructMember : public IAstNode
     {
         Symbol _name;
-        std::unique_ptr<AstType> _type;
+        std::unique_ptr<types::AstType> _type;
 
     public:
-        AstStructMember(const Symbol& name, std::unique_ptr<AstType> type) :
+        AstStructMember(const Symbol& name, std::unique_ptr<types::AstType> type) :
             _name(name),
             _type(std::move(type))
         {
@@ -21,7 +21,7 @@ namespace stride::ast
         std::string to_string() override;
 
         Symbol name() const { return this->_name; }
-        AstType& type() const { return *this->_type; }
+        types::AstType& type() const { return *this->_type; }
     };
 
     class AstStruct : public IAstNode
@@ -33,12 +33,12 @@ namespace stride::ast
         // Whether this struct references another one
         // This can be used for declaring a type with the data layout
         // of another
-        std::optional<std::unique_ptr<AstType>> _reference;
+        std::optional<std::unique_ptr<types::AstType>> _reference;
 
     public:
         AstStruct(
             const Symbol& name,
-            std::unique_ptr<AstType> reference
+            std::unique_ptr<types::AstType> reference
         ) : _name(name), _reference(std::move(reference))
         {
         }
@@ -56,7 +56,7 @@ namespace stride::ast
 
         bool is_reference() const { return _reference.has_value(); }
 
-        AstType* reference() const { return _reference->get(); }
+        types::AstType* reference() const { return _reference->get(); }
 
         std::string to_string() override;
 

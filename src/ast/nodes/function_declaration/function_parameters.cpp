@@ -49,7 +49,7 @@ std::unique_ptr<AstFunctionParameterNode> AstFunctionParameterNode::try_parse(
 
     tokens.expect(TokenType::COLON);
 
-    std::unique_ptr<AstType> type_ptr = try_parse_type(tokens);
+    std::unique_ptr<types::AstType> type_ptr = types::try_parse_type(tokens);
 
     return std::move(std::make_unique<AstFunctionParameterNode>(param_name, std::move(type_ptr)));
 }
