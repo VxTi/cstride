@@ -62,7 +62,7 @@ std::string AstEnumerable::to_string()
 }
 
 
-std::unique_ptr<AstEnumerable> AstEnumerable::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(const Scope& scope, TokenSet& tokens)
 {
     tokens.expect(TokenType::KEYWORD_ENUM);
     const auto enumerable_name = tokens.expect(TokenType::IDENTIFIER);
@@ -94,7 +94,7 @@ std::unique_ptr<AstEnumerable> AstEnumerable::try_parse(const Scope& scope, Toke
     );
 }
 
-bool AstEnumerable::can_parse(const TokenSet& tokens)
+bool stride::ast::is_enumerable_declaration(const TokenSet& tokens)
 {
     return tokens.peak_next_eq(TokenType::KEYWORD_ENUM);
 }

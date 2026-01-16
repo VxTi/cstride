@@ -60,12 +60,13 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        static bool can_parse(const TokenSet& tokens);
-
-        static std::unique_ptr<AstStruct> try_parse(const Scope& scope, TokenSet& tokens);
 
         Symbol name() const { return _name; }
 
         const std::vector<std::unique_ptr<AstStructMember>>& members() const { return this->_cases; }
     };
+
+    std::unique_ptr<AstStruct> parse_struct_declaration(const Scope& scope, TokenSet& tokens);
+
+    bool is_struct_declaration(const TokenSet& tokens);
 }

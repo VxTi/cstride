@@ -9,6 +9,11 @@
 
 namespace stride::ast
 {
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     *                                                             *
+     *                Function parameter definitions               *
+     *                                                             *
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
     class AstFunctionParameter : IAstNode
     {
     public:
@@ -27,17 +32,27 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstFunctionParameter> try_parse_first_fn_param(
+    std::unique_ptr<AstFunctionParameter> parse_first_fn_param(
         const Scope& scope,
         TokenSet& tokens
     );
 
-    void try_parse_subsequent_fn_params(
+    void parse_subsequent_fn_params(
         const Scope& scope,
         TokenSet& tokens,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
+    std::unique_ptr<AstFunctionParameter> parse_variadic_fn_param(
+        const Scope& scope,
+        TokenSet& tokens
+    );
+
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  *
+     *                                                             *
+     *                Function declaration definitions             *
+     *                                                             *
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
     class AstFunctionDefinition :
         public IAstNode,
         public ISynthesisable
@@ -85,12 +100,12 @@ namespace stride::ast
         [[nodiscard]] bool is_extern() const { return this->_is_extern; }
 
         [[nodiscard]] bool is_variadic() const { return this->_is_variadic; }
-
-        static bool can_parse(const TokenSet& tokens);
-
-        static std::unique_ptr<AstFunctionDefinition> try_parse(
-            const Scope& scope,
-            TokenSet& tokens
-        );
     };
+
+    bool is_fn_declaration(const TokenSet& tokens);
+
+    std::unique_ptr<AstFunctionDefinition> parse_fn_declaration(
+        const Scope& scope,
+        TokenSet& tokens
+    );
 }

@@ -23,12 +23,12 @@ std::unique_ptr<AstStructMember> try_parse_struct_member(
     return std::make_unique<AstStructMember>(struct_member_sym, std::move(struct_member_type));
 }
 
-bool AstStruct::can_parse(const TokenSet& tokens)
+bool stride::ast::is_struct_declaration(const TokenSet& tokens)
 {
     return tokens.peak_next_eq(TokenType::KEYWORD_STRUCT);
 }
 
-std::unique_ptr<AstStruct> AstStruct::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& scope, TokenSet& tokens)
 {
     tokens.expect(TokenType::KEYWORD_STRUCT);
     const auto struct_name = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");

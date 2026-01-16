@@ -7,12 +7,12 @@ std::string AstModule::to_string()
     return std::format("Module ({})", this->name().to_string());
 }
 
-bool AstModule::can_parse(const TokenSet& tokens)
+bool stride::ast::is_module_statement(const TokenSet& tokens)
 {
     return tokens.peak_next_eq(TokenType::KEYWORD_MODULE);
 }
 
-std::unique_ptr<AstModule> AstModule::try_parse(
+std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     [[maybe_unused]] const Scope& scope,
     TokenSet& tokens
 )

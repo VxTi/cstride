@@ -3,7 +3,7 @@
 using namespace stride::ast;
 
 
-void stride::ast::try_parse_subsequent_fn_params(
+void stride::ast::parse_subsequent_fn_params(
     const Scope& scope,
     TokenSet& tokens,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
@@ -14,7 +14,7 @@ void stride::ast::try_parse_subsequent_fn_params(
         tokens.next();
         const auto next = tokens.peak_next();
 
-        auto param = try_parse_first_fn_param(scope, tokens);
+        auto param = parse_first_fn_param(scope, tokens);
 
         if (std::ranges::find_if(
             parameters, [&](const std::unique_ptr<AstFunctionParameter>& p)
@@ -40,7 +40,7 @@ std::string AstFunctionParameter::to_string()
     return name.value;
 }
 
-std::unique_ptr<AstFunctionParameter> stride::ast::try_parse_first_fn_param(
+std::unique_ptr<AstFunctionParameter> stride::ast::parse_first_fn_param(
     [[maybe_unused]] const Scope& scope,
     TokenSet& tokens
 )

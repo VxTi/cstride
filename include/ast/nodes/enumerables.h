@@ -47,10 +47,10 @@ namespace stride::ast
 
         [[nodiscard]] Symbol name() const { return this->_name; }
 
-        static std::unique_ptr<AstEnumerable> try_parse(const Scope& scope, TokenSet& tokens);
-
-        static bool can_parse(const TokenSet& tokens);
-
         std::string to_string() override;
     };
+
+    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(const Scope& scope, TokenSet& tokens);
+
+    bool is_enumerable_declaration(const TokenSet& tokens);
 }

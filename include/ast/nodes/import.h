@@ -28,9 +28,9 @@ namespace stride::ast
         }
 
         std::string to_string() override;
-
-        static bool can_parse(const TokenSet& tokens);
-
-        static std::unique_ptr<AstImport> try_parse(const Scope& scope, TokenSet& tokens);
     };
+
+    bool is_import_statement(const TokenSet& tokens);
+
+    std::unique_ptr<AstImport> parse_import_statement(const Scope& scope, TokenSet& tokens);
 }

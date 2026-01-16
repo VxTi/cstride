@@ -22,11 +22,11 @@ namespace stride::ast
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
-        static bool can_parse(const TokenSet& tokens);
-
-        static std::unique_ptr<AstReturn> try_parse(const Scope& scope, TokenSet& tokens);
 
         [[nodiscard]] IAstNode* value() const { return _value.get(); }
     };
-}
 
+    bool is_return_statement(const TokenSet& tokens);
+
+    std::unique_ptr<AstReturn> parse_return_statement(const Scope& scope, TokenSet& tokens);
+}

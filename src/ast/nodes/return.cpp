@@ -5,12 +5,12 @@
 
 using namespace stride::ast;
 
-bool AstReturn::can_parse(const TokenSet& tokens)
+bool stride::ast::is_return_statement(const TokenSet& tokens)
 {
     return tokens.peak_next_eq(TokenType::KEYWORD_RETURN);
 }
 
-std::unique_ptr<AstReturn> AstReturn::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const Scope& scope, TokenSet& tokens)
 {
     tokens.expect(TokenType::KEYWORD_RETURN);
 
@@ -41,11 +41,10 @@ llvm::Value* AstReturn::codegen(llvm::Module* module, llvm::LLVMContext& context
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(_value.get()))
         {
-             llvm::Value* val = synthesisable->codegen(module, context, builder);
-             // When using create ret, we also return the instruction as a value
-             return builder->CreateRet(val);
+            llvm::Value* val = synthesisable->codegen(module, context, builder);
+            // When using create ret, we also return the instruction as a value
+            return builder->CreateRet(val);
         }
     }
     return builder->CreateRetVoid();
 }
-

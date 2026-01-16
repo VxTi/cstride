@@ -14,34 +14,35 @@ using namespace stride::ast;
 
 std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
 {
-    if (AstModule::can_parse(tokens))
+    if (is_module_statement(tokens))
     {
-        return AstModule::try_parse(scope, tokens);
+        return parse_module_statement(scope, tokens);
     }
 
-    if (AstImport::can_parse(tokens))
+    if (is_import_statement(tokens))
     {
-        return AstImport::try_parse(scope, tokens);
+        return parse_import_statement(scope, tokens);
     }
 
-    if (AstFunctionDefinition::can_parse(tokens))
+    if (is_fn_declaration(tokens))
     {
-        return AstFunctionDefinition::try_parse(scope, tokens);
+        return parse_fn_declaration(scope, tokens);
     }
 
-    if (AstStruct::can_parse(tokens))
+    if (is_struct_declaration(tokens))
     {
-        return AstStruct::try_parse(scope, tokens);
+        return parse_struct_declaration(scope, tokens);
     }
 
-    if (AstEnumerable::can_parse(tokens))
+
+    if (is_enumerable_declaration(tokens))
     {
-        return AstEnumerable::try_parse(scope, tokens);
+        return parse_enumerable_declaration(scope, tokens);
     }
 
-    if (AstReturn::can_parse(tokens))
+    if (is_return_statement(tokens))
     {
-        return AstReturn::try_parse(scope, tokens);
+        return parse_return_statement(scope, tokens);
     }
 
     return try_parse_expression(scope, tokens);

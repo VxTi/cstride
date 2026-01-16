@@ -33,7 +33,7 @@ std::string AstFunctionDefinition::to_string()
     );
 }
 
-bool AstFunctionDefinition::can_parse(const TokenSet& tokens)
+bool stride::ast::is_fn_declaration(const TokenSet& tokens)
 {
     return tokens.peak_next_eq(TokenType::KEYWORD_FN) || tokens.peak_next_eq(TokenType::KEYWORD_EXTERNAL);
 }
@@ -42,7 +42,7 @@ bool AstFunctionDefinition::can_parse(const TokenSet& tokens)
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
-std::unique_ptr<AstFunctionDefinition> AstFunctionDefinition::try_parse(
+std::unique_ptr<AstFunctionDefinition> stride::ast::parse_fn_declaration(
     const Scope& scope,
     TokenSet& tokens
 )
@@ -69,10 +69,10 @@ std::unique_ptr<AstFunctionDefinition> AstFunctionDefinition::try_parse(
     // have to parse it a little differenly
     if (!tokens.peak_next_eq(TokenType::RPAREN))
     {
-        auto initial = try_parse_first_fn_param(scope, tokens);
+        auto initial = parse_first_fn_param(scope, tokens);
         parameters.push_back(std::move(initial));
 
-        try_parse_subsequent_fn_params(scope, tokens, parameters);
+        parse_subsequent_fn_params(scope, tokens, parameters);
     }
 
     // The return type of the function, e.g., ": i8"
