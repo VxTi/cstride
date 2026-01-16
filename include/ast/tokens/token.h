@@ -80,7 +80,7 @@ namespace stride::ast
         PRIMITIVE_FLOAT64, // float64
 
         PRIMITIVE_BOOL, // bool
-        PRIMITIVE_STRING, // str
+        PRIMITIVE_STRING, // string
         PRIMITIVE_CHAR, // char
         PRIMITIVE_VOID, // void
         PRIMITIVE_AUTO, // auto

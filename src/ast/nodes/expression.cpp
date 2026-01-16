@@ -2,18 +2,30 @@
 
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include "ast/nodes/binary_op.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literals.h"
 #include "ast/nodes/logical_op.h"
 #include "ast/nodes/primitive_type.h"
+#include "ast/scope.h"
 
 using namespace stride::ast;
 
 llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    return nullptr;
+    // Look up the variable in the current scope
+    llvm::AllocaInst* alloca = Scope::get_current()->lookup_variable(name);
+
+    if (!alloca)
+    {
+        llvm::errs() << "Unknown variable name: " << name.value << "\n";
+        return nullptr;
+    }
+
+    // Load the value from the allocated variable
+    return builder->CreateLoad(alloca->getAllocatedType(), alloca, name.value.c_str());
 }
 
 std::string AstIdentifier::to_string()

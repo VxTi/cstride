@@ -24,9 +24,13 @@ std::string AstFunctionInvocation::to_string()
     return std::format("FunctionInvocation({} {})", function_name.to_string(), oss.str());
 }
 
-llvm::Value* AstFunctionInvocation::codegen(llvm::Module* module, llvm::LLVMContext& context,
-                                            llvm::IRBuilder<>* builder)
+llvm::Value* AstFunctionInvocation::codegen(
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
+)
 {
+    // The actual function being called. This must be in the registry.
     llvm::Function* callee = module->getFunction(function_name.value);
     if (!callee)
     {
