@@ -6,7 +6,9 @@ namespace stride::ast
 {
     typedef struct Symbol
     {
-        const std::string &value;
+        // Previously: const std::string &value;
+        // Store an owning string to avoid dangling references when constructed from temporaries.
+        std::string value;
 
         bool operator==(const Symbol& other) const
         {
@@ -15,7 +17,8 @@ namespace stride::ast
 
         static Symbol from_segments(const std::vector<std::string>& segments)
         {
-            std::string initial = "";
+            // Build a single string with '_' separators and return it by value.
+            std::string initial;
             for (const auto& segment : segments)
             {
                 initial += segment;
@@ -24,7 +27,7 @@ namespace stride::ast
                     initial += "_";
                 }
             }
-            return Symbol{ initial };
+            return Symbol{ std::move(initial) };
         }
 
         [[nodiscard]] std::string to_string() const { return value; }

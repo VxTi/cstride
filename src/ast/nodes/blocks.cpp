@@ -1,4 +1,4 @@
-#include "ast/nodes/root_node.h"
+#include "ast/nodes/blocks.h"
 
 #include <iostream>
 

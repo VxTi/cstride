@@ -1,6 +1,6 @@
 #include "ast/nodes/function_signature.h"
 
-#include "ast/nodes/root_node.h"
+#include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
 

@@ -1,7 +1,7 @@
 #include "files.h"
 #include "ast/parser.h"
 #include "ast/nodes/import.h"
-#include "ast/nodes/root_node.h"
+#include "ast/nodes/blocks.h"
 #include "ast/tokens/tokenizer.h"
 
 using namespace stride::ast;

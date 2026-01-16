@@ -32,7 +32,7 @@ namespace stride::ast
     class SymbolDefinition
     {
     public:
-        const Symbol& symbol;
+        Symbol symbol;
         const Token& reference_token;
 
         explicit SymbolDefinition(
