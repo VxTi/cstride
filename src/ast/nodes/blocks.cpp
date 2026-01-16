@@ -33,17 +33,12 @@ std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens
         return AstStruct::try_parse(scope, tokens);
     }
 
-    if (AstFunctionInvocation::can_parse(tokens))
-    {
-        return AstFunctionInvocation::try_parse(scope, tokens);
-    }
-
     if (AstEnumerable::can_parse(tokens))
     {
         return AstEnumerable::try_parse(scope, tokens);
     }
 
-    return AstExpression::try_parse(scope, tokens);
+    return try_parse_expression(scope, tokens);
 }
 
 std::unique_ptr<AstBlockNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& tokens)

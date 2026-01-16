@@ -25,50 +25,8 @@ llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& con
     return nullptr;
 }
 
-llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMContext& context)
-{
-    // Generate code for the initial value
-    llvm::Value* init_value = nullptr;
-    if (this->initial_value != nullptr)
-    {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->initial_value.get()))
-        {
-            init_value = synthesisable->codegen(module, context);
-        }
-    }
 
-    // Get the LLVM type for the variable
-    llvm::Type* var_type = types::ast_type_to_llvm(this->variable_type.get(), context);
-
-    // Create an alloca instruction for the variable
-    llvm::IRBuilder<> builder(context);
-    // Find the entry block of the current function
-    llvm::Function* current_function = builder.GetInsertBlock()->getParent();
-    llvm::BasicBlock& entry_block = current_function->getEntryBlock();
-    builder.SetInsertPoint(&entry_block, entry_block.begin());
-
-    llvm::AllocaInst* alloca = builder.CreateAlloca(var_type, nullptr, this->variable_name.value);
-
-    // Store the initial value if it exists
-    if (init_value != nullptr)
-    {
-        builder.CreateStore(init_value, alloca);
-    }
-
-    return alloca;
-}
-
-std::string AstVariableDeclaration::to_string()
-{
-    return std::format(
-        "VariableDeclaration({}, {}, {})",
-        variable_name.value,
-        variable_type->to_string(),
-        initial_value ? initial_value->to_string() : "nil"
-    );
-}
-
-bool AstExpression::can_parse(const TokenSet& tokens)
+bool stride::ast::can_parse_expression(const TokenSet& tokens)
 {
     const auto type = tokens.peak_next().type;
 
@@ -109,22 +67,7 @@ std::string AstExpression::to_string()
     return std::format("Expression({})", children_str.substr(0, children_str.length() - 2));
 }
 
-bool is_variable_declaration(const TokenSet& set)
-{
-    // let k: i8 = 123
-    return (
-        set.peak_eq(TokenType::KEYWORD_LET, 0) &&
-        set.peak_eq(TokenType::IDENTIFIER, 1) &&
-        set.peak_eq(TokenType::COLON, 2) &&
-        (
-            // Type can be either a primitive or a user-defined identifier
-            set.peak_eq(TokenType::IDENTIFIER, 3) || is_primitive(set.peak(3).type)
-        )
-        && set.peak_eq(TokenType::EQUALS, 4)
-    );
-}
-
-int get_precedence(TokenType type)
+int stride::ast::operator_precedence(const TokenType type)
 {
     switch (type)
     {
@@ -149,7 +92,7 @@ std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& set)
     if (set.peak_next_eq(TokenType::LPAREN))
     {
         set.next();
-        auto expr = AstExpression::try_parse_expression(0, scope, set);
+        auto expr = try_parse_expression_ext(0, scope, set);
         set.expect(TokenType::RPAREN);
         return expr;
     }
@@ -167,7 +110,7 @@ std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& set)
             if (function_parameter_set.has_value())
             {
                 auto subset = function_parameter_set.value();
-                auto initial_arg = AstExpression::try_parse_expression(-1, scope, subset);
+                auto initial_arg = try_parse_expression_ext(-1, scope, subset);
                 function_parameter_nodes.push_back(std::move(initial_arg));
 
                 while (subset.has_next())
@@ -198,7 +141,7 @@ std::unique_ptr<AstExpression> parse_binary_op(
     while (true)
     {
         auto op = tokens.peak_next().type;
-        int prec = get_precedence(op);
+        int prec = operator_precedence(op);
 
         if (prec < min_prec)
         {
@@ -214,7 +157,7 @@ std::unique_ptr<AstExpression> parse_binary_op(
         }
 
         auto next_op = tokens.peak_next().type;
-        int next_prec = get_precedence(next_op);
+        int next_prec = operator_precedence(next_op);
 
         if (prec < next_prec)
         {
@@ -225,7 +168,7 @@ std::unique_ptr<AstExpression> parse_binary_op(
     }
 }
 
-std::unique_ptr<AstExpression> AstExpression::try_parse_expression(
+std::unique_ptr<AstExpression> stride::ast::try_parse_expression_ext(
     const int expression_type_flags,
     const Scope& scope,
     TokenSet& set
@@ -239,14 +182,14 @@ std::unique_ptr<AstExpression> AstExpression::try_parse_expression(
         }
 
         set.expect(TokenType::KEYWORD_LET);
-        auto variable_name_tok = set.expect(TokenType::IDENTIFIER);
+        const auto variable_name_tok = set.expect(TokenType::IDENTIFIER);
         Symbol variable_name(variable_name_tok.lexeme);
         set.expect(TokenType::COLON);
         auto type = types::try_parse_type(set);
 
         set.expect(TokenType::EQUALS);
 
-        auto value = try_parse_expression(
+        auto value = try_parse_expression_ext(
             EXPRESSION_VARIABLE_ASSIGNATION,
             scope, set
         );
@@ -276,9 +219,9 @@ std::unique_ptr<AstExpression> AstExpression::try_parse_expression(
     );
 }
 
-std::unique_ptr<AstExpression> AstExpression::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstExpression> stride::ast::try_parse_expression(const Scope& scope, TokenSet& tokens)
 {
-    return try_parse_expression(
+    return try_parse_expression_ext(
         EXPRESSION_VARIABLE_DECLARATION |
         EXPRESSION_INLINE_VARIABLE_DECLARATION,
         scope,

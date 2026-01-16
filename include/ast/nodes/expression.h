@@ -25,16 +25,6 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
 
         std::string to_string() override;
-
-        static bool can_parse(const TokenSet& tokens);
-
-        static std::unique_ptr<AstExpression> try_parse(const Scope& scope, TokenSet& tokens);
-
-        static std::unique_ptr<AstExpression> try_parse_expression(
-            int expression_type_flags,
-            const Scope& scope,
-            TokenSet& set
-        );
     };
 
     class AstIdentifier : public AstExpression
@@ -118,4 +108,18 @@ namespace stride::ast
             return this->initial_value.get();
         }
     };
+
+    bool is_variable_declaration(const TokenSet& set);
+
+    std::unique_ptr<AstExpression> try_parse_expression(const Scope& scope, TokenSet& tokens);
+
+    std::unique_ptr<AstExpression> try_parse_expression_ext(
+        int expression_type_flags,
+        const Scope& scope,
+        TokenSet& set
+    );
+
+    bool can_parse_expression(const TokenSet& tokens);
+
+    int operator_precedence(TokenType type);
 }
