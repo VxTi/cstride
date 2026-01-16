@@ -26,10 +26,10 @@ std::string AstBinaryOp::to_string()
     );
 }
 
-llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& context)
+llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
-    llvm::Value* l = left->codegen(module, context);
-    llvm::Value* r = right->codegen(module, context);
+    llvm::Value* l = left->codegen(module, context, irbuilder);
+    llvm::Value* r = right->codegen(module, context, irbuilder);
 
     if (!l || !r)
     {

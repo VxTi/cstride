@@ -22,7 +22,7 @@ namespace stride::ast
         {
         };
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };
@@ -38,7 +38,7 @@ namespace stride::ast
         {
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder = nullptr) override;
 
         std::string to_string() override;
     };
@@ -69,7 +69,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder = nullptr) override;
     };
 
     class AstVariableDeclaration :
@@ -91,7 +91,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         [[nodiscard]] const Symbol& get_variable_name() const
         {

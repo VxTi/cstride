@@ -19,7 +19,8 @@ if (LLVM_FOUND)
     add_definitions(${LLVM_DEFINITIONS})
 
     # Link against specific LLVM libraries
-    llvm_map_components_to_libnames(llvm_libs support core irreader)
+    llvm_map_components_to_libnames(llvm_libs support core irreader executionengine interpreter native)
+    message(STATUS "LLVM Libs to link: ${llvm_libs}")
 else ()
     message(STATUS "LLVM not found - building without LLVM support")
 endif ()

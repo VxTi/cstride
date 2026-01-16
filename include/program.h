@@ -24,5 +24,7 @@ namespace stride
         explicit Program(std::vector<std::string> files);
 
         std::vector<ProgramObject>& nodes() { return _nodes; }
+
+        void execute();
     };
 }

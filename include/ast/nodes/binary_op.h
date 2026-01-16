@@ -19,7 +19,7 @@ namespace stride::ast
             std::unique_ptr<AstExpression> right
         );
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };

@@ -22,16 +22,17 @@ std::string AstFunctionDefinitionNode::to_string()
     const auto body_str = this->body() == nullptr ? "EMPTY" : this->body()->to_string();
 
     return std::format(
-        "FunctionDefinition(name: {}, parameters: [ {} ], body: {})",
+        "FunctionDefinition(name: {}, parameters: [ {} ], body: {}, is_external: {})",
         this->name().value,
         params,
-        body_str
+        body_str,
+        this->is_extern()
     );
 }
 
 bool AstFunctionDefinitionNode::can_parse(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_FN);
+    return tokens.peak_next_eq(TokenType::KEYWORD_FN) || tokens.peak_next_eq(TokenType::KEYWORD_EXTERNAL);
 }
 
 
@@ -43,6 +44,13 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
     TokenSet& tokens
 )
 {
+    bool is_external = false;
+    if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERNAL))
+    {
+        tokens.expect(TokenType::KEYWORD_EXTERNAL);
+        is_external = true;
+    }
+
     tokens.expect(TokenType::KEYWORD_FN);
 
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
@@ -66,24 +74,35 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
     const Scope function_scope(scope, ScopeType::FUNCTION);
 
     std::unique_ptr<types::AstType> return_type = types::try_parse_type(tokens);
-    std::unique_ptr<AstBlockNode> body = AstBlockNode::try_parse_block(function_scope, tokens);
+    std::unique_ptr<AstBlockNode> body = nullptr;
 
-    if (body != nullptr && body->children().empty())
+    if (is_external)
     {
-        // Ensure we don't populate the function if it doesn't actually have resolved AST nodes
-        body = nullptr;
+        tokens.expect(TokenType::SEMICOLON);
+    }
+    else
+    {
+        body = AstBlockNode::try_parse_block(function_scope, tokens);
+
+        if (body != nullptr && body->children().empty())
+        {
+            // Ensure we don't populate the function if it doesn't actually have resolved AST nodes
+            body = nullptr;
+        }
     }
 
     return std::move(std::make_unique<AstFunctionDefinitionNode>(
         fn_name,
         std::move(parameters),
         std::move(return_type),
-        std::move(body)
+        std::move(body),
+        is_external
     ));
 }
 
 
-llvm::Value* AstFunctionDefinitionNode::codegen(llvm::Module* module, llvm::LLVMContext& context)
+llvm::Value* AstFunctionDefinitionNode::codegen(llvm::Module* module, llvm::LLVMContext& context,
+                                                llvm::IRBuilder<>* irbuilder)
 {
     // Create parameter types vector
     std::vector<llvm::Type*> param_types;
@@ -109,6 +128,11 @@ llvm::Value* AstFunctionDefinitionNode::codegen(llvm::Module* module, llvm::LLVM
         module
     );
 
+    if (this->is_extern())
+    {
+        return function;
+    }
+
     // Create entry basic block (already appended to function by passing function as 3rd arg)
     llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(
         context,
@@ -125,7 +149,7 @@ llvm::Value* AstFunctionDefinitionNode::codegen(llvm::Module* module, llvm::LLVM
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
         {
-            synthesisable->codegen(module, context);
+            synthesisable->codegen(module, context, irbuilder);
         }
     }
 

@@ -21,7 +21,7 @@ std::string AstIntegerLiteral::to_string()
     return std::format("IntLiteral({})", value());
 }
 
-llvm::Value* AstIntegerLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context)
+llvm::Value* AstIntegerLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     // 32-bit integer
     return llvm::ConstantInt::get(context, llvm::APInt(32, _value, true));

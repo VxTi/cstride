@@ -22,8 +22,7 @@ std::string AstStringLiteral::to_string()
     return std::format("StringLiteral({})", value());
 }
 
-llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context)
+llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
 {
-    llvm::IRBuilder<> builder(context);
-    return builder.CreateGlobalString(_value);
+    return irBuilder->CreateGlobalString(_value);
 }

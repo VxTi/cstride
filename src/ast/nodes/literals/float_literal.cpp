@@ -21,7 +21,7 @@ std::string AstFloatLiteral::to_string()
     return std::format("FloatLiteral({})", value());
 }
 
-llvm::Value* AstFloatLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context)
+llvm::Value* AstFloatLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     return llvm::ConstantFP::get(context, llvm::APFloat(_value));
 }

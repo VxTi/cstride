@@ -10,7 +10,7 @@
 
 using namespace stride::ast;
 
-llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& context)
+llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     return nullptr;
 }
@@ -20,7 +20,7 @@ std::string AstIdentifier::to_string()
     return name.value;
 }
 
-llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& context)
+llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
     return nullptr;
 }

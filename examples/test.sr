@@ -3,6 +3,7 @@ mod test::tes2;
 use std::fs::{ File, Reader, Writer };
 use std::io::{ Stream };
 
+external fn printf(format: string): i32;
 
 struct Hello {
     test: i8;

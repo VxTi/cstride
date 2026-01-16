@@ -25,6 +25,8 @@ int main(const int argc, char* argv[])
             const auto nodes = node.root()->to_string();
             std::cout << "Stride compilation completed: " << nodes << std::endl;
         }
+
+        program.execute();
     }
     catch (const std::exception& e)
     {

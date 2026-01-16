@@ -17,7 +17,7 @@ std::string AstFunctionInvocation::to_string()
     return std::format("FunctionInvocation({} {})", function_name.to_string(), oss.str());
 }
 
-llvm::Value* AstFunctionInvocation::codegen(llvm::Module* module, llvm::LLVMContext& context)
+llvm::Value* AstFunctionInvocation::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     return nullptr;
 }

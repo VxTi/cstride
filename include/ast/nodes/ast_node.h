@@ -1,6 +1,7 @@
 #pragma once
 
 #include <llvm/IR/Value.h>
+#include <llvm/IR/IRBuilder.h>
 
 namespace stride::ast
 {
@@ -9,7 +10,9 @@ namespace stride::ast
     public:
         virtual ~ISynthesisable() = default;
         virtual llvm::Value* codegen(
-            llvm::Module* module, llvm::LLVMContext& context
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
         ) = 0;
     };
 
