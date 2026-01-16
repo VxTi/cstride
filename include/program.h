@@ -25,6 +25,6 @@ namespace stride
 
         std::vector<ProgramObject>& nodes() { return _nodes; }
 
-        void execute();
+        void execute() const;
     };
 }

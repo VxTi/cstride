@@ -5,7 +5,8 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/ExecutionEngine/Interpreter.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <iostream>
@@ -30,7 +31,7 @@ Program::Program(std::vector<std::string> files)
 }
 
 
-void Program::execute()
+void Program::execute() const
 {
     if (_nodes.empty())
     {
@@ -46,7 +47,28 @@ void Program::execute()
 
     llvm::LLVMContext context;
     llvm::IRBuilder builder(context);
+
     auto module = std::make_unique<llvm::Module>("stride_module", context);
+    const std::string target_triple_str = llvm::sys::getDefaultTargetTriple();
+    const auto triple = llvm::Triple(target_triple_str);
+
+    std::string message;
+    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(
+        target_triple_str, message
+    );
+    if (!target) throw std::runtime_error("Couldn't find target.");
+
+    llvm::TargetMachine* const machine = target->createTargetMachine(
+        triple,
+        "generic",
+        "",
+        llvm::TargetOptions(),
+        std::optional<llvm::Reloc::Model>()
+    );
+
+    module->setDataLayout(machine->createDataLayout());
+    module->setTargetTriple(triple);
+
 
     auto* root = _nodes[0].root();
     if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(root))

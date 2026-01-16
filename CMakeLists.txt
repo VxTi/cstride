@@ -1,48 +1,25 @@
 cmake_minimum_required(VERSION 3.10)
-
-set(PROJECT_NAME cstride)
-project(${PROJECT_NAME})
+project(cstride)
 
 set(CMAKE_CXX_STANDARD 23)
 
-# # # # # # # # # # # # # # # #
-#          LLVM Setup         #
-# # # # # # # # # # # # # # # #
-find_package(LLVM CONFIG)
+find_package(LLVM CONFIG REQUIRED)
 
-if (LLVM_FOUND)
-    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+# Map the components you need
+llvm_map_components_to_libnames(llvm_libs support core irreader executionengine interpreter native)
 
-    # Include directories and definitions
-    include_directories(${LLVM_INCLUDE_DIRS})
-    add_definitions(${LLVM_DEFINITIONS})
+file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.cc")
+file(GLOB_RECURSE HEADER_FILES "include/*.h" "include/*.hpp")
 
-    # Link against specific LLVM libraries
-    llvm_map_components_to_libnames(llvm_libs support core irreader executionengine interpreter native)
-    message(STATUS "LLVM Libs to link: ${llvm_libs}")
-else ()
-    message(STATUS "LLVM not found - building without LLVM support")
-endif ()
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 
-# # # # END LLVM Setup # # # #
-
-file(GLOB_RECURSE HEADER_FILES "./include/*.h" "./include/*.hpp")
-file(GLOB_RECURSE SOURCE_FILES "./src/*.cpp" "./src/*.cc")
-
-
-list(LENGTH HEADER_FILES HEADER_COUNT)
-list(LENGTH SOURCE_FILES SOURCE_COUNT)
-math(EXPR TOTAL_FILES "${HEADER_COUNT} + ${SOURCE_COUNT}")
-message(STATUS "Building ${PROJECT_NAME}: ${TOTAL_FILES} file(s) in total (${HEADER_COUNT} headers, ${SOURCE_COUNT} sources)")
-
-include_directories(./include)
-
-add_executable(${PROJECT_NAME}
-    ${HEADER_FILES}
-    ${SOURCE_FILES}
+# Use target-specific commands
+target_include_directories(${PROJECT_NAME} PRIVATE
+        "include"
+        ${LLVM_INCLUDE_DIRS}
 )
 
-if (LLVM_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${llvm_libs})
-endif ()
+# Apply LLVM definitions (like -D__STDC_CONSTANT_MACROS) to the target
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${LLVM_DEFINITIONS})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${llvm_libs})

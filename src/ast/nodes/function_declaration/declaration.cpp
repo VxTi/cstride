@@ -5,6 +5,9 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
+#include <iostream>
 
 
 using namespace stride::ast;
@@ -133,6 +136,9 @@ llvm::Value* AstFunctionDefinitionNode::codegen(
 
     if (this->is_extern())
     {
+        if (llvm::verifyFunction(*function, &llvm::errs())) {
+            std::cerr << "Function " << this->name().value << " verification failed!" << std::endl;
+        }
         return function;
     }
 
@@ -168,6 +174,10 @@ llvm::Value* AstFunctionDefinitionNode::codegen(
         {
             builder.CreateRet(ret_val);
         }
+    }
+
+    if (llvm::verifyFunction(*function, &llvm::errs())) {
+        std::cerr << "Function " << this->name().value << " verification failed!" << std::endl;
     }
 
     return function;
