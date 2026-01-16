@@ -22,6 +22,8 @@ enum Test {
 fn main(): i32 {
   // Should error
   //   use std::io::{Reader};
+
+  test();
 }
 
 fn test(first: i8, first3: i32, second: i32, first2: i8): i8 {}

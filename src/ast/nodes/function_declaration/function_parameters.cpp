@@ -22,7 +22,7 @@ void AstFunctionParameterNode::try_parse_subsequent_parameters(
                 return p->name == param->name;
             }) != parameters.end())
         {
-            tokens.except(
+            tokens.throw_error(
                 next,
                 stride::ErrorType::SEMANTIC_ERROR,
                 std::format(

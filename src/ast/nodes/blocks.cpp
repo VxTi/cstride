@@ -5,7 +5,6 @@
 #include "ast/nodes/enumerables.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/function_signature.h"
-#include "ast/nodes/function_invocation.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/module.h"
 #include "ast/nodes/struct.h"
@@ -49,10 +48,10 @@ std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens
         return AstEnumerable::try_parse(scope, tokens);
     }
 
-    tokens.except("Unexpected token");
+    tokens.throw_error("Unexpected token");
 }
 
-std::unique_ptr<IAstNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstBlockNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& tokens)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
@@ -82,7 +81,7 @@ std::string AstBlockNode::to_string()
 {
     std::ostringstream result;
     result << "AstBlock";
-    for (const auto& child : children)
+    for (const auto& child : children())
     {
         result << "\n" << child->to_string();
     }
@@ -122,10 +121,10 @@ std::optional<TokenSet> AstBlockNode::collect_block(TokenSet& set)
             return block;
         }
     }
-    set.except("Unmatched closing bracket");
+    set.throw_error("Unmatched closing bracket");
 }
 
-std::unique_ptr<IAstNode> AstBlockNode::try_parse_block(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstBlockNode> AstBlockNode::try_parse_block(const Scope& scope, TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 

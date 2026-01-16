@@ -63,10 +63,10 @@ namespace stride::ast
 
         [[nodiscard]] std::shared_ptr<SourceFile> source() const;
 
-        [[noreturn]] void except(const Token& token, ErrorType error_type, const std::string& message) const;
+        [[noreturn]] void throw_error(const Token& token, ErrorType error_type, const std::string& message) const;
 
-        [[noreturn]] void except(ErrorType error_type, const std::string& message) const;
+        [[noreturn]] void throw_error(ErrorType error_type, const std::string& message) const;
 
-        [[noreturn]] void except(const std::string& message) const;
+        [[noreturn]] void throw_error(const std::string& message) const;
     };
 }

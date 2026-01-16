@@ -110,7 +110,7 @@ std::unique_ptr<AstType> stride::ast::types::try_parse_type(TokenSet& tokens)
     }
     else
     {
-        tokens.except("Expected a type in function parameter declaration");
+        tokens.throw_error("Expected a type in function parameter declaration");
     }
 
     return std::move(type_ptr);

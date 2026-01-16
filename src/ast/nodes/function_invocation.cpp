@@ -1,4 +1,5 @@
-#include "ast/nodes/function_invocation.h"
+#include "ast/nodes/expression.h"
+
 using namespace stride::ast;
 
 
@@ -10,11 +11,6 @@ std::string AstFunctionInvocation::to_string()
 llvm::Value* AstFunctionInvocation::codegen(llvm::Module* module, llvm::LLVMContext& context)
 {
     return nullptr;
-}
-
-bool AstFunctionInvocation::can_parse(const TokenSet& tokens)
-{
-    return tokens.peak_next_eq(TokenType::IDENTIFIER);
 }
 
 Symbol consume_function_name(TokenSet& tokens)
@@ -32,6 +28,7 @@ Symbol consume_function_name(TokenSet& tokens)
     return Symbol::from_segments(function_segments);
 }
 
+/*
 std::unique_ptr<AstFunctionInvocation> AstFunctionInvocation::try_parse(const Scope& scope, TokenSet& tokens)
 {
     const auto function_name = consume_function_name(tokens);
@@ -40,4 +37,4 @@ std::unique_ptr<AstFunctionInvocation> AstFunctionInvocation::try_parse(const Sc
     tokens.expect(TokenType::RPAREN, "Expected ')' after function invocation");
 
     return std::make_unique<AstFunctionInvocation>(function_name);
-}
+}*/

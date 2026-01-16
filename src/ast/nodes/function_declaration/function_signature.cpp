@@ -66,7 +66,13 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
     const Scope function_scope(scope, ScopeType::FUNCTION);
 
     std::unique_ptr<types::AstType> return_type = types::try_parse_type(tokens);
-    std::unique_ptr<IAstNode> body = AstBlockNode::try_parse_block(function_scope, tokens);
+    std::unique_ptr<AstBlockNode> body = AstBlockNode::try_parse_block(function_scope, tokens);
+
+    if (body != nullptr && body->children().empty())
+    {
+        // Ensure we don't populate the function if it doesn't actually have resolved AST nodes
+        body = nullptr;
+    }
 
     return std::move(std::make_unique<AstFunctionDefinitionNode>(
         fn_name,

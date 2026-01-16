@@ -26,7 +26,7 @@ std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const
 
     if (!value.has_value())
     {
-        tokens.except("Expected a literal value for enum member");
+        tokens.throw_error("Expected a literal value for enum member");
     }
 
     tokens.expect(TokenType::COMMA, "Expected a comma after enum member value");
@@ -74,7 +74,7 @@ std::unique_ptr<AstEnumerable> AstEnumerable::try_parse(const Scope& scope, Toke
 
     if (!opt_enum_body_subset.has_value())
     {
-        tokens.except("Expected a block in enum declaration");
+        tokens.throw_error("Expected a block in enum declaration");
     }
 
     std::vector<std::unique_ptr<AstEnumerableMember>> members = {};

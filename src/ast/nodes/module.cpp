@@ -22,7 +22,7 @@ std::unique_ptr<AstModule> AstModule::try_parse(
         mod_token.offset != 0
     )
     {
-        tokens.except(
+        tokens.throw_error(
             mod_token,
             ErrorType::SYNTAX_ERROR,
             "Module declaration must be at the beginning of the file"

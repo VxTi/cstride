@@ -67,7 +67,7 @@ Token TokenSet::expect(const TokenType type)
 {
     if (!this->has_next())
     {
-        this->except(
+        this->throw_error(
             ErrorType::SYNTAX_ERROR,
             std::format(
                 "Expected '{}', but reached end of block",
@@ -82,7 +82,7 @@ Token TokenSet::expect(const TokenType type)
         {
             return this->next();
         }
-        this->except(
+        this->throw_error(
             ErrorType::SYNTAX_ERROR,
             std::format(
                 "Expected '{}' but found '{}'",
@@ -104,7 +104,7 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 
     if (const auto next_type = this->peak_next().type; next_type != type)
     {
-        this->except(ErrorType::SYNTAX_ERROR, message);
+        this->throw_error(ErrorType::SYNTAX_ERROR, message);
     }
 
     return this->next();
@@ -145,7 +145,7 @@ std::shared_ptr<stride::SourceFile> TokenSet::source() const
     return this->_source;
 }
 
-[[noreturn]] void TokenSet::except(const Token& token, const ErrorType error_type, const std::string& message) const
+[[noreturn]] void TokenSet::throw_error(const Token& token, const ErrorType error_type, const std::string& message) const
 {
     throw parsing_error(
         make_source_error(
@@ -158,14 +158,14 @@ std::shared_ptr<stride::SourceFile> TokenSet::source() const
     );
 }
 
-[[noreturn]] void TokenSet::except(const ErrorType error_type, const std::string& message) const
+[[noreturn]] void TokenSet::throw_error(const ErrorType error_type, const std::string& message) const
 {
-    this->except(this->at(this->position()), error_type, message);
+    this->throw_error(this->at(this->position()), error_type, message);
 }
 
-[[noreturn]] void TokenSet::except(const std::string& message) const
+[[noreturn]] void TokenSet::throw_error(const std::string& message) const
 {
-    this->except(ErrorType::SYNTAX_ERROR, message);
+    this->throw_error(ErrorType::SYNTAX_ERROR, message);
 }
 
 

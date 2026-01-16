@@ -69,7 +69,7 @@ std::vector<Symbol> consume_import_list(TokenSet& tokens)
 
     if (symbols.empty())
     {
-        tokens.except(
+        tokens.throw_error(
             "Expected at least one symbol in import list"
         );
     }
@@ -84,7 +84,7 @@ std::unique_ptr<AstImportNode> AstImportNode::try_parse(const Scope& scope, Toke
 {
     if (scope.type != ScopeType::GLOBAL)
     {
-        tokens.except(
+        tokens.throw_error(
             std::format(
                 "Import statements are only allowed in global scope, but was found in {} scope",
                 scope_type_to_str(scope.type)
