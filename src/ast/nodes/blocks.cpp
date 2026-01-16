@@ -4,9 +4,10 @@
 
 #include "ast/nodes/enumerables.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/declaration.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/module.h"
+#include "ast/nodes/return.h"
 #include "ast/nodes/struct.h"
 
 using namespace stride::ast;
@@ -18,14 +19,14 @@ std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens
         return AstModule::try_parse(scope, tokens);
     }
 
-    if (AstImportNode::can_parse(tokens))
+    if (AstImport::can_parse(tokens))
     {
-        return AstImportNode::try_parse(scope, tokens);
+        return AstImport::try_parse(scope, tokens);
     }
 
-    if (AstFunctionDefinitionNode::can_parse(tokens))
+    if (AstFunctionDefinition::can_parse(tokens))
     {
-        return AstFunctionDefinitionNode::try_parse(scope, tokens);
+        return AstFunctionDefinition::try_parse(scope, tokens);
     }
 
     if (AstStruct::can_parse(tokens))
@@ -38,10 +39,15 @@ std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens
         return AstEnumerable::try_parse(scope, tokens);
     }
 
+    if (AstReturn::can_parse(tokens))
+    {
+        return AstReturn::try_parse(scope, tokens);
+    }
+
     return try_parse_expression(scope, tokens);
 }
 
-std::unique_ptr<AstBlockNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstBlock> AstBlock::try_parse(const Scope& scope, TokenSet& tokens)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
@@ -59,15 +65,20 @@ std::unique_ptr<AstBlockNode> AstBlockNode::try_parse(const Scope& scope, TokenS
         }
     }
 
-    return std::make_unique<AstBlockNode>(AstBlockNode(std::move(nodes)));
+    return std::make_unique<AstBlock>(AstBlock(std::move(nodes)));
 }
 
-llvm::Value* AstBlockNode::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstBlock::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     llvm::Value* last_value = nullptr;
 
     for (const auto& child : children())
     {
+        if (auto* block = builder->GetInsertBlock(); block && block->getTerminator())
+        {
+            break;
+        }
+
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
             last_value = synthesisable->codegen(module, context, builder);
@@ -77,18 +88,18 @@ llvm::Value* AstBlockNode::codegen(llvm::Module* module, llvm::LLVMContext& cont
     return last_value;
 }
 
-std::string AstBlockNode::to_string()
+std::string AstBlock::to_string()
 {
     std::ostringstream result;
     result << "AstBlock";
     for (const auto& child : children())
     {
-        result << "\n" << child->to_string();
+        result << "\n  " << child->to_string();
     }
     return result.str();
 }
 
-std::optional<TokenSet> AstBlockNode::collect_block_until(
+std::optional<TokenSet> AstBlock::collect_block_until(
     TokenSet& set, const TokenType start_token,
     const TokenType end_token
 )
@@ -127,12 +138,12 @@ std::optional<TokenSet> AstBlockNode::collect_block_until(
     set.throw_error(std::format("Unmatched closing {}", token_type_to_str(end_token)));
 }
 
-std::optional<TokenSet> AstBlockNode::collect_block(TokenSet& set)
+std::optional<TokenSet> AstBlock::collect_block(TokenSet& set)
 {
     return collect_block_until(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
-std::unique_ptr<AstBlockNode> AstBlockNode::try_parse_block(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstBlock> AstBlock::try_parse_block(const Scope& scope, TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 

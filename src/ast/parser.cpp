@@ -13,5 +13,5 @@ std::unique_ptr<IAstNode> parser::parse(const std::string& source_path)
     const auto source_file = read_file(source_path);
     auto tokens = tokenizer::tokenize(source_file);
 
-    return AstBlockNode::try_parse(scope_global, tokens);
+    return AstBlock::try_parse(scope_global, tokens);
 }

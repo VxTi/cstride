@@ -140,8 +140,10 @@ llvm::Type* stride::ast::types::ast_type_to_llvm(AstType* type, llvm::LLVMContex
             return llvm::Type::getInt8Ty(context);
         case TokenType::PRIMITIVE_STRING:
             return llvm::PointerType::get(context, 0);
+
+        case TokenType::PRIMITIVE_VOID:
         default:
-            return nullptr;
+            return llvm::Type::getVoidTy(context);
         }
     }
 

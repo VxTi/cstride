@@ -46,7 +46,7 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::KEYWORD_THIS, R"(\bthis\b)"),
     TOKEN(TokenType::KEYWORD_PUBLIC, R"(\bpublic\b)"),
     TOKEN(TokenType::KEYWORD_MODULE, R"(\bmod\b)"),
-    TOKEN(TokenType::KEYWORD_EXTERNAL, R"(\bexternal\b)"),
+    TOKEN(TokenType::KEYWORD_EXTERNAL, R"(\bextern\b)"),
     TOKEN(TokenType::KEYWORD_OVERRIDE, R"(\boverride\b)"),
     TOKEN(TokenType::KEYWORD_AND, R"(\band\b)"),
     TOKEN(TokenType::KEYWORD_AS, R"(\bas\b)"),

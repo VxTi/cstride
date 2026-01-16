@@ -10,19 +10,19 @@
 
 namespace stride::ast
 {
-    class AstImportNode : public IAstNode
+    class AstImport : public IAstNode
     {
         Symbol module;
         const std::vector<Symbol> dependencies;
 
     public:
-        explicit AstImportNode(Symbol module, const Symbol& dependency) :
+        explicit AstImport(Symbol module, const Symbol& dependency) :
             module(std::move(module)),
             dependencies({dependency})
         {
         }
 
-        explicit AstImportNode(Symbol module, const std::vector<Symbol>& dependencies) : module(std::move(module)),
+        explicit AstImport(Symbol module, const std::vector<Symbol>& dependencies) : module(std::move(module)),
             dependencies(dependencies)
         {
         }
@@ -31,6 +31,6 @@ namespace stride::ast
 
         static bool can_parse(const TokenSet& tokens);
 
-        static std::unique_ptr<AstImportNode> try_parse(const Scope& scope, TokenSet& tokens);
+        static std::unique_ptr<AstImport> try_parse(const Scope& scope, TokenSet& tokens);
     };
 }

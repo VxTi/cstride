@@ -3,16 +3,16 @@ mod test::tes2;
 use std::fs::{ File, Reader, Writer };
 use std::io::{ Stream };
 
-external fn printf(format: string): i32;
+extern fn printf(format: string): i32;
 
-enum Test {
-    HELLO2: "test",
-    HELLO: 123,
+fn test(): i32 {
+    return 10 + 10;
 }
 
-fn main(): i32 {
+fn main(): void {
 
-    let test: i8 = test(1 + (1 * 2) + (1)) ;
+    let val: i8 = test();
 
-    printf("HEllo!")
+    printf("Hello world!")
+    return;
 }

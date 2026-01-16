@@ -105,5 +105,5 @@ void Program::execute() const
     }
 
     llvm::GenericValue result = engine->runFunction(main, {});
-    std::cout << "Program returned: " << result.IntVal.getSExtValue() << std::endl;
+    std::cout << "\nProgram exited with status " << result.IntVal.getSExtValue() << std::endl;
 }

@@ -5,7 +5,7 @@
 
 using namespace stride::ast;
 
-bool AstImportNode::can_parse(const TokenSet& tokens)
+bool AstImport::can_parse(const TokenSet& tokens)
 {
     return tokens.peak_next().type == TokenType::KEYWORD_USE;
 }
@@ -80,7 +80,7 @@ std::vector<Symbol> consume_import_list(TokenSet& tokens)
 /**
  * Attempts to parse an import expression from the given TokenSet.
  */
-std::unique_ptr<AstImportNode> AstImportNode::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstImport> AstImport::try_parse(const Scope& scope, TokenSet& tokens)
 {
     if (scope.type != ScopeType::GLOBAL)
     {
@@ -99,10 +99,10 @@ std::unique_ptr<AstImportNode> AstImportNode::try_parse(const Scope& scope, Toke
     tokens.expect(TokenType::SEMICOLON);
 
 
-    return std::make_unique<AstImportNode>(AstImportNode(import_module, import_list));
+    return std::make_unique<AstImport>(AstImport(import_module, import_list));
 }
 
-std::string AstImportNode::to_string()
+std::string AstImport::to_string()
 {
     std::ostringstream deps_stream;
     for (size_t i = 0; i < this->dependencies.size(); ++i)

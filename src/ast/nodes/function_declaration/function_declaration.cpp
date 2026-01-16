@@ -1,4 +1,4 @@
-#include "ast/nodes/declaration.h"
+#include "ast/nodes/function_declaration.h"
 
 #include "ast/nodes/blocks.h"
 #include <llvm/IR/Function.h>
@@ -12,7 +12,7 @@
 
 using namespace stride::ast;
 
-std::string AstFunctionDefinitionNode::to_string()
+std::string AstFunctionDefinition::to_string()
 {
     std::string params;
     for (const auto& param : this->parameters())
@@ -33,7 +33,7 @@ std::string AstFunctionDefinitionNode::to_string()
     );
 }
 
-bool AstFunctionDefinitionNode::can_parse(const TokenSet& tokens)
+bool AstFunctionDefinition::can_parse(const TokenSet& tokens)
 {
     return tokens.peak_next_eq(TokenType::KEYWORD_FN) || tokens.peak_next_eq(TokenType::KEYWORD_EXTERNAL);
 }
@@ -42,42 +42,45 @@ bool AstFunctionDefinitionNode::can_parse(const TokenSet& tokens)
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
-std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
+std::unique_ptr<AstFunctionDefinition> AstFunctionDefinition::try_parse(
     const Scope& scope,
     TokenSet& tokens
 )
 {
     bool is_external = false;
+    bool is_variadic = false;
     if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERNAL))
     {
         tokens.expect(TokenType::KEYWORD_EXTERNAL);
         is_external = true;
     }
 
-    tokens.expect(TokenType::KEYWORD_FN);
+    tokens.expect(TokenType::KEYWORD_FN); // fn
 
+    // Here we expect to receive the function name
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
     const auto fn_name = Symbol(fn_name_tok.lexeme);
     scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name);
 
     tokens.expect(TokenType::LPAREN);
-    std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters = {};
+    std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
+    // If we don't receive a ')', the function has parameters, so we'll
+    // have to parse it a little differenly
     if (!tokens.peak_next_eq(TokenType::RPAREN))
     {
-        auto initial = AstFunctionParameterNode::try_parse(scope, tokens);
+        auto initial = try_parse_first_fn_param(scope, tokens);
         parameters.push_back(std::move(initial));
 
-        AstFunctionParameterNode::try_parse_subsequent_parameters(scope, tokens, parameters);
+        try_parse_subsequent_fn_params(scope, tokens, parameters);
     }
 
+    // The return type of the function, e.g., ": i8"
     tokens.expect(TokenType::RPAREN);
     tokens.expect(TokenType::COLON);
-
-    const Scope function_scope(scope, ScopeType::FUNCTION);
-
     std::unique_ptr<types::AstType> return_type = types::try_parse_type(tokens);
-    std::unique_ptr<AstBlockNode> body = nullptr;
+
+    std::unique_ptr<AstBlock> body = nullptr;
 
     if (is_external)
     {
@@ -85,7 +88,8 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
     }
     else
     {
-        body = AstBlockNode::try_parse_block(function_scope, tokens);
+        const Scope function_scope(scope, ScopeType::FUNCTION);
+        body = AstBlock::try_parse_block(function_scope, tokens);
 
         if (body != nullptr && body->children().empty())
         {
@@ -94,51 +98,56 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
         }
     }
 
-    return std::move(std::make_unique<AstFunctionDefinitionNode>(
+    return std::move(std::make_unique<AstFunctionDefinition>(
         fn_name,
         std::move(parameters),
         std::move(return_type),
         std::move(body),
+        is_variadic,
         is_external
     ));
 }
 
 
-llvm::Value* AstFunctionDefinitionNode::codegen(
+llvm::Value* AstFunctionDefinition::codegen(
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* irBuilder
-    )
+)
 {
+    const auto fn_name = this->name().value;
+
     // Create parameter types vector
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->parameters())
     {
         auto llvm_type = types::ast_type_to_llvm(param->type.get(), context);
-        if (!llvm_type) {
-             std::cerr << "Failed to resolve type for parameter " << param->name.value << std::endl;
-             return nullptr;
+        if (!llvm_type)
+        {
+            std::cerr << "Failed to resolve type for parameter " << param->name.value << std::endl;
+            return nullptr;
         }
         param_types.push_back(llvm_type);
     }
 
     // Create function type
     llvm::Type* return_type = types::ast_type_to_llvm(this->return_type().get(), context);
-    if (!return_type) {
-         std::cerr << "Failed to resolve return type for function " << this->name().value << std::endl;
-         return nullptr;
+    if (!return_type)
+    {
+        std::cerr << "Failed to resolve return type for function " << fn_name << std::endl;
+        return nullptr;
     }
     llvm::FunctionType* function_type = llvm::FunctionType::get(
         return_type,
         param_types,
-        false // is not variadic
+        this->is_variadic()
     );
 
     // Create the function
     llvm::Function* function = llvm::Function::Create(
         function_type,
         llvm::Function::ExternalLinkage,
-        this->name().value,
+        fn_name,
         module
     );
 
@@ -169,7 +178,7 @@ llvm::Value* AstFunctionDefinitionNode::codegen(
     }
 
     // Add default return if needed (void functions or missing return)
-    if (!builder.GetInsertBlock()->getTerminator())
+    if (auto* block = builder.GetInsertBlock(); block && !block->getTerminator())
     {
         if (return_type->isVoidTy())
         {
@@ -181,7 +190,8 @@ llvm::Value* AstFunctionDefinitionNode::codegen(
         }
     }
 
-    if (llvm::verifyFunction(*function, &llvm::errs())) {
+    if (llvm::verifyFunction(*function, &llvm::errs()))
+    {
         std::cerr << "Function " << this->name().value << " verification failed!" << std::endl;
     }
 

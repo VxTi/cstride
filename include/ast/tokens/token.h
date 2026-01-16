@@ -241,7 +241,7 @@ namespace stride::ast
         case TokenType::KEYWORD_IMPORT: return "import";
         case TokenType::KEYWORD_PUBLIC: return "public";
         case TokenType::KEYWORD_MODULE: return "module";
-        case TokenType::KEYWORD_EXTERNAL: return "external";
+        case TokenType::KEYWORD_EXTERNAL: return "extern";
         case TokenType::KEYWORD_NIL: return "nil";
         case TokenType::KEYWORD_OVERRIDE: return "override";
         case TokenType::KEYWORD_ENUM: return "enum";

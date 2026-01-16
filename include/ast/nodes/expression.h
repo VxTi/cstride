@@ -38,7 +38,7 @@ namespace stride::ast
         {
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder = nullptr) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };
@@ -69,7 +69,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder = nullptr) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
     class AstVariableDeclaration :

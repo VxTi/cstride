@@ -50,7 +50,7 @@ std::unique_ptr<AstStruct> AstStruct::try_parse(const Scope& scope, TokenSet& to
         return std::make_unique<AstStruct>(struct_sym, std::move(reference_sym));
     }
 
-    auto struct_body_set = AstBlockNode::collect_block(tokens);
+    auto struct_body_set = AstBlock::collect_block(tokens);
     std::vector<std::unique_ptr<AstStructMember>> members = {};
 
     if (struct_body_set.has_value())

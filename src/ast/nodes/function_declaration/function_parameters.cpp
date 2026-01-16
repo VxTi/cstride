@@ -1,12 +1,12 @@
-#include "ast/nodes/declaration.h"
+#include "ast/nodes/function_declaration.h"
 
 using namespace stride::ast;
 
 
-void AstFunctionParameterNode::try_parse_subsequent_parameters(
+void stride::ast::try_parse_subsequent_fn_params(
     const Scope& scope,
     TokenSet& tokens,
-    std::vector<std::unique_ptr<AstFunctionParameterNode>>& parameters
+    std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
 {
     while (tokens.peak_next_eq(TokenType::COMMA))
@@ -14,10 +14,10 @@ void AstFunctionParameterNode::try_parse_subsequent_parameters(
         tokens.next();
         const auto next = tokens.peak_next();
 
-        auto param = try_parse(scope, tokens);
+        auto param = try_parse_first_fn_param(scope, tokens);
 
         if (std::ranges::find_if(
-            parameters, [&](const std::unique_ptr<AstFunctionParameterNode>& p)
+            parameters, [&](const std::unique_ptr<AstFunctionParameter>& p)
             {
                 return p->name == param->name;
             }) != parameters.end())
@@ -35,12 +35,12 @@ void AstFunctionParameterNode::try_parse_subsequent_parameters(
     }
 }
 
-std::string AstFunctionParameterNode::to_string()
+std::string AstFunctionParameter::to_string()
 {
     return name.value;
 }
 
-std::unique_ptr<AstFunctionParameterNode> AstFunctionParameterNode::try_parse(
+std::unique_ptr<AstFunctionParameter> stride::ast::try_parse_first_fn_param(
     [[maybe_unused]] const Scope& scope,
     TokenSet& tokens
 )
@@ -51,5 +51,5 @@ std::unique_ptr<AstFunctionParameterNode> AstFunctionParameterNode::try_parse(
 
     std::unique_ptr<types::AstType> type_ptr = types::try_parse_type(tokens);
 
-    return std::move(std::make_unique<AstFunctionParameterNode>(param_name, std::move(type_ptr)));
+    return std::move(std::make_unique<AstFunctionParameter>(param_name, std::move(type_ptr)));
 }

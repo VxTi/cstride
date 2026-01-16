@@ -6,14 +6,14 @@
 
 namespace stride::ast
 {
-    class AstBlockNode :
+    class AstBlock :
         public virtual IAstNode,
         public virtual ISynthesisable
     {
         std::vector<std::unique_ptr<IAstNode>> _children;
 
     public:
-        explicit AstBlockNode(
+        explicit AstBlock(
             std::vector<std::unique_ptr<IAstNode>> children
         ) : _children(std::move(children))
         {
@@ -27,9 +27,9 @@ namespace stride::ast
 
         static std::optional<TokenSet> collect_block_until(TokenSet& set, TokenType start_token, TokenType end_token);
 
-        static std::unique_ptr<AstBlockNode> try_parse(const Scope& scope, TokenSet& set);
+        static std::unique_ptr<AstBlock> try_parse(const Scope& scope, TokenSet& set);
 
-        static std::unique_ptr<AstBlockNode> try_parse_block(const Scope& scope, TokenSet& set);
+        static std::unique_ptr<AstBlock> try_parse_block(const Scope& scope, TokenSet& set);
 
         [[nodiscard]] const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
     };
