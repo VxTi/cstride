@@ -12,7 +12,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<IAstNode> parse_next_statement(const Scope& scope, TokenSet& tokens)
 {
     if (is_module_statement(tokens))
     {
@@ -48,7 +48,7 @@ std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens
     return try_parse_expression(scope, tokens);
 }
 
-std::unique_ptr<AstBlock> AstBlock::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstBlock> stride::ast::parse_sequential(const Scope& scope, TokenSet& tokens)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
@@ -60,7 +60,7 @@ std::unique_ptr<AstBlock> AstBlock::try_parse(const Scope& scope, TokenSet& toke
             continue;
         }
 
-        if (auto result = try_parse_partial(scope, tokens))
+        if (auto result = parse_next_statement(scope, tokens))
         {
             nodes.push_back(std::move(result));
         }
@@ -100,7 +100,7 @@ std::string AstBlock::to_string()
     return result.str();
 }
 
-std::optional<TokenSet> AstBlock::collect_block_until(
+std::optional<TokenSet> stride::ast::collect_token_subset(
     TokenSet& set, const TokenType start_token,
     const TokenType end_token
 )
@@ -139,12 +139,12 @@ std::optional<TokenSet> AstBlock::collect_block_until(
     set.throw_error(std::format("Unmatched closing {}", token_type_to_str(end_token)));
 }
 
-std::optional<TokenSet> AstBlock::collect_block(TokenSet& set)
+std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
 {
-    return collect_block_until(set, TokenType::LBRACE, TokenType::RBRACE);
+    return collect_token_subset(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
-std::unique_ptr<AstBlock> AstBlock::try_parse_block(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstBlock> stride::ast::parse_block(const Scope& scope, TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 
@@ -153,5 +153,5 @@ std::unique_ptr<AstBlock> AstBlock::try_parse_block(const Scope& scope, TokenSet
         return nullptr;
     }
 
-    return try_parse(scope, collected_subset.value());
+    return parse_sequential(scope, collected_subset.value());
 }

@@ -15,22 +15,20 @@ namespace stride::ast
     public:
         explicit AstBlock(
             std::vector<std::unique_ptr<IAstNode>> children
-        ) : _children(std::move(children))
-        {
-        };
+        ) : _children(std::move(children)) {};
 
         std::string to_string() override;
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
-        static std::optional<TokenSet> collect_block(TokenSet& set);
-
-        static std::optional<TokenSet> collect_block_until(TokenSet& set, TokenType start_token, TokenType end_token);
-
-        static std::unique_ptr<AstBlock> try_parse(const Scope& scope, TokenSet& set);
-
-        static std::unique_ptr<AstBlock> try_parse_block(const Scope& scope, TokenSet& set);
-
         [[nodiscard]] const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
     };
+
+    std::unique_ptr<AstBlock> parse_block(const Scope& scope, TokenSet& set);
+
+    std::unique_ptr<AstBlock> parse_sequential(const Scope& scope, TokenSet& set);
+
+    std::optional<TokenSet> collect_block(TokenSet& set);
+
+    std::optional<TokenSet> collect_token_subset(TokenSet& set, TokenType start_token, TokenType end_token);
 }

@@ -102,7 +102,7 @@ std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& set)
         if (set.peak(1).type == TokenType::LPAREN)
         {
             auto name = set.next().lexeme;
-            auto function_parameter_set = AstBlock::collect_block_until(set, TokenType::LPAREN, TokenType::RPAREN);
+            auto function_parameter_set = collect_token_subset(set, TokenType::LPAREN, TokenType::RPAREN);
 
             std::vector<std::unique_ptr<IAstNode>> function_parameter_nodes = {};
 

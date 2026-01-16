@@ -89,7 +89,7 @@ std::unique_ptr<AstFunctionDefinition> stride::ast::parse_fn_declaration(
     else
     {
         const Scope function_scope(scope, ScopeType::FUNCTION);
-        body = AstBlock::try_parse_block(function_scope, tokens);
+        body = parse_block(function_scope, tokens);
 
         if (body != nullptr && body->children().empty())
         {

@@ -50,7 +50,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& sc
         return std::make_unique<AstStruct>(struct_sym, std::move(reference_sym));
     }
 
-    auto struct_body_set = AstBlock::collect_block(tokens);
+    auto struct_body_set = collect_block(tokens);
     std::vector<std::unique_ptr<AstStructMember>> members = {};
 
     if (struct_body_set.has_value())

@@ -1,0 +1,52 @@
+/**
+ * Stride Standard Library
+ * Memory Management
+ */
+
+mod stl::memory;
+
+extern fn malloc(size: usize): ptr;
+extern fn free(ptr: ptr): void;
+extern fn memcpy(dest: ptr, src: ptr, n: usize): ptr;
+extern fn memset(ptr: ptr, value: i32, num: usize): ptr;
+extern fn strlen(str: string): usize;
+extern fn strcmp(str1: string, str2: string): i32;
+extern fn strcpy(dest: string, src: string): string;
+extern fn strcat(dest: string, src: string): string;
+
+
+fn print(format: string): i32 {
+    return printf(format);
+}
+
+fn allocate(size: usize): ptr {
+    return malloc(size);
+}
+
+fn deallocate(ptr: ptr): void {
+    free(ptr);
+}
+
+fn copy_memory(dest: ptr, src: ptr, n: usize): ptr {
+    return memcpy(dest, src, n);
+}
+
+fn set_memory(ptr: ptr, value: i32, num: usize): ptr {
+    return memset(ptr, value, num);
+}
+
+fn string_length(str: string): usize {
+    return strlen(str);
+}
+
+fn string_compare(str1: string, str2: string): i32 {
+    return strcmp(str1, str2);
+}
+
+fn string_copy(dest: string, src: string): string {
+    return strcpy(dest, src);
+}
+
+fn string_concat(dest: string, src: string): string {
+    return strcat(dest, src);
+}

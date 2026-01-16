@@ -70,7 +70,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(const S
 
     scope.try_define_global_symbol(*tokens.source(), enumerable_name, enumerable_sym);
 
-    const auto opt_enum_body_subset = AstBlock::collect_block(tokens);
+    const auto opt_enum_body_subset = collect_block(tokens);
 
     if (!opt_enum_body_subset.has_value())
     {

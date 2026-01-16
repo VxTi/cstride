@@ -49,6 +49,7 @@ namespace stride::ast
     {
     public:
         ScopeType type;
+        std::unique_ptr<Symbol> module_symbol = nullptr;
         std::shared_ptr<Scope> parent_scope;
         std::unique_ptr<std::vector<SymbolDefinition>> symbols;
 
@@ -68,6 +69,28 @@ namespace stride::ast
                 std::shared_ptr<Scope>(const_cast<Scope*>(&parent), [](Scope*) {}),
                 scope
             ) {}
+
+        void set_module(Symbol module)
+        {
+            this->module_symbol = std::make_unique<Symbol>(module);
+        }
+
+        bool has_module() const
+        {
+            Scope* parent = this->parent_scope.get();
+
+            while (parent != nullptr)
+            {
+                if (parent->has_module())
+                {
+                    return true;
+                }
+
+                parent = parent->parent_scope.get();
+            }
+
+            return this->module_symbol != nullptr;
+        }
 
         std::optional<SymbolDefinition> try_get_symbol_globally(const Symbol& symbol) const;
 
