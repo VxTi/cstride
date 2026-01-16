@@ -2,11 +2,6 @@
 
 using namespace stride::ast;
 
-llvm::Value* AstModule::codegen()
-{
-    return nullptr;
-}
-
 std::string AstModule::to_string()
 {
     return std::format("Module ({})", this->name().to_string());

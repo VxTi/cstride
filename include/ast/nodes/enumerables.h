@@ -6,8 +6,10 @@
 
 namespace stride::ast
 {
-    class AstEnumerableMember : AstNode
+    class AstEnumerableMember : IAstNode
     {
+        friend class AstEnumerable;
+
         Symbol _name;
         std::unique_ptr<AstLiteral> _value;
 
@@ -24,12 +26,10 @@ namespace stride::ast
 
         static std::unique_ptr<AstEnumerableMember> try_parse_member(const Scope& scope, TokenSet& tokens);
 
-        llvm::Value* codegen() override;
-
         std::string to_string() override;
     };
 
-    class AstEnumerable : public AstNode
+    class AstEnumerable : public IAstNode
     {
         const std::vector<std::unique_ptr<AstEnumerableMember>> _members;
         const Symbol _name;
@@ -50,8 +50,6 @@ namespace stride::ast
         static std::unique_ptr<AstEnumerable> try_parse(const Scope& scope, TokenSet& tokens);
 
         static bool can_parse(const TokenSet& tokens);
-
-        llvm::Value* codegen() override;
 
         std::string to_string() override;
     };

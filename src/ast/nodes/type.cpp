@@ -4,6 +4,16 @@
 
 using namespace stride::ast;
 
+std::string AstPrimitiveType::to_string()
+{
+    return std::format("PrimitiveType({})", token_type_to_str(this->type()));
+}
+
+std::string AstCustomType::to_string()
+{
+    return std::format("CustomType({})", this->name());
+}
+
 std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(TokenSet& set)
 {
     std::optional<std::unique_ptr<AstPrimitiveType>> result = std::nullopt;

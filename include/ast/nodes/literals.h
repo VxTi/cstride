@@ -6,7 +6,8 @@
 
 namespace stride::ast
 {
-    class AstLiteral : public AstNode
+    class AstLiteral :
+        public virtual IAstNode
     {
     public:
         std::string to_string() override = 0;
@@ -25,9 +26,6 @@ namespace stride::ast
 
         ~AstStringLiteral() override = default;
 
-
-        llvm::Value* codegen() override;
-
         std::string to_string() override;
 
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
@@ -41,8 +39,6 @@ namespace stride::ast
         explicit AstIntegerLiteral(const int value) : value(value)
         {
         }
-
-        llvm::Value* codegen() override;
 
         std::string to_string() override;
 

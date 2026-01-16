@@ -7,16 +7,6 @@
 
 using namespace stride::ast;
 
-llvm::Value* AstEnumerable::codegen()
-{
-    return nullptr;
-}
-
-llvm::Value* AstEnumerableMember::codegen()
-{
-    return nullptr;
-}
-
 /**
  * Parses member entries with the following sequence:
  * <code>
@@ -28,7 +18,7 @@ std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const
     const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
     auto member_sym = Symbol(member_name_tok.lexeme);
 
-    scope.try_define_symbol_isolated(*tokens.source().get(), member_name_tok, member_sym);
+    scope.try_define_scoped_symbol(*tokens.source().get(), member_name_tok, member_sym);
 
     tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
 
@@ -78,7 +68,7 @@ std::unique_ptr<AstEnumerable> AstEnumerable::try_parse(const Scope& scope, Toke
     const auto enumerable_name = tokens.expect(TokenType::IDENTIFIER);
     const auto enumerable_sym = Symbol(enumerable_name.lexeme);
 
-    scope.try_define_symbol(*tokens.source(), enumerable_name, enumerable_sym);
+    scope.try_define_global_symbol(*tokens.source(), enumerable_name, enumerable_sym);
 
     const auto opt_enum_body_subset = AstBlockNode::collect_block(tokens);
 

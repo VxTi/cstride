@@ -8,7 +8,9 @@
 
 namespace stride::ast
 {
-    class AstFunctionInvocation : public AstNode
+    class AstFunctionInvocation :
+        public virtual IAstNode,
+        public virtual ISynthesisable
     {
     public:
         const Symbol function_name;

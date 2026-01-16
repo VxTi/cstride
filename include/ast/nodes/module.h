@@ -6,13 +6,11 @@
 
 namespace stride::ast
 {
-    class AstModule : public AstNode
+    class AstModule : public IAstNode
     {
       Symbol _name;
 
     public:
-        llvm::Value* codegen() override;
-
         std::string to_string() override;
 
         explicit AstModule(Symbol name) : _name(std::move(name)) {}

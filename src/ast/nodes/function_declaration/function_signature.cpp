@@ -26,12 +26,6 @@ std::string AstFunctionDefinitionNode::to_string()
 
 
 // TODO
-llvm::Value* AstFunctionParameterNode::codegen()
-{
-    return nullptr;
-}
-
-// TODO
 llvm::Value* AstFunctionDefinitionNode::codegen()
 {
     return nullptr;
@@ -85,7 +79,7 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
 
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
     const auto fn_name = Symbol(fn_name_tok.lexeme);
-    // scope.try_define_symbol(*tokens.source(), fn_name_tok, fn_name);
+    scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name);
 
     tokens.expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters = {};
@@ -104,7 +98,7 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
     const Scope function_scope(scope, ScopeType::FUNCTION);
 
     std::unique_ptr<AstType> return_type = try_parse_type(tokens);
-    std::unique_ptr<AstNode> body = AstBlockNode::try_parse_block(function_scope, tokens);
+    std::unique_ptr<IAstNode> body = AstBlockNode::try_parse_block(function_scope, tokens);
 
     return std::move(std::make_unique<AstFunctionDefinitionNode>(
         fn_name,

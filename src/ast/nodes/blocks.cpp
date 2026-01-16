@@ -8,10 +8,11 @@
 #include "ast/nodes/function_invocation.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/module.h"
+#include "ast/nodes/struct.h"
 
 using namespace stride::ast;
 
-std::unique_ptr<AstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<IAstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
 {
     if (AstModule::can_parse(tokens))
     {
@@ -26,6 +27,11 @@ std::unique_ptr<AstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
     if (AstFunctionDefinitionNode::can_parse(tokens))
     {
         return AstFunctionDefinitionNode::try_parse(scope, tokens);
+    }
+
+    if (AstStruct::can_parse(tokens))
+    {
+        return AstStruct::try_parse(scope, tokens);
     }
 
     if (AstFunctionInvocation::can_parse(tokens))
@@ -46,9 +52,9 @@ std::unique_ptr<AstNode> try_parse_partial(const Scope& scope, TokenSet& tokens)
     tokens.except("Unexpected token");
 }
 
-std::unique_ptr<AstNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<IAstNode> AstBlockNode::try_parse(const Scope& scope, TokenSet& tokens)
 {
-    std::vector<std::unique_ptr<AstNode>> nodes = {};
+    std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
     while (tokens.has_next())
     {
@@ -119,7 +125,7 @@ std::optional<TokenSet> AstBlockNode::collect_block(TokenSet& set)
     set.except("Unmatched closing bracket");
 }
 
-std::unique_ptr<AstNode> AstBlockNode::try_parse_block(const Scope& scope, TokenSet& set)
+std::unique_ptr<IAstNode> AstBlockNode::try_parse_block(const Scope& scope, TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 

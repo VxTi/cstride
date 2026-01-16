@@ -16,8 +16,3 @@ std::string AstIntegerLiteral::to_string()
 {
     return std::format("IntLiteral({})", value);
 }
-
-llvm::Value* AstIntegerLiteral::codegen()
-{
-    return nullptr;
-}

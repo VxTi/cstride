@@ -2,11 +2,6 @@
 
 using namespace stride::ast;
 
-llvm::Value* AstStringLiteral::codegen()
-{
-    return nullptr;
-}
-
 std::optional<std::unique_ptr<AstLiteral>> AstStringLiteral::try_parse_optional(
     [[maybe_unused]] const Scope& scope, TokenSet& tokens)
 {

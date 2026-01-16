@@ -11,11 +11,13 @@ namespace stride::ast
     )
     {
         const auto end = scope->symbols->end();
-        const auto it_result = std::ranges::find_if(scope->symbols->begin(), end,
-                                                    [&](const SymbolDefinition& s)
-                                                    {
-                                                        return s.symbol == symbol;
-                                                    });
+        const auto it_result = std::ranges::find_if(
+            scope->symbols->begin(), end,
+            [&](const SymbolDefinition& s)
+            {
+                return s.symbol == symbol;
+            }
+        );
 
         if (it_result == end)
         {
@@ -54,16 +56,16 @@ namespace stride::ast
         return sym_definition.has_value();
     }
 
-    bool Scope::is_symbol_defined_isolated(const Symbol& symbol) const
+    bool Scope::is_symbol_defined_scoped(const Symbol& symbol) const
     {
         const auto sym_definition = this->try_get_symbol(symbol);
 
         return sym_definition.has_value();
     }
 
-    void Scope::try_define_symbol_isolated(const SourceFile& source, const Token& token, const Symbol& symbol) const
+    void Scope::try_define_scoped_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const
     {
-        if (this->is_symbol_defined_isolated(symbol))
+        if (this->is_symbol_defined_scoped(symbol))
         {
             throw parsing_error(
                 make_source_error(
@@ -80,7 +82,7 @@ namespace stride::ast
         );
     }
 
-    void Scope::try_define_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const
+    void Scope::try_define_global_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const
     {
         if (this->is_symbol_defined_globally(symbol))
         {

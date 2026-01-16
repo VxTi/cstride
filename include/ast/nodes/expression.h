@@ -6,12 +6,14 @@
 
 namespace stride::ast
 {
-    class AstExpression : public AstNode
+    class AstExpression :
+        public virtual IAstNode,
+        public virtual ISynthesisable
     {
     public:
-        const std::vector<std::unique_ptr<AstNode>> children;
+        const std::vector<std::unique_ptr<IAstNode>> children;
 
-        explicit AstExpression(std::vector<std::unique_ptr<AstNode>> children) : children(std::move(children))
+        explicit AstExpression(std::vector<std::unique_ptr<IAstNode>> children) : children(std::move(children))
         {
         };
 

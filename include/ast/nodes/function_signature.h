@@ -9,7 +9,7 @@
 
 namespace stride::ast
 {
-    class AstFunctionParameterNode : AstNode
+    class AstFunctionParameterNode : IAstNode
     {
     public:
         const Symbol name;
@@ -26,17 +26,17 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen() override;
-
         static std::unique_ptr<AstFunctionParameterNode> try_parse(
             const Scope& scope,
             TokenSet& tokens
         );
     };
 
-    class AstFunctionDefinitionNode : public AstNode
+    class AstFunctionDefinitionNode :
+        public IAstNode,
+        public ISynthesisable
     {
-        const std::unique_ptr<AstNode> _body;
+        const std::unique_ptr<IAstNode> _body;
         const Symbol _name;
         const std::vector<std::unique_ptr<AstFunctionParameterNode>> _parameters;
         const std::unique_ptr<AstType> _return_type;
@@ -46,7 +46,7 @@ namespace stride::ast
             Symbol name,
             std::vector<std::unique_ptr<AstFunctionParameterNode>> parameters,
             std::unique_ptr<AstType> return_type,
-            std::unique_ptr<AstNode> body
+            std::unique_ptr<IAstNode> body
         )
             : _body(std::move(body)),
               _name(std::move(name)),
@@ -61,7 +61,7 @@ namespace stride::ast
 
         [[nodiscard]] Symbol name() const { return this->_name; }
 
-        [[nodiscard]] AstNode* body() const { return this->_body.get(); }
+        [[nodiscard]] IAstNode* body() const { return this->_body.get(); }
 
         [[nodiscard]] const std::vector<std::unique_ptr<AstFunctionParameterNode>>& parameters() const
         {

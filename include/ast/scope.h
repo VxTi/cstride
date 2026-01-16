@@ -96,7 +96,7 @@ namespace stride::ast
          * @param symbol Symbol to define
          * @throws parsing_error if the symbol already exists in this scope or any parent scope
          */
-        void try_define_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const;
+        void try_define_global_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const;
 
         /**
          * Defines a symbol in this scope after checking it doesn't exist in the current scope only.
@@ -105,7 +105,7 @@ namespace stride::ast
          * @param symbol Symbol to define
          * @throws parsing_error if the symbol already exists in this scope (ignores parent scopes)
          */
-        void try_define_symbol_isolated(const SourceFile& source, const Token& token, const Symbol& symbol) const;
+        void try_define_scoped_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const;
 
         /**
          * Checks if a symbol exists in this scope or any parent scope.
@@ -119,6 +119,6 @@ namespace stride::ast
          * @param symbol Symbol to check
          * @return true if the symbol exists in the current scope, false otherwise
          */
-        [[nodiscard]] bool is_symbol_defined_isolated(const Symbol& symbol) const;
+        [[nodiscard]] bool is_symbol_defined_scoped(const Symbol& symbol) const;
     };
 }

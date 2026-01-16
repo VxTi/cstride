@@ -10,7 +10,7 @@
 
 namespace stride::ast
 {
-    class AstImportNode : public AstNode
+    class AstImportNode : public IAstNode
     {
         Symbol module;
         const std::vector<Symbol> dependencies;
@@ -26,8 +26,6 @@ namespace stride::ast
             dependencies(dependencies)
         {
         }
-
-        llvm::Value* codegen() override;
 
         std::string to_string() override;
 

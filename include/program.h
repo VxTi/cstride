@@ -5,15 +5,15 @@ namespace stride
 {
     class ProgramObject
     {
-        std::unique_ptr<ast::AstNode> _root;
+        std::unique_ptr<ast::IAstNode> _root;
 
     public:
-        explicit ProgramObject(std::unique_ptr<ast::AstNode> root) :
+        explicit ProgramObject(std::unique_ptr<ast::IAstNode> root) :
             _root(std::move(root))
         {
         }
 
-        [[nodiscard]] ast::AstNode* root() const { return _root.get(); }
+        [[nodiscard]] ast::IAstNode* root() const { return _root.get(); }
     };
 
     class Program

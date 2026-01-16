@@ -67,7 +67,13 @@ Token TokenSet::expect(const TokenType type)
 {
     if (!this->has_next())
     {
-        throw parsing_error("No more tokens available");
+        this->except(
+            ErrorType::SYNTAX_ERROR,
+            std::format(
+                "Expected '{}', but reached end of block",
+                token_type_to_str(type)
+            )
+        );
     }
 
     if (const auto next_type = this->peak_next().type; next_type != type)
@@ -131,7 +137,7 @@ size_t TokenSet::remaining() const
 bool TokenSet::has_next() const
 {
     return this->remaining() > 0
-        && this->peak_next_type() != TokenType::END_OF_FILE;
+        && !this->peak_next_eq(TokenType::END_OF_FILE);
 }
 
 std::shared_ptr<stride::SourceFile> TokenSet::source() const

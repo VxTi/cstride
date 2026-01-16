@@ -5,5 +5,5 @@
 
 namespace stride::ast::parser
 {
-    [[nodiscard]] std::unique_ptr<AstNode> parse(const std::string& source_path);
+    [[nodiscard]] std::unique_ptr<IAstNode> parse(const std::string& source_path);
 }

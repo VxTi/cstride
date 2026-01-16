@@ -19,13 +19,13 @@ bool AstFunctionInvocation::can_parse(const TokenSet& tokens)
 
 Symbol consume_function_name(TokenSet& tokens)
 {
-    const auto initial = tokens.expect(TokenType::IDENTIFIER).lexeme;
+    const auto initial = tokens.expect(TokenType::IDENTIFIER, "Expected function name").lexeme;
     std::vector function_segments = {initial};
 
     while (tokens.peak_next_eq(TokenType::DOUBLE_COLON))
     {
         tokens.expect(TokenType::DOUBLE_COLON);
-        const auto next = tokens.expect(TokenType::IDENTIFIER).lexeme;
+        const auto next = tokens.expect(TokenType::IDENTIFIER, "Expected function name segment").lexeme;
         function_segments.push_back(next);
     }
 
@@ -35,7 +35,9 @@ Symbol consume_function_name(TokenSet& tokens)
 std::unique_ptr<AstFunctionInvocation> AstFunctionInvocation::try_parse(const Scope& scope, TokenSet& tokens)
 {
     const auto function_name = consume_function_name(tokens);
-    tokens.expect(TokenType::LPAREN);
+    tokens.expect(TokenType::LPAREN, "Expected '(' after function name for invocation");
+
+    tokens.expect(TokenType::RPAREN, "Expected ')' after function invocation");
 
     return std::make_unique<AstFunctionInvocation>(function_name);
 }

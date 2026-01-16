@@ -4,13 +4,18 @@
 
 namespace stride::ast
 {
-    class AstNode
+    class ISynthesisable
     {
     public:
-        virtual ~AstNode() = default;
+        virtual ~ISynthesisable() = default;
+        virtual llvm::Value* codegen() = 0;
+    };
+
+    class IAstNode
+    {
+    public:
+        virtual ~IAstNode() = default;
 
         [[nodiscard]] virtual std::string to_string() = 0;
-
-        virtual llvm::Value* codegen() = 0;
     };
 }
