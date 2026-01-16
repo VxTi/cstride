@@ -18,5 +18,5 @@ std::optional<std::unique_ptr<AstLiteral>> AstStringLiteral::try_parse_optional(
 
 std::string AstStringLiteral::to_string()
 {
-    return std::format("StringLiteral({})", value);
+    return std::format("StringLiteral({})", value());
 }

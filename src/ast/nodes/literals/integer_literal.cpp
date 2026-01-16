@@ -7,12 +7,15 @@ std::optional<std::unique_ptr<AstLiteral>> AstIntegerLiteral::try_parse_optional
     if (tokens.peak_next_eq(TokenType::INTEGER_LITERAL))
     {
         const auto next = tokens.next();
-        return std::make_unique<AstIntegerLiteral>(std::stoi(next.lexeme));
+
+        return std::make_unique<AstIntegerLiteral>(
+            std::move(std::stoi(next.lexeme))
+        );
     }
     return std::nullopt;
 }
 
 std::string AstIntegerLiteral::to_string()
 {
-    return std::format("IntLiteral({})", value);
+    return std::format("IntLiteral({})", value());
 }

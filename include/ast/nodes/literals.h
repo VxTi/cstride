@@ -17,10 +17,10 @@ namespace stride::ast
 
     class AstStringLiteral : public AstLiteral
     {
-    public:
-        const std::string value;
+        const std::string _value;
 
-        explicit AstStringLiteral(std::string val) : value(std::move(val))
+    public:
+        explicit AstStringLiteral(std::string val) : _value(std::move(val))
         {
         }
 
@@ -29,33 +29,39 @@ namespace stride::ast
         std::string to_string() override;
 
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
+
+        [[nodiscard]] const std::string& value() const { return this->_value; }
     };
 
     class AstIntegerLiteral : public AstLiteral
     {
-    public:
-        const int value;
+        const int _value;
 
-        explicit AstIntegerLiteral(const int value) : value(value)
+    public:
+        explicit AstIntegerLiteral(const int value) : _value(value)
         {
         }
 
         std::string to_string() override;
 
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
+
+        [[nodiscard]] int value() const { return this->_value; }
     };
 
     class AstFloatLiteral : public AstLiteral
     {
-        const float _value;
+        const double _value;
 
     public :
-        explicit AstFloatLiteral(const float value) : _value(value)
+        explicit AstFloatLiteral(const double value) : _value(value)
         {
         }
 
-        [[nodiscard]] float value() const { return this->_value; }
+        std::string to_string() override;
 
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
+
+        [[nodiscard]] double value() const { return this->_value; }
     };
 }
