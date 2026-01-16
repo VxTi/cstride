@@ -26,6 +26,11 @@ std::string AstFunctionInvocation::to_string()
 
 llvm::Value* AstFunctionInvocation::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
+    if (!module) {
+        std::cerr << "Module is null in AstFunctionInvocation::codegen" << std::endl;
+        return nullptr;
+    }
+    std::cerr << "Looking up function: " << function_name.value << std::endl;
     llvm::Function* callee = module->getFunction(function_name.value);
     if (!callee)
     {

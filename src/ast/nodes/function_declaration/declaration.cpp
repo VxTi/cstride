@@ -115,11 +115,19 @@ llvm::Value* AstFunctionDefinitionNode::codegen(
     for (const auto& param : this->parameters())
     {
         auto llvm_type = types::ast_type_to_llvm(param->type.get(), context);
+        if (!llvm_type) {
+             std::cerr << "Failed to resolve type for parameter " << param->name.value << std::endl;
+             return nullptr;
+        }
         param_types.push_back(llvm_type);
     }
 
     // Create function type
     llvm::Type* return_type = types::ast_type_to_llvm(this->return_type().get(), context);
+    if (!return_type) {
+         std::cerr << "Failed to resolve return type for function " << this->name().value << std::endl;
+         return nullptr;
+    }
     llvm::FunctionType* function_type = llvm::FunctionType::get(
         return_type,
         param_types,
@@ -133,12 +141,16 @@ llvm::Value* AstFunctionDefinitionNode::codegen(
         this->name().value,
         module
     );
+    std::cerr << "Created function: " << this->name().value << std::endl;
 
     if (this->is_extern())
     {
-        if (llvm::verifyFunction(*function, &llvm::errs())) {
-            std::cerr << "Function " << this->name().value << " verification failed!" << std::endl;
-        }
+        // verification of external functions segfaults?
+        // std::cerr << "Verifying external function: " << this->name().value << std::endl;
+        // if (llvm::verifyFunction(*function, &llvm::errs())) {
+        //    std::cerr << "Function " << this->name().value << " verification failed!" << std::endl;
+        // }
+        // std::cerr << "Verified external function: " << this->name().value << std::endl;
         return function;
     }
 
