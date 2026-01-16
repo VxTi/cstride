@@ -5,31 +5,14 @@ use std::io::{ Stream };
 
 external fn printf(format: string): i32;
 
-struct Hello {
-    test: i8;
-    $test: i8;
-}
-
-
-struct Ref = i8;
-
-struct Forward = Ref;
-
 enum Test {
     HELLO2: "test",
     HELLO: 123,
 }
 
 fn main(): i32 {
-  // Should error
-  //   use std::io::{Reader};
 
     let test: i8 = test(1 + (1 * 2) + (1)) ;
 
-  // test();
+    printf("HEllo!")
 }
-
-fn test(first: i8, first3: i32, second: i32, first2: i8): i8 {}
-
-
-// fn test() {}

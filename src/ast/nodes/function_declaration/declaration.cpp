@@ -1,4 +1,4 @@
-#include "ast/nodes/function_signature.h"
+#include "ast/nodes/declaration.h"
 
 #include "ast/nodes/blocks.h"
 #include <llvm/IR/Function.h>
@@ -101,8 +101,11 @@ std::unique_ptr<AstFunctionDefinitionNode> AstFunctionDefinitionNode::try_parse(
 }
 
 
-llvm::Value* AstFunctionDefinitionNode::codegen(llvm::Module* module, llvm::LLVMContext& context,
-                                                llvm::IRBuilder<>* irbuilder)
+llvm::Value* AstFunctionDefinitionNode::codegen(
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* irBuilder
+    )
 {
     // Create parameter types vector
     std::vector<llvm::Type*> param_types;
@@ -145,18 +148,26 @@ llvm::Value* AstFunctionDefinitionNode::codegen(llvm::Module* module, llvm::LLVM
     builder.SetInsertPoint(entry_block);
 
     // Generate body code
+    llvm::Value* ret_val = nullptr;
     if (this->body() != nullptr)
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
         {
-            synthesisable->codegen(module, context, irbuilder);
+            ret_val = synthesisable->codegen(module, context, &builder);
         }
     }
 
     // Add default return if needed (void functions or missing return)
-    if (return_type->isVoidTy())
+    if (!builder.GetInsertBlock()->getTerminator())
     {
-        builder.CreateRetVoid();
+        if (return_type->isVoidTy())
+        {
+            builder.CreateRetVoid();
+        }
+        else if (ret_val)
+        {
+            builder.CreateRet(ret_val);
+        }
     }
 
     return function;

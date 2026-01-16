@@ -35,19 +35,33 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
     // Get the LLVM type for the variable
     llvm::Type* var_type = types::ast_type_to_llvm(this->variable_type.get(), context);
 
-    // Create an alloca instruction for the variable
-    llvm::IRBuilder<> builder(context);
-    // Find the entry block of the current function
-    llvm::Function* current_function = builder.GetInsertBlock()->getParent();
-    llvm::BasicBlock& entry_block = current_function->getEntryBlock();
-    builder.SetInsertPoint(&entry_block, entry_block.begin());
+    // Check if we have a valid insert block
+    llvm::BasicBlock* current_block = irbuilder->GetInsertBlock();
+    if (current_block == nullptr)
+    {
+        return nullptr;
+    }
 
-    llvm::AllocaInst* alloca = builder.CreateAlloca(var_type, nullptr, this->variable_name.value);
+    // Find the entry block of the current function
+    llvm::Function* current_function = current_block->getParent();
+    if (current_function == nullptr)
+    {
+        return nullptr;
+    }
+
+    llvm::BasicBlock& entry_block = current_function->getEntryBlock();
+    llvm::IRBuilder<>::InsertPoint save_point = irbuilder->saveIP();
+    irbuilder->SetInsertPoint(&entry_block, entry_block.begin());
+
+    llvm::AllocaInst* alloca = irbuilder->CreateAlloca(var_type, nullptr, this->variable_name.value);
+
+    // Restore the insert point
+    irbuilder->restoreIP(save_point);
 
     // Store the initial value if it exists
     if (init_value != nullptr)
     {
-        builder.CreateStore(init_value, alloca);
+        irbuilder->CreateStore(init_value, alloca);
     }
 
     return alloca;

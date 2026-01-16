@@ -4,7 +4,7 @@
 
 #include "ast/nodes/enumerables.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/function_signature.h"
+#include "ast/nodes/declaration.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/module.h"
 #include "ast/nodes/struct.h"
@@ -64,7 +64,17 @@ std::unique_ptr<AstBlockNode> AstBlockNode::try_parse(const Scope& scope, TokenS
 
 llvm::Value* AstBlockNode::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    return nullptr;
+    llvm::Value* last_value = nullptr;
+
+    for (const auto& child : children())
+    {
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
+        {
+            last_value = synthesisable->codegen(module, context, builder);
+        }
+    }
+
+    return last_value;
 }
 
 std::string AstBlockNode::to_string()

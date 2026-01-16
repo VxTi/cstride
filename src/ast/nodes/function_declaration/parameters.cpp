@@ -1,4 +1,4 @@
-#include "ast/nodes/function_signature.h"
+#include "ast/nodes/declaration.h"
 
 using namespace stride::ast;
 
