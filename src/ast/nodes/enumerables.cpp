@@ -25,9 +25,11 @@ llvm::Value* AstEnumerableMember::codegen()
  */
 std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const Scope& scope, TokenSet& tokens)
 {
-    auto member_name = tokens.expect(TokenType::IDENTIFIER).lexeme;
+    auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
+    auto member_sym = Symbol(member_name_tok.lexeme);
+    scope.try_define_symbol(*tokens.source(), member_name_tok, member_sym);
 
-    tokens.expect(TokenType::COLON);
+    tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
 
     auto value = AstLiteral::try_parse(scope, tokens);
 
@@ -36,10 +38,10 @@ std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const
         tokens.except("Expected a literal value for enum member");
     }
 
-    tokens.expect(TokenType::SEMICOLON);
+    tokens.expect(TokenType::COMMA, "Expected a comma after enum member value");
 
     return std::make_unique<AstEnumerableMember>(
-        Symbol(member_name),
+        std::move(member_sym),
         std::move(value.value())
     );
 }
@@ -62,10 +64,10 @@ std::string AstEnumerable::to_string()
     imploded << this->members()[0]->to_string();
     for (size_t i = 1; i < this->members().size(); ++i)
     {
-        imploded << "\n" << this->members()[i]->to_string();
+        imploded << "\n  " << this->members()[i]->to_string();
     }
 
-    return std::format("Enumerable {} ({})", this->name().to_string(), imploded.str());
+    return std::format("Enumerable {} (\n  {}\n)", this->name().to_string(), imploded.str());
 }
 
 
@@ -90,8 +92,6 @@ std::unique_ptr<AstEnumerable> AstEnumerable::try_parse(const Scope& scope, Toke
     {
         auto member = AstEnumerableMember::try_parse_member(nested_scope, enum_body_subset);
         members.push_back(std::move(member));
-
-        auto next = enum_body_subset.next();
     }
 
     return std::make_unique<AstEnumerable>(

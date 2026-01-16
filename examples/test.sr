@@ -3,7 +3,8 @@ use std::io::{ Stream };
 
 
 enum Test {
-    HELLO: 123;
+    HELLO: 123,
+    HELLO2: 123,
 }
 
 fn main(): i32 {

@@ -25,9 +25,14 @@ TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
 
 [[nodiscard]] Token TokenSet::at(const size_t index) const
 {
-    if (index >= this->size())
+    if (this->size() == 0)
     {
         return END_OF_FILE;
+    }
+
+    if (index >= this->size())
+    {
+        return this->_tokens.back();
     }
 
     return this->_tokens[index];
