@@ -38,11 +38,6 @@ void Program::execute() const
         return;
     }
 
-    for (const auto &node : this->_nodes)
-    {
-        std::cout << node.root()->to_string() << std::endl;
-    }
-
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     LLVMInitializeNativeAsmPrinter();

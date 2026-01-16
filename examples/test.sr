@@ -6,18 +6,16 @@ use std::io::{ Stream };
 extern fn printf(format: string): i32;
 
 fn test(): string {
-    return "test";
+    return "
+
+    Hello world, from another function
+
+    ";
 }
 
 fn main(): void {
-
-    let val: i8 = test();
+    let val: string = test();
     printf(val)
-
-    // for (let i: i32 = 0; i < 10; i++) {
-    // }
-
-    return;
 }
 
 /*

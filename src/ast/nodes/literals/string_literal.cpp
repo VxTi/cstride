@@ -1,5 +1,6 @@
 #include "ast/nodes/literals.h"
 #include <llvm/IR/IRBuilder.h>
+#include <sstream>
 
 using namespace stride::ast;
 
