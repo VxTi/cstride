@@ -1,4 +1,5 @@
 #include "ast/nodes/literals.h"
+#include <llvm/IR/Constants.h>
 
 using namespace stride::ast;
 
@@ -18,4 +19,9 @@ std::optional<std::unique_ptr<AstLiteral>> AstFloatLiteral::try_parse_optional(
 std::string AstFloatLiteral::to_string()
 {
     return std::format("FloatLiteral({})", value());
+}
+
+llvm::Value* AstFloatLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context)
+{
+    return llvm::ConstantFP::get(context, llvm::APFloat(_value));
 }

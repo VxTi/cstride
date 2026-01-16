@@ -37,6 +37,22 @@ namespace stride::ast
         );
     };
 
+    class AstIdentifier : public AstExpression
+    {
+    public:
+        const Symbol name;
+
+        explicit AstIdentifier(Symbol name) :
+            AstExpression({}),
+            name(std::move(name))
+        {
+        }
+
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
+
+        std::string to_string() override;
+    };
+
     class AstFunctionInvocation :
         public AstExpression
     {

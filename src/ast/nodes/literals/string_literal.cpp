@@ -1,4 +1,5 @@
 #include "ast/nodes/literals.h"
+#include <llvm/IR/IRBuilder.h>
 
 using namespace stride::ast;
 
@@ -11,7 +12,7 @@ std::optional<std::unique_ptr<AstLiteral>> AstStringLiteral::try_parse_optional(
 
         const auto concatenated = sym.lexeme.substr(1, sym.lexeme.size() - 2);
 
-        return std::make_unique<AstStringLiteral>(AstStringLiteral(concatenated));
+        return std::make_unique<AstStringLiteral>(concatenated);
     }
     return std::nullopt;
 }
@@ -19,4 +20,10 @@ std::optional<std::unique_ptr<AstLiteral>> AstStringLiteral::try_parse_optional(
 std::string AstStringLiteral::to_string()
 {
     return std::format("StringLiteral({})", value());
+}
+
+llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context)
+{
+    llvm::IRBuilder<> builder(context);
+    return builder.CreateGlobalString(_value);
 }

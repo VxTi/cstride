@@ -1,4 +1,5 @@
 #include "ast/nodes/literals.h"
+#include <llvm/IR/Constants.h>
 
 using namespace stride::ast;
 
@@ -18,4 +19,10 @@ std::optional<std::unique_ptr<AstLiteral>> AstIntegerLiteral::try_parse_optional
 std::string AstIntegerLiteral::to_string()
 {
     return std::format("IntLiteral({})", value());
+}
+
+llvm::Value* AstIntegerLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context)
+{
+    // 32-bit integer
+    return llvm::ConstantInt::get(context, llvm::APInt(32, _value, true));
 }

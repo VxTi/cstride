@@ -3,13 +3,16 @@
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
+#include "expression.h"
 
 namespace stride::ast
 {
     class AstLiteral :
-        public virtual IAstNode
+        public AstExpression
     {
     public:
+        AstLiteral() : AstExpression({}) {}
+
         std::string to_string() override = 0;
 
         static std::optional<std::unique_ptr<AstLiteral>> try_parse(const Scope& scope, TokenSet& tokens);
@@ -28,6 +31,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
+
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
 
         [[nodiscard]] const std::string& value() const { return this->_value; }
@@ -44,6 +49,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
+
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
 
         [[nodiscard]] int value() const { return this->_value; }
@@ -59,6 +66,8 @@ namespace stride::ast
         }
 
         std::string to_string() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context) override;
 
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
 
