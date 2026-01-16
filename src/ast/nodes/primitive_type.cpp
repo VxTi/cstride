@@ -139,7 +139,7 @@ llvm::Type* stride::ast::types::ast_type_to_llvm(AstType* type, llvm::LLVMContex
         case TokenType::PRIMITIVE_CHAR:
             return llvm::Type::getInt8Ty(context);
         case TokenType::PRIMITIVE_STRING:
-            return llvm::PointerType::getInt1Ty(context);
+            return llvm::PointerType::get(context, 0);
         default:
             return nullptr;
         }

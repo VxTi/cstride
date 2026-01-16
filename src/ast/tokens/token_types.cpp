@@ -71,7 +71,7 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::PRIMITIVE_FLOAT32, R"(\bfloat32\b)"),
     TOKEN(TokenType::PRIMITIVE_FLOAT64, R"(\bfloat64\b)"),
     TOKEN(TokenType::PRIMITIVE_CHAR, R"(\bchar\b)"),
-    TOKEN(TokenType::PRIMITIVE_STRING, R"(\bstr\b)"),
+    TOKEN(TokenType::PRIMITIVE_STRING, R"(\bstring\b)"),
     TOKEN(TokenType::PRIMITIVE_VOID, R"(\bvoid\b)"),
     TOKEN(TokenType::PRIMITIVE_AUTO, R"(\bauto\b)"),
 

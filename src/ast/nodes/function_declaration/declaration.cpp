@@ -141,16 +141,9 @@ llvm::Value* AstFunctionDefinitionNode::codegen(
         this->name().value,
         module
     );
-    std::cerr << "Created function: " << this->name().value << std::endl;
 
     if (this->is_extern())
     {
-        // verification of external functions segfaults?
-        // std::cerr << "Verifying external function: " << this->name().value << std::endl;
-        // if (llvm::verifyFunction(*function, &llvm::errs())) {
-        //    std::cerr << "Function " << this->name().value << " verification failed!" << std::endl;
-        // }
-        // std::cerr << "Verified external function: " << this->name().value << std::endl;
         return function;
     }
 
