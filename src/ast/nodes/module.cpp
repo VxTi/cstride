@@ -22,12 +22,15 @@ std::unique_ptr<AstModule> AstModule::try_parse(
     TokenSet& tokens
 )
 {
-    auto mod_token = tokens.expect(TokenType::KEYWORD_MODULE);
-
-    if (mod_token.offset != 0)
+    if (
+        const auto mod_token = tokens.expect(TokenType::KEYWORD_MODULE);
+        mod_token.offset != 0
+    )
     {
         tokens.except(
-            "Expected 'mod' keyword at the start of module declaration"
+            mod_token,
+            ErrorType::SYNTAX_ERROR,
+            "Module declaration must be at the beginning of the file"
         );
     }
 
