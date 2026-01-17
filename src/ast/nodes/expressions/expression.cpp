@@ -7,10 +7,8 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "ast/scope.h"
-#include "ast/nodes/binary_op.h"
 #include "ast/nodes/blocks.h"
-#include "ast/nodes/literals.h"
-#include "ast/nodes/logical_op.h"
+#include "ast/nodes/literal_values.h"
 #include "ast/nodes/primitive_type.h"
 
 using namespace stride::ast;
@@ -49,9 +47,36 @@ std::string AstIdentifier::to_string()
 
 llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
-    return nullptr;
+    throw parsing_error("Expression codegen not implemented, this must be implemented by subclasses");
 }
 
+bool AstVariableDeclaration::is_reducible()
+{
+    // Variables are reducible only if their initial value is reducible,
+    // In the future we can also check whether variables are ever refereced,
+    // in which case we can optimize away the variable declaration.
+    if (const auto value = dynamic_cast<IReducible*>(this->initial_value.get()))
+    {
+        return value->is_reducible();
+    }
+
+    return false;
+}
+
+std::unique_ptr<IAstNode> AstVariableDeclaration::reduce()
+{
+    if (this->is_reducible())
+    {
+        const auto reduced_value = dynamic_cast<IReducible*>(this->initial_value.get())->reduce();
+
+        return std::make_unique<AstVariableDeclaration>(
+            this->get_variable_name(),
+            std::make_unique<types::AstType>(this->get_variable_type()),
+            std::unique_ptr<IAstNode>(std::move(reduced_value))
+        );
+    }
+    return this;
+}
 
 bool stride::ast::can_parse_expression(const TokenSet& tokens)
 {
@@ -86,7 +111,7 @@ std::string AstExpression::to_string()
 {
     std::string children_str;
 
-    for (const auto& child : children)
+    for (const auto& child : this->children())
     {
         children_str += child->to_string() + ", ";
     }
@@ -211,6 +236,46 @@ std::unique_ptr<AstExpression> parse_binary_op(
     }
 }
 
+std::unique_ptr<AstVariableDeclaration> try_parse_variable_declaration(
+    const int expression_type_flags,
+    const Scope& scope,
+    TokenSet& set
+)
+{
+    if ((expression_type_flags & EXPRESSION_ALLOW_VARIABLE_DECLARATION) == 0)
+    {
+        set.throw_error("Variable declarations are not allowed in this context");
+    }
+
+    set.expect(TokenType::KEYWORD_LET);
+    const auto variable_name_tok = set.expect(TokenType::IDENTIFIER);
+    Symbol variable_name(variable_name_tok.lexeme);
+    set.expect(TokenType::COLON);
+    auto type = types::try_parse_type(set);
+
+    set.expect(TokenType::EQUALS);
+
+    auto value = parse_expression_ext(
+        EXPRESSION_VARIABLE_ASSIGNATION,
+        scope, set
+    );
+
+    // If it's not an inline variable declaration (e.g., in a for loop),
+    // we expect a semicolon at the end.
+    if ((expression_type_flags & EXPRESSION_INLINE_VARIABLE_DECLARATION) == 0)
+    {
+        set.expect(TokenType::SEMICOLON);
+    }
+
+    scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name);
+
+    return std::make_unique<AstVariableDeclaration>(
+        variable_name,
+        std::move(type),
+        std::move(value)
+    );
+}
+
 std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
     const int expression_type_flags,
     const Scope& scope,
@@ -219,37 +284,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
 {
     if (is_variable_declaration(set))
     {
-        if ((expression_type_flags & EXPRESSION_ALLOW_VARIABLE_DECLARATION) == 0)
-        {
-            set.throw_error("Variable declarations are not allowed in this context");
-        }
-
-        set.expect(TokenType::KEYWORD_LET);
-        const auto variable_name_tok = set.expect(TokenType::IDENTIFIER);
-        Symbol variable_name(variable_name_tok.lexeme);
-        set.expect(TokenType::COLON);
-        auto type = types::try_parse_type(set);
-
-        set.expect(TokenType::EQUALS);
-
-        auto value = parse_expression_ext(
-            EXPRESSION_VARIABLE_ASSIGNATION,
-            scope, set
-        );
-
-        // If it's not an inline variable declaration (e.g., in a for loop),
-        // we expect a semicolon at the end.
-        if ((expression_type_flags & EXPRESSION_INLINE_VARIABLE_DECLARATION) == 0)
-        {
-            set.expect(TokenType::SEMICOLON);
-        }
-
-        scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name);
-
-        return std::make_unique<AstVariableDeclaration>(
-            variable_name,
-            std::move(type),
-            std::move(value)
+        return try_parse_variable_declaration(
+            expression_type_flags,
+            scope,
+            set
         );
     }
 

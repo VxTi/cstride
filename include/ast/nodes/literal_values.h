@@ -7,6 +7,15 @@
 
 namespace stride::ast
 {
+    enum class LiteralType
+    {
+        STRING,
+        INTEGER,
+        FLOAT,
+        BOOLEAN,
+        CHAR
+    };
+
 #define BITS_PER_BYTE (8)
 #define INFER_INT_BYTE_COUNT(x) \
     ((x >> 48) & 0xFF) ? 8 : \
@@ -22,37 +31,51 @@ namespace stride::ast
     class AstLiteral :
         public AstExpression
     {
+        char _bit_count;
+        LiteralType _type;
+
     public:
-        AstLiteral() : AstExpression({}) {}
+        AstLiteral(
+            const LiteralType type,
+            const char byte_count
+        )
+            : AstExpression({}),
+              _bit_count(byte_count),
+              _type(type) {}
+
+        ~AstLiteral() override = default;
 
         std::string to_string() override = 0;
 
-        static std::optional<std::unique_ptr<AstLiteral>> try_parse(const Scope& scope, TokenSet& tokens);
+        [[nodiscard]] char bit_count() const { return this->_bit_count; }
+
+        [[nodiscard]] LiteralType type() const { return this->_type; }
     };
 
     template <typename T>
-    class AstLiteralBase : public AstLiteral
+    class AbstractAstLiteralBase : public AstLiteral
     {
         T _value;
-        char _bit_count;
 
     public:
-        explicit AstLiteralBase(T value, const char byte_count) :
-            _value(value),
-            _bit_count(byte_count) {}
+        explicit AbstractAstLiteralBase(
+            const LiteralType type,
+            const T value,
+            const char byte_count
+        ) :
+            AstLiteral(type, byte_count),
+            _value(value) {}
 
         [[nodiscard]] const T& value() const { return this->_value; }
-
-        [[nodiscard]] char bit_count() const { return this->_bit_count; }
     };
 
-    class AstStringLiteral : public AstLiteralBase<std::string>
+    class AstStringLiteral : public AbstractAstLiteralBase<std::string>
     {
     public:
         explicit AstStringLiteral(std::string val) :
             // Strings are only considered to be a single byte,
             // as they're pointing to a memory location
-            AstLiteralBase(std::move(val), 1 * BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(LiteralType::STRING, std::move(val), 1 * BITS_PER_BYTE) {}
 
         ~AstStringLiteral() override = default;
 
@@ -63,11 +86,11 @@ namespace stride::ast
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
     };
 
-    class AstIntegerLiteral : public AstLiteralBase<int64_t>
+    class AstIntegerLiteral : public AbstractAstLiteralBase<int64_t>
     {
     public:
         explicit AstIntegerLiteral(const int64_t value) :
-            AstLiteralBase(value, BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)) {}
+            AbstractAstLiteralBase(LiteralType::INTEGER, value, BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)) {}
 
         std::string to_string() override;
 
@@ -76,33 +99,33 @@ namespace stride::ast
         static std::optional<std::unique_ptr<AstLiteral>> try_parse_optional(const Scope& scope, TokenSet& tokens);
     };
 
-    class AstFloatLiteral : public AstLiteralBase<float>
+    class AstFloatLiteral : public AbstractAstLiteralBase<float>
     {
     public :
         explicit AstFloatLiteral(const long double value) :
-            AstLiteralBase(value, 4 * BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(LiteralType::FLOAT, value, 4 * BITS_PER_BYTE) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
-    class AstBooleanLiteral : public AstLiteralBase<bool>
+    class AstBooleanLiteral : public AbstractAstLiteralBase<bool>
     {
     public:
         explicit AstBooleanLiteral(const bool value) :
-            AstLiteralBase(value, 1 /* Single bit only*/) {}
+            AbstractAstLiteralBase(LiteralType::BOOLEAN, value, 1 /* Single bit only*/) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
-    class AstCharLiteral : public AstLiteralBase<char>
+    class AstCharLiteral : public AbstractAstLiteralBase<char>
     {
     public:
         explicit AstCharLiteral(const char value) :
-            AstLiteralBase(value, BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(LiteralType::CHAR, value, BITS_PER_BYTE) {}
 
         std::string to_string() override;
 
@@ -136,5 +159,5 @@ namespace stride::ast
         TokenSet& tokens
     );
 
-    bool is_ast_literal(IAstNode *node);
+    bool is_ast_literal(IAstNode* node);
 }

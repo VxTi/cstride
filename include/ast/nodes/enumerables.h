@@ -1,6 +1,6 @@
 #pragma once
 #include "ast_node.h"
-#include "ast/nodes/literals.h"
+#include "ast/nodes/literal_values.h"
 #include "ast/symbol.h"
 #include "ast/tokens/token_set.h"
 

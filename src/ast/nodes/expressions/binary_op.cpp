@@ -1,6 +1,8 @@
-#include "ast/nodes/binary_op.h"
+#include "ast/nodes/expression.h"
 #include <llvm/IR/IRBuilder.h>
 #include <format>
+
+#include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
 
@@ -67,5 +69,41 @@ llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& conte
 
 bool AstBinaryOp::is_reducible()
 {
-    return this->left->
+    return is_ast_literal(this->left.get()) && is_ast_literal(this->right.get());
+}
+
+std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
+    AstBinaryOp* self,
+    AstExpression* left_lit,
+    AstExpression* right_lit
+)
+{
+
+
+    if (left_lit->type() == LiteralType::INTEGER)
+    {
+        // For integers, we do allow addition of other numeric types, though
+        // this will change the resulting type. E.g., adding a float to an int
+        // will result in a float (32/64 bit)
+
+        auto lval_ptr = dynamic_cast<AstIntegerLiteral*>(left_lit);
+        if (!lval_ptr) return std::nullopt;
+
+        auto lval = lval_ptr->value();
+
+        if (right_lit->type() == LiteralType::FLOAT)
+        {
+
+        }
+    }
+
+    return std::nullopt;
+}
+
+IAstNode* AstBinaryOp::reduce()
+{
+    if (!this->is_reducible()) return this;
+
+    // TODO: Implement
+    return this;
 }

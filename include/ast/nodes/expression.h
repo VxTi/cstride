@@ -12,20 +12,30 @@ namespace stride::ast
 #define EXPRESSION_VARIABLE_ASSIGNATION        4
 
     class AstExpression :
-        public virtual IAstNode,
-        public virtual ISynthesisable
+        public IAstNode,
+        public ISynthesisable,
+        public IReducible
     {
-    public:
-        const std::vector<std::unique_ptr<IAstNode>> children;
+        const std::vector<std::unique_ptr<IAstNode>> _children;
 
-        explicit AstExpression(std::vector<std::unique_ptr<IAstNode>> children) : children(std::move(children)) {};
+    public:
+        explicit AstExpression(std::vector<std::unique_ptr<IAstNode>> children) : _children(std::move(children)) {};
+
+        ~AstExpression() override = default;
+
+        [[nodiscard]] const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
+
+        bool is_reducible() override { return false; };
+
+        IAstNode* reduce() override { return this; };
     };
 
-    class AstIdentifier : public AstExpression
+    class AstIdentifier
+        : public AstExpression
     {
     public:
         const Symbol name;
@@ -37,6 +47,10 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
+
+        bool is_reducible() override { return false; };
+
+        IAstNode* reduce() override { return this; };
     };
 
     class AstFunctionInvocation :
@@ -59,9 +73,15 @@ namespace stride::ast
             arguments(std::move(arguments)),
             function_name(std::move(function_name)) {}
 
+        [[nodiscard]] const std::vector<std::unique_ptr<IAstNode>>& get_arguments() const { return this->arguments; }
+
         std::string to_string() override;
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
+        bool is_reducible() override;
+
+        IAstNode* reduce() override;
     };
 
     class AstVariableDeclaration :
@@ -72,16 +92,15 @@ namespace stride::ast
         const std::unique_ptr<IAstNode> initial_value;
 
     public:
-        AstVariableDeclaration(Symbol variable_name, std::unique_ptr<types::AstType> variable_type,
-                               std::unique_ptr<IAstNode> initial_value) :
+        AstVariableDeclaration(
+            Symbol variable_name,
+            std::unique_ptr<types::AstType> variable_type,
+            std::unique_ptr<IAstNode> initial_value
+        ) :
             AstExpression({}),
             variable_name(std::move(variable_name)),
             variable_type(std::move(variable_type)),
             initial_value(std::move(initial_value)) {}
-
-        std::string to_string() override;
-
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         [[nodiscard]] const Symbol& get_variable_name() const
         {
@@ -97,6 +116,56 @@ namespace stride::ast
         {
             return this->initial_value.get();
         }
+
+        std::string to_string() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
+        bool is_reducible() override;
+
+        IAstNode* reduce() override;
+    };
+
+    class AstBinaryOp :
+        public AstExpression
+    {
+    public:
+        std::unique_ptr<AstExpression> left;
+        TokenType op;
+        std::unique_ptr<AstExpression> right;
+
+        AstBinaryOp(
+            std::unique_ptr<AstExpression> left,
+            TokenType op,
+            std::unique_ptr<AstExpression> right
+        );
+
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
+        std::string to_string() override;
+
+        bool is_reducible() override;
+
+        IAstNode* reduce() override;
+    };
+
+    class AstLogicalOp :
+        public AstExpression
+    {
+    public:
+        std::unique_ptr<AstExpression> left;
+        TokenType op;
+        std::unique_ptr<AstExpression> right;
+
+        AstLogicalOp(
+            std::unique_ptr<AstExpression> left,
+            TokenType op,
+            std::unique_ptr<AstExpression> right
+        );
+
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
+        std::string to_string() override;
     };
 
     bool is_variable_declaration(const TokenSet& set);

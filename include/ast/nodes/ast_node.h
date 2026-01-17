@@ -37,5 +37,11 @@ namespace stride::ast
          * @return The reduced node.
          */
         virtual IAstNode* reduce() = 0;
+
+        /**
+         * Checks if the node can be reduced.
+         * @return True if the node can be reduced, false otherwise.
+         */
+        virtual bool is_reducible() = 0;
     };
 }

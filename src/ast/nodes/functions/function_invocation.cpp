@@ -11,6 +11,18 @@
 
 using namespace stride::ast;
 
+bool AstFunctionInvocation::is_reducible()
+{
+    // TODO: implement
+    // Function calls can be reducible if the function returns
+    // a constant value or if all arguments are reducible.
+    return false;
+}
+
+IAstNode* AstFunctionInvocation::reduce()
+{
+  return this;
+}
 
 std::string AstFunctionInvocation::to_string()
 {

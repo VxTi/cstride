@@ -13,9 +13,8 @@ namespace stride::ast
         std::vector<std::unique_ptr<IAstNode>> _children;
 
     public:
-        explicit AstBlock(
-            std::vector<std::unique_ptr<IAstNode>> children
-        ) : _children(std::move(children)) {};
+        explicit AstBlock(std::vector<std::unique_ptr<IAstNode>> children)
+            : _children(std::move(children)) {};
 
         std::string to_string() override;
 
