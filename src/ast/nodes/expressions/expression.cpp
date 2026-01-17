@@ -68,10 +68,12 @@ IAstNode* AstVariableDeclaration::reduce()
     if (this->is_reducible())
     {
         const auto reduced_value = dynamic_cast<IReducible*>(this->initial_value.get())->reduce();
+        auto cloned_type = this->get_variable_type()->clone();
+
 
         return std::make_unique<AstVariableDeclaration>(
             this->get_variable_name(),
-            std::make_unique<types::AstType>(this->get_variable_type()),
+            std::move(cloned_type),
             u_ptr<IAstNode>(std::move(reduced_value))
         ).release();
     }
@@ -121,7 +123,7 @@ std::string AstExpression::to_string()
 
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(const Scope& scope, TokenSet& set)
 {
-    if (auto lit = parse_literal_optional(scope, set))
+    if (auto lit = parse_literal_optional(scope, set); lit.has_value())
     {
         return std::move(*lit);
     }
@@ -209,7 +211,6 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(co
 
     return std::nullopt;
 }
-
 
 
 std::unique_ptr<AstVariableDeclaration> try_parse_variable_declaration(

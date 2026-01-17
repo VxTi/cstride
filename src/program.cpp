@@ -24,7 +24,15 @@ Program::Program(std::vector<std::string> files)
         files, std::back_inserter(nodes),
         [](const std::string& file) -> ProgramObject
         {
-            return ProgramObject(ast::parser::parse(file));
+            auto root_node = ast::parser::parse(file);
+
+            if (const auto reducible = dynamic_cast<ast::IReducible *>(root_node.get());
+                reducible && reducible->is_reducible())
+            {
+                return ProgramObject(reducible->reduce());
+            }
+
+            return ProgramObject(std::move(root_node));
         });
 
     this->_nodes = std::move(nodes);

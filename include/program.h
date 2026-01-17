@@ -13,6 +13,8 @@ namespace stride
         {
         }
 
+        explicit ProgramObject(ast::IAstNode* root) : _root(root) {}
+
         [[nodiscard]]
         ast::IAstNode* root() const { return _root.get(); }
     };

@@ -111,9 +111,9 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        types::AstType& get_variable_type() const
+        types::AstType* get_variable_type() const
         {
-            return *this->variable_type;
+            return this->variable_type.get();
         }
 
         [[nodiscard]]

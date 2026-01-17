@@ -134,11 +134,6 @@ llvm::Value* AstFunctionDefinition::codegen(
     llvm::IRBuilder<>* irBuilder
 )
 {
-    if (this->body() == nullptr)
-    {
-        std::cerr << "Function " << this->name().value << " has no body!" << std::endl;
-        return nullptr;
-    }
     const auto fn_name = this->name().value;
 
     // Create parameter types vector
@@ -190,9 +185,12 @@ llvm::Value* AstFunctionDefinition::codegen(
     // Generate body code
     llvm::Value* ret_val = nullptr;
 
-    if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
+    if (this->body() != nullptr)
     {
-        ret_val = synthesisable->codegen(module, context, &builder);
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
+        {
+            ret_val = synthesisable->codegen(module, context, &builder);
+        }
     }
 
     // Add default return if needed (void functions or missing return)

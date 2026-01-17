@@ -3,13 +3,30 @@
 #include "ast/tokens/token_set.h"
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/LLVMContext.h>
 
 using namespace stride::ast::types;
 
+std::string primitive_type_to_str(PrimitiveType type)
+{
+    switch (type)
+    {
+    case PrimitiveType::INT8: return "int8";
+    case PrimitiveType::INT16: return "int16";
+    case PrimitiveType::INT32: return "int32";
+    case PrimitiveType::INT64: return "int64";
+    case PrimitiveType::FLOAT32: return "float32";
+    case PrimitiveType::FLOAT64: return "float64";
+    case PrimitiveType::BOOL: return "bool";
+    case PrimitiveType::CHAR: return "char";
+    case PrimitiveType::STRING: return "string";
+    case PrimitiveType::VOID: return "void";
+    default: return "unknown";
+    }
+}
+
 std::string AstPrimitiveType::to_string()
 {
-    return std::format("PrimitiveType({})", token_type_to_str(this->type()));
+    return std::format("PrimitiveType({})", primitive_type_to_str(this->type()));
 }
 
 std::string AstCustomType::to_string()

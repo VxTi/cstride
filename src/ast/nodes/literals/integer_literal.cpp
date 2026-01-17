@@ -3,7 +3,10 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstLiteral>> AstIntegerLiteral::try_parse_optional(const Scope& scope, TokenSet& tokens)
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_optional(
+    const Scope& scope,
+    TokenSet& tokens
+)
 {
     if (tokens.peak_next_eq(TokenType::INTEGER_LITERAL))
     {

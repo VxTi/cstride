@@ -26,6 +26,8 @@ namespace stride::ast::types
     public:
         AstType() = default;
         ~AstType() override = default;
+
+        virtual u_ptr<AstType> clone() const = 0;
     };
 
     class AstPrimitiveType : public AstType
@@ -45,6 +47,10 @@ namespace stride::ast::types
 
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
+
+        std::unique_ptr<AstType> clone() const override {
+            return std::make_unique<AstPrimitiveType>(*this);
+        }
     };
 
     class AstCustomType : public AstType
@@ -60,6 +66,10 @@ namespace stride::ast::types
 
         [[nodiscard]]
         std::string name() const { return this->_name; }
+
+        std::unique_ptr<AstType> clone() const override {
+            return std::make_unique<AstCustomType>(*this);
+        }
     };
 
     std::unique_ptr<AstType> parse_primitive_type(TokenSet& set);

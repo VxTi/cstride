@@ -67,7 +67,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_op(
     const int min_precedence
 )
 {
-    for (;;)
+    while (true)
     {
         const auto next_token = set.peak_next_type();
         // First, we'll check if the next token is a binary operator
@@ -113,6 +113,10 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_op(
             }
 
             lhs = std::make_unique<AstBinaryOp>(std::move(lhs), binary_op.value(), std::move(rhs));
+        }
+        else
+        {
+            return lhs;
         }
     }
 }

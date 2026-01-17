@@ -142,7 +142,7 @@ namespace stride::ast
         }
     }
 
-    static std::string token_type_to_str(TokenType type)
+    static std::string token_type_to_str(const TokenType type)
     {
         switch (type)
         {

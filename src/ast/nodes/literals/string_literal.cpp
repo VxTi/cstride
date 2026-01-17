@@ -4,7 +4,7 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstLiteral>> AstStringLiteral::try_parse_optional(
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_optional(
     [[maybe_unused]] const Scope& scope, TokenSet& tokens)
 {
     if (tokens.peak_next_eq(TokenType::STRING_LITERAL))
@@ -23,5 +23,5 @@ std::string AstStringLiteral::to_string()
 
 llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
 {
-    return irBuilder->CreateGlobalString(_value);
+    return irBuilder->CreateGlobalString(this->value());
 }

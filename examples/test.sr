@@ -6,11 +6,7 @@ use std::io::{ Stream };
 extern fn printf(format: string): i32;
 
 fn test(): string {
-    return "
-
-    \x1b[32mHello world from \n\x1b[40manother function
-
-    ";
+    return "\x1b[32mHello world from \n\x1b[40manother function";
 }
 
 
