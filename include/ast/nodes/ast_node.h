@@ -5,6 +5,9 @@
 
 namespace stride::ast
 {
+    template<typename... T>
+    using u_ptr = std::unique_ptr<T...>;
+
     class ISynthesisable
     {
     public:

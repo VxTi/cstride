@@ -16,15 +16,15 @@ namespace stride::ast
         public ISynthesisable,
         public IReducible
     {
-        const std::vector<std::unique_ptr<IAstNode>> _children;
+        const std::vector<u_ptr<IAstNode>> _children;
 
     public:
-        explicit AstExpression(std::vector<std::unique_ptr<IAstNode>> children) : _children(std::move(children)) {};
+        explicit AstExpression(std::vector<u_ptr<IAstNode>> children) : _children(std::move(children)) {};
 
         ~AstExpression() override = default;
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
+        const std::vector<u_ptr<IAstNode>>& children() const { return this->_children; }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -90,14 +90,14 @@ namespace stride::ast
         public AstExpression
     {
         const Symbol variable_name;
-        const std::unique_ptr<types::AstType> variable_type;
-        const std::unique_ptr<IAstNode> initial_value;
+        const u_ptr<types::AstType> variable_type;
+        const u_ptr<IAstNode> initial_value;
 
     public:
         AstVariableDeclaration(
             Symbol variable_name,
-            std::unique_ptr<types::AstType> variable_type,
-            std::unique_ptr<IAstNode> initial_value
+            u_ptr<types::AstType> variable_type,
+            u_ptr<IAstNode> initial_value
         ) :
             AstExpression({}),
             variable_name(std::move(variable_name)),
@@ -117,9 +117,9 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const IAstNode* get_initial_value() const
+        const u_ptr<IAstNode>& get_initial_value() const
         {
-            return this->initial_value.get();
+            return this->initial_value;
         }
 
         std::string to_string() override;
@@ -136,7 +136,9 @@ namespace stride::ast
         ADD,
         SUBTRACT,
         MULTIPLY,
-        DIVIDE
+        DIVIDE,
+        MODULO,
+        POWER
     };
 
     enum class LogicalOpType
@@ -262,10 +264,18 @@ namespace stride::ast
         const Scope& scope,
         TokenSet& set
     );
+    std::unique_ptr<AstExpression> parse_standalone_expression_part(const Scope& scope, TokenSet& set);
 
     bool can_parse_expression(const TokenSet& tokens);
 
-    int operator_precedence(TokenType type);
+    int binary_operator_precedence(BinaryOpType type);
+
+    std::optional<std::unique_ptr<AstExpression>> parse_binary_op(
+        const Scope& scope,
+        TokenSet& set,
+        std::unique_ptr<AstExpression> lhs,
+        int min_precedence
+    );
 
     std::optional<LogicalOpType> get_logical_op_type(TokenType type);
 

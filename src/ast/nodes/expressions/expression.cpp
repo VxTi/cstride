@@ -45,7 +45,7 @@ std::string AstIdentifier::to_string()
     return name.value;
 }
 
-llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
+llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
 {
     throw parsing_error("Expression codegen not implemented, this must be implemented by subclasses");
 }
@@ -72,8 +72,8 @@ IAstNode* AstVariableDeclaration::reduce()
         return std::make_unique<AstVariableDeclaration>(
             this->get_variable_name(),
             std::make_unique<types::AstType>(this->get_variable_type()),
-            std::unique_ptr<IAstNode>(std::move(reduced_value))
-        ).get();
+            u_ptr<IAstNode>(std::move(reduced_value))
+        ).release();
     }
     return this;
 }
@@ -119,58 +119,7 @@ std::string AstExpression::to_string()
     return std::format("Expression({})", children_str.substr(0, children_str.length() - 2));
 }
 
-std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType type)
-{
-    switch (type)
-    {
-    case TokenType::DOUBLE_AMPERSAND: return LogicalOpType::AND;
-    case TokenType::DOUBLE_PIPE: return LogicalOpType::OR;
-    default: return std::nullopt;
-    }
-}
-
-std::optional<ComparisonOpType> stride::ast::get_comparative_op_type(const TokenType type)
-{
-    switch (type)
-    {
-    case TokenType::DOUBLE_EQUALS: return ComparisonOpType::EQUAL;
-    case TokenType::BANG_EQUALS: return ComparisonOpType::NOT_EQUAL;
-    case TokenType::LARROW: return ComparisonOpType::LESS_THAN;
-    case TokenType::LEQUALS: return ComparisonOpType::LESS_THAN_OR_EQUAL;
-    case TokenType::RARROW: return ComparisonOpType::GREATER_THAN;
-    case TokenType::GEQUALS: return ComparisonOpType::GREATER_THAN_OR_EQUAL;
-    default: return std::nullopt;
-    }
-}
-
-std::optional<BinaryOpType> stride::ast::get_binary_op_type(const TokenType type)
-{
-    switch (type)
-    {
-    case TokenType::STAR: return BinaryOpType::MULTIPLY;
-    case TokenType::PLUS: return BinaryOpType::ADD;
-    case TokenType::MINUS: return BinaryOpType::SUBTRACT;
-    case TokenType::SLASH: return BinaryOpType::DIVIDE;
-    default: return std::nullopt;
-    }
-}
-
-int stride::ast::operator_precedence(const TokenType type)
-{
-    switch (type)
-    {
-    case TokenType::STAR:
-    case TokenType::SLASH:
-        return 2;
-    case TokenType::PLUS:
-    case TokenType::MINUS:
-        return 1;
-    default:
-        return 0;
-    }
-}
-
-std::unique_ptr<AstExpression> parse_standalone_expression_part(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(const Scope& scope, TokenSet& set)
 {
     if (auto lit = parse_literal_optional(scope, set))
     {
@@ -261,60 +210,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(co
     return std::nullopt;
 }
 
-/**
- * This parses expressions that requires precedence, such as binary expressions.
- * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
- */
-std::optional<std::unique_ptr<AstExpression>> parse_binary_op(
-    const Scope& scope,
-    TokenSet& set,
-    std::unique_ptr<AstExpression> lhs,
-    const int min_precedence
-)
-{
-    for (;;)
-    {
-        const auto op = set.peak_next_type();
-        const int precedence = operator_precedence(op);
 
-        if (precedence < min_precedence)
-        {
-            return lhs;
-        }
-
-        set.next();
-
-        auto rhs = parse_standalone_expression_part(scope, set);
-        if (!rhs)
-        {
-            return std::nullopt;
-        }
-
-        const auto next_op = set.peak_next().type;
-
-        if (const int next_precedence = operator_precedence(next_op);
-            precedence < next_precedence)
-        {
-            if (auto rhs_opt = parse_binary_op(scope, set, std::move(rhs), precedence + 1); rhs_opt.has_value())
-            {
-                rhs = std::move(rhs_opt.value());
-            }
-            else
-            {
-                return std::nullopt;
-            }
-        }
-
-        if (auto binary_op = get_binary_op_type(op); binary_op.has_value())
-        {
-            lhs = std::make_unique<AstBinaryOp>(std::move(lhs), binary_op.value(), std::move(rhs));
-        }
-        else
-        {
-            set.throw_error("Unexpected token in expression");
-        }
-    }
-}
 
 std::unique_ptr<AstVariableDeclaration> try_parse_variable_declaration(
     const int expression_type_flags,
@@ -377,20 +273,13 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
         set.throw_error("Unexpected token in expression");
     }
 
-    if (auto binary_op = parse_binary_op(
-        scope,
-        set,
-        std::move(lhs),
-        1
-    ); binary_op.has_value())
-    {
-        return std::move(binary_op.value());
-    }
+    std::unique_ptr<AstExpression> final_expression = parse_binary_op(scope, set, std::move(lhs), 1)
+       .value_or(parse_logical_or_comparative_op(scope, set)
+           .value_or(nullptr));
 
-    if (auto logical_op = parse_logical_or_comparative_op(scope, set);
-        logical_op.has_value() && logical_op != nullptr)
+    if (final_expression != nullptr)
     {
-        return std::move(logical_op).value();
+        return std::move(final_expression);
     }
 
     set.throw_error("Unexpected token in expression");

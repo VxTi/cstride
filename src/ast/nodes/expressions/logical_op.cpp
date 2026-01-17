@@ -18,6 +18,16 @@ std::string AstLogicalOp::to_string()
     );
 }
 
+std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType type)
+{
+    switch (type)
+    {
+    case TokenType::DOUBLE_AMPERSAND: return LogicalOpType::AND;
+    case TokenType::DOUBLE_PIPE: return LogicalOpType::OR;
+    default: return std::nullopt;
+    }
+}
+
 llvm::Value* AstLogicalOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
     // Implementation following short-circuiting logic

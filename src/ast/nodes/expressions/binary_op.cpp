@@ -6,6 +6,34 @@
 
 using namespace stride::ast;
 
+std::optional<BinaryOpType> stride::ast::get_binary_op_type(const TokenType type)
+{
+    switch (type)
+    {
+    case TokenType::STAR: return BinaryOpType::MULTIPLY;
+    case TokenType::PLUS: return BinaryOpType::ADD;
+    case TokenType::MINUS: return BinaryOpType::SUBTRACT;
+    case TokenType::SLASH: return BinaryOpType::DIVIDE;
+    default: return std::nullopt;
+    }
+}
+
+int stride::ast::binary_operator_precedence(const BinaryOpType type)
+{
+    switch (type)
+    {
+    case BinaryOpType::POWER: return 3;
+    case BinaryOpType::MULTIPLY:
+    case BinaryOpType::DIVIDE:
+        return 2;
+    case BinaryOpType::ADD:
+    case BinaryOpType::SUBTRACT:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 std::string binary_op_to_str(const BinaryOpType op)
 {
     switch (op)
@@ -26,6 +54,67 @@ std::string AstBinaryOp::to_string()
         binary_op_to_str(this->get_op_type()),
         this->get_right().to_string()
     );
+}
+
+/**
+ * This parses expressions that requires precedence, such as binary expressions.
+ * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
+ */
+std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_op(
+    const Scope& scope,
+    TokenSet& set,
+    std::unique_ptr<AstExpression> lhs,
+    const int min_precedence
+)
+{
+    for (;;)
+    {
+        const auto next_token = set.peak_next_type();
+        // First, we'll check if the next token is a binary operator
+        if (auto binary_op = get_binary_op_type(next_token); binary_op.has_value())
+        {
+            const auto op = binary_op.value();
+
+            const int precedence = binary_operator_precedence(op);
+
+            // If the precedence is lower than the minimum required, we return the lhs
+            if (precedence < min_precedence)
+            {
+                return lhs;
+            }
+
+            set.next();
+
+            // If we're unable to parse the next expression part, for whatever reason,
+            // we'll return nullopt. This will indicate that the expression is incomplete or invalid.
+            auto rhs = parse_standalone_expression_part(scope, set);
+            if (!rhs)
+            {
+                return std::nullopt;
+            }
+
+            // If the followup token is also a binary expression,
+            // we can try to parse it with higher precedence
+            if (const auto next_op = get_binary_op_type(set.peak_next_type()); next_op.has_value())
+            {
+                if (const int next_precedence = binary_operator_precedence(next_op.value());
+                    precedence < next_precedence)
+                {
+                    if (auto rhs_opt = parse_binary_op(scope, set, std::move(rhs), precedence + 1); rhs_opt.has_value())
+                    {
+                        rhs = std::move(rhs_opt.value());
+                    }
+                    else
+                    {
+                        // We're unable to parse the next expression part, which is required for a binary operation.
+                        return std::nullopt;
+                    }
+                }
+            }
+
+            lhs = std::make_unique<AstBinaryOp>(std::move(lhs), binary_op.value(), std::move(rhs));
+        }
+    }
 }
 
 llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
