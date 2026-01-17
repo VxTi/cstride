@@ -46,7 +46,7 @@ std::string binary_op_to_str(const BinaryOpType op)
     }
 }
 
-std::string AstBinaryOp::to_string()
+std::string AstBinaryArithmeticOp::to_string()
 {
     return std::format(
         "BinaryOp({}, {}, {})",
@@ -60,7 +60,7 @@ std::string AstBinaryOp::to_string()
  * This parses expressions that requires precedence, such as binary expressions.
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
-std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_op(
+std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_binary_op(
     const Scope& scope,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs,
@@ -100,7 +100,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_op(
                 if (const int next_precedence = binary_operator_precedence(next_op.value());
                     precedence < next_precedence)
                 {
-                    if (auto rhs_opt = parse_binary_op(scope, set, std::move(rhs), precedence + 1); rhs_opt.has_value())
+                    if (auto rhs_opt = parse_arithmetic_binary_op(scope, set, std::move(rhs), precedence + 1); rhs_opt.has_value())
                     {
                         rhs = std::move(rhs_opt.value());
                     }
@@ -112,7 +112,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_op(
                 }
             }
 
-            lhs = std::make_unique<AstBinaryOp>(std::move(lhs), binary_op.value(), std::move(rhs));
+            lhs = std::make_unique<AstBinaryArithmeticOp>(std::move(lhs), binary_op.value(), std::move(rhs));
         }
         else
         {
@@ -121,7 +121,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_op(
     }
 }
 
-llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
+llvm::Value* AstBinaryArithmeticOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
     llvm::Value* l = this->get_left().codegen(module, context, irbuilder);
     llvm::Value* r = this->get_right().codegen(module, context, irbuilder);
@@ -162,7 +162,7 @@ llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& conte
     }
 }
 
-bool AstBinaryOp::is_reducible()
+bool AstBinaryArithmeticOp::is_reducible()
 {
     // A binary operation is reducible if either of both sides is reducible
     // A literal doesn't extend `IReducible`, though is by nature "reducible" in followup steps.
@@ -172,7 +172,7 @@ bool AstBinaryOp::is_reducible()
 }
 
 std::unique_ptr<IAstNode> reduce_literal_binary_op(
-    const AstBinaryOp* self,
+    const AstBinaryArithmeticOp* self,
     AstLiteral* left_lit,
     AstLiteral* right_lit
 )
@@ -204,7 +204,7 @@ std::unique_ptr<IAstNode> reduce_literal_binary_op(
 }
 
 std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
-    AstBinaryOp* self,
+    AstBinaryArithmeticOp* self,
     AstExpression* left_lit,
     AstExpression* right_lit
 )
@@ -225,7 +225,7 @@ std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
     return std::nullopt;
 }
 
-IAstNode* AstBinaryOp::reduce()
+IAstNode* AstBinaryArithmeticOp::reduce()
 {
     /*if (!this->is_reducible()) return this;
 

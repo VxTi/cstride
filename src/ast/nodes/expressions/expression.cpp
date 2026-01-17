@@ -213,7 +213,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(co
 }
 
 
-std::unique_ptr<AstVariableDeclaration> try_parse_variable_declaration(
+std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
     const int expression_type_flags,
     const Scope& scope,
     TokenSet& set
@@ -261,7 +261,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
 {
     if (is_variable_declaration(set))
     {
-        return try_parse_variable_declaration(
+        return parse_variable_declaration(
             expression_type_flags,
             scope,
             set
@@ -274,7 +274,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
         set.throw_error("Unexpected token in expression");
     }
 
-    std::unique_ptr<AstExpression> final_expression = parse_binary_op(scope, set, std::move(lhs), 1)
+    std::unique_ptr<AstExpression> final_expression = parse_arithmetic_binary_op(scope, set, std::move(lhs), 1)
        .value_or(parse_logical_or_comparative_op(scope, set)
            .value_or(nullptr));
 
@@ -289,7 +289,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
 /**
  * General expression parsing. These can occur in global / function scopes
  */
-std::unique_ptr<AstExpression> stride::ast::parse_expression(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(const Scope& scope, TokenSet& tokens)
 {
     return parse_expression_ext(
         EXPRESSION_ALLOW_VARIABLE_DECLARATION,

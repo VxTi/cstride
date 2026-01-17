@@ -9,12 +9,12 @@ std::string AstLogicalOp::to_string()
 {
     return std::format(
         "LogicalOp({}, {}, {})",
-        _left->to_string(),
+        this->get_left().to_string(),
         token_type_to_str(
             this->get_op_type() == LogicalOpType::AND
                 ? TokenType::DOUBLE_AMPERSAND
                 : TokenType::DOUBLE_PIPE),
-        _right->to_string()
+        this->get_right().to_string()
     );
 }
 

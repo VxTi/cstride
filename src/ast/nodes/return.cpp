@@ -21,7 +21,7 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const Scope& scop
         return std::make_unique<AstReturn>(nullptr);
     }
 
-    auto value = parse_expression(scope, tokens);
+    auto value = parse_standalone_expression(scope, tokens);
     tokens.expect(TokenType::SEMICOLON);
 
     return std::make_unique<AstReturn>(std::move(value));

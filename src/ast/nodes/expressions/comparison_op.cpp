@@ -34,14 +34,14 @@ std::string AstComparisonOp::to_string()
 {
     return std::format(
         "ComparisonOp({}, {}, {})",
-        this->_left->to_string(), comparison_op_to_str(this->_op_type), this->_right->to_string()
+        this->get_left().to_string(), comparison_op_to_str(this->_op_type), this->get_right().to_string()
     );
 }
 
 llvm::Value* AstComparisonOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    llvm::Value* left = this->_left->codegen(module, context, builder);
-    llvm::Value* right = this->_right->codegen(module, context, builder);
+    llvm::Value* left = this->get_left().codegen(module, context, builder);
+    llvm::Value* right = this->get_right().codegen(module, context, builder);
 
     if (!left || !right)
     {

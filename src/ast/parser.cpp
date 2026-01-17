@@ -62,7 +62,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, 
         return parse_while_loop_statement(scope, tokens);
     }
 
-    return parse_expression(scope, tokens);
+    return parse_standalone_expression(scope, tokens);
 }
 
 std::unique_ptr<AstBlock> stride::ast::parse_sequential(const Scope& scope, TokenSet& tokens)

@@ -11,6 +11,43 @@ namespace stride::ast
 #define EXPRESSION_INLINE_VARIABLE_DECLARATION 2 // Variables declared after initial one
 #define EXPRESSION_VARIABLE_ASSIGNATION        4
 
+    enum class BinaryOpType
+    {
+        ADD,
+        SUBTRACT,
+        MULTIPLY,
+        DIVIDE,
+        MODULO,
+        POWER
+    };
+
+    enum class LogicalOpType
+    {
+        AND,
+        OR
+    };
+
+    enum class ComparisonOpType
+    {
+        EQUAL,
+        NOT_EQUAL,
+        LESS_THAN,
+        LESS_THAN_OR_EQUAL,
+        GREATER_THAN,
+        GREATER_THAN_OR_EQUAL
+    };
+
+    enum class UnaryOpType
+    {
+        LOGICAL_NOT, //  !<..>
+        NEGATE,      //  -<..>
+        COMPLEMENT,  //  ~<..>
+        INCREMENT,   // ++<..> or <..>++
+        DECREMENT,   // --<..> or <..>--
+        ADDRESS_OF,  //  &<..>
+        DEREFERENCE, //  *<..>
+    };
+
     class AstExpression :
         public IAstNode,
         public ISynthesisable,
@@ -131,58 +168,39 @@ namespace stride::ast
         IAstNode* reduce() override;
     };
 
-    enum class BinaryOpType
+    class AbstractBinaryOp : public AstExpression
     {
-        ADD,
-        SUBTRACT,
-        MULTIPLY,
-        DIVIDE,
-        MODULO,
-        POWER
-    };
-
-    enum class LogicalOpType
-    {
-        AND,
-        OR
-    };
-
-    enum class ComparisonOpType
-    {
-        EQUAL,
-        NOT_EQUAL,
-        LESS_THAN,
-        LESS_THAN_OR_EQUAL,
-        GREATER_THAN,
-        GREATER_THAN_OR_EQUAL
-    };
-
-    class AstBinaryOp :
-        public AstExpression
-    {
-        std::unique_ptr<AstExpression> _left;
-        const BinaryOpType _op_type;
-        std::unique_ptr<AstExpression> _right;
+        std::unique_ptr<AstExpression> _lsh;
+        std::unique_ptr<AstExpression> _rsh;
 
     public:
-        AstBinaryOp(
+        AbstractBinaryOp(std::unique_ptr<AstExpression> lsh, std::unique_ptr<AstExpression> rsh) :
+            AstExpression({}),
+            _lsh(std::move(lsh)),
+            _rsh(std::move(rsh)) {}
+
+        [[nodiscard]]
+        AstExpression& get_left() const { return *this->_lsh.get(); }
+
+        [[nodiscard]]
+        AstExpression& get_right() const { return *this->_rsh.get(); }
+    };
+
+    class AstBinaryArithmeticOp :
+        public AbstractBinaryOp
+    {
+        const BinaryOpType _op_type;
+
+    public:
+        AstBinaryArithmeticOp(
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AstExpression({}),
-            _left(std::move(left)),
-            _op_type(op),
-            _right(std::move(right)) {}
+        ) : AbstractBinaryOp(std::move(left), std::move(right)),
+            _op_type(op) {}
 
         [[nodiscard]]
         BinaryOpType get_op_type() const { return this->_op_type; }
-
-        [[nodiscard]]
-        AstExpression& get_left() const { return *this->_left.get(); }
-
-        [[nodiscard]]
-        AstExpression& get_right() const { return *this->_right.get(); }
-
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -194,30 +212,21 @@ namespace stride::ast
     };
 
     class AstLogicalOp :
-        public AstExpression
+        public AbstractBinaryOp
     {
-        std::unique_ptr<AstExpression> _left;
         LogicalOpType _op_type;
-        std::unique_ptr<AstExpression> _right;
 
     public:
         AstLogicalOp(
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AstExpression({}),
-            _left(std::move(left)),
-            _op_type(op),
-            _right(std::move(right)) {}
+        ) :
+            AbstractBinaryOp(std::move(left), std::move(right)),
+            _op_type(op) {}
 
         [[nodiscard]]
         LogicalOpType get_op_type() const { return this->_op_type; }
-
-        [[nodiscard]]
-        AstExpression& get_left() const { return *this->_left.get(); }
-
-        [[nodiscard]]
-        AstExpression& get_right() const { return *this->_right.get(); }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -225,39 +234,53 @@ namespace stride::ast
     };
 
     class AstComparisonOp :
-        public AstExpression
+        public AbstractBinaryOp
     {
-        std::unique_ptr<AstExpression> _left;
         ComparisonOpType _op_type;
-        std::unique_ptr<AstExpression> _right;
 
     public:
         AstComparisonOp(
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AstExpression({}),
-            _left(std::move(left)),
-            _op_type(op),
-            _right(std::move(right)) {}
+        ) : AbstractBinaryOp(std::move(left), std::move(right)),
+            _op_type(op) {}
 
         [[nodiscard]]
         ComparisonOpType get_op_type() const { return this->_op_type; }
-
-        [[nodiscard]]
-        AstExpression& get_left() const { return *this->_left.get(); }
-
-        [[nodiscard]]
-        AstExpression& get_right() const { return *this->_right.get(); }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };
 
+    class AstUnaryOp
+        : public AbstractBinaryOp
+    {
+        const UnaryOpType _op_type;
+        u_ptr<AstExpression> _operand;
+        const bool _is_lsh;
+
+    public:
+        AstUnaryOp(
+            const UnaryOpType op,
+            std::unique_ptr<AstExpression> operand,
+            const bool is_lsh = false
+        ) : AbstractBinaryOp(std::move(operand), nullptr),
+            _op_type(op), _is_lsh(is_lsh) {}
+
+        [[nodiscard]]
+        bool is_lsh() const { return this->_is_lsh; }
+
+        [[nodiscard]]
+        UnaryOpType get_op_type() const { return this->_op_type; }
+
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+    };
+
     bool is_variable_declaration(const TokenSet& set);
 
-    std::unique_ptr<AstExpression> parse_expression(const Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& tokens);
 
     std::unique_ptr<AstExpression> parse_expression_ext(
         int expression_type_flags,
@@ -270,16 +293,20 @@ namespace stride::ast
 
     int binary_operator_precedence(BinaryOpType type);
 
-    std::optional<std::unique_ptr<AstExpression>> parse_binary_op(
-        const Scope& scope,
-        TokenSet& set,
-        std::unique_ptr<AstExpression> lhs,
-        int min_precedence
-    );
+    std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(const Scope& scope,
+                                                                             TokenSet& set,
+                                                                             std::unique_ptr<AstExpression> lhs,
+                                                                             int min_precedence);
+
+    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(const Scope& scope, TokenSet& set);
+
+    // Operation type utility functions
 
     std::optional<LogicalOpType> get_logical_op_type(TokenType type);
 
     std::optional<ComparisonOpType> get_comparative_op_type(TokenType type);
 
     std::optional<BinaryOpType> get_binary_op_type(TokenType type);
+
+    std::optional<UnaryOpType> get_unary_op_type(TokenType type);
 }

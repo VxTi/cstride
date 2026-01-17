@@ -43,7 +43,7 @@ std::unique_ptr<AstExpression> try_collect_condition(const Scope& scope, TokenSe
     }
 
 
-    return parse_expression(scope, condition.value());
+    return parse_standalone_expression(scope, condition.value());
 }
 
 std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scope, TokenSet& set)
@@ -63,7 +63,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scop
 
     auto initiator = try_collect_initiator(scope, header_body);
     auto condition = try_collect_condition(scope, header_body);
-    auto increment = parse_expression(scope, header_body);
+    auto increment = parse_standalone_expression(scope, header_body);
 
     return std::make_unique<AstLoop>(
         std::move(initiator),
@@ -85,7 +85,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const Scope& sc
 
     auto header_condition = header_condition_opt.value();
 
-    auto condition = parse_expression(scope, header_condition);
+    auto condition = parse_standalone_expression(scope, header_condition);
     auto body = parse_block(scope, set);
 
     return std::make_unique<AstLoop>(
