@@ -121,7 +121,7 @@ int stride::ast::operator_precedence(const TokenType type)
 
 std::unique_ptr<AstExpression> parse_primary(const Scope& scope, TokenSet& set)
 {
-    if (auto lit = AstLiteral::try_parse(scope, set))
+    if (auto lit = parse_literal_optional(scope, set))
     {
         return std::move(*lit);
     }

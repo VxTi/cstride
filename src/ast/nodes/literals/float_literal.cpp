@@ -3,7 +3,7 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstLiteral>> AstFloatLiteral::try_parse_optional(
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
     const Scope& scope,
     TokenSet& tokens
 )
@@ -23,5 +23,5 @@ std::string AstFloatLiteral::to_string()
 
 llvm::Value* AstFloatLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    return llvm::ConstantFP::get(context, llvm::APFloat(_value));
+    return llvm::ConstantFP::get(context, llvm::APFloat(this->value()));
 }

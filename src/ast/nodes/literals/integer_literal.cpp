@@ -23,6 +23,12 @@ std::string AstIntegerLiteral::to_string()
 
 llvm::Value* AstIntegerLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    // 32-bit integer
-    return llvm::ConstantInt::get(context, llvm::APInt(32, _value, true));
+    return llvm::ConstantInt::get(
+        context,
+        llvm::APInt(
+            this->bit_count(),
+            this->value(),
+            true
+        )
+    );
 }

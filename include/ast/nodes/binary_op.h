@@ -22,5 +22,8 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
+
+        bool is_reducible();
     };
+
 }

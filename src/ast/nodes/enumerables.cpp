@@ -22,7 +22,7 @@ std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const
 
     tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
 
-    auto value = AstLiteral::try_parse(scope, tokens);
+    auto value = parse_literal_optional(scope, tokens);
 
     if (!value.has_value())
     {

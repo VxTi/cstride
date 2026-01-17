@@ -64,3 +64,8 @@ llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& conte
         return nullptr;
     }
 }
+
+bool AstBinaryOp::is_reducible()
+{
+    return this->left->
+}

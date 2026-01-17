@@ -9,6 +9,7 @@ namespace stride::ast
     {
     public:
         virtual ~ISynthesisable() = default;
+
         virtual llvm::Value* codegen(
             llvm::Module* module,
             llvm::LLVMContext& context,
@@ -22,5 +23,19 @@ namespace stride::ast
         virtual ~IAstNode() = default;
 
         [[nodiscard]] virtual std::string to_string() = 0;
+    };
+
+    class IReducible
+    {
+    public:
+        virtual ~IReducible() = default;
+
+        /**
+         * Reduces the current node to a simpler form.
+         * This is part of the reduction process, where complex nodes are simplified
+         * to make further analysis or code generation easier.
+         * @return The reduced node.
+         */
+        virtual IAstNode* reduce() = 0;
     };
 }
