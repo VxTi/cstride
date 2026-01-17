@@ -1,25 +1,37 @@
-#include "ast/nodes/expression.h"
-#include <llvm/IR/IRBuilder.h>
 #include <format>
+#include <llvm/IR/IRBuilder.h>
 
+#include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
+
+std::string binary_op_to_str(const BinaryOpType op)
+{
+    switch (op)
+    {
+    case BinaryOpType::ADD: return "+";
+    case BinaryOpType::SUBTRACT: return "-";
+    case BinaryOpType::MULTIPLY: return "*";
+    case BinaryOpType::DIVIDE: return "/";
+    default: return "";
+    }
+}
 
 std::string AstBinaryOp::to_string()
 {
     return std::format(
         "BinaryOp({}, {}, {})",
-        left->to_string(),
-        token_type_to_str(op),
-        right->to_string()
+        this->get_left().to_string(),
+        binary_op_to_str(this->get_op_type()),
+        this->get_right().to_string()
     );
 }
 
 llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
-    llvm::Value* l = left->codegen(module, context, irbuilder);
-    llvm::Value* r = right->codegen(module, context, irbuilder);
+    llvm::Value* l = this->get_left().codegen(module, context, irbuilder);
+    llvm::Value* r = this->get_right().codegen(module, context, irbuilder);
 
     if (!l || !r)
     {
@@ -42,15 +54,15 @@ llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& conte
 
     bool is_float = l->getType()->isFloatingPointTy();
 
-    switch (op)
+    switch (this->get_op_type())
     {
-    case TokenType::PLUS:
+    case BinaryOpType::ADD:
         return is_float ? builder.CreateFAdd(l, r, "addtmp") : builder.CreateAdd(l, r, "addtmp");
-    case TokenType::MINUS:
+    case BinaryOpType::SUBTRACT:
         return is_float ? builder.CreateFSub(l, r, "subtmp") : builder.CreateSub(l, r, "subtmp");
-    case TokenType::STAR:
+    case BinaryOpType::MULTIPLY:
         return is_float ? builder.CreateFMul(l, r, "multmp") : builder.CreateMul(l, r, "multmp");
-    case TokenType::SLASH:
+    case BinaryOpType::DIVIDE:
         return is_float ? builder.CreateFDiv(l, r, "divtmp") : builder.CreateSDiv(l, r, "divtmp");
     default:
         return nullptr;
@@ -61,9 +73,9 @@ bool AstBinaryOp::is_reducible()
 {
     // A binary operation is reducible if either of both sides is reducible
     // A literal doesn't extend `IReducible`, though is by nature "reducible" in followup steps.
-    return (is_ast_literal(this->left.get()) && is_ast_literal(this->right.get()))
-        || this->left->is_reducible()
-        || this->right->is_reducible();
+    return (is_ast_literal(&this->get_left()) && is_ast_literal(&this->get_right()))
+        || this->get_left().is_reducible()
+        || this->get_right().is_reducible();
 }
 
 std::unique_ptr<IAstNode> reduce_literal_binary_op(
@@ -72,10 +84,10 @@ std::unique_ptr<IAstNode> reduce_literal_binary_op(
     AstLiteral* right_lit
 )
 {
-    switch (self->op)
+    switch (self->get_op_type())
     {
-    case TokenType::PLUS:
-        if (left_lit->type() == LiteralType::INTEGER && right_lit->type() == LiteralType::INTEGER)
+    case BinaryOpType::ADD:
+        /*if (left_lit->type() == LiteralType::INTEGER && right_lit->type() == LiteralType::INTEGER)
         {
             return std::make_unique<AstLiteral>(LiteralType::INTEGER, left_lit->value() + right_lit->value());
         }
@@ -83,13 +95,13 @@ std::unique_ptr<IAstNode> reduce_literal_binary_op(
         if (left_lit->type() == LiteralType::FLOAT && right_lit->type() == LiteralType::FLOAT)
         {
             return std::make_unique<AstLiteral>(LiteralType::FLOAT, left_lit->value() + right_lit->value());
-        }
+        }*/
         break;
-    case TokenType::MINUS:
+    case BinaryOpType::SUBTRACT:
         break;
-    case TokenType::STAR:
+    case BinaryOpType::MULTIPLY:
         break;
-    case TokenType::SLASH:
+    case BinaryOpType::DIVIDE:
         break;
     default:
         return nullptr;
@@ -104,7 +116,28 @@ std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
     AstExpression* right_lit
 )
 {
-    if (const auto lhs_ptr_i = dynamic_cast<AstIntegerLiteral*>(left_lit);
+    /*if (const auto lhs_ptr_i = dynamic_cast<AstIntegerLiteral*>(left_lit);
+        lhs_ptr_i != nullptr
+    )
+    {
+        // For integers, we do allow addition of other numeric types, though
+        // this will change the resulting type. E.g., adding a float to an int
+        // will result in a float (32/64 bit)
+
+        auto lval = lval_ptr->value();
+
+        if (right_lit->type() == LiteralType::FLOAT) {}
+    }*/
+
+    return std::nullopt;
+}
+
+IAstNode* AstBinaryOp::reduce()
+{
+    /*if (!this->is_reducible()) return this;
+
+
+    if (const auto lhs_ptr_i = dynamic_cast<AstIntegerLiteral*>(this->left.get());
         lhs_ptr_i != nullptr
     )
     {
@@ -117,28 +150,7 @@ std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
         if (right_lit->type() == LiteralType::FLOAT) {}
     }
 
-    return std::nullopt;
-}
-
-IAstNode* AstBinaryOp::reduce()
-{
-    if (!this->is_reducible()) return this;
-
-
-    if (const auto lhs_ptr_i = dynamic_cast<AstIntegerLiteral*>(this->left.get());
-       lhs_ptr_i != nullptr
-   )
-    {
-        // For integers, we do allow addition of other numeric types, though
-        // this will change the resulting type. E.g., adding a float to an int
-        // will result in a float (32/64 bit)
-
-        auto lval = lval_ptr->value();
-
-        if (right_lit->type() == LiteralType::FLOAT) {}
-    }
-
-    return std::nullopt;
+    return std::nullopt;*/
 
     return this;
 }

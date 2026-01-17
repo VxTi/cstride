@@ -159,13 +159,13 @@ namespace stride::ast
         public AstExpression
     {
         std::unique_ptr<AstExpression> _left;
-        BinaryOpType _op_type;
+        const BinaryOpType _op_type;
         std::unique_ptr<AstExpression> _right;
 
     public:
         AstBinaryOp(
             std::unique_ptr<AstExpression> left,
-            BinaryOpType op,
+            const BinaryOpType op,
             std::unique_ptr<AstExpression> right
         ) : AstExpression({}),
             _left(std::move(left)),
@@ -222,6 +222,37 @@ namespace stride::ast
         std::string to_string() override;
     };
 
+    class AstComparisonOp :
+        public AstExpression
+    {
+        std::unique_ptr<AstExpression> _left;
+        ComparisonOpType _op_type;
+        std::unique_ptr<AstExpression> _right;
+
+    public:
+        AstComparisonOp(
+            std::unique_ptr<AstExpression> left,
+            const ComparisonOpType op,
+            std::unique_ptr<AstExpression> right
+        ) : AstExpression({}),
+            _left(std::move(left)),
+            _op_type(op),
+            _right(std::move(right)) {}
+
+        [[nodiscard]]
+        ComparisonOpType get_op_type() const { return this->_op_type; }
+
+        [[nodiscard]]
+        AstExpression& get_left() const { return *this->_left.get(); }
+
+        [[nodiscard]]
+        AstExpression& get_right() const { return *this->_right.get(); }
+
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
+        std::string to_string() override;
+    };
+
     bool is_variable_declaration(const TokenSet& set);
 
     std::unique_ptr<AstExpression> parse_expression(const Scope& scope, TokenSet& tokens);
@@ -236,5 +267,9 @@ namespace stride::ast
 
     int operator_precedence(TokenType type);
 
-    bool is_logical_operator(TokenType type);
+    std::optional<LogicalOpType> get_logical_op_type(TokenType type);
+
+    std::optional<ComparisonOpType> get_comparative_op_type(TokenType type);
+
+    std::optional<BinaryOpType> get_binary_op_type(TokenType type);
 }
