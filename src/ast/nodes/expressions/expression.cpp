@@ -63,7 +63,7 @@ bool AstVariableDeclaration::is_reducible()
     return false;
 }
 
-std::unique_ptr<IAstNode> AstVariableDeclaration::reduce()
+IAstNode* AstVariableDeclaration::reduce()
 {
     if (this->is_reducible())
     {
@@ -73,7 +73,7 @@ std::unique_ptr<IAstNode> AstVariableDeclaration::reduce()
             this->get_variable_name(),
             std::make_unique<types::AstType>(this->get_variable_type()),
             std::unique_ptr<IAstNode>(std::move(reduced_value))
-        );
+        ).get();
     }
     return this;
 }
@@ -251,7 +251,7 @@ std::unique_ptr<AstVariableDeclaration> try_parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER);
     Symbol variable_name(variable_name_tok.lexeme);
     set.expect(TokenType::COLON);
-    auto type = types::try_parse_type(set);
+    auto type = types::parse_primitive_type(set);
 
     set.expect(TokenType::EQUALS);
 

@@ -17,7 +17,8 @@ namespace stride::ast
         {
         }
 
-        [[nodiscard]] Symbol name() const { return _name; }
+        [[nodiscard]]
+        Symbol name() const { return _name; }
     };
 
     bool is_module_statement(const TokenSet& tokens);

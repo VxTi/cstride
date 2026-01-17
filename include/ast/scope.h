@@ -109,6 +109,7 @@ namespace stride::ast
          * @param symbol Symbol to check
          * @return true if the symbol exists in the current scope, false otherwise
          */
-        [[nodiscard]] bool is_symbol_defined_scoped(const Symbol& symbol) const;
+        [[nodiscard]]
+        bool is_symbol_defined_scoped(const Symbol& symbol) const;
     };
 }

@@ -47,9 +47,11 @@ namespace stride::ast
 
         std::string to_string() override = 0;
 
-        [[nodiscard]] char bit_count() const { return this->_bit_count; }
+        [[nodiscard]]
+        char bit_count() const { return this->_bit_count; }
 
-        [[nodiscard]] LiteralType type() const { return this->_type; }
+        [[nodiscard]]
+        LiteralType type() const { return this->_type; }
     };
 
     template <typename T>
@@ -66,7 +68,8 @@ namespace stride::ast
             AstLiteral(type, byte_count),
             _value(value) {}
 
-        [[nodiscard]] const T& value() const { return this->_value; }
+        [[nodiscard]]
+        const T& value() const { return this->_value; }
     };
 
     class AstStringLiteral : public AbstractAstLiteralBase<std::string>

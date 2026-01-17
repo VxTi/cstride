@@ -20,9 +20,11 @@ namespace stride::ast
         {
         }
 
-        [[nodiscard]] Symbol name() const { return this->_name; }
+        [[nodiscard]]
+        Symbol name() const { return this->_name; }
 
-        [[nodiscard]] AstLiteral& value() const { return *this->_value; }
+        [[nodiscard]]
+        AstLiteral& value() const { return *this->_value; }
 
         static std::unique_ptr<AstEnumerableMember> try_parse_member(const Scope& scope, TokenSet& tokens);
 
@@ -40,12 +42,14 @@ namespace stride::ast
         {
         }
 
-        [[nodiscard]] const std::vector<std::unique_ptr<AstEnumerableMember>>& members() const
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<AstEnumerableMember>>& members() const
         {
             return this->_members;
         }
 
-        [[nodiscard]] Symbol name() const { return this->_name; }
+        [[nodiscard]]
+        Symbol name() const { return this->_name; }
 
         std::string to_string() override;
     };

@@ -3,6 +3,9 @@
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/loops.h"
+#include "ast/nodes/module.h"
+#include "ast/nodes/return.h"
+#include "ast/nodes/struct.h"
 #include "ast/tokens/tokenizer.h"
 
 using namespace stride::ast;

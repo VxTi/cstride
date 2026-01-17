@@ -86,20 +86,26 @@ namespace stride::ast
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
-        [[nodiscard]] Symbol name() const { return this->_name; }
+        [[nodiscard]]
+        Symbol name() const { return this->_name; }
 
-        [[nodiscard]] IAstNode* body() const { return this->_body.get(); }
+        [[nodiscard]]
+        IAstNode* body() const { return this->_body.get(); }
 
-        [[nodiscard]] const std::vector<std::unique_ptr<AstFunctionParameter>>& parameters() const
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<AstFunctionParameter>>& parameters() const
         {
             return this->_parameters;
         }
 
-        [[nodiscard]] const std::unique_ptr<types::AstType>& return_type() const { return this->_return_type; }
+        [[nodiscard]]
+        const std::unique_ptr<types::AstType>& return_type() const { return this->_return_type; }
 
-        [[nodiscard]] bool is_extern() const { return this->_is_extern; }
+        [[nodiscard]]
+        bool is_extern() const { return this->_is_extern; }
 
-        [[nodiscard]] bool is_variadic() const { return this->_is_variadic; }
+        [[nodiscard]]
+        bool is_variadic() const { return this->_is_variadic; }
     };
 
     bool is_fn_declaration(const TokenSet& tokens);

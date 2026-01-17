@@ -32,13 +32,17 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        [[nodiscard]] AstExpression* initiator() const { return _initiator.get(); }
+        [[nodiscard]]
+        AstExpression* initiator() const { return _initiator.get(); }
 
-        [[nodiscard]] AstBlock* body() const { return _body.get(); }
+        [[nodiscard]]
+        AstBlock* body() const { return _body.get(); }
 
-        [[nodiscard]] AstExpression* condition() const { return _condition.get(); }
+        [[nodiscard]]
+        AstExpression* condition() const { return _condition.get(); }
 
-        [[nodiscard]] AstExpression* increment() const { return _increment.get(); }
+        [[nodiscard]]
+        AstExpression* increment() const { return _increment.get(); }
     };
 
     bool is_for_loop_statement(const TokenSet& tokens);

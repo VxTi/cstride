@@ -34,7 +34,7 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
     }
 
     // Get the LLVM type for the variable
-    llvm::Type* var_type = types::ast_type_to_llvm(this->variable_type.get(), context);
+    llvm::Type* var_type = types::internal_type_to_llvm_type(this->variable_type.get(), module, context);
 
     // Check if we have a valid insert block
     llvm::BasicBlock* current_block = irbuilder->GetInsertBlock();

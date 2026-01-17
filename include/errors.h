@@ -106,7 +106,8 @@ namespace stride
         }
 
 
-        [[nodiscard]] const char* what() const noexcept override
+        [[nodiscard]]
+        const char* what() const noexcept override
         {
             return what_msg.c_str();
         }

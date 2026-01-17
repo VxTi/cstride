@@ -49,7 +49,7 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_first_fn_param(
 
     tokens.expect(TokenType::COLON);
 
-    std::unique_ptr<types::AstType> type_ptr = types::try_parse_type(tokens);
+    std::unique_ptr<types::AstType> type_ptr = types::parse_primitive_type(tokens);
 
     return std::move(std::make_unique<AstFunctionParameter>(param_name, std::move(type_ptr)));
 }

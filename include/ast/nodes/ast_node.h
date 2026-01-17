@@ -22,7 +22,8 @@ namespace stride::ast
     public:
         virtual ~IAstNode() = default;
 
-        [[nodiscard]] virtual std::string to_string() = 0;
+        [[nodiscard]]
+        virtual std::string to_string() = 0;
     };
 
     class IReducible

@@ -24,52 +24,52 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(Tok
     {
     case TokenType::PRIMITIVE_INT8:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_INT8, 1));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::INT8, 1));
         }
         break;
     case TokenType::PRIMITIVE_INT16:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_INT16, 2));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::INT16, 2));
         }
         break;
     case TokenType::PRIMITIVE_INT32:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_INT32, 4));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::INT32, 4));
         }
         break;
     case TokenType::PRIMITIVE_INT64:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_INT64, 8));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::INT64, 8));
         }
         break;
     case TokenType::PRIMITIVE_FLOAT32:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_FLOAT32, 4));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::FLOAT32, 4));
         }
         break;
     case TokenType::PRIMITIVE_FLOAT64:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_FLOAT64, 8));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::FLOAT64, 8));
         }
         break;
     case TokenType::PRIMITIVE_BOOL:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_BOOL, 1));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::BOOL, 1));
         }
         break;
     case TokenType::PRIMITIVE_CHAR:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_CHAR, 1));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::CHAR, 1));
         }
         break;
     case TokenType::PRIMITIVE_STRING:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_STRING, 1));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::STRING, 1));
         }
         break;
     case TokenType::PRIMITIVE_VOID:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(TokenType::PRIMITIVE_VOID, 0));
+            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::VOID, 0));
         }
         break;
     default:
@@ -96,7 +96,7 @@ std::optional<std::unique_ptr<AstCustomType>> AstCustomType::try_parse(TokenSet&
     return std::move(std::make_unique<AstCustomType>(AstCustomType(name)));
 }
 
-std::unique_ptr<AstType> stride::ast::types::try_parse_type(TokenSet& tokens)
+std::unique_ptr<AstType> stride::ast::types::parse_primitive_type(TokenSet& tokens)
 {
     std::unique_ptr<AstType> type_ptr;
 
@@ -116,32 +116,35 @@ std::unique_ptr<AstType> stride::ast::types::try_parse_type(TokenSet& tokens)
     return std::move(type_ptr);
 }
 
-llvm::Type* stride::ast::types::ast_type_to_llvm(AstType* type, llvm::LLVMContext& context)
+llvm::Type* stride::ast::types::internal_type_to_llvm_type(
+    AstType* type,
+    llvm::Module* module,
+    llvm::LLVMContext& context
+)
 {
     if (const auto* primitive = dynamic_cast<AstPrimitiveType*>(type))
     {
         switch (primitive->type())
         {
-        case TokenType::PRIMITIVE_INT8:
+        case PrimitiveType::INT8:
             return llvm::Type::getInt8Ty(context);
-        case TokenType::PRIMITIVE_INT16:
+        case PrimitiveType::INT16:
             return llvm::Type::getInt16Ty(context);
-        case TokenType::PRIMITIVE_INT32:
+        case PrimitiveType::INT32:
             return llvm::Type::getInt32Ty(context);
-        case TokenType::PRIMITIVE_INT64:
+        case PrimitiveType::INT64:
             return llvm::Type::getInt64Ty(context);
-        case TokenType::PRIMITIVE_FLOAT32:
+        case PrimitiveType::FLOAT32:
             return llvm::Type::getFloatTy(context);
-        case TokenType::PRIMITIVE_FLOAT64:
+        case PrimitiveType::FLOAT64:
             return llvm::Type::getDoubleTy(context);
-        case TokenType::PRIMITIVE_BOOL:
+        case PrimitiveType::BOOL:
             return llvm::Type::getInt1Ty(context);
-        case TokenType::PRIMITIVE_CHAR:
+        case PrimitiveType::CHAR:
             return llvm::Type::getInt8Ty(context);
-        case TokenType::PRIMITIVE_STRING:
+        case PrimitiveType::STRING:
             return llvm::PointerType::get(context, 0);
-
-        case TokenType::PRIMITIVE_VOID:
+        case PrimitiveType::VOID:
         default:
             return llvm::Type::getVoidTy(context);
         }

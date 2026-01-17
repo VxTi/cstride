@@ -6,16 +6,6 @@
 
 using namespace stride::ast;
 
-AstBinaryOp::AstBinaryOp(
-    std::unique_ptr<AstExpression> left,
-    TokenType op,
-    std::unique_ptr<AstExpression> right
-) :
-    AstExpression({}),
-    left(std::move(left)),
-    op(op),
-    right(std::move(right)) {}
-
 std::string AstBinaryOp::to_string()
 {
     return std::format(
@@ -69,7 +59,43 @@ llvm::Value* AstBinaryOp::codegen(llvm::Module* module, llvm::LLVMContext& conte
 
 bool AstBinaryOp::is_reducible()
 {
-    return is_ast_literal(this->left.get()) && is_ast_literal(this->right.get());
+    // A binary operation is reducible if either of both sides is reducible
+    // A literal doesn't extend `IReducible`, though is by nature "reducible" in followup steps.
+    return (is_ast_literal(this->left.get()) && is_ast_literal(this->right.get()))
+        || this->left->is_reducible()
+        || this->right->is_reducible();
+}
+
+std::unique_ptr<IAstNode> reduce_literal_binary_op(
+    const AstBinaryOp* self,
+    AstLiteral* left_lit,
+    AstLiteral* right_lit
+)
+{
+    switch (self->op)
+    {
+    case TokenType::PLUS:
+        if (left_lit->type() == LiteralType::INTEGER && right_lit->type() == LiteralType::INTEGER)
+        {
+            return std::make_unique<AstLiteral>(LiteralType::INTEGER, left_lit->value() + right_lit->value());
+        }
+
+        if (left_lit->type() == LiteralType::FLOAT && right_lit->type() == LiteralType::FLOAT)
+        {
+            return std::make_unique<AstLiteral>(LiteralType::FLOAT, left_lit->value() + right_lit->value());
+        }
+        break;
+    case TokenType::MINUS:
+        break;
+    case TokenType::STAR:
+        break;
+    case TokenType::SLASH:
+        break;
+    default:
+        return nullptr;
+    }
+
+    return nullptr;
 }
 
 std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
@@ -78,23 +104,17 @@ std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
     AstExpression* right_lit
 )
 {
-
-
-    if (left_lit->type() == LiteralType::INTEGER)
+    if (const auto lhs_ptr_i = dynamic_cast<AstIntegerLiteral*>(left_lit);
+        lhs_ptr_i != nullptr
+    )
     {
         // For integers, we do allow addition of other numeric types, though
         // this will change the resulting type. E.g., adding a float to an int
         // will result in a float (32/64 bit)
 
-        auto lval_ptr = dynamic_cast<AstIntegerLiteral*>(left_lit);
-        if (!lval_ptr) return std::nullopt;
-
         auto lval = lval_ptr->value();
 
-        if (right_lit->type() == LiteralType::FLOAT)
-        {
-
-        }
+        if (right_lit->type() == LiteralType::FLOAT) {}
     }
 
     return std::nullopt;
@@ -104,6 +124,21 @@ IAstNode* AstBinaryOp::reduce()
 {
     if (!this->is_reducible()) return this;
 
-    // TODO: Implement
+
+    if (const auto lhs_ptr_i = dynamic_cast<AstIntegerLiteral*>(this->left.get());
+       lhs_ptr_i != nullptr
+   )
+    {
+        // For integers, we do allow addition of other numeric types, though
+        // this will change the resulting type. E.g., adding a float to an int
+        // will result in a float (32/64 bit)
+
+        auto lval = lval_ptr->value();
+
+        if (right_lit->type() == LiteralType::FLOAT) {}
+    }
+
+    return std::nullopt;
+
     return this;
 }

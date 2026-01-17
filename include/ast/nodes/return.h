@@ -23,7 +23,8 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
 
-        [[nodiscard]] IAstNode* value() const { return _value.get(); }
+        [[nodiscard]]
+        IAstNode* value() const { return _value.get(); }
     };
 
     bool is_return_statement(const TokenSet& tokens);

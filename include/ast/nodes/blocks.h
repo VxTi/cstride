@@ -20,7 +20,8 @@ namespace stride::ast
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
-        [[nodiscard]] const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
     };
 
     std::unique_ptr<AstBlock> parse_block(const Scope& scope, TokenSet& set);

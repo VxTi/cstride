@@ -32,6 +32,7 @@ namespace stride::ast
             return Symbol{ std::move(initial) };
         }
 
-        [[nodiscard]] std::string to_string() const { return value; }
+        [[nodiscard]]
+        std::string to_string() const { return value; }
     } Symbol;
 }

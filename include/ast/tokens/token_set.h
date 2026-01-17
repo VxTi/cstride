@@ -27,48 +27,61 @@ namespace stride::ast
             _source(std::move(source)),
             _cursor(0),
             _size(tokens.size()),
-            _tokens(std::move(tokens))
-        {
-        }
+            _tokens(std::move(tokens)) {}
 
         static bool should_skip_token(TokenType type);
 
-        [[nodiscard]] TokenSet create_subset(size_t offset, size_t length) const;
+        [[nodiscard]]
+        TokenSet create_subset(size_t offset, size_t length) const;
 
-        [[nodiscard]] Token at(size_t index) const;
+        [[nodiscard]]
+        Token at(size_t index) const;
 
-        [[nodiscard]] Token peak(size_t offset) const;
+        [[nodiscard]]
+        Token peak(size_t offset) const;
 
-        [[nodiscard]] Token peak_next() const;
+        [[nodiscard]]
+        Token peak_next() const;
 
-        [[nodiscard]] TokenType peak_next_type() const;
+        [[nodiscard]]
+        TokenType peak_next_type() const;
 
-        [[nodiscard]] bool peak_next_eq(TokenType type) const;
+        [[nodiscard]]
+        bool peak_next_eq(TokenType type) const;
 
-        [[nodiscard]] bool peak_eq(TokenType type, size_t offset) const;
+        [[nodiscard]]
+        bool peak_eq(TokenType type, size_t offset) const;
 
         void skip(size_t amount);
 
         Token expect(TokenType type);
 
-        Token expect(TokenType type, const std::string &message);
+        Token expect(TokenType type, const std::string& message);
 
         Token next();
 
-        [[nodiscard]] size_t size() const;
+        [[nodiscard]]
+        size_t size() const;
 
-        [[nodiscard]] size_t position() const;
+        [[nodiscard]]
+        size_t position() const;
 
-        [[nodiscard]] size_t remaining() const;
+        [[nodiscard]]
+        size_t remaining() const;
 
-        [[nodiscard]] bool has_next() const;
+        [[nodiscard]]
+        bool has_next() const;
 
-        [[nodiscard]] std::shared_ptr<SourceFile> source() const;
+        [[nodiscard]]
+        std::shared_ptr<SourceFile> source() const;
 
-        [[noreturn]] void throw_error(const Token& token, ErrorType error_type, const std::string& message) const;
+        [[noreturn]]
+        void throw_error(const Token& token, ErrorType error_type, const std::string& message) const;
 
-        [[noreturn]] void throw_error(ErrorType error_type, const std::string& message) const;
+        [[noreturn]]
+        void throw_error(ErrorType error_type, const std::string& message) const;
 
-        [[noreturn]] void throw_error(const std::string& message) const;
+        [[noreturn]]
+        void throw_error(const std::string& message) const;
     };
 }

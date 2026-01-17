@@ -78,7 +78,7 @@ std::unique_ptr<AstFunctionDefinition> stride::ast::parse_fn_declaration(
     // The return type of the function, e.g., ": i8"
     tokens.expect(TokenType::RPAREN);
     tokens.expect(TokenType::COLON);
-    std::unique_ptr<types::AstType> return_type = types::try_parse_type(tokens);
+    std::unique_ptr<types::AstType> return_type = types::parse_primitive_type(tokens);
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -109,37 +109,57 @@ std::unique_ptr<AstFunctionDefinition> stride::ast::parse_fn_declaration(
 }
 
 
+std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
+    const AstFunctionDefinition* self,
+    llvm::Module* module,
+    llvm::LLVMContext& context
+)
+{
+    std::vector<llvm::Type*> param_types;
+    for (const auto& param : self->parameters())
+    {
+        auto llvm_type = types::internal_type_to_llvm_type(param->type.get(), module, context);
+        if (!llvm_type)
+        {
+            return std::nullopt;
+        }
+        param_types.push_back(llvm_type);
+    }
+    return param_types;
+}
+
 llvm::Value* AstFunctionDefinition::codegen(
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* irBuilder
 )
 {
+    if (this->body() == nullptr)
+    {
+        std::cerr << "Function " << this->name().value << " has no body!" << std::endl;
+        return nullptr;
+    }
     const auto fn_name = this->name().value;
 
     // Create parameter types vector
-    std::vector<llvm::Type*> param_types;
-    for (const auto& param : this->parameters())
+    const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(this, module, context);
+    if (!param_types)
     {
-        auto llvm_type = types::ast_type_to_llvm(param->type.get(), context);
-        if (!llvm_type)
-        {
-            std::cerr << "Failed to resolve type for parameter " << param->name.value << std::endl;
-            return nullptr;
-        }
-        param_types.push_back(llvm_type);
+        std::cerr << "Failed to resolve parameter types for function " << fn_name << std::endl;
+        return nullptr;
     }
 
     // Create function type
-    llvm::Type* return_type = types::ast_type_to_llvm(this->return_type().get(), context);
+    llvm::Type* return_type = types::internal_type_to_llvm_type(this->return_type().get(), module, context);
     if (!return_type)
     {
+        // This can currently happen when unidentified symbols are used as types
         std::cerr << "Failed to resolve return type for function " << fn_name << std::endl;
         return nullptr;
     }
     llvm::FunctionType* function_type = llvm::FunctionType::get(
         return_type,
-        param_types,
+        param_types.value(),
         this->is_variadic()
     );
 
@@ -169,12 +189,10 @@ llvm::Value* AstFunctionDefinition::codegen(
 
     // Generate body code
     llvm::Value* ret_val = nullptr;
-    if (this->body() != nullptr)
+
+    if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
-        {
-            ret_val = synthesisable->codegen(module, context, &builder);
-        }
+        ret_val = synthesisable->codegen(module, context, &builder);
     }
 
     // Add default return if needed (void functions or missing return)
@@ -193,6 +211,8 @@ llvm::Value* AstFunctionDefinition::codegen(
     if (llvm::verifyFunction(*function, &llvm::errs()))
     {
         std::cerr << "Function " << this->name().value << " verification failed!" << std::endl;
+        std::cerr << &llvm::errs() << std::endl;
+        return nullptr;
     }
 
     return function;

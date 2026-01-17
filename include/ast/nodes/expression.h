@@ -23,7 +23,8 @@ namespace stride::ast
 
         ~AstExpression() override = default;
 
-        [[nodiscard]] const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -73,7 +74,8 @@ namespace stride::ast
             arguments(std::move(arguments)),
             function_name(std::move(function_name)) {}
 
-        [[nodiscard]] const std::vector<std::unique_ptr<IAstNode>>& get_arguments() const { return this->arguments; }
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<IAstNode>>& get_arguments() const { return this->arguments; }
 
         std::string to_string() override;
 
@@ -88,7 +90,7 @@ namespace stride::ast
         public AstExpression
     {
         const Symbol variable_name;
-        std::unique_ptr<types::AstType> variable_type;
+        const std::unique_ptr<types::AstType> variable_type;
         const std::unique_ptr<IAstNode> initial_value;
 
     public:
@@ -102,17 +104,20 @@ namespace stride::ast
             variable_type(std::move(variable_type)),
             initial_value(std::move(initial_value)) {}
 
-        [[nodiscard]] const Symbol& get_variable_name() const
+        [[nodiscard]]
+        const Symbol& get_variable_name() const
         {
             return this->variable_name;
         }
 
-        [[nodiscard]] const types::AstType* get_variable_type() const
+        [[nodiscard]]
+        types::AstType& get_variable_type() const
         {
-            return this->variable_type.get();
+            return *this->variable_type;
         }
 
-        [[nodiscard]] const IAstNode* get_initial_value() const
+        [[nodiscard]]
+        const IAstNode* get_initial_value() const
         {
             return this->initial_value.get();
         }
@@ -126,19 +131,56 @@ namespace stride::ast
         IAstNode* reduce() override;
     };
 
+    enum class BinaryOpType
+    {
+        ADD,
+        SUBTRACT,
+        MULTIPLY,
+        DIVIDE
+    };
+
+    enum class LogicalOpType
+    {
+        AND,
+        OR
+    };
+
+    enum class ComparisonOpType
+    {
+        EQUAL,
+        NOT_EQUAL,
+        LESS_THAN,
+        LESS_THAN_OR_EQUAL,
+        GREATER_THAN,
+        GREATER_THAN_OR_EQUAL
+    };
+
     class AstBinaryOp :
         public AstExpression
     {
-    public:
-        std::unique_ptr<AstExpression> left;
-        TokenType op;
-        std::unique_ptr<AstExpression> right;
+        std::unique_ptr<AstExpression> _left;
+        BinaryOpType _op_type;
+        std::unique_ptr<AstExpression> _right;
 
+    public:
         AstBinaryOp(
             std::unique_ptr<AstExpression> left,
-            TokenType op,
+            BinaryOpType op,
             std::unique_ptr<AstExpression> right
-        );
+        ) : AstExpression({}),
+            _left(std::move(left)),
+            _op_type(op),
+            _right(std::move(right)) {}
+
+        [[nodiscard]]
+        BinaryOpType get_op_type() const { return this->_op_type; }
+
+        [[nodiscard]]
+        AstExpression& get_left() const { return *this->_left.get(); }
+
+        [[nodiscard]]
+        AstExpression& get_right() const { return *this->_right.get(); }
+
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -152,16 +194,28 @@ namespace stride::ast
     class AstLogicalOp :
         public AstExpression
     {
-    public:
-        std::unique_ptr<AstExpression> left;
-        TokenType op;
-        std::unique_ptr<AstExpression> right;
+        std::unique_ptr<AstExpression> _left;
+        LogicalOpType _op_type;
+        std::unique_ptr<AstExpression> _right;
 
+    public:
         AstLogicalOp(
             std::unique_ptr<AstExpression> left,
-            TokenType op,
+            const LogicalOpType op,
             std::unique_ptr<AstExpression> right
-        );
+        ) : AstExpression({}),
+            _left(std::move(left)),
+            _op_type(op),
+            _right(std::move(right)) {}
+
+        [[nodiscard]]
+        LogicalOpType get_op_type() const { return this->_op_type; }
+
+        [[nodiscard]]
+        AstExpression& get_left() const { return *this->_left.get(); }
+
+        [[nodiscard]]
+        AstExpression& get_right() const { return *this->_right.get(); }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
