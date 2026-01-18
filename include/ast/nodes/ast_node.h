@@ -34,8 +34,9 @@ namespace stride::ast
 
         virtual ~IAstNode() = default;
 
-        [[nodiscard]]
         virtual std::string to_string() = 0;
+
+        virtual void validate() {}
 
         const std::shared_ptr<SourceFile> source;
 

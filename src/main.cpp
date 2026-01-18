@@ -20,7 +20,7 @@ int main(const int argc, char* argv[])
     {
         const auto program = stride::Program({argv[1]});
 
-        program.execute();
+        program.execute(argc, argv);
     }
     catch (const std::exception& e)
     {

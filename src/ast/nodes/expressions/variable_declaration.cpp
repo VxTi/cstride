@@ -26,7 +26,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
     }
 
     return (
-        set.peak_eq(TokenType::KEYWORD_LET, 0) &&
+        (set.peak_eq(TokenType::KEYWORD_LET, 0) || set.peak_eq(TokenType::KEYWORD_MUT, 0)) &&
         set.peak_eq(TokenType::IDENTIFIER, 1) &&
         set.peak_eq(TokenType::COLON, 2) &&
         (
@@ -77,7 +77,7 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
     const llvm::IRBuilder<>::InsertPoint save_point = irBuilder->saveIP();
     irBuilder->SetInsertPoint(&entry_block, entry_block.begin());
 
-    llvm::AllocaInst* alloca = irBuilder->CreateAlloca(var_type, nullptr, this->get_variable_name().value);
+    llvm::AllocaInst* alloca = irBuilder->CreateAlloca(var_type, nullptr, this->get_internal_name());
 
     // Restore the insert point
     irBuilder->restoreIP(save_point);
@@ -85,6 +85,11 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
     // Store the initial value if it exists
     if (init_value != nullptr)
     {
+        if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
+        {
+            init_value = irBuilder->CreateIntCast(init_value, var_type, true);
+        }
+
         irBuilder->CreateStore(init_value, alloca);
     }
 
@@ -111,14 +116,14 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     auto reference_token = set.peak_next();
 
-    if (set.peak_next_eq(TokenType::KEYWORD_CONST))
+    if (set.peak_next_eq(TokenType::KEYWORD_MUT))
     {
-        // Variables are const by default.
+        flags |= SRFLAG_VAR_DECL_MUTABLE;
         set.next();
     }
     else
     {
-        flags |= SRFLAG_VAR_DECL_MUTABLE;
+        // Variables are const by default.
         set.expect(TokenType::KEYWORD_LET);
     }
 
@@ -141,7 +146,15 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         set.expect(TokenType::SEMICOLON);
     }
 
-    scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name, SymbolType::VARIABLE);
+    std::string internal_name = variable_name.value;
+    if (scope.type != ScopeType::GLOBAL)
+    {
+        static int var_decl_counter = 0;
+        internal_name = std::format("{}.{}", variable_name.value, var_decl_counter++);
+    }
+
+    scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name, SymbolType::VARIABLE,
+                                   internal_name);
 
     return std::make_unique<AstVariableDeclaration>(
         set.source(),
@@ -149,15 +162,17 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         variable_name,
         std::move(type),
         std::move(value),
-        flags
+        flags,
+        internal_name
     );
 }
 
 std::string AstVariableDeclaration::to_string()
 {
     return std::format(
-        "VariableDeclaration({}, {}, {})",
+        "VariableDeclaration({}({}), {}, {})",
         get_variable_name().value,
+        get_internal_name(),
         get_variable_type()->to_string(),
         this->get_initial_value() ? get_initial_value()->to_string() : "nil"
     );

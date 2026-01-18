@@ -84,16 +84,28 @@ namespace stride::ast
     class AstIdentifier
         : public AstExpression
     {
-    public:
-        const Symbol name;
+        const Symbol _name;
+        std::string _internal_name;
 
+    public:
         explicit AstIdentifier(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol name
+            Symbol name,
+            std::string internal_name = ""
         ) :
             AstExpression(source, source_offset, {}),
-            name(std::move(name)) {}
+            _name(std::move(name)),
+            _internal_name(std::move(internal_name)) {}
+
+        [[nodiscard]]
+        const Symbol& get_name() const { return this->_name; }
+
+        [[nodiscard]]
+        const std::string& get_internal_name() const
+        {
+            return this->_internal_name.empty() ? this->_name.value : this->_internal_name;
+        }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -147,6 +159,7 @@ namespace stride::ast
     {
         const int _flags;
         const Symbol _variable_name;
+        const std::string _internal_name;
         const u_ptr<types::AstType> _variable_type;
         const u_ptr<IAstNode> _initial_value;
 
@@ -157,12 +170,14 @@ namespace stride::ast
             Symbol variable_name,
             u_ptr<types::AstType> variable_type,
             u_ptr<IAstNode> initial_value,
-            const int flags
+            const int flags,
+            std::string internal_name
         ) :
             AstExpression(source, source_offset, {}),
 
             _flags(flags),
             _variable_name(std::move(variable_name)),
+            _internal_name(std::move(internal_name)),
             _variable_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)) {}
 
@@ -170,6 +185,12 @@ namespace stride::ast
         const Symbol& get_variable_name() const
         {
             return this->_variable_name;
+        }
+
+        [[nodiscard]]
+        const std::string& get_internal_name() const
+        {
+            return this->_internal_name.empty() ? this->_variable_name.value : this->_internal_name;
         }
 
         [[nodiscard]]
@@ -297,7 +318,7 @@ namespace stride::ast
     };
 
     class AstUnaryOp
-        : public AbstractBinaryOp
+        : public AstExpression
     {
         const UnaryOpType _op_type;
         u_ptr<AstExpression> _operand;
@@ -310,14 +331,20 @@ namespace stride::ast
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
-        ) : AbstractBinaryOp(source, source_offset, std::move(operand), nullptr),
-            _op_type(op), _is_lsh(is_lsh) {}
+        ) :
+            AstExpression(source, source_offset, {}),
+            _op_type(op),
+            _is_lsh(is_lsh),
+            _operand(std::move(operand)) {}
 
         [[nodiscard]]
         bool is_lsh() const { return this->_is_lsh; }
 
         [[nodiscard]]
         UnaryOpType get_op_type() const { return this->_op_type; }
+
+        [[nodiscard]]
+        AstExpression& get_operand() const { return *this->_operand.get(); }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };

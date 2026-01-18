@@ -1,6 +1,8 @@
 #pragma once
 #include "ast/nodes/ast_node.h"
 
+#define MAIN_FN_NAME ("main")
+
 namespace stride
 {
     class ProgramObject
@@ -9,9 +11,7 @@ namespace stride
 
     public:
         explicit ProgramObject(std::unique_ptr<ast::IAstNode> root) :
-            _root(std::move(root))
-        {
-        }
+            _root(std::move(root)) {}
 
         explicit ProgramObject(ast::IAstNode* root) : _root(root) {}
 
@@ -28,6 +28,9 @@ namespace stride
 
         std::vector<ProgramObject>& nodes() { return _nodes; }
 
-        void execute() const;
+        void execute(
+            int argc,
+            char* argv[]
+        ) const;
     };
 }

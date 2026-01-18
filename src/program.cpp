@@ -26,7 +26,7 @@ Program::Program(std::vector<std::string> files)
         {
             auto root_node = ast::parser::parse(file);
 
-            if (const auto reducible = dynamic_cast<ast::IReducible *>(root_node.get());
+            if (const auto reducible = dynamic_cast<ast::IReducible*>(root_node.get());
                 reducible && reducible->is_reducible())
             {
                 return ProgramObject(reducible->reduce());
@@ -39,14 +39,17 @@ Program::Program(std::vector<std::string> files)
 }
 
 
-void Program::execute() const
+void Program::execute(
+    int argc,
+    char* argv[]
+) const
 {
     if (_nodes.empty())
     {
         return;
     }
 
-   //  std::cout << _nodes[0].root()->to_string() << std::endl;
+   // std::cout << _nodes[0].root()->to_string() << std::endl;
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -83,7 +86,11 @@ void Program::execute() const
     auto* root = _nodes[0].root();
     if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(root))
     {
-        synthesisable->codegen(module.get(), context, &builder);
+        if (const auto entry = synthesisable->codegen(module.get(), context, &builder); !entry)
+        {
+            std::cerr << "Failed to codegen entry point" << std::endl;
+            return;
+        }
     }
     else
     {
@@ -93,8 +100,12 @@ void Program::execute() const
     if (llvm::verifyModule(*module, &llvm::errs()))
     {
         std::cerr << "Module verification failed!" << std::endl;
+        module->print(llvm::errs(), nullptr);
         return;
     }
+
+
+  //  module->print(llvm::errs(), nullptr);
 
     std::string error;
     llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))
@@ -108,13 +119,12 @@ void Program::execute() const
         return;
     }
 
-    llvm::Function* main = engine->FindFunctionNamed("main");
+    llvm::Function* main = engine->FindFunctionNamed(MAIN_FN_NAME);
     if (!main)
     {
-        std::cout << "Function 'main' not found" << std::endl;
+        std::cout << "Function '" << MAIN_FN_NAME << "' not found" << std::endl;
         return;
     }
 
     llvm::GenericValue result = engine->runFunction(main, {});
-    std::cout << "\nProgram exited with status " << result.IntVal.getSExtValue() << std::endl;
 }

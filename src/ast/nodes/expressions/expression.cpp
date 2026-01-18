@@ -17,11 +17,13 @@ llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& con
 {
     llvm::Value* val = nullptr;
 
+    const auto internal_name = this->get_internal_name();
+
     if (const auto block = builder->GetInsertBlock())
     {
         if (const auto function = block->getParent())
         {
-            val = function->getValueSymbolTable()->lookup(name.value);
+            val = function->getValueSymbolTable()->lookup(internal_name);
         }
     }
 
@@ -34,26 +36,26 @@ llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& con
     if (auto* alloca = llvm::dyn_cast_or_null<llvm::AllocaInst>(val))
     {
         // Load the value from the allocated variable
-        return builder->CreateLoad(alloca->getAllocatedType(), alloca, name.value.c_str());
+        return builder->CreateLoad(alloca->getAllocatedType(), alloca, internal_name);
     }
 
-    if (const auto global = module->getNamedGlobal(name.value))
+    if (const auto global = module->getNamedGlobal(internal_name))
     {
-        return builder->CreateLoad(global->getValueType(), global, name.value.c_str());
+        return builder->CreateLoad(global->getValueType(), global,internal_name);
     }
 
-    if (auto* function = module->getFunction(name.value))
+    if (auto* function = module->getFunction(internal_name))
     {
         return function;
     }
 
-    llvm::errs() << "Unknown variable or function name: " << name.value << "\n";
+    llvm::errs() << "Unknown variable or function name: " << internal_name << "\n";
     return nullptr;
 }
 
 std::string AstIdentifier::to_string()
 {
-    return name.value;
+    return std::format("{} ({})", this->get_name().value, this->get_internal_name());
 }
 
 llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
@@ -88,7 +90,8 @@ IAstNode* AstVariableDeclaration::reduce()
             this->get_variable_name(),
             std::move(cloned_type),
             u_ptr<IAstNode>(std::move(reduced_value)),
-            this->get_flags()
+            this->get_flags(),
+            this->get_internal_name()
         ).release();
     }
     return this;
@@ -189,10 +192,19 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
         }
 
         const auto reference_token = set.next();
+        Symbol symbol(reference_token.lexeme);
+        std::string internal_name;
+
+        if (const auto sym_def = scope.get_symbol_globally(symbol); sym_def.has_value())
+        {
+            internal_name = sym_def->get_internal_name();
+        }
+
         return std::make_unique<AstIdentifier>(
             set.source(),
             reference_token.offset,
-            Symbol(reference_token.lexeme)
+            std::move(symbol),
+            internal_name
         );
     }
 

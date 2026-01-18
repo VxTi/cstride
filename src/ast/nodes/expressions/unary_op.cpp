@@ -47,10 +47,11 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
 
 llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    if (requires_identifier_operand(_op_type))
+    if (requires_identifier_operand(this->get_op_type()))
     {
         // These operations require an LValue (address), effectively only working on variables (identifiers)
-        const auto* identifier = dynamic_cast<AstIdentifier*>(&get_left());
+        const auto* identifier = dynamic_cast<AstIdentifier*>(&this->get_operand());
+
         if (!identifier)
         {
             throw parsing_error(
@@ -62,32 +63,38 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
             );
         }
 
+        const auto internal_name = identifier->get_internal_name();
+
         llvm::Value* var_addr = nullptr;
         if (const auto block = builder->GetInsertBlock())
         {
             if (const auto function = block->getParent())
             {
-                var_addr = function->getValueSymbolTable()->lookup(identifier->name.value);
+                var_addr = function->getValueSymbolTable()->lookup(internal_name);
             }
         }
 
         if (!var_addr)
         {
+            // var_addr = module->getNamedGlobal(internal_name);
+
             // Try global
-            var_addr = module->getNamedGlobal(identifier->name.value);
+            module->getNamedGlobal(identifier->get_name().value);
         }
 
         if (!var_addr)
         {
             throw parsing_error(
-                make_ast_error(*this->source, this->source_offset,
-                               "Unknown variable: " + identifier->name.value
+                make_ast_error(
+                    *this->source,
+                    this->source_offset,
+                    "Unknown variable: " + internal_name
                 )
             );
         }
 
         // Address Of (&x) just returns the address
-        if (_op_type == UnaryOpType::ADDRESS_OF)
+        if (this->get_op_type() == UnaryOpType::ADDRESS_OF)
         {
             return var_addr;
         }
@@ -104,8 +111,10 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
         else
         {
             throw parsing_error(
-                make_ast_error(*this->source, this->source_offset,
-                               "Cannot determine type of variable: " + identifier->name.value
+                make_ast_error(
+                    *this->source,
+                    this->source_offset,
+                    "Cannot determine type of variable: " + internal_name
                 )
             );
         }
@@ -115,7 +124,7 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
         llvm::Value* one = llvm::ConstantInt::get(loaded_val->getType(), 1);
         llvm::Value* new_val;
 
-        if (_op_type == UnaryOpType::INCREMENT)
+        if (this->get_op_type() == UnaryOpType::INCREMENT)
         {
             new_val = builder->CreateAdd(loaded_val, one, "inctmp");
         }
@@ -130,10 +139,10 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
         return this->is_lsh() ? loaded_val : new_val;
     }
 
-    auto* val = get_left().codegen(module, context, builder);
+    auto* val = get_operand().codegen(module, context, builder);
     if (!val) return nullptr;
 
-    switch (_op_type)
+    switch (this->get_op_type())
     {
     case UnaryOpType::LOGICAL_NOT:
         {
@@ -148,8 +157,11 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
     case UnaryOpType::DEREFERENCE:
         // Requires type system to know what we are pointing to
         throw parsing_error(
-            make_ast_error(*this->source, this->source_offset,
-                           "Dereference not implemented yet due to opaque pointers"));
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                "Dereference not implemented yet due to opaque pointers")
+        );
     default:
         return nullptr;
     }

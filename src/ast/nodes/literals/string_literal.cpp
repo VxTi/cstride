@@ -39,7 +39,7 @@ llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::LLVMContext& 
 
         if (const auto* constData = llvm::dyn_cast<llvm::ConstantDataArray>(global.getInitializer()))
         {
-            if (constData->isString() && constData->getAsString() == this->value())
+            if (constData->isCString() && constData->getAsString().drop_back() == this->value())
             {
                 // Return a pointer to the existing global string
                 return irBuilder->CreateInBoundsGEP(

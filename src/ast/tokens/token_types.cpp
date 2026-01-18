@@ -27,7 +27,7 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     // Keywords
     TOKEN(TokenType::KEYWORD_LET, R"(\blet\b)"),
     TOKEN(TokenType::KEYWORD_USE, R"(\buse\b)"),
-    TOKEN(TokenType::KEYWORD_CONST, R"(\bconst\b)"),
+    TOKEN(TokenType::KEYWORD_MUT, R"(\bmut\b)"),
     TOKEN(TokenType::KEYWORD_FN, R"(\bfn\b)"),
     TOKEN(TokenType::KEYWORD_IF, R"(\bif\b)"),
     TOKEN(TokenType::KEYWORD_ELSE, R"(\belse\b)"),

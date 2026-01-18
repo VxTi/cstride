@@ -57,13 +57,14 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scop
     }
 
     auto header_body = header_body_opt.value();
+    const auto for_scope = Scope(scope, ScopeType::BLOCK);
 
 
-    auto body = parse_block(scope, set);
+    auto body = parse_block(for_scope, set);
 
-    auto initiator = try_collect_initiator(scope, header_body);
-    auto condition = try_collect_condition(scope, header_body);
-    auto increment = parse_standalone_expression(scope, header_body);
+    auto initiator = try_collect_initiator(for_scope, header_body);
+    auto condition = try_collect_condition(for_scope, header_body);
+    auto increment = parse_standalone_expression(for_scope, header_body);
 
     return std::make_unique<AstLoop>(
         set.source(),

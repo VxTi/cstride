@@ -45,9 +45,9 @@ std::string AstReturn::to_string()
 
 llvm::Value* AstReturn::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    if (_value)
+    if (this->value())
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(_value.get()))
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->value()))
         {
             llvm::Value* val = synthesisable->codegen(module, context, builder);
             // When using create ret, we also return the instruction as a value

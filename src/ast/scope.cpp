@@ -67,7 +67,8 @@ namespace stride::ast
         const SourceFile& source,
         const Token& token,
         const Symbol& symbol,
-        const SymbolType symbol_type
+        const SymbolType symbol_type,
+        const std::string& internal_name
     ) const
     {
         if (this->is_symbol_defined_scoped(symbol))
@@ -83,7 +84,7 @@ namespace stride::ast
             );
         }
         this->symbols->push_back(
-            SymbolDefinition(symbol, token, symbol_type)
+            SymbolDefinition(symbol, token, symbol_type, internal_name)
         );
     }
 
@@ -91,7 +92,8 @@ namespace stride::ast
         const SourceFile& source,
         const Token& reference_token,
         const Symbol& symbol,
-        const SymbolType symbol_type
+        const SymbolType symbol_type,
+        const std::string& internal_name
     ) const
     {
         if (this->is_symbol_defined_globally(symbol))
@@ -107,7 +109,7 @@ namespace stride::ast
             );
         }
         this->symbols->push_back(
-            SymbolDefinition(symbol, reference_token, symbol_type)
+            SymbolDefinition(symbol, reference_token, symbol_type, internal_name)
         );
     }
 }

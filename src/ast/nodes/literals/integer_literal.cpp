@@ -18,7 +18,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
 
     if (set.peak(offset).type == TokenType::INTEGER_LITERAL)
     {
-        set.skip(offset);
+        set.skip(offset + 1);
 
         return std::make_unique<AstIntegerLiteral>(
             set.source(),
