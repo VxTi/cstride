@@ -1,24 +1,29 @@
-import { useEffect } from 'react';
 import Editor, { useMonaco } from '@monaco-editor/react';
-import { language, conf, languageID } from './StrideLanguage';
+import { useEffect } from 'react';
+import {
+  conf,
+  language,
+  registerCompletionProvider,
+  strideLanguageId,
+} from './StrideLanguage';
 
 function App() {
   const monaco = useMonaco();
 
   useEffect(() => {
-    if (monaco) {
-      // Register custom language
-      monaco.languages.register({ id: languageID });
-      monaco.languages.setMonarchTokensProvider(languageID, language);
-      monaco.languages.setLanguageConfiguration(languageID, conf);
-    }
+    if (!monaco) return;
+
+    monaco.languages.register({ id: strideLanguageId });
+    monaco.languages.setMonarchTokensProvider(strideLanguageId, language);
+    monaco.languages.setLanguageConfiguration(strideLanguageId, conf);
+    registerCompletionProvider(monaco);
   }, [monaco]);
 
   return (
     <div style={{ height: '100vh', width: '100vw', margin: 0, padding: 0 }}>
       <Editor
         height="100%"
-        defaultLanguage={languageID}
+        defaultLanguage={strideLanguageId}
         defaultValue={`// Welcome to Stride Editor
 // Try writing some Stride code here
 
@@ -34,8 +39,8 @@ fn main() {
 }`}
         theme="vs-dark"
         options={{
-            minimap: { enabled: true },
-            fontSize: 14,
+          minimap: { enabled: true },
+          fontSize: 14,
         }}
       />
     </div>
@@ -43,4 +48,3 @@ fn main() {
 }
 
 export default App;
-

@@ -11,6 +11,7 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+
     "noEmit": true,
     "jsx": "react-jsx",
     "esModuleInterop": true,
@@ -21,7 +22,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": [
+    "./src",
+    "eslint.config.ts",
+    "prettier.config.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
 
