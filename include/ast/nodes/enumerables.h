@@ -14,11 +14,14 @@ namespace stride::ast
         std::unique_ptr<AstLiteral> _value;
 
     public:
-        explicit AstEnumerableMember(const Symbol& name, std::unique_ptr<AstLiteral> value)
-            : _name(name),
-              _value(std::move(value))
-        {
-        }
+        explicit AstEnumerableMember(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const Symbol& name, std::unique_ptr<AstLiteral> value
+        )
+            : IAstNode(source, source_offset),
+              _name(name),
+              _value(std::move(value)) {}
 
         [[nodiscard]]
         Symbol name() const { return this->_name; }
@@ -37,10 +40,15 @@ namespace stride::ast
         const Symbol _name;
 
     public:
-        explicit AstEnumerable(std::vector<std::unique_ptr<AstEnumerableMember>> members, Symbol name) :
-            _members(std::move(members)), _name(std::move(name))
-        {
-        }
+        explicit AstEnumerable(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            std::vector<std::unique_ptr<AstEnumerableMember>> members,
+            Symbol name
+        )
+            :
+            IAstNode(source, source_offset),
+            _members(std::move(members)), _name(std::move(name)) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstEnumerableMember>>& members() const
@@ -54,7 +62,7 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(const Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(const Scope& scope, TokenSet& set);
 
     bool is_enumerable_declaration(const TokenSet& tokens);
 }

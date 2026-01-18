@@ -25,8 +25,8 @@ std::unique_ptr<AstExpression> try_collect_initiator(const Scope& scope, TokenSe
     }
 
     return parse_expression_ext(
-        EXPRESSION_INLINE_VARIABLE_DECLARATION |
-        EXPRESSION_ALLOW_VARIABLE_DECLARATION,
+        SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION |
+        SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION,
         scope,
         initiator.value()
     );
@@ -48,7 +48,7 @@ std::unique_ptr<AstExpression> try_collect_condition(const Scope& scope, TokenSe
 
 std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scope, TokenSet& set)
 {
-    set.expect(TokenType::KEYWORD_FOR);
+    const auto reference_token = set.expect(TokenType::KEYWORD_FOR);
     const auto header_body_opt = collect_token_subset(set, TokenType::LPAREN, TokenType::RPAREN);
 
     if (!header_body_opt.has_value())
@@ -66,6 +66,8 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scop
     auto increment = parse_standalone_expression(scope, header_body);
 
     return std::make_unique<AstLoop>(
+        set.source(),
+        reference_token.offset,
         std::move(initiator),
         std::move(condition),
         std::move(increment),
@@ -75,7 +77,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scop
 
 std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const Scope& scope, TokenSet& set)
 {
-    set.expect(TokenType::KEYWORD_WHILE);
+    const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);
     const auto header_condition_opt = collect_token_subset(set, TokenType::LPAREN, TokenType::RPAREN);
 
     if (!header_condition_opt.has_value())
@@ -89,6 +91,8 @@ std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const Scope& sc
     auto body = parse_block(scope, set);
 
     return std::make_unique<AstLoop>(
+        set.source(),
+        reference_token.offset,
         nullptr,
         std::move(condition),
         nullptr,
@@ -120,7 +124,13 @@ llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, 
 
         if (condValue == nullptr)
         {
-            throw std::runtime_error("Failed to codegen loop condition");
+            throw parsing_error(
+                make_ast_error(
+                    *this->source,
+                    this->source_offset,
+                    "Failed to codegen loop condition"
+                )
+            );
         }
 
         if (const auto cond_type = condValue->getType(); cond_type != nullptr && cond_type->isIntegerTy(1))

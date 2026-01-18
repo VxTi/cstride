@@ -18,7 +18,7 @@ std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const
     const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
     auto member_sym = Symbol(member_name_tok.lexeme);
 
-    scope.try_define_scoped_symbol(*tokens.source().get(), member_name_tok, member_sym);
+    scope.try_define_scoped_symbol(*tokens.source().get(), member_name_tok, member_sym, SymbolType::ENUM_MEMBER);
 
     tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
 
@@ -32,6 +32,8 @@ std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const
     tokens.expect(TokenType::COMMA, "Expected a comma after enum member value");
 
     return std::make_unique<AstEnumerableMember>(
+        tokens.source(),
+        member_name_tok.offset,
         std::move(member_sym),
         std::move(value.value())
     );
@@ -62,19 +64,19 @@ std::string AstEnumerable::to_string()
 }
 
 
-std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(const Scope& scope, TokenSet& set)
 {
-    tokens.expect(TokenType::KEYWORD_ENUM);
-    const auto enumerable_name = tokens.expect(TokenType::IDENTIFIER);
+    const auto reference_token = set.expect(TokenType::KEYWORD_ENUM);
+    const auto enumerable_name = set.expect(TokenType::IDENTIFIER);
     const auto enumerable_sym = Symbol(enumerable_name.lexeme);
 
-    scope.try_define_global_symbol(*tokens.source(), enumerable_name, enumerable_sym);
+    scope.try_define_global_symbol(*set.source(), enumerable_name, enumerable_sym, SymbolType::ENUM);
 
-    const auto opt_enum_body_subset = collect_block(tokens);
+    const auto opt_enum_body_subset = collect_block(set);
 
     if (!opt_enum_body_subset.has_value())
     {
-        tokens.throw_error("Expected a block in enum declaration");
+        set.throw_error("Expected a block in enum declaration");
     }
 
     std::vector<std::unique_ptr<AstEnumerableMember>> members = {};
@@ -89,6 +91,8 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(const S
     }
 
     return std::make_unique<AstEnumerable>(
+        set.source(),
+        reference_token.offset,
         std::move(members),
         Symbol(enumerable_name.lexeme)
     );

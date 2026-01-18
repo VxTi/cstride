@@ -9,9 +9,9 @@
 
 namespace stride::ast
 {
-#define FN_DEFINITION_FLAG_EXTERN (0x1)
-#define FN_DEFINITION_FLAG_VARIADIC (0x2)
-#define FN_DEFINITION_FLAG_MUTABLE (0x3)
+#define SRFLAG_FN_DEF_EXTERN   (0x1)
+#define SRFLAG_FN_DEF_VARIADIC (0x2)
+#define SRFLAG_FN_DEF_MUTABLE  (0x3)
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *                                                             *
@@ -25,9 +25,12 @@ namespace stride::ast
         const std::unique_ptr<types::AstType> type;
 
         explicit AstFunctionParameter(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             Symbol param_name,
             std::unique_ptr<types::AstType> param_type
         ) :
+            IAstNode(source, source_offset),
             name(std::move(param_name)),
             type(std::move(param_type)) {}
 
@@ -51,33 +54,18 @@ namespace stride::ast
 
     public:
         AstFunctionDeclaration(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             Symbol name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
-            std::unique_ptr<types::AstType> return_type,
             std::unique_ptr<IAstNode> body,
-            const bool is_variadic = false,
-            const bool is_extern = false,
-            const bool is_mutable = false
-        )
-            : _body(std::move(body)),
-              _name(std::move(name)),
-              _parameters(std::move(parameters)),
-              _return_type(std::move(return_type)),
-              _flags(
-                  (is_extern ? FN_DEFINITION_FLAG_EXTERN : 0)
-                  | (is_variadic ? FN_DEFINITION_FLAG_VARIADIC : 0)
-                  | (is_mutable ? FN_DEFINITION_FLAG_MUTABLE : 0)
-              ) {}
-
-        AstFunctionDeclaration(
-            Symbol name,
-            std::unique_ptr<IAstNode>
-            body,
             std::unique_ptr<types::AstType> return_type,
             const int flags
         ) :
+            IAstNode(source, source_offset),
             _body(std::move(body)),
             _name(std::move(name)),
+            _parameters(std::move(parameters)),
             _return_type(std::move(return_type)),
             _flags(flags) {}
 
@@ -101,13 +89,13 @@ namespace stride::ast
         const std::unique_ptr<types::AstType>& return_type() const { return this->_return_type; }
 
         [[nodiscard]]
-        bool is_extern() const { return this->_flags & FN_DEFINITION_FLAG_EXTERN; }
+        bool is_extern() const { return this->_flags & SRFLAG_FN_DEF_EXTERN; }
 
         [[nodiscard]]
-        bool is_variadic() const { return this->_flags & FN_DEFINITION_FLAG_VARIADIC; }
+        bool is_variadic() const { return this->_flags & SRFLAG_FN_DEF_VARIADIC; }
 
         [[nodiscard]]
-        bool is_mutable() const { return this->_flags & FN_DEFINITION_FLAG_MUTABLE; }
+        bool is_mutable() const { return this->_flags & SRFLAG_FN_DEF_MUTABLE; }
     };
 
     bool is_fn_declaration(const TokenSet& tokens);

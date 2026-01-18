@@ -5,15 +5,19 @@ using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optional(
     const Scope& scope,
-    TokenSet& tokens
+    TokenSet& set
 )
 {
-    if (tokens.peak_next_eq(TokenType::CHAR_LITERAL))
+    if (const auto reference_token = set.peak_next(); reference_token.type == TokenType::CHAR_LITERAL)
     {
-        const auto next = tokens.next();
+        const auto next = set.next();
         const char value = next.lexeme[0];
 
-        return std::make_unique<AstCharLiteral>(value);
+        return std::make_unique<AstCharLiteral>(
+            set.source(),
+            reference_token.offset,
+            value
+        );
     }
     return std::nullopt;
 }

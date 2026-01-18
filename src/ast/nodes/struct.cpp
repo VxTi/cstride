@@ -7,20 +7,24 @@ using namespace stride::ast;
 
 std::unique_ptr<AstStructMember> try_parse_struct_member(
     const Scope& scope,
-    TokenSet& tokens
+    TokenSet& set
 )
 {
-    const auto struct_member_name = tokens.expect(TokenType::IDENTIFIER, "Expected struct member name");
+    const auto struct_member_name = set.expect(TokenType::IDENTIFIER, "Expected struct member name");
     const auto struct_member_sym = Symbol(struct_member_name.lexeme);
 
-    scope.try_define_scoped_symbol(*tokens.source(), struct_member_name, struct_member_sym);
+    scope.try_define_scoped_symbol(*set.source(), struct_member_name, struct_member_sym, SymbolType::STRUCT);
 
-    tokens.expect(TokenType::COLON);
+    set.expect(TokenType::COLON);
 
-    auto struct_member_type = types::parse_primitive_type(tokens);
-    tokens.expect(TokenType::SEMICOLON);
+    auto struct_member_type = types::parse_primitive_type(set);
+    set.expect(TokenType::SEMICOLON);
 
-    return std::make_unique<AstStructMember>(struct_member_sym, std::move(struct_member_type));
+    return std::make_unique<AstStructMember>(
+        set.source(),
+        struct_member_name.offset,
+        struct_member_sym, std::move(struct_member_type)
+    );
 }
 
 bool stride::ast::is_struct_declaration(const TokenSet& tokens)
@@ -30,11 +34,11 @@ bool stride::ast::is_struct_declaration(const TokenSet& tokens)
 
 std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& scope, TokenSet& tokens)
 {
-    tokens.expect(TokenType::KEYWORD_STRUCT);
+    const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
     const auto struct_name = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");
     const auto struct_sym = Symbol(struct_name.lexeme);
 
-    scope.try_define_global_symbol(*tokens.source(), struct_name, struct_sym);
+    scope.try_define_global_symbol(*tokens.source(), struct_name, struct_sym, SymbolType::STRUCT);
 
     // Might be a reference to another type
     // This will parse a definition like:
@@ -47,7 +51,12 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& sc
 
         tokens.expect(TokenType::SEMICOLON);
 
-        return std::make_unique<AstStruct>(struct_sym, std::move(reference_sym));
+        return std::make_unique<AstStruct>(
+            tokens.source(),
+            reference_token.offset,
+            struct_sym,
+            std::move(reference_sym)
+        );
     }
 
     auto struct_body_set = collect_block(tokens);
@@ -63,7 +72,11 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& sc
         }
     }
 
-    return std::make_unique<AstStruct>(struct_sym, std::move(members));
+    return std::make_unique<AstStruct>(
+        tokens.source(), reference_token.offset,
+        struct_sym,
+        std::move(members)
+    );
 }
 
 

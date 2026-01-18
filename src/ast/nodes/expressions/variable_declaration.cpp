@@ -5,24 +5,40 @@
 
 using namespace stride::ast;
 
+/**
+ * Checks whether the provided sequence conforms to
+ * "let name: type = value",
+ * or "extern let name: type;"
+ */
 bool stride::ast::is_variable_declaration(const TokenSet& set)
 {
-    // let k: i8 = 123
-    int offset = set.peak_next_eq(TokenType::KEYWORD_EXTERN) ? 1 : 0;
+    // External variables cannot have initializers
+    if (set.peak_next_eq(TokenType::KEYWORD_EXTERN))
+    {
+        return set.peak_eq(TokenType::KEYWORD_LET, 1) &&
+            set.peak_eq(TokenType::IDENTIFIER, 2) &&
+            set.peak_eq(TokenType::COLON, 3) &&
+            (
+                // Type can be either a primitive or a user-defined identifier
+                set.peak_eq(TokenType::IDENTIFIER, 4) || is_primitive(set.peak(4).type)
+            )
+            && set.peak_eq(TokenType::SEMICOLON, 5);
+    }
+
     return (
-        set.peak_eq(TokenType::KEYWORD_LET, 0 + offset) &&
-        set.peak_eq(TokenType::IDENTIFIER, 1 + offset) &&
-        set.peak_eq(TokenType::COLON, 2 + offset) &&
+        set.peak_eq(TokenType::KEYWORD_LET, 0) &&
+        set.peak_eq(TokenType::IDENTIFIER, 1) &&
+        set.peak_eq(TokenType::COLON, 2) &&
         (
             // Type can be either a primitive or a user-defined identifier
-            set.peak_eq(TokenType::IDENTIFIER, 3 + offset) || is_primitive(set.peak(3 + offset).type)
+            set.peak_eq(TokenType::IDENTIFIER, 3) || is_primitive(set.peak(3).type)
         )
-        && set.peak_eq(TokenType::EQUALS, 4 + offset)
+        && set.peak_eq(TokenType::EQUALS, 4)
     );
 }
 
 llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMContext& context,
-                                             llvm::IRBuilder<>* irbuilder)
+                                             llvm::IRBuilder<>* irBuilder)
 {
     // Generate code for the initial value
     llvm::Value* init_value = nullptr;
@@ -30,7 +46,7 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
         {
-            init_value = synthesisable->codegen(module, context, irbuilder);
+            init_value = synthesisable->codegen(module, context, irBuilder);
         }
     }
 
@@ -44,7 +60,7 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
     }
 
     // Check if we have a valid insert block
-    llvm::BasicBlock* current_block = irbuilder->GetInsertBlock();
+    llvm::BasicBlock* current_block = irBuilder->GetInsertBlock();
     if (current_block == nullptr)
     {
         return nullptr;
@@ -58,30 +74,30 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
     }
 
     llvm::BasicBlock& entry_block = current_function->getEntryBlock();
-    const llvm::IRBuilder<>::InsertPoint save_point = irbuilder->saveIP();
-    irbuilder->SetInsertPoint(&entry_block, entry_block.begin());
+    const llvm::IRBuilder<>::InsertPoint save_point = irBuilder->saveIP();
+    irBuilder->SetInsertPoint(&entry_block, entry_block.begin());
 
-    llvm::AllocaInst* alloca = irbuilder->CreateAlloca(var_type, nullptr, this->get_variable_name().value);
+    llvm::AllocaInst* alloca = irBuilder->CreateAlloca(var_type, nullptr, this->get_variable_name().value);
 
     // Restore the insert point
-    irbuilder->restoreIP(save_point);
+    irBuilder->restoreIP(save_point);
 
     // Store the initial value if it exists
     if (init_value != nullptr)
     {
-        irbuilder->CreateStore(init_value, alloca);
+        irBuilder->CreateStore(init_value, alloca);
     }
 
     return alloca;
 }
 
-std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
+std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
     const Scope& scope,
     TokenSet& set
 )
 {
-    if ((expression_type_flags & EXPRESSION_ALLOW_VARIABLE_DECLARATION) == 0)
+    if ((expression_type_flags & SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION) == 0)
     {
         set.throw_error("Variable declarations are not allowed in this context");
     }
@@ -90,8 +106,10 @@ std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
 
     if (scope.type == ScopeType::GLOBAL)
     {
-        flags |= VARIABLE_DECLARATION_FLAG_GLOBAL;
+        flags |= SRFLAG_VAR_DECL_GLOBAL;
     }
+
+    auto reference_token = set.peak_next();
 
     if (set.peak_next_eq(TokenType::KEYWORD_CONST))
     {
@@ -100,7 +118,7 @@ std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
     }
     else
     {
-        flags |= VARIABLE_DECLARATION_FLAG_MUTABLE;
+        flags |= SRFLAG_VAR_DECL_MUTABLE;
         set.expect(TokenType::KEYWORD_LET);
     }
 
@@ -112,20 +130,22 @@ std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
     set.expect(TokenType::EQUALS);
 
     auto value = parse_expression_ext(
-        EXPRESSION_VARIABLE_ASSIGNATION,
+        SRFLAG_EXPR_VARIABLE_ASSIGNATION,
         scope, set
     );
 
     // If it's not an inline variable declaration (e.g., in a for loop),
     // we expect a semicolon at the end.
-    if ((expression_type_flags & EXPRESSION_INLINE_VARIABLE_DECLARATION) == 0)
+    if ((expression_type_flags & SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION) == 0)
     {
         set.expect(TokenType::SEMICOLON);
     }
 
-    scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name);
+    scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name, SymbolType::VARIABLE);
 
     return std::make_unique<AstVariableDeclaration>(
+        set.source(),
+        reference_token.offset,
         variable_name,
         std::move(type),
         std::move(value),

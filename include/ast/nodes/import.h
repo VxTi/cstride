@@ -16,21 +16,32 @@ namespace stride::ast
         const std::vector<Symbol> dependencies;
 
     public:
-        explicit AstImport(Symbol module, const Symbol& dependency) :
+        explicit AstImport(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            Symbol module,
+            const std::vector<Symbol>& dependencies
+        ) : IAstNode(source, source_offset),
             module(std::move(module)),
-            dependencies({dependency})
-        {
-        }
+            dependencies(dependencies) {}
 
-        explicit AstImport(Symbol module, const std::vector<Symbol>& dependencies) : module(std::move(module)),
-            dependencies(dependencies)
-        {
-        }
+        explicit AstImport(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            Symbol module,
+            const Symbol& dependency
+        ) :
+            AstImport(
+                source,
+                source_offset,
+                std::move(module),
+                std::vector{dependency}
+            ) {}
 
         std::string to_string() override;
     };
 
     bool is_import_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstImport> parse_import_statement(const Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstImport> parse_import_statement(const Scope& scope, TokenSet& set);
 }

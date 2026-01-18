@@ -3,9 +3,11 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/IRBuilder.h>
 
+#include "files.h"
+
 namespace stride::ast
 {
-    template<typename... T>
+    template <typename... T>
     using u_ptr = std::unique_ptr<T...>;
 
     class ISynthesisable
@@ -23,10 +25,21 @@ namespace stride::ast
     class IAstNode
     {
     public:
+        explicit IAstNode(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset
+        )
+            : source(source),
+              source_offset(source_offset) {}
+
         virtual ~IAstNode() = default;
 
         [[nodiscard]]
         virtual std::string to_string() = 0;
+
+        const std::shared_ptr<SourceFile> source;
+
+        const int source_offset;
     };
 
     class IReducible

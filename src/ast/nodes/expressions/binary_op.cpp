@@ -69,9 +69,9 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 {
     while (true)
     {
-        const auto next_token = set.peak_next_type();
+        const auto reference_token = set.peak_next();
         // First, we'll check if the next token is a binary operator
-        if (auto binary_op = get_binary_op_type(next_token); binary_op.has_value())
+        if (auto binary_op = get_binary_op_type(reference_token.type); binary_op.has_value())
         {
             const auto op = binary_op.value();
 
@@ -100,7 +100,8 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
                 if (const int next_precedence = binary_operator_precedence(next_op.value());
                     precedence < next_precedence)
                 {
-                    if (auto rhs_opt = parse_arithmetic_binary_op(scope, set, std::move(rhs), precedence + 1); rhs_opt.has_value())
+                    if (auto rhs_opt = parse_arithmetic_binary_op(scope, set, std::move(rhs), precedence + 1); rhs_opt.
+                        has_value())
                     {
                         rhs = std::move(rhs_opt.value());
                     }
@@ -112,7 +113,13 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
                 }
             }
 
-            lhs = std::make_unique<AstBinaryArithmeticOp>(std::move(lhs), binary_op.value(), std::move(rhs));
+            lhs = std::make_unique<AstBinaryArithmeticOp>(
+                set.source(),
+                reference_token.offset,
+                std::move(lhs),
+                binary_op.value(),
+                std::move(rhs)
+            );
         }
         else
         {
@@ -121,7 +128,8 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
     }
 }
 
-llvm::Value* AstBinaryArithmeticOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
+llvm::Value* AstBinaryArithmeticOp::codegen(llvm::Module* module, llvm::LLVMContext& context,
+                                            llvm::IRBuilder<>* irbuilder)
 {
     llvm::Value* l = this->get_left().codegen(module, context, irbuilder);
     llvm::Value* r = this->get_right().codegen(module, context, irbuilder);
@@ -145,7 +153,7 @@ llvm::Value* AstBinaryArithmeticOp::codegen(llvm::Module* module, llvm::LLVMCont
         builder.SetInsertPoint(instruction->getParent());
     }
 
-     // Handle integer promotion for mismatched types
+    // Handle integer promotion for mismatched types
     if (l->getType()->isIntegerTy() && r->getType()->isIntegerTy())
     {
         const auto l_width = l->getType()->getIntegerBitWidth();

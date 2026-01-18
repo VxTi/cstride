@@ -12,11 +12,15 @@ namespace stride::ast
         std::unique_ptr<types::AstType> _type;
 
     public:
-        AstStructMember(const Symbol& name, std::unique_ptr<types::AstType> type) :
+        AstStructMember(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const Symbol& name,
+            std::unique_ptr<types::AstType> type
+        ) :
+            IAstNode(source, source_offset),
             _name(name),
-            _type(std::move(type))
-        {
-        }
+            _type(std::move(type)) {}
 
         std::string to_string() override;
 
@@ -37,22 +41,28 @@ namespace stride::ast
 
     public:
         AstStruct(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             const Symbol& name,
             std::unique_ptr<types::AstType> reference
-        ) : _name(name), _reference(std::move(reference))
-        {
-        }
+        )
+            :
+            IAstNode(source, source_offset),
+            _name(name),
+            _reference(std::move(reference)) {}
 
         AstStruct(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             const Symbol& name,
             std::vector<std::unique_ptr<AstStructMember>> members,
             std::optional<std::unique_ptr<AstStructMember>> default_case = std::nullopt
-        ) : _name(name),
+        ) :
+            IAstNode(source, source_offset),
+            _name(name),
             _cases(std::move(members)),
             _default_case(std::move(default_case)),
-            _reference(std::nullopt)
-        {
-        }
+            _reference(std::nullopt) {}
 
         bool is_reference() const { return _reference.has_value(); }
 

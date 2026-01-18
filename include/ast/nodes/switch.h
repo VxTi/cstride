@@ -6,10 +6,7 @@
 
 namespace stride::ast
 {
-    class AstSwitchBranch : public IAstNode
-    {
-
-    };
+    class AstSwitchBranch : public IAstNode {};
 
     class AstSwitch :
         public IAstNode,
@@ -20,10 +17,12 @@ namespace stride::ast
 
     public:
         explicit AstSwitch(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             const Symbol& name
-        ) : _name(name)
-        {
-        }
+        )
+            : IAstNode(source, source_offset),
+              _name(name) {}
 
         std::string to_string() override;
 

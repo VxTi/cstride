@@ -17,13 +17,14 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     TokenSet& tokens
 )
 {
+    const auto reference_token = tokens.expect(TokenType::KEYWORD_MODULE);
+
     if (
-        const auto mod_token = tokens.expect(TokenType::KEYWORD_MODULE);
-        mod_token.offset != 0
+        reference_token.offset != 0
     )
     {
         tokens.throw_error(
-            mod_token,
+            reference_token,
             ErrorType::SYNTAX_ERROR,
             "Module declaration must be at the beginning of the file"
         );
@@ -48,5 +49,9 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
 
     const auto module_name = Symbol::from_segments(segments);
 
-    return std::make_unique<AstModule>(module_name);
+    return std::make_unique<AstModule>(
+        tokens.source(),
+        reference_token.offset,
+        module_name
+    );
 }

@@ -18,11 +18,14 @@ namespace stride::ast
 
     public:
         AstLoop(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             std::unique_ptr<AstExpression> initiator,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstExpression> increment,
             std::unique_ptr<AstBlock> body
         ) :
+            IAstNode(source, source_offset),
             _body(std::move(body)),
             _initiator(std::move(initiator)),
             _condition(std::move(condition)),

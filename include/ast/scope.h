@@ -17,6 +17,16 @@ namespace stride::ast
         BLOCK
     };
 
+    enum class SymbolType
+    {
+        VARIABLE,
+        FUNCTION,
+        ENUM,
+        ENUM_MEMBER,
+        STRUCT,
+        STRUCT_MEMBER
+    };
+
     static std::string scope_type_to_str(const ScopeType& type)
     {
         switch (type)
@@ -31,15 +41,22 @@ namespace stride::ast
 
     class SymbolDefinition
     {
-    public:
-        Symbol symbol;
-        const Token& reference_token;
+        SymbolType _symbol_type;
+        Symbol _symbol;
+        const Token& _reference_token;
 
+    public:
         explicit SymbolDefinition(
             const Symbol& symbol,
-            const Token& reference_token
-        ) : symbol(symbol),
-            reference_token(reference_token) {}
+            const Token& reference_token,
+            const SymbolType symbol_type
+        ) : _symbol_type(symbol_type),
+            _symbol(symbol),
+            _reference_token(reference_token) {}
+
+        SymbolType get_symbol_type() const { return this->_symbol_type; }
+        const Symbol& get_symbol() const { return this->_symbol; }
+        const Token& get_reference_token() const { return this->_reference_token; }
     };
 
 
@@ -69,33 +86,34 @@ namespace stride::ast
                 scope
             ) {}
 
-        std::optional<SymbolDefinition> try_get_symbol_globally(const Symbol& symbol) const;
+        std::optional<SymbolDefinition> get_symbol_globally(const Symbol& symbol) const;
 
         /**
          * Searches for a symbol only in the current scope, not in parent scopes.
          * @param symbol Symbol to search for
          * @return SymbolDefinition if found in the current scope, std::nullopt otherwise
-         * @example auto def = scope.try_get_symbol(Symbol("local_var"));
          */
-        std::optional<SymbolDefinition> try_get_symbol(const Symbol& symbol) const;
+        std::optional<SymbolDefinition> get_symbol(const Symbol& symbol) const;
 
         /**
          * Defines a symbol in this scope after checking it doesn't exist globally.
          * @param source Source file for error reporting
-         * @param token Token representing the symbol for error reporting
+         * @param reference_token Token representing the symbol for error reporting
          * @param symbol Symbol to define
+         * @param symbol_type Type of the symbol being defined
          * @throws parsing_error if the symbol already exists in this scope or any parent scope
          */
-        void try_define_global_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const;
+        void try_define_global_symbol(const SourceFile& source, const Token& reference_token, const Symbol& symbol, SymbolType symbol_type) const;
 
         /**
          * Defines a symbol in this scope after checking it doesn't exist in the current scope only.
          * @param source Source file for error reporting
          * @param token Token representing the symbol for error reporting
          * @param symbol Symbol to define
+         * @param symbol_type Type of the symbol being defined
          * @throws parsing_error if the symbol already exists in this scope (ignores parent scopes)
          */
-        void try_define_scoped_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const;
+        void try_define_scoped_symbol(const SourceFile& source, const Token& token, const Symbol& symbol, SymbolType symbol_type) const;
 
         /**
          * Checks if a symbol exists in this scope or any parent scope.

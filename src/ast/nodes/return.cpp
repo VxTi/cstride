@@ -10,21 +10,29 @@ bool stride::ast::is_return_statement(const TokenSet& tokens)
     return tokens.peak_next_eq(TokenType::KEYWORD_RETURN);
 }
 
-std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const Scope& scope, TokenSet& set)
 {
-    tokens.expect(TokenType::KEYWORD_RETURN);
+    const auto reference_token = set.expect(TokenType::KEYWORD_RETURN);
 
     // If parsing a void return: `return;`
-    if (tokens.peak_next_eq(TokenType::SEMICOLON))
+    if (set.peak_next_eq(TokenType::SEMICOLON))
     {
-        tokens.expect(TokenType::SEMICOLON);
-        return std::make_unique<AstReturn>(nullptr);
+        set.expect(TokenType::SEMICOLON);
+        return std::make_unique<AstReturn>(
+            set.source(),
+            reference_token.offset,
+            nullptr
+        );
     }
 
-    auto value = parse_standalone_expression(scope, tokens);
-    tokens.expect(TokenType::SEMICOLON);
+    auto value = parse_standalone_expression(scope, set);
+    set.expect(TokenType::SEMICOLON);
 
-    return std::make_unique<AstReturn>(std::move(value));
+    return std::make_unique<AstReturn>(
+        set.source(),
+        reference_token.offset,
+        std::move(value)
+    );
 }
 
 std::string AstReturn::to_string()

@@ -53,7 +53,13 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
         const auto* identifier = dynamic_cast<AstIdentifier*>(&get_left());
         if (!identifier)
         {
-            throw std::runtime_error("Operand must be an identifier for this operation");
+            throw parsing_error(
+                make_ast_error(
+                    *this->source,
+                    this->source_offset,
+                    "Operand must be an identifier for this operation"
+                )
+            );
         }
 
         llvm::Value* var_addr = nullptr;
@@ -67,13 +73,17 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
 
         if (!var_addr)
         {
-             // Try global
-             var_addr = module->getNamedGlobal(identifier->name.value);
+            // Try global
+            var_addr = module->getNamedGlobal(identifier->name.value);
         }
 
         if (!var_addr)
         {
-            throw std::runtime_error("Unknown variable: " + identifier->name.value);
+            throw parsing_error(
+                make_ast_error(*this->source, this->source_offset,
+                               "Unknown variable: " + identifier->name.value
+                )
+            );
         }
 
         // Address Of (&x) just returns the address
@@ -83,12 +93,21 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
         }
 
         llvm::Type* loaded_type = nullptr;
-        if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(var_addr)) {
+        if (const auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(var_addr))
+        {
             loaded_type = alloca->getAllocatedType();
-        } else if (auto* global = llvm::dyn_cast<llvm::GlobalVariable>(var_addr)) {
+        }
+        else if (const auto* global = llvm::dyn_cast<llvm::GlobalVariable>(var_addr))
+        {
             loaded_type = global->getValueType();
-        } else {
-             throw std::runtime_error("Cannot determine type of variable: " + identifier->name.value);
+        }
+        else
+        {
+            throw parsing_error(
+                make_ast_error(*this->source, this->source_offset,
+                               "Cannot determine type of variable: " + identifier->name.value
+                )
+            );
         }
 
         // Increment / Decrement
@@ -128,7 +147,9 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
         return builder->CreateNot(val, "not");
     case UnaryOpType::DEREFERENCE:
         // Requires type system to know what we are pointing to
-        throw std::runtime_error("Dereference not implemented yet due to opaque pointers");
+        throw parsing_error(
+            make_ast_error(*this->source, this->source_offset,
+                           "Dereference not implemented yet due to opaque pointers"));
     default:
         return nullptr;
     }
@@ -146,18 +167,23 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         // Recursive call to handle chained unaries like !!x or - -x etc.
         // We call parse_standalone_expression_part, which will call parse_binary_unary_op again.
         auto distinct_expr = parse_standalone_expression_part(scope, set);
-        if (!distinct_expr) {
+        if (!distinct_expr)
+        {
             set.throw_error("Expected expression after unary operator");
         }
 
         // Validation for identifiers
-        if (requires_identifier_operand(op_type.value())) {
-             if (!dynamic_cast<AstIdentifier*>(distinct_expr.get())) {
-                 set.throw_error("Unary operator requires identifier operand");
-             }
+        if (requires_identifier_operand(op_type.value()))
+        {
+            if (!dynamic_cast<AstIdentifier*>(distinct_expr.get()))
+            {
+                set.throw_error("Unary operator requires identifier operand");
+            }
         }
 
         return std::make_unique<AstUnaryOp>(
+            set.source(),
+            next.offset,
             op_type.value(),
             std::move(distinct_expr),
             false // Prefix
@@ -172,16 +198,24 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         // Check if the token AFTER identifier is ++ or --
         if (set.peak(1).type == TokenType::DOUBLE_PLUS || set.peak(1).type == TokenType::DOUBLE_MINUS)
         {
-             auto id_token = set.next(); // Eat identifier
-             auto op_token = set.next(); // Eat op
+            const auto id_token = set.next(); // Eat identifier
+            const auto op_token = set.next(); // Eat op
 
-             UnaryOpType type = (op_token.type == TokenType::DOUBLE_PLUS) ? UnaryOpType::INCREMENT : UnaryOpType::DECREMENT;
+            UnaryOpType type = (op_token.type == TokenType::DOUBLE_PLUS)
+                                   ? UnaryOpType::INCREMENT
+                                   : UnaryOpType::DECREMENT;
 
-             return std::make_unique<AstUnaryOp>(
-                 type,
-                 std::make_unique<AstIdentifier>(Symbol(id_token.lexeme)),
-                 true // Postfix
-             );
+            return std::make_unique<AstUnaryOp>(
+                set.source(),
+                id_token.offset,
+                type,
+                std::make_unique<AstIdentifier>(
+                    set.source(),
+                    next.offset,
+                    Symbol(id_token.lexeme)
+                ),
+                true // Postfix
+            );
         }
     }
 

@@ -5,15 +5,26 @@ using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_optional(
     const Scope& scope,
-    TokenSet& tokens
+    TokenSet& set
 )
 {
-    if (tokens.peak_next_eq(TokenType::INTEGER_LITERAL))
+    const auto reference_token = set.peak_next();
+    int offset = 0;
+
+    if (reference_token.type == TokenType::PLUS || reference_token.type == TokenType::MINUS)
     {
-        const auto next = tokens.next();
+        offset++;
+    }
+
+    if (set.peak(offset).type == TokenType::INTEGER_LITERAL)
+    {
+        set.skip(offset);
 
         return std::make_unique<AstIntegerLiteral>(
-            std::move(std::stoi(next.lexeme))
+            set.source(),
+            reference_token.offset,
+            std::move(std::stoi(reference_token.lexeme)),
+            SRFLAG_INT_UNSIGNED
         );
     }
     return std::nullopt;
@@ -31,7 +42,7 @@ llvm::Value* AstIntegerLiteral::codegen(llvm::Module* module, llvm::LLVMContext&
         llvm::APInt(
             this->bit_count(),
             this->value(),
-            true
+            this->is_signed()
         )
     );
 }

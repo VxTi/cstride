@@ -13,8 +13,12 @@ namespace stride::ast
         std::vector<std::unique_ptr<IAstNode>> _children;
 
     public:
-        explicit AstBlock(std::vector<std::unique_ptr<IAstNode>> children)
-            : _children(std::move(children)) {};
+        explicit AstBlock(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            std::vector<std::unique_ptr<IAstNode>> children
+        )
+            : IAstNode(source, source_offset), _children(std::move(children)) {};
 
         std::string to_string() override;
 

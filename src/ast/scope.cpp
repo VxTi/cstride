@@ -15,7 +15,7 @@ namespace stride::ast
             scope->symbols->begin(), end,
             [&](const SymbolDefinition& s)
             {
-                return s.symbol == symbol;
+                return s.get_symbol() == symbol;
             }
         );
 
@@ -27,7 +27,7 @@ namespace stride::ast
         return *it_result;
     }
 
-    std::optional<SymbolDefinition> Scope::try_get_symbol_globally(const Symbol& symbol) const
+    std::optional<SymbolDefinition> Scope::get_symbol_globally(const Symbol& symbol) const
     {
         auto current = this;
 
@@ -44,26 +44,31 @@ namespace stride::ast
         return std::nullopt;
     }
 
-    std::optional<SymbolDefinition> Scope::try_get_symbol(const Symbol& symbol) const
+    std::optional<SymbolDefinition> Scope::get_symbol(const Symbol& symbol) const
     {
         return try_get_symbol_from_scope(this, symbol);
     }
 
     bool Scope::is_symbol_defined_globally(const Symbol& symbol) const
     {
-        const auto sym_definition = this->try_get_symbol_globally(symbol);
+        const auto sym_definition = this->get_symbol_globally(symbol);
 
         return sym_definition.has_value();
     }
 
     bool Scope::is_symbol_defined_scoped(const Symbol& symbol) const
     {
-        const auto sym_definition = this->try_get_symbol(symbol);
+        const auto sym_definition = this->get_symbol(symbol);
 
         return sym_definition.has_value();
     }
 
-    void Scope::try_define_scoped_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const
+    void Scope::try_define_scoped_symbol(
+        const SourceFile& source,
+        const Token& token,
+        const Symbol& symbol,
+        const SymbolType symbol_type
+    ) const
     {
         if (this->is_symbol_defined_scoped(symbol))
         {
@@ -78,11 +83,16 @@ namespace stride::ast
             );
         }
         this->symbols->push_back(
-            SymbolDefinition(symbol, token)
+            SymbolDefinition(symbol, token, symbol_type)
         );
     }
 
-    void Scope::try_define_global_symbol(const SourceFile& source, const Token& token, const Symbol& symbol) const
+    void Scope::try_define_global_symbol(
+        const SourceFile& source,
+        const Token& reference_token,
+        const Symbol& symbol,
+        const SymbolType symbol_type
+    ) const
     {
         if (this->is_symbol_defined_globally(symbol))
         {
@@ -91,13 +101,13 @@ namespace stride::ast
                     source,
                     ErrorType::SEMANTIC_ERROR,
                     "Symbol already defined globally",
-                    token.offset,
+                    reference_token.offset,
                     symbol.value.size()
                 )
             );
         }
         this->symbols->push_back(
-            SymbolDefinition(symbol, token)
+            SymbolDefinition(symbol, reference_token, symbol_type)
         );
     }
 }

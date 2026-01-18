@@ -25,6 +25,10 @@ namespace stride::ast
     ((x >> 12) & 0xFF) ? 2 : \
     ((x >> 6) & 0xFF) ? 1 : 0
 
+#define SRFLAG_INT_SIGNED   (0)
+#define SRFLAG_INT_UNSIGNED (1)
+
+
     class AstLiteral :
         public AstExpression
     {
@@ -33,10 +37,12 @@ namespace stride::ast
 
     public:
         AstLiteral(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             const LiteralType type,
             const char byte_count
         )
-            : AstExpression({}),
+            : AstExpression(source, source_offset, {}),
               _bit_count(byte_count),
               _type(type) {}
 
@@ -58,11 +64,13 @@ namespace stride::ast
 
     public:
         explicit AbstractAstLiteralBase(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             const LiteralType type,
             const T value,
             const char byte_count
         ) :
-            AstLiteral(type, byte_count),
+            AstLiteral(source, source_offset, type, byte_count),
             _value(value) {}
 
         [[nodiscard]]
@@ -72,10 +80,14 @@ namespace stride::ast
     class AstStringLiteral : public AbstractAstLiteralBase<std::string>
     {
     public:
-        explicit AstStringLiteral(std::string val) :
+        explicit AstStringLiteral(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            std::string val
+        ) :
             // Strings are only considered to be a single byte,
             // as they're pointing to a memory location
-            AbstractAstLiteralBase(LiteralType::STRING, std::move(val), 1 * BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(source, source_offset, LiteralType::STRING, std::move(val), 1 * BITS_PER_BYTE) {}
 
         ~AstStringLiteral() override = default;
 
@@ -86,9 +98,22 @@ namespace stride::ast
 
     class AstIntegerLiteral : public AbstractAstLiteralBase<int64_t>
     {
+        const int flags;
+
     public:
-        explicit AstIntegerLiteral(const int64_t value) :
-            AbstractAstLiteralBase(LiteralType::INTEGER, value, BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)) {}
+        explicit AstIntegerLiteral(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const int64_t value,
+            const int flags = SRFLAG_INT_SIGNED
+        ) :
+            AbstractAstLiteralBase(source, source_offset, LiteralType::INTEGER, value,
+                                   BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)),
+            flags(flags) {}
+
+        int get_flags() const { return this->flags; }
+
+        bool is_signed() const { return this->flags & SRFLAG_INT_SIGNED; }
 
         std::string to_string() override;
 
@@ -98,8 +123,12 @@ namespace stride::ast
     class AstFloatLiteral : public AbstractAstLiteralBase<float>
     {
     public :
-        explicit AstFloatLiteral(const long double value) :
-            AbstractAstLiteralBase(LiteralType::FLOAT, value, 4 * BITS_PER_BYTE) {}
+        explicit AstFloatLiteral(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const long double value
+        ) :
+            AbstractAstLiteralBase(source, source_offset, LiteralType::FLOAT, value, 4 * BITS_PER_BYTE) {}
 
         std::string to_string() override;
 
@@ -109,8 +138,12 @@ namespace stride::ast
     class AstBooleanLiteral : public AbstractAstLiteralBase<bool>
     {
     public:
-        explicit AstBooleanLiteral(const bool value) :
-            AbstractAstLiteralBase(LiteralType::BOOLEAN, value, 1 /* Single bit only*/) {}
+        explicit AstBooleanLiteral(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const bool value
+        ) :
+            AbstractAstLiteralBase(source, source_offset, LiteralType::BOOLEAN, value, 1 /* Single bit only*/) {}
 
         std::string to_string() override;
 
@@ -120,8 +153,12 @@ namespace stride::ast
     class AstCharLiteral : public AbstractAstLiteralBase<char>
     {
     public:
-        explicit AstCharLiteral(const char value) :
-            AbstractAstLiteralBase(LiteralType::CHAR, value, BITS_PER_BYTE) {}
+        explicit AstCharLiteral(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const char value
+        ) :
+            AbstractAstLiteralBase(source, source_offset, LiteralType::CHAR, value, BITS_PER_BYTE) {}
 
         std::string to_string() override;
 
@@ -132,27 +169,27 @@ namespace stride::ast
 
     std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
         const Scope& scope,
-        TokenSet& tokens
+        TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_float_literal_optional(
         const Scope& scope,
-        TokenSet& tokens
+        TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(
         const Scope& scope,
-        TokenSet& tokens
+        TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_string_literal_optional(
         const Scope& scope,
-        TokenSet& tokens
+        TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_char_literal_optional(
         const Scope& scope,
-        TokenSet& tokens
+        TokenSet& set
     );
 
     bool is_ast_literal(IAstNode* node);

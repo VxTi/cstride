@@ -80,26 +80,31 @@ std::vector<Symbol> consume_import_list(TokenSet& tokens)
 /**
  * Attempts to parse an import expression from the given TokenSet.
  */
-std::unique_ptr<AstImport> stride::ast::parse_import_statement(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstImport> stride::ast::parse_import_statement(const Scope& scope, TokenSet& set)
 {
     if (scope.type != ScopeType::GLOBAL)
     {
-        tokens.throw_error(
+        set.throw_error(
             std::format(
                 "Import statements are only allowed in global scope, but was found in {} scope",
                 scope_type_to_str(scope.type)
             )
         );
     }
-    tokens.expect(TokenType::KEYWORD_USE);
+    const auto reference_token = set.expect(TokenType::KEYWORD_USE);
 
-    const auto import_module = consume_import_module_base(tokens);
-    const auto import_list = consume_import_list(tokens);
+    const auto import_module = consume_import_module_base(set);
+    const auto import_list = consume_import_list(set);
 
-    tokens.expect(TokenType::SEMICOLON);
+    set.expect(TokenType::SEMICOLON);
 
 
-    return std::make_unique<AstImport>(AstImport(import_module, import_list));
+    return std::make_unique<AstImport>(
+        set.source(),
+        reference_token.offset,
+        import_module,
+        import_list
+    );
 }
 
 std::string AstImport::to_string()

@@ -7,13 +7,13 @@
 
 namespace stride::ast
 {
-#define EXPRESSION_ALLOW_VARIABLE_DECLARATION  1
-#define EXPRESSION_INLINE_VARIABLE_DECLARATION 2 // Variables declared after initial one
-#define EXPRESSION_VARIABLE_ASSIGNATION        4
+#define SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION  1
+#define SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION 2 // Variables declared after initial one
+#define SRFLAG_EXPR_VARIABLE_ASSIGNATION        4
 
-#define VARIABLE_DECLARATION_FLAG_EXTERN  0x1
-#define VARIABLE_DECLARATION_FLAG_MUTABLE 0x2
-#define VARIABLE_DECLARATION_FLAG_GLOBAL  0x4
+#define SRFLAG_VAR_DECL_EXTERN  0x1
+#define SRFLAG_VAR_DECL_MUTABLE 0x2
+#define SRFLAG_VAR_DECL_GLOBAL  0x4
 
     enum class BinaryOpType
     {
@@ -60,7 +60,12 @@ namespace stride::ast
         const std::vector<u_ptr<IAstNode>> _children;
 
     public:
-        explicit AstExpression(std::vector<u_ptr<IAstNode>> children) : _children(std::move(children)) {};
+        explicit AstExpression(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            std::vector<u_ptr<IAstNode>> children
+        ) :
+            IAstNode(source, source_offset), _children(std::move(children)) {};
 
         ~AstExpression() override = default;
 
@@ -82,8 +87,12 @@ namespace stride::ast
     public:
         const Symbol name;
 
-        explicit AstIdentifier(Symbol name) :
-            AstExpression({}),
+        explicit AstIdentifier(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            Symbol name
+        ) :
+            AstExpression(source, source_offset, {}),
             name(std::move(name)) {}
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
@@ -103,15 +112,21 @@ namespace stride::ast
     public:
         const Symbol function_name;
 
-        explicit AstFunctionInvocation(Symbol function_name) :
-            AstExpression({}),
+        explicit AstFunctionInvocation(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            Symbol function_name
+        ) :
+            AstExpression(source, source_offset, {}),
             function_name(std::move(function_name)) {}
 
         explicit AstFunctionInvocation(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             Symbol function_name,
             std::vector<std::unique_ptr<IAstNode>> arguments
         ) :
-            AstExpression({}),
+            AstExpression(source, source_offset, {}),
             arguments(std::move(arguments)),
             function_name(std::move(function_name)) {}
 
@@ -137,12 +152,15 @@ namespace stride::ast
 
     public:
         AstVariableDeclaration(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             Symbol variable_name,
             u_ptr<types::AstType> variable_type,
             u_ptr<IAstNode> initial_value,
             const int flags
         ) :
-            AstExpression({}),
+            AstExpression(source, source_offset, {}),
+
             _flags(flags),
             _variable_name(std::move(variable_name)),
             _variable_type(std::move(variable_type)),
@@ -187,8 +205,13 @@ namespace stride::ast
         std::unique_ptr<AstExpression> _rsh;
 
     public:
-        AbstractBinaryOp(std::unique_ptr<AstExpression> lsh, std::unique_ptr<AstExpression> rsh) :
-            AstExpression({}),
+        AbstractBinaryOp(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            std::unique_ptr<AstExpression> lsh,
+            std::unique_ptr<AstExpression> rsh
+        ) :
+            AstExpression(source, source_offset, {}),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
 
@@ -206,10 +229,12 @@ namespace stride::ast
 
     public:
         AstBinaryArithmeticOp(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, source_offset, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -231,11 +256,13 @@ namespace stride::ast
 
     public:
         AstLogicalOp(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
         ) :
-            AbstractBinaryOp(std::move(left), std::move(right)),
+            AbstractBinaryOp(source, source_offset, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -253,10 +280,12 @@ namespace stride::ast
 
     public:
         AstComparisonOp(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, source_offset, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -276,10 +305,12 @@ namespace stride::ast
 
     public:
         AstUnaryOp(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
-        ) : AbstractBinaryOp(std::move(operand), nullptr),
+        ) : AbstractBinaryOp(source, source_offset, std::move(operand), nullptr),
             _op_type(op), _is_lsh(is_lsh) {}
 
         [[nodiscard]]

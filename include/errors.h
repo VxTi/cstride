@@ -26,6 +26,61 @@ namespace stride
         return "Unknown Error";
     }
 
+    static std::string make_ast_error(
+        const SourceFile &source,
+        const int offset,
+        const std::string& error
+        )
+    {
+        if (offset >= source.source.length())
+        {
+            return std::format(
+                "┃ in {}\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
+                source.path,
+                error
+            );
+        }
+
+        // Find the start of the line
+        size_t line_start = offset;
+        while (line_start > 0 && line_start < source.source.length() && source.source[line_start - 1] != '\n')
+        {
+            line_start--;
+        }
+
+        // Find the end of the line
+        size_t line_end = offset;
+        while (line_end < source.source.length() && source.source[line_end] != '\n')
+        {
+            line_end++;
+        }
+
+        // Calculate line number by counting newlines before offset
+        size_t line_number = 1;
+        for (size_t i = 0; i < line_start; i++)
+        {
+            if (source.source[i] == '\n')
+            {
+                line_number++;
+            }
+        }
+
+        // Extract the line as a string
+        std::string line_str = source.source.substr(line_start, line_end - line_start);
+
+        return std::format(
+            "┃ in \x1b[4m{}\x1b[0m:\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m\n┃",
+            source.path,
+            error,
+            line_number,
+            line_str
+        );
+    }
+
+    /**
+     * Will produce an error for the given source file, at the provided
+     * position and length.
+     */
     static std::string make_source_error(
         const SourceFile& source_file,
         const ErrorType error_type,
@@ -93,7 +148,6 @@ namespace stride
 
     class parsing_error : public std::runtime_error
     {
-    private:
         std::string what_msg;
 
     public:

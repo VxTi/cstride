@@ -45,11 +45,16 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_first_fn_param(
     TokenSet& tokens
 )
 {
-    const auto param_name = Symbol(tokens.expect(TokenType::IDENTIFIER).lexeme);
+    const auto reference_token = tokens.expect(TokenType::IDENTIFIER);
+    const auto param_name = Symbol(reference_token.lexeme);
 
     tokens.expect(TokenType::COLON);
 
     std::unique_ptr<types::AstType> type_ptr = types::parse_primitive_type(tokens);
 
-    return std::move(std::make_unique<AstFunctionParameter>(param_name, std::move(type_ptr)));
+    return std::make_unique<AstFunctionParameter>(
+        tokens.source(),
+        reference_token.offset,
+        param_name, std::move(type_ptr)
+    );
 }

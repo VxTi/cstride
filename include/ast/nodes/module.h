@@ -13,9 +13,13 @@ namespace stride::ast
     public:
         std::string to_string() override;
 
-        explicit AstModule(Symbol name) : _name(std::move(name))
-        {
-        }
+        explicit AstModule(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            Symbol name
+        )
+            : IAstNode(source, source_offset),
+              _name(std::move(name)) {}
 
         [[nodiscard]]
         Symbol name() const { return _name; }

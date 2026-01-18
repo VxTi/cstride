@@ -65,23 +65,29 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, 
     return parse_standalone_expression(scope, tokens);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_sequential(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstBlock> stride::ast::parse_sequential(const Scope& scope, TokenSet& set)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
-    while (tokens.has_next())
+    const auto initial_token = set.peak_next();
+
+    while (set.has_next())
     {
-        if (TokenSet::should_skip_token(tokens.peak_next().type))
+        if (TokenSet::should_skip_token(set.peak_next().type))
         {
-            tokens.next();
+            set.next();
             continue;
         }
 
-        if (auto result = parse_next_statement(scope, tokens))
+        if (auto result = parse_next_statement(scope, set))
         {
             nodes.push_back(std::move(result));
         }
     }
 
-    return std::make_unique<AstBlock>(std::move(nodes));
+    return std::make_unique<AstBlock>(
+        set.source(),
+        initial_token.offset,
+        std::move(nodes)
+    );
 }

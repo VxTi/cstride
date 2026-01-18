@@ -83,6 +83,8 @@ IAstNode* AstVariableDeclaration::reduce()
 
 
         return std::make_unique<AstVariableDeclaration>(
+            this->source,
+            this->source_offset,
             this->get_variable_name(),
             std::move(cloned_type),
             u_ptr<IAstNode>(std::move(reduced_value)),
@@ -157,7 +159,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
     {
         if (set.peak(1).type == TokenType::LPAREN)
         {
-            auto name = set.next().lexeme;
+            const auto reference_token = set.next();
+            const auto name = reference_token.lexeme;
             auto function_parameter_set = collect_token_subset(set, TokenType::LPAREN, TokenType::RPAREN);
 
             std::vector<std::unique_ptr<IAstNode>> function_parameter_nodes = {};
@@ -177,10 +180,20 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
                 }
             }
 
-            return std::make_unique<AstFunctionInvocation>(Symbol(name), std::move(function_parameter_nodes));
+            return std::make_unique<AstFunctionInvocation>(
+                set.source(),
+                reference_token.offset,
+                Symbol(name),
+                std::move(function_parameter_nodes)
+            );
         }
-        auto tok = set.next();
-        return std::make_unique<AstIdentifier>(Symbol(tok.lexeme));
+
+        const auto reference_token = set.next();
+        return std::make_unique<AstIdentifier>(
+            set.source(),
+            reference_token.offset,
+            Symbol(reference_token.lexeme)
+        );
     }
 
     return nullptr;
@@ -196,9 +209,9 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
     std::unique_ptr<AstExpression> lhs
 )
 {
-    const auto op_token = set.peak_next_type();
+    const auto reference_token = set.peak_next();
 
-    if (auto logical_op = get_logical_op_type(op_token); logical_op.has_value())
+    if (auto logical_op = get_logical_op_type(reference_token.type); logical_op.has_value())
     {
         set.next();
 
@@ -208,10 +221,16 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
             return std::nullopt;
         }
 
-        return std::make_unique<AstLogicalOp>(std::move(lhs), logical_op.value(), std::move(rhs));
+        return std::make_unique<AstLogicalOp>(
+            set.source(),
+            reference_token.offset,
+            std::move(lhs),
+            logical_op.value(),
+            std::move(rhs)
+        );
     }
 
-    if (auto comparative_op = get_comparative_op_type(op_token); comparative_op.has_value())
+    if (auto comparative_op = get_comparative_op_type(reference_token.type); comparative_op.has_value())
     {
         set.next();
 
@@ -221,7 +240,13 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
             return std::nullopt;
         }
 
-        return std::make_unique<AstComparisonOp>(std::move(lhs), comparative_op.value(), std::move(rhs));
+        return std::make_unique<AstComparisonOp>(
+            set.source(),
+            reference_token.offset,
+            std::move(lhs),
+            comparative_op.value(),
+            std::move(rhs)
+        );
     }
 
     return lhs;
@@ -282,7 +307,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(const Scope& scope, TokenSet& tokens)
 {
     return parse_expression_ext(
-        EXPRESSION_ALLOW_VARIABLE_DECLARATION,
+        SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION,
         scope,
         tokens
     );

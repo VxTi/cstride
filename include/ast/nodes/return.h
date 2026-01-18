@@ -13,10 +13,14 @@ namespace stride::ast
         const std::unique_ptr<IAstNode> _value;
 
     public:
-        explicit AstReturn(std::unique_ptr<IAstNode> value)
-            : _value(std::move(value))
-        {
-        }
+        explicit AstReturn(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            std::unique_ptr<IAstNode> value
+        )
+            :
+            IAstNode(source, source_offset),
+            _value(std::move(value)) {}
 
         std::string to_string() override;
 
@@ -29,5 +33,5 @@ namespace stride::ast
 
     bool is_return_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstReturn> parse_return_statement(const Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstReturn> parse_return_statement(const Scope& scope, TokenSet& set);
 }

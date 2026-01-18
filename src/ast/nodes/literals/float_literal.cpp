@@ -5,13 +5,17 @@ using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
     const Scope& scope,
-    TokenSet& tokens
+    TokenSet& set
 )
 {
-    if (tokens.peak_next_eq(TokenType::FLOAT_LITERAL))
+    if (const auto reference_token = set.peak_next(); reference_token.type == TokenType::FLOAT_LITERAL)
     {
-        const auto next = tokens.next();
-        return std::make_unique<AstFloatLiteral>(std::stof(next.lexeme));
+        const auto next = set.next();
+        return std::make_unique<AstFloatLiteral>(
+            set.source(),
+            reference_token.offset,
+            std::stof(next.lexeme)
+        );
     }
     return std::nullopt;
 }

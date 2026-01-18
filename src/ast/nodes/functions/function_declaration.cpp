@@ -49,20 +49,20 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     TokenSet& tokens
 )
 {
-    bool is_external = false;
-    bool is_variadic = false;
+    // TODO: Add support for variadic arguments
+    int flags = 0;
     if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERN))
     {
         tokens.expect(TokenType::KEYWORD_EXTERN);
-        is_external = true;
+        flags |= SRFLAG_FN_DEF_EXTERN;
     }
 
-    tokens.expect(TokenType::KEYWORD_FN); // fn
+    auto reference_token = tokens.expect(TokenType::KEYWORD_FN); // fn
 
     // Here we expect to receive the function name
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
     const auto fn_name = Symbol(fn_name_tok.lexeme);
-    scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name);
+    scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name, SymbolType::FUNCTION);
 
     tokens.expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -84,7 +84,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     std::unique_ptr<AstBlock> body = nullptr;
 
-    if (is_external)
+    if (flags & SRFLAG_FN_DEF_EXTERN)
     {
         tokens.expect(TokenType::SEMICOLON);
     }
@@ -101,12 +101,13 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
 
     return std::move(std::make_unique<AstFunctionDeclaration>(
+        tokens.source(),
+        reference_token.offset,
         fn_name,
         std::move(parameters),
-        std::move(return_type),
         std::move(body),
-        is_variadic,
-        is_external
+        std::move(return_type),
+        flags
     ));
 }
 

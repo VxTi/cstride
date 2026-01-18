@@ -7,6 +7,9 @@
 
 namespace stride::ast::types
 {
+#define SRFLAG_TYPE_PTR       (0x1)
+#define SRFLAG_TYPE_REFERENCE (0x2)
+
     enum class PrimitiveType
     {
         INT8,
@@ -23,16 +26,23 @@ namespace stride::ast::types
 
     class AstType : public IAstNode
     {
-        bool is_ptr;
+        const int flags;
 
     public:
-        AstType(const bool is_ptr = false) : is_ptr(is_ptr) {}
+        AstType(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const int flags
+        )
+            : IAstNode(source, source_offset),
+              flags(flags) {}
+
         ~AstType() override = default;
 
         virtual u_ptr<AstType> clone() const = 0;
 
         [[nodiscard]]
-        bool is_pointer() const { return this->is_ptr; }
+        bool is_pointer() const { return this->flags & SRFLAG_TYPE_PTR; }
     };
 
     class AstPrimitiveType : public AstType
@@ -41,8 +51,14 @@ namespace stride::ast::types
         size_t _byte_size;
 
     public:
-        explicit AstPrimitiveType(const PrimitiveType type, const size_t byte_size, const bool is_ptr = false) :
-            AstType(is_ptr),
+        explicit AstPrimitiveType(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const PrimitiveType type,
+            const size_t byte_size,
+            const int flags
+        ) :
+            AstType(source, source_offset, flags),
             _type(type),
             _byte_size(byte_size) {}
 
@@ -69,8 +85,13 @@ namespace stride::ast::types
     public:
         std::string to_string() override;
 
-        explicit AstCustomType(std::string name, const bool is_ptr) :
-            AstType(is_ptr),
+        explicit AstCustomType(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            std::string name,
+            const int flags
+        ) :
+            AstType(source, source_offset, flags),
             _name(std::move(name)) {}
 
         static std::optional<std::unique_ptr<AstCustomType>> try_parse(TokenSet& set);

@@ -9,9 +9,8 @@ using namespace stride::ast;
 TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
 {
     const auto start = offset;
-    const auto end = offset + length - 1;
 
-    if (start > end || end >= this->size())
+    if (const auto end = offset + length - 1; start > end || end >= this->size())
     {
         throw std::out_of_range("Invalid range for TokenSet copy");
     }
