@@ -20,6 +20,7 @@ export const conf: languages.LanguageConfiguration = {
     { open: '(', close: ')' },
     { open: '"', close: '"' },
     { open: "'", close: "'" },
+    { open: '/**', close: ' */' },
   ],
   surroundingPairs: [
     { open: '{', close: '}' },
@@ -27,31 +28,35 @@ export const conf: languages.LanguageConfiguration = {
     { open: '(', close: ')' },
     { open: '"', close: '"' },
     { open: "'", close: "'" },
+    { open: '/**', close: ' */' },
   ],
-  /* onEnterRules: [
+  onEnterRules: [
     {
-      beforeText: /^\s*\/\*\*(?!\/)([^\*]|\*(?!\/))*$/,
-      afterText:  /^\s*\*\/$/,
-      action:     {
+      // Matches /** followed by anything except / and ending the line.
+      beforeText: /^\s*\/\*\*(?!\/)([^*]|\*(?!\/))*$/,
+      afterText: /^\s*\*\/$/,
+      action: {
         indentAction: languages.IndentAction.IndentOutdent,
-        appendText:   ' * ',
+        appendText: ' * ',
       },
     },
     {
-      beforeText: /^\s*\/\*\*(?!\/)([^\*]|\*(?!\/))*$/,
-      action:     {
+      // Matches /** followed by anything except / and ending the line.
+      beforeText: /^\s*\/\*\*(?!\/)([^*]|\*(?!\/))*$/,
+      action: {
         indentAction: languages.IndentAction.None,
-        appendText:   ' * ',
+        appendText: ' * ',
       },
     },
     {
-      beforeText: /^(\t|[ ])*[ ]\*([ ]([^\*]|\*(?!\/))*)?$/,
-      action:     {
+      // Matches * optionally followed by a space and anything except /
+      beforeText: /^(\t|[ ])*[ ]\*([ ]([^*]|\*(?!\/))*)?$/,
+      action: {
         indentAction: languages.IndentAction.None,
-        appendText:   '* ',
+        appendText: '* ',
       },
     },
-  ],*/
+  ],
 };
 
 export const keywords = [
@@ -107,7 +112,7 @@ export const keywords = [
 
 export const language: languages.IMonarchLanguage = {
   defaultToken: '',
-  tokenPostfix: languageExtension,
+  tokenPostfix: '.' + languageExtension,
   keywords,
   operators: [
     '**=',
@@ -170,7 +175,12 @@ export const language: languages.IMonarchLanguage = {
       // Identifiers and keywords
       [
         /[a-zA-Z_]\w*/,
-        { cases: { '@keywords': 'keyword', '@default': 'identifier' } },
+        {
+          cases: {
+            '@keywords': 'keyword',
+            '@default': 'identifier',
+          },
+        },
       ],
 
       // Whitespace
@@ -178,13 +188,22 @@ export const language: languages.IMonarchLanguage = {
 
       // Delimiters and operators
       [/[{}()\[\]]/, '@brackets'],
-      [/@symbols/, { cases: { '@operators': 'operator', '@default': '' } }],
+      [
+        /@symbols/,
+        {
+          cases: {
+            '@operators': 'operator',
+            '@default': '',
+          },
+        },
+      ],
 
       // Punctuation
       [/[;,]/, 'delimiter'],
 
       // Numbers
-      [/\d+\.\d+/, 'number.float'],
+      [/\d*\.\d+([eE][\-+]?\d+)?/, 'number.float'],
+      [/0[xX][0-9a-fA-F]+/, 'number.hex'],
       [/\d+/, 'number'],
 
       // Strings
@@ -195,12 +214,11 @@ export const language: languages.IMonarchLanguage = {
       [/'/, { token: 'string.quote', bracket: '@open', next: '@character' }],
     ],
 
-        comment: [
-            [/[^\/*]+/, 'comment' ],
-            [/\/\*/,    'comment', '@push' ],    // nested comment
-            ["\\*/",    'comment', '@pop'  ],
-            [/[\/*]/,   'comment' ]
-        ],
+    whitespace: [
+      [/[ \t\r\n]+/, 'white'],
+      [/\/\*/, 'comment', '@comment'],
+      [/\/\/.*$/, 'comment'],
+    ],
 
     string: [
       [/[^\\"]+/, 'string'],
@@ -216,20 +234,44 @@ export const language: languages.IMonarchLanguage = {
       [/'/, { token: 'string.quote', bracket: '@close', next: '@pop' }],
     ],
 
-    whitespace: [
-      [/[ \t\r\n]+/, 'white'],
-      [/\/\*/, 'comment', '@comment'],
-      [/\/\/.*$/, 'comment'],
+    comment: [
+      [/[^\/*]+/, 'comment'],
+      [/\/\*/, 'comment', '@push'], // nested comment
+      [/\*\//, 'comment', '@pop'],
+      [/[\/*]/, 'comment'],
     ],
   },
 };
 
 export function registerCompletionProvider(
   monaco: typeof import('monaco-editor')
-): void {
-  monaco.languages.registerCompletionItemProvider(strideLanguageId, {
+): import('monaco-editor').IDisposable {
+  return monaco.languages.registerCompletionItemProvider(strideLanguageId, {
     provideCompletionItems: (model, position) => {
-      const suggestions = provideKeywordCompletions(model, position);
+      const lineContent = model.getLineContent(position.lineNumber);
+      const textUntilPosition = lineContent.substring(0, position.column - 1);
+
+      const suggestions: languages.CompletionItem[] = [];
+
+      // Add doc comment snippet if /** is typed
+      if (textUntilPosition.endsWith('/**')) {
+        suggestions.push({
+          label: '/** */',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          documentation: 'JSDoc-style documentation comment',
+          insertText: '/**\n * $0\n */',
+          insertTextRules:
+            monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          range: {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: position.column - 3,
+            endColumn: position.column,
+          },
+        });
+      }
+
+      suggestions.push(...provideKeywordCompletions(model, position));
 
       return { suggestions };
     },
@@ -257,17 +299,15 @@ function provideKeywordCompletions(
     keyword.startsWith(wordPrefix)
   );
 
-  return filteredKeywords.map(
-    keyword => ({
-      label:      keyword,
-      kind:       languages.CompletionItemKind.Keyword,
-      insertText: keyword,
-      range:      {
-        startLineNumber: position.lineNumber,
-        endLineNumber:   position.lineNumber,
-        startColumn,
-        endColumn,
-      },
-    })
-  );
+  return filteredKeywords.map(keyword => ({
+    label: keyword,
+    kind: languages.CompletionItemKind.Keyword,
+    insertText: keyword,
+    range: {
+      startLineNumber: position.lineNumber,
+      endLineNumber: position.lineNumber,
+      startColumn,
+      endColumn,
+    },
+  }));
 }

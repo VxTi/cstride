@@ -1,5 +1,6 @@
-import Editor, { useMonaco } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 import { useEffect } from 'react';
+import useCustomMonaco from './hooks/monaco';
 import {
   conf,
   language,
@@ -8,7 +9,7 @@ import {
 } from './StrideLanguage';
 
 function App() {
-  const monaco = useMonaco();
+  const monaco = useCustomMonaco();
 
   useEffect(() => {
     if (!monaco) return;
@@ -16,7 +17,9 @@ function App() {
     monaco.languages.register({ id: strideLanguageId });
     monaco.languages.setMonarchTokensProvider(strideLanguageId, language);
     monaco.languages.setLanguageConfiguration(strideLanguageId, conf);
-    registerCompletionProvider(monaco);
+
+    const disposable = registerCompletionProvider(monaco);
+    return () => disposable.dispose();
   }, [monaco]);
 
   return (
@@ -24,7 +27,18 @@ function App() {
       <Editor
         height="100%"
         defaultLanguage={strideLanguageId}
-        defaultValue={`// Welcome to Stride Editor
+        defaultValue={defaultCodeFragment}
+        theme="vs-dark"
+        options={{
+          minimap: { enabled: false },
+          fontSize: 14,
+        }}
+      />
+    </div>
+  );
+}
+
+const defaultCodeFragment = `// Welcome to Stride Editor
 // Try writing some Stride code here
 
 fn main() {
@@ -36,15 +50,6 @@ fn main() {
     }
     
     return false;
-}`}
-        theme="vs-dark"
-        options={{
-          minimap: { enabled: true },
-          fontSize: 14,
-        }}
-      />
-    </div>
-  );
-}
+}`;
 
 export default App;
