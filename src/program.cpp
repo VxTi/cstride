@@ -46,6 +46,8 @@ void Program::execute() const
         return;
     }
 
+   //  std::cout << _nodes[0].root()->to_string() << std::endl;
+
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     LLVMInitializeNativeAsmPrinter();

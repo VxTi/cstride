@@ -9,121 +9,120 @@ namespace stride::ast
 {
     enum class TokenType
     {
-        COMMENT, // //
+        COMMENT,           // //
         COMMENT_MULTILINE, // /* */
-        END_OF_FILE, // EOF symbol
+        END_OF_FILE,       // EOF symbol
 
-        LPAREN, // (
-        RPAREN, // )
-        LBRACE, // {
-        RBRACE, // }
-        LSQUARE_BRACKET, // [
-        RSQUARE_BRACKET, // ]
-        COMMA, // ,
-        LARROW_DASH, // <-
-        DASH_RARROW, // ->
-        RARROW, // >
-        LARROW, // <
-        EQUALS, // =
-        DOUBLE_EQUALS, // ==
-        NOT_EQUALS, // !=
-        LEQUALS, // <=
-        GEQUALS, // >=
-        PLUS, // +
-        MINUS, // -
-        STAR, // *
-        SLASH, // /
-        PERCENT, // %
-        AMPERSAND, // &
-        PIPE, // |
-        CARET, // ^
-        TILDE, // ~
-        BANG, // !
-        QUESTION, // ?
-        TILDE_EQUALS, // ~=
-        STAR_EQUALS, // *=
-        SLASH_EQUALS, // /=
-        PERCENT_EQUALS, // %=
-        PLUS_EQUALS, // +=
-        MINUS_EQUALS, // -=
-        AMPERSAND_EQUALS, // &=
-        PIPE_EQUALS, // |=
-        CARET_EQUALS, // ^=
-        BANG_EQUALS, // !=
-        DOUBLE_LARROW, // <<
-        DOUBLE_RARROW, // >>
+        LPAREN,               // (
+        RPAREN,               // )
+        LBRACE,               // {
+        RBRACE,               // }
+        LSQUARE_BRACKET,      // [
+        RSQUARE_BRACKET,      // ]
+        COMMA,                // ,
+        LARROW_DASH,          // <-
+        DASH_RARROW,          // ->
+        RARROW,               // >
+        LARROW,               // <
+        EQUALS,               // =
+        DOUBLE_EQUALS,        // ==
+        NOT_EQUALS,           // !=
+        LEQUALS,              // <=
+        GEQUALS,              // >=
+        PLUS,                 // +
+        MINUS,                // -
+        STAR,                 // *
+        SLASH,                // /
+        PERCENT,              // %
+        AMPERSAND,            // &
+        PIPE,                 // |
+        CARET,                // ^
+        TILDE,                // ~
+        BANG,                 // !
+        QUESTION,             // ?
+        TILDE_EQUALS,         // ~=
+        STAR_EQUALS,          // *=
+        SLASH_EQUALS,         // /=
+        PERCENT_EQUALS,       // %=
+        PLUS_EQUALS,          // +=
+        MINUS_EQUALS,         // -=
+        AMPERSAND_EQUALS,     // &=
+        PIPE_EQUALS,          // |=
+        CARET_EQUALS,         // ^=
+        BANG_EQUALS,          // !=
+        DOUBLE_LARROW,        // <<
+        DOUBLE_RARROW,        // >>
         DOUBLE_LARROW_EQUALS, // <<=
         DOUBLE_RARROW_EQUALS, // >>=
-        DOUBLE_STAR_EQUALS, // **=
-        DOUBLE_PIPE, // ||
-        DOUBLE_AMPERSAND, // &&
-        DOUBLE_PLUS, // ++
-        DOUBLE_MINUS, // --
-        DOUBLE_STAR, // **
-        DOUBLE_COLON, // ::
-        SEMICOLON, // ;
-        COLON, // :
-        DOT, // .
-        THREE_DOTS, // ...
+        DOUBLE_STAR_EQUALS,   // **=
+        DOUBLE_PIPE,          // ||
+        DOUBLE_AMPERSAND,     // &&
+        DOUBLE_PLUS,          // ++
+        DOUBLE_MINUS,         // --
+        DOUBLE_STAR,          // **
+        DOUBLE_COLON,         // ::
+        SEMICOLON,            // ;
+        COLON,                // :
+        DOT,                  // .
+        THREE_DOTS,           // ...
 
         /* Primitives */
-        PRIMITIVE_UINT8, // uint8
+        PRIMITIVE_UINT8,  // uint8
         PRIMITIVE_UINT16, // uint16
         PRIMITIVE_UINT32, // uint32
         PRIMITIVE_UINT64, // uint64
-        PRIMITIVE_INT8, // int8
-        PRIMITIVE_INT16, // int16
-        PRIMITIVE_INT32, // int32
-        PRIMITIVE_INT64, // int64
+        PRIMITIVE_INT8,   // int8
+        PRIMITIVE_INT16,  // int16
+        PRIMITIVE_INT32,  // int32
+        PRIMITIVE_INT64,  // int64
 
         PRIMITIVE_FLOAT32, // float32
         PRIMITIVE_FLOAT64, // float64
 
-        PRIMITIVE_BOOL, // bool
+        PRIMITIVE_BOOL,   // bool
         PRIMITIVE_STRING, // string
-        PRIMITIVE_CHAR, // char
-        PRIMITIVE_VOID, // void
-        PRIMITIVE_AUTO, // auto
+        PRIMITIVE_CHAR,   // char
+        PRIMITIVE_VOID,   // void
+        PRIMITIVE_AUTO,   // auto
 
         /* Keywords */
-        KEYWORD_USE, // use
-        KEYWORD_AND, // and
-        KEYWORD_AS, // as
-        KEYWORD_ASYNC, // async
-        KEYWORD_FN, // fn
-        KEYWORD_LET, // let
+        KEYWORD_USE,      // use
+        KEYWORD_AS,       // as
+        KEYWORD_ASYNC,    // async
+        KEYWORD_FN,       // fn
+        KEYWORD_LET,      // let
         KEYWORD_CONTINUE, // continue
-        KEYWORD_CONST, // const
-        KEYWORD_DO, // do
-        KEYWORD_WHILE, // while
-        KEYWORD_FOR, // for
-        KEYWORD_SWITCH, // switch
-        KEYWORD_TRY, // try
-        KEYWORD_CATCH, // catch
-        KEYWORD_THROW, // throw
-        KEYWORD_NEW, // new
-        KEYWORD_RETURN, // return
-        KEYWORD_IF, // if
-        KEYWORD_ELSE, // else
-        KEYWORD_CLASS, // class
-        KEYWORD_THIS, // this
-        KEYWORD_STRUCT, // struct
-        KEYWORD_IMPORT, // import
-        KEYWORD_PUBLIC, // public
-        KEYWORD_MODULE, // module
-        KEYWORD_EXTERNAL, // external
-        KEYWORD_NIL, // nil
+        KEYWORD_CONST,    // const
+        KEYWORD_DO,       // do
+        KEYWORD_WHILE,    // while
+        KEYWORD_FOR,      // for
+        KEYWORD_SWITCH,   // switch
+        KEYWORD_TRY,      // try
+        KEYWORD_CATCH,    // catch
+        KEYWORD_THROW,    // throw
+        KEYWORD_NEW,      // new
+        KEYWORD_RETURN,   // return
+        KEYWORD_IF,       // if
+        KEYWORD_ELSE,     // else
+        KEYWORD_CLASS,    // class
+        KEYWORD_THIS,     // this
+        KEYWORD_STRUCT,   // struct
+        KEYWORD_IMPORT,   // import
+        KEYWORD_PUBLIC,   // public
+        KEYWORD_MODULE,   // module
+        KEYWORD_EXTERN,   // external
+        KEYWORD_NIL,      // nil
         KEYWORD_OVERRIDE, // override
-        KEYWORD_ENUM, // enum
-        KEYWORD_CASE, // case
-        KEYWORD_DEFAULT, // default
-        KEYWORD_BREAK, // break
+        KEYWORD_ENUM,     // enum
+        KEYWORD_CASE,     // case
+        KEYWORD_DEFAULT,  // default
+        KEYWORD_BREAK,    // break
 
-        IDENTIFIER, // variableName
-        STRING_LITERAL, // "hello"
-        CHAR_LITERAL, // 'a'
+        IDENTIFIER,      // variableName
+        STRING_LITERAL,  // "hello"
+        CHAR_LITERAL,    // 'a'
         INTEGER_LITERAL, // 42
-        FLOAT_LITERAL, // 3.14
+        FLOAT_LITERAL,   // 3.14
         BOOLEAN_LITERAL, // true, false
     };
 
@@ -131,14 +130,14 @@ namespace stride::ast
     {
         switch (type)
         {
-            case TokenType::INTEGER_LITERAL:
-            case TokenType::FLOAT_LITERAL:
-            case TokenType::STRING_LITERAL:
-            case TokenType::CHAR_LITERAL:
-            case TokenType::BOOLEAN_LITERAL:
-                return true;
-            default:
-                return false;
+        case TokenType::INTEGER_LITERAL:
+        case TokenType::FLOAT_LITERAL:
+        case TokenType::STRING_LITERAL:
+        case TokenType::CHAR_LITERAL:
+        case TokenType::BOOLEAN_LITERAL:
+            return true;
+        default:
+            return false;
         }
     }
 
@@ -217,7 +216,6 @@ namespace stride::ast
         case TokenType::PRIMITIVE_VOID: return "void";
         case TokenType::PRIMITIVE_AUTO: return "auto";
         case TokenType::KEYWORD_USE: return "use";
-        case TokenType::KEYWORD_AND: return "and";
         case TokenType::KEYWORD_AS: return "as";
         case TokenType::KEYWORD_ASYNC: return "async";
         case TokenType::KEYWORD_FN: return "fn";
@@ -241,7 +239,7 @@ namespace stride::ast
         case TokenType::KEYWORD_IMPORT: return "import";
         case TokenType::KEYWORD_PUBLIC: return "public";
         case TokenType::KEYWORD_MODULE: return "module";
-        case TokenType::KEYWORD_EXTERNAL: return "extern";
+        case TokenType::KEYWORD_EXTERN: return "extern";
         case TokenType::KEYWORD_NIL: return "nil";
         case TokenType::KEYWORD_OVERRIDE: return "override";
         case TokenType::KEYWORD_ENUM: return "enum";
@@ -293,9 +291,7 @@ namespace stride::ast
         TokenDefinition(
             const TokenType type,
             std::regex pattern
-        ) : pattern(std::move(pattern)), type(type)
-        {
-        }
+        ) : pattern(std::move(pattern)), type(type) {}
 
         bool operator ==(const TokenType& other) const
         {
@@ -322,9 +318,7 @@ namespace stride::ast
             std::string lexeme
         ) : type(type),
             offset(offset),
-            lexeme(std::move(lexeme))
-        {
-        }
+            lexeme(std::move(lexeme)) {}
 
         bool operator ==(const TokenType& other) const
         {

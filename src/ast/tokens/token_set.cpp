@@ -25,7 +25,7 @@ TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
 
 Token TokenSet::at(const size_t index) const
 {
-    if (this->size() == 0)
+    if (this->size() == 0 || this->remaining() == 0)
     {
         return END_OF_FILE;
     }

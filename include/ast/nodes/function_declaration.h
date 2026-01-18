@@ -39,7 +39,7 @@ namespace stride::ast
      *                Function declaration definitions             *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-    class AstFunctionDefinition :
+    class AstFunctionDeclaration :
         public IAstNode,
         public ISynthesisable
     {
@@ -50,7 +50,7 @@ namespace stride::ast
         int _flags;
 
     public:
-        AstFunctionDefinition(
+        AstFunctionDeclaration(
             Symbol name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<types::AstType> return_type,
@@ -69,7 +69,7 @@ namespace stride::ast
                   | (is_mutable ? FN_DEFINITION_FLAG_MUTABLE : 0)
               ) {}
 
-        AstFunctionDefinition(
+        AstFunctionDeclaration(
             Symbol name,
             std::unique_ptr<IAstNode>
             body,
@@ -112,7 +112,7 @@ namespace stride::ast
 
     bool is_fn_declaration(const TokenSet& tokens);
 
-    std::unique_ptr<AstFunctionDefinition> parse_fn_declaration(
+    std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
         const Scope& scope,
         TokenSet& tokens
     );

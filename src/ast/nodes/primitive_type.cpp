@@ -26,67 +26,70 @@ std::string primitive_type_to_str(PrimitiveType type)
 
 std::string AstPrimitiveType::to_string()
 {
-    return std::format("PrimitiveType({})", primitive_type_to_str(this->type()));
+    return std::format("PrimitiveType({}{})", primitive_type_to_str(this->type()), this->is_pointer() ? "*" : "");
 }
 
 std::string AstCustomType::to_string()
 {
-    return std::format("CustomType({})", this->name());
+    return std::format("CustomType({}{})", this->name(), this->is_pointer() ? "*" : "");
 }
 
 std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(TokenSet& set)
 {
+    const bool is_ptr = set.peak_next_eq(TokenType::STAR);
+    const int offset = is_ptr ? 1 : 0;
+
     std::optional<std::unique_ptr<AstPrimitiveType>> result = std::nullopt;
-    switch (set.peak_next().type)
+    switch (set.peak(offset).type)
     {
     case TokenType::PRIMITIVE_INT8:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::INT8, 1));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::INT8, 1, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_INT16:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::INT16, 2));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::INT16, 2, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_INT32:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::INT32, 4));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::INT32, 4, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_INT64:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::INT64, 8));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::INT64, 8, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_FLOAT32:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::FLOAT32, 4));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::FLOAT32, 4, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_FLOAT64:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::FLOAT64, 8));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::FLOAT64, 8, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_BOOL:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::BOOL, 1));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::BOOL, 1, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_CHAR:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::CHAR, 1));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::CHAR, 1, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_STRING:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::STRING, 1));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::STRING, 1, is_ptr);
         }
         break;
     case TokenType::PRIMITIVE_VOID:
         {
-            result = std::make_unique<AstPrimitiveType>(AstPrimitiveType(PrimitiveType::VOID, 0));
+            result = std::make_unique<AstPrimitiveType>(PrimitiveType::VOID, 0, is_ptr);
         }
         break;
     default:
@@ -95,7 +98,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(Tok
 
     if (result.has_value())
     {
-        set.next();
+        set.skip(offset + 1);
     }
 
     return result;
@@ -104,13 +107,19 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(Tok
 std::optional<std::unique_ptr<AstCustomType>> AstCustomType::try_parse(TokenSet& set)
 {
     // Custom types are identifiers in type position.
+    bool is_ptr = false;
+    if (set.peak_next_eq(TokenType::STAR))
+    {
+        set.next();
+        is_ptr = true;
+    }
     if (set.peak_next().type != TokenType::IDENTIFIER)
     {
         return std::nullopt;
     }
 
     const auto name = set.next().lexeme;
-    return std::move(std::make_unique<AstCustomType>(AstCustomType(name)));
+    return std::move(std::make_unique<AstCustomType>(AstCustomType(name, is_ptr)));
 }
 
 std::unique_ptr<AstType> stride::ast::types::parse_primitive_type(TokenSet& tokens)

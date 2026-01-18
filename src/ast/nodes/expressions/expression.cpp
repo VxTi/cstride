@@ -25,10 +25,21 @@ llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& con
         }
     }
 
+    // Check if it's a function argument
+    if (auto* arg = llvm::dyn_cast_or_null<llvm::Argument>(val))
+    {
+        return arg;
+    }
+
     if (auto* alloca = llvm::dyn_cast_or_null<llvm::AllocaInst>(val))
     {
         // Load the value from the allocated variable
         return builder->CreateLoad(alloca->getAllocatedType(), alloca, name.value.c_str());
+    }
+
+    if (const auto global = module->getNamedGlobal(name.value))
+    {
+        return builder->CreateLoad(global->getValueType(), global, name.value.c_str());
     }
 
     if (auto* function = module->getFunction(name.value))
@@ -55,7 +66,7 @@ bool AstVariableDeclaration::is_reducible()
     // Variables are reducible only if their initial value is reducible,
     // In the future we can also check whether variables are ever refereced,
     // in which case we can optimize away the variable declaration.
-    if (const auto value = dynamic_cast<IReducible*>(this->initial_value.get()))
+    if (const auto value = dynamic_cast<IReducible*>(this->get_initial_value().get()))
     {
         return value->is_reducible();
     }
@@ -67,14 +78,15 @@ IAstNode* AstVariableDeclaration::reduce()
 {
     if (this->is_reducible())
     {
-        const auto reduced_value = dynamic_cast<IReducible*>(this->initial_value.get())->reduce();
+        const auto reduced_value = dynamic_cast<IReducible*>(this->get_initial_value().get())->reduce();
         auto cloned_type = this->get_variable_type()->clone();
 
 
         return std::make_unique<AstVariableDeclaration>(
             this->get_variable_name(),
             std::move(cloned_type),
-            u_ptr<IAstNode>(std::move(reduced_value))
+            u_ptr<IAstNode>(std::move(reduced_value)),
+            this->get_flags()
         ).release();
     }
     return this;
@@ -123,9 +135,14 @@ std::string AstExpression::to_string()
 
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(const Scope& scope, TokenSet& set)
 {
+    if (auto unary = parse_binary_unary_op(scope, set); unary.has_value())
+    {
+        return std::move(unary.value());
+    }
+
     if (auto lit = parse_literal_optional(scope, set); lit.has_value())
     {
-        return std::move(*lit);
+        return std::move(lit.value());
     }
 
     if (set.peak_next_eq(TokenType::LPAREN))
@@ -173,14 +190,12 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
  * Parsing of an expression that does not require precedence, but has a LHS and RHS, and an operator.
  * This can be either binary expressions, e.g., 1 + 1, or comparative expressions, e.g., 1 < 2
  */
-std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(const Scope& scope, TokenSet& set)
+std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
+    const Scope& scope,
+    TokenSet& set,
+    std::unique_ptr<AstExpression> lhs
+)
 {
-    auto lhs = parse_standalone_expression_part(scope, set);
-    if (!lhs)
-    {
-        return std::nullopt;
-    }
-
     const auto op_token = set.peak_next_type();
 
     if (auto logical_op = get_logical_op_type(op_token); logical_op.has_value())
@@ -209,49 +224,9 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(co
         return std::make_unique<AstComparisonOp>(std::move(lhs), comparative_op.value(), std::move(rhs));
     }
 
-    return std::nullopt;
+    return lhs;
 }
 
-
-std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
-    const int expression_type_flags,
-    const Scope& scope,
-    TokenSet& set
-)
-{
-    if ((expression_type_flags & EXPRESSION_ALLOW_VARIABLE_DECLARATION) == 0)
-    {
-        set.throw_error("Variable declarations are not allowed in this context");
-    }
-
-    set.expect(TokenType::KEYWORD_LET);
-    const auto variable_name_tok = set.expect(TokenType::IDENTIFIER);
-    Symbol variable_name(variable_name_tok.lexeme);
-    set.expect(TokenType::COLON);
-    auto type = types::parse_primitive_type(set);
-
-    set.expect(TokenType::EQUALS);
-
-    auto value = parse_expression_ext(
-        EXPRESSION_VARIABLE_ASSIGNATION,
-        scope, set
-    );
-
-    // If it's not an inline variable declaration (e.g., in a for loop),
-    // we expect a semicolon at the end.
-    if ((expression_type_flags & EXPRESSION_INLINE_VARIABLE_DECLARATION) == 0)
-    {
-        set.expect(TokenType::SEMICOLON);
-    }
-
-    scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name);
-
-    return std::make_unique<AstVariableDeclaration>(
-        variable_name,
-        std::move(type),
-        std::move(value)
-    );
-}
 
 std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
     const int expression_type_flags,
@@ -274,13 +249,28 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
         set.throw_error("Unexpected token in expression");
     }
 
-    std::unique_ptr<AstExpression> final_expression = parse_arithmetic_binary_op(scope, set, std::move(lhs), 1)
-       .value_or(parse_logical_or_comparative_op(scope, set)
-           .value_or(nullptr));
+    // Attempt to parse arithmetic binary operations first
 
-    if (final_expression != nullptr)
+    // If we have a result from arithmetic parsing, update lhs.
+    // Note: parse_arithmetic_binary_op returns the lhs if no arithmetic op is found,
+    // so it effectively passes through unless an error occurs (returns nullopt).
+    if (auto arithmetic_result = parse_arithmetic_binary_op(scope, set, std::move(lhs), 1); arithmetic_result.
+        has_value())
     {
-        return std::move(final_expression);
+        lhs = std::move(arithmetic_result.value());
+    }
+    else
+    {
+        // This case handles errors during arithmetic parsing (e.g. valid LHS but invalid RHS)
+        set.throw_error("Invalid arithmetic expression");
+    }
+
+    // Now attempt to parse logical or comparative operations using the result
+    auto logical_result = parse_logical_or_comparative_op(scope, set, std::move(lhs));
+
+    if (logical_result.has_value())
+    {
+        return std::move(logical_result.value());
     }
 
     set.throw_error("Unexpected token in expression");

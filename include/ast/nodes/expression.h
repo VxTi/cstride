@@ -11,6 +11,10 @@ namespace stride::ast
 #define EXPRESSION_INLINE_VARIABLE_DECLARATION 2 // Variables declared after initial one
 #define EXPRESSION_VARIABLE_ASSIGNATION        4
 
+#define VARIABLE_DECLARATION_FLAG_EXTERN  0x1
+#define VARIABLE_DECLARATION_FLAG_MUTABLE 0x2
+#define VARIABLE_DECLARATION_FLAG_GLOBAL  0x4
+
     enum class BinaryOpType
     {
         ADD,
@@ -126,37 +130,46 @@ namespace stride::ast
     class AstVariableDeclaration :
         public AstExpression
     {
-        const Symbol variable_name;
-        const u_ptr<types::AstType> variable_type;
-        const u_ptr<IAstNode> initial_value;
+        const int _flags;
+        const Symbol _variable_name;
+        const u_ptr<types::AstType> _variable_type;
+        const u_ptr<IAstNode> _initial_value;
 
     public:
         AstVariableDeclaration(
             Symbol variable_name,
             u_ptr<types::AstType> variable_type,
-            u_ptr<IAstNode> initial_value
+            u_ptr<IAstNode> initial_value,
+            const int flags
         ) :
             AstExpression({}),
-            variable_name(std::move(variable_name)),
-            variable_type(std::move(variable_type)),
-            initial_value(std::move(initial_value)) {}
+            _flags(flags),
+            _variable_name(std::move(variable_name)),
+            _variable_type(std::move(variable_type)),
+            _initial_value(std::move(initial_value)) {}
 
         [[nodiscard]]
         const Symbol& get_variable_name() const
         {
-            return this->variable_name;
+            return this->_variable_name;
         }
 
         [[nodiscard]]
         types::AstType* get_variable_type() const
         {
-            return this->variable_type.get();
+            return this->_variable_type.get();
         }
 
         [[nodiscard]]
         const u_ptr<IAstNode>& get_initial_value() const
         {
-            return this->initial_value;
+            return this->_initial_value;
+        }
+
+        [[nodiscard]]
+        int get_flags() const
+        {
+            return this->_flags;
         }
 
         std::string to_string() override;
@@ -280,6 +293,10 @@ namespace stride::ast
 
     bool is_variable_declaration(const TokenSet& set);
 
+    bool can_parse_expression(const TokenSet& tokens);
+
+    int binary_operator_precedence(BinaryOpType type);
+
     std::unique_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& tokens);
 
     std::unique_ptr<AstExpression> parse_expression_ext(
@@ -289,9 +306,12 @@ namespace stride::ast
     );
     std::unique_ptr<AstExpression> parse_standalone_expression_part(const Scope& scope, TokenSet& set);
 
-    bool can_parse_expression(const TokenSet& tokens);
+    std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
+        int expression_type_flags,
+        const Scope& scope,
+        TokenSet& set
+    );
 
-    int binary_operator_precedence(BinaryOpType type);
 
     std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(const Scope& scope,
                                                                              TokenSet& set,

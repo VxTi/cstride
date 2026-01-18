@@ -18,10 +18,7 @@ namespace stride::ast
 
 #define BITS_PER_BYTE (8)
 #define INFER_INT_BYTE_COUNT(x) \
-    ((x >> 48) & 0xFF) ? 8 : \
-    ((x >> 32) & 0xFF) ? 4 : \
-    ((x >> 16) & 0xFF) ? 2 : \
-    ((x >> 8) & 0xFF) ? 1 : 0
+    ((x > 0xFFFFFFFF) ? 8 : 4)
 
 #define INFER_FLOAT_BYTE_COUNT(x) \
     ((x >> 23) & 0xFF) ? 4 : \

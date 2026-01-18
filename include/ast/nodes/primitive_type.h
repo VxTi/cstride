@@ -23,23 +23,28 @@ namespace stride::ast::types
 
     class AstType : public IAstNode
     {
+        bool is_ptr;
+
     public:
-        AstType() = default;
+        AstType(const bool is_ptr = false) : is_ptr(is_ptr) {}
         ~AstType() override = default;
 
         virtual u_ptr<AstType> clone() const = 0;
+
+        [[nodiscard]]
+        bool is_pointer() const { return this->is_ptr; }
     };
 
     class AstPrimitiveType : public AstType
     {
         const PrimitiveType _type;
+        size_t _byte_size;
 
     public:
-        size_t byte_size;
-
-        explicit AstPrimitiveType(const PrimitiveType type, const size_t byte_size) :
+        explicit AstPrimitiveType(const PrimitiveType type, const size_t byte_size, const bool is_ptr = false) :
+            AstType(is_ptr),
             _type(type),
-            byte_size(byte_size) {}
+            _byte_size(byte_size) {}
 
         std::string to_string() override;
 
@@ -48,7 +53,11 @@ namespace stride::ast::types
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
 
-        std::unique_ptr<AstType> clone() const override {
+        [[nodiscard]]
+        size_t byte_size() const { return this->_byte_size; }
+
+        std::unique_ptr<AstType> clone() const override
+        {
             return std::make_unique<AstPrimitiveType>(*this);
         }
     };
@@ -60,14 +69,17 @@ namespace stride::ast::types
     public:
         std::string to_string() override;
 
-        explicit AstCustomType(std::string name) : _name(std::move(name)) {}
+        explicit AstCustomType(std::string name, const bool is_ptr) :
+            AstType(is_ptr),
+            _name(std::move(name)) {}
 
         static std::optional<std::unique_ptr<AstCustomType>> try_parse(TokenSet& set);
 
         [[nodiscard]]
         std::string name() const { return this->_name; }
 
-        std::unique_ptr<AstType> clone() const override {
+        std::unique_ptr<AstType> clone() const override
+        {
             return std::make_unique<AstCustomType>(*this);
         }
     };

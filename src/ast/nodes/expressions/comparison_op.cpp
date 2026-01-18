@@ -48,6 +48,22 @@ llvm::Value* AstComparisonOp::codegen(llvm::Module* module, llvm::LLVMContext& c
         return nullptr;
     }
 
+    // Cast operands if they are integers and have different bit widths
+    if (left->getType()->isIntegerTy() && right->getType()->isIntegerTy())
+    {
+        const auto left_width = left->getType()->getIntegerBitWidth();
+        const auto right_width = right->getType()->getIntegerBitWidth();
+
+        if (left_width < right_width)
+        {
+            left = builder->CreateIntCast(left, right->getType(), true, "icmp_sext");
+        }
+        else if (right_width < left_width)
+        {
+            right = builder->CreateIntCast(right, left->getType(), true, "icmp_sext");
+        }
+    }
+
     // Check if operands are floating point or integer
     const bool is_float = left->getType()->isFloatingPointTy();
 

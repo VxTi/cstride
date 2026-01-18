@@ -1,15 +1,19 @@
 mod test::tes2;
 
-use std::fs::{ File, Reader, Writer };
-use std::io::{ Stream };
+extern fn write(fd: i32, buf: string, count: i32): i32;
 
 extern fn printf(format: string): i32;
 
 fn test(): string {
-    return "\x1b[32mHello world from \n\x1b[40manother function";
+    return "Hello world from another function \n";
 }
 
-
 fn main(): void {
-    printf(test())
+
+    // STDERR FD
+    let stdio_fd: i32 = 2;
+
+    for (let i: i8 = 0; i < 5; i++) {
+        printf(test())
+    }
 }

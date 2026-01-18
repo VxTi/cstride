@@ -12,7 +12,7 @@
 
 using namespace stride::ast;
 
-std::string AstFunctionDefinition::to_string()
+std::string AstFunctionDeclaration::to_string()
 {
     std::string params;
     for (const auto& param : this->parameters())
@@ -35,23 +35,25 @@ std::string AstFunctionDefinition::to_string()
 
 bool stride::ast::is_fn_declaration(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_FN) || tokens.peak_next_eq(TokenType::KEYWORD_EXTERNAL);
+    return tokens.peak_next_eq(TokenType::KEYWORD_FN)
+        || (tokens.peak_eq(TokenType::KEYWORD_EXTERN, 0)
+            && tokens.peak_eq(TokenType::KEYWORD_FN, 1));
 }
 
 
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
-std::unique_ptr<AstFunctionDefinition> stride::ast::parse_fn_declaration(
+std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const Scope& scope,
     TokenSet& tokens
 )
 {
     bool is_external = false;
     bool is_variadic = false;
-    if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERNAL))
+    if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERN))
     {
-        tokens.expect(TokenType::KEYWORD_EXTERNAL);
+        tokens.expect(TokenType::KEYWORD_EXTERN);
         is_external = true;
     }
 
@@ -98,7 +100,7 @@ std::unique_ptr<AstFunctionDefinition> stride::ast::parse_fn_declaration(
         }
     }
 
-    return std::move(std::make_unique<AstFunctionDefinition>(
+    return std::move(std::make_unique<AstFunctionDeclaration>(
         fn_name,
         std::move(parameters),
         std::move(return_type),
@@ -110,7 +112,7 @@ std::unique_ptr<AstFunctionDefinition> stride::ast::parse_fn_declaration(
 
 
 std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
-    const AstFunctionDefinition* self,
+    const AstFunctionDeclaration* self,
     llvm::Module* module,
     llvm::LLVMContext& context
 )
@@ -128,7 +130,7 @@ std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
     return param_types;
 }
 
-llvm::Value* AstFunctionDefinition::codegen(
+llvm::Value* AstFunctionDeclaration::codegen(
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* irBuilder

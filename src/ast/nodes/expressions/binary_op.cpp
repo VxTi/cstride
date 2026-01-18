@@ -145,6 +145,22 @@ llvm::Value* AstBinaryArithmeticOp::codegen(llvm::Module* module, llvm::LLVMCont
         builder.SetInsertPoint(instruction->getParent());
     }
 
+     // Handle integer promotion for mismatched types
+    if (l->getType()->isIntegerTy() && r->getType()->isIntegerTy())
+    {
+        const auto l_width = l->getType()->getIntegerBitWidth();
+        const auto r_width = r->getType()->getIntegerBitWidth();
+
+        if (l_width < r_width)
+        {
+            l = builder.CreateIntCast(l, r->getType(), true, "binop_sext");
+        }
+        else if (r_width < l_width)
+        {
+            r = builder.CreateIntCast(r, l->getType(), true, "binop_sext");
+        }
+    }
+
     bool is_float = l->getType()->isFloatingPointTy();
 
     switch (this->get_op_type())
