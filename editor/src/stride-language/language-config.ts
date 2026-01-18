@@ -1,5 +1,4 @@
-import { editor, languages, type Position } from 'monaco-editor';
-import ITextModel = editor.ITextModel;
+import { languages } from 'monaco-editor';
 
 export const strideLanguageId = 'stride';
 export const languageExtension = 'sr';
@@ -112,7 +111,7 @@ export const keywords = [
 
 export const language: languages.IMonarchLanguage = {
   defaultToken: '',
-  tokenPostfix: '.' + languageExtension,
+  tokenPostfix: `.${languageExtension}`,
   keywords,
   operators: [
     '**=',
@@ -242,72 +241,3 @@ export const language: languages.IMonarchLanguage = {
     ],
   },
 };
-
-export function registerCompletionProvider(
-  monaco: typeof import('monaco-editor')
-): import('monaco-editor').IDisposable {
-  return monaco.languages.registerCompletionItemProvider(strideLanguageId, {
-    provideCompletionItems: (model, position) => {
-      const lineContent = model.getLineContent(position.lineNumber);
-      const textUntilPosition = lineContent.substring(0, position.column - 1);
-
-      const suggestions: languages.CompletionItem[] = [];
-
-      // Add doc comment snippet if /** is typed
-      if (textUntilPosition.endsWith('/**')) {
-        suggestions.push({
-          label: '/** */',
-          kind: monaco.languages.CompletionItemKind.Snippet,
-          documentation: 'JSDoc-style documentation comment',
-          insertText: '/**\n * $0\n */',
-          insertTextRules:
-            monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range: {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: position.column - 3,
-            endColumn: position.column,
-          },
-        });
-      }
-
-      suggestions.push(...provideKeywordCompletions(model, position));
-
-      return { suggestions };
-    },
-  });
-}
-
-function provideKeywordCompletions(
-  model: ITextModel,
-  position: Position
-): languages.CompletionItem[] {
-  // Get the text on the current line up to the cursor position
-  const lineContent = model.getLineContent(position.lineNumber);
-  const textUntilPosition = lineContent.substring(0, position.column - 1);
-
-  // Find the start of the current word
-  const match = textUntilPosition.match(/[a-zA-Z_]\w*$/);
-  const wordPrefix = match ? match[0] : '';
-
-  // Calculate the range to replace
-  const startColumn = position.column - wordPrefix.length;
-  const endColumn = position.column;
-
-  // Filter keywords based on the typed prefix
-  const filteredKeywords = keywords.filter(keyword =>
-    keyword.startsWith(wordPrefix)
-  );
-
-  return filteredKeywords.map(keyword => ({
-    label: keyword,
-    kind: languages.CompletionItemKind.Keyword,
-    insertText: keyword,
-    range: {
-      startLineNumber: position.lineNumber,
-      endLineNumber: position.lineNumber,
-      startColumn,
-      endColumn,
-    },
-  }));
-}
