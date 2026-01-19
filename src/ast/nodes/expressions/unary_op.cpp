@@ -205,30 +205,35 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
     // Check for Postfix Unary (only Identifier supported for provided context/examples)
     // We can't easily hijack arbitrary expression parsing for postfix here without restructuring `parse_standalone_expression_part`.
     // However, we can peek if we have Identifier -> PostfixOp
-    if (set.peak_next_eq(TokenType::IDENTIFIER))
-    {
+    if (set.peak_next_eq(TokenType::IDENTIFIER) && (
         // Check if the token AFTER identifier is ++ or --
-        if (set.peak(1).type == TokenType::DOUBLE_PLUS || set.peak(1).type == TokenType::DOUBLE_MINUS)
-        {
-            const auto id_token = set.next(); // Eat identifier
-            const auto op_token = set.next(); // Eat op
+        set.peak(1).type == TokenType::DOUBLE_PLUS || set.peak(1).type == TokenType::DOUBLE_MINUS))
+    {
+        const auto iden_tok = set.next();
+        const auto iden_sym = Symbol(iden_tok.lexeme);
 
-            UnaryOpType type = (op_token.type == TokenType::DOUBLE_PLUS)
-                                   ? UnaryOpType::INCREMENT
-                                   : UnaryOpType::DECREMENT;
+        const auto operation_tok = set.next();
 
-            return std::make_unique<AstUnaryOp>(
+        const auto internal_name = scope.get_symbol_globally(iden_sym)
+                                        .transform([](const SymbolDefinition& def) { return def.get_internal_name(); })
+                                        .value_or(iden_tok.lexeme);
+
+        UnaryOpType type = (operation_tok.type == TokenType::DOUBLE_PLUS)
+                               ? UnaryOpType::INCREMENT
+                               : UnaryOpType::DECREMENT;
+
+        return std::make_unique<AstUnaryOp>(
+            set.source(),
+            iden_tok.offset,
+            type,
+            std::make_unique<AstIdentifier>(
                 set.source(),
-                id_token.offset,
-                type,
-                std::make_unique<AstIdentifier>(
-                    set.source(),
-                    next.offset,
-                    Symbol(id_token.lexeme)
-                ),
-                true // Postfix
-            );
-        }
+                next.offset,
+                iden_sym,
+                internal_name
+            ),
+            true // Postfix
+        );
     }
 
     return std::nullopt;
