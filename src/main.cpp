@@ -16,7 +16,13 @@ int main(const int argc, char* argv[])
 
     try
     {
-        const auto program = stride::Program({argv[1]});
+        std::vector<std::string> files;
+        for (int i = 1; i < argc; ++i)
+        {
+            files.push_back(argv[i]);
+        }
+
+        const auto program = stride::Program(files);
 
         program.execute(argc, argv);
     }

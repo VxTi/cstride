@@ -1,0 +1,34 @@
+mod stl::math;
+
+/**
+ * Stride Standard Library
+ * Math Functions
+ */
+
+// Trigonometric functions
+extern fn sin(x: f64): f64;
+extern fn cos(x: f64): f64;
+extern fn tan(x: f64): f64;
+extern fn asin(x: f64): f64;
+extern fn acos(x: f64): f64;
+extern fn atan(x: f64): f64;
+extern fn atan2(y: f64, x: f64): f64;
+
+// Hyperbolic functions
+extern fn sinh(x: f64): f64;
+extern fn cosh(x: f64): f64;
+extern fn tanh(x: f64): f64;
+
+// Exponential and logarithmic functions
+extern fn exp(x: f64): f64;
+extern fn log(x: f64): f64;
+extern fn log10(x: f64): f64;
+extern fn pow(base: f64, exponent: f64): f64;
+extern fn sqrt(x: f64): f64;
+
+// Rounding and remainder functions
+extern fn ceil(x: f64): f64;
+extern fn floor(x: f64): f64;
+extern fn fabs(x: f64): f64;
+extern fn fmod(x: f64, y: f64): f64;
+

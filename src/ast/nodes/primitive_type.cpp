@@ -11,12 +11,12 @@ std::string primitive_type_to_str(PrimitiveType type)
 {
     switch (type)
     {
-    case PrimitiveType::INT8: return "int8";
-    case PrimitiveType::INT16: return "int16";
-    case PrimitiveType::INT32: return "int32";
-    case PrimitiveType::INT64: return "int64";
-    case PrimitiveType::FLOAT32: return "float32";
-    case PrimitiveType::FLOAT64: return "float64";
+    case PrimitiveType::INT8: return "i8";
+    case PrimitiveType::INT16: return "i16";
+    case PrimitiveType::INT32: return "i32";
+    case PrimitiveType::INT64: return "i64";
+    case PrimitiveType::FLOAT32: return "f32";
+    case PrimitiveType::FLOAT64: return "f64";
     case PrimitiveType::BOOL: return "bool";
     case PrimitiveType::CHAR: return "char";
     case PrimitiveType::STRING: return "string";

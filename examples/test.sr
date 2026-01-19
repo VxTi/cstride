@@ -1,3 +1,5 @@
+use stl::math;
+
 extern fn printf(format: string): i32;
 
 extern fn write(fd: i32, input: string, length: i32): i32;
@@ -17,6 +19,7 @@ fn hello_world(): string {
 
 fn main(): void {
 
+    cos(45);
     printf("Test")
     exit(-1)
 

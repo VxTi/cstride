@@ -39,10 +39,7 @@ Program::Program(std::vector<std::string> files)
 }
 
 
-void Program::execute(
-    int argc,
-    char* argv[]
-) const
+void Program::execute(int argc, char* argv[]) const
 {
     if (_nodes.empty())
     {
@@ -127,7 +124,18 @@ void Program::execute(
         return;
     }
 
-    llvm::GenericValue result = engine->runFunction(main, {});
+
+    std::vector<llvm::GenericValue> ArgValues;
+
+    llvm::GenericValue ArgcValue;
+    ArgcValue.IntVal = llvm::APInt(32, argc);
+    ArgValues.push_back(ArgcValue);
+
+    llvm::GenericValue ArgvValue;
+    ArgvValue.PointerVal = argv;
+    ArgValues.push_back(ArgvValue);
+
+    llvm::GenericValue result = engine->runFunction(main, ArgValues);
 
     const auto status_code = static_cast<int>(result.IntVal.getZExtValue());
 
