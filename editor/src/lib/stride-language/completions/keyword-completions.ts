@@ -3,6 +3,7 @@ import { keywords } from '../language-config';
 import ITextModel = editor.ITextModel;
 
 export function provideKeywordCompletions(
+  _monaco: typeof import('monaco-editor'),
   model: ITextModel,
   position: Position
 ): languages.CompletionItem[] {

@@ -1,5 +1,6 @@
 import { type IDisposable, type languages } from 'monaco-editor';
 import { strideLanguageId } from '../language-config';
+import { provideFunctionReferenceCompletions } from './function-reference-completions';
 import { provideKeywordCompletions } from './keyword-completions';
 
 export function registerCompletionProvider(
@@ -30,7 +31,10 @@ export function registerCompletionProvider(
         });
       }
 
-      suggestions.push(...provideKeywordCompletions(model, position));
+      suggestions.push(
+        ...provideKeywordCompletions(monaco, model, position),
+        ...provideFunctionReferenceCompletions(monaco, model, position)
+      );
 
       return { suggestions };
     },
