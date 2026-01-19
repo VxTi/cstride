@@ -41,4 +41,10 @@ namespace stride::ast
          */
         CompilationMode mode;
     } CompilationOptions;
+
+    /**
+     * Will attempt to resolve compilation options from command-line arguments
+     * into a <code>stride::ast::CompilationOptions</code> structure.
+     */
+    CompilationOptions resolve_compilation_options_from_args(int argc, char** argv);
 }

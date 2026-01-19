@@ -128,7 +128,7 @@ namespace stride::ast
             const int source_offset,
             const long double value
         ) :
-            AbstractAstLiteralBase(source, source_offset, LiteralType::FLOAT, value, 4 * BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(source, source_offset, LiteralType::FLOAT, value, 8 * BITS_PER_BYTE) {}
 
         std::string to_string() override;
 

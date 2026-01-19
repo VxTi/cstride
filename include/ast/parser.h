@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ast/nodes/enumerables.h"
-#include "ast/nodes/function_declaration.h"
+#include "ast/nodes/function_definition.h"
 #include "ast/nodes/import.h"
 #include "nodes/ast_node.h"
 #include "nodes/blocks.h"

@@ -2,7 +2,7 @@
 
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/enumerables.h"
-#include "ast/nodes/function_declaration.h"
+#include "ast/nodes/function_definition.h"
 #include "ast/nodes/import.h"
 
 using namespace stride::ast;

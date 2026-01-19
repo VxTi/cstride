@@ -50,13 +50,12 @@ void Program::print_ast_nodes() const
 
 void Program::execute(int argc, char* argv[]) const
 {
-    setvbuf(stdout, nullptr, _IONBF, 0);
     if (_nodes.empty())
     {
         return;
     }
     // For debugging purposes, comment this out to see the generated AST nodes
-    // this->print_ast_nodes();
+     this->print_ast_nodes();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();

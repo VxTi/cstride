@@ -1,4 +1,4 @@
-#include "ast/nodes/function_declaration.h"
+#include "ast/nodes/function_definition.h"
 
 #include "ast/nodes/blocks.h"
 #include <llvm/IR/Function.h>
@@ -22,15 +22,15 @@ std::string AstFunctionDeclaration::to_string()
         params += param->to_string();
     }
 
-    const auto body_str = this->body() == nullptr ? "EMPTY" : this->body()->to_string();
+    const auto body_str = this->body() == nullptr ? "<empty>" : this->body()->to_string();
 
     return std::format(
-        "FunctionDeclaration(name: {} ({}), parameters: [ {} ], body: {}, is_external: {})",
+        "FunctionDefinition(name: {} ({}), parameters: [ {} ], body: {}{})",
         this->get_name(),
         this->get_internal_name(),
         params,
         body_str,
-        this->is_extern()
+        this->is_extern() ? " (extern)" : ""
     );
 }
 

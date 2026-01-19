@@ -9,7 +9,7 @@
 #include "ast/scope.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
-#include "ast/nodes/primitive_type.h"
+#include "ast/nodes/types.h"
 
 using namespace stride::ast;
 

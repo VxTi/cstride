@@ -1,4 +1,4 @@
-#include "ast/nodes/function_declaration.h"
+#include "ast/nodes/function_definition.h"
 
 using namespace stride::ast;
 

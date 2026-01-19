@@ -21,7 +21,7 @@ int main(const int argc, char* argv[])
         {
             files.push_back(argv[i]);
         }
-        auto program = stride::Program(files);
+        const auto program = stride::Program(files);
 
         program.execute(argc, argv);
     }

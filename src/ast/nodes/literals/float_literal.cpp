@@ -14,7 +14,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
         return std::make_unique<AstFloatLiteral>(
             set.source(),
             reference_token.offset,
-            std::stof(next.lexeme)
+            std::stod(next.lexeme)
         );
     }
     return std::nullopt;
@@ -22,10 +22,14 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
 
 std::string AstFloatLiteral::to_string()
 {
-    return std::format("FloatLiteral({})", value());
+    return std::format("FloatLiteral({}, {}b)", this->value(), this->bit_count() / 8);
 }
 
 llvm::Value* AstFloatLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    return llvm::ConstantFP::get(context, llvm::APFloat(this->value()));
+    if (this->bit_count() > 32)
+    {
+        return llvm::ConstantFP::get(builder->getDoubleTy(), this->value());
+    }
+    return llvm::ConstantFP::get(builder->getFloatTy(), this->value());
 }

@@ -179,7 +179,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     // we expect a semicolon at the end.
     if ((expression_type_flags & SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION) == 0)
     {
-        set.expect(TokenType::SEMICOLON);
+        set.expect(TokenType::SEMICOLON, "Expected ';' after variable declaration");
     }
 
     std::string internal_name = variable_name;

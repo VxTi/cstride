@@ -1,7 +1,6 @@
 #pragma once
 #include "ast_node.h"
 #include "ast/scope.h"
-#include "ast/identifiers.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -12,14 +11,15 @@ namespace stride::ast
         public IAstNode,
         public ISynthesisable
     {
-        Symbol _name;
+        std::string _name;
         std::vector<std::unique_ptr<AstSwitchBranch>> _branches;
 
     public:
+        M_2_PI
         explicit AstSwitch(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const Symbol& name
+            const std::string& name
         )
             : IAstNode(source, source_offset),
               _name(name) {}
@@ -30,6 +30,6 @@ namespace stride::ast
 
         static bool can_parse(const TokenSet& tokens);
 
-        static std::unique_ptr<AstSwitch> try_parse(const Scope& scope, TokenSet& tokens);
+        static std::unique_ptr<AstSwitch> try_parse(const Scope& scope, TokenSet& set);
     };
 }

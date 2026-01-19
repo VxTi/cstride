@@ -30,11 +30,7 @@ namespace stride
 
         std::vector<ProgramObject>& nodes() { return _nodes; }
 
-        void execute(
-            int argc,
-            char* argv[]
-        ) const;
-
-
+        void execute(int argc,char* argv[]) const;
     };
+
 }
