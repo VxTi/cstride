@@ -16,7 +16,7 @@ using namespace stride::ast;
 std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const Scope& scope, TokenSet& tokens)
 {
     const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
-    auto member_sym = Symbol(member_name_tok.lexeme);
+    auto member_sym = member_name_tok.lexeme;
 
     scope.try_define_scoped_symbol(*tokens.source().get(), member_name_tok, member_sym, SymbolType::ENUM_MEMBER);
 
@@ -42,35 +42,35 @@ std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(const
 std::string AstEnumerableMember::to_string()
 {
     auto member_value_str = this->value().to_string();
-    return std::format("{}: {}", this->name().to_string(), member_value_str);
+    return std::format("{}: {}", this->get_name(), member_value_str);
 }
 
 std::string AstEnumerable::to_string()
 {
     std::ostringstream imploded;
 
-    if (this->members().empty())
+    if (this->get_members().empty())
     {
-        return std::format("Enumerable {} (empty)", this->name().to_string());
+        return std::format("Enumerable {} (empty)", this->get_name());
     }
 
-    imploded << this->members()[0]->to_string();
-    for (size_t i = 1; i < this->members().size(); ++i)
+    imploded << this->get_members()[0]->to_string();
+    for (size_t i = 1; i < this->get_members().size(); ++i)
     {
-        imploded << "\n  " << this->members()[i]->to_string();
+        imploded << "\n  " << this->get_members()[i]->to_string();
     }
 
-    return std::format("Enumerable {} (\n  {}\n)", this->name().to_string(), imploded.str());
+    return std::format("Enumerable {} (\n  {}\n)", this->get_name(), imploded.str());
 }
 
 
 std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(const Scope& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_ENUM);
-    const auto enumerable_name = set.expect(TokenType::IDENTIFIER);
-    const auto enumerable_sym = Symbol(enumerable_name.lexeme);
+    const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
+    auto enumerable_name = enumerable_name_tok.lexeme;
 
-    scope.try_define_global_symbol(*set.source(), enumerable_name, enumerable_sym, SymbolType::ENUM);
+    scope.try_define_global_symbol(*set.source(), enumerable_name_tok, enumerable_name, SymbolType::ENUM);
 
     const auto opt_enum_body_subset = collect_block(set);
 
@@ -94,7 +94,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(const S
         set.source(),
         reference_token.offset,
         std::move(members),
-        Symbol(enumerable_name.lexeme)
+        enumerable_name
     );
 }
 

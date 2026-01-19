@@ -79,19 +79,17 @@ void Program::execute(int argc, char* argv[]) const
     module->setDataLayout(machine->createDataLayout());
     module->setTargetTriple(triple);
 
-
-    auto* root = _nodes[0].root();
-    if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(root))
+    for (const auto& node : _nodes)
     {
-        if (const auto entry = synthesisable->codegen(module.get(), context, &builder); !entry)
+        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node.root()))
         {
-            std::cerr << "Failed to codegen entry point" << std::endl;
-            return;
+            if (const auto entry = synthesisable->codegen(module.get(), context, &builder); !entry)
+            {
+                throw std::runtime_error(
+                    "Failed to build executable for file " + node.root()->source->path
+                );
+            }
         }
-    }
-    else
-    {
-        return;
     }
 
     if (llvm::verifyModule(*module, &llvm::errs()))

@@ -6,7 +6,7 @@ using namespace stride::ast;
 void stride::ast::parse_subsequent_fn_params(
     const Scope& scope,
     TokenSet& tokens,
-    std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
+    std::vector<u_ptr<AstFunctionParameter>>& parameters
 )
 {
     while (tokens.peak_next_eq(TokenType::COMMA))
@@ -17,17 +17,17 @@ void stride::ast::parse_subsequent_fn_params(
         auto param = parse_first_fn_param(scope, tokens);
 
         if (std::ranges::find_if(
-            parameters, [&](const std::unique_ptr<AstFunctionParameter>& p)
+            parameters, [&](const u_ptr<AstFunctionParameter>& p)
             {
-                return p->name == param->name;
+                return p->get_name() == param->get_name();
             }) != parameters.end())
         {
             tokens.throw_error(
                 next,
-                stride::ErrorType::SEMANTIC_ERROR,
+                ErrorType::SEMANTIC_ERROR,
                 std::format(
                     "Duplicate parameter name \"{}\" in function definition",
-                    param->name.value)
+                    param->get_name())
             );
         }
 
@@ -37,16 +37,15 @@ void stride::ast::parse_subsequent_fn_params(
 
 std::string AstFunctionParameter::to_string()
 {
-    return std::format("{}()", name.to_string(), this->type->to_string());
+    return std::format("{}()", get_name(), this->get_type()->to_string());
 }
 
-std::unique_ptr<AstFunctionParameter> stride::ast::parse_first_fn_param(
+u_ptr<AstFunctionParameter> stride::ast::parse_first_fn_param(
     [[maybe_unused]] const Scope& scope,
     TokenSet& tokens
 )
 {
     const auto reference_token = tokens.expect(TokenType::IDENTIFIER);
-    const auto param_name = Symbol(reference_token.lexeme);
 
     tokens.expect(TokenType::COLON);
 
@@ -55,6 +54,7 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_first_fn_param(
     return std::make_unique<AstFunctionParameter>(
         tokens.source(),
         reference_token.offset,
-        param_name, std::move(type_ptr)
+        reference_token.lexeme,
+        std::move(type_ptr)
     );
 }

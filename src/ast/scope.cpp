@@ -7,7 +7,7 @@ namespace stride::ast
 {
     std::optional<SymbolDefinition> try_get_symbol_from_scope(
         const Scope* scope,
-        const Symbol& symbol
+        const std::string& symbol
     )
     {
         const auto end = scope->symbols->end();
@@ -27,7 +27,7 @@ namespace stride::ast
         return *it_result;
     }
 
-    std::optional<SymbolDefinition> Scope::get_symbol_globally(const Symbol& symbol) const
+    std::optional<SymbolDefinition> Scope::get_symbol_globally(const std::string& symbol) const
     {
         auto current = this;
 
@@ -44,19 +44,19 @@ namespace stride::ast
         return std::nullopt;
     }
 
-    std::optional<SymbolDefinition> Scope::get_symbol(const Symbol& symbol) const
+    std::optional<SymbolDefinition> Scope::get_symbol(const std::string& symbol) const
     {
         return try_get_symbol_from_scope(this, symbol);
     }
 
-    bool Scope::is_symbol_defined_globally(const Symbol& symbol) const
+    bool Scope::is_symbol_defined_globally(const std::string& symbol) const
     {
         const auto sym_definition = this->get_symbol_globally(symbol);
 
         return sym_definition.has_value();
     }
 
-    bool Scope::is_symbol_defined_scoped(const Symbol& symbol) const
+    bool Scope::is_symbol_defined_scoped(const std::string& symbol) const
     {
         const auto sym_definition = this->get_symbol(symbol);
 
@@ -66,12 +66,12 @@ namespace stride::ast
     void Scope::try_define_scoped_symbol(
         const SourceFile& source,
         const Token& token,
-        const Symbol& symbol,
+        const std::string& symbol,
         const SymbolType symbol_type,
         const std::string& internal_name
     ) const
     {
-        if (this->is_symbol_defined_scoped(symbol))
+        if (this->is_symbol_defined_scoped(internal_name))
         {
             throw parsing_error(
                 make_source_error(
@@ -79,7 +79,7 @@ namespace stride::ast
                     ErrorType::SEMANTIC_ERROR,
                     "Symbol already defined in this scope",
                     token.offset,
-                    symbol.value.size()
+                    symbol.size()
                 )
             );
         }
@@ -91,7 +91,7 @@ namespace stride::ast
     void Scope::try_define_global_symbol(
         const SourceFile& source,
         const Token& reference_token,
-        const Symbol& symbol,
+        const std::string& symbol,
         const SymbolType symbol_type,
         const std::string& internal_name
     ) const
@@ -104,7 +104,7 @@ namespace stride::ast
                     ErrorType::SEMANTIC_ERROR,
                     "Symbol already defined globally",
                     reference_token.offset,
-                    symbol.value.size()
+                    symbol.size()
                 )
             );
         }

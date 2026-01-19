@@ -4,7 +4,7 @@
 #include "ast_node.h"
 #include "primitive_type.h"
 #include "ast/scope.h"
-#include "ast/symbol.h"
+#include "ast/identifiers.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -20,21 +20,27 @@ namespace stride::ast
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
     class AstFunctionParameter : IAstNode
     {
-    public:
-        const Symbol name;
-        const std::unique_ptr<types::AstType> type;
+        const std::string _name;
+        const std::unique_ptr<types::AstType> _type;
 
+    public:
         explicit AstFunctionParameter(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol param_name,
+            std::string param_name,
             std::unique_ptr<types::AstType> param_type
         ) :
             IAstNode(source, source_offset),
-            name(std::move(param_name)),
-            type(std::move(param_type)) {}
+            _name(std::move(param_name)),
+            _type(std::move(param_type)) {}
 
         std::string to_string() override;
+
+        [[nodiscard]]
+        std::string get_name() const { return this->_name; }
+
+        [[nodiscard]]
+        types::AstType* get_type() const { return this->_type.get(); }
     };
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  *
@@ -47,7 +53,8 @@ namespace stride::ast
         public ISynthesisable
     {
         u_ptr<IAstNode> _body;
-        Symbol _name;
+        std::string _name;
+        std::string _internal_name;
         std::vector<u_ptr<AstFunctionParameter>> _parameters;
         u_ptr<types::AstType> _return_type;
         int _flags;
@@ -56,7 +63,8 @@ namespace stride::ast
         AstFunctionDeclaration(
             const s_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol name,
+            std::string name,
+            std::string internal_name,
             std::vector<u_ptr<AstFunctionParameter>> parameters,
             u_ptr<IAstNode> body,
             u_ptr<types::AstType> return_type,
@@ -65,6 +73,7 @@ namespace stride::ast
             IAstNode(source, source_offset),
             _body(std::move(body)),
             _name(std::move(name)),
+            _internal_name(std::move(internal_name)),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)),
             _flags(flags) {}
@@ -74,7 +83,10 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         [[nodiscard]]
-        Symbol name() const { return this->_name; }
+        std::string get_name() const { return this->_name; }
+
+        [[nodiscard]]
+        std::string get_internal_name() const { return this->_internal_name; }
 
         [[nodiscard]]
         IAstNode* body() const { return this->_body.get(); }

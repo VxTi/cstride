@@ -2,20 +2,20 @@
 #include "primitive_type.h"
 #include "ast_node.h"
 #include "ast/scope.h"
-#include "ast/symbol.h"
+#include "ast/identifiers.h"
 
 namespace stride::ast
 {
     class AstStructMember : public IAstNode
     {
-        Symbol _name;
+        std::string _name;
         std::unique_ptr<types::AstType> _type;
 
     public:
         AstStructMember(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const Symbol& name,
+            const std::string& name,
             std::unique_ptr<types::AstType> type
         ) :
             IAstNode(source, source_offset),
@@ -24,13 +24,14 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        Symbol name() const { return this->_name; }
-        types::AstType& type() const { return *this->_type; }
+        std::string get_name() const { return this->_name; }
+
+        types::AstType& get_type() const { return *this->_type; }
     };
 
     class AstStruct : public IAstNode
     {
-        Symbol _name;
+        std::string _name;
         std::vector<std::unique_ptr<AstStructMember>> _cases;
         std::optional<std::unique_ptr<AstStructMember>> _default_case;
 
@@ -43,7 +44,7 @@ namespace stride::ast
         AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const Symbol& name,
+            const std::string& name,
             std::unique_ptr<types::AstType> reference
         )
             :
@@ -54,7 +55,7 @@ namespace stride::ast
         AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const Symbol& name,
+            const std::string& name,
             std::vector<std::unique_ptr<AstStructMember>> members,
             std::optional<std::unique_ptr<AstStructMember>> default_case = std::nullopt
         ) :
@@ -64,16 +65,15 @@ namespace stride::ast
             _default_case(std::move(default_case)),
             _reference(std::nullopt) {}
 
-        bool is_reference() const { return _reference.has_value(); }
+        bool is_reference_type() const { return _reference.has_value(); }
 
-        types::AstType* reference() const { return _reference->get(); }
+        types::AstType* get_reference_type() const { return _reference->get(); }
 
         std::string to_string() override;
 
+        std::string get_name() const { return _name; }
 
-        Symbol name() const { return _name; }
-
-        const std::vector<std::unique_ptr<AstStructMember>>& members() const { return this->_cases; }
+        const std::vector<std::unique_ptr<AstStructMember>>& get_members() const { return this->_cases; }
     };
 
     std::unique_ptr<AstStruct> parse_struct_declaration(const Scope& scope, TokenSet& tokens);

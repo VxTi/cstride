@@ -4,7 +4,7 @@ using namespace stride::ast;
 
 std::string AstModule::to_string()
 {
-    return std::format("Module ({})", this->name().to_string());
+    return std::format("Module ({})", this->get_name());
 }
 
 bool stride::ast::is_module_statement(const TokenSet& tokens)
@@ -46,8 +46,7 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     }
 
     tokens.expect(TokenType::SEMICOLON);
-
-    const auto module_name = Symbol::from_segments(segments);
+    const auto module_name = internal_identifier_from_segments(segments);
 
     return std::make_unique<AstModule>(
         tokens.source(),

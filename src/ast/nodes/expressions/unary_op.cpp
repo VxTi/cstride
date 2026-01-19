@@ -79,7 +79,7 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
             // var_addr = module->getNamedGlobal(internal_name);
 
             // Try global
-            module->getNamedGlobal(identifier->get_name().value);
+            module->getNamedGlobal(identifier->get_name());
         }
 
         if (!var_addr)
@@ -210,11 +210,11 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         set.peak(1).type == TokenType::DOUBLE_PLUS || set.peak(1).type == TokenType::DOUBLE_MINUS))
     {
         const auto iden_tok = set.next();
-        const auto iden_sym = Symbol(iden_tok.lexeme);
+        const auto iden_name = iden_tok.lexeme;
 
         const auto operation_tok = set.next();
 
-        const auto internal_name = scope.get_symbol_globally(iden_sym)
+        const auto internal_name = scope.get_symbol_globally(iden_name)
                                         .transform([](const SymbolDefinition& def) { return def.get_internal_name(); })
                                         .value_or(iden_tok.lexeme);
 
@@ -229,7 +229,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
             std::make_unique<AstIdentifier>(
                 set.source(),
                 next.offset,
-                iden_sym,
+                iden_name,
                 internal_name
             ),
             true // Postfix

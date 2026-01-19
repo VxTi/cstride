@@ -7,7 +7,7 @@
 
 using namespace stride::ast::types;
 
-std::string primitive_type_to_str(PrimitiveType type)
+std::string stride::ast::types::primitive_type_to_str(const PrimitiveType type)
 {
     switch (type)
     {

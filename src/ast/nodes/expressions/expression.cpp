@@ -55,7 +55,7 @@ llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& con
 
 std::string AstIdentifier::to_string()
 {
-    return std::format("{} ({})", this->get_name().value, this->get_internal_name());
+    return std::format("{} ({})", this->get_name(), this->get_internal_name());
 }
 
 llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
@@ -157,16 +157,16 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
             return std::make_unique<AstFunctionInvocation>(
                 set.source(),
                 reference_token.offset,
-                Symbol(name),
+                name,
                 std::move(function_parameter_nodes)
             );
         }
 
         const auto reference_token = set.next();
-        Symbol symbol(reference_token.lexeme);
+        std::string identifier_name = reference_token.lexeme;
         std::string internal_name;
 
-        if (const auto sym_def = scope.get_symbol_globally(symbol); sym_def.has_value())
+        if (const auto sym_def = scope.get_symbol_globally(identifier_name); sym_def.has_value())
         {
             internal_name = sym_def->get_internal_name();
         }
@@ -174,7 +174,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
         return std::make_unique<AstIdentifier>(
             set.source(),
             reference_token.offset,
-            std::move(symbol),
+            std::move(identifier_name),
             internal_name
         );
     }

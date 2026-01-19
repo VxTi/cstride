@@ -1,14 +1,13 @@
 #pragma once
 #include "ast_node.h"
 #include "ast/scope.h"
-#include "ast/symbol.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
 {
     class AstModule : public IAstNode
     {
-        Symbol _name;
+        std::string _name;
 
     public:
         std::string to_string() override;
@@ -16,13 +15,13 @@ namespace stride::ast
         explicit AstModule(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol name
+            const std::string& name
         )
             : IAstNode(source, source_offset),
-              _name(std::move(name)) {}
+              _name(name) {}
 
         [[nodiscard]]
-        Symbol name() const { return _name; }
+        const std::string& get_name() const { return _name; }
     };
 
     bool is_module_statement(const TokenSet& tokens);

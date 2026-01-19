@@ -10,10 +10,10 @@ std::unique_ptr<AstStructMember> try_parse_struct_member(
     TokenSet& set
 )
 {
-    const auto struct_member_name = set.expect(TokenType::IDENTIFIER, "Expected struct member name");
-    const auto struct_member_sym = Symbol(struct_member_name.lexeme);
+    const auto struct_member_name_tok = set.expect(TokenType::IDENTIFIER, "Expected struct member name");
+    const auto struct_member_name = struct_member_name_tok.lexeme;
 
-    scope.try_define_scoped_symbol(*set.source(), struct_member_name, struct_member_sym, SymbolType::STRUCT);
+    scope.try_define_scoped_symbol(*set.source(), struct_member_name_tok, struct_member_name, SymbolType::STRUCT);
 
     set.expect(TokenType::COLON);
 
@@ -22,8 +22,9 @@ std::unique_ptr<AstStructMember> try_parse_struct_member(
 
     return std::make_unique<AstStructMember>(
         set.source(),
-        struct_member_name.offset,
-        struct_member_sym, std::move(struct_member_type)
+        struct_member_name_tok.offset,
+        struct_member_name,
+        std::move(struct_member_type)
     );
 }
 
@@ -35,10 +36,10 @@ bool stride::ast::is_struct_declaration(const TokenSet& tokens)
 std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& scope, TokenSet& tokens)
 {
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
-    const auto struct_name = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");
-    const auto struct_sym = Symbol(struct_name.lexeme);
+    const auto struct_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");
+    const auto struct_name = struct_name_tok.lexeme;
 
-    scope.try_define_global_symbol(*tokens.source(), struct_name, struct_sym, SymbolType::STRUCT);
+    scope.try_define_global_symbol(*tokens.source(), struct_name_tok, struct_name, SymbolType::STRUCT);
 
     // Might be a reference to another type
     // This will parse a definition like:
@@ -54,7 +55,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& sc
         return std::make_unique<AstStruct>(
             tokens.source(),
             reference_token.offset,
-            struct_sym,
+            struct_name,
             std::move(reference_sym)
         );
     }
@@ -74,7 +75,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& sc
 
     return std::make_unique<AstStruct>(
         tokens.source(), reference_token.offset,
-        struct_sym,
+        struct_name,
         std::move(members)
     );
 }
@@ -82,26 +83,26 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& sc
 
 std::string AstStructMember::to_string()
 {
-    return std::format("{}: {}", this->name().to_string(), this->type().to_string());
+    return std::format("{}: {}", this->get_name(), this->get_type().to_string());
 }
 
 std::string AstStruct::to_string()
 {
-    if (this->is_reference())
+    if (this->is_reference_type())
     {
-        return std::format("Struct({}) (reference to {})", this->name().to_string(), this->reference()->to_string());
+        return std::format("Struct({}) (reference to {})", this->get_name(), this->get_reference_type()->to_string());
     }
-    if (this->members().empty())
+    if (this->get_members().empty())
     {
-        return std::format("Struct({}) (empty)", this->name().to_string());
+        return std::format("Struct({}) (empty)", this->get_name());
     }
 
     std::ostringstream imploded;
 
-    imploded << this->members()[0]->to_string();
-    for (size_t i = 1; i < this->members().size(); ++i)
+    imploded << this->get_members()[0]->to_string();
+    for (size_t i = 1; i < this->get_members().size(); ++i)
     {
-        imploded << "\n  " << this->members()[i]->to_string();
+        imploded << "\n  " << this->get_members()[i]->to_string();
     }
-    return std::format("Struct({}) (\n  {}\n)", this->name().to_string(), imploded.str());
+    return std::format("Struct({}) (\n  {}\n)", this->get_name(), imploded.str());
 }

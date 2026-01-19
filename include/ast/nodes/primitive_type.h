@@ -28,6 +28,8 @@ namespace stride::ast::types
         VOID
     };
 
+    std::string primitive_type_to_str(PrimitiveType type);
+
     class AstType : public IAstNode
     {
         const int flags;
@@ -47,9 +49,12 @@ namespace stride::ast::types
 
         [[nodiscard]]
         bool is_pointer() const { return this->flags & SRFLAG_TYPE_PTR; }
+
+        virtual std::string get_internal_name() = 0;
     };
 
-    class AstPrimitiveType : public AstType
+    class AstPrimitiveType
+        : public AstType
     {
         const PrimitiveType _type;
         size_t _byte_size;
@@ -80,9 +85,12 @@ namespace stride::ast::types
         {
             return std::make_unique<AstPrimitiveType>(*this);
         }
+
+        std::string get_internal_name() override { return primitive_type_to_str(_type); }
     };
 
-    class AstCustomType : public AstType
+    class AstCustomType
+        : public AstType
     {
         std::string _name;
 
@@ -107,6 +115,7 @@ namespace stride::ast::types
         {
             return std::make_unique<AstCustomType>(*this);
         }
+        std::string get_internal_name() override { return this->_name; }
     };
 
     std::unique_ptr<AstType> parse_primitive_type(TokenSet& set);

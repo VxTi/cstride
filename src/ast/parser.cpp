@@ -21,54 +21,61 @@ u_ptr<IAstNode> parser::parse(const std::string& source_path)
     return parse_sequential(scope_global, tokens);
 }
 
-u_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, TokenSet& tokens)
+u_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, TokenSet& set)
 {
-    if (is_module_statement(tokens))
+    // Prevent parsing empty statements
+    if (set.peak_next_eq(TokenType::SEMICOLON))
     {
-        return parse_module_statement(scope, tokens);
+        set.next();
+        return parse_next_statement(scope, set);
     }
 
-    if (is_import_statement(tokens))
+    if (is_module_statement(set))
     {
-        return parse_import_statement(scope, tokens);
+        return parse_module_statement(scope, set);
     }
 
-    if (is_fn_declaration(tokens))
+    if (is_import_statement(set))
     {
-        return parse_fn_declaration(scope, tokens);
+        return parse_import_statement(scope, set);
     }
 
-    if (is_struct_declaration(tokens))
+    if (is_fn_declaration(set))
     {
-        return parse_struct_declaration(scope, tokens);
+        return parse_fn_declaration(scope, set);
     }
 
-    if (is_enumerable_declaration(tokens))
+    if (is_struct_declaration(set))
     {
-        return parse_enumerable_declaration(scope, tokens);
+        return parse_struct_declaration(scope, set);
     }
 
-    if (is_return_statement(tokens))
+    if (is_enumerable_declaration(set))
     {
-        return parse_return_statement(scope, tokens);
+        return parse_enumerable_declaration(scope, set);
     }
 
-    if (is_for_loop_statement(tokens))
+    if (is_return_statement(set))
     {
-        return parse_for_loop_statement(scope, tokens);
+        return parse_return_statement(scope, set);
     }
 
-    if (is_while_loop_statement(tokens))
+    if (is_for_loop_statement(set))
     {
-        return parse_while_loop_statement(scope, tokens);
+        return parse_for_loop_statement(scope, set);
     }
 
-    if (is_if_statement(tokens))
+    if (is_while_loop_statement(set))
     {
-        return parse_if_statement(scope, tokens);
+        return parse_while_loop_statement(scope, set);
     }
 
-    return parse_standalone_expression(scope, tokens);
+    if (is_if_statement(set))
+    {
+        return parse_if_statement(scope, set);
+    }
+
+    return parse_standalone_expression(scope, set);
 }
 
 std::unique_ptr<AstBlock> stride::ast::parse_sequential(const Scope& scope, TokenSet& set)

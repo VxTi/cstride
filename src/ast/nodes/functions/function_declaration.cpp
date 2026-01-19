@@ -25,8 +25,9 @@ std::string AstFunctionDeclaration::to_string()
     const auto body_str = this->body() == nullptr ? "EMPTY" : this->body()->to_string();
 
     return std::format(
-        "FunctionDefinition(name: {}, parameters: [ {} ], body: {}, is_external: {})",
-        this->name().value,
+        "FunctionDefinition(name: {} (), parameters: [ {} ], body: {}, is_external: {})",
+        this->get_name(),
+        this->get_internal_name(),
         params,
         body_str,
         this->is_extern()
@@ -61,8 +62,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     // Here we expect to receive the function name
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
-    const auto fn_name = Symbol(fn_name_tok.lexeme);
-    scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name, SymbolType::FUNCTION);
+    const auto fn_name = fn_name_tok.lexeme;
 
     tokens.expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -76,6 +76,15 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
         parse_subsequent_fn_params(scope, tokens, parameters);
     }
+
+    // Internal name contains all parameter types, so that there can be function overloads with
+    // different parameter types
+    std::string internal_name = fn_name;
+    for (const auto& param : parameters)
+    {
+        internal_name += SEGMENT_DELIMITER + param->get_type()->get_internal_name();
+    }
+    scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name, SymbolType::FUNCTION, internal_name);
 
     // The return type of the function, e.g., ": i8"
     tokens.expect(TokenType::RPAREN);
@@ -104,6 +113,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         tokens.source(),
         reference_token.offset,
         fn_name,
+        internal_name,
         std::move(parameters),
         std::move(body),
         std::move(return_type),
@@ -121,7 +131,7 @@ std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
     std::vector<llvm::Type*> param_types;
     for (const auto& param : self->parameters())
     {
-        auto llvm_type = types::internal_type_to_llvm_type(param->type.get(), module, context);
+        auto llvm_type = types::internal_type_to_llvm_type(param->get_type(), module, context);
         if (!llvm_type)
         {
             return std::nullopt;
@@ -137,7 +147,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
     llvm::IRBuilder<>* irBuilder
 )
 {
-    const auto fn_name = this->name().value;
+    const auto fn_name = this->get_internal_name();
 
     // Create parameter types vector
     const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(this, module, context);
@@ -211,7 +221,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
 
     if (llvm::verifyFunction(*function, &llvm::errs()))
     {
-        std::cerr << "Function " << this->name().value << " verification failed!" << std::endl;
+        std::cerr << "Function " << this->get_name() << " verification failed!" << std::endl;
         std::cerr << &llvm::errs() << std::endl;
         return nullptr;
     }

@@ -84,14 +84,14 @@ namespace stride::ast
     class AstIdentifier
         : public AstExpression
     {
-        const Symbol _name;
+        const std::string _name;
         std::string _internal_name;
 
     public:
         explicit AstIdentifier(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol name,
+            std::string name,
             std::string internal_name = ""
         ) :
             AstExpression(source, source_offset, {}),
@@ -99,12 +99,12 @@ namespace stride::ast
             _internal_name(std::move(internal_name)) {}
 
         [[nodiscard]]
-        const Symbol& get_name() const { return this->_name; }
+        const std::string& get_name() const { return this->_name; }
 
         [[nodiscard]]
         const std::string& get_internal_name() const
         {
-            return this->_internal_name.empty() ? this->_name.value : this->_internal_name;
+            return this->_internal_name.empty() ? this->_name : this->_internal_name;
         }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
@@ -119,31 +119,34 @@ namespace stride::ast
     class AstFunctionInvocation :
         public AstExpression
     {
-        std::vector<std::unique_ptr<IAstNode>> arguments;
+        std::vector<std::unique_ptr<IAstNode>> _arguments;
+        const std::string _function_name;
 
     public:
-        const Symbol function_name;
 
         explicit AstFunctionInvocation(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol function_name
+            std::string function_name
         ) :
             AstExpression(source, source_offset, {}),
-            function_name(std::move(function_name)) {}
+            _function_name(std::move(function_name)) {}
 
         explicit AstFunctionInvocation(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol function_name,
+            std::string function_name,
             std::vector<std::unique_ptr<IAstNode>> arguments
         ) :
             AstExpression(source, source_offset, {}),
-            arguments(std::move(arguments)),
-            function_name(std::move(function_name)) {}
+            _arguments(std::move(arguments)),
+            _function_name(std::move(function_name)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstNode>>& get_arguments() const { return this->arguments; }
+        const std::vector<std::unique_ptr<IAstNode>>& get_arguments() const { return this->_arguments; }
+
+        [[nodiscard]]
+        const std::string& get_function_name() const { return this->_function_name; }
 
         std::string to_string() override;
 
@@ -158,7 +161,7 @@ namespace stride::ast
         public AstExpression
     {
         const int _flags;
-        const Symbol _variable_name;
+        const std::string _variable_name;
         const std::string _internal_name;
         const u_ptr<types::AstType> _variable_type;
         const u_ptr<IAstNode> _initial_value;
@@ -167,7 +170,7 @@ namespace stride::ast
         AstVariableDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol variable_name,
+            std::string variable_name,
             u_ptr<types::AstType> variable_type,
             u_ptr<IAstNode> initial_value,
             const int flags,
@@ -182,7 +185,7 @@ namespace stride::ast
             _initial_value(std::move(initial_value)) {}
 
         [[nodiscard]]
-        const Symbol& get_variable_name() const
+        const std::string& get_variable_name() const
         {
             return this->_variable_name;
         }
@@ -190,7 +193,7 @@ namespace stride::ast
         [[nodiscard]]
         const std::string& get_internal_name() const
         {
-            return this->_internal_name.empty() ? this->_variable_name.value : this->_internal_name;
+            return this->_internal_name.empty() ? this->_variable_name : this->_internal_name;
         }
 
         [[nodiscard]]

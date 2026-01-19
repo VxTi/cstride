@@ -21,19 +21,19 @@ bool AstFunctionInvocation::is_reducible()
 
 IAstNode* AstFunctionInvocation::reduce()
 {
-  return this;
+    return this;
 }
 
 std::string AstFunctionInvocation::to_string()
 {
     std::ostringstream oss;
 
-    for (const auto& arg : arguments)
+    for (const auto& arg : this->get_arguments())
     {
         oss << arg->to_string() << ", ";
     }
 
-    return std::format("FunctionInvocation({} {})", function_name.to_string(), oss.str());
+    return std::format("FunctionInvocation({} {})", this->get_function_name(), oss.str());
 }
 
 llvm::Value* AstFunctionInvocation::codegen(
@@ -42,22 +42,33 @@ llvm::Value* AstFunctionInvocation::codegen(
     llvm::IRBuilder<>* builder
 )
 {
+    const auto internal_name = this->get_function_name();
     // The actual function being called. This must be in the registry.
-    llvm::Function* callee = module->getFunction(function_name.value);
+    llvm::Function* callee = module->getFunction(internal_name);
     if (!callee)
     {
-        std::cerr << "Unknown function referenced: " << function_name.value << std::endl;
-        return nullptr;
+        throw parsing_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                "Function \"" + internal_name + "\" was not found in this scope"
+            )
+        );
     }
 
-    if (callee->arg_size() != arguments.size())
+    if (callee->arg_size() != this->get_arguments().size())
     {
-        std::cerr << "Incorrect arguments passed for function " << function_name.value << std::endl;
-        return nullptr;
+        throw parsing_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                "Incorrect arguments passed for function \"" + internal_name + "\""
+            )
+        );
     }
 
     std::vector<llvm::Value*> args_v;
-    for (const auto& arg : arguments)
+    for (const auto& arg : this->get_arguments())
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
         {
@@ -78,7 +89,7 @@ llvm::Value* AstFunctionInvocation::codegen(
     return builder->CreateCall(callee, args_v, "calltmp");
 }
 
-Symbol consume_function_name(TokenSet& tokens)
+std::string compose_function_name(TokenSet& tokens)
 {
     const auto initial = tokens.expect(TokenType::IDENTIFIER, "Expected function name").lexeme;
     std::vector function_segments = {initial};
@@ -90,5 +101,5 @@ Symbol consume_function_name(TokenSet& tokens)
         function_segments.push_back(next);
     }
 
-    return Symbol::from_segments(function_segments);
+    return internal_identifier_from_segments(function_segments);
 }

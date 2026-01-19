@@ -56,7 +56,7 @@ wss.on('connection', (ws: WebSocket) => {
           handleCompile(ws, data.message);
           break;
         case WsMessageType.TERMINATE_PROCESS:
-          process?.kill();
+          process?.kill('SIGTERM');
           sendMessage(ws, WsMessageType.PROCESS_TERMINATED);
           break;
       }
@@ -109,7 +109,7 @@ function handleCompile(ws: WebSocket, code: string) {
       sendMessage(
         ws,
         WsMessageType.PROCESS_TERMINATED,
-        `${ansiPrefix}Process exited with status code ${code}\x1b[0m`
+        `${ansiPrefix}Process exited with status code ${code ?? 0}\x1b[0m`
       );
     });
   });

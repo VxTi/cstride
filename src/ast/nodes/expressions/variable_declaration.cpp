@@ -59,6 +59,42 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
         var_type = llvm::PointerType::get(context, 0);
     }
 
+// Check if this is a global variable declaration
+    if ((this->get_flags() & SRFLAG_VAR_DECL_GLOBAL) != 0)
+    {
+        // Create a global variable
+        llvm::Constant* initializer = nullptr;
+
+        if (init_value != nullptr)
+        {
+            if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
+            {
+                initializer = constant;
+            }
+            else
+            {
+                // Global variables require constant initializers
+                initializer = llvm::Constant::getNullValue(var_type);
+            }
+        }
+        else
+        {
+            initializer = llvm::Constant::getNullValue(var_type);
+        }
+
+        auto* global_var = new llvm::GlobalVariable(
+            *module,
+            var_type,
+            (this->get_flags() & SRFLAG_VAR_DECL_MUTABLE) == 0, // isConstant
+            llvm::GlobalValue::ExternalLinkage,
+            initializer,
+            this->get_internal_name()
+        );
+
+        return global_var;
+    }
+
+    // Local variable - use AllocaInst
     // Check if we have a valid insert block
     llvm::BasicBlock* current_block = irBuilder->GetInsertBlock();
     if (current_block == nullptr)
@@ -128,7 +164,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
 
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
-    Symbol variable_name(variable_name_tok.lexeme);
+    const auto  variable_name = variable_name_tok.lexeme;
     set.expect(TokenType::COLON);
     auto type = types::parse_primitive_type(set);
 
@@ -146,11 +182,11 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         set.expect(TokenType::SEMICOLON);
     }
 
-    std::string internal_name = variable_name.value;
+    std::string internal_name = variable_name;
     if (scope.type != ScopeType::GLOBAL)
     {
         static int var_decl_counter = 0;
-        internal_name = std::format("{}.{}", variable_name.value, var_decl_counter++);
+        internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
     }
 
     scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name, SymbolType::VARIABLE,
@@ -171,7 +207,7 @@ std::string AstVariableDeclaration::to_string()
 {
     return std::format(
         "VariableDeclaration({}({}), {}, {})",
-        get_variable_name().value,
+        get_variable_name(),
         get_internal_name(),
         get_variable_type()->to_string(),
         this->get_initial_value() ? get_initial_value()->to_string() : "nil"

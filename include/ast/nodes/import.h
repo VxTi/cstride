@@ -5,38 +5,39 @@
 
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
-#include "ast/symbol.h"
+#include "ast/identifiers.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
 {
-    class AstImport : public IAstNode
+
+    typedef struct Dependency
     {
-        Symbol module;
-        const std::vector<Symbol> dependencies;
+        std::string module_base;
+        std::vector<std::string> submodules;
+    } Dependency;
+
+    class AstImport
+        : public IAstNode
+    {
+        const Dependency _dependency;
 
     public:
         explicit AstImport(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            Symbol module,
-            const std::vector<Symbol>& dependencies
+            const Dependency& dependency
         ) : IAstNode(source, source_offset),
-            module(std::move(module)),
-            dependencies(dependencies) {}
+            _dependency(dependency) {}
 
-        explicit AstImport(
-            const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
-            Symbol module,
-            const Symbol& dependency
-        ) :
-            AstImport(
-                source,
-                source_offset,
-                std::move(module),
-                std::vector{dependency}
-            ) {}
+        [[nodiscard]]
+        const std::string& get_module() const { return this->_dependency.module_base; }
+
+        [[nodiscard]]
+        const Dependency& get_dependency() const { return this->_dependency; }
+
+        [[nodiscard]]
+        const std::vector<std::string>& get_submodules() const { return this->_dependency.submodules; }
 
         std::string to_string() override;
     };
