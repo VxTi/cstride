@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { spawn } from 'child_process'
+import tailwindcss from '@tailwindcss/vite'
 
 const startServerPlugin = () => {
   return {
@@ -35,5 +36,6 @@ const startServerPlugin = () => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), startServerPlugin()],
+  plugins: [react(), startServerPlugin(),     tailwindcss(),
+  ],
 })

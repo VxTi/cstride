@@ -66,7 +66,7 @@ wss.on('connection', (ws: WebSocket) => {
 
 function handleCompile(ws: WebSocket, code: string) {
   // Generate a unique filename for the cache
-  const id =  'tmp'// crypto.randomBytes(8).toString('hex');
+  const id = 'tmp'; // crypto.randomBytes(8).toString('hex');
   const filename = `code_${id}.sr`; // Stride source file
   const filePath = path.join(CACHE_DIR, filename);
 
