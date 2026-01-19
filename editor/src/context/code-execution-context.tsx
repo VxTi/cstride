@@ -1,7 +1,7 @@
 import { useMonaco } from '@monaco-editor/react';
 import { type Terminal } from '@xterm/xterm';
 import { type editor } from 'monaco-editor';
-import {
+import React, {
   createContext,
   type MutableRefObject,
   type RefObject,
@@ -10,8 +10,8 @@ import {
   useRef,
   useState,
 } from 'react';
+import { websocketMessageDecoder, WsMessageType } from '../common';
 import { registerLanguage } from '../lib/stride-language/stride-language';
-import { websocketMessageDecoder, WsMessageType } from '../shared';
 
 interface CodeExecutionContextType {
   monaco: typeof import('monaco-editor') | null;
@@ -24,6 +24,9 @@ interface CodeExecutionContextType {
   setTerminalResizing: React.Dispatch<React.SetStateAction<boolean>>;
 
   onEditorMount: (editor: editor.IStandaloneCodeEditor) => void;
+
+  processActive: boolean;
+  setProcessActive: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const CodeExecutionContext = createContext<CodeExecutionContextType | null>(
@@ -53,6 +56,7 @@ export function CodeContextProvider({
   const xtermRef = useRef<Terminal | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [terminalResizing, setTerminalResizing] = useState(false);
+  const [processActive, setProcessActive] = useState(false);
 
   useEffect(() => {
     if (!monaco) return;
@@ -83,12 +87,20 @@ export function CodeContextProvider({
         }
         const data = decoded.data;
 
-        if (data.type === WsMessageType.PROCESS_STDOUT) {
-          term.writeln(data.message || 'Success (No output)');
-        } else if (data.type === WsMessageType.PROCESS_STDERR) {
-          data.message
-            .split('\n')
-            .forEach(line => term.writeln(`\x1b[31m${line}\x1b[0m`));
+        switch (data.type) {
+          case WsMessageType.PROCESS_TERMINATED:
+            setProcessActive(false);
+            term.writeln(data.message || 'Process terminated');
+            break;
+          case WsMessageType.PROCESS_STDOUT:
+            term.writeln(data.message || 'Success (No output)');
+            break;
+          case WsMessageType.PROCESS_STDERR:
+            data.message
+              .split('\n')
+              .forEach(line => term.writeln(`\x1b[31m${line}\x1b[0m`));
+
+            break;
         }
       } catch {}
     };
@@ -110,6 +122,8 @@ export function CodeContextProvider({
         onEditorMount,
         ws,
         monaco,
+        processActive,
+        setProcessActive,
         terminalRef,
         editorRef,
         xtermRef,

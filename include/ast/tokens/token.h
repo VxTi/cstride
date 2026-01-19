@@ -256,7 +256,7 @@ namespace stride::ast
         }
     }
 
-    static bool is_primitive(const TokenType type)
+    static bool is_primitive_type(const TokenType type)
     {
         switch (type)
         {
@@ -264,6 +264,10 @@ namespace stride::ast
         case TokenType::PRIMITIVE_INT16:
         case TokenType::PRIMITIVE_INT32:
         case TokenType::PRIMITIVE_INT64:
+        case TokenType::PRIMITIVE_UINT8:
+        case TokenType::PRIMITIVE_UINT16:
+        case TokenType::PRIMITIVE_UINT32:
+        case TokenType::PRIMITIVE_UINT64:
         case TokenType::PRIMITIVE_FLOAT32:
         case TokenType::PRIMITIVE_FLOAT64:
         case TokenType::PRIMITIVE_BOOL:

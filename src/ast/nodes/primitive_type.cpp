@@ -92,6 +92,41 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(Tok
                 PrimitiveType::INT64, 8, flags);
         }
         break;
+    case TokenType::PRIMITIVE_UINT8:
+        {
+            result = std::make_unique<AstPrimitiveType>(
+                set.source(),
+                reference_token.offset,
+                PrimitiveType::UINT8,
+                1,
+                flags
+            );
+        }
+        break;
+    case TokenType::PRIMITIVE_UINT16:
+        {
+            result = std::make_unique<AstPrimitiveType>(
+                set.source(),
+                reference_token.offset,
+                PrimitiveType::UINT16, 2, flags);
+        }
+        break;
+    case TokenType::PRIMITIVE_UINT32:
+        {
+            result = std::make_unique<AstPrimitiveType>(
+                set.source(),
+                reference_token.offset,
+                PrimitiveType::UINT32, 4, flags);
+        }
+        break;
+    case TokenType::PRIMITIVE_UINT64:
+        {
+            result = std::make_unique<AstPrimitiveType>(
+                set.source(),
+                reference_token.offset,
+                PrimitiveType::UINT64, 8, flags);
+        }
+        break;
     case TokenType::PRIMITIVE_FLOAT32:
         {
             result = std::make_unique<AstPrimitiveType>(
@@ -208,12 +243,16 @@ llvm::Type* stride::ast::types::internal_type_to_llvm_type(
         switch (primitive->type())
         {
         case PrimitiveType::INT8:
+        case PrimitiveType::UINT8:
             return llvm::Type::getInt8Ty(context);
         case PrimitiveType::INT16:
+        case PrimitiveType::UINT16:
             return llvm::Type::getInt16Ty(context);
         case PrimitiveType::INT32:
+        case PrimitiveType::UINT32:
             return llvm::Type::getInt32Ty(context);
         case PrimitiveType::INT64:
+        case PrimitiveType::UINT64:
             return llvm::Type::getInt64Ty(context);
         case PrimitiveType::FLOAT32:
             return llvm::Type::getFloatTy(context);

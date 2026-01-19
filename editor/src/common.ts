@@ -3,6 +3,8 @@ import { z } from 'zod';
 export enum WsMessageType {
   EXECUTE_CODE = 'run',
   TERMINATE_PROCESS = 'terminate',
+
+  PROCESS_TERMINATED = 'terminated',
   PROCESS_STDOUT = 'execution_success',
   PROCESS_STDERR = 'execution_failed',
 }
@@ -17,7 +19,7 @@ type WebSocketType = { send: (message: string) => void };
 export function sendMessage(
   ws: WebSocketType,
   type: WsMessageType,
-  message: string
+  message: string = ""
 ) {
   ws.send(JSON.stringify({ type, message }));
 }

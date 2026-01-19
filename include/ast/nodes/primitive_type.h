@@ -7,8 +7,8 @@
 
 namespace stride::ast::types
 {
-#define SRFLAG_TYPE_PTR       (0x1)
-#define SRFLAG_TYPE_REFERENCE (0x2)
+#define SRFLAG_TYPE_PTR            (0x1)
+#define SRFLAG_TYPE_REFERENCE      (0x2)
 
     enum class PrimitiveType
     {
@@ -16,6 +16,10 @@ namespace stride::ast::types
         INT16,
         INT32,
         INT64,
+        UINT8,
+        UINT16,
+        UINT32,
+        UINT64,
         FLOAT32,
         FLOAT64,
         BOOL,

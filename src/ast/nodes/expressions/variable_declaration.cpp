@@ -20,7 +20,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
             set.peak_eq(TokenType::COLON, 3) &&
             (
                 // Type can be either a primitive or a user-defined identifier
-                set.peak_eq(TokenType::IDENTIFIER, 4) || is_primitive(set.peak(4).type)
+                set.peak_eq(TokenType::IDENTIFIER, 4) || is_primitive_type(set.peak(4).type)
             )
             && set.peak_eq(TokenType::SEMICOLON, 5);
     }
@@ -31,7 +31,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
         set.peak_eq(TokenType::COLON, 2) &&
         (
             // Type can be either a primitive or a user-defined identifier
-            set.peak_eq(TokenType::IDENTIFIER, 3) || is_primitive(set.peak(3).type)
+            set.peak_eq(TokenType::IDENTIFIER, 3) || is_primitive_type(set.peak(3).type)
         )
         && set.peak_eq(TokenType::EQUALS, 4)
     );
