@@ -59,7 +59,7 @@ std::optional<TokenSet> stride::ast::collect_until_token(TokenSet& set, TokenTyp
     return std::nullopt;
 }
 
-std::optional<TokenSet> stride::ast::collect_token_subset(
+std::optional<TokenSet> stride::ast::collect_block_variant(
     TokenSet& set, const TokenType start_token,
     const TokenType end_token
 )
@@ -100,7 +100,7 @@ std::optional<TokenSet> stride::ast::collect_token_subset(
 
 std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
 {
-    return collect_token_subset(set, TokenType::LBRACE, TokenType::RBRACE);
+    return collect_block_variant(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
 std::unique_ptr<AstBlock> stride::ast::parse_block(const Scope& scope, TokenSet& set)

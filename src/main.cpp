@@ -14,8 +14,6 @@ int main(const int argc, char* argv[])
         return 1;
     }
 
-    std::cout << "Starting Stride compilation..." << std::endl;
-
     try
     {
         const auto program = stride::Program({argv[1]});

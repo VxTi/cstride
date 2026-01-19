@@ -1,6 +1,7 @@
 #include "ast/parser.h"
 #include "files.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/if_statement.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/loops.h"
 #include "ast/nodes/module.h"
@@ -10,7 +11,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstNode> parser::parse(const std::string& source_path)
+u_ptr<IAstNode> parser::parse(const std::string& source_path)
 {
     const auto scope_global = Scope(ScopeType::GLOBAL);
 
@@ -20,7 +21,7 @@ std::unique_ptr<IAstNode> parser::parse(const std::string& source_path)
     return parse_sequential(scope_global, tokens);
 }
 
-std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, TokenSet& tokens)
+u_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, TokenSet& tokens)
 {
     if (is_module_statement(tokens))
     {
@@ -60,6 +61,11 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, 
     if (is_while_loop_statement(tokens))
     {
         return parse_while_loop_statement(scope, tokens);
+    }
+
+    if (is_if_statement(tokens))
+    {
+        return parse_if_statement(scope, tokens);
     }
 
     return parse_standalone_expression(scope, tokens);

@@ -41,7 +41,7 @@ llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& con
 
     if (const auto global = module->getNamedGlobal(internal_name))
     {
-        return builder->CreateLoad(global->getValueType(), global,internal_name);
+        return builder->CreateLoad(global->getValueType(), global, internal_name);
     }
 
     if (auto* function = module->getFunction(internal_name))
@@ -97,35 +97,6 @@ IAstNode* AstVariableDeclaration::reduce()
     return this;
 }
 
-bool stride::ast::can_parse_expression(const TokenSet& tokens)
-{
-    const auto type = tokens.peak_next().type;
-
-    if (is_literal(type)) return true;
-
-    switch (type)
-    {
-    case TokenType::IDENTIFIER:      // <something>
-    case TokenType::LPAREN:          // (
-    case TokenType::RPAREN:          // )
-    case TokenType::BANG:            // !
-    case TokenType::MINUS:           // -
-    case TokenType::PLUS:            // +
-    case TokenType::TILDE:           // ~
-    case TokenType::CARET:           // ^
-    case TokenType::LSQUARE_BRACKET: // [
-    case TokenType::RSQUARE_BRACKET: // ]
-    case TokenType::STAR:            // *
-    case TokenType::AMPERSAND:       // &
-    case TokenType::DOUBLE_MINUS:    // --
-    case TokenType::DOUBLE_PLUS:     // ++
-    case TokenType::KEYWORD_NIL:     // nil
-        return true;
-    default: break;
-    }
-    return false;
-}
-
 std::string AstExpression::to_string()
 {
     std::string children_str;
@@ -164,7 +135,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
         {
             const auto reference_token = set.next();
             const auto name = reference_token.lexeme;
-            auto function_parameter_set = collect_token_subset(set, TokenType::LPAREN, TokenType::RPAREN);
+            auto function_parameter_set = collect_parenthesized_block(set);
 
             std::vector<std::unique_ptr<IAstNode>> function_parameter_nodes = {};
 

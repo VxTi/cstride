@@ -128,4 +128,8 @@ void Program::execute(
     }
 
     llvm::GenericValue result = engine->runFunction(main, {});
+
+    const auto status_code = static_cast<int>(result.IntVal.getZExtValue());
+
+    std::cout << "\nProcess exited with status code " << status_code << std::endl;
 }

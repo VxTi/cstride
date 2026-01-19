@@ -49,7 +49,7 @@ std::unique_ptr<AstExpression> try_collect_condition(const Scope& scope, TokenSe
 std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_FOR);
-    const auto header_body_opt = collect_token_subset(set, TokenType::LPAREN, TokenType::RPAREN);
+    const auto header_body_opt = collect_parenthesized_block(set);
 
     if (!header_body_opt.has_value())
     {
@@ -76,10 +76,10 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scop
     );
 }
 
-std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const Scope& scope, TokenSet& set)
+u_ptr<AstLoop> stride::ast::parse_while_loop_statement(const Scope& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);
-    const auto header_condition_opt = collect_token_subset(set, TokenType::LPAREN, TokenType::RPAREN);
+    const auto header_condition_opt = collect_parenthesized_block(set);
 
     if (!header_condition_opt.has_value())
     {
@@ -105,23 +105,23 @@ llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, 
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
 
-    llvm::BasicBlock* loopCondBB = llvm::BasicBlock::Create(context, "loop.cond", function);
-    llvm::BasicBlock* loopBodyBB = llvm::BasicBlock::Create(context, "loop.body", function);
-    llvm::BasicBlock* loopIncrBB = llvm::BasicBlock::Create(context, "loop.incr", function);
-    llvm::BasicBlock* loopEndBB = llvm::BasicBlock::Create(context, "loop.end", function);
+    llvm::BasicBlock* loop_cond_bb = llvm::BasicBlock::Create(context, "loop.cond", function);
+    llvm::BasicBlock* loop_body_bb = llvm::BasicBlock::Create(context, "loop.body", function);
+    llvm::BasicBlock* loop_incr_bb = llvm::BasicBlock::Create(context, "loop.incr", function);
+    llvm::BasicBlock* loop_end_bb = llvm::BasicBlock::Create(context, "loop.end", function);
 
-    if (this->initiator())
+    if (this->get_initializer())
     {
-        this->initiator()->codegen(module, context, builder);
+        this->get_initializer()->codegen(module, context, builder);
     }
 
-    builder->CreateBr(loopCondBB);
-    builder->SetInsertPoint(loopCondBB);
+    builder->CreateBr(loop_cond_bb);
+    builder->SetInsertPoint(loop_cond_bb);
 
     llvm::Value* condValue = nullptr;
-    if (const auto cond = this->condition(); cond != nullptr)
+    if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->condition()->codegen(module, context, builder);
+        condValue = this->get_condition()->codegen(module, context, builder);
 
         if (condValue == nullptr)
         {
@@ -133,14 +133,6 @@ llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, 
                 )
             );
         }
-
-        if (const auto cond_type = condValue->getType(); cond_type != nullptr && cond_type->isIntegerTy(1))
-        {
-            condValue = builder->CreateICmpNE(
-                condValue,
-                llvm::Constant::getNullValue(condValue->getType()),
-                "loopcond");
-        }
     }
     else
     {
@@ -148,23 +140,23 @@ llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, 
         condValue = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
     }
 
-    builder->CreateCondBr(condValue, loopBodyBB, loopEndBB);
+    builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
 
-    builder->SetInsertPoint(loopBodyBB);
+    builder->SetInsertPoint(loop_body_bb);
     if (this->body())
     {
         this->body()->codegen(module, context, builder);
     }
-    builder->CreateBr(loopIncrBB);
+    builder->CreateBr(loop_incr_bb);
 
-    builder->SetInsertPoint(loopIncrBB);
-    if (increment())
+    builder->SetInsertPoint(loop_incr_bb);
+    if (get_incrementor())
     {
-        this->increment()->codegen(module, context, builder);
+        this->get_incrementor()->codegen(module, context, builder);
     }
-    builder->CreateBr(loopCondBB);
+    builder->CreateBr(loop_cond_bb);
 
-    builder->SetInsertPoint(loopEndBB);
+    builder->SetInsertPoint(loop_end_bb);
 
     return nullptr;
 }
@@ -172,17 +164,17 @@ llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, 
 std::string AstLoop::to_string()
 {
     std::string result = "Loop(";
-    if (initiator())
+    if (get_initializer())
     {
-        result += "init: " + initiator()->to_string() + ", ";
+        result += "init: " + get_initializer()->to_string() + ", ";
     }
-    if (condition())
+    if (get_condition())
     {
-        result += "cond: " + condition()->to_string() + ", ";
+        result += "cond: " + get_condition()->to_string() + ", ";
     }
-    if (increment())
+    if (get_incrementor())
     {
-        result += "incr: " + increment()->to_string() + ", ";
+        result += "incr: " + get_incrementor()->to_string() + ", ";
     }
     if (body())
     {

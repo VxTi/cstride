@@ -351,8 +351,6 @@ namespace stride::ast
 
     bool is_variable_declaration(const TokenSet& set);
 
-    bool can_parse_expression(const TokenSet& tokens);
-
     int binary_operator_precedence(BinaryOpType type);
 
     std::unique_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& tokens);
@@ -376,7 +374,7 @@ namespace stride::ast
                                                                              std::unique_ptr<AstExpression> lhs,
                                                                              int min_precedence);
 
-    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(const Scope& scope, TokenSet& set);
+    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(const /**/Scope& scope, TokenSet& set);
 
     // Operation type utility functions
 

@@ -12,9 +12,9 @@ namespace stride::ast
           public ISynthesisable
     {
         std::unique_ptr<AstBlock> _body;
-        std::unique_ptr<AstExpression> _initiator;
+        std::unique_ptr<AstExpression> _initializer;
         std::unique_ptr<AstExpression> _condition;
-        std::unique_ptr<AstExpression> _increment;
+        std::unique_ptr<AstExpression> _incrementor;
 
     public:
         AstLoop(
@@ -27,32 +27,32 @@ namespace stride::ast
         ) :
             IAstNode(source, source_offset),
             _body(std::move(body)),
-            _initiator(std::move(initiator)),
+            _initializer(std::move(initiator)),
             _condition(std::move(condition)),
-            _increment(std::move(increment)) {}
+            _incrementor(std::move(increment)) {}
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
 
         [[nodiscard]]
-        AstExpression* initiator() const { return _initiator.get(); }
+        AstExpression* get_initializer() const { return _initializer.get(); }
 
         [[nodiscard]]
         AstBlock* body() const { return _body.get(); }
 
         [[nodiscard]]
-        AstExpression* condition() const { return _condition.get(); }
+        AstExpression* get_condition() const { return _condition.get(); }
 
         [[nodiscard]]
-        AstExpression* increment() const { return _increment.get(); }
+        AstExpression* get_incrementor() const { return _incrementor.get(); }
     };
 
-    bool is_for_loop_statement(const TokenSet& tokens);
+    bool is_for_loop_statement(const TokenSet& set);
 
-    bool is_while_loop_statement(const TokenSet& tokens);
+    bool is_while_loop_statement(const TokenSet& set);
 
-    std::unique_ptr<AstLoop> parse_for_loop_statement(const Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstLoop> parse_for_loop_statement(const Scope& scope, TokenSet& set);
 
-    std::unique_ptr<AstLoop> parse_while_loop_statement(const Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstLoop> parse_while_loop_statement(const Scope& scope, TokenSet& set);
 }

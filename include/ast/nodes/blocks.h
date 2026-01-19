@@ -10,13 +10,13 @@ namespace stride::ast
         public virtual IAstNode,
         public virtual ISynthesisable
     {
-        std::vector<std::unique_ptr<IAstNode>> _children;
+        std::vector<u_ptr<IAstNode>> _children;
 
     public:
         explicit AstBlock(
-            const std::shared_ptr<SourceFile>& source,
+            const s_ptr<SourceFile>& source,
             const int source_offset,
-            std::vector<std::unique_ptr<IAstNode>> children
+            std::vector<u_ptr<IAstNode>> children
         )
             : IAstNode(source, source_offset), _children(std::move(children)) {};
 
@@ -25,7 +25,7 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
+        const std::vector<u_ptr<IAstNode>>& children() const { return this->_children; }
     };
 
     std::unique_ptr<AstBlock> parse_block(const Scope& scope, TokenSet& set);
@@ -34,7 +34,12 @@ namespace stride::ast
 
     std::optional<TokenSet> collect_block(TokenSet& set);
 
-    std::optional<TokenSet> collect_token_subset(TokenSet& set, TokenType start_token, TokenType end_token);
+    std::optional<TokenSet> collect_block_variant(TokenSet& set, TokenType start_token, TokenType end_token);
 
     std::optional<TokenSet> collect_until_token(TokenSet& set, TokenType token);
+
+    inline std::optional<TokenSet> collect_parenthesized_block(TokenSet& set)
+    {
+        return collect_block_variant(set, TokenType::LPAREN, TokenType::RPAREN);
+    }
 }
