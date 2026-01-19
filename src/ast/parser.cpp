@@ -23,13 +23,6 @@ u_ptr<IAstNode> parser::parse(const std::string& source_path)
 
 u_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, TokenSet& set)
 {
-    // Prevent parsing empty statements
-    if (set.peak_next_eq(TokenType::SEMICOLON))
-    {
-        set.next();
-        return parse_next_statement(scope, set);
-    }
-
     if (is_module_statement(set))
     {
         return parse_module_statement(scope, set);

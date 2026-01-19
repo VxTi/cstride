@@ -104,7 +104,13 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 {
     if (!this->has_next())
     {
-        throw parsing_error("No more tokens available");
+        this->throw_error(
+            ErrorType::SYNTAX_ERROR,
+            std::format(
+                "Expected '{}', but reached end of block",
+                token_type_to_str(type)
+            )
+        );
     }
 
     if (const auto next_type = this->peak_next().type; next_type != type)
