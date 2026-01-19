@@ -2,7 +2,7 @@ import Editor from '@monaco-editor/react';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { Terminal } from '@xterm/xterm';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useCodeContext } from './context/code-execution-context';
 import { strideLanguageId } from './lib/stride-language/language-config';
 import { PlayIcon, SquareIcon } from 'lucide-react';
@@ -15,14 +15,15 @@ function App() {
 
   const { onEditorMount, terminalResizing } = useCodeContext();
 
-  const debounceSave = useCallback(() => {
+  const debounceSave = useMemo(() => {
     let timeout: number | null = null;
 
-    return (value: string | null) => {
+    return (value: string | undefined) => {
       if (timeout) window.clearTimeout(timeout);
+
       timeout = window.setTimeout(() => {
         if (value) localStorage.setItem('stride_code', value);
-      }, 1000);
+      }, 200);
     };
   }, []);
 
