@@ -122,6 +122,7 @@ namespace stride::ast
         STRING_LITERAL,  // "hello"
         CHAR_LITERAL,    // 'a'
         INTEGER_LITERAL, // 42
+        HEX_LITERAL,     // 0xFF
         FLOAT_LITERAL,   // 3.14
         BOOLEAN_LITERAL, // true, false
     };
@@ -135,6 +136,7 @@ namespace stride::ast
         case TokenType::STRING_LITERAL:
         case TokenType::CHAR_LITERAL:
         case TokenType::BOOLEAN_LITERAL:
+        case TokenType::HEX_LITERAL:
             return true;
         default:
             return false;

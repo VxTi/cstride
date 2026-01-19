@@ -16,14 +16,20 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
         offset++;
     }
 
-    if (set.peak(offset).type == TokenType::INTEGER_LITERAL)
+
+    if (const auto is_hex_type = set.peak(offset).type == TokenType::HEX_LITERAL;
+        set.peak(offset).type == TokenType::INTEGER_LITERAL || is_hex_type)
     {
         set.skip(offset + 1);
+
+        const int value = is_hex_type
+                              ? std::stoi(reference_token.lexeme, nullptr, 16)
+                              : std::stoi(reference_token.lexeme);
 
         return std::make_unique<AstIntegerLiteral>(
             set.source(),
             reference_token.offset,
-            std::move(std::stoi(reference_token.lexeme)),
+            value,
             SRFLAG_INT_UNSIGNED
         );
     }

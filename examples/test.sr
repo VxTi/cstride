@@ -4,7 +4,7 @@ extern fn printf(format: string): i32;
 
 extern fn write(fd: i32, input: string, length: i32): i32;
 
-extern fn exit(status: i32): void;
+extern fn exit(status: i32): i32;
 
 /**
  * HEllo world!

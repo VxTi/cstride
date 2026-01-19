@@ -14,14 +14,6 @@ extern fn acos(x: f64): f64;
 extern fn atan(x: f64): f64;
 extern fn atan2(y: f64, x: f64): f64;
 
-extern fn sin(x: f32): f32;
-extern fn cos(x: f32): f32;
-extern fn tan(x: f32): f32;
-extern fn asin(x: f32): f32;
-extern fn acos(x: f32): f32;
-extern fn atan(x: f32): f32;
-extern fn atan2(y: f32, x: f32): f32;
-
 // Hyperbolic functions
 extern fn sinh(x: f64): f64;
 extern fn cosh(x: f64): f64;
@@ -40,7 +32,7 @@ extern fn floor(x: f64): f64;
 extern fn fabs(x: f64): f64;
 extern fn fmod(x: f64, y: f64): f64;
 
-// let PI: f64 = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679;
+let PI: f64 = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679;
 
 let E: f64 = 2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274;
 

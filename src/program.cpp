@@ -38,15 +38,23 @@ Program::Program(std::vector<std::string> files)
     this->_nodes = std::move(nodes);
 }
 
+void Program::print_ast_nodes()
+{
+    for (const auto& node : _nodes)
+    {
+        std::cout << node.root()->source->path;
+        std::cout << node.root()->to_string() << std::endl;
+    }
+}
 
-void Program::execute(int argc, char* argv[]) const
+void Program::execute(int argc, char* argv[])
 {
     if (_nodes.empty())
     {
         return;
     }
     // For debugging purposes, comment this out to see the generated AST nodes
-    // std::cout << _nodes[0].root()->to_string() << std::endl;
+    this->print_ast_nodes();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();

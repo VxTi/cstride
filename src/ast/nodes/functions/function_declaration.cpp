@@ -25,7 +25,7 @@ std::string AstFunctionDeclaration::to_string()
     const auto body_str = this->body() == nullptr ? "EMPTY" : this->body()->to_string();
 
     return std::format(
-        "FunctionDefinition(name: {} (), parameters: [ {} ], body: {}, is_external: {})",
+        "FunctionDeclaration(name: {} (), parameters: [ {} ], body: {}, is_external: {})",
         this->get_name(),
         this->get_internal_name(),
         params,
@@ -80,9 +80,15 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
     std::string internal_name = fn_name;
-    for (const auto& param : parameters)
+
+    // Prevent tagging extern functions with different internal names.
+    // This prevents the linker from being unable to make a reference to this function.
+    if ((flags & SRFLAG_FN_DEF_EXTERN) == 0)
     {
-        internal_name += SEGMENT_DELIMITER + param->get_type()->get_internal_name();
+        for (const auto& param : parameters)
+        {
+            internal_name += SEGMENT_DELIMITER + param->get_type()->get_internal_name();
+        }
     }
     scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name, SymbolType::FUNCTION, internal_name);
 
