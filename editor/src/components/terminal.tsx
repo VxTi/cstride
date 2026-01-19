@@ -1,6 +1,7 @@
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
 import { useEffect, useRef, useState } from 'react';
+import { twMerge } from 'tailwind-merge';
 import { useCodeContext } from '../context/code-execution-context';
 
 export default function TerminalWindow() {
@@ -9,22 +10,21 @@ export default function TerminalWindow() {
 
   const fitAddonRef = useRef<FitAddon | null>(null);
   const [height, setHeight] = useState(300);
-  const isResizing = useRef(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing.current) return;
+      if (!terminalResizing) return;
 
       const newHeight = window.innerHeight - e.clientY;
+
+      console.log(newHeight);
       if (newHeight > 50 && newHeight < window.innerHeight - 50) {
         setHeight(newHeight);
+        console.log('Height updated:', newHeight);
       }
     };
 
     const handleMouseUp = () => {
-      if (!isResizing.current) return;
-
-      isResizing.current = false;
       setTerminalResizing(false);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
@@ -37,7 +37,7 @@ export default function TerminalWindow() {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [setTerminalResizing, terminalResizing]);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -66,7 +66,7 @@ export default function TerminalWindow() {
       term.dispose();
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [terminalRef, xtermRef]);
 
   useEffect(() => {
     if (fitAddonRef.current) {
@@ -76,32 +76,31 @@ export default function TerminalWindow() {
 
   return (
     <>
+      <TerminalResizeBar />
       <div
-        onMouseDown={e => {
-          isResizing.current = true;
-          setTerminalResizing(true);
-          document.body.style.cursor = 'ns-resize';
-          document.body.style.userSelect = 'none';
-          e.preventDefault();
-        }}
-        style={{
-          height: '5px',
-          cursor: 'ns-resize',
-          backgroundColor: terminalResizing ? '#007fd4' : '#333',
-          transition: 'background-color 0.2s ease',
-          zIndex: 10,
-        }}
-      />
-      <div
-        style={{
-          height: `${height}px`,
-          backgroundColor: '#1E1E1E',
-          padding: '10px',
-          overflow: 'hidden',
-        }}
+        className={twMerge('p-2.5 overflow-hidden')}
+        style={{ height: `${height}px`, backgroundColor: '#1E1E1E' }}
       >
-        <div ref={terminalRef} style={{ width: '100%', height: '100%' }} />
+        <div ref={terminalRef} className="size-full" />
       </div>
     </>
+  );
+}
+
+function TerminalResizeBar() {
+  const { setTerminalResizing, terminalResizing } = useCodeContext();
+  return (
+    <div
+      onMouseDown={e => {
+        setTerminalResizing(true);
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      }}
+      className={twMerge(
+        'h-1 cursor-ns-resize z-10 transition-colors duration-200',
+        terminalResizing ? 'bg-blue-500' : 'bg-stone-700'
+      )}
+    />
   );
 }
