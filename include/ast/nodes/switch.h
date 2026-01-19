@@ -15,7 +15,6 @@ namespace stride::ast
         std::vector<std::unique_ptr<AstSwitchBranch>> _branches;
 
     public:
-        M_2_PI
         explicit AstSwitch(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,

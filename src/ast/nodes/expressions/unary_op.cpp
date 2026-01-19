@@ -238,3 +238,13 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
 
     return std::nullopt;
 }
+
+bool AstUnaryOp::is_reducible()
+{
+    return this->get_operand().is_reducible();
+}
+
+IAstNode* AstUnaryOp::reduce()
+{
+    return this->get_operand().reduce();
+}

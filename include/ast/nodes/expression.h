@@ -53,6 +53,8 @@ namespace stride::ast
         DEREFERENCE, //  *<..>
     };
 
+    /// Base class for all expression AST nodes.
+
     class AstExpression :
         public IAstNode,
         public ISynthesisable,
@@ -124,7 +126,6 @@ namespace stride::ast
         const std::string _function_name;
 
     public:
-
         explicit AstFunctionInvocation(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
@@ -351,42 +352,92 @@ namespace stride::ast
         AstExpression& get_operand() const { return *this->_operand.get(); }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
+        bool is_reducible() override;
+
+        IAstNode* reduce() override;
     };
 
+    class AstVariableAssignment :
+        public AstExpression
+    {
+        const std::string _variable_name;
+        u_ptr<IAstNode> _value;
+
+    public:
+        explicit AstVariableAssignment(
+            const s_ptr<SourceFile>& source,
+            const int source_offset,
+            std::string variable_name,
+            u_ptr<IAstNode> value
+        )
+            : AstExpression(source, source_offset, {}),
+              _variable_name(std::move(variable_name)),
+              _value(std::move(value)) {}
+
+        [[nodiscard]]
+       const std::string& get_variable_name() const { return _variable_name; }
+
+        [[nodiscard]]
+        IAstNode* get_value() const { return this->_value.get(); }
+
+        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
+        bool is_reducible() override;
+
+        IAstNode* reduce() override;
+
+        std::string to_string() override;
+    };
+
+
+    /// Checks if the token set represents a variable declaration
     bool is_variable_declaration(const TokenSet& set);
 
+    /// Checks if the token set represents a variable assignment
+    bool is_variable_assignment(const TokenSet& set);
+
+    /// Returns the precedence value for a binary arithmetic operator
     int binary_operator_precedence(BinaryOpType type);
 
-    std::unique_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& tokens);
+    /// Parses a complete standalone expression from tokens
+    u_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& tokens);
 
-    std::unique_ptr<AstExpression> parse_expression_ext(
+    /// Parses an expression with extended flags controlling variable declarations and assignments
+    u_ptr<AstExpression> parse_expression_ext(int expression_type_flags, const Scope& scope, TokenSet& set);
+
+    /// Parses a single part of a standalone expression
+    u_ptr<AstExpression> parse_standalone_expression_part(const Scope& scope, TokenSet& set);
+
+    /// Parses a variable declaration statement
+    u_ptr<AstVariableDeclaration> parse_variable_declaration(
         int expression_type_flags,
         const Scope& scope,
         TokenSet& set
     );
-    std::unique_ptr<AstExpression> parse_standalone_expression_part(const Scope& scope, TokenSet& set);
 
-    std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
-        int expression_type_flags,
+    /// Parses a binary arithmetic operation using precedence climbing
+    option<u_ptr<AstExpression>> parse_arithmetic_binary_op(
         const Scope& scope,
-        TokenSet& set
+        TokenSet& set,
+        u_ptr<AstExpression> lhs,
+        int min_precedence
     );
 
+    /// Parses a unary operator expression
+    option<u_ptr<AstExpression>> parse_binary_unary_op(const Scope& scope, TokenSet& set);
 
-    std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(const Scope& scope,
-                                                                             TokenSet& set,
-                                                                             std::unique_ptr<AstExpression> lhs,
-                                                                             int min_precedence);
+    option<u_ptr<AstExpression>> parse_variable_assignment(const Scope& scope, TokenSet& set);
 
-    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(const /**/Scope& scope, TokenSet& set);
+    /// Converts a token type to its corresponding logical operator type
+    option<LogicalOpType> get_logical_op_type(TokenType type);
 
-    // Operation type utility functions
+    /// Converts a token type to its corresponding comparison operator type
+    option<ComparisonOpType> get_comparative_op_type(TokenType type);
 
-    std::optional<LogicalOpType> get_logical_op_type(TokenType type);
+    /// Converts a token type to its corresponding binary arithmetic operator type
+    option<BinaryOpType> get_binary_op_type(TokenType type);
 
-    std::optional<ComparisonOpType> get_comparative_op_type(TokenType type);
-
-    std::optional<BinaryOpType> get_binary_op_type(TokenType type);
-
-    std::optional<UnaryOpType> get_unary_op_type(TokenType type);
+    /// Converts a token type to its corresponding unary operator type
+    option<UnaryOpType> get_unary_op_type(TokenType type);
 }

@@ -14,7 +14,7 @@ namespace stride::ast
     using s_ptr = std::shared_ptr<T...>;
 
     template <typename... T>
-    using opt = std::optional<T...>;
+    using option = std::optional<T...>;
 
     class ISynthesisable
     {

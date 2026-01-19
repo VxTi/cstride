@@ -51,7 +51,7 @@ llvm::Value* AstFunctionInvocation::codegen(
             make_ast_error(
                 *this->source,
                 this->source_offset,
-                "Function \"" + internal_name + "\" was not found in this scope"
+                "Function '" + internal_name + "' was not found in this scope"
             )
         );
     }
@@ -62,7 +62,7 @@ llvm::Value* AstFunctionInvocation::codegen(
             make_ast_error(
                 *this->source,
                 this->source_offset,
-                "Incorrect arguments passed for function \"" + internal_name + "\""
+                "Incorrect arguments passed for function '" + internal_name + "'"
             )
         );
     }
