@@ -23,7 +23,7 @@ namespace stride
     {
         std::vector<ProgramObject> _nodes;
 
-        void print_ast_nodes();
+        void print_ast_nodes() const;
 
     public:
         explicit Program(std::vector<std::string> files);
@@ -33,7 +33,7 @@ namespace stride
         void execute(
             int argc,
             char* argv[]
-        );
+        ) const;
 
 
     };

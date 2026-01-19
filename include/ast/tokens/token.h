@@ -252,8 +252,9 @@ namespace stride::ast
         case TokenType::STRING_LITERAL: return "String Literal";
         case TokenType::CHAR_LITERAL: return "Char Literal";
         case TokenType::INTEGER_LITERAL: return "Integer";
-        case TokenType::FLOAT_LITERAL: return "<float>";
-        case TokenType::BOOLEAN_LITERAL: return "bool";
+            case TokenType::HEX_LITERAL: return "Hexadecimal";
+        case TokenType::FLOAT_LITERAL: return "Float";
+        case TokenType::BOOLEAN_LITERAL: return "Bool";
         default: return "Unknown";
         }
     }

@@ -27,12 +27,12 @@ std::string stride::ast::types::primitive_type_to_str(const PrimitiveType type)
 
 std::string AstPrimitiveType::to_string()
 {
-    return std::format("PrimitiveType({}{})", primitive_type_to_str(this->type()), this->is_pointer() ? "*" : "");
+    return std::format("Primitive({}{})", primitive_type_to_str(this->type()), this->is_pointer() ? "*" : "");
 }
 
 std::string AstCustomType::to_string()
 {
-    return std::format("CustomType({}{})", this->name(), this->is_pointer() ? "*" : "");
+    return std::format("Custom({}{})", this->name(), this->is_pointer() ? "*" : "");
 }
 
 std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::try_parse(TokenSet& set)

@@ -92,7 +92,7 @@ namespace stride::ast
         IAstNode* body() const { return this->_body.get(); }
 
         [[nodiscard]]
-        const std::vector<u_ptr<AstFunctionParameter>>& parameters() const
+        const std::vector<u_ptr<AstFunctionParameter>>& get_parameters() const
         {
             return this->_parameters;
         }

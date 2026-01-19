@@ -1,15 +1,16 @@
 #include "program.h"
 
+#include <iostream>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
+#include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/MC/TargetRegistry.h>
-#include <llvm/TargetParser/Host.h>
-#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
-#include <iostream>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/TargetParser/Host.h>
 
 #include "ast/parser.h"
 
@@ -38,7 +39,7 @@ Program::Program(std::vector<std::string> files)
     this->_nodes = std::move(nodes);
 }
 
-void Program::print_ast_nodes()
+void Program::print_ast_nodes() const
 {
     for (const auto& node : _nodes)
     {
@@ -47,20 +48,22 @@ void Program::print_ast_nodes()
     }
 }
 
-void Program::execute(int argc, char* argv[])
+void Program::execute(int argc, char* argv[]) const
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
     if (_nodes.empty())
     {
         return;
     }
     // For debugging purposes, comment this out to see the generated AST nodes
-    this->print_ast_nodes();
+    // this->print_ast_nodes();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     LLVMInitializeNativeAsmPrinter();
     LLVMInitializeNativeAsmParser();
     LLVMLinkInInterpreter();
+    LLVMLinkInMCJIT();
 
 
     llvm::LLVMContext context;
@@ -114,7 +117,7 @@ void Program::execute(int argc, char* argv[])
     std::string error;
     llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))
                                    .setErrorStr(&error)
-                                   .setEngineKind(llvm::EngineKind::Interpreter)
+                                   .setEngineKind(llvm::EngineKind::Either)
                                    .create();
 
     if (!engine)
@@ -123,27 +126,20 @@ void Program::execute(int argc, char* argv[])
         return;
     }
 
-    llvm::Function* main = engine->FindFunctionNamed(MAIN_FN_NAME);
-    if (!main)
+    engine->finalizeObject();
+    const uint64_t func_addr = engine->getFunctionAddress(MAIN_FN_NAME);
+
+    if (func_addr == 0)
     {
         std::cout << "Function '" << MAIN_FN_NAME << "' not found" << std::endl;
         return;
     }
 
+    typedef int (*MainFunc)(int, char**);
+    auto main_func = reinterpret_cast<MainFunc>(func_addr);
 
-    std::vector<llvm::GenericValue> ArgValues;
-
-    llvm::GenericValue ArgcValue;
-    ArgcValue.IntVal = llvm::APInt(32, argc);
-    ArgValues.push_back(ArgcValue);
-
-    llvm::GenericValue ArgvValue;
-    ArgvValue.PointerVal = argv;
-    ArgValues.push_back(ArgvValue);
-
-    llvm::GenericValue result = engine->runFunction(main, ArgValues);
-
-    const auto status_code = static_cast<int>(result.IntVal.getZExtValue());
+    const int status_code = main_func(argc, argv);
 
     std::cout << "\nProcess exited with status code " << status_code << std::endl;
+
 }

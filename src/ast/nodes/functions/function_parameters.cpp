@@ -37,7 +37,7 @@ void stride::ast::parse_subsequent_fn_params(
 
 std::string AstFunctionParameter::to_string()
 {
-    return std::format("{}()", get_name(), this->get_type()->to_string());
+    return std::format("{}({})", get_name(), this->get_type()->to_string());
 }
 
 u_ptr<AstFunctionParameter> stride::ast::parse_first_fn_param(

@@ -15,7 +15,7 @@ using namespace stride::ast;
 std::string AstFunctionDeclaration::to_string()
 {
     std::string params;
-    for (const auto& param : this->parameters())
+    for (const auto& param : this->get_parameters())
     {
         if (!params.empty())
             params += ", ";
@@ -25,7 +25,7 @@ std::string AstFunctionDeclaration::to_string()
     const auto body_str = this->body() == nullptr ? "EMPTY" : this->body()->to_string();
 
     return std::format(
-        "FunctionDeclaration(name: {} (), parameters: [ {} ], body: {}, is_external: {})",
+        "FunctionDeclaration(name: {} ({}), parameters: [ {} ], body: {}, is_external: {})",
         this->get_name(),
         this->get_internal_name(),
         params,
@@ -135,7 +135,7 @@ std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
 )
 {
     std::vector<llvm::Type*> param_types;
-    for (const auto& param : self->parameters())
+    for (const auto& param : self->get_parameters())
     {
         auto llvm_type = types::internal_type_to_llvm_type(param->get_type(), module, context);
         if (!llvm_type)

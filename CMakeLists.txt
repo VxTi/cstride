@@ -6,7 +6,16 @@ set(CMAKE_CXX_STANDARD 23)
 find_package(LLVM CONFIG REQUIRED)
 
 # Map the components you need
-llvm_map_components_to_libnames(llvm_libs support core irreader executionengine interpreter native)
+llvm_map_components_to_libnames(
+        llvm_libs
+        support
+        core
+        irreader
+        executionengine
+        interpreter
+        native
+        mcjit
+)
 
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.cc")
 file(GLOB_RECURSE HEADER_FILES "include/*.h" "include/*.hpp")
