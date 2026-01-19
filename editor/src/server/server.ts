@@ -4,6 +4,8 @@ import * as path from 'path';
 import { exec } from 'child_process';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { type z } from 'zod';
+import { sendMessage, websocketMessageDecoder, WsMessageType } from '../shared';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -12,7 +14,7 @@ const wss = new WebSocketServer({ port });
 
 console.log(`WebSocket server started on port ${port}`);
 
-const CACHE_DIR = path.join(__dirname, 'cache');
+const CACHE_DIR = path.join(__dirname, '../../.c-cache');
 
 const CSTRIDE_BUILD_PATH = path.resolve(__dirname, '../../../build/cstride');
 const CSTRIDE_DEBUG_PATH = path.resolve(
@@ -36,26 +38,23 @@ if (!fs.existsSync(CACHE_DIR)) {
   fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
 
-interface CompileMessage {
-  type: 'compile';
-  code: string;
-}
+type CompileMessage = z.infer<typeof websocketMessageDecoder>;
 
 wss.on('connection', (ws: WebSocket) => {
   console.log('Client connected');
 
   ws.on('message', (message: string) => {
     try {
-      const data: CompileMessage = JSON.parse(message.toString());
+      const json: unknown = JSON.parse(message);
+      const data: CompileMessage = websocketMessageDecoder.parse(json);
 
-      if (data.type === 'compile' && data.code) {
-        handleCompile(ws, data.code);
-      } else {
-        ws.send(JSON.stringify({ error: 'Invalid message format or type' }));
+      if (data.type === WsMessageType.EXECUTE_CODE) {
+        handleCompile(ws, data.message);
       }
     } catch (e) {
       console.error('Failed to parse message', e);
-      ws.send(JSON.stringify({ error: 'Failed to parse JSON' }));
+
+      sendMessage(ws, WsMessageType.PROCESS_STDERR, 'Failed to parse JSON');
     }
   });
 
@@ -74,38 +73,23 @@ function handleCompile(ws: WebSocket, code: string) {
   fs.writeFile(filePath, code, err => {
     if (err) {
       console.error('Error writing file:', err);
-      ws.send(
-        JSON.stringify({ type: 'error', message: 'Failed to save code' })
-      );
+
+      sendMessage(ws, WsMessageType.PROCESS_STDERR, 'Failed to save code');
       return;
     }
 
     console.log(`Code saved to ${filePath}, executing cstride...`);
 
     // Run cstride <cache file name>
-    exec(`${cstrideExe} "${filePath}"`, (error, stdout, stderr) => {
+    exec(`${cstrideExe} "${filePath}"`, (_error, stdout, stderr) => {
       // Clean up file after execution (optional, dependent on requirement)
       // fs.unlinkSync(filePath);
 
-      if (error) {
-        console.error(`exec error: ${error}`);
-        ws.send(
-          JSON.stringify({
-            type: 'execution_error',
-            error: error.message,
-            stderr,
-          })
-        );
-        return;
+      if (stderr.length) {
+        sendMessage(ws, WsMessageType.PROCESS_STDERR, stderr);
+      } else {
+        sendMessage(ws, WsMessageType.PROCESS_STDOUT, stdout);
       }
-
-      ws.send(
-        JSON.stringify({
-          type: 'execution_success',
-          stdout,
-          stderr,
-        })
-      );
     });
   });
 }

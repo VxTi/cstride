@@ -48,8 +48,8 @@ void Program::execute(
     {
         return;
     }
-
-   // std::cout << _nodes[0].root()->to_string() << std::endl;
+    // For debugging purposes, comment this out to see the generated AST nodes
+    // std::cout << _nodes[0].root()->to_string() << std::endl;
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -105,7 +105,8 @@ void Program::execute(
     }
 
 
-  //  module->print(llvm::errs(), nullptr);
+    // Will print the LLVM IR
+    // module->print(llvm::errs(), nullptr);
 
     std::string error;
     llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))

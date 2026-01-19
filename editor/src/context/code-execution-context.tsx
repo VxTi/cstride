@@ -11,6 +11,7 @@ import {
   useState,
 } from 'react';
 import { registerLanguage } from '../lib/stride-language/stride-language';
+import { websocketMessageDecoder, WsMessageType } from '../shared';
 
 interface CodeExecutionContextType {
   monaco: typeof import('monaco-editor') | null;
@@ -72,22 +73,24 @@ export function CodeContextProvider({
       if (!term) return;
 
       try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'execution_success') {
-          term.writeln(data.stdout || 'Success (No output)');
-          if (data.stderr)
-            term.writeln(`\x1b[31mStderr:\x1b[0m\r\n${data.stderr}`);
-        } else if (data.type === 'execution_error') {
-          term.writeln(`\x1b[31mError: ${data.error}\x1b[0m`);
-          if (data.stderr)
-            term.writeln(`\x1b[31mStderr:\x1b[0m\r\n${data.stderr}`);
-        } else if (data.error) {
-          term.writeln(`\x1b[31mServer Error: ${data.error}\x1b[0m`);
+        const json: unknown = JSON.parse(
+          typeof event.data === 'string' ? event.data : ''
+        );
+        const decoded = websocketMessageDecoder.safeParse(json);
+        if (!decoded.success) {
+          term.writeln('\x1b[31mFailed to decode server message\x1b[0m');
+          return;
         }
-      } catch (e) {
-        console.error('Failed to parse server message', e);
-        term.writeln('\x1b[31mFailed to parse server message\x1b[0m');
-      }
+        const data = decoded.data;
+
+        if (data.type === WsMessageType.PROCESS_STDOUT) {
+          term.writeln(data.message || 'Success (No output)');
+        } else if (data.type === WsMessageType.PROCESS_STDERR) {
+          data.message
+            .split('\n')
+            .forEach(line => term.writeln(`\x1b[31m${line}\x1b[0m`));
+        }
+      } catch {}
     };
 
     setWs(socket);
@@ -111,7 +114,7 @@ export function CodeContextProvider({
         editorRef,
         xtermRef,
         terminalResizing,
-        setTerminalResizing
+        setTerminalResizing,
       }}
     >
       {children}

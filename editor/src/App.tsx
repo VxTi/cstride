@@ -1,34 +1,33 @@
-import Editor                                       from '@monaco-editor/react';
-import { FitAddon }                                 from '@xterm/addon-fit';
+import Editor from '@monaco-editor/react';
+import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { Terminal }                                 from '@xterm/xterm';
-import { clearTimeout }                             from 'node:timers';
+import { Terminal } from '@xterm/xterm';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useCodeContext }                           from './context/code-execution-context';
-import { strideLanguageId }                         from './lib/stride-language/language-config';
+import { useCodeContext } from './context/code-execution-context';
+import { strideLanguageId } from './lib/stride-language/language-config';
+import { PlayIcon, SquareIcon } from 'lucide-react';
+import { sendMessage, WsMessageType } from './shared';
 
 function App() {
-  const [ initialCode ] = useState(
-    () => localStorage.getItem('stride_code') || defaultCodeFragment,
+  const [initialCode] = useState(
+    () => localStorage.getItem('stride_code') || defaultCodeFragment
   );
 
   const { onEditorMount, terminalResizing } = useCodeContext();
 
   const debounceSave = useCallback(() => {
-    let timeout: NodeJS.Timeout | null = null;
+    let timeout: number | null = null;
 
     return (value: string | null) => {
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => {
+      if (timeout) window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => {
         if (value) localStorage.setItem('stride_code', value);
       }, 1000);
     };
   }, []);
 
   return (
-    <div
-      className="w-screen h-screen flex flex-col m-0 p-0"
-    >
+    <div className="w-screen h-screen flex flex-col m-0 p-0">
       <div
         className="flex-1 relative"
         style={{ pointerEvents: terminalResizing ? 'none' : 'auto' }}
@@ -41,14 +40,46 @@ function App() {
           onMount={onEditorMount}
           onChange={debounceSave}
           options={{
-            minimap:  { enabled: false },
+            minimap: { enabled: false },
             fontSize: 14,
           }}
         />
-        <ExecuteCodeButton />
+        <div className="flex items-center gap-2 absolute bottom-2 right-2 z-1000">
+          <TerminateCodeButton />
+          <ExecuteCodeButton />
+        </div>
       </div>
       <TerminalWindow />
     </div>
+  );
+}
+
+function TerminateCodeButton() {
+  const { editorRef, ws, xtermRef } = useCodeContext();
+
+  const runCode = () => {
+    if (editorRef.current && ws) {
+      const term = xtermRef.current;
+      term?.reset();
+      term?.writeln('Compiling and running...');
+
+      const code = editorRef.current.getValue();
+
+      sendMessage(ws, WsMessageType.EXECUTE_CODE, code);
+    } else {
+      xtermRef.current?.writeln(
+        '\x1b[31mEditor not ready or not connected to server.\x1b[0m'
+      );
+    }
+  };
+
+  return (
+    <button
+      onClick={runCode}
+      className="rounded-2xl px-4 py-2 text-white cursor-pointer hover:bg-gray-100/10 transition-colors duration-200"
+    >
+      <SquareIcon className="stroke-red-500 stroke-2" />
+    </button>
   );
 }
 
@@ -61,10 +92,11 @@ function ExecuteCodeButton() {
       term?.reset();
       term?.writeln('Compiling and running...');
       const code = editorRef.current.getValue();
-      ws.send(JSON.stringify({ type: 'compile', code }));
+
+      sendMessage(ws, WsMessageType.EXECUTE_CODE, code);
     } else {
       xtermRef.current?.writeln(
-        '\x1b[31mEditor not ready or not connected to server.\x1b[0m',
+        '\x1b[31mEditor not ready or not connected to server.\x1b[0m'
       );
     }
   };
@@ -72,19 +104,20 @@ function ExecuteCodeButton() {
   return (
     <button
       onClick={runCode}
-      className="absolute bottom-2 right-2 rounded-2xl px-4 py-2 bg-blue-500 text-white border-none cursor-pointer z-1000"
+      className="rounded-2xl p-2 hover:bg-gray-100/10 transition-colors duration-200 text-white cursor-pointer"
     >
-      Run Code
+      <PlayIcon className="stroke-green-500 stroke-2" />
     </button>
   );
 }
 
 function TerminalWindow() {
-  const { terminalRef, xtermRef, terminalResizing, setTerminalResizing } = useCodeContext();
+  const { terminalRef, xtermRef, terminalResizing, setTerminalResizing } =
+    useCodeContext();
 
-  const fitAddonRef           = useRef<FitAddon | null>(null);
-  const [ height, setHeight ] = useState(300);
-  const isResizing            = useRef(false);
+  const fitAddonRef = useRef<FitAddon | null>(null);
+  const [height, setHeight] = useState(300);
+  const isResizing = useRef(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -101,7 +134,7 @@ function TerminalWindow() {
 
       isResizing.current = false;
       setTerminalResizing(false);
-      document.body.style.cursor     = '';
+      document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
 
@@ -118,13 +151,13 @@ function TerminalWindow() {
     if (!terminalRef.current) return;
 
     const term = new Terminal({
-                                convertEol: true,
-                                theme:      {
-                                  background: '#1E1E1E',
-                                },
-                                fontFamily: 'monospace',
-                                fontSize:   14,
-                              });
+      convertEol: true,
+      theme: {
+        background: '#1E1E1E',
+      },
+      fontFamily: 'monospace',
+      fontSize: 14,
+    });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
 
@@ -147,7 +180,7 @@ function TerminalWindow() {
     if (fitAddonRef.current) {
       requestAnimationFrame(() => fitAddonRef.current?.fit());
     }
-  }, [ height ]);
+  }, [height]);
 
   return (
     <>

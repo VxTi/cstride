@@ -36,6 +36,14 @@ const startServerPlugin = () => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), startServerPlugin(),     tailwindcss(),
-  ],
-})
+  plugins: [react(), startServerPlugin(), tailwindcss()],
+  server: {
+    port: 3000,
+    watch: {
+      ignored: ['**/.c-cache/**'],
+    },
+  },
+  build: {
+    target: 'esnext',
+  },
+});
