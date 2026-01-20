@@ -16,6 +16,10 @@ namespace stride::ast
 #define SRFLAG_VAR_DECL_GLOBAL  (0x4)
 #define SRFLAG_VAR_DECL_ARRAY   (0x8)
 
+#define SR_PROPERTY_ACCESSOR_SEPARATOR ("@")
+
+#define SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION (100)
+
     enum class BinaryOpType
     {
         ADD,
@@ -51,6 +55,19 @@ namespace stride::ast
         DECREMENT,   // --<..> or <..>--
         ADDRESS_OF,  //  &<..>
         DEREFERENCE, //  *<..>
+    };
+
+    enum class MutativeAssignmentType
+    {
+        ASSIGN,
+        ADD,
+        SUBTRACT,
+        MULTIPLY,
+        DIVIDE,
+        MODULO,
+        BITWISE_OR,
+        BITWISE_AND,
+        BITWISE_XOR
     };
 
     /// Base class for all expression AST nodes.
@@ -356,30 +373,40 @@ namespace stride::ast
         bool is_reducible() override;
 
         IAstNode* reduce() override;
+
+        std::string to_string() override;
     };
 
-    class AstVariableAssignment :
+    class AstVariableReassignment :
         public AstExpression
     {
         const std::string _variable_name;
+        const std::string _internal_name;
         u_ptr<IAstNode> _value;
+        MutativeAssignmentType _operator;
 
     public:
-        explicit AstVariableAssignment(
+        explicit AstVariableReassignment(
             const s_ptr<SourceFile>& source,
             const int source_offset,
             std::string variable_name,
+            std::string internal_name,
+            const MutativeAssignmentType op,
             u_ptr<IAstNode> value
         )
             : AstExpression(source, source_offset, {}),
               _variable_name(std::move(variable_name)),
-              _value(std::move(value)) {}
+              _internal_name(std::move(internal_name)),
+              _value(std::move(value)),
+              _operator(op) {}
 
-        [[nodiscard]]
-       const std::string& get_variable_name() const { return _variable_name; }
+        const std::string& get_variable_name() const { return _variable_name; }
 
-        [[nodiscard]]
         IAstNode* get_value() const { return this->_value.get(); }
+
+        const std::string& get_internal_name() const { return this->_internal_name; }
+
+        MutativeAssignmentType get_operator() const { return this->_operator; }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -394,14 +421,11 @@ namespace stride::ast
     /// Checks if the token set represents a variable declaration
     bool is_variable_declaration(const TokenSet& set);
 
-    /// Checks if the token set represents a variable assignment
-    bool is_variable_assignment(const TokenSet& set);
-
     /// Returns the precedence value for a binary arithmetic operator
     int binary_operator_precedence(BinaryOpType type);
 
     /// Parses a complete standalone expression from tokens
-    u_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& tokens);
+    u_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& set);
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
     u_ptr<AstExpression> parse_expression_ext(int expression_type_flags, const Scope& scope, TokenSet& set);
@@ -412,6 +436,12 @@ namespace stride::ast
     /// Parses a variable declaration statement
     u_ptr<AstVariableDeclaration> parse_variable_declaration(
         int expression_type_flags,
+        const Scope& scope,
+        TokenSet& set
+    );
+
+    /// Parses a variable assignment statement
+    option<u_ptr<AstVariableReassignment>> parse_variable_reassignment(
         const Scope& scope,
         TokenSet& set
     );
@@ -427,8 +457,6 @@ namespace stride::ast
     /// Parses a unary operator expression
     option<u_ptr<AstExpression>> parse_binary_unary_op(const Scope& scope, TokenSet& set);
 
-    option<u_ptr<AstExpression>> parse_variable_assignment(const Scope& scope, TokenSet& set);
-
     /// Converts a token type to its corresponding logical operator type
     option<LogicalOpType> get_logical_op_type(TokenType type);
 
@@ -440,4 +468,11 @@ namespace stride::ast
 
     /// Converts a token type to its corresponding unary operator type
     option<UnaryOpType> get_unary_op_type(TokenType type);
+
+    /// Whether the next sequence of tokens is a variable/function access by property reference
+    /// e.g., <identifier>.<accessor>
+    bool is_property_accessor_statement(const TokenSet& set);
+
+    /// Parses a property accessor statement, e.g., <identifier>.<accessor>
+    std::string parse_property_accessor_statement(const Scope& scope, TokenSet& set);
 }

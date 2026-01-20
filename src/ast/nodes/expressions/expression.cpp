@@ -111,14 +111,22 @@ std::string AstExpression::to_string()
 
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(const Scope& scope, TokenSet& set)
 {
-    if (auto unary = parse_binary_unary_op(scope, set); unary.has_value())
+    if (auto unary = parse_binary_unary_op(scope, set);
+        unary.has_value())
     {
         return std::move(unary.value());
     }
 
-    if (auto lit = parse_literal_optional(scope, set); lit.has_value())
+    if (auto lit = parse_literal_optional(scope, set);
+        lit.has_value())
     {
         return std::move(lit.value());
+    }
+
+    if (auto reassignment = parse_variable_reassignment(scope, set);
+        reassignment.has_value())
+    {
+        return std::move(reassignment.value());
     }
 
     if (set.peak_next_eq(TokenType::LPAREN))
@@ -274,9 +282,9 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
     }
 
     // Now attempt to parse logical or comparative operations using the result
-    auto logical_result = parse_logical_or_comparative_op(scope, set, std::move(lhs));
 
-    if (logical_result.has_value())
+    if (auto logical_result = parse_logical_or_comparative_op(scope, set, std::move(lhs));
+        logical_result.has_value())
     {
         return std::move(logical_result.value());
     }
@@ -287,11 +295,45 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
 /**
  * General expression parsing. These can occur in global / function scopes
  */
-std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(const Scope& scope, TokenSet& set)
 {
     return parse_expression_ext(
         SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION,
         scope,
-        tokens
+        set
     );
+}
+
+std::string stride::ast::parse_property_accessor_statement(const Scope& scope, TokenSet& set)
+{
+    const auto reference_token = set.expect(TokenType::IDENTIFIER);
+    auto identifier_name = reference_token.lexeme;
+
+    int iterations = 0;
+    while (true)
+    {
+        if (set.peak_next_eq(TokenType::DOT) && set.peak_eq(TokenType::IDENTIFIER, 1))
+        {
+            set.next();
+            const auto accessor_token = set.expect(TokenType::IDENTIFIER);
+            identifier_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.lexeme;
+        }
+        else break;
+
+        if (++iterations > SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION)
+        {
+            set.throw_error("Maximum identifier resolution exceeded");
+        }
+    }
+
+    return identifier_name;
+}
+
+bool stride::ast::is_property_accessor_statement(const TokenSet& set)
+{
+    const bool initial_identifier = set.peak_next_eq(TokenType::IDENTIFIER);
+    const bool is_followup_accessor = set.peak_eq(TokenType::DOT, 1)
+        && set.peak_eq(TokenType::IDENTIFIER, 2);
+
+    return initial_identifier && (is_followup_accessor || true);
 }

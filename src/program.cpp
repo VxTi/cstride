@@ -50,6 +50,8 @@ void Program::print_ast_nodes() const
 
 void Program::execute(int argc, char* argv[]) const
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
     if (_nodes.empty())
     {
         return;
@@ -116,7 +118,7 @@ void Program::execute(int argc, char* argv[]) const
     std::string error;
     llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))
                                    .setErrorStr(&error)
-                                   .setEngineKind(llvm::EngineKind::Either)
+                                   .setEngineKind(llvm::EngineKind::JIT)
                                    .create();
 
     if (!engine)

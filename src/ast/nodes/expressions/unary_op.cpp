@@ -7,6 +7,22 @@
 
 using namespace stride::ast;
 
+std::string unary_op_type_to_str(const UnaryOpType type)
+{
+    switch (type)
+    {
+    case UnaryOpType::LOGICAL_NOT: return "!";
+    case UnaryOpType::NEGATE: return "-";
+    case UnaryOpType::COMPLEMENT: return "~";
+    case UnaryOpType::INCREMENT: return "++";
+    case UnaryOpType::DECREMENT: return "--";
+    case UnaryOpType::ADDRESS_OF: return "&";
+    case UnaryOpType::DEREFERENCE: return "*";
+
+    default: return "";
+    }
+}
+
 bool requires_identifier_operand(const UnaryOpType op)
 {
     switch (op)
@@ -247,4 +263,13 @@ bool AstUnaryOp::is_reducible()
 IAstNode* AstUnaryOp::reduce()
 {
     return this->get_operand().reduce();
+}
+
+std::string AstUnaryOp::to_string()
+{
+    return std::format(
+        "UnaryOp({}{})",
+        this->is_lsh() ? unary_op_type_to_str(this->get_op_type()) : this->get_operand().to_string(),
+        this->is_lsh() ? this->get_operand().to_string() : unary_op_type_to_str(this->get_op_type())
+    );
 }
