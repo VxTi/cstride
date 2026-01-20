@@ -3,6 +3,7 @@ import { Terminal } from '@xterm/xterm';
 import { useEffect, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { useCodeContext } from '../context/code-execution-context';
+import ActionButtons from './action-buttons';
 
 export default function TerminalWindow() {
   const { terminalRef, xtermRef, terminalResizing, setTerminalResizing } =
@@ -17,10 +18,8 @@ export default function TerminalWindow() {
 
       const newHeight = window.innerHeight - e.clientY;
 
-      console.log(newHeight);
       if (newHeight > 50 && newHeight < window.innerHeight - 50) {
         setHeight(newHeight);
-        console.log('Height updated:', newHeight);
       }
     };
 
@@ -45,7 +44,7 @@ export default function TerminalWindow() {
     const term = new Terminal({
       convertEol: true,
       theme: {
-        background: '#1E1E1E',
+        background: 'rgba(0, 0, 0, 0)',
       },
       fontFamily: 'monospace',
       fontSize: 14,
@@ -75,15 +74,13 @@ export default function TerminalWindow() {
   }, [height]);
 
   return (
-    <>
+    <div style={{ height: `${height}px` }} className="bg-neutral-800">
       <TerminalResizeBar />
-      <div
-        className={twMerge('p-2.5 overflow-hidden')}
-        style={{ height: `${height}px`, backgroundColor: '#1E1E1E' }}
-      >
+      <ActionButtons />
+      <div className="p-2.5 overflow-hidden">
         <div ref={terminalRef} className="size-full" />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -99,7 +96,7 @@ function TerminalResizeBar() {
       }}
       className={twMerge(
         'h-1 cursor-ns-resize z-10 transition-colors duration-200',
-        terminalResizing ? 'bg-blue-500' : 'bg-stone-700'
+        terminalResizing ? 'bg-blue-500' : 'bg-neutral-700'
       )}
     />
   );

@@ -24,6 +24,8 @@ namespace stride::ast
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
+        void define_symbols(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
         [[nodiscard]]
         const std::vector<u_ptr<IAstNode>>& children() const { return this->_children; }
     };

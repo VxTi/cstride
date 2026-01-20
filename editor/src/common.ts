@@ -19,7 +19,7 @@ type WebSocketType = { send: (message: string) => void };
 export function sendMessage(
   ws: WebSocketType,
   type: WsMessageType,
-  message: string = ""
+  message: string = ''
 ) {
   ws.send(JSON.stringify({ type, message }));
 }

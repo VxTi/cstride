@@ -57,7 +57,7 @@ void Program::execute(int argc, char* argv[]) const
         return;
     }
     // For debugging purposes, comment this out to see the generated AST nodes
-     this->print_ast_nodes();
+    // this->print_ast_nodes();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -91,6 +91,16 @@ void Program::execute(int argc, char* argv[]) const
     module->setDataLayout(machine->createDataLayout());
     module->setTargetTriple(triple);
 
+    // First we'll define symbols for all nodes
+    // This allows for function calls even if they're defined below the callee
+    for (const auto& node : _nodes)
+    {
+        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node.root()))
+        {
+            synthesisable->define_symbols(module.get(), context, &builder);
+        }
+    }
+
     for (const auto& node : _nodes)
     {
         if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node.root()))
@@ -113,7 +123,7 @@ void Program::execute(int argc, char* argv[]) const
 
 
     // Will print the LLVM IR
-    // module->print(llvm::errs(), nullptr);
+    module->print(llvm::errs(), nullptr);
 
     std::string error;
     llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))
@@ -142,5 +152,4 @@ void Program::execute(int argc, char* argv[]) const
     const int status_code = main_func(argc, argv);
 
     std::cout << "\nProcess exited with status code " << status_code << std::endl;
-
 }

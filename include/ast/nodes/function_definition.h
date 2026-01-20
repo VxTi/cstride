@@ -4,7 +4,6 @@
 #include "ast_node.h"
 #include "types.h"
 #include "ast/scope.h"
-#include "ast/identifiers.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -80,6 +79,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
+        void define_symbols(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         [[nodiscard]]
@@ -108,6 +109,12 @@ namespace stride::ast
 
         [[nodiscard]]
         bool is_mutable() const { return this->_flags & SRFLAG_FN_DEF_MUTABLE; }
+
+    private:
+        std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
+            llvm::Module* module,
+            llvm::LLVMContext& context
+        ) const;
     };
 
     bool is_fn_declaration(const TokenSet& tokens);

@@ -7,6 +7,17 @@
 
 using namespace stride::ast;
 
+void AstBlock::define_symbols(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+{
+    for (const auto& child : children())
+    {
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
+        {
+            synthesisable->define_symbols(module, context, builder);
+        }
+    }
+}
+
 llvm::Value* AstBlock::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     llvm::Value* last_value = nullptr;

@@ -48,7 +48,13 @@ llvm::Value* AstVariableReassignment::codegen(
 
     if (!variable)
     {
-        throw std::runtime_error("Variable '" + this->get_variable_name() + "' not found: ");
+        throw std::runtime_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                "Variable '" + this->get_variable_name() + "' not found: "
+            )
+        );
     }
 
     if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_value()); synthesisable != nullptr)

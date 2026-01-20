@@ -97,15 +97,15 @@ function handleCompile(ws: WebSocket, code: string) {
 
     process = spawn(cstrideExe, [filePath]);
 
-    process.stdout.on('data', data => {
+    process.stdout.on('data', (data: Buffer) => {
       sendMessage(ws, WsMessageType.PROCESS_STDOUT, data.toString());
     });
-    process.stderr.on('data', data => {
+    process.stderr.on('data', (data: Buffer) => {
       sendMessage(ws, WsMessageType.PROCESS_STDERR, data.toString());
     });
 
-    process.on('close', code => {
-      const ansiPrefix = code === 0 ? '\x1b[32m' : '';
+    process.on('close', (code: number | null) => {
+      const ansiPrefix = !!code && code !== 0 ? '\x1b[31m' : '';
       sendMessage(
         ws,
         WsMessageType.PROCESS_TERMINATED,

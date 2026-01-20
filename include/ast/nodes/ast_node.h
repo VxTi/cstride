@@ -26,6 +26,12 @@ namespace stride::ast
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
         ) = 0;
+
+        virtual void define_symbols(
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) {}
     };
 
     class IAstNode
