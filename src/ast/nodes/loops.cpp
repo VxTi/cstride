@@ -76,7 +76,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const Scope& scop
     );
 }
 
-u_ptr<AstLoop> stride::ast::parse_while_loop_statement(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const Scope& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);
     const auto header_condition_opt = collect_parenthesized_block(set);

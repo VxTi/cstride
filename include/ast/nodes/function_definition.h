@@ -59,22 +59,22 @@ namespace stride::ast
         public IAstNode,
         public ISynthesisable
     {
-        u_ptr<IAstNode> _body;
+        std::unique_ptr<IAstNode> _body;
         std::string _name;
         std::string _internal_name;
-        std::vector<u_ptr<AstFunctionParameter>> _parameters;
-        u_ptr<IAstInternalFieldType> _return_type;
+        std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
+        std::unique_ptr<IAstInternalFieldType> _return_type;
         int _flags;
 
     public:
         AstFunctionDeclaration(
-            const s_ptr<SourceFile>& source,
+            const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string name,
             std::string internal_name,
-            std::vector<u_ptr<AstFunctionParameter>> parameters,
-            u_ptr<IAstNode> body,
-            u_ptr<IAstInternalFieldType> return_type,
+            std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
+            std::unique_ptr<IAstNode> body,
+            std::unique_ptr<IAstInternalFieldType> return_type,
             const int flags
         ) :
             IAstNode(source, source_offset),
@@ -101,13 +101,13 @@ namespace stride::ast
         IAstNode* body() const { return this->_body.get(); }
 
         [[nodiscard]]
-        const std::vector<u_ptr<AstFunctionParameter>>& get_parameters() const
+        const std::vector<std::unique_ptr<AstFunctionParameter>>& get_parameters() const
         {
             return this->_parameters;
         }
 
         [[nodiscard]]
-        const u_ptr<IAstInternalFieldType>& return_type() const { return this->_return_type; }
+        const std::unique_ptr<IAstInternalFieldType>& return_type() const { return this->_return_type; }
 
         [[nodiscard]]
         bool is_extern() const { return this->_flags & SRFLAG_FN_DEF_EXTERN; }
@@ -127,12 +127,12 @@ namespace stride::ast
 
     bool is_fn_declaration(const TokenSet& tokens);
 
-    u_ptr<AstFunctionDeclaration> parse_fn_declaration(
+    std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
         const Scope& scope,
         TokenSet& tokens
     );
 
-    u_ptr<AstFunctionParameter> parse_standalone_fn_param(
+    std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(
         const Scope& scope,
         TokenSet& set
     );
@@ -140,12 +140,12 @@ namespace stride::ast
     void parse_subsequent_fn_params(
         const Scope& scope,
         TokenSet& set,
-        std::vector<u_ptr<AstFunctionParameter>>& parameters
+        std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
     void parse_variadic_fn_param(
         const Scope& scope,
         TokenSet& tokens,
-        std::vector<u_ptr<AstFunctionParameter>>& parameters
+        std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 }

@@ -8,10 +8,10 @@
 namespace stride::ast
 {
     template <typename... T>
-    using u_ptr = std::unique_ptr<T...>;
+    using std::unique_ptr = std::unique_ptr<T...>;
 
     template <typename... T>
-    using s_ptr = std::shared_ptr<T...>;
+    using std::shared_ptr = std::shared_ptr<T...>;
 
     template <typename... T>
     using option = std::optional<T...>;

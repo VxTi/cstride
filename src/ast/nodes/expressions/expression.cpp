@@ -46,7 +46,7 @@ IAstNode* AstVariableDeclaration::reduce()
                 this->source_offset,
                 this->get_variable_name(),
                 std::move(cloned_type),
-                u_ptr<AstExpression>(reduced_expr),
+                std::unique_ptr<AstExpression>(reduced_expr),
                 this->get_flags(),
                 this->get_internal_name()
             ).release();
@@ -105,7 +105,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
             auto function_parameter_set = collect_parenthesized_block(set);
 
             std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
-            std::vector<IAstInternalFieldType*> parameter_types = {};
+            std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types = {};
 
             // Parsing function parameter values
             if (function_parameter_set.has_value())
@@ -113,7 +113,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
                 auto subset = function_parameter_set.value();
                 auto initial_arg = parse_standalone_expression_part(scope, subset);
 
-                parameter_types.push_back(std::move(resolve_expression_internal_type(scope, initial_arg.get()).get()));
+                parameter_types.push_back(std::move(resolve_expression_internal_type(scope, &*initial_arg)));
                 function_arg_nodes.push_back(std::move(initial_arg));
 
                 while (subset.has_next())
@@ -121,7 +121,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
                     subset.expect(TokenType::COMMA);
                     auto next_arg = parse_standalone_expression_part(scope, subset);
 
-                    parameter_types.push_back(std::move(resolve_expression_internal_type(scope, next_arg.get()).get()));
+                    parameter_types.push_back(std::move(resolve_expression_internal_type(scope, &*next_arg)));
                     function_arg_nodes.push_back(std::move(next_arg));
                 }
             }
@@ -314,7 +314,28 @@ bool stride::ast::is_property_accessor_statement(const TokenSet& set)
     return initial_identifier && (is_followup_accessor || true);
 }
 
-u_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(const Scope& scope, AstLiteral* literal)
+
+/**
+ * Resolves the internal field type for a given literal expression.
+ * 
+ * This function examines a literal AST node and determines its corresponding internal field type
+ * representation. It performs runtime type identification (via dynamic_cast) to determine the
+ * specific kind of literal (string, floating-point, integer, character, or boolean) and creates
+ * an appropriate AstPrimitiveFieldType instance with the correct primitive type and bit count.
+ * 
+ * The function handles the following literal types:
+ * - AstStringLiteral: Resolves to STRING primitive type with bit count of 1
+ * - AstFpLiteral: Resolves to FLOAT32 or FLOAT64 depending on bit count (>4 bytes = FLOAT64)
+ * - AstIntLiteral: Resolves to INT32 or INT64 depending on bit count (>32 bits = INT64)
+ * - AstCharLiteral: Resolves to CHAR primitive type with the literal's bit count
+ * - AstBooleanLiteral: Resolves to BOOL primitive type with the literal's bit count
+ * 
+ * @param scope The current scope context (used for symbol resolution, though not directly used in this function)
+ * @param literal Pointer to the AstLiteral node whose type needs to be resolved
+ * @return A unique pointer to an IAstInternalFieldType representing the resolved type
+ * @throws std::runtime_error If the literal type cannot be resolved (unknown literal subtype)
+ */
+std::unique_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(const Scope& scope, AstLiteral* literal)
 {
     // "string" -> <string> (primitive)
     if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
@@ -387,7 +408,7 @@ u_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(const Scop
     );
 }
 
-u_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(const Scope& scope, AstExpression* expr)
+std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(const Scope& scope, AstExpression* expr)
 {
     // If the provided expression is already an IAstInternalFieldType, we can easily resolve it
     if (auto* literal = dynamic_cast<AstLiteral*>(expr))
@@ -397,8 +418,8 @@ u_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(const
 
     if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
     {
-        u_ptr<IAstInternalFieldType> lhs_type = resolve_expression_internal_type(scope, &operation->get_left());
-        u_ptr<IAstInternalFieldType> rhs_type = resolve_expression_internal_type(scope, &operation->get_right());
+        std::unique_ptr<IAstInternalFieldType> lhs_type = resolve_expression_internal_type(scope, &operation->get_left());
+        std::unique_ptr<IAstInternalFieldType> rhs_type = resolve_expression_internal_type(scope, &operation->get_right());
 
         // If both types are equal, then we know we've got the final type.
         if (*lhs_type == *rhs_type)

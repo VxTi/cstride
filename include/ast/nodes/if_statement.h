@@ -10,17 +10,17 @@ namespace stride::ast
           public ISynthesisable,
           public IReducible
     {
-        u_ptr<AstExpression> _condition;
-        u_ptr<AstBlock> _block;
-        u_ptr<AstBlock> _else_block;
+        std::unique_ptr<AstExpression> _condition;
+        std::unique_ptr<AstBlock> _block;
+        std::unique_ptr<AstBlock> _else_block;
 
     public:
         AstIfStatement(
-            const s_ptr<SourceFile>& source,
+            const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            u_ptr<AstExpression> condition,
-            u_ptr<AstBlock> block,
-            u_ptr<AstBlock> else_block
+            std::unique_ptr<AstExpression> condition,
+            std::unique_ptr<AstBlock> block,
+            std::unique_ptr<AstBlock> else_block
         )
             : IAstNode(source, source_offset),
               _condition(std::move(condition)),
@@ -52,5 +52,5 @@ namespace stride::ast
 
     bool is_if_statement(const TokenSet& tokens);
 
-    u_ptr<AstIfStatement> parse_if_statement(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstIfStatement> parse_if_statement(const Scope& scope, TokenSet& set);
 }

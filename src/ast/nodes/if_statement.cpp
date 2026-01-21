@@ -21,7 +21,7 @@ std::unique_ptr<AstBlock> parse_else_optional(const Scope& scope, TokenSet& set)
         return parse_block(scope, set);
     }
 
-    std::vector<u_ptr<IAstNode>> nodes;
+    std::vector<std::unique_ptr<IAstNode>> nodes;
     nodes.push_back(parse_next_statement(scope, set));
 
     // Otherwise, we can just parse it as a next statement.
@@ -32,7 +32,7 @@ std::unique_ptr<AstBlock> parse_else_optional(const Scope& scope, TokenSet& set)
     );
 }
 
-u_ptr<AstIfStatement> stride::ast::parse_if_statement(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const Scope& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IF);
 

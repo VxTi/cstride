@@ -211,12 +211,10 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     std::unique_ptr<IAstInternalFieldType> return_type = parse_ast_type(tokens);
 
 
-    // It's a bit clunky, but
-    std::vector<IAstInternalFieldType*> parameter_types;
+    std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types = {};
     for (const auto& param : parameters)
     {
-        auto node_type  = param->get_type();
-        parameter_types.push_back(node_type);
+        parameter_types.push_back(param->get_type()->clone());
     }
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types

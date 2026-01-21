@@ -2,10 +2,13 @@
 #include <memory>
 #include <string>
 #include <optional>
+#include <vector>
 
 #include "files.h"
 #include "identifiers.h"
 #include "tokens/token.h"
+#include "ast/nodes/functions.h"
+#include "ast/nodes/types.h"
 
 namespace stride::ast
 {
@@ -39,9 +42,20 @@ namespace stride::ast
         return "unknown";
     }
 
-    class SymbolDefinition
+    class InternalSymbolDefinition
     {
         SymbolType _symbol_type;
+
+    public:
+        explicit InternalSymbolDefinition(const SymbolType symbol_type) : _symbol_type(symbol_type) {}
+        virtual ~InternalSymbolDefinition() = default;
+
+        SymbolType get_symbol_type() const { return this->_symbol_type; }
+    };
+
+    class SymbolDefinition
+        : public InternalSymbolDefinition
+    {
         std::string _symbol;
         const Token& _reference_token;
         std::string _internal_name;
@@ -52,12 +66,11 @@ namespace stride::ast
             const Token& reference_token,
             const SymbolType symbol_type,
             std::string internal_name = ""
-        ) : _symbol_type(symbol_type),
+        ) : InternalSymbolDefinition(symbol_type),
             _symbol(symbol),
             _reference_token(reference_token),
             _internal_name(std::move(internal_name)) {}
 
-        SymbolType get_symbol_type() const { return this->_symbol_type; }
 
         const std::string& get_symbol() const { return this->_symbol; }
 
@@ -66,6 +79,42 @@ namespace stride::ast
         const std::string& get_internal_name() const { return this->_internal_name.empty() ? _symbol : _internal_name; }
     };
 
+    class SymbolFnDefinition
+        : public InternalSymbolDefinition
+    {
+        std::vector<std::shared_ptr<IAstInternalFieldType>> _parameter_types;
+        std::shared_ptr<IAstInternalFieldType> _return_type;
+        std::string _fn_name;
+        std::string _internal_name;
+        const Token& _reference_token;
+
+    public:
+        explicit SymbolFnDefinition(
+            const std::string& function_name,
+            const Token& reference_token,
+            std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types,
+            std::shared_ptr<IAstInternalFieldType> return_type,
+            std::string internal_name
+        ) :
+            InternalSymbolDefinition(SymbolType::FUNCTION),
+            _fn_name(function_name),
+            _reference_token(reference_token),
+            _parameter_types(std::move(parameter_types)),
+            _return_type(std::move(return_type)),
+            _internal_name(std::move(internal_name)) {}
+
+        std::vector<std::shared_ptr<IAstInternalFieldType>> get_parameter_types() const
+        {
+            return this->_parameter_types;
+        }
+
+        const IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
+
+        const std::string& get_internal_name() const
+        {
+            return this->_internal_name.empty() ? this->_fn_name : this->_internal_name;
+        }
+    };
 
     class Scope;
 
@@ -111,7 +160,8 @@ namespace stride::ast
          * @param internal_name Unique name for codegen
          * @throws parsing_error if the symbol already exists in this scope or any parent scope
          */
-        void try_define_global_symbol(const SourceFile& source, const Token& reference_token, const std::string& symbol, SymbolType symbol_type, const std::string& internal_name = "") const;
+        void try_define_global_symbol(const SourceFile& source, const Token& reference_token, const std::string& symbol,
+                                      SymbolType symbol_type, const std::string& internal_name = "") const;
 
         /**
          * Defines a symbol in this scope after checking it doesn't exist in the current scope only.
@@ -122,7 +172,8 @@ namespace stride::ast
          * @param internal_name Unique name for codegen
          * @throws parsing_error if the symbol already exists in this scope (ignores parent scopes)
          */
-        void try_define_scoped_symbol(const SourceFile& source, const Token& token, const std::string& symbol, SymbolType symbol_type, const std::string& internal_name = "") const;
+        void try_define_scoped_symbol(const SourceFile& source, const Token& token, const std::string& symbol,
+                                      SymbolType symbol_type, const std::string& internal_name = "") const;
 
         /**
          * Checks if a symbol exists in this scope or any parent scope.
@@ -138,5 +189,16 @@ namespace stride::ast
          */
         [[nodiscard]]
         bool is_symbol_defined_scoped(const std::string& symbol) const;
+
+        bool is_function_defined_globally(const std::string& internal_name) const;
+
+        void try_define_function_symbol(
+            const SourceFile& source,
+            const Token& reference_token,
+            const std::string& symbol,
+            const std::vector<unique_ptr<IAstInternalFieldType>>& parameter_types,
+            const shared_ptr<IAstInternalFieldType>& return_type,
+            bool anonymous = false
+        );
     };
 }

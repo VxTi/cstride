@@ -6,7 +6,7 @@
 namespace stride::ast
 {
     std::string resolve_internal_function_name(
-        const std::vector<IAstInternalFieldType*>& parameter_types,
+        const std::vector<std::unique_ptr<IAstInternalFieldType>>& parameter_types,
         const std::string& function_name
     );
 }

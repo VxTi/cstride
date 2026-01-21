@@ -42,7 +42,7 @@ namespace stride::ast
 
     public:
         IAstInternalFieldType(
-            const s_ptr<SourceFile>& source,
+            const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const int flags
         )
@@ -52,7 +52,7 @@ namespace stride::ast
         ~IAstInternalFieldType() override = default;
 
         [[nodiscard]]
-        virtual u_ptr<IAstInternalFieldType> clone() const = 0;
+        virtual std::unique_ptr<IAstInternalFieldType> clone() const = 0;
 
         [[nodiscard]]
         bool is_pointer() const { return this->_flags & SRFLAG_TYPE_PTR; }
@@ -80,7 +80,7 @@ namespace stride::ast
 
     public:
         explicit AstPrimitiveFieldType(
-            const s_ptr<SourceFile>& source,
+            const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const PrimitiveType type,
             const size_t byte_size,
@@ -94,7 +94,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        static std::optional<u_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(TokenSet& set);
+        static std::optional<std::unique_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(TokenSet& set);
 
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
@@ -105,7 +105,7 @@ namespace stride::ast
         /* * * * * * * * Override fields * * * * * * * */
 
         [[nodiscard]]
-        u_ptr<IAstInternalFieldType> clone() const override
+        std::unique_ptr<IAstInternalFieldType> clone() const override
         {
             return std::make_unique<AstPrimitiveFieldType>(*this);
         }
@@ -132,7 +132,7 @@ namespace stride::ast
         std::string to_string() override;
 
         explicit AstNamedValueType(
-            const s_ptr<SourceFile>& source,
+            const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string name,
             const int flags
@@ -140,13 +140,13 @@ namespace stride::ast
             IAstInternalFieldType(source, source_offset, flags),
             _name(std::move(name)) {}
 
-        static std::optional<u_ptr<AstNamedValueType>> parse_named_type_optional(TokenSet& set);
+        static std::optional<std::unique_ptr<AstNamedValueType>> parse_named_type_optional(TokenSet& set);
 
         [[nodiscard]]
         std::string name() const { return this->_name; }
 
         [[nodiscard]]
-        u_ptr<IAstInternalFieldType> clone() const override
+        std::unique_ptr<IAstInternalFieldType> clone() const override
         {
             return std::make_unique<AstNamedValueType>(*this);
         }
@@ -163,7 +163,7 @@ namespace stride::ast
         }
     };
 
-    u_ptr<IAstInternalFieldType> parse_ast_type(TokenSet& set);
+    std::unique_ptr<IAstInternalFieldType> parse_ast_type(TokenSet& set);
 
     llvm::Type* internal_type_to_llvm_type(
         IAstInternalFieldType* type,
@@ -171,7 +171,7 @@ namespace stride::ast
         llvm::LLVMContext& context
     );
 
-    u_ptr<IAstInternalFieldType> get_dominant_type(const IAstInternalFieldType* lhs, const IAstInternalFieldType* rhs);
+    std::unique_ptr<IAstInternalFieldType> get_dominant_type(const IAstInternalFieldType* lhs, const IAstInternalFieldType* rhs);
 
     /**
      * Resolves a unique identifier (UID) for the given internal type.

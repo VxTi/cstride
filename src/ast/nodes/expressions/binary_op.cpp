@@ -233,8 +233,8 @@ std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
     AstExpression* right_lit
 )
 {
-    /*if (const auto lhs_ptr_i = dynamic_cast<AstIntLiteral*>(left_lit);
-        lhs_ptr_i != nullptr
+    /*if (const auto lhstd::shared_ptr_i = dynamic_cast<AstIntLiteral*>(left_lit);
+        lhstd::shared_ptr_i != nullptr
     )
     {
         // For integers, we do allow addition of other numeric types, though
@@ -254,8 +254,8 @@ IAstNode* AstBinaryArithmeticOp::reduce()
     /*if (!this->is_reducible()) return this;
 
 
-    if (const auto lhs_ptr_i = dynamic_cast<AstIntLiteral*>(this->left.get());
-        lhs_ptr_i != nullptr
+    if (const auto lhstd::shared_ptr_i = dynamic_cast<AstIntLiteral*>(this->left.get());
+        lhstd::shared_ptr_i != nullptr
     )
     {
         // For integers, we do allow addition of other numeric types, though

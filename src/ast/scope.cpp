@@ -112,4 +112,67 @@ namespace stride::ast
             SymbolDefinition(symbol, reference_token, symbol_type, internal_name)
         );
     }
+
+    bool Scope::is_function_defined_globally(const std::string& internal_name) const
+    {
+        if (const auto it = try_get_symbol_from_scope(this, internal_name); it.has_value())
+        {
+            auto sym_def = it.value();
+            if (const auto* fn_def = dynamic_cast<SymbolFnDefinition*>(&sym_def))
+            {
+                if (fn_def->get_internal_name() == internal_name)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    void Scope::try_define_function_symbol(
+        const SourceFile& source,
+        const Token& reference_token,
+        const std::string& symbol,
+        const std::vector<unique_ptr<IAstInternalFieldType>>& parameter_types,
+        const shared_ptr<IAstInternalFieldType>& return_type,
+        bool anonymous = false
+    )
+    {
+        if (!anonymous && this->type != ScopeType::GLOBAL)
+        {
+            throw parsing_error(
+                make_source_error(
+                    source,
+                    ErrorType::SEMANTIC_ERROR,
+                    "Only global scopes can define non-anonymous functions",
+                    reference_token.offset,
+                    symbol.size()
+                )
+            );
+        }
+
+        const auto internal_name = resolve_internal_function_name(parameter_types, symbol);
+        if (this->is_function_defined_globally(internal_name))
+        {
+            throw parsing_error(
+                make_source_error(
+                    source,
+                    ErrorType::SEMANTIC_ERROR,
+                    "Function already defined in this scope",
+                    reference_token.offset,
+                    symbol.size()
+                )
+            );
+        }
+
+        this->symbols->push_back(
+            std::make_unique<SymbolFnDefinition>(
+                symbol,
+                reference_token,
+                std::move(parameter_types),
+                return_type,
+                internal_name
+            )
+        );
+    }
 }

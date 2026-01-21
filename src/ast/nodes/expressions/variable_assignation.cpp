@@ -30,7 +30,7 @@ IAstNode* AstVariableReassignment::reduce()
                 this->get_variable_name(),
                 this->get_internal_name(),
                 this->get_operator(),
-                u_ptr<AstExpression>(reduced_expr)
+                std::unique_ptr<AstExpression>(reduced_expr)
             );
         }
     }
@@ -141,7 +141,7 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
     }
 }
 
-option<u_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(const Scope& scope, TokenSet& set)
+option<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(const Scope& scope, TokenSet& set)
 {
     // Can be either a singular field, e.g., a regular variable,
     // or member access, e.g., <member>.<field>

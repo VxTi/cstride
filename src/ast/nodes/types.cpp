@@ -39,10 +39,10 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> AstPrimitiveFieldType::par
 {
     int flags = 0;
     const auto reference_token = set.peak_next();
-    const bool is_ptr = set.peak_next_eq(TokenType::STAR);
+    const bool istd::shared_ptr = set.peak_next_eq(TokenType::STAR);
     const bool is_reference = set.peak_next_eq(TokenType::AMPERSAND);
 
-    if (is_ptr)
+    if (istd::shared_ptr)
     {
         flags |= SRFLAG_TYPE_PTR;
     }
@@ -190,13 +190,13 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> AstPrimitiveFieldType::par
 std::optional<std::unique_ptr<AstNamedValueType>> AstNamedValueType::parse_named_type_optional(TokenSet& set)
 {
     // Custom types are identifiers in type position.
-    bool is_ptr = false;
+    bool istd::shared_ptr = false;
     const auto reference_token = set.peak_next();
 
     if (set.peak_next_eq(TokenType::STAR))
     {
         set.next();
-        is_ptr = true;
+        istd::shared_ptr = true;
     }
     if (set.peak_next().type != TokenType::IDENTIFIER)
     {
@@ -208,7 +208,7 @@ std::optional<std::unique_ptr<AstNamedValueType>> AstNamedValueType::parse_named
         set.source(),
         reference_token.offset,
         name,
-        is_ptr
+        istd::shared_ptr
     );
 }
 
@@ -298,7 +298,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     return nullptr;
 }
 
-u_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(const IAstInternalFieldType* lhs, const IAstInternalFieldType* rhs)
+std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(const IAstInternalFieldType* lhs, const IAstInternalFieldType* rhs)
 {
     const auto* lhs_primitive = dynamic_cast<const AstPrimitiveFieldType*>(lhs);
     const auto* rhs_primitive = dynamic_cast<const AstPrimitiveFieldType*>(rhs);

@@ -5,7 +5,7 @@ using namespace stride::ast;
 void stride::ast::parse_variadic_fn_param(
     const Scope& scope,
     TokenSet& tokens,
-    std::vector<u_ptr<AstFunctionParameter>>& parameters
+    std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
 {
     const auto reference_token = tokens.expect(TokenType::THREE_DOTS);
@@ -16,7 +16,7 @@ void stride::ast::parse_variadic_fn_param(
 void stride::ast::parse_subsequent_fn_params(
     const Scope& scope,
     TokenSet& set,
-    std::vector<u_ptr<AstFunctionParameter>>& parameters
+    std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
 {
     while (set.peak_next_eq(TokenType::COMMA))
@@ -43,7 +43,7 @@ void stride::ast::parse_subsequent_fn_params(
         auto param = parse_standalone_fn_param(scope, set);
 
         if (std::ranges::find_if(
-            parameters, [&](const u_ptr<AstFunctionParameter>& p)
+            parameters, [&](const std::unique_ptr<AstFunctionParameter>& p)
             {
                 return p->get_name() == param->get_name();
             }) != parameters.end())
@@ -66,7 +66,7 @@ std::string AstFunctionParameter::to_string()
     return std::format("{}({})", get_name(), this->get_type()->to_string());
 }
 
-u_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
+std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     [[maybe_unused]] const Scope& scope,
     TokenSet& set
 )

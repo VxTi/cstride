@@ -11,7 +11,7 @@
 
 using namespace stride::ast;
 
-u_ptr<IAstNode> parser::parse(const std::string& source_path)
+std::unique_ptr<IAstNode> parser::parse(const std::string& source_path)
 {
     const auto scope_global = Scope(ScopeType::GLOBAL);
 
@@ -21,7 +21,7 @@ u_ptr<IAstNode> parser::parse(const std::string& source_path)
     return parse_sequential(scope_global, tokens);
 }
 
-u_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, TokenSet& set)
+std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const Scope& scope, TokenSet& set)
 {
     if (is_module_statement(set))
     {

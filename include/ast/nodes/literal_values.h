@@ -170,29 +170,29 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
-    option<u_ptr<AstLiteral>> parse_literal_optional(const Scope& scope, TokenSet& tokens);
+    option<std::unique_ptr<AstLiteral>> parse_literal_optional(const Scope& scope, TokenSet& tokens);
 
-    option<u_ptr<AstLiteral>> parse_boolean_literal_optional(
+    option<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
 
-    option<u_ptr<AstLiteral>> parse_float_literal_optional(
+    option<std::unique_ptr<AstLiteral>> parse_float_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
 
-    option<u_ptr<AstLiteral>> parse_integer_literal_optional(
+    option<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
 
-    option<u_ptr<AstLiteral>> parse_string_literal_optional(
+    option<std::unique_ptr<AstLiteral>> parse_string_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
 
-    option<u_ptr<AstLiteral>> parse_char_literal_optional(
+    option<std::unique_ptr<AstLiteral>> parse_char_literal_optional(
         const Scope& scope,
         TokenSet& set
     );

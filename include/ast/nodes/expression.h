@@ -77,20 +77,20 @@ namespace stride::ast
         public ISynthesisable,
         public IReducible
     {
-        const std::vector<u_ptr<IAstNode>> _children;
+        const std::vector<std::unique_ptr<IAstNode>> _children;
 
     public:
         explicit AstExpression(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            std::vector<u_ptr<IAstNode>> children
+            std::vector<std::unique_ptr<IAstNode>> children
         ) :
             IAstNode(source, source_offset), _children(std::move(children)) {};
 
         ~AstExpression() override = default;
 
         [[nodiscard]]
-        const std::vector<u_ptr<IAstNode>>& children() const { return this->_children; }
+        const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
@@ -190,16 +190,16 @@ namespace stride::ast
         const int _flags;
         const std::string _variable_name;
         const std::string _internal_name;
-        const u_ptr<IAstInternalFieldType> _variable_type;
-        const u_ptr<AstExpression> _initial_value;
+        const std::unique_ptr<IAstInternalFieldType> _variable_type;
+        const std::unique_ptr<AstExpression> _initial_value;
 
     public:
         AstVariableDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string variable_name,
-            u_ptr<IAstInternalFieldType> variable_type,
-            u_ptr<AstExpression> initial_value,
+            std::unique_ptr<IAstInternalFieldType> variable_type,
+            std::unique_ptr<AstExpression> initial_value,
             const int flags,
             std::string internal_name
         ) :
@@ -230,7 +230,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const u_ptr<AstExpression>& get_initial_value() const
+        const std::unique_ptr<AstExpression>& get_initial_value() const
         {
             return this->_initial_value;
         }
@@ -351,7 +351,7 @@ namespace stride::ast
         : public AstExpression
     {
         const UnaryOpType _op_type;
-        u_ptr<AstExpression> _operand;
+        std::unique_ptr<AstExpression> _operand;
         const bool _is_lsh;
 
     public:
@@ -390,17 +390,17 @@ namespace stride::ast
     {
         const std::string _variable_name;
         const std::string _internal_name;
-        u_ptr<AstExpression> _value;
+        std::unique_ptr<AstExpression> _value;
         MutativeAssignmentType _operator;
 
     public:
         explicit AstVariableReassignment(
-            const s_ptr<SourceFile>& source,
+            const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
-            u_ptr<AstExpression> value
+            std::unique_ptr<AstExpression> value
         )
             : AstExpression(source, source_offset, {}),
               _variable_name(std::move(variable_name)),
@@ -437,37 +437,37 @@ namespace stride::ast
     int binary_operator_precedence(BinaryOpType type);
 
     /// Parses a complete standalone expression from tokens
-    u_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& set);
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
-    u_ptr<AstExpression> parse_expression_ext(int expression_type_flags, const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_expression_ext(int expression_type_flags, const Scope& scope, TokenSet& set);
 
     /// Parses a single part of a standalone expression
-    u_ptr<AstExpression> parse_standalone_expression_part(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression_part(const Scope& scope, TokenSet& set);
 
     /// Parses a variable declaration statement
-    u_ptr<AstVariableDeclaration> parse_variable_declaration(
+    std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
         int expression_type_flags,
         const Scope& scope,
         TokenSet& set
     );
 
     /// Parses a variable assignment statement
-    option<u_ptr<AstVariableReassignment>> parse_variable_reassignment(
+    option<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
         const Scope& scope,
         TokenSet& set
     );
 
     /// Parses a binary arithmetic operation using precedence climbing
-    option<u_ptr<AstExpression>> parse_arithmetic_binary_op(
+    option<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(
         const Scope& scope,
         TokenSet& set,
-        u_ptr<AstExpression> lhs,
+        std::unique_ptr<AstExpression> lhs,
         int min_precedence
     );
 
     /// Parses a unary operator expression
-    option<u_ptr<AstExpression>> parse_binary_unary_op(const Scope& scope, TokenSet& set);
+    option<std::unique_ptr<AstExpression>> parse_binary_unary_op(const Scope& scope, TokenSet& set);
 
     /// Converts a token type to its corresponding logical operator type
     option<LogicalOpType> get_logical_op_type(TokenType type);
@@ -489,5 +489,5 @@ namespace stride::ast
     std::string parse_property_accessor_statement(const Scope& scope, TokenSet& set);
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
-    u_ptr<IAstInternalFieldType> resolve_expression_internal_type(const Scope& scope, AstExpression* expr);
+    std::unique_ptr<IAstInternalFieldType> resolve_expression_internal_type(const Scope& scope, AstExpression* expr);
 }

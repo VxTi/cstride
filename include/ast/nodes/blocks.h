@@ -10,13 +10,13 @@ namespace stride::ast
         public virtual IAstNode,
         public virtual ISynthesisable
     {
-        std::vector<u_ptr<IAstNode>> _children;
+        std::vector<std::unique_ptr<IAstNode>> _children;
 
     public:
         explicit AstBlock(
-            const s_ptr<SourceFile>& source,
+            const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            std::vector<u_ptr<IAstNode>> children
+            std::vector<std::unique_ptr<IAstNode>> children
         )
             : IAstNode(source, source_offset), _children(std::move(children)) {};
 
@@ -27,7 +27,7 @@ namespace stride::ast
         void define_symbols(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         [[nodiscard]]
-        const std::vector<u_ptr<IAstNode>>& children() const { return this->_children; }
+        const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
     };
 
     std::unique_ptr<AstBlock> parse_block(const Scope& scope, TokenSet& set);
