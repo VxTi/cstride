@@ -166,7 +166,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
     const auto  variable_name = variable_name_tok.lexeme;
     set.expect(TokenType::COLON);
-    auto type = parse_primitive_type(set);
+    auto type = parse_ast_type(set);
 
     set.expect(TokenType::EQUALS);
 

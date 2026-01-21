@@ -141,31 +141,39 @@ namespace stride::ast
     {
         std::vector<std::unique_ptr<AstExpression>> _arguments;
         const std::string _function_name;
+        const std::string _internal_name;
 
     public:
         explicit AstFunctionInvocation(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            std::string function_name
+            std::string function_name,
+            std::string internal_name
         ) :
             AstExpression(source, source_offset, {}),
-            _function_name(std::move(function_name)) {}
+            _function_name(std::move(function_name)),
+            _internal_name(std::move(internal_name)) {}
 
         explicit AstFunctionInvocation(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string function_name,
+            std::string internal_name,
             std::vector<std::unique_ptr<AstExpression>> arguments
         ) :
             AstExpression(source, source_offset, {}),
             _arguments(std::move(arguments)),
-            _function_name(std::move(function_name)) {}
+            _function_name(std::move(function_name)),
+            _internal_name(std::move(internal_name)) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstExpression>>& get_arguments() const { return this->_arguments; }
 
         [[nodiscard]]
         const std::string& get_function_name() const { return this->_function_name; }
+
+        [[nodiscard]]
+        const std::string& get_internal_name() const { return this->_internal_name; }
 
         std::string to_string() override;
 
@@ -182,7 +190,7 @@ namespace stride::ast
         const int _flags;
         const std::string _variable_name;
         const std::string _internal_name;
-        const u_ptr<AstType> _variable_type;
+        const u_ptr<IAstInternalFieldType> _variable_type;
         const u_ptr<AstExpression> _initial_value;
 
     public:
@@ -190,7 +198,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string variable_name,
-            u_ptr<AstType> variable_type,
+            u_ptr<IAstInternalFieldType> variable_type,
             u_ptr<AstExpression> initial_value,
             const int flags,
             std::string internal_name
@@ -216,7 +224,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        AstType* get_variable_type() const
+        IAstInternalFieldType* get_variable_type() const
         {
             return this->_variable_type.get();
         }
@@ -480,6 +488,6 @@ namespace stride::ast
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
     std::string parse_property_accessor_statement(const Scope& scope, TokenSet& set);
 
-    /// Will attempt to resolve the provided expression into an AstType
-    u_ptr<AstType> resolve_expression_type(const Scope& scope, AstExpression* expr);
+    /// Will attempt to resolve the provided expression into an IAstInternalFieldType
+    u_ptr<IAstInternalFieldType> resolve_expression_internal_type(const Scope& scope, AstExpression* expr);
 }

@@ -1,9 +1,9 @@
 #include "ast/nodes/types.h"
 
-#include "ast/tokens/token_set.h"
-#include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Type.h>
+#include "ast/tokens/token_set.h"
 
 using namespace stride::ast;
 
@@ -25,17 +25,17 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
     }
 }
 
-std::string AstPrimitiveType::to_string()
+std::string AstPrimitiveFieldType::to_string()
 {
     return std::format("Primitive({}{})", primitive_type_to_str(this->type()), this->is_pointer() ? "*" : "");
 }
 
-std::string AstNamedType::to_string()
+std::string AstNamedValueType::to_string()
 {
     return std::format("Custom({}{})", this->name(), this->is_pointer() ? "*" : "");
 }
 
-std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primitive_type_optional(TokenSet& set)
+std::optional<std::unique_ptr<AstPrimitiveFieldType>> AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
 {
     int flags = 0;
     const auto reference_token = set.peak_next();
@@ -54,12 +54,12 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
     // If it has flags, we'll have to offset the next token peaking by one
     const int offset = flags ? 1 : 0;
 
-    std::optional<std::unique_ptr<AstPrimitiveType>> result = std::nullopt;
+    std::optional<std::unique_ptr<AstPrimitiveFieldType>> result = std::nullopt;
     switch (set.peak(offset).type)
     {
     case TokenType::PRIMITIVE_INT8:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::INT8,
@@ -70,7 +70,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_INT16:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::INT16, 2, flags);
@@ -78,7 +78,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_INT32:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::INT32, 4, flags);
@@ -86,7 +86,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_INT64:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::INT64, 8, flags);
@@ -94,7 +94,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_UINT8:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::UINT8,
@@ -105,7 +105,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_UINT16:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::UINT16, 2, flags);
@@ -113,7 +113,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_UINT32:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::UINT32, 4, flags);
@@ -121,7 +121,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_UINT64:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::UINT64, 8, flags);
@@ -129,7 +129,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_FLOAT32:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::FLOAT32, 4, flags);
@@ -137,7 +137,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_FLOAT64:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::FLOAT64, 8, flags);
@@ -145,7 +145,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_BOOL:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::BOOL, 1, flags);
@@ -153,7 +153,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_CHAR:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::CHAR, 1, flags);
@@ -161,7 +161,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_STRING:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::STRING, 1, flags);
@@ -169,7 +169,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
         break;
     case TokenType::PRIMITIVE_VOID:
         {
-            result = std::make_unique<AstPrimitiveType>(
+            result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
                 PrimitiveType::VOID, 0, flags);
@@ -187,7 +187,7 @@ std::optional<std::unique_ptr<AstPrimitiveType>> AstPrimitiveType::parse_primiti
     return result;
 }
 
-std::optional<std::unique_ptr<AstNamedType>> AstNamedType::parse_named_type_optional(TokenSet& set)
+std::optional<std::unique_ptr<AstNamedValueType>> AstNamedValueType::parse_named_type_optional(TokenSet& set)
 {
     // Custom types are identifiers in type position.
     bool is_ptr = false;
@@ -204,7 +204,7 @@ std::optional<std::unique_ptr<AstNamedType>> AstNamedType::parse_named_type_opti
     }
 
     const auto name = set.next().lexeme;
-    return std::make_unique<AstNamedType>(
+    return std::make_unique<AstNamedValueType>(
         set.source(),
         reference_token.offset,
         name,
@@ -212,15 +212,15 @@ std::optional<std::unique_ptr<AstNamedType>> AstNamedType::parse_named_type_opti
     );
 }
 
-std::unique_ptr<AstType> stride::ast::parse_primitive_type(TokenSet& set)
+std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(TokenSet& set)
 {
-    std::unique_ptr<AstType> type_ptr;
+    std::unique_ptr<IAstInternalFieldType> type_ptr;
 
-    if (auto primitive = AstPrimitiveType::parse_primitive_type_optional(set); primitive.has_value())
+    if (auto primitive = AstPrimitiveFieldType::parse_primitive_type_optional(set); primitive.has_value())
     {
         type_ptr = std::move(primitive.value());
     }
-    else if (auto named_type = AstNamedType::parse_named_type_optional(set); named_type.has_value())
+    else if (auto named_type = AstNamedValueType::parse_named_type_optional(set); named_type.has_value())
     {
         type_ptr = std::move(named_type.value());
     }
@@ -233,12 +233,12 @@ std::unique_ptr<AstType> stride::ast::parse_primitive_type(TokenSet& set)
 }
 
 llvm::Type* stride::ast::internal_type_to_llvm_type(
-    AstType* type,
+    IAstInternalFieldType* type,
     [[maybe_unused]] llvm::Module* module,
     llvm::LLVMContext& context
 )
 {
-    if (const auto* primitive = dynamic_cast<AstPrimitiveType*>(type))
+    if (const auto* primitive = dynamic_cast<AstPrimitiveFieldType*>(type))
     {
         switch (primitive->type())
         {
@@ -270,7 +270,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
     }
 
-    if (const auto* custom = dynamic_cast<AstNamedType*>(type))
+    if (const auto* custom = dynamic_cast<AstNamedValueType*>(type))
     {
         // If it's a pointer, we don't even need to look up the struct name
         // to return the LLVM type, because all pointers are the same.
@@ -298,12 +298,12 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     return nullptr;
 }
 
-u_ptr<AstType> stride::ast::get_dominant_type(AstType* lhs, AstType* rhs)
+u_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(const IAstInternalFieldType* lhs, const IAstInternalFieldType* rhs)
 {
-    const auto* lhs_primitive = dynamic_cast<const AstPrimitiveType*>(lhs);
-    const auto* rhs_primitive = dynamic_cast<const AstPrimitiveType*>(rhs);
-    const auto* lhs_named = dynamic_cast<const AstNamedType*>(lhs);
-    const auto* rhs_named = dynamic_cast<const AstNamedType*>(rhs);
+    const auto* lhs_primitive = dynamic_cast<const AstPrimitiveFieldType*>(lhs);
+    const auto* rhs_primitive = dynamic_cast<const AstPrimitiveFieldType*>(rhs);
+    const auto* lhs_named = dynamic_cast<const AstNamedValueType*>(lhs);
+    const auto* rhs_named = dynamic_cast<const AstNamedValueType*>(rhs);
 
     // Error if one is named and the other is primitive
     if ((lhs_named && rhs_primitive) || (lhs_primitive && rhs_named))
@@ -356,7 +356,7 @@ u_ptr<AstType> stride::ast::get_dominant_type(AstType* lhs, AstType* rhs)
     // Return type with larger byte size
     if (lhs_primitive->byte_size() >= rhs_primitive->byte_size())
     {
-        return std::make_unique<AstPrimitiveType>(
+        return std::make_unique<AstPrimitiveFieldType>(
             lhs_primitive->source,
             lhs_primitive->source_offset,
             lhs_primitive->type(),
@@ -365,7 +365,7 @@ u_ptr<AstType> stride::ast::get_dominant_type(AstType* lhs, AstType* rhs)
         );
     }
 
-    return std::make_unique<AstPrimitiveType>(
+    return std::make_unique<AstPrimitiveFieldType>(
         rhs_primitive->source,
         rhs_primitive->source_offset,
         rhs_primitive->type(),
@@ -374,9 +374,9 @@ u_ptr<AstType> stride::ast::get_dominant_type(AstType* lhs, AstType* rhs)
     );
 }
 
-size_t stride::ast::ast_type_to_internal_id(const AstType* type)
+size_t stride::ast::ast_type_to_internal_id(IAstInternalFieldType* type)
 {
-    if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(type))
+    if (const auto* primitive = dynamic_cast<AstPrimitiveFieldType*>(type); primitive != nullptr)
     {
         switch (primitive->type())
         {
@@ -413,7 +413,7 @@ size_t stride::ast::ast_type_to_internal_id(const AstType* type)
         }
     }
 
-    if (const auto* named = dynamic_cast<const AstNamedType*>(type))
+    if (const auto* named = dynamic_cast<const AstNamedValueType*>(type))
     {
         return std::hash<std::string>{}(named->name());
     }

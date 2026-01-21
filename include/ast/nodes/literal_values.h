@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "expression.h"
+#include "ast/nodes/expression.h"
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
@@ -56,7 +56,7 @@ namespace stride::ast
         char bit_count() const { return this->_bit_count; }
 
         [[nodiscard]]
-        LiteralType type() const { return this->_type; }
+        LiteralType get_type() const { return this->_type; }
     };
 
     template <typename T>

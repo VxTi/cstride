@@ -9,14 +9,14 @@ namespace stride::ast
     class AstStructMember : public IAstNode
     {
         std::string _name;
-        std::unique_ptr<AstType> _type;
+        std::unique_ptr<IAstInternalFieldType> _type;
 
     public:
         AstStructMember(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::string& name,
-            std::unique_ptr<AstType> type
+            std::unique_ptr<IAstInternalFieldType> type
         ) :
             IAstNode(source, source_offset),
             _name(name),
@@ -26,7 +26,7 @@ namespace stride::ast
 
         std::string get_name() const { return this->_name; }
 
-        AstType& get_type() const { return *this->_type; }
+        IAstInternalFieldType& get_type() const { return *this->_type; }
     };
 
     class AstStruct : public IAstNode
@@ -38,14 +38,14 @@ namespace stride::ast
         // Whether this struct references another one
         // This can be used for declaring a type with the data layout
         // of another
-        std::optional<std::unique_ptr<AstType>> _reference;
+        std::optional<std::unique_ptr<IAstInternalFieldType>> _reference;
 
     public:
         AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::string& name,
-            std::unique_ptr<AstType> reference
+            std::unique_ptr<IAstInternalFieldType> reference
         )
             :
             IAstNode(source, source_offset),
@@ -67,7 +67,7 @@ namespace stride::ast
 
         bool is_reference_type() const { return _reference.has_value(); }
 
-        AstType* get_reference_type() const { return _reference->get(); }
+        IAstInternalFieldType* get_reference_type() const { return _reference->get(); }
 
         std::string to_string() override;
 

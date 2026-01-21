@@ -1,6 +1,7 @@
 #include "ast/nodes/literal_values.h"
-#include <llvm/IR/IRBuilder.h>
+
 #include <sstream>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
@@ -25,7 +26,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_opt
 
 std::string AstStringLiteral::to_string()
 {
-    return std::format("StringLiteral({})", value());
+    return std::format("StringLiteral(\"{}\")", value());
 }
 
 llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)

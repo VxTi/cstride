@@ -8,6 +8,7 @@
 
 #include "ast/scope.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/functions.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
 
@@ -38,16 +39,18 @@ IAstNode* AstVariableDeclaration::reduce()
         const auto reduced_value = dynamic_cast<IReducible*>(this->get_initial_value().get())->reduce();
         auto cloned_type = this->get_variable_type()->clone();
 
-
-        return std::make_unique<AstVariableDeclaration>(
-            this->source,
-            this->source_offset,
-            this->get_variable_name(),
-            std::move(cloned_type),
-            u_ptr<IAstNode>(reduced_value),
-            this->get_flags(),
-            this->get_internal_name()
-        ).release();
+        if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced_value); reduced_expr != nullptr)
+        {
+            return std::make_unique<AstVariableDeclaration>(
+                this->source,
+                this->source_offset,
+                this->get_variable_name(),
+                std::move(cloned_type),
+                u_ptr<AstExpression>(reduced_expr),
+                this->get_flags(),
+                this->get_internal_name()
+            ).release();
+        }
     }
     return this;
 }
@@ -66,17 +69,18 @@ std::string AstExpression::to_string()
 
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(const Scope& scope, TokenSet& set)
 {
+    if (auto lit = parse_literal_optional(scope, set);
+        lit.has_value())
+    {
+        return std::move(lit.value());
+    }
+
     if (auto unary = parse_binary_unary_op(scope, set);
         unary.has_value())
     {
         return std::move(unary.value());
     }
 
-    if (auto lit = parse_literal_optional(scope, set);
-        lit.has_value())
-    {
-        return std::move(lit.value());
-    }
 
     if (auto reassignment = parse_variable_reassignment(scope, set);
         reassignment.has_value())
@@ -87,7 +91,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
     if (set.peak_next_eq(TokenType::LPAREN))
     {
         set.next();
-        auto expr = parse_expression_ext(0, scope, set);
+        auto expr = parse_standalone_expression_part(scope, set);
         set.expect(TokenType::RPAREN);
         return expr;
     }
@@ -97,30 +101,41 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
         if (set.peak(1).type == TokenType::LPAREN)
         {
             const auto reference_token = set.next();
-            const auto name = reference_token.lexeme;
+            const auto candidate_function_name = reference_token.lexeme;
             auto function_parameter_set = collect_parenthesized_block(set);
 
             std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
+            std::vector<IAstInternalFieldType*> parameter_types = {};
 
             // Parsing function parameter values
             if (function_parameter_set.has_value())
             {
                 auto subset = function_parameter_set.value();
-                auto initial_arg = parse_expression_ext(-1, scope, subset);
+                auto initial_arg = parse_standalone_expression_part(scope, subset);
+
+                parameter_types.push_back(std::move(resolve_expression_internal_type(scope, initial_arg.get()).get()));
                 function_arg_nodes.push_back(std::move(initial_arg));
 
                 while (subset.has_next())
                 {
                     subset.expect(TokenType::COMMA);
                     auto next_arg = parse_standalone_expression_part(scope, subset);
+
+                    parameter_types.push_back(std::move(resolve_expression_internal_type(scope, next_arg.get()).get()));
                     function_arg_nodes.push_back(std::move(next_arg));
                 }
             }
 
+            std::string internal_fn_name = resolve_internal_function_name(
+                parameter_types,
+                candidate_function_name
+            );
+
             return std::make_unique<AstFunctionInvocation>(
                 set.source(),
                 reference_token.offset,
-                name,
+                candidate_function_name,
+                internal_fn_name,
                 std::move(function_arg_nodes)
             );
         }
@@ -142,7 +157,13 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
         );
     }
 
-    return nullptr;
+    throw parsing_error(
+        make_ast_error(
+            *set.source(),
+            set.peak_next().offset,
+            "Invalid expression"
+        )
+    );
 }
 
 /**
@@ -293,18 +314,91 @@ bool stride::ast::is_property_accessor_statement(const TokenSet& set)
     return initial_identifier && (is_followup_accessor || true);
 }
 
-u_ptr<AstType> stride::ast::resolve_expression_type(const Scope& scope, AstExpression* expr)
+u_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(const Scope& scope, AstLiteral* literal)
 {
-    // If the provided expression is already an AstType, we can easily resolve it
-    if (auto* typed = dynamic_cast<AstType*>(expr))
+    // "string" -> <string> (primitive)
+    if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
     {
-        return u_ptr<AstType>(typed);
+        return std::make_unique<AstPrimitiveFieldType>(
+            str->source,
+            str->source_offset,
+            PrimitiveType::STRING,
+            1
+        );
+    }
+
+    // 1.325 -> <fp32 / fp64>
+    if (const auto* fp_lit = dynamic_cast<AstFpLiteral*>(literal))
+    {
+        auto type = PrimitiveType::FLOAT32;
+        if (fp_lit->bit_count() > 4)
+        {
+            type = PrimitiveType::FLOAT64;
+        }
+
+        return std::make_unique<AstPrimitiveFieldType>(
+            fp_lit->source,
+            fp_lit->source_offset,
+            type,
+            fp_lit->bit_count()
+        );
+    }
+
+    // 1 -> <int32 / int64>
+    if (const auto* int_lit = dynamic_cast<AstIntLiteral*>(literal))
+    {
+        auto type = int_lit->bit_count() > 32 ? PrimitiveType::INT64 : PrimitiveType::INT32;
+        return std::make_unique<AstPrimitiveFieldType>(
+            int_lit->source,
+            int_lit->source_offset,
+            type,
+            int_lit->bit_count()
+        );
+    }
+
+    // 'a' -> <char>
+    if (const auto* char_lit = dynamic_cast<AstCharLiteral*>(literal))
+    {
+        return std::make_unique<AstPrimitiveFieldType>(
+            char_lit->source,
+            char_lit->source_offset,
+            PrimitiveType::CHAR,
+            char_lit->bit_count()
+        );
+    }
+
+    // true / false -> <bool>
+    if (const auto* bool_lit = dynamic_cast<AstBooleanLiteral*>(literal))
+    {
+        return std::make_unique<AstPrimitiveFieldType>(
+            bool_lit->source,
+            bool_lit->source_offset,
+            PrimitiveType::BOOL,
+            bool_lit->bit_count()
+        );
+    }
+
+    throw std::runtime_error(
+        stride::make_ast_error(
+            *literal->source,
+            literal->source_offset,
+            "Unable to resolve expression literal type"
+        )
+    );
+}
+
+u_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(const Scope& scope, AstExpression* expr)
+{
+    // If the provided expression is already an IAstInternalFieldType, we can easily resolve it
+    if (auto* literal = dynamic_cast<AstLiteral*>(expr))
+    {
+        return resolve_expression_literal_internal_type(scope, literal);
     }
 
     if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
     {
-        u_ptr<AstType> lhs_type = resolve_expression_type(scope, &operation->get_left());
-        u_ptr<AstType> rhs_type = resolve_expression_type(scope, &operation->get_right());
+        u_ptr<IAstInternalFieldType> lhs_type = resolve_expression_internal_type(scope, &operation->get_left());
+        u_ptr<IAstInternalFieldType> rhs_type = resolve_expression_internal_type(scope, &operation->get_right());
 
         // If both types are equal, then we know we've got the final type.
         if (*lhs_type == *rhs_type)
@@ -323,15 +417,15 @@ u_ptr<AstType> stride::ast::resolve_expression_type(const Scope& scope, AstExpre
 
 
     // For unary expressions it's quite straight-forward; we'll just resolve the operand type.
-    if (const auto *operation = dynamic_cast<AstUnaryOp*>(expr))
+    if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
     {
-        return resolve_expression_type(scope, &operation->get_operand());
+        return resolve_expression_internal_type(scope, &operation->get_operand());
     }
 
     if (dynamic_cast<AstLogicalOp*>(expr) || dynamic_cast<AstComparisonOp*>(expr))
     {
         // For logical operations (&&, ||) and comparative ops, the return type is always a boolean.
-        return std::make_unique<AstPrimitiveType>(
+        return std::make_unique<AstPrimitiveFieldType>(
             expr->source,
             expr->source_offset,
             PrimitiveType::BOOL,
@@ -340,22 +434,22 @@ u_ptr<AstType> stride::ast::resolve_expression_type(const Scope& scope, AstExpre
         );
     }
 
-    if (const auto *operation = dynamic_cast<AstVariableReassignment*>(expr))
+    if (const auto* operation = dynamic_cast<AstVariableReassignment*>(expr))
     {
-        return resolve_expression_type(scope, operation->get_value());
+        return resolve_expression_internal_type(scope, operation->get_value());
     }
 
-    if (const auto *operation = dynamic_cast<AstVariableDeclaration*>(expr))
+    if (const auto* operation = dynamic_cast<AstVariableDeclaration*>(expr))
     {
         const auto declared_type = operation->get_variable_type();
-        const auto value_type = resolve_expression_type(scope, operation->get_initial_value().get());
+        const auto value_type = resolve_expression_internal_type(scope, operation->get_initial_value().get());
 
         if (*declared_type == *value_type)
         {
             return declared_type->clone();
         }
 
-        return get_dominant_type( declared_type, value_type.get());
+        return get_dominant_type(declared_type, value_type.get());
     }
 
     throw parsing_error("Unable to resolve expression type");

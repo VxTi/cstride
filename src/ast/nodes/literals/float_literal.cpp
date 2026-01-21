@@ -33,7 +33,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
 
 std::string AstFpLiteral::to_string()
 {
-    return std::format("FfLiteral({} ({}bit))", this->value(), this->bit_count());
+    return std::format("FpLiteral({} ({} bit))", this->value(), this->bit_count());
 }
 
 llvm::Value* AstFpLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)

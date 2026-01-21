@@ -57,7 +57,7 @@ void Program::execute(int argc, char* argv[]) const
         return;
     }
     // For debugging purposes, comment this out to see the generated AST nodes
-    // this->print_ast_nodes();
+    this->print_ast_nodes();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();

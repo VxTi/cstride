@@ -10,6 +10,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/functions.h"
 
 
 using namespace stride::ast;
@@ -190,6 +191,15 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // have to parse it a little differenly
     if (!tokens.peak_next_eq(TokenType::RPAREN))
     {
+        if (parameters.size() > MAX_FUNCTION_PARAMETERS)
+        {
+            throw parsing_error(make_ast_error(
+                *tokens.source(),
+                reference_token.offset,
+                "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters"
+            ));
+        }
+
         auto initial = parse_standalone_fn_param(scope, tokens);
         parameters.push_back(std::move(initial));
 
@@ -197,27 +207,28 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
 
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
+    tokens.expect(TokenType::COLON, "Expected a colon after function header type");
+    std::unique_ptr<IAstInternalFieldType> return_type = parse_ast_type(tokens);
 
+
+    // It's a bit clunky, but
+    std::vector<IAstInternalFieldType*> parameter_types;
+    for (const auto& param : parameters)
+    {
+        auto node_type  = param->get_type();
+        parameter_types.push_back(node_type);
+    }
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
     std::string internal_name = fn_name;
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
-    // TODO: Make this a unique hash instead of vague textual representation
     if ((flags & SRFLAG_FN_DEF_EXTERN) == 0)
     {
-        for (const auto& param : parameters)
-        {
-            internal_name += SEGMENT_DELIMITER + param->get_type()->get_internal_name();
-        }
+        internal_name = resolve_internal_function_name(parameter_types, fn_name);
     }
     scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name, SymbolType::FUNCTION, internal_name);
-
-    // The return type of the function, e.g., ": i8"
-
-    tokens.expect(TokenType::COLON, "Expected a colon after function header type");
-    std::unique_ptr<AstType> return_type = parse_primitive_type(tokens);
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -237,7 +248,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         }
     }
 
-    return std::move(std::make_unique<AstFunctionDeclaration>(
+    return std::make_unique<AstFunctionDeclaration>(
         tokens.source(),
         reference_token.offset,
         fn_name,
@@ -246,7 +257,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         std::move(body),
         std::move(return_type),
         flags
-    ));
+    );
 }
 
 std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(

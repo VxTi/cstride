@@ -83,7 +83,7 @@ u_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
 
     set.expect(TokenType::COLON);
 
-    std::unique_ptr<AstType> type_ptr = parse_primitive_type(set);
+    std::unique_ptr<IAstInternalFieldType> type_ptr = parse_ast_type(set);
 
     return std::make_unique<AstFunctionParameter>(
         set.source(),

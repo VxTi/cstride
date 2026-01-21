@@ -17,7 +17,7 @@ std::unique_ptr<AstStructMember> try_parse_struct_member(
 
     set.expect(TokenType::COLON);
 
-    auto struct_member_type = parse_primitive_type(set);
+    auto struct_member_type = parse_ast_type(set);
     set.expect(TokenType::SEMICOLON);
 
     return std::make_unique<AstStructMember>(
@@ -48,7 +48,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& sc
     if (tokens.peak_next_eq(TokenType::EQUALS))
     {
         tokens.next();
-        auto reference_sym = parse_primitive_type(tokens);
+        auto reference_sym = parse_ast_type(tokens);
 
         tokens.expect(TokenType::SEMICOLON);
 

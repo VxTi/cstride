@@ -12,6 +12,8 @@ namespace stride::ast
 #define SRFLAG_TYPE_REFERENCE      (0x2)
 #define SRFLAG_TYPE_MUTABLE        (0x4)
 
+#define SRFLAG_NONE (0)
+
     enum class PrimitiveType
     {
         INT8,
@@ -32,12 +34,14 @@ namespace stride::ast
 
     std::string primitive_type_to_str(PrimitiveType type);
 
-    class AstType : public IAstNode
+
+    class IAstInternalFieldType :
+        public IAstNode
     {
         const int _flags;
 
     public:
-        AstType(
+        IAstInternalFieldType(
             const s_ptr<SourceFile>& source,
             const int source_offset,
             const int flags
@@ -45,10 +49,10 @@ namespace stride::ast
             : IAstNode(source, source_offset),
               _flags(flags) {}
 
-        ~AstType() override = default;
+        ~IAstInternalFieldType() override = default;
 
         [[nodiscard]]
-        virtual u_ptr<AstType> clone() const = 0;
+        virtual u_ptr<IAstInternalFieldType> clone() const = 0;
 
         [[nodiscard]]
         bool is_pointer() const { return this->_flags & SRFLAG_TYPE_PTR; }
@@ -65,30 +69,32 @@ namespace stride::ast
         [[nodiscard]]
         virtual std::string get_internal_name() = 0;
 
-        virtual bool operator==(AstType& other) = 0;
+        virtual bool operator==(IAstInternalFieldType& other) = 0;
     };
 
-    class AstPrimitiveType
-        : public AstType
+    class AstPrimitiveFieldType
+        : public IAstInternalFieldType
     {
         const PrimitiveType _type;
         size_t _byte_size;
 
     public:
-        explicit AstPrimitiveType(
+        explicit AstPrimitiveFieldType(
             const s_ptr<SourceFile>& source,
             const int source_offset,
             const PrimitiveType type,
             const size_t byte_size,
-            const int flags
+            const int flags = SRFLAG_NONE
         ) :
-            AstType(source, source_offset, flags),
+            IAstInternalFieldType(source, source_offset, flags),
             _type(type),
             _byte_size(byte_size) {}
 
+        ~AstPrimitiveFieldType() override = default;
+
         std::string to_string() override;
 
-        static std::optional<u_ptr<AstPrimitiveType>> parse_primitive_type_optional(TokenSet& set);
+        static std::optional<u_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(TokenSet& set);
 
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
@@ -99,17 +105,17 @@ namespace stride::ast
         /* * * * * * * * Override fields * * * * * * * */
 
         [[nodiscard]]
-        u_ptr<AstType> clone() const override
+        u_ptr<IAstInternalFieldType> clone() const override
         {
-            return std::make_unique<AstPrimitiveType>(*this);
+            return std::make_unique<AstPrimitiveFieldType>(*this);
         }
 
         std::string get_internal_name() override { return primitive_type_to_str(_type); }
 
         // For primitives, we can easily compare whether another is equal by comparing the `PrimitiveType` enumerable
-        bool operator==(AstType& other) override
+        bool operator==(IAstInternalFieldType& other) override
         {
-            if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
+            if (const auto* other_primitive = dynamic_cast<AstPrimitiveFieldType*>(&other))
             {
                 return this->_type == other_primitive->_type;
             }
@@ -117,39 +123,39 @@ namespace stride::ast
         }
     };
 
-    class AstNamedType
-        : public AstType
+    class AstNamedValueType
+        : public IAstInternalFieldType
     {
         std::string _name;
 
     public:
         std::string to_string() override;
 
-        explicit AstNamedType(
+        explicit AstNamedValueType(
             const s_ptr<SourceFile>& source,
             const int source_offset,
             std::string name,
             const int flags
         ) :
-            AstType(source, source_offset, flags),
+            IAstInternalFieldType(source, source_offset, flags),
             _name(std::move(name)) {}
 
-        static std::optional<u_ptr<AstNamedType>> parse_named_type_optional(TokenSet& set);
+        static std::optional<u_ptr<AstNamedValueType>> parse_named_type_optional(TokenSet& set);
 
         [[nodiscard]]
         std::string name() const { return this->_name; }
 
         [[nodiscard]]
-        u_ptr<AstType> clone() const override
+        u_ptr<IAstInternalFieldType> clone() const override
         {
-            return std::make_unique<AstNamedType>(*this);
+            return std::make_unique<AstNamedValueType>(*this);
         }
 
         std::string get_internal_name() override { return this->_name; }
 
-        bool operator==(AstType& other) override
+        bool operator==(IAstInternalFieldType& other) override
         {
-            if (const auto* other_named = dynamic_cast<AstNamedType*>(&other))
+            if (const auto* other_named = dynamic_cast<AstNamedValueType*>(&other))
             {
                 return this->_name == other_named->_name;
             }
@@ -157,16 +163,20 @@ namespace stride::ast
         }
     };
 
-    u_ptr<AstType> parse_primitive_type(TokenSet& set);
+    u_ptr<IAstInternalFieldType> parse_ast_type(TokenSet& set);
 
-    llvm::Type* internal_type_to_llvm_type(AstType* type, llvm::Module* module, llvm::LLVMContext& context);
+    llvm::Type* internal_type_to_llvm_type(
+        IAstInternalFieldType* type,
+        llvm::Module* module,
+        llvm::LLVMContext& context
+    );
 
-    u_ptr<AstType> get_dominant_type(AstType* lhs, AstType* rhs);
+    u_ptr<IAstInternalFieldType> get_dominant_type(const IAstInternalFieldType* lhs, const IAstInternalFieldType* rhs);
 
     /**
      * Resolves a unique identifier (UID) for the given internal type.
      *
-     * This function generates a unique identifier for the provided AstType object.
+     * This function generates a unique identifier for the provided IAstInternalFieldType object.
      * The UID is determined based on the specific characteristics of the type,
      * such as whether it is a primitive type, custom type, pointer, or reference.
      *
@@ -174,5 +184,5 @@ namespace stride::ast
      *             The AstType can represent either a primitive or a custom type.
      * @return The unique identifier (UID) associated with the given internal type.
      */
-    size_t ast_type_to_internal_id(const AstType* type);
+    size_t ast_type_to_internal_id(IAstInternalFieldType* type);
 }
