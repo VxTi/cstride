@@ -14,7 +14,7 @@ namespace stride::ast
         std::unique_ptr<IAstNode> parse(const std::string& source_path);
     }
 
-    std::unique_ptr<IAstNode> parse_next_statement(const Scope& scope, TokenSet& set);
+    std::unique_ptr<IAstNode> parse_next_statement(Scope& scope, TokenSet& set);
 
-    std::unique_ptr<AstBlock> parse_sequential(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstBlock> parse_sequential(Scope& scope, TokenSet& set);
 }

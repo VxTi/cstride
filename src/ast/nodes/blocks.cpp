@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "ast/nodes/blocks.h"
-#include "ast/nodes/enumerables.h"
 #include "ast/nodes/function_definition.h"
 #include "ast/nodes/import.h"
 
@@ -114,7 +113,7 @@ std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
     return collect_block_variant(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_block(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstBlock> stride::ast::parse_block(Scope& scope, TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 

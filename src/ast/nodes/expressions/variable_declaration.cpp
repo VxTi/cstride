@@ -37,8 +37,11 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
     );
 }
 
-llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMContext& context,
-                                             llvm::IRBuilder<>* irBuilder)
+llvm::Value* AstVariableDeclaration::codegen(
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* irBuilder
+)
 {
     // Generate code for the initial value
     llvm::Value* init_value = nullptr;
@@ -59,7 +62,7 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
         var_type = llvm::PointerType::get(context, 0);
     }
 
-// Check if this is a global variable declaration
+    // Check if this is a global variable declaration
     if ((this->get_flags() & SRFLAG_VAR_DECL_GLOBAL) != 0)
     {
         // Create a global variable
@@ -134,7 +137,7 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
-    const Scope& scope,
+    Scope& scope,
     TokenSet& set
 )
 {
@@ -145,7 +148,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     int flags = 0;
 
-    if (scope.type == ScopeType::GLOBAL)
+    if (scope.get_scope_type() == ScopeType::GLOBAL)
     {
         flags |= SRFLAG_VAR_DECL_GLOBAL;
     }
@@ -164,7 +167,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
 
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
-    const auto  variable_name = variable_name_tok.lexeme;
+    const auto variable_name = variable_name_tok.lexeme;
     set.expect(TokenType::COLON);
     auto type = parse_ast_type(set);
 
@@ -183,14 +186,18 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
 
     std::string internal_name = variable_name;
-    if (scope.type != ScopeType::GLOBAL)
+    if (scope.get_scope_type() != ScopeType::GLOBAL)
     {
         static int var_decl_counter = 0;
         internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
     }
 
-    scope.try_define_scoped_symbol(*set.source(), variable_name_tok, variable_name, SymbolType::VARIABLE,
-                                   internal_name);
+    scope.define_variable(
+        variable_name,
+        internal_name,
+        std::shared_ptr<IAstInternalFieldType>(type.get()),
+        flags
+    );
 
     return std::make_unique<AstVariableDeclaration>(
         set.source(),

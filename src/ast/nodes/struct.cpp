@@ -6,14 +6,14 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstStructMember> try_parse_struct_member(
-    const Scope& scope,
+    Scope& scope,
     TokenSet& set
 )
 {
     const auto struct_member_name_tok = set.expect(TokenType::IDENTIFIER, "Expected struct member name");
     const auto struct_member_name = struct_member_name_tok.lexeme;
 
-    scope.try_define_scoped_symbol(*set.source(), struct_member_name_tok, struct_member_name, SymbolType::STRUCT);
+    scope.define_symbol(struct_member_name, IdentifiableSymbolType::STRUCT_MEMBER);
 
     set.expect(TokenType::COLON);
 
@@ -33,13 +33,13 @@ bool stride::ast::is_struct_declaration(const TokenSet& tokens)
     return tokens.peak_next_eq(TokenType::KEYWORD_STRUCT);
 }
 
-std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(Scope& scope, TokenSet& tokens)
 {
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
     const auto struct_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");
     const auto struct_name = struct_name_tok.lexeme;
 
-    scope.try_define_global_symbol(*tokens.source(), struct_name_tok, struct_name, SymbolType::STRUCT);
+    scope.define_symbol(struct_name, IdentifiableSymbolType::STRUCT);
 
     // Might be a reference to another type
     // This will parse a definition like:
@@ -65,7 +65,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const Scope& sc
 
     if (struct_body_set.has_value())
     {
-        const auto nested_scope = Scope(scope, ScopeType::BLOCK);
+        auto nested_scope = Scope(scope, ScopeType::BLOCK);
         while (struct_body_set.value().has_next())
         {
             auto member = try_parse_struct_member(nested_scope, struct_body_set.value());

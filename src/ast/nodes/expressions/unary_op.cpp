@@ -35,16 +35,6 @@ bool requires_identifier_operand(const UnaryOpType op)
     }
 }
 
-/**
- * Certain operations require a RHS operand, e.g., `~<num>`
- */
-bool requires_rhs_operand(const UnaryOpType op)
-{
-    // Technically all prefix operators require a RHS operand.
-    // However, if this function implies "Does this operator syntax REQUIRE an operand to follow?", then yes.
-    return true;
-}
-
 std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
 {
     switch (type)
@@ -183,7 +173,7 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
     }
 }
 
-std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(const Scope& scope, TokenSet& set)
+std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(Scope& scope, TokenSet& set)
 {
     const auto next = set.peak_next();
 
@@ -230,9 +220,12 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
 
         const auto operation_tok = set.next();
 
-        const auto internal_name = scope.get_symbol_globally(iden_name)
-                                        .transform([](const SymbolDefinition& def) { return def.get_internal_name(); })
-                                        .value_or(iden_tok.lexeme);
+        auto variable_def = scope.get_variable_def(iden_name);
+        if (!variable_def)
+        {
+            return std::nullopt;
+        }
+        const auto internal_name = variable_def->get_internal_symbol_name();
 
         UnaryOpType type = (operation_tok.type == TokenType::DOUBLE_PLUS)
                                ? UnaryOpType::INCREMENT

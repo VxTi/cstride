@@ -7,15 +7,6 @@
 
 namespace stride::ast
 {
-    template <typename... T>
-    using std::unique_ptr = std::unique_ptr<T...>;
-
-    template <typename... T>
-    using std::shared_ptr = std::shared_ptr<T...>;
-
-    template <typename... T>
-    using option = std::optional<T...>;
-
     class ISynthesisable
     {
     public:

@@ -67,7 +67,7 @@ std::string AstExpression::to_string()
     return std::format("Expression({})", children_str.substr(0, children_str.length() - 2));
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(Scope& scope, TokenSet& set)
 {
     if (auto lit = parse_literal_optional(scope, set);
         lit.has_value())
@@ -105,7 +105,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
             auto function_parameter_set = collect_parenthesized_block(set);
 
             std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
-            std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types = {};
+            std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types = {};
 
             // Parsing function parameter values
             if (function_parameter_set.has_value())
@@ -144,9 +144,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
         std::string identifier_name = reference_token.lexeme;
         std::string internal_name;
 
-        if (const auto sym_def = scope.get_symbol_globally(identifier_name); sym_def.has_value())
+        if (const auto variable_definition = scope.get_variable_def(identifier_name);
+            variable_definition != nullptr)
         {
-            internal_name = sym_def->get_internal_name();
+            internal_name = variable_definition->get_internal_symbol_name();
         }
 
         return std::make_unique<AstIdentifier>(
@@ -171,7 +172,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
  * This can be either binary expressions, e.g., 1 + 1, or comparative expressions, e.g., 1 < 2
  */
 std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
-    const Scope& scope,
+    Scope& scope,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs
 )
@@ -222,7 +223,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
 
 std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
     const int expression_type_flags,
-    const Scope& scope,
+    Scope& scope,
     TokenSet& set
 )
 {
@@ -271,7 +272,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
 /**
  * General expression parsing. These can occur in global / function scopes
  */
-std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(const Scope& scope, TokenSet& set)
+std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(Scope& scope, TokenSet& set)
 {
     return parse_expression_ext(
         SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION,
@@ -280,7 +281,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(const Sc
     );
 }
 
-std::string stride::ast::parse_property_accessor_statement(const Scope& scope, TokenSet& set)
+std::string stride::ast::parse_property_accessor_statement(Scope& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::IDENTIFIER);
     auto identifier_name = reference_token.lexeme;
@@ -408,7 +409,10 @@ std::unique_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(
     );
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(const Scope& scope, AstExpression* expr)
+std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(
+    Scope& scope,
+    AstExpression* expr
+)
 {
     // If the provided expression is already an IAstInternalFieldType, we can easily resolve it
     if (auto* literal = dynamic_cast<AstLiteral*>(expr))
@@ -418,8 +422,10 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_
 
     if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
     {
-        std::unique_ptr<IAstInternalFieldType> lhs_type = resolve_expression_internal_type(scope, &operation->get_left());
-        std::unique_ptr<IAstInternalFieldType> rhs_type = resolve_expression_internal_type(scope, &operation->get_right());
+        std::unique_ptr<IAstInternalFieldType> lhs_type = resolve_expression_internal_type(
+            scope, &operation->get_left());
+        std::unique_ptr<IAstInternalFieldType> rhs_type = resolve_expression_internal_type(
+            scope, &operation->get_right());
 
         // If both types are equal, then we know we've got the final type.
         if (*lhs_type == *rhs_type)

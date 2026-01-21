@@ -128,23 +128,23 @@ namespace stride::ast
     bool is_fn_declaration(const TokenSet& tokens);
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
-        const Scope& scope,
+        Scope& scope,
         TokenSet& tokens
     );
 
     std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(
-        const Scope& scope,
+        Scope& scope,
         TokenSet& set
     );
 
     void parse_subsequent_fn_params(
-        const Scope& scope,
+        Scope& scope,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
     void parse_variadic_fn_param(
-        const Scope& scope,
+        Scope& scope,
         TokenSet& tokens,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );

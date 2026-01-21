@@ -28,7 +28,7 @@ namespace stride::ast
         [[nodiscard]]
         AstLiteral& value() const { return *this->_value; }
 
-        static std::unique_ptr<AstEnumerableMember> try_parse_member(const Scope& scope, TokenSet& tokens);
+        static std::unique_ptr<AstEnumerableMember> try_parse_member(Scope& scope, TokenSet& tokens);
 
         std::string to_string() override;
     };
@@ -61,7 +61,7 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(Scope& scope, TokenSet& set);
 
     bool is_enumerable_declaration(const TokenSet& tokens);
 }

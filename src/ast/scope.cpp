@@ -3,176 +3,168 @@
 #include "ast/scope.h"
 #include "errors.h"
 
-namespace stride::ast
+using namespace stride::ast;
+
+Scope* Scope::traverse_to_root()
 {
-    std::optional<SymbolDefinition> try_get_symbol_from_scope(
-        const Scope* scope,
-        const std::string& symbol
-    )
+    auto global_scope = this;
+    while (global_scope->parent_scope != nullptr)
     {
-        const auto end = scope->symbols->end();
-        const auto it_result = std::ranges::find_if(
-            scope->symbols->begin(), end,
-            [&](const SymbolDefinition& s)
+        global_scope = global_scope->parent_scope.get();
+    }
+    return global_scope;
+}
+
+bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
+{
+    for (const auto symbol_def : this->symbols)
+    {
+        if (auto* var_def = dynamic_cast<VariableSymbolDef*>(symbol_def.get()))
+        {
+            if (var_def->get_internal_symbol_name() == variable_name)
             {
-                return s.get_symbol() == symbol;
-            }
-        );
-
-        if (it_result == end)
-        {
-            return std::nullopt;
-        }
-
-        return *it_result;
-    }
-
-    std::optional<SymbolDefinition> Scope::get_symbol_globally(const std::string& symbol) const
-    {
-        auto current = this;
-
-        while (current != nullptr)
-        {
-            if (auto it = try_get_symbol_from_scope(current, symbol); it.has_value())
-            {
-                return it;
-            }
-
-            current = current->parent_scope.get();
-        }
-
-        return std::nullopt;
-    }
-
-    std::optional<SymbolDefinition> Scope::get_symbol(const std::string& symbol) const
-    {
-        return try_get_symbol_from_scope(this, symbol);
-    }
-
-    bool Scope::is_symbol_defined_globally(const std::string& symbol) const
-    {
-        const auto sym_definition = this->get_symbol_globally(symbol);
-
-        return sym_definition.has_value();
-    }
-
-    bool Scope::is_symbol_defined_scoped(const std::string& symbol) const
-    {
-        const auto sym_definition = this->get_symbol(symbol);
-
-        return sym_definition.has_value();
-    }
-
-    void Scope::try_define_scoped_symbol(
-        const SourceFile& source,
-        const Token& token,
-        const std::string& symbol,
-        const SymbolType symbol_type,
-        const std::string& internal_name
-    ) const
-    {
-        if (this->is_symbol_defined_scoped(internal_name))
-        {
-            throw parsing_error(
-                make_source_error(
-                    source,
-                    ErrorType::SEMANTIC_ERROR,
-                    "Symbol already defined in this scope",
-                    token.offset,
-                    symbol.size()
-                )
-            );
-        }
-        this->symbols->push_back(
-            SymbolDefinition(symbol, token, symbol_type, internal_name)
-        );
-    }
-
-    void Scope::try_define_global_symbol(
-        const SourceFile& source,
-        const Token& reference_token,
-        const std::string& symbol,
-        const SymbolType symbol_type,
-        const std::string& internal_name
-    ) const
-    {
-        if (this->is_symbol_defined_globally(symbol))
-        {
-            throw parsing_error(
-                make_source_error(
-                    source,
-                    ErrorType::SEMANTIC_ERROR,
-                    "Symbol already defined globally",
-                    reference_token.offset,
-                    symbol.size()
-                )
-            );
-        }
-        this->symbols->push_back(
-            SymbolDefinition(symbol, reference_token, symbol_type, internal_name)
-        );
-    }
-
-    bool Scope::is_function_defined_globally(const std::string& internal_name) const
-    {
-        if (const auto it = try_get_symbol_from_scope(this, internal_name); it.has_value())
-        {
-            auto sym_def = it.value();
-            if (const auto* fn_def = dynamic_cast<SymbolFnDefinition*>(&sym_def))
-            {
-                if (fn_def->get_internal_name() == internal_name)
-                {
-                    return true;
-                }
+                return true;
             }
         }
-        return false;
+    }
+    return false;
+}
+
+bool Scope::is_variable_defined_globally(const std::string& variable_name) const
+{
+    auto current = this;
+    while (current != nullptr)
+    {
+        if (current->is_variable_defined_in_scope(variable_name))
+        {
+            return true;
+        }
+        current = current->parent_scope.get();
+    }
+    return false;
+}
+
+bool Scope::is_function_defined_globally(const std::string& internal_function_name)
+{
+    for (const auto root = this->traverse_to_root();
+         const auto& symbol : root->symbols)
+    {
+        if (const auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol.get()))
+        {
+            if (fn_def->get_internal_symbol_name() == internal_function_name)
+            {
+                return true;
+            }
+        }
     }
 
-    void Scope::try_define_function_symbol(
-        const SourceFile& source,
-        const Token& reference_token,
-        const std::string& symbol,
-        const std::vector<unique_ptr<IAstInternalFieldType>>& parameter_types,
-        const shared_ptr<IAstInternalFieldType>& return_type,
-        bool anonymous = false
-    )
+    return false;
+}
+
+bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type)
+{
+    for (const auto root = this->traverse_to_root();
+         const auto& symbol : root->symbols)
     {
-        if (!anonymous && this->type != ScopeType::GLOBAL)
+        if (const auto* identifiable = dynamic_cast<IdentifiableSymbolDef*>(symbol.get()))
         {
-            throw parsing_error(
-                make_source_error(
-                    source,
-                    ErrorType::SEMANTIC_ERROR,
-                    "Only global scopes can define non-anonymous functions",
-                    reference_token.offset,
-                    symbol.size()
-                )
-            );
+            if (identifiable->get_symbol_type() == type
+                && identifiable->get_internal_symbol_name() == symbol_name)
+            {
+                return true;
+            }
         }
+    }
 
-        const auto internal_name = resolve_internal_function_name(parameter_types, symbol);
-        if (this->is_function_defined_globally(internal_name))
-        {
-            throw parsing_error(
-                make_source_error(
-                    source,
-                    ErrorType::SEMANTIC_ERROR,
-                    "Function already defined in this scope",
-                    reference_token.offset,
-                    symbol.size()
-                )
-            );
-        }
+    return false;
+}
 
-        this->symbols->push_back(
-            std::make_unique<SymbolFnDefinition>(
-                symbol,
-                reference_token,
-                std::move(parameter_types),
-                return_type,
-                internal_name
-            )
+void Scope::define_function(
+    const std::string& internal_function_name,
+    std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types,
+    const std::shared_ptr<IAstInternalFieldType>& return_type
+)
+{
+    auto* global_scope = this->traverse_to_root();
+    global_scope->symbols.push_back(std::make_shared<SymbolFnDefinition>(
+        std::move(parameter_types), return_type, internal_function_name
+    ));
+}
+
+void Scope::define_variable(
+    const std::string& variable_name,
+    const std::string& internal_name,
+    const std::shared_ptr<IAstInternalFieldType>& type,
+    const int flags
+)
+{
+    if (is_variable_defined_in_scope(variable_name))
+    {
+        throw parsing_error(
+            "Variable '" + variable_name + "' is already defined in this scope"
         );
     }
+
+    this->symbols.push_back(std::make_shared<VariableSymbolDef>(
+        variable_name,
+        internal_name,
+        type.get(),
+        flags
+    ));
+}
+
+void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymbolType type)
+{
+    auto* global_scope = this->traverse_to_root();
+    global_scope->symbols.push_back(std::make_shared<IdentifiableSymbolDef>(
+        type,
+        symbol_name
+    ));
+}
+
+
+VariableSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
+{
+    for (const auto symbol_def : this->symbols)
+    {
+        if (auto* var_def = dynamic_cast<VariableSymbolDef*>(symbol_def.get()))
+        {
+            if (var_def->get_variable_name() == variable_name
+                || var_def->get_internal_symbol_name() == variable_name)
+            {
+                return var_def;
+            }
+        }
+    }
+    return nullptr;
+}
+
+IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_name) const
+{
+    for (const auto symbol_def : this->symbols)
+    {
+        if (auto* identif_def = dynamic_cast<IdentifiableSymbolDef*>(symbol_def.get()))
+        {
+            if (identif_def->get_internal_symbol_name() == symbol_name)
+            {
+                return identif_def;
+            }
+        }
+    }
+    return nullptr;
+}
+
+SymbolFnDefinition* Scope::get_function_def(const std::string& function_name) const
+{
+    for (const auto symbol_def : this->symbols)
+    {
+        if (auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol_def.get()))
+        {
+            if (fn_def->get_internal_symbol_name() == function_name)
+            {
+                return fn_def;
+            }
+        }
+    }
+    return nullptr;
 }

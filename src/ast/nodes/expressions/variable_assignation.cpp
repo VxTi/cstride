@@ -1,3 +1,4 @@
+#include <iostream>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
@@ -141,7 +142,8 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
     }
 }
 
-option<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(const Scope& scope, TokenSet& set)
+std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
+    Scope& scope, TokenSet& set)
 {
     // Can be either a singular field, e.g., a regular variable,
     // or member access, e.g., <member>.<field>
@@ -150,11 +152,18 @@ option<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_rea
         const auto reference_token = set.peak_next();
 
         std::string reassignment_iden_name = reference_token.lexeme;
-        auto reassignment_internal_name_def = scope.get_symbol(reference_token.lexeme);
+        auto reassign_internal_variable_name = scope.get_variable_def(reassignment_iden_name);
 
-        std::string reassign_internal_name = reassignment_internal_name_def.has_value()
-                                                 ? reassignment_internal_name_def->get_internal_name()
-                                                 : reassignment_iden_name;
+        if (!reassign_internal_variable_name)
+        {
+            // Variable isn't found.
+            std::cout << "Warning - Variable '" << reassignment_iden_name <<
+                "' not found in scope. Skipping reassignment.\n";
+            return std::nullopt;
+        }
+
+
+        std::string reassign_internal_name = reassign_internal_variable_name->get_internal_symbol_name();
 
         // Instead of moving the cursor over in the set, we peak forward.
         // This way, if it appears we don't have a mutative operation,
@@ -167,10 +176,17 @@ option<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_rea
                 offset += 2;
                 const auto accessor_token = set.peak(offset + 1);
 
-                const auto accessor_internal_name_def = scope.get_symbol(accessor_token.lexeme);
-                const std::string accessor_internal_name = accessor_internal_name_def.has_value()
-                                                               ? accessor_internal_name_def->get_internal_name()
-                                                               : accessor_token.lexeme;
+                const auto accessor_internal_name_def = scope.get_variable_def(accessor_token.lexeme);
+
+                if (!accessor_internal_name_def)
+                {
+                    std::cout << "Warning - Accessor '" << accessor_token.lexeme <<
+                        "' not found in scope. Skipping reassignment.\n";
+                    return std::nullopt;
+                }
+
+
+                const std::string accessor_internal_name = accessor_internal_name_def->get_internal_symbol_name();
 
                 reassignment_iden_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.lexeme;
                 reassign_internal_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_internal_name;

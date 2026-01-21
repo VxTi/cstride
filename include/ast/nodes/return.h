@@ -33,5 +33,5 @@ namespace stride::ast
 
     bool is_return_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstReturn> parse_return_statement(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstReturn> parse_return_statement(Scope& scope, TokenSet& set);
 }

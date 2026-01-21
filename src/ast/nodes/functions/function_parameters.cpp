@@ -3,7 +3,7 @@
 using namespace stride::ast;
 
 void stride::ast::parse_variadic_fn_param(
-    const Scope& scope,
+    Scope& scope,
     TokenSet& tokens,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
@@ -14,7 +14,7 @@ void stride::ast::parse_variadic_fn_param(
 }
 
 void stride::ast::parse_subsequent_fn_params(
-    const Scope& scope,
+    Scope& scope,
     TokenSet& set,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
@@ -67,7 +67,7 @@ std::string AstFunctionParameter::to_string()
 }
 
 std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
-    [[maybe_unused]] const Scope& scope,
+    [[maybe_unused]] Scope& scope,
     TokenSet& set
 )
 {

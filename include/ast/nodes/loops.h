@@ -52,7 +52,7 @@ namespace stride::ast
 
     bool is_while_loop_statement(const TokenSet& set);
 
-    std::unique_ptr<AstLoop> parse_for_loop_statement(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstLoop> parse_for_loop_statement(Scope& scope, TokenSet& set);
 
-    std::unique_ptr<AstLoop> parse_while_loop_statement(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstLoop> parse_while_loop_statement(Scope& scope, TokenSet& set);
 }

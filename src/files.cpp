@@ -6,7 +6,7 @@
 
 using namespace stride;
 
-ast::std::shared_ptr<SourceFile> stride::read_file(const std::string& path)
+std::shared_ptr<SourceFile> stride::read_file(const std::string& path)
 {
     const std::ifstream file(path);
 

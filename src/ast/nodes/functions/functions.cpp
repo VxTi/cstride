@@ -1,7 +1,7 @@
 #include "ast/nodes/functions.h"
 
 std::string stride::ast::resolve_internal_function_name(
-    const std::vector<std::unique_ptr<IAstInternalFieldType>>& parameter_types,
+    const std::vector<std::shared_ptr<IAstInternalFieldType>>& parameter_types,
     const std::string& function_name
 )
 {

@@ -112,7 +112,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string name,
-            std::string internal_name = ""
+            std::string internal_name
         ) :
             AstExpression(source, source_offset, {}),
             _name(std::move(name)),
@@ -437,57 +437,57 @@ namespace stride::ast
     int binary_operator_precedence(BinaryOpType type);
 
     /// Parses a complete standalone expression from tokens
-    std::unique_ptr<AstExpression> parse_standalone_expression(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression(Scope& scope, TokenSet& set);
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
-    std::unique_ptr<AstExpression> parse_expression_ext(int expression_type_flags, const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_expression_ext(int expression_type_flags, Scope& scope, TokenSet& set);
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<AstExpression> parse_standalone_expression_part(const Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression_part(Scope& scope, TokenSet& set);
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
         int expression_type_flags,
-        const Scope& scope,
+        Scope& scope,
         TokenSet& set
     );
 
     /// Parses a variable assignment statement
-    option<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
-        const Scope& scope,
+    std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
+        Scope& scope,
         TokenSet& set
     );
 
     /// Parses a binary arithmetic operation using precedence climbing
-    option<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(
-        const Scope& scope,
+    std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(
+        Scope& scope,
         TokenSet& set,
         std::unique_ptr<AstExpression> lhs,
         int min_precedence
     );
 
     /// Parses a unary operator expression
-    option<std::unique_ptr<AstExpression>> parse_binary_unary_op(const Scope& scope, TokenSet& set);
+    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(Scope& scope, TokenSet& set);
 
     /// Converts a token type to its corresponding logical operator type
-    option<LogicalOpType> get_logical_op_type(TokenType type);
+    std::optional<LogicalOpType> get_logical_op_type(TokenType type);
 
     /// Converts a token type to its corresponding comparison operator type
-    option<ComparisonOpType> get_comparative_op_type(TokenType type);
+    std::optional<ComparisonOpType> get_comparative_op_type(TokenType type);
 
     /// Converts a token type to its corresponding binary arithmetic operator type
-    option<BinaryOpType> get_binary_op_type(TokenType type);
+    std::optional<BinaryOpType> get_binary_op_type(TokenType type);
 
     /// Converts a token type to its corresponding unary operator type
-    option<UnaryOpType> get_unary_op_type(TokenType type);
+    std::optional<UnaryOpType> get_unary_op_type(TokenType type);
 
     /// Whether the next sequence of tokens is a variable/function access by property reference
     /// e.g., <identifier>.<accessor>
     bool is_property_accessor_statement(const TokenSet& set);
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
-    std::string parse_property_accessor_statement(const Scope& scope, TokenSet& set);
+    std::string parse_property_accessor_statement(Scope& scope, TokenSet& set);
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
-    std::unique_ptr<IAstInternalFieldType> resolve_expression_internal_type(const Scope& scope, AstExpression* expr);
+    std::unique_ptr<IAstInternalFieldType> resolve_expression_internal_type(Scope& scope, AstExpression* expr);
 }

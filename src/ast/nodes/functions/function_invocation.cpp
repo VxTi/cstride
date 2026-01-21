@@ -7,6 +7,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 
+#include "ast/identifiers.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 

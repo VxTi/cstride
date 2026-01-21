@@ -1,5 +1,7 @@
 #include "ast/nodes/module.h"
 
+#include "ast/identifiers.h"
+
 using namespace stride::ast;
 
 std::string AstModule::to_string()
