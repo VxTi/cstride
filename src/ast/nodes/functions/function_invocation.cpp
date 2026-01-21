@@ -41,12 +41,12 @@ std::optional<std::string> resolve_type_name(AstExpression* expr)
 {
     if (!expr) return std::nullopt;
 
-    if (const auto* primitive = dynamic_cast<types::AstPrimitiveType*>(expr))
+    if (const auto* primitive = dynamic_cast<AstPrimitiveType*>(expr))
     {
-        return types::primitive_type_to_str(primitive->type());
+        return primitive_type_to_str(primitive->type());
     }
 
-    if (const auto* custom_type = dynamic_cast<types::AstCustomType*>(expr))
+    if (const auto* custom_type = dynamic_cast<AstCustomType*>(expr))
     {
         return custom_type->name();
     }

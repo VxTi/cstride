@@ -23,7 +23,7 @@ namespace stride::ast
     class AstFunctionParameter : IAstNode
     {
         const std::string _name;
-        const std::unique_ptr<types::AstType> _type;
+        const std::unique_ptr<AstType> _type;
         const int _flags;
 
     public:
@@ -31,7 +31,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string param_name,
-            std::unique_ptr<types::AstType> param_type,
+            std::unique_ptr<AstType> param_type,
             const int flags
         ) :
             IAstNode(source, source_offset),
@@ -45,7 +45,7 @@ namespace stride::ast
         std::string get_name() const { return this->_name; }
 
         [[nodiscard]]
-        types::AstType* get_type() const { return this->_type.get(); }
+        AstType* get_type() const { return this->_type.get(); }
     };
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  *
@@ -61,7 +61,7 @@ namespace stride::ast
         std::string _name;
         std::string _internal_name;
         std::vector<u_ptr<AstFunctionParameter>> _parameters;
-        u_ptr<types::AstType> _return_type;
+        u_ptr<AstType> _return_type;
         int _flags;
 
     public:
@@ -72,7 +72,7 @@ namespace stride::ast
             std::string internal_name,
             std::vector<u_ptr<AstFunctionParameter>> parameters,
             u_ptr<IAstNode> body,
-            u_ptr<types::AstType> return_type,
+            u_ptr<AstType> return_type,
             const int flags
         ) :
             IAstNode(source, source_offset),
@@ -105,7 +105,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const u_ptr<types::AstType>& return_type() const { return this->_return_type; }
+        const u_ptr<AstType>& return_type() const { return this->_return_type; }
 
         [[nodiscard]]
         bool is_extern() const { return this->_flags & SRFLAG_FN_DEF_EXTERN; }

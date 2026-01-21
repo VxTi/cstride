@@ -2,10 +2,10 @@
 
 #include <utility>
 
+#include "expression.h"
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
-#include "expression.h"
 
 namespace stride::ast
 {
@@ -169,32 +169,34 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(const Scope& scope, TokenSet& tokens);
+    option<u_ptr<AstLiteral>> parse_literal_optional(const Scope& scope, TokenSet& tokens);
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
+    option<u_ptr<AstLiteral>> parse_boolean_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_float_literal_optional(
+    option<u_ptr<AstLiteral>> parse_float_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(
+    option<u_ptr<AstLiteral>> parse_integer_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_string_literal_optional(
+    option<u_ptr<AstLiteral>> parse_string_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_char_literal_optional(
+    option<u_ptr<AstLiteral>> parse_char_literal_optional(
         const Scope& scope,
         TokenSet& set
     );
+
+    size_t resolve_internal_type_id()
 
     bool is_ast_literal(IAstNode* node);
 }

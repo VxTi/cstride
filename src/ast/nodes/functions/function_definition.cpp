@@ -31,7 +31,7 @@ void AstFunctionDeclaration::define_symbols(
     }
 
     // Create function type
-    llvm::Type* return_type = types::internal_type_to_llvm_type(this->return_type().get(), module, context);
+    llvm::Type* return_type = internal_type_to_llvm_type(this->return_type().get(), module, context);
     if (!return_type)
     {
         // This can currently happen when unidentified symbols are used as types
@@ -217,7 +217,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // The return type of the function, e.g., ": i8"
 
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
-    std::unique_ptr<types::AstType> return_type = types::parse_primitive_type(tokens);
+    std::unique_ptr<AstType> return_type = parse_primitive_type(tokens);
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -257,7 +257,7 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())
     {
-        auto llvm_type = types::internal_type_to_llvm_type(param->get_type(), module, context);
+        auto llvm_type = internal_type_to_llvm_type(param->get_type(), module, context);
         if (!llvm_type)
         {
             return std::nullopt;

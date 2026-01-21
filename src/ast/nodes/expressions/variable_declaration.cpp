@@ -51,7 +51,7 @@ llvm::Value* AstVariableDeclaration::codegen(llvm::Module* module, llvm::LLVMCon
     }
 
     // Get the LLVM type for the variable
-    llvm::Type* var_type = types::internal_type_to_llvm_type(this->get_variable_type(), module, context);
+    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module, context);
 
     // If this is a pointer type, convert to pointer
     if (this->get_variable_type()->is_pointer())
@@ -166,7 +166,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
     const auto  variable_name = variable_name_tok.lexeme;
     set.expect(TokenType::COLON);
-    auto type = types::parse_primitive_type(set);
+    auto type = parse_primitive_type(set);
 
     set.expect(TokenType::EQUALS);
 

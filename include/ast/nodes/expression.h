@@ -182,7 +182,7 @@ namespace stride::ast
         const int _flags;
         const std::string _variable_name;
         const std::string _internal_name;
-        const u_ptr<types::AstType> _variable_type;
+        const u_ptr<AstType> _variable_type;
         const u_ptr<IAstNode> _initial_value;
 
     public:
@@ -190,7 +190,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string variable_name,
-            u_ptr<types::AstType> variable_type,
+            u_ptr<AstType> variable_type,
             u_ptr<IAstNode> initial_value,
             const int flags,
             std::string internal_name
@@ -216,7 +216,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        types::AstType* get_variable_type() const
+        AstType* get_variable_type() const
         {
             return this->_variable_type.get();
         }

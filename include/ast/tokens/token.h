@@ -124,6 +124,7 @@ namespace stride::ast
         INTEGER_LITERAL, // 42
         HEX_LITERAL,     // 0xFF
         FLOAT_LITERAL,   // 3.14
+        DOUBLE_LITERAL,  // 3.14159D
         BOOLEAN_LITERAL, // true, false
     };
 
@@ -132,11 +133,14 @@ namespace stride::ast
         switch (type)
         {
         case TokenType::INTEGER_LITERAL:
+        case TokenType::HEX_LITERAL:
+
         case TokenType::FLOAT_LITERAL:
+
+        case TokenType::DOUBLE_LITERAL:
         case TokenType::STRING_LITERAL:
         case TokenType::CHAR_LITERAL:
         case TokenType::BOOLEAN_LITERAL:
-        case TokenType::HEX_LITERAL:
             return true;
         default:
             return false;
@@ -252,8 +256,9 @@ namespace stride::ast
         case TokenType::STRING_LITERAL: return "String Literal";
         case TokenType::CHAR_LITERAL: return "Char Literal";
         case TokenType::INTEGER_LITERAL: return "Integer";
-            case TokenType::HEX_LITERAL: return "Hexadecimal";
-        case TokenType::FLOAT_LITERAL: return "Float";
+        case TokenType::HEX_LITERAL: return "Hexadecimal";
+        case TokenType::FLOAT_LITERAL: return "f32";
+        case TokenType::DOUBLE_LITERAL: return "f64";
         case TokenType::BOOLEAN_LITERAL: return "Bool";
         default: return "Unknown";
         }

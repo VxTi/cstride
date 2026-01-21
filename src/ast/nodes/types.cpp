@@ -7,7 +7,7 @@
 
 using namespace stride::ast::types;
 
-std::string stride::ast::types::primitive_type_to_str(const PrimitiveType type)
+std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
 {
     switch (type)
     {
@@ -212,7 +212,7 @@ std::optional<std::unique_ptr<AstCustomType>> AstCustomType::try_parse(TokenSet&
     );
 }
 
-std::unique_ptr<AstType> stride::ast::types::parse_primitive_type(TokenSet& tokens)
+std::unique_ptr<AstType> stride::ast::parse_primitive_type(TokenSet& tokens)
 {
     std::unique_ptr<AstType> type_ptr;
 
@@ -232,7 +232,7 @@ std::unique_ptr<AstType> stride::ast::types::parse_primitive_type(TokenSet& toke
     return std::move(type_ptr);
 }
 
-llvm::Type* stride::ast::types::internal_type_to_llvm_type(
+llvm::Type* stride::ast::internal_type_to_llvm_type(
     AstType* type,
     llvm::Module* module,
     llvm::LLVMContext& context
