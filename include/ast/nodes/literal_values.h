@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
@@ -67,11 +69,11 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const LiteralType type,
-            const T value,
+            T value,
             const char byte_count
         ) :
             AstLiteral(source, source_offset, type, byte_count),
-            _value(value) {}
+            _value(std::move(value)) {}
 
         [[nodiscard]]
         const T& value() const { return this->_value; }
@@ -111,8 +113,10 @@ namespace stride::ast
                                    BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)),
             flags(flags) {}
 
+        [[nodiscard]]
         int get_flags() const { return this->flags; }
 
+        [[nodiscard]]
         bool is_signed() const { return this->flags & SRFLAG_INT_SIGNED; }
 
         std::string to_string() override;
@@ -120,7 +124,7 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
-    class AstFloatLiteral : public AbstractAstLiteralBase<float>
+    class AstFloatLiteral : public AbstractAstLiteralBase<long double>
     {
     public :
         explicit AstFloatLiteral(

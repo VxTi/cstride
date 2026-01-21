@@ -100,20 +100,20 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
             const auto name = reference_token.lexeme;
             auto function_parameter_set = collect_parenthesized_block(set);
 
-            std::vector<std::unique_ptr<IAstNode>> function_parameter_nodes = {};
+            std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
 
             // Parsing function parameter values
             if (function_parameter_set.has_value())
             {
                 auto subset = function_parameter_set.value();
                 auto initial_arg = parse_expression_ext(-1, scope, subset);
-                function_parameter_nodes.push_back(std::move(initial_arg));
+                function_arg_nodes.push_back(std::move(initial_arg));
 
                 while (subset.has_next())
                 {
                     subset.expect(TokenType::COMMA);
                     auto next_arg = parse_standalone_expression_part(scope, subset);
-                    function_parameter_nodes.push_back(std::move(next_arg));
+                    function_arg_nodes.push_back(std::move(next_arg));
                 }
             }
 
@@ -121,7 +121,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(con
                 set.source(),
                 reference_token.offset,
                 name,
-                std::move(function_parameter_nodes)
+                std::move(function_arg_nodes)
             );
         }
 

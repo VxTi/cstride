@@ -27,7 +27,7 @@ export default function EditorWindow() {
   return (
     <Editor
       height="100%"
-      className="absolute left-0 top-0 size-full bg-neutral-800"
+      className="absolute left-0 top-0 size-full bg-neutral-950"
       defaultLanguage={strideLanguageId}
       defaultValue={initialCode}
       theme="vs-dark"

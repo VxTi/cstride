@@ -1,14 +1,15 @@
 #include "ast/nodes/function_definition.h"
 
-#include "ast/nodes/blocks.h"
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Type.h>
+#include <iostream>
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
-#include <iostream>
-#include <llvm/IR/Module.h>
+
+#include "ast/nodes/blocks.h"
 
 
 using namespace stride::ast;
@@ -97,6 +98,18 @@ llvm::Value* AstFunctionDeclaration::codegen(
     // Set up IR builder
     llvm::IRBuilder builder(context);
     builder.SetInsertPoint(entry_block);
+
+    // Register function arguments in the symbol table
+    auto arg_it = function->arg_begin();
+    for (const auto& param : this->get_parameters())
+    {
+        if (arg_it == function->arg_end())
+        {
+            break;
+        }
+        arg_it->setName(param->get_name());
+        ++arg_it;
+    }
 
     // Generate body code
     llvm::Value* ret_val = nullptr;

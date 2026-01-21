@@ -8,6 +8,7 @@
 #include <llvm/IR/Value.h>
 
 #include "ast/nodes/expression.h"
+#include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
 
@@ -36,22 +37,58 @@ std::string AstFunctionInvocation::to_string()
     return std::format("FunctionInvocation({} {})", this->get_function_name(), oss.str());
 }
 
+std::optional<std::string> resolve_type_name(AstExpression* expr)
+{
+    if (!expr) return std::nullopt;
+
+    if (const auto* primitive = dynamic_cast<types::AstPrimitiveType*>(expr))
+    {
+        return types::primitive_type_to_str(primitive->type());
+    }
+
+    if (const auto* custom_type = dynamic_cast<types::AstCustomType*>(expr))
+    {
+        return custom_type->name();
+    }
+
+    return std::nullopt;
+}
+
 llvm::Value* AstFunctionInvocation::codegen(
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
-    const auto internal_name = this->get_function_name();
-    // The actual function being called. This must be in the registry.
-    llvm::Function* callee = module->getFunction(internal_name);
+    std::string candidate_name = this->get_function_name();
+
+    // 2. Append argument types to match the definition's mangling logic
+    // matching: internal_name += SEGMENT_DELIMITER + param->get_type()->get_internal_name();
+    for (const auto& arg_expr : this->get_arguments()) {
+        // Note: You must evaluate/resolve the type of the argument expression first
+        if (const auto arg_type = resolve_type_name(&*arg_expr); arg_type.has_value())
+        {
+            candidate_name += SEGMENT_DELIMITER + arg_type.value();
+        }
+    }
+
+    // 3. Attempt to find the mangled name in the LLVM module
+    llvm::Function* callee = module->getFunction(candidate_name);
+
+    // 4. Fallback for 'extern' functions
+    // In parse_fn_declaration, externs do not have type suffixes.
+    // If the mangled version isn't found, try the raw name.
+    if (!callee) {
+        callee = module->getFunction(this->get_function_name());
+    }
+
     if (!callee)
     {
         throw parsing_error(
             make_ast_error(
                 *this->source,
                 this->source_offset,
-                "Function '" + internal_name + "' was not found in this scope"
+                "Function '" + candidate_name + "' was not found in this scope"
             )
         );
     }
@@ -62,7 +99,7 @@ llvm::Value* AstFunctionInvocation::codegen(
             make_ast_error(
                 *this->source,
                 this->source_offset,
-                "Incorrect arguments passed for function '" + internal_name + "'"
+                "Incorrect arguments passed for function '" + candidate_name + "'"
             )
         );
     }

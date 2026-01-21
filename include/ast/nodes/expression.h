@@ -139,7 +139,7 @@ namespace stride::ast
     class AstFunctionInvocation :
         public AstExpression
     {
-        std::vector<std::unique_ptr<IAstNode>> _arguments;
+        std::vector<std::unique_ptr<AstExpression>> _arguments;
         const std::string _function_name;
 
     public:
@@ -155,14 +155,14 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string function_name,
-            std::vector<std::unique_ptr<IAstNode>> arguments
+            std::vector<std::unique_ptr<AstExpression>> arguments
         ) :
             AstExpression(source, source_offset, {}),
             _arguments(std::move(arguments)),
             _function_name(std::move(function_name)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstNode>>& get_arguments() const { return this->_arguments; }
+        const std::vector<std::unique_ptr<AstExpression>>& get_arguments() const { return this->_arguments; }
 
         [[nodiscard]]
         const std::string& get_function_name() const { return this->_function_name; }

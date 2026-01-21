@@ -36,7 +36,7 @@ export default function ActionButtons() {
   const Icon = processActive ? SquareIcon : PlayIcon;
 
   return (
-    <div className="flex items-center w-full z-1000">
+    <div className="flex items-center w-full z-1000 px-3">
       <div className="flex flex-row items-center justify-end gap-1 grow bg-neutral-800 rounded-t-xl">
         <ActionButton onClick={clearTerminal}>
           <Trash2Icon className="stroke-2 stroke-white" />
@@ -58,8 +58,8 @@ function ActionButton({ className, ...props }: ComponentProps<'button'>) {
   return (
     <button
       className={twMerge(
-        'rounded-2xl p-2 hover:bg-gray-100/10 transition-colors duration-200 text-white' +
-          ' cursor-pointer *:stroke-2 size-10 *:size-full'
+        'rounded-sm p-2 hover:bg-gray-100/10 transition-colors duration-200 text-white' +
+          ' cursor-pointer *:stroke-2 size-9 *:size-full'
       )}
       {...props}
     ></button>
