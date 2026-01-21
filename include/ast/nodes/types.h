@@ -10,6 +10,7 @@ namespace stride::ast
 {
 #define SRFLAG_TYPE_PTR            (0x1)
 #define SRFLAG_TYPE_REFERENCE      (0x2)
+#define SRFLAG_TYPE_MUTABLE        (0x4)
 
     enum class PrimitiveType
     {
@@ -33,7 +34,7 @@ namespace stride::ast
 
     class AstType : public IAstNode
     {
-        const int flags;
+        const int _flags;
 
     public:
         AstType(
@@ -42,7 +43,7 @@ namespace stride::ast
             const int flags
         )
             : IAstNode(source, source_offset),
-              flags(flags) {}
+              _flags(flags) {}
 
         ~AstType() override = default;
 
@@ -50,9 +51,21 @@ namespace stride::ast
         virtual u_ptr<AstType> clone() const = 0;
 
         [[nodiscard]]
-        bool is_pointer() const { return this->flags & SRFLAG_TYPE_PTR; }
+        bool is_pointer() const { return this->_flags & SRFLAG_TYPE_PTR; }
 
+        [[nodiscard]]
+        bool is_reference() const { return this->_flags & SRFLAG_TYPE_REFERENCE; }
+
+        [[nodiscard]]
+        bool is_mutable() const { return this->_flags & SRFLAG_TYPE_MUTABLE; }
+
+        [[nodiscard]]
+        int get_flags() const { return this->_flags; }
+
+        [[nodiscard]]
         virtual std::string get_internal_name() = 0;
+
+        virtual bool operator==(AstType& other) = 0;
     };
 
     class AstPrimitiveType
@@ -75,7 +88,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        static std::optional<u_ptr<AstPrimitiveType>> try_parse(TokenSet& set);
+        static std::optional<u_ptr<AstPrimitiveType>> parse_primitive_type_optional(TokenSet& set);
 
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
@@ -83,16 +96,28 @@ namespace stride::ast
         [[nodiscard]]
         size_t byte_size() const { return this->_byte_size; }
 
-        [[nodiscard]] 
+        /* * * * * * * * Override fields * * * * * * * */
+
+        [[nodiscard]]
         u_ptr<AstType> clone() const override
         {
             return std::make_unique<AstPrimitiveType>(*this);
         }
 
         std::string get_internal_name() override { return primitive_type_to_str(_type); }
+
+        // For primitives, we can easily compare whether another is equal by comparing the `PrimitiveType` enumerable
+        bool operator==(AstType& other) override
+        {
+            if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
+            {
+                return this->_type == other_primitive->_type;
+            }
+            return false;
+        }
     };
 
-    class AstCustomType
+    class AstNamedType
         : public AstType
     {
         std::string _name;
@@ -100,7 +125,7 @@ namespace stride::ast
     public:
         std::string to_string() override;
 
-        explicit AstCustomType(
+        explicit AstNamedType(
             const s_ptr<SourceFile>& source,
             const int source_offset,
             std::string name,
@@ -109,7 +134,7 @@ namespace stride::ast
             AstType(source, source_offset, flags),
             _name(std::move(name)) {}
 
-        static std::optional<u_ptr<AstCustomType>> try_parse(TokenSet& set);
+        static std::optional<u_ptr<AstNamedType>> parse_named_type_optional(TokenSet& set);
 
         [[nodiscard]]
         std::string name() const { return this->_name; }
@@ -117,12 +142,37 @@ namespace stride::ast
         [[nodiscard]]
         u_ptr<AstType> clone() const override
         {
-            return std::make_unique<AstCustomType>(*this);
+            return std::make_unique<AstNamedType>(*this);
         }
+
         std::string get_internal_name() override { return this->_name; }
+
+        bool operator==(AstType& other) override
+        {
+            if (const auto* other_named = dynamic_cast<AstNamedType*>(&other))
+            {
+                return this->_name == other_named->_name;
+            }
+            return false;
+        }
     };
 
     u_ptr<AstType> parse_primitive_type(TokenSet& set);
 
     llvm::Type* internal_type_to_llvm_type(AstType* type, llvm::Module* module, llvm::LLVMContext& context);
+
+    u_ptr<AstType> get_dominant_type(AstType* lhs, AstType* rhs);
+
+    /**
+     * Resolves a unique identifier (UID) for the given internal type.
+     *
+     * This function generates a unique identifier for the provided AstType object.
+     * The UID is determined based on the specific characteristics of the type,
+     * such as whether it is a primitive type, custom type, pointer, or reference.
+     *
+     * @param type A pointer to the AstType object for which the UID is to be resolved.
+     *             The AstType can represent either a primitive or a custom type.
+     * @return The unique identifier (UID) associated with the given internal type.
+     */
+    size_t ast_type_to_internal_id(const AstType* type);
 }

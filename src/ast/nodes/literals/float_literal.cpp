@@ -4,28 +4,39 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
-    const Scope& scope,
+    [[maybe_unused]] const Scope& scope,
     TokenSet& set
 )
 {
+    if (const auto reference_token = set.peak_next(); reference_token.type == TokenType::DOUBLE_LITERAL)
+    {
+        const auto next = set.next();
+        return std::make_unique<AstFpLiteral>(
+            set.source(),
+            reference_token.offset,
+            std::stod(next.lexeme),
+            8
+        );
+    }
     if (const auto reference_token = set.peak_next(); reference_token.type == TokenType::FLOAT_LITERAL)
     {
         const auto next = set.next();
-        return std::make_unique<AstFloatLiteral>(
+        return std::make_unique<AstFpLiteral>(
             set.source(),
             reference_token.offset,
-            std::stod(next.lexeme)
+            std::stof(next.lexeme),
+            4
         );
     }
     return std::nullopt;
 }
 
-std::string AstFloatLiteral::to_string()
+std::string AstFpLiteral::to_string()
 {
-    return std::format("FloatLiteral({}, {}b)", this->value(), this->bit_count() / 8);
+    return std::format("FfLiteral({} ({}bit))", this->value(), this->bit_count());
 }
 
-llvm::Value* AstFloatLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstFpLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     if (this->bit_count() > 32)
     {

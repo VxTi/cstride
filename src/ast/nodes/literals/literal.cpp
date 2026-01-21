@@ -48,7 +48,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(c
     return std::nullopt;
 }
 
-bool stride::ast::is_ast_literal(IAstNode* node)
+bool stride::ast::is_literal_ast_node(IAstNode* node)
 {
     return dynamic_cast<AstLiteral*>(node) != nullptr;
 }

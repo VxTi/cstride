@@ -183,7 +183,7 @@ namespace stride::ast
         const std::string _variable_name;
         const std::string _internal_name;
         const u_ptr<AstType> _variable_type;
-        const u_ptr<IAstNode> _initial_value;
+        const u_ptr<AstExpression> _initial_value;
 
     public:
         AstVariableDeclaration(
@@ -191,7 +191,7 @@ namespace stride::ast
             const int source_offset,
             std::string variable_name,
             u_ptr<AstType> variable_type,
-            u_ptr<IAstNode> initial_value,
+            u_ptr<AstExpression> initial_value,
             const int flags,
             std::string internal_name
         ) :
@@ -222,7 +222,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const u_ptr<IAstNode>& get_initial_value() const
+        const u_ptr<AstExpression>& get_initial_value() const
         {
             return this->_initial_value;
         }
@@ -259,10 +259,10 @@ namespace stride::ast
             _rsh(std::move(rsh)) {}
 
         [[nodiscard]]
-        AstExpression& get_left() const { return *this->_lsh.get(); }
+        AstExpression& get_left() const { return *this->_lsh; }
 
         [[nodiscard]]
-        AstExpression& get_right() const { return *this->_rsh.get(); }
+        AstExpression& get_right() const { return *this->_rsh; }
     };
 
     class AstBinaryArithmeticOp :
@@ -382,7 +382,7 @@ namespace stride::ast
     {
         const std::string _variable_name;
         const std::string _internal_name;
-        u_ptr<IAstNode> _value;
+        u_ptr<AstExpression> _value;
         MutativeAssignmentType _operator;
 
     public:
@@ -392,7 +392,7 @@ namespace stride::ast
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
-            u_ptr<IAstNode> value
+            u_ptr<AstExpression> value
         )
             : AstExpression(source, source_offset, {}),
               _variable_name(std::move(variable_name)),
@@ -400,12 +400,16 @@ namespace stride::ast
               _value(std::move(value)),
               _operator(op) {}
 
+        [[nodiscard]]
         const std::string& get_variable_name() const { return _variable_name; }
 
-        IAstNode* get_value() const { return this->_value.get(); }
+        [[nodiscard]]
+        AstExpression* get_value() const { return this->_value.get(); }
 
+        [[nodiscard]]
         const std::string& get_internal_name() const { return this->_internal_name; }
 
+        [[nodiscard]]
         MutativeAssignmentType get_operator() const { return this->_operator; }
 
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
@@ -475,4 +479,7 @@ namespace stride::ast
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
     std::string parse_property_accessor_statement(const Scope& scope, TokenSet& set);
+
+    /// Will attempt to resolve the provided expression into an AstType
+    u_ptr<AstType> resolve_expression_type(const Scope& scope, AstExpression* expr);
 }

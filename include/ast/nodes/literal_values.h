@@ -98,12 +98,12 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
-    class AstIntegerLiteral : public AbstractAstLiteralBase<int64_t>
+    class AstIntLiteral : public AbstractAstLiteralBase<int64_t>
     {
         const int flags;
 
     public:
-        explicit AstIntegerLiteral(
+        explicit AstIntLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const int64_t value,
@@ -124,15 +124,16 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
-    class AstFloatLiteral : public AbstractAstLiteralBase<long double>
+    class AstFpLiteral : public AbstractAstLiteralBase<long double>
     {
     public :
-        explicit AstFloatLiteral(
+        explicit AstFpLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const long double value
+            const long double value,
+            const int byte_count
         ) :
-            AbstractAstLiteralBase(source, source_offset, LiteralType::FLOAT, value, 8 * BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(source, source_offset, LiteralType::FLOAT, value, byte_count * BITS_PER_BYTE) {}
 
         std::string to_string() override;
 
@@ -196,7 +197,5 @@ namespace stride::ast
         TokenSet& set
     );
 
-    size_t resolve_internal_type_id()
-
-    bool is_ast_literal(IAstNode* node);
+    bool is_literal_ast_node(IAstNode* node);
 }

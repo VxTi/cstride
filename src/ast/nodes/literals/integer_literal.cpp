@@ -26,7 +26,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
                               ? std::stoi(reference_token.lexeme, nullptr, 16)
                               : std::stoi(reference_token.lexeme);
 
-        return std::make_unique<AstIntegerLiteral>(
+        return std::make_unique<AstIntLiteral>(
             set.source(),
             reference_token.offset,
             value,
@@ -36,12 +36,12 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
     return std::nullopt;
 }
 
-std::string AstIntegerLiteral::to_string()
+std::string AstIntLiteral::to_string()
 {
     return std::format("IntLiteral({})", value());
 }
 
-llvm::Value* AstIntegerLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstIntLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     return llvm::ConstantInt::get(
         context,

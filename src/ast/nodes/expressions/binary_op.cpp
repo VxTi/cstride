@@ -190,7 +190,7 @@ bool AstBinaryArithmeticOp::is_reducible()
 {
     // A binary operation is reducible if either of both sides is reducible
     // A literal doesn't extend `IReducible`, though is by nature "reducible" in followup steps.
-    return (is_ast_literal(&this->get_left()) && is_ast_literal(&this->get_right()))
+    return (is_literal_ast_node(&this->get_left()) && is_literal_ast_node(&this->get_right()))
         || this->get_left().is_reducible()
         || this->get_right().is_reducible();
 }
@@ -233,7 +233,7 @@ std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
     AstExpression* right_lit
 )
 {
-    /*if (const auto lhs_ptr_i = dynamic_cast<AstIntegerLiteral*>(left_lit);
+    /*if (const auto lhs_ptr_i = dynamic_cast<AstIntLiteral*>(left_lit);
         lhs_ptr_i != nullptr
     )
     {
@@ -254,7 +254,7 @@ IAstNode* AstBinaryArithmeticOp::reduce()
     /*if (!this->is_reducible()) return this;
 
 
-    if (const auto lhs_ptr_i = dynamic_cast<AstIntegerLiteral*>(this->left.get());
+    if (const auto lhs_ptr_i = dynamic_cast<AstIntLiteral*>(this->left.get());
         lhs_ptr_i != nullptr
     )
     {

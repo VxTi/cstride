@@ -292,3 +292,71 @@ bool stride::ast::is_property_accessor_statement(const TokenSet& set)
 
     return initial_identifier && (is_followup_accessor || true);
 }
+
+u_ptr<AstType> stride::ast::resolve_expression_type(const Scope& scope, AstExpression* expr)
+{
+    // If the provided expression is already an AstType, we can easily resolve it
+    if (auto* typed = dynamic_cast<AstType*>(expr))
+    {
+        return u_ptr<AstType>(typed);
+    }
+
+    if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
+    {
+        u_ptr<AstType> lhs_type = resolve_expression_type(scope, &operation->get_left());
+        u_ptr<AstType> rhs_type = resolve_expression_type(scope, &operation->get_right());
+
+        // If both types are equal, then we know we've got the final type.
+        if (*lhs_type == *rhs_type)
+        {
+            return std::move(lhs_type);
+        }
+
+        // Otherwise, we'll have to check which type is dominant.
+        // For example, if we receive an arithmetic operation with two integer types of different
+        // bit sizes, we'll return the integer type with the larger size.
+        // This ensures we reserve the right amount of memory.
+        return get_dominant_type(lhs_type.get(), rhs_type.get());
+    }
+
+    // We continue the same process as before for other expression types.
+
+
+    // For unary expressions it's quite straight-forward; we'll just resolve the operand type.
+    if (const auto *operation = dynamic_cast<AstUnaryOp*>(expr))
+    {
+        return resolve_expression_type(scope, &operation->get_operand());
+    }
+
+    if (dynamic_cast<AstLogicalOp*>(expr) || dynamic_cast<AstComparisonOp*>(expr))
+    {
+        // For logical operations (&&, ||) and comparative ops, the return type is always a boolean.
+        return std::make_unique<AstPrimitiveType>(
+            expr->source,
+            expr->source_offset,
+            PrimitiveType::BOOL,
+            1,
+            0
+        );
+    }
+
+    if (const auto *operation = dynamic_cast<AstVariableReassignment*>(expr))
+    {
+        return resolve_expression_type(scope, operation->get_value());
+    }
+
+    if (const auto *operation = dynamic_cast<AstVariableDeclaration*>(expr))
+    {
+        const auto declared_type = operation->get_variable_type();
+        const auto value_type = resolve_expression_type(scope, operation->get_initial_value().get());
+
+        if (*declared_type == *value_type)
+        {
+            return declared_type->clone();
+        }
+
+        return get_dominant_type( declared_type, value_type.get());
+    }
+
+    throw parsing_error("Unable to resolve expression type");
+}

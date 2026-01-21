@@ -20,14 +20,19 @@ IAstNode* AstVariableReassignment::reduce()
 {
     if (auto* reducible = dynamic_cast<IReducible*>(this->get_value()); reducible != nullptr)
     {
-        return new AstVariableReassignment(
-            this->source,
-            this->source_offset,
-            this->get_variable_name(),
-            this->get_internal_name(),
-            this->get_operator(),
-            u_ptr<IAstNode>(reducible->reduce())
-        );
+        const auto reduced = reducible->reduce();
+
+        if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced); reduced_expr != nullptr)
+        {
+            return new AstVariableReassignment(
+                this->source,
+                this->source_offset,
+                this->get_variable_name(),
+                this->get_internal_name(),
+                this->get_operator(),
+                u_ptr<AstExpression>(reduced_expr)
+            );
+        }
     }
 
     return this;
