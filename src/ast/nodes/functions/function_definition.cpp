@@ -70,7 +70,6 @@ llvm::Value* AstFunctionDeclaration::codegen(
     llvm::IRBuilder<>* irBuilder
 )
 {
-
     llvm::Function* function = module->getFunction(this->get_internal_name());
     if (!function)
     {
@@ -119,6 +118,13 @@ llvm::Value* AstFunctionDeclaration::codegen(
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
         {
             ret_val = synthesisable->codegen(module, context, &builder);
+
+            // Void instructions cannot have a name, but the generator might have assigned one
+            // This way, we prevent LLVM from complaining
+            if (ret_val && ret_val->getType()->isVoidTy() && ret_val->hasName())
+            {
+                ret_val->setName("");
+            }
         }
     }
 
@@ -184,11 +190,13 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // have to parse it a little differenly
     if (!tokens.peak_next_eq(TokenType::RPAREN))
     {
-        auto initial = parse_first_fn_param(scope, tokens);
+        auto initial = parse_standalone_fn_param(scope, tokens);
         parameters.push_back(std::move(initial));
 
         parse_subsequent_fn_params(scope, tokens, parameters);
     }
+
+    tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
 
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
@@ -196,6 +204,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
+    // TODO: Make this a unique hash instead of vague textual representation
     if ((flags & SRFLAG_FN_DEF_EXTERN) == 0)
     {
         for (const auto& param : parameters)
@@ -206,15 +215,15 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     scope.try_define_scoped_symbol(*tokens.source(), fn_name_tok, fn_name, SymbolType::FUNCTION, internal_name);
 
     // The return type of the function, e.g., ": i8"
-    tokens.expect(TokenType::RPAREN);
-    tokens.expect(TokenType::COLON);
+
+    tokens.expect(TokenType::COLON, "Expected a colon after function header type");
     std::unique_ptr<types::AstType> return_type = types::parse_primitive_type(tokens);
 
     std::unique_ptr<AstBlock> body = nullptr;
 
     if (flags & SRFLAG_FN_DEF_EXTERN)
     {
-        tokens.expect(TokenType::SEMICOLON);
+        tokens.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
     }
     else
     {

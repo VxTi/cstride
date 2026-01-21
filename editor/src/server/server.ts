@@ -105,11 +105,10 @@ function handleCompile(ws: WebSocket, code: string) {
     });
 
     process.on('close', (code: number | null) => {
-      const ansiPrefix = !!code && code !== 0 ? '\x1b[31m' : '';
       sendMessage(
         ws,
         WsMessageType.PROCESS_TERMINATED,
-        `${ansiPrefix}Process exited with status code ${code ?? 0}\x1b[0m`
+        `Process exited with status code ${code ?? 0}`
       );
     });
   });

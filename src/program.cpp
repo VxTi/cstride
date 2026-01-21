@@ -151,5 +151,6 @@ void Program::execute(int argc, char* argv[]) const
 
     const int status_code = main_func(argc, argv);
 
-    std::cout << "\nProcess exited with status code " << status_code << std::endl;
+    // Ensure we exit this process with the same status code as the interpreted process
+    exit(status_code);
 }

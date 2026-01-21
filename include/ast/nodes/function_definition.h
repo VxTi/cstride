@@ -12,6 +12,9 @@ namespace stride::ast
 #define SRFLAG_FN_DEF_VARIADIC (0x2)
 #define SRFLAG_FN_DEF_MUTABLE  (0x3)
 
+#define SRFLAG_FN_PARAM_DEF_VARIADIC (0x1)
+#define SRFLAG_FN_PARAM_DEF_MUTABLE  (0x2)
+
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *                                                             *
      *                Function parameter definitions               *
@@ -21,17 +24,20 @@ namespace stride::ast
     {
         const std::string _name;
         const std::unique_ptr<types::AstType> _type;
+        const int _flags;
 
     public:
         explicit AstFunctionParameter(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string param_name,
-            std::unique_ptr<types::AstType> param_type
+            std::unique_ptr<types::AstType> param_type,
+            const int flags
         ) :
             IAstNode(source, source_offset),
             _name(std::move(param_name)),
-            _type(std::move(param_type)) {}
+            _type(std::move(param_type)),
+            _flags(flags) {}
 
         std::string to_string() override;
 
@@ -124,19 +130,20 @@ namespace stride::ast
         TokenSet& tokens
     );
 
-    u_ptr<AstFunctionParameter> parse_first_fn_param(
+    u_ptr<AstFunctionParameter> parse_standalone_fn_param(
         const Scope& scope,
-        TokenSet& tokens
+        TokenSet& set
     );
 
     void parse_subsequent_fn_params(
         const Scope& scope,
-        TokenSet& tokens,
+        TokenSet& set,
         std::vector<u_ptr<AstFunctionParameter>>& parameters
     );
 
-    u_ptr<AstFunctionParameter> parse_variadic_fn_param(
+    void parse_variadic_fn_param(
         const Scope& scope,
-        TokenSet& tokens
+        TokenSet& tokens,
+        std::vector<u_ptr<AstFunctionParameter>>& parameters
     );
 }

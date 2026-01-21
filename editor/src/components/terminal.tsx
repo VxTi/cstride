@@ -55,7 +55,7 @@ export default function TerminalWindow() {
       fontSize: 14,
       allowTransparency: true,
       theme: {
-        background: '#262626',
+        background: '#171717',
       },
     });
     const fitAddon = new FitAddon();
@@ -93,7 +93,7 @@ export default function TerminalWindow() {
   return (
     <div
       style={{ height: `${height}px` }}
-      className="bg-neutral-800 flex flex-col rounded-t-3xl"
+      className={twMerge('bg-neutral-900 flex flex-col rounded-t-4xl mx-1 border border-neutral-700', terminalResizing && 'border-t-blue-500')}
     >
       <TerminalResizeBar onMouseDown={handleMouseDown} />
       <ActionButtons />
@@ -107,14 +107,10 @@ export default function TerminalWindow() {
 function TerminalResizeBar({
   onMouseDown,
 }: Pick<ComponentProps<'div'>, 'onMouseDown'>) {
-  const { terminalResizing } = useCodeContext();
   return (
     <div onMouseDown={onMouseDown} className="h-2 cursor-ns-resize z-10">
       <div
-        className={twMerge(
-          'h-1  transition-colors duration-200',
-          terminalResizing ? 'bg-blue-500' : 'bg-transparent'
-        )}
+        className='h-1  transition-colors duration-200'
       />
     </div>
   );

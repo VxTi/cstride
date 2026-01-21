@@ -36,8 +36,8 @@ export default function ActionButtons() {
   const Icon = processActive ? SquareIcon : PlayIcon;
 
   return (
-    <div className="flex items-center w-full z-1000 px-3">
-      <div className="flex flex-row items-center justify-end gap-1 grow bg-neutral-800 rounded-t-xl">
+    <div className="flex items-center w-full z-1000 px-3 pt-1">
+      <div className="flex flex-row items-center justify-end gap-1 grow rounded-t-xl">
         <ActionButton onClick={clearTerminal}>
           <Trash2Icon className="stroke-2 stroke-white" />
         </ActionButton>
