@@ -412,7 +412,7 @@ std::unique_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(
 }
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(
-    std::shared_ptr<Scope> scope,
+    const std::shared_ptr<Scope>& scope,
     AstExpression* expr
 )
 {
@@ -420,6 +420,24 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_
     if (auto* literal = dynamic_cast<AstLiteral*>(expr))
     {
         return resolve_expression_literal_internal_type(scope, literal);
+    }
+
+    if (auto* identifier = dynamic_cast<AstIdentifier*>(expr))
+    {
+        // Look up type in scope
+        const auto variable_def = scope->get_variable_def(identifier->get_name());
+        if (variable_def == nullptr)
+        {
+            throw parsing_error(
+                make_ast_error(
+                    *identifier->source,
+                    identifier->source_offset,
+                    "Variable not found in scope"
+                )
+            );
+        }
+
+        return std::unique_ptr<IAstInternalFieldType>(variable_def->get_type());
     }
 
     if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
@@ -481,5 +499,5 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_
         return get_dominant_type(declared_type, value_type.get());
     }
 
-    throw parsing_error("Unable to resolve expression type");
+    throw parsing_error("Unable to resolve expression type" + expr->to_string());
 }

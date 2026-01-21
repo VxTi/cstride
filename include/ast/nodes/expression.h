@@ -494,5 +494,5 @@ namespace stride::ast
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
     std::unique_ptr<IAstInternalFieldType> resolve_expression_internal_type(
-        std::shared_ptr<Scope> scope, AstExpression* expr);
+        const std::shared_ptr<Scope>& scope, AstExpression* expr);
 }
