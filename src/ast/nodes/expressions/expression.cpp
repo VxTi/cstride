@@ -67,7 +67,8 @@ std::string AstExpression::to_string()
     return std::format("Expression({})", children_str.substr(0, children_str.length() - 2));
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(Scope& scope, TokenSet& set)
+std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
+    std::shared_ptr<Scope> scope, TokenSet& set)
 {
     if (auto lit = parse_literal_optional(scope, set);
         lit.has_value())
@@ -144,7 +145,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(Sco
         std::string identifier_name = reference_token.lexeme;
         std::string internal_name;
 
-        if (const auto variable_definition = scope.get_variable_def(identifier_name);
+        if (const auto variable_definition = scope->get_variable_def(identifier_name);
             variable_definition != nullptr)
         {
             internal_name = variable_definition->get_internal_symbol_name();
@@ -172,7 +173,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(Sco
  * This can be either binary expressions, e.g., 1 + 1, or comparative expressions, e.g., 1 < 2
  */
 std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
-    Scope& scope,
+    std::shared_ptr<Scope> scope,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs
 )
@@ -223,7 +224,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
 
 std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
     const int expression_type_flags,
-    Scope& scope,
+    std::shared_ptr<Scope> scope,
     TokenSet& set
 )
 {
@@ -272,7 +273,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
 /**
  * General expression parsing. These can occur in global / function scopes
  */
-std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(Scope& scope, TokenSet& set)
+std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(std::shared_ptr<Scope> scope, TokenSet& set)
 {
     return parse_expression_ext(
         SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION,
@@ -281,7 +282,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(Scope& s
     );
 }
 
-std::string stride::ast::parse_property_accessor_statement(Scope& scope, TokenSet& set)
+std::string stride::ast::parse_property_accessor_statement(std::shared_ptr<Scope> scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::IDENTIFIER);
     auto identifier_name = reference_token.lexeme;
@@ -336,7 +337,8 @@ bool stride::ast::is_property_accessor_statement(const TokenSet& set)
  * @return A unique pointer to an IAstInternalFieldType representing the resolved type
  * @throws std::runtime_error If the literal type cannot be resolved (unknown literal subtype)
  */
-std::unique_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(const Scope& scope, AstLiteral* literal)
+std::unique_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(
+    std::shared_ptr<Scope> scope, AstLiteral* literal)
 {
     // "string" -> <string> (primitive)
     if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
@@ -410,7 +412,7 @@ std::unique_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(
 }
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(
-    Scope& scope,
+    std::shared_ptr<Scope> scope,
     AstExpression* expr
 )
 {

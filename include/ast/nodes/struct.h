@@ -76,7 +76,7 @@ namespace stride::ast
         const std::vector<std::unique_ptr<AstStructMember>>& get_members() const { return this->_cases; }
     };
 
-    std::unique_ptr<AstStruct> parse_struct_declaration(Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstStruct> parse_struct_declaration(std::shared_ptr<Scope> scope, TokenSet& tokens);
 
     bool is_struct_declaration(const TokenSet& tokens);
 }

@@ -137,7 +137,7 @@ llvm::Value* AstVariableDeclaration::codegen(
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
-    Scope& scope,
+    std::shared_ptr<Scope> scope,
     TokenSet& set
 )
 {
@@ -148,7 +148,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     int flags = 0;
 
-    if (scope.get_scope_type() == ScopeType::GLOBAL)
+    if (scope->get_scope_type() == ScopeType::GLOBAL)
     {
         flags |= SRFLAG_VAR_DECL_GLOBAL;
     }
@@ -186,16 +186,16 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
 
     std::string internal_name = variable_name;
-    if (scope.get_scope_type() != ScopeType::GLOBAL)
+    if (scope->get_scope_type() != ScopeType::GLOBAL)
     {
         static int var_decl_counter = 0;
         internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
     }
 
-    scope.define_variable(
+    scope->define_field(
         variable_name,
         internal_name,
-        std::shared_ptr<IAstInternalFieldType>(type.get()),
+        type->clone(),
         flags
     );
 

@@ -437,37 +437,41 @@ namespace stride::ast
     int binary_operator_precedence(BinaryOpType type);
 
     /// Parses a complete standalone expression from tokens
-    std::unique_ptr<AstExpression> parse_standalone_expression(Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression(std::shared_ptr<Scope> scope, TokenSet& set);
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
-    std::unique_ptr<AstExpression> parse_expression_ext(int expression_type_flags, Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_expression_ext(
+        int expression_type_flags,
+        std::shared_ptr<Scope> scope,
+        TokenSet& set
+    );
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<AstExpression> parse_standalone_expression_part(Scope& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression_part(std::shared_ptr<Scope> scope, TokenSet& set);
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
         int expression_type_flags,
-        Scope& scope,
+        std::shared_ptr<Scope> scope,
         TokenSet& set
     );
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
-        Scope& scope,
+        std::shared_ptr<Scope> scope,
         TokenSet& set
     );
 
     /// Parses a binary arithmetic operation using precedence climbing
     std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(
-        Scope& scope,
+        std::shared_ptr<Scope> scope,
         TokenSet& set,
         std::unique_ptr<AstExpression> lhs,
         int min_precedence
     );
 
     /// Parses a unary operator expression
-    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(Scope& scope, TokenSet& set);
+    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(std::shared_ptr<Scope> scope, TokenSet& set);
 
     /// Converts a token type to its corresponding logical operator type
     std::optional<LogicalOpType> get_logical_op_type(TokenType type);
@@ -486,8 +490,9 @@ namespace stride::ast
     bool is_property_accessor_statement(const TokenSet& set);
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
-    std::string parse_property_accessor_statement(Scope& scope, TokenSet& set);
+    std::string parse_property_accessor_statement(std::shared_ptr<Scope> scope, TokenSet& set);
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
-    std::unique_ptr<IAstInternalFieldType> resolve_expression_internal_type(Scope& scope, AstExpression* expr);
+    std::unique_ptr<IAstInternalFieldType> resolve_expression_internal_type(
+        std::shared_ptr<Scope> scope, AstExpression* expr);
 }

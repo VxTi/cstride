@@ -66,7 +66,8 @@ namespace stride::ast
         IdentifiableSymbolType get_symbol_type() const { return this->_type; }
     };
 
-    class VariableSymbolDef
+    /// Can be either a variable or a field in a struct/class
+    class FieldSymbolDef
         : public ISymbolDef
     {
         IAstInternalFieldType* _type;
@@ -74,14 +75,14 @@ namespace stride::ast
         bool is_mutable;
 
     public:
-        explicit VariableSymbolDef(
-            const std::string& variable_name,
+        explicit FieldSymbolDef(
+            const std::string& field_name,
             const std::string& internal_name,
             IAstInternalFieldType* type,
             const int flags
         ) : ISymbolDef(internal_name),
             _type(type),
-            _variable_name(variable_name),
+            _variable_name(field_name),
             is_mutable(flags & SRFLAG_VAR_MUTABLE) {}
 
         IAstInternalFieldType* get_type() const { return this->_type; }
@@ -124,7 +125,7 @@ namespace stride::ast
         std::vector<std::shared_ptr<ISymbolDef>> symbols;
 
         Scope(
-            std::shared_ptr<Scope>&& parent,
+            std::shared_ptr<Scope> parent,
             const ScopeType type
         )
             : _type(type),
@@ -142,7 +143,7 @@ namespace stride::ast
 
         ScopeType get_scope_type() const { return this->_type; }
 
-        VariableSymbolDef* get_variable_def(const std::string& variable_name) const;
+        FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
 
         SymbolFnDefinition* get_function_def(const std::string& function_name) const;
 
@@ -155,8 +156,8 @@ namespace stride::ast
             const std::shared_ptr<IAstInternalFieldType>& return_type
         );
 
-        void define_variable(
-            const std::string& variable_name,
+        void define_field(
+            const std::string& field_name,
             const std::string& internal_name,
             const std::shared_ptr<IAstInternalFieldType>& type,
             int flags

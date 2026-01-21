@@ -5,7 +5,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<AstBlock> parse_else_optional(Scope& scope, TokenSet& set)
+std::unique_ptr<AstBlock> parse_else_optional(std::shared_ptr<Scope> scope, TokenSet& set)
 {
     if (!set.peak_next_eq(TokenType::KEYWORD_ELSE))
     {
@@ -32,11 +32,11 @@ std::unique_ptr<AstBlock> parse_else_optional(Scope& scope, TokenSet& set)
     );
 }
 
-std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(Scope& scope, TokenSet& set)
+std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(std::shared_ptr<Scope> scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IF);
 
-    auto if_header_scope = Scope(scope, ScopeType::BLOCK);
+    auto if_header_scope = std::make_shared<Scope>(std::shared_ptr(scope), ScopeType::BLOCK);
     auto if_header_body = collect_parenthesized_block(set);
 
     if (!if_header_body.has_value())

@@ -3,7 +3,8 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(const Scope& scope, TokenSet& tokens)
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
+    const std::shared_ptr<Scope>& scope, TokenSet& tokens)
 {
     if (
         auto str = parse_string_literal_optional(scope, tokens);

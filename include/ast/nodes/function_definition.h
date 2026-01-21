@@ -25,7 +25,7 @@ namespace stride::ast
     class AstFunctionParameter : IAstNode
     {
         const std::string _name;
-        const std::unique_ptr<IAstInternalFieldType> _type;
+        const std::shared_ptr<IAstInternalFieldType> _type;
         const int _flags;
 
     public:
@@ -33,12 +33,12 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string param_name,
-            std::unique_ptr<IAstInternalFieldType> param_type,
+            const std::shared_ptr<IAstInternalFieldType> &param_type,
             const int flags
         ) :
             IAstNode(source, source_offset),
             _name(std::move(param_name)),
-            _type(std::move(param_type)),
+            _type(param_type),
             _flags(flags) {}
 
         std::string to_string() override;
@@ -128,23 +128,23 @@ namespace stride::ast
     bool is_fn_declaration(const TokenSet& tokens);
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
-        Scope& scope,
+        std::shared_ptr<Scope> scope,
         TokenSet& tokens
     );
 
     std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(
-        Scope& scope,
+        std::shared_ptr<Scope> scope,
         TokenSet& set
     );
 
     void parse_subsequent_fn_params(
-        Scope& scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
     void parse_variadic_fn_param(
-        Scope& scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& tokens,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );

@@ -19,7 +19,7 @@ bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
 {
     for (const auto symbol_def : this->symbols)
     {
-        if (auto* var_def = dynamic_cast<VariableSymbolDef*>(symbol_def.get()))
+        if (const auto* var_def = dynamic_cast<FieldSymbolDef*>(symbol_def.get()))
         {
             if (var_def->get_internal_symbol_name() == variable_name)
             {
@@ -91,22 +91,26 @@ void Scope::define_function(
     ));
 }
 
-void Scope::define_variable(
-    const std::string& variable_name,
+void Scope::define_field(
+    const std::string& field_name,
     const std::string& internal_name,
     const std::shared_ptr<IAstInternalFieldType>& type,
     const int flags
 )
 {
-    if (is_variable_defined_in_scope(variable_name))
+    if (is_variable_defined_in_scope(field_name))
     {
         throw parsing_error(
-            "Variable '" + variable_name + "' is already defined in this scope"
+            make_ast_error(
+                *type->source,
+                type->source_offset,
+                "Variable '" + field_name + "' is already defined in this scope"
+            )
         );
     }
 
-    this->symbols.push_back(std::make_shared<VariableSymbolDef>(
-        variable_name,
+    this->symbols.push_back(std::make_shared<FieldSymbolDef>(
+        field_name,
         internal_name,
         type.get(),
         flags
@@ -123,11 +127,11 @@ void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymb
 }
 
 
-VariableSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
+FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
 {
     for (const auto symbol_def : this->symbols)
     {
-        if (auto* var_def = dynamic_cast<VariableSymbolDef*>(symbol_def.get()))
+        if (auto* var_def = dynamic_cast<FieldSymbolDef*>(symbol_def.get()))
         {
             if (var_def->get_variable_name() == variable_name
                 || var_def->get_internal_symbol_name() == variable_name)

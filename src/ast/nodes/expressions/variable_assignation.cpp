@@ -143,7 +143,9 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
 }
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
-    Scope& scope, TokenSet& set)
+    std::shared_ptr<Scope> scope,
+    TokenSet& set
+)
 {
     // Can be either a singular field, e.g., a regular variable,
     // or member access, e.g., <member>.<field>
@@ -152,7 +154,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
         const auto reference_token = set.peak_next();
 
         std::string reassignment_iden_name = reference_token.lexeme;
-        auto reassign_internal_variable_name = scope.get_variable_def(reassignment_iden_name);
+        auto reassign_internal_variable_name = scope->get_variable_def(reassignment_iden_name);
 
         if (!reassign_internal_variable_name)
         {
@@ -176,7 +178,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
                 offset += 2;
                 const auto accessor_token = set.peak(offset + 1);
 
-                const auto accessor_internal_name_def = scope.get_variable_def(accessor_token.lexeme);
+                const auto accessor_internal_name_def = scope->get_variable_def(accessor_token.lexeme);
 
                 if (!accessor_internal_name_def)
                 {

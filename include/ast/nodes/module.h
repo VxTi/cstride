@@ -26,5 +26,5 @@ namespace stride::ast
 
     bool is_module_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstModule> parse_module_statement(const Scope& scope, TokenSet& tokens);
+    std::unique_ptr<AstModule> parse_module_statement(std::shared_ptr<Scope>, TokenSet& tokens);
 }

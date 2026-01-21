@@ -3,7 +3,7 @@
 using namespace stride::ast;
 
 void stride::ast::parse_variadic_fn_param(
-    Scope& scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& tokens,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
@@ -14,7 +14,7 @@ void stride::ast::parse_variadic_fn_param(
 }
 
 void stride::ast::parse_subsequent_fn_params(
-    Scope& scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& set,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
@@ -23,6 +23,15 @@ void stride::ast::parse_subsequent_fn_params(
     {
         set.next(); // Skip comma
         const auto next = set.peak_next();
+
+        if (parameters.size() > MAX_FUNCTION_PARAMETERS)
+        {
+            throw parsing_error(make_ast_error(
+                *set.source(),
+                next.offset,
+                "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters"
+            ));
+        }
 
         // If the next token is `...`, then we assume it's variadic. This parsing is done elsewhere.
         /* TODO: Further implement
@@ -67,7 +76,7 @@ std::string AstFunctionParameter::to_string()
 }
 
 std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
-    [[maybe_unused]] Scope& scope,
+    std::shared_ptr<Scope> scope,
     TokenSet& set
 )
 {
@@ -80,16 +89,18 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     }
 
     const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected a function parameter name");
-
+    auto param_name = reference_token.lexeme;
     set.expect(TokenType::COLON);
 
-    std::unique_ptr<IAstInternalFieldType> type_ptr = parse_ast_type(set);
+
+    std::shared_ptr type_ptr = parse_ast_type(set);
+    scope->define_field(param_name, reference_token.lexeme, type_ptr, flags);
 
     return std::make_unique<AstFunctionParameter>(
         set.source(),
         reference_token.offset,
         reference_token.lexeme,
-        std::move(type_ptr),
+        type_ptr,
         flags
     );
 }

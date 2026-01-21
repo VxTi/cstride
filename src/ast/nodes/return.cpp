@@ -10,7 +10,7 @@ bool stride::ast::is_return_statement(const TokenSet& tokens)
     return tokens.peak_next_eq(TokenType::KEYWORD_RETURN);
 }
 
-std::unique_ptr<AstReturn> stride::ast::parse_return_statement(Scope& scope, TokenSet& set)
+std::unique_ptr<AstReturn> stride::ast::parse_return_statement(std::shared_ptr<Scope> scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_RETURN);
 

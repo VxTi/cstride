@@ -173,7 +173,7 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
     }
 }
 
-std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(Scope& scope, TokenSet& set)
+std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(std::shared_ptr<Scope> scope, TokenSet& set)
 {
     const auto next = set.peak_next();
 
@@ -220,7 +220,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
 
         const auto operation_tok = set.next();
 
-        auto variable_def = scope.get_variable_def(iden_name);
+        auto variable_def = scope->get_variable_def(iden_name);
         if (!variable_def)
         {
             return std::nullopt;

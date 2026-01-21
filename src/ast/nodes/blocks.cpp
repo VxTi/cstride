@@ -113,7 +113,7 @@ std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
     return collect_block_variant(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_block(Scope& scope, TokenSet& set)
+std::unique_ptr<AstBlock> stride::ast::parse_block(std::shared_ptr<Scope> scope, TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 

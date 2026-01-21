@@ -61,7 +61,7 @@ std::string AstBinaryArithmeticOp::to_string()
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
 std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_binary_op(
-    Scope& scope,
+    std::shared_ptr<Scope> scope,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs,
     const int min_precedence

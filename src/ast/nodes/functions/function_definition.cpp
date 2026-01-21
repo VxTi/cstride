@@ -166,7 +166,7 @@ bool stride::ast::is_fn_declaration(const TokenSet& tokens)
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
-    Scope& scope,
+    std::shared_ptr<Scope> scope,
     TokenSet& tokens
 )
 {
@@ -184,6 +184,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
     const auto fn_name = fn_name_tok.lexeme;
 
+    auto function_scope = std::make_shared<Scope>(scope, ScopeType::FUNCTION);
+
     tokens.expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
@@ -191,19 +193,10 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // have to parse it a little differenly
     if (!tokens.peak_next_eq(TokenType::RPAREN))
     {
-        if (parameters.size() > MAX_FUNCTION_PARAMETERS)
-        {
-            throw parsing_error(make_ast_error(
-                *tokens.source(),
-                reference_token.offset,
-                "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters"
-            ));
-        }
-
-        auto initial = parse_standalone_fn_param(scope, tokens);
+        auto initial = parse_standalone_fn_param(function_scope, tokens);
         parameters.push_back(std::move(initial));
 
-        parse_subsequent_fn_params(scope, tokens, parameters);
+        parse_subsequent_fn_params(function_scope, tokens, parameters);
     }
 
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
@@ -226,7 +219,11 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     {
         internal_name = resolve_internal_function_name(parameter_types, fn_name);
     }
-    scope.define_function(fn_name, parameter_types, std::shared_ptr<IAstInternalFieldType>(return_type.get()));
+    scope->define_function(
+        fn_name,
+        parameter_types,
+        return_type->clone()
+    );
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -236,7 +233,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
     else
     {
-        Scope function_scope(scope, ScopeType::FUNCTION);
         body = parse_block(function_scope, tokens);
 
         if (body != nullptr && body->children().empty())

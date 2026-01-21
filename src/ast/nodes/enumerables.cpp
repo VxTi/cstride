@@ -13,12 +13,12 @@ using namespace stride::ast;
  * IDENTIFIER: <literal value>;
  * </code>
  */
-std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(Scope& scope, TokenSet& tokens)
+std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(std::shared_ptr<Scope> scope, TokenSet& tokens)
 {
     const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
     auto member_sym = member_name_tok.lexeme;
 
-    scope.define_symbol(member_sym, IdentifiableSymbolType::ENUM_MEMBER);
+    scope->define_symbol(member_sym, IdentifiableSymbolType::ENUM_MEMBER);
 
     tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
 
@@ -64,13 +64,13 @@ std::string AstEnumerable::to_string()
 }
 
 
-std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(Scope& scope, TokenSet& set)
+std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(std::shared_ptr<Scope> scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_ENUM);
     const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
     auto enumerable_name = enumerable_name_tok.lexeme;
 
-    scope.define_symbol(enumerable_name, IdentifiableSymbolType::ENUM);
+    scope->define_symbol(enumerable_name, IdentifiableSymbolType::ENUM);
 
     const auto opt_enum_body_subset = collect_block(set);
 
@@ -81,7 +81,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(Scope& 
 
     std::vector<std::unique_ptr<AstEnumerableMember>> members = {};
 
-    auto nested_scope = Scope(scope, ScopeType::BLOCK);
+    auto nested_scope = std::make_shared<Scope>(std::shared_ptr(scope), ScopeType::BLOCK);
     auto enum_body_subset = opt_enum_body_subset.value();
 
     while (enum_body_subset.has_next())
