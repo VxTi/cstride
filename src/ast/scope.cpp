@@ -3,6 +3,8 @@
 
 using namespace stride::ast;
 
+SymbolFnDefinition::~SymbolFnDefinition() = default;
+
 std::shared_ptr<Scope> Scope::traverse_to_root()
 {
     auto* global_scope = this;

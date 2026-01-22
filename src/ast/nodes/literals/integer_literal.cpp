@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "ast/nodes/literal_values.h"
 #include <llvm/IR/Constants.h>
 
@@ -20,11 +22,13 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
     if (const auto is_hex_type = set.peak(offset).type == TokenType::HEX_LITERAL;
         set.peak(offset).type == TokenType::INTEGER_LITERAL || is_hex_type)
     {
+        std::string input = reference_token.lexeme + set.peak(offset).lexeme;
         set.skip(offset + 1);
 
+
         const int value = is_hex_type
-                              ? std::stoi(reference_token.lexeme, nullptr, 16)
-                              : std::stoi(reference_token.lexeme);
+                              ? std::stoi(input, nullptr, 16)
+                              : std::stoi(input);
 
         return std::make_unique<AstIntLiteral>(
             set.source(),
