@@ -109,8 +109,13 @@ namespace stride::ast
             const int64_t value,
             const int flags = SRFLAG_INT_SIGNED
         ) :
-            AbstractAstLiteralBase(source, source_offset, LiteralType::INTEGER, value,
-                                   BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)),
+            AbstractAstLiteralBase(
+                source,
+                source_offset,
+                LiteralType::INTEGER,
+                value,
+                BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)
+            ),
             flags(flags) {}
 
         [[nodiscard]]

@@ -33,7 +33,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string param_name,
-            const std::shared_ptr<IAstInternalFieldType> &param_type,
+            std::shared_ptr<IAstInternalFieldType> param_type,
             const int flags
         ) :
             IAstNode(source, source_offset),
@@ -47,10 +47,12 @@ namespace stride::ast
         std::string get_name() const { return this->_name; }
 
         [[nodiscard]]
-        std::shared_ptr<IAstInternalFieldType> get_type() const { return this->_type; }
+        IAstInternalFieldType* get_type() const { return this->_type.get(); }
+
+        ~AstFunctionParameter() override = default;
     };
 
-    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  *
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      *                                                             *
      *                Function declaration definitions             *
      *                                                             *
@@ -63,7 +65,7 @@ namespace stride::ast
         std::string _name;
         std::string _internal_name;
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
-        std::unique_ptr<IAstInternalFieldType> _return_type;
+        std::shared_ptr<IAstInternalFieldType> _return_type;
         int _flags;
 
     public:
@@ -74,7 +76,7 @@ namespace stride::ast
             std::string internal_name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<IAstNode> body,
-            std::unique_ptr<IAstInternalFieldType> return_type,
+            std::shared_ptr<IAstInternalFieldType> return_type,
             const int flags
         ) :
             IAstNode(source, source_offset),
@@ -107,7 +109,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::unique_ptr<IAstInternalFieldType>& return_type() const { return this->_return_type; }
+        const std::shared_ptr<IAstInternalFieldType>& return_type() const { return this->_return_type; }
 
         [[nodiscard]]
         bool is_extern() const { return this->_flags & SRFLAG_FN_DEF_EXTERN; }
@@ -133,7 +135,7 @@ namespace stride::ast
     );
 
     std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 

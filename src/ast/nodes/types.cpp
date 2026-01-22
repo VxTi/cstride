@@ -230,7 +230,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(TokenSet& set
         set.throw_error("Expected a type in function parameter declaration");
     }
 
-    return std::move(type_ptr);
+    return type_ptr;
 }
 
 llvm::Type* stride::ast::internal_type_to_llvm_type(

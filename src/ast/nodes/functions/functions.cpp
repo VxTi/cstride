@@ -11,7 +11,7 @@ std::string stride::ast::resolve_internal_function_name(
     int parameter_offset = 0;
 
     // Not perfect, but semi unique
-    for (const auto& type : parameter_types)
+    for (const auto &type : parameter_types)
     {
         type_hash |= ast_type_to_internal_id(type.get());
         type_hash <<= parameter_offset;

@@ -2,8 +2,6 @@
 
 #include <iostream>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
@@ -16,36 +14,44 @@
 
 using namespace stride;
 
-Program::Program(std::vector<std::string> files)
+void Program::parse_files(const std::vector<std::string>& files)
 {
-    std::vector<ProgramObject> nodes;
     this->_global_scope = std::make_shared<ast::Scope>(ast::ScopeType::GLOBAL);
+    this->_files = files;
 
     for (const auto& file : files)
     {
-        auto root_node = ast::parser::parse(*this, file);
+        auto root_node = ast::parser::parse_file(*this, file);
 
         if (const auto reducible = dynamic_cast<ast::IReducible*>(root_node.get());
             reducible && reducible->is_reducible())
         {
-            const auto reduced = reducible->reduce();
-            nodes.emplace_back(std::move(reduced));
+            // It's possible the node can be completely reduced,
+            // so we'll have to be careful here.
+            if (auto* reduced_raw = reducible->reduce())
+            {
+                std::unique_ptr<ast::IAstNode> reduced_node(reduced_raw);
+
+                this->_program_objects.push_back(
+                    std::make_unique<ProgramObject>(std::move(reduced_node))
+                );
+            }
         }
         else
         {
-            nodes.emplace_back(std::move(root_node));
+            this->_program_objects.push_back(
+                std::make_unique<ProgramObject>(std::move(root_node))
+            );
         }
     }
-
-    this->_nodes = std::move(nodes);
 }
 
 void Program::print_ast_nodes() const
 {
-    for (const auto& node : _nodes)
+    for (const auto& node : _program_objects)
     {
-        std::cout << node.root()->source->path;
-        std::cout << node.root()->to_string() << std::endl;
+        std::cout << node->get_root_ast_node()->source->path;
+        std::cout << node->get_root_ast_node()->to_string() << std::endl;
     }
 }
 
@@ -53,12 +59,12 @@ void Program::execute(int argc, char* argv[]) const
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    if (_nodes.empty())
+    if (_program_objects.empty())
     {
         return;
     }
     // For debugging purposes, comment this out to see the generated AST nodes
-    this->print_ast_nodes();
+    // this->print_ast_nodes();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -94,22 +100,22 @@ void Program::execute(int argc, char* argv[]) const
 
     // First we'll define symbols for all nodes
     // This allows for function calls even if they're defined below the callee
-    for (const auto& node : _nodes)
+    for (const auto& node : _program_objects)
     {
-        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node.root()))
+        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
         {
             synthesisable->define_symbols(module.get(), context, &builder);
         }
     }
 
-    for (const auto& node : _nodes)
+    for (const auto& node : _program_objects)
     {
-        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node.root()))
+        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
         {
             if (const auto entry = synthesisable->codegen(module.get(), context, &builder); !entry)
             {
                 throw std::runtime_error(
-                    "Failed to build executable for file " + node.root()->source->path
+                    "Failed to build executable for file " + node->get_root_ast_node()->source->path
                 );
             }
         }

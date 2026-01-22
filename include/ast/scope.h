@@ -70,7 +70,7 @@ namespace stride::ast
     class FieldSymbolDef
         : public ISymbolDef
     {
-        IAstInternalFieldType* _type;
+        std::shared_ptr<IAstInternalFieldType> _type;
         std::string _variable_name;
         bool is_mutable;
 
@@ -78,14 +78,14 @@ namespace stride::ast
         explicit FieldSymbolDef(
             const std::string& field_name,
             const std::string& internal_name,
-            IAstInternalFieldType* type,
+            std::shared_ptr<IAstInternalFieldType> type,
             const int flags
         ) : ISymbolDef(internal_name),
-            _type(type),
+            _type(std::move(type)),
             _variable_name(field_name),
             is_mutable(flags & SRFLAG_VAR_MUTABLE) {}
 
-        IAstInternalFieldType* get_type() const { return this->_type; }
+        IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
         const std::string& get_variable_name() const { return this->_variable_name; }
     };
@@ -98,17 +98,21 @@ namespace stride::ast
 
     public:
         explicit SymbolFnDefinition(
-            const std::vector<std::shared_ptr<IAstInternalFieldType>>& parameter_types,
-            const std::shared_ptr<IAstInternalFieldType>& return_type,
+            std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types,
+            std::shared_ptr<IAstInternalFieldType> return_type,
             const std::string& internal_name
         ) :
             ISymbolDef(internal_name),
             _parameter_types(std::move(parameter_types)),
             _return_type(std::move(return_type)) {}
 
-        std::vector<std::shared_ptr<IAstInternalFieldType>> get_parameter_types() const
+        std::vector<const IAstInternalFieldType*> get_parameter_types() const
         {
-            return this->_parameter_types;
+            std::vector<const IAstInternalFieldType*> out;
+            out.reserve(this->_parameter_types.size());
+            for (const auto& p : this->_parameter_types)
+                out.push_back(p.get());
+            return out;
         }
 
         const IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
@@ -122,24 +126,16 @@ namespace stride::ast
         ScopeType _type;
         std::shared_ptr<Scope> parent_scope;
 
-        std::vector<std::shared_ptr<ISymbolDef>> symbols;
+        std::vector<std::unique_ptr<ISymbolDef>> symbols = {};
 
-        Scope(
+        explicit Scope(
             std::shared_ptr<Scope> parent,
             const ScopeType type
-        )
-            : _type(type),
-              parent_scope(std::move(parent)),
-              symbols({}) {}
+        ) : _type(type),
+            parent_scope(std::move(parent)) {}
 
         explicit Scope(const ScopeType type)
             : Scope(nullptr, type) {}
-
-        explicit Scope(const Scope& parent, const ScopeType scope)
-            : Scope(
-                std::shared_ptr<Scope>(const_cast<Scope*>(&parent), [](Scope*) {}),
-                scope
-            ) {}
 
         ScopeType get_scope_type() const { return this->_type; }
 
@@ -153,7 +149,7 @@ namespace stride::ast
         void define_function(
             const std::string& internal_function_name,
             std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types,
-            const std::shared_ptr<IAstInternalFieldType>& return_type
+            std::shared_ptr<IAstInternalFieldType> return_type
         );
 
         void define_field(

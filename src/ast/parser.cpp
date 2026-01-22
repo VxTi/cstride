@@ -12,10 +12,8 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstNode> parser::parse(const Program &program, const std::string& source_path)
+std::unique_ptr<IAstNode> parser::parse_file(const Program& program, const std::string& source_path)
 {
-
-
     const auto source_file = read_file(source_path);
     auto tokens = tokenizer::tokenize(source_file);
 

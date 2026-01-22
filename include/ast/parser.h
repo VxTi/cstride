@@ -12,7 +12,7 @@ namespace stride::ast
     namespace parser
     {
         [[nodiscard]]
-        std::unique_ptr<IAstNode> parse(const Program &program, const std::string& source_path);
+        std::unique_ptr<IAstNode> parse_file(const Program &program, const std::string& source_path);
     }
 
     std::unique_ptr<IAstNode> parse_next_statement(const std::shared_ptr<Scope>& scope, TokenSet& set);

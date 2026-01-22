@@ -30,7 +30,7 @@ namespace stride::ast
         const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
     };
 
-    std::unique_ptr<AstBlock> parse_block(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::unique_ptr<AstBlock> parse_block(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     std::unique_ptr<AstBlock> parse_sequential(const std::shared_ptr<Scope>& scope, TokenSet& set);
 

@@ -15,7 +15,7 @@ std::unique_ptr<AstBlock> parse_else_optional(std::shared_ptr<Scope> scope, Toke
     const auto reference_token = set.next();
 
     // In case we encounter a `{` after an `if ... else {`, we'll
-    // have to parse the block separately
+    // have to parse_file the block separately
     if (set.peak_next_eq(TokenType::LBRACE))
     {
         return parse_block(scope, set);
@@ -24,7 +24,7 @@ std::unique_ptr<AstBlock> parse_else_optional(std::shared_ptr<Scope> scope, Toke
     std::vector<std::unique_ptr<IAstNode>> nodes;
     nodes.push_back(parse_next_statement(scope, set));
 
-    // Otherwise, we can just parse it as a next statement.
+    // Otherwise, we can just parse_file it as a next statement.
     return std::make_unique<AstBlock>(
         set.source(),
         reference_token.offset,

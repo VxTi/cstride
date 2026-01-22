@@ -1,5 +1,3 @@
-#include <algorithm>
-
 #include "ast/scope.h"
 #include "errors.h"
 
@@ -17,7 +15,7 @@ std::shared_ptr<Scope> Scope::traverse_to_root()
 
 bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
 {
-    for (const auto symbol_def : this->symbols)
+    for (const auto& symbol_def : this->symbols)
     {
         if (const auto* var_def = dynamic_cast<FieldSymbolDef*>(symbol_def.get()))
         {
@@ -82,12 +80,14 @@ bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, cons
 void Scope::define_function(
     const std::string& internal_function_name,
     std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types,
-    const std::shared_ptr<IAstInternalFieldType>& return_type
+    std::shared_ptr<IAstInternalFieldType> return_type
 )
 {
     const auto global_scope = this->traverse_to_root();
-    global_scope->symbols.push_back(std::make_shared<SymbolFnDefinition>(
-        parameter_types, return_type, internal_function_name
+    global_scope->symbols.push_back(std::make_unique<SymbolFnDefinition>(
+        std::move(parameter_types),
+        std::move(return_type),
+        internal_function_name
     ));
 }
 
@@ -109,10 +109,10 @@ void Scope::define_field(
         );
     }
 
-    this->symbols.push_back(std::make_shared<FieldSymbolDef>(
+    this->symbols.push_back(std::make_unique<FieldSymbolDef>(
         field_name,
         internal_name,
-        type.get(),
+        type,
         flags
     ));
 }
@@ -120,7 +120,7 @@ void Scope::define_field(
 void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymbolType type)
 {
     const auto global_scope = this->traverse_to_root();
-    global_scope->symbols.push_back(std::make_shared<IdentifiableSymbolDef>(
+    global_scope->symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
         type,
         symbol_name
     ));
@@ -129,7 +129,7 @@ void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymb
 
 FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
 {
-    for (const auto symbol_def : this->symbols)
+    for (const auto& symbol_def : this->symbols)
     {
         if (auto* var_def = dynamic_cast<FieldSymbolDef*>(symbol_def.get()))
         {
@@ -145,7 +145,7 @@ FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
 
 IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_name) const
 {
-    for (const auto symbol_def : this->symbols)
+    for (const auto& symbol_def : this->symbols)
     {
         if (auto* identif_def = dynamic_cast<IdentifiableSymbolDef*>(symbol_def.get()))
         {
@@ -160,7 +160,7 @@ IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_name) con
 
 SymbolFnDefinition* Scope::get_function_def(const std::string& function_name) const
 {
-    for (const auto symbol_def : this->symbols)
+    for (const auto& symbol_def : this->symbols)
     {
         if (auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol_def.get()))
         {

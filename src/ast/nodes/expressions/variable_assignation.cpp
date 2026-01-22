@@ -158,9 +158,6 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 
         if (!reassign_internal_variable_name)
         {
-            // Variable isn't found.
-            std::cout << "Warning - Variable '" << reassignment_iden_name <<
-                "' not found in scope. Skipping reassignment.\n";
             return std::nullopt;
         }
 

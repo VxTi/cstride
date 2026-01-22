@@ -85,7 +85,7 @@ llvm::Value* AstVariableDeclaration::codegen(
             initializer = llvm::Constant::getNullValue(var_type);
         }
 
-        auto* global_var = new llvm::GlobalVariable(
+        return new llvm::GlobalVariable(
             *module,
             var_type,
             (this->get_flags() & SRFLAG_VAR_DECL_MUTABLE) == 0, // isConstant
@@ -93,8 +93,6 @@ llvm::Value* AstVariableDeclaration::codegen(
             initializer,
             this->get_internal_name()
         );
-
-        return global_var;
     }
 
     // Local variable - use AllocaInst

@@ -166,7 +166,7 @@ bool stride::ast::is_fn_declaration(const TokenSet& tokens)
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
-    std::shared_ptr<Scope> scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& tokens
 )
 {
@@ -203,6 +203,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
     auto return_type = parse_ast_type(tokens);
 
+    std::shared_ptr<IAstInternalFieldType> return_type_shared = std::move(return_type);
+
 
     std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types = {};
     for (const auto& param : parameters)
@@ -219,11 +221,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     {
         internal_name = resolve_internal_function_name(parameter_types, fn_name);
     }
-    scope->define_function(
-        fn_name,
-        parameter_types,
-        return_type->clone()
-    );
+    scope->define_function(fn_name, parameter_types, return_type_shared);
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -249,7 +247,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         internal_name,
         std::move(parameters),
         std::move(body),
-        std::move(return_type),
+        return_type_shared,
         flags
     );
 }

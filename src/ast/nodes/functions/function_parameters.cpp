@@ -72,11 +72,13 @@ void stride::ast::parse_subsequent_fn_params(
 
 std::string AstFunctionParameter::to_string()
 {
-    return std::format("{}({})", this->get_name(), this->get_type().get()->to_string());
+    const auto name = this->get_name();
+    const auto type_str = this->get_type()->to_string();
+    return std::format("{}({})", name, type_str);
 }
 
 std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
-    std::shared_ptr<Scope> scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& set
 )
 {
@@ -89,18 +91,20 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     }
 
     const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected a function parameter name");
-    auto param_name = reference_token.lexeme;
+    const auto param_name = reference_token.lexeme;
     set.expect(TokenType::COLON);
 
+    auto fn_param_type = parse_ast_type(set);
 
-    std::shared_ptr type_ptr = parse_ast_type(set);
-    scope->define_field(param_name, reference_token.lexeme, type_ptr, flags);
+    std::shared_ptr<IAstInternalFieldType> fn_param_type_shared = std::move(fn_param_type);
+
+    scope->define_field(param_name, reference_token.lexeme, fn_param_type_shared, flags);
 
     return std::make_unique<AstFunctionParameter>(
         set.source(),
         reference_token.offset,
         reference_token.lexeme,
-        type_ptr,
+        fn_param_type_shared,
         flags
     );
 }
