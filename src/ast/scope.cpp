@@ -5,14 +5,14 @@
 
 using namespace stride::ast;
 
-Scope* Scope::traverse_to_root()
+std::shared_ptr<Scope> Scope::traverse_to_root()
 {
-    auto global_scope = this;
-    while (global_scope->parent_scope != nullptr)
+    auto* global_scope = this;
+    while (global_scope != nullptr && global_scope->parent_scope != nullptr)
     {
         global_scope = global_scope->parent_scope.get();
     }
-    return global_scope;
+    return std::shared_ptr<Scope>(global_scope, [](Scope*) {});
 }
 
 bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
@@ -85,9 +85,9 @@ void Scope::define_function(
     const std::shared_ptr<IAstInternalFieldType>& return_type
 )
 {
-    auto* global_scope = this->traverse_to_root();
+    const auto global_scope = this->traverse_to_root();
     global_scope->symbols.push_back(std::make_shared<SymbolFnDefinition>(
-        std::move(parameter_types), return_type, internal_function_name
+        parameter_types, return_type, internal_function_name
     ));
 }
 
@@ -119,7 +119,7 @@ void Scope::define_field(
 
 void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymbolType type)
 {
-    auto* global_scope = this->traverse_to_root();
+    const auto global_scope = this->traverse_to_root();
     global_scope->symbols.push_back(std::make_shared<IdentifiableSymbolDef>(
         type,
         symbol_name

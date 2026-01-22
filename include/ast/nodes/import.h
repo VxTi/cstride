@@ -44,5 +44,5 @@ namespace stride::ast
 
     bool is_import_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstImport> parse_import_statement(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::unique_ptr<AstImport> parse_import_statement(const std::shared_ptr<Scope>& scope, TokenSet& set);
 }

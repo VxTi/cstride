@@ -81,7 +81,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(std::sh
 
     std::vector<std::unique_ptr<AstEnumerableMember>> members = {};
 
-    auto nested_scope = std::make_shared<Scope>(std::shared_ptr(scope), ScopeType::BLOCK);
+    auto nested_scope = std::make_shared<Scope>(scope, ScopeType::BLOCK);
     auto enum_body_subset = opt_enum_body_subset.value();
 
     while (enum_body_subset.has_next())

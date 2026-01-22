@@ -80,7 +80,7 @@ std::vector<std::string> consume_import_submodules(TokenSet& tokens)
 /**
  * Attempts to parse an import expression from the given TokenSet.
  */
-std::unique_ptr<AstImport> stride::ast::parse_import_statement(std::shared_ptr<Scope> scope, TokenSet& set)
+std::unique_ptr<AstImport> stride::ast::parse_import_statement(const std::shared_ptr<Scope>& scope, TokenSet& set)
 {
     if (scope->get_scope_type() != ScopeType::GLOBAL)
     {

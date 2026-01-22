@@ -65,7 +65,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(std::shared_ptr
 
     if (struct_body_set.has_value())
     {
-        auto nested_scope = std::make_shared<Scope>(std::shared_ptr(scope), ScopeType::BLOCK);
+        auto nested_scope = std::make_shared<Scope>(scope, ScopeType::BLOCK);
         while (struct_body_set.value().has_next())
         {
             auto member = try_parse_struct_member(nested_scope, struct_body_set.value());

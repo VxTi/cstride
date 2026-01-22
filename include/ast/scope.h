@@ -179,6 +179,6 @@ namespace stride::ast
         bool is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type);
 
     private:
-        Scope* traverse_to_root();
+        std::shared_ptr<Scope> traverse_to_root();
     };
 }

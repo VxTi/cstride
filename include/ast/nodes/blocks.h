@@ -32,7 +32,7 @@ namespace stride::ast
 
     std::unique_ptr<AstBlock> parse_block(std::shared_ptr<Scope> scope, TokenSet& set);
 
-    std::unique_ptr<AstBlock> parse_sequential(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::unique_ptr<AstBlock> parse_sequential(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     std::optional<TokenSet> collect_block(TokenSet& set);
 

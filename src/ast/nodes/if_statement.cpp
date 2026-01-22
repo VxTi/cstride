@@ -36,7 +36,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(std::shared_ptr<
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IF);
 
-    auto if_header_scope = std::make_shared<Scope>(std::shared_ptr(scope), ScopeType::BLOCK);
+    auto if_header_scope = std::make_shared<Scope>(scope, ScopeType::BLOCK);
     auto if_header_body = collect_parenthesized_block(set);
 
     if (!if_header_body.has_value())

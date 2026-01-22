@@ -57,7 +57,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(std::shared_ptr<S
     }
 
     auto header_body = header_body_opt.value();
-    const auto for_scope = std::make_shared<Scope>(std::shared_ptr(scope), ScopeType::BLOCK);
+    const auto for_scope = std::make_shared<Scope>(scope, ScopeType::BLOCK);
 
 
     auto body = parse_block(for_scope, set);

@@ -19,22 +19,23 @@ using namespace stride;
 Program::Program(std::vector<std::string> files)
 {
     std::vector<ProgramObject> nodes;
+    this->_global_scope = std::make_shared<ast::Scope>(ast::ScopeType::GLOBAL);
 
-    // Transform provided files into Program Objects (IR file representation)
-    std::ranges::transform(
-        files, std::back_inserter(nodes),
-        [](const std::string& file) -> ProgramObject
+    for (const auto& file : files)
+    {
+        auto root_node = ast::parser::parse(*this, file);
+
+        if (const auto reducible = dynamic_cast<ast::IReducible*>(root_node.get());
+            reducible && reducible->is_reducible())
         {
-            auto root_node = ast::parser::parse(file);
-
-            if (const auto reducible = dynamic_cast<ast::IReducible*>(root_node.get());
-                reducible && reducible->is_reducible())
-            {
-                return ProgramObject(reducible->reduce());
-            }
-
-            return ProgramObject(std::move(root_node));
-        });
+            const auto reduced = reducible->reduce();
+            nodes.emplace_back(std::move(reduced));
+        }
+        else
+        {
+            nodes.emplace_back(std::move(root_node));
+        }
+    }
 
     this->_nodes = std::move(nodes);
 }

@@ -1,5 +1,6 @@
 #include "ast/parser.h"
 #include "files.h"
+#include "program.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/if_statement.h"
 #include "ast/nodes/import.h"
@@ -11,17 +12,17 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstNode> parser::parse(const std::string& source_path)
+std::unique_ptr<IAstNode> parser::parse(const Program &program, const std::string& source_path)
 {
-    const auto scope_global = std::make_shared<Scope>(ScopeType::GLOBAL);
+
 
     const auto source_file = read_file(source_path);
     auto tokens = tokenizer::tokenize(source_file);
 
-    return parse_sequential(scope_global, tokens);
+    return parse_sequential(program.get_global_scope(), tokens);
 }
 
-std::unique_ptr<IAstNode> stride::ast::parse_next_statement(std::shared_ptr<Scope> scope, TokenSet& set)
+std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<Scope>& scope, TokenSet& set)
 {
     if (is_module_statement(set))
     {
@@ -71,7 +72,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(std::shared_ptr<Scop
     return parse_standalone_expression(scope, set);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_sequential(std::shared_ptr<Scope> scope, TokenSet& set)
+std::unique_ptr<AstBlock> stride::ast::parse_sequential(const std::shared_ptr<Scope>& scope, TokenSet& set)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
