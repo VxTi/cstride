@@ -101,7 +101,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(std::shared_ptr
     );
 }
 
-llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstLoop::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
 
@@ -112,7 +112,7 @@ llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, 
 
     if (this->get_initializer())
     {
-        this->get_initializer()->codegen(module, context, builder);
+        this->get_initializer()->codegen(TODO, module, context, builder);
     }
 
     builder->CreateBr(loop_cond_bb);
@@ -121,7 +121,7 @@ llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, 
     llvm::Value* condValue = nullptr;
     if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->get_condition()->codegen(module, context, builder);
+        condValue = this->get_condition()->codegen(TODO, module, context, builder);
 
         if (condValue == nullptr)
         {
@@ -145,14 +145,14 @@ llvm::Value* AstLoop::codegen(llvm::Module* module, llvm::LLVMContext& context, 
     builder->SetInsertPoint(loop_body_bb);
     if (this->body())
     {
-        this->body()->codegen(module, context, builder);
+        this->body()->codegen(TODO, module, context, builder);
     }
     builder->CreateBr(loop_incr_bb);
 
     builder->SetInsertPoint(loop_incr_bb);
     if (get_incrementor())
     {
-        this->get_incrementor()->codegen(module, context, builder);
+        this->get_incrementor()->codegen(TODO, module, context, builder);
     }
     builder->CreateBr(loop_cond_bb);
 

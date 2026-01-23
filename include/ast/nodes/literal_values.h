@@ -95,7 +95,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
     class AstIntLiteral : public AbstractAstLiteralBase<int64_t>
@@ -126,7 +126,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
     class AstFpLiteral : public AbstractAstLiteralBase<long double>
@@ -142,7 +142,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
     class AstBooleanLiteral : public AbstractAstLiteralBase<bool>
@@ -157,7 +157,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
     class AstCharLiteral : public AbstractAstLiteralBase<char>
@@ -172,7 +172,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
     };
 
     std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(

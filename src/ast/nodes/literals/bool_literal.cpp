@@ -27,7 +27,7 @@ std::string AstBooleanLiteral::to_string()
     return std::format("BooleanLiteral({})", value());
 }
 
-llvm::Value* AstBooleanLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstBooleanLiteral::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     return llvm::ConstantInt::get(
         context,

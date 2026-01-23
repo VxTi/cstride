@@ -51,7 +51,7 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
     return std::nullopt;
 }
 
-llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     if (requires_identifier_operand(this->get_op_type()))
     {
@@ -145,7 +145,7 @@ llvm::Value* AstUnaryOp::codegen(llvm::Module* module, llvm::LLVMContext& contex
         return this->is_lsh() ? loaded_val : new_val;
     }
 
-    auto* val = get_operand().codegen(module, context, builder);
+    auto* val = get_operand().codegen(TODO, module, context, builder);
     if (!val) return nullptr;
 
     switch (this->get_op_type())

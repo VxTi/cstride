@@ -4,6 +4,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include "files.h"
+#include "ast/scope.h"
 
 namespace stride::ast
 {
@@ -13,9 +14,9 @@ namespace stride::ast
         virtual ~ISynthesisable() = default;
 
         virtual llvm::Value* codegen(
+            const std::shared_ptr<Scope>& scope,
             llvm::Module* module,
-            llvm::LLVMContext& context,
-            llvm::IRBuilder<>* builder
+            llvm::LLVMContext& context, llvm::IRBuilder<>* builder
         ) = 0;
 
         virtual void define_symbols(

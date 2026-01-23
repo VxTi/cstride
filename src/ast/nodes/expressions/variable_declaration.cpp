@@ -38,9 +38,9 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 }
 
 llvm::Value* AstVariableDeclaration::codegen(
+    const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
-    llvm::IRBuilder<>* irBuilder
+    llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder
 )
 {
     // Generate code for the initial value
@@ -49,7 +49,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
         {
-            init_value = synthesisable->codegen(module, context, irBuilder);
+            init_value = synthesisable->codegen(TODO, module, context, irBuilder);
         }
     }
 

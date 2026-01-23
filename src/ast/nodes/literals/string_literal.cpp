@@ -29,7 +29,7 @@ std::string AstStringLiteral::to_string()
     return std::format("StringLiteral(\"{}\")", value());
 }
 
-llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
+llvm::Value* AstStringLiteral::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
 {
     // Check if a global variable already exists with the same value
     // If it does, we'll return a pointer to the existing global string

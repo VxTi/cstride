@@ -36,7 +36,7 @@ std::string AstFpLiteral::to_string()
     return std::format("FpLiteral({} ({} bit))", this->value(), this->bit_count());
 }
 
-llvm::Value* AstFpLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstFpLiteral::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     if (this->bit_count() > 32)
     {

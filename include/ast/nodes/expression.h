@@ -92,7 +92,7 @@ namespace stride::ast
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
 
@@ -127,7 +127,7 @@ namespace stride::ast
             return this->_internal_name.empty() ? this->_name : this->_internal_name;
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
 
@@ -177,7 +177,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
 
@@ -243,7 +243,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
 
@@ -291,7 +291,7 @@ namespace stride::ast
         [[nodiscard]]
         BinaryOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
 
@@ -319,7 +319,7 @@ namespace stride::ast
         [[nodiscard]]
         LogicalOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };
@@ -342,7 +342,7 @@ namespace stride::ast
         [[nodiscard]]
         ComparisonOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };
@@ -376,7 +376,7 @@ namespace stride::ast
         [[nodiscard]]
         AstExpression& get_operand() const { return *this->_operand.get(); }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
 
@@ -420,7 +420,7 @@ namespace stride::ast
         [[nodiscard]]
         MutativeAssignmentType get_operator() const { return this->_operator; }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
 

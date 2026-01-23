@@ -40,16 +40,21 @@ IAstNode* AstVariableReassignment::reduce()
 }
 
 llvm::Value* AstVariableReassignment::codegen(
-    llvm::Module* module, llvm::LLVMContext& context,
-    llvm::IRBuilder<>* builder
+    const std::shared_ptr<Scope>& scope, llvm::Module* module,
+    llvm::LLVMContext& context, llvm::IRBuilder<>* builder
 )
 {
     // Get the variable allocation
-    llvm::Value* variable = module->getNamedGlobal(this->get_internal_name());
+    llvm::Value* variable = builder->GetInsertBlock()->getValueSymbolTable()->lookup(this->get_internal_name());
     if (!variable)
     {
-        // Try to find in local scope (function)
-        variable = builder->GetInsertBlock()->getValueSymbolTable()->lookup(this->get_variable_name());
+        // Try to find in global scope with regular name
+        module->getNamedGlobal(this->get_variable_name());
+    }
+    if (!variable)
+    {
+        // Once more try with its internal name
+        module->getNamedGlobal(this->get_internal_name());
     }
 
     if (!variable)
@@ -65,7 +70,7 @@ llvm::Value* AstVariableReassignment::codegen(
 
     if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_value()); synthesisable != nullptr)
     {
-        llvm::Value* value = synthesisable->codegen(module, context, builder);
+        llvm::Value* value = synthesisable->codegen(TODO, module, context, builder);
 
         // Store the value in the variable
         builder->CreateStore(value, variable);

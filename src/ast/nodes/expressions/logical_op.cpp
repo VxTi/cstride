@@ -28,10 +28,10 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
     }
 }
 
-llvm::Value* AstLogicalOp::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
+llvm::Value* AstLogicalOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
     // Implementation following short-circuiting logic
-    llvm::Value* lhValue = this->get_left().codegen(module, context, irbuilder);
+    llvm::Value* lhValue = this->get_left().codegen(TODO, module, context, irbuilder);
 
     if (!lhValue) return nullptr;
 
@@ -83,7 +83,7 @@ llvm::Value* AstLogicalOp::codegen(llvm::Module* module, llvm::LLVMContext& cont
 
     // Emit Right block
     irbuilder->SetInsertPoint(eval_right_bb);
-    llvm::Value* r = this->get_right().codegen(module, context, irbuilder);
+    llvm::Value* r = this->get_right().codegen(TODO, module, context, irbuilder);
     if (!r) return nullptr;
 
     r = to_bool(r);

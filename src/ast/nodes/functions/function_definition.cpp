@@ -66,9 +66,9 @@ void AstFunctionDeclaration::define_symbols(
 }
 
 llvm::Value* AstFunctionDeclaration::codegen(
+    const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
-    llvm::IRBuilder<>* irBuilder
+    llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder
 )
 {
     llvm::Function* function = module->getFunction(this->get_internal_name());
@@ -118,7 +118,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
         {
-            ret_val = synthesisable->codegen(module, context, &builder);
+            ret_val = synthesisable->codegen(scope, module, context, &builder);
 
             // Void instructions cannot have a name, but the generator might have assigned one
             // This way, we prevent LLVM from complaining

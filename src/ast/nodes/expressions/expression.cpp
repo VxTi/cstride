@@ -14,7 +14,7 @@
 
 using namespace stride::ast;
 
-llvm::Value* AstExpression::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
+llvm::Value* AstExpression::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder)
 {
     throw parsing_error("Expression codegen not implemented, this must be implemented by subclasses");
 }

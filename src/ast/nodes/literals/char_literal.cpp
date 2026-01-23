@@ -27,7 +27,7 @@ std::string AstCharLiteral::to_string()
     return std::format("CharLiteral({})", value());
 }
 
-llvm::Value* AstCharLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstCharLiteral::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     return llvm::ConstantInt::get(
         context,

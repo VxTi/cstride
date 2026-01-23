@@ -45,7 +45,7 @@ std::string AstIntLiteral::to_string()
     return std::format("IntLiteral({})", value());
 }
 
-llvm::Value* AstIntLiteral::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstIntLiteral::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     return llvm::ConstantInt::get(
         context,

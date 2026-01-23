@@ -5,7 +5,7 @@
 
 using namespace stride::ast;
 
-llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstIdentifier::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     llvm::Value* val = nullptr;
 
@@ -47,5 +47,5 @@ llvm::Value* AstIdentifier::codegen(llvm::Module* module, llvm::LLVMContext& con
 
 std::string AstIdentifier::to_string()
 {
-    return std::format("{} ({})", this->get_name(), this->get_internal_name());
+    return std::format("{}({})", this->get_name(), this->get_internal_name());
 }

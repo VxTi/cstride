@@ -17,7 +17,7 @@ void AstBlock::define_symbols(llvm::Module* module, llvm::LLVMContext& context, 
     }
 }
 
-llvm::Value* AstBlock::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstBlock::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     llvm::Value* last_value = nullptr;
 
@@ -30,7 +30,7 @@ llvm::Value* AstBlock::codegen(llvm::Module* module, llvm::LLVMContext& context,
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(module, context, builder);
+            last_value = synthesisable->codegen(TODO, module, context, builder);
         }
     }
 

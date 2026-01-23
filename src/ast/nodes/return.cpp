@@ -43,13 +43,13 @@ std::string AstReturn::to_string()
     );
 }
 
-llvm::Value* AstReturn::codegen(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstReturn::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     if (this->value())
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->value()))
         {
-            llvm::Value* val = synthesisable->codegen(module, context, builder);
+            llvm::Value* val = synthesisable->codegen(TODO, module, context, builder);
             // When using create ret, we also return the instruction as a value
             return builder->CreateRet(val);
         }

@@ -56,9 +56,9 @@ std::optional<std::string> resolve_type_name(AstExpression* expr)
 }
 
 llvm::Value* AstFunctionInvocation::codegen(
+    const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
-    llvm::IRBuilder<>* builder
+    llvm::LLVMContext& context, llvm::IRBuilder<>* builder
 )
 {
     // 3. Attempt to find the mangled name in the LLVM module
@@ -99,7 +99,7 @@ llvm::Value* AstFunctionInvocation::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
         {
-            auto* arg_val = synthesisable->codegen(module, context, builder);
+            auto* arg_val = synthesisable->codegen(TODO, module, context, builder);
             if (!arg_val)
             {
                 return nullptr;
