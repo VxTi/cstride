@@ -71,7 +71,7 @@ fn atan(x: f32): f32 {
 }
 
 fn atan2(x: f32, y: f32): f32 {
-    return __builtin_atan2l(x, y);
+    return __builtin_atan2f(x, y);
 }
 
 fn atan2(x: f64, y: f64): f64 {
@@ -97,3 +97,38 @@ fn sqrt(x: f64): f64 {
 let M_PI: f64 = 3.14159265358979323846264338327950288;
 
 let M_E: f64 = 2.71828182845904523536028747135266250;
+
+
+extern fn printf(format: string): i32;
+
+extern fn write(fd: i32, input: string, length: i32): i32;
+
+extern fn exit(status: i32): i32;
+
+/**
+ * HEllo world!
+ */
+fn another_fn(): string {
+    return "\x1b[31mHellooooo\x1b[0m\n";
+}
+
+fn hello_world(): string {
+    return another_fn();
+}
+
+let E: f64 = 2.73;
+
+fn main(): void {
+
+
+    let val: f64 = 54.0;
+
+    let amount: f64 = sqrt(100.0);
+
+    for (let i: i32 = 0; i < amount; i++) {
+        printf("Hello!")
+    }
+
+    exit(-1)
+}
+
