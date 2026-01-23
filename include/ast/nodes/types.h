@@ -181,7 +181,8 @@ namespace stride::ast
 
     std::unique_ptr<IAstInternalFieldType> parse_ast_type(
         const std::shared_ptr<Scope>& scope,
-        TokenSet& set
+        TokenSet& set,
+        const std::string &error
     );
 
     llvm::Type* internal_type_to_llvm_type(

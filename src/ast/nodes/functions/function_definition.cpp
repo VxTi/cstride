@@ -15,6 +15,12 @@
 
 using namespace stride::ast;
 
+void AstFunctionDeclaration::validate()
+{
+    // Check if there's a return node
+ //    bool should_have_return_node = this->return_type().get() != nullptr;
+}
+
 void AstFunctionDeclaration::resolve_forward_references(
     const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
@@ -200,7 +206,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
-    auto return_type = parse_ast_type(scope, tokens);
+    auto return_type = parse_ast_type(scope, tokens, "Expected return type in function header");
 
     std::vector<IAstInternalFieldType*> parameter_types;
     for (const auto& param : parameters)

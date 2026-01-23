@@ -2,6 +2,7 @@
 #include <utility>
 
 #include "ast_node.h"
+#include "blocks.h"
 #include "types.h"
 #include "ast/scope.h"
 #include "ast/tokens/token_set.h"
@@ -61,7 +62,7 @@ namespace stride::ast
         public IAstNode,
         public ISynthesisable
     {
-        std::unique_ptr<IAstNode> _body;
+        std::unique_ptr<AstBlock> _body;
         std::string _name;
         std::string _internal_name;
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
@@ -76,7 +77,7 @@ namespace stride::ast
             std::string name,
             std::string internal_name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
-            std::unique_ptr<IAstNode> body,
+            std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstInternalFieldType> return_type,
             const int flags
         ) :
@@ -126,6 +127,8 @@ namespace stride::ast
 
         [[nodiscard]]
         bool is_mutable() const { return this->_flags & SRFLAG_FN_DEF_MUTABLE; }
+
+        void validate() override;
 
         ~AstFunctionDeclaration() override = default;
 

@@ -51,6 +51,8 @@ namespace stride::ast
 
         [[nodiscard]]
         AstExpression* get_incrementor() const { return _incrementor.get(); }
+
+        void validate() override;
     };
 
     bool is_for_loop_statement(const TokenSet& set);
