@@ -167,7 +167,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
     const auto variable_name = variable_name_tok.lexeme;
     set.expect(TokenType::COLON);
-    auto type = parse_ast_type(set);
+    auto variable_type = parse_ast_type(set);
 
     set.expect(TokenType::EQUALS);
 
@@ -175,6 +175,13 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         SRFLAG_EXPR_VARIABLE_ASSIGNATION,
         scope, set
     );
+
+    const auto internal_expr_type = resolve_expression_internal_type(scope, value.get());
+
+    if (internal_expr_type.get() != variable_type.get())
+    {
+        set.throw_error("Type mismatch in variable declaration; expected type '" + variable_type->to_string() + "', got '" + internal_expr_type->to_string() + "'");
+    }
 
     // If it's not an inline variable declaration (e.g., in a for loop),
     // we expect a semicolon at the end.
@@ -193,7 +200,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     scope->define_field(
         variable_name,
         internal_name,
-        type.get(),
+        variable_type.get(),
         flags
     );
 
@@ -201,7 +208,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         set.source(),
         reference_token.offset,
         variable_name,
-        std::move(type),
+        std::move(variable_type),
         std::move(value),
         flags,
         internal_name
