@@ -59,20 +59,41 @@ void Program::print_ast_nodes() const
 
 void Program::optimize_ast_nodes() const
 {
+    std::vector<std::unique_ptr<ast::IAstNode>> new_children;
     for (int i = 0; i < this->_root_node->children().capacity(); i++)
     {
-        ast::IAstNode * child = this->_root_node->children()[i].get();
+        ast::IAstNode* child = this->_root_node->children()[i].get();
 
         if (auto* reducible = dynamic_cast<ast::IReducible*>(child))
         {
-            this->_root_node->replace_child(i, std::unique_ptr<ast::IAstNode>(reducible->reduce()));
+            if (auto reduced = reducible->reduce())
+            {
+                std::cout << "Reduced node: " << reduced->to_string() << std::endl;
+                new_children.push_back(
+                    std::vector<std::unique_ptr<ast::IAstNode>>::value_type(std::move(reduced))
+                );
+            }
+        }
+        else
+        {
+            // Keep previous node
+            new_children.push_back(std::unique_ptr<ast::IAstNode>(child));
         }
     }
+
+    const auto new_root = std::make_unique<ast::AstBlock>(
+        this->_root_node->source,
+        this->_root_node->source_offset,
+        this->get_global_scope(),
+        std::move(new_children)
+    );
+    // TODO:
+    //    this->_root_node = new_root.get();
 }
 
 void Program::validate_ast_nodes() const
 {
-    for (const auto& child : this->_root_node.get()->children())
+    for (const auto& child : this->_root_node->children())
     {
         child->validate();
     }
@@ -84,10 +105,7 @@ void Program::resolve_forward_references(
     llvm::IRBuilder<>* builder
 ) const
 {
-    if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(this->_root_node.get()))
-    {
-        synthesisable->resolve_forward_references(this->get_global_scope(), module, context, builder);
-    }
+    this->_root_node->resolve_forward_references(this->get_global_scope(), module, context, builder);
 }
 
 void Program::generate_llvm_ir(

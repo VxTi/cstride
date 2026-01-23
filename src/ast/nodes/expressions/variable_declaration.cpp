@@ -153,6 +153,44 @@ void AstVariableDeclaration::validate()
     }
 }
 
+
+bool AstVariableDeclaration::is_reducible()
+{
+    // Variables are reducible only if their initial value is reducible,
+    // In the future we can also check whether variables are ever refereced,
+    // in which case we can optimize away the variable declaration.
+    if (const auto value = dynamic_cast<IReducible*>(this->get_initial_value().get()))
+    {
+        return value->is_reducible();
+    }
+
+    return false;
+}
+
+IAstNode* AstVariableDeclaration::reduce()
+{
+    if (this->is_reducible())
+    {
+        const auto reduced_value = dynamic_cast<IReducible*>(this->get_initial_value().get())->reduce();
+        auto cloned_type = this->get_variable_type()->clone();
+
+        if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced_value); reduced_expr != nullptr)
+        {
+            return std::make_unique<AstVariableDeclaration>(
+                this->source,
+                this->source_offset,
+                scope,
+                this->get_variable_name(),
+                std::move(cloned_type),
+                std::unique_ptr<AstExpression>(reduced_expr),
+                this->get_flags(),
+                this->get_internal_name()
+            ).release();
+        }
+    }
+    return this;
+}
+
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
     const std::shared_ptr<Scope>& scope,

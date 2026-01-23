@@ -56,15 +56,6 @@ namespace stride::ast
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
 
-        void replace_child(const size_t index, std::unique_ptr<IAstNode> new_node)
-        {
-            if (index >= this->_children.size())
-            {
-                throw std::out_of_range("Child index out of range");
-            }
-            // this->_children[index] = std::move(new_node);
-        }
-
         ~AstBlock() override = default;
     };
 
