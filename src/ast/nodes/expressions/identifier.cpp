@@ -9,7 +9,16 @@ llvm::Value* AstIdentifier::codegen(const std::shared_ptr<Scope>& scope, llvm::M
 {
     llvm::Value* val = nullptr;
 
-    const auto internal_name = this->get_internal_name();
+    std::string internal_name;
+
+    if (const auto definition = scope->lookup(this->get_name()))
+    {
+        internal_name = definition->get_internal_symbol_name();
+    }
+    else
+    {
+        internal_name = this->get_internal_name();
+    }
 
     if (const auto block = builder->GetInsertBlock())
     {
@@ -47,5 +56,5 @@ llvm::Value* AstIdentifier::codegen(const std::shared_ptr<Scope>& scope, llvm::M
 
 std::string AstIdentifier::to_string()
 {
-    return std::format("{}({})", this->get_name(), this->get_internal_name());
+    return std::format("Identifier<{}({})>", this->get_name(), this->get_internal_name());
 }

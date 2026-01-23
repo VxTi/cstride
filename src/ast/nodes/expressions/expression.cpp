@@ -79,7 +79,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         return std::move(unary.value());
     }
 
-
     if (auto reassignment = parse_variable_reassignment(scope, set);
         reassignment.has_value())
     {
@@ -105,7 +104,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         std::string identifier_name = reference_token.lexeme;
         std::string internal_name;
 
-        if (const auto variable_definition = scope->get_variable_def(identifier_name);
+        if (const auto variable_definition = scope->lookup(identifier_name);
             variable_definition != nullptr)
         {
             internal_name = variable_definition->get_internal_symbol_name();
@@ -114,7 +113,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         return std::make_unique<AstIdentifier>(
             set.source(),
             reference_token.offset,
-            std::move(identifier_name),
+            identifier_name,
             internal_name
         );
     }

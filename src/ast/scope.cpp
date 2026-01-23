@@ -158,6 +158,20 @@ const IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_nam
     return nullptr;
 }
 
+const FieldSymbolDef* Scope::lookup(const std::string& name) const
+{
+    auto current = this;
+    while (current != nullptr)
+    {
+        if (const auto def = current->get_variable_def(name))
+        {
+            return def;
+        }
+        current = current->parent_scope.get();
+    }
+    return nullptr;
+}
+
 const SymbolFnDefinition* Scope::get_function_def(const std::string& function_name) const
 {
     for (const auto& symbol_def : this->symbols)

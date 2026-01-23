@@ -145,6 +145,8 @@ namespace stride::ast
 
         const IdentifiableSymbolDef* get_symbol_def(const std::string& symbol_name) const;
 
+        const FieldSymbolDef* lookup(const std::string& name) const;
+
         /// Will attempt to define the function in the global scope.
         void define_function(
             const std::string& internal_function_name,
