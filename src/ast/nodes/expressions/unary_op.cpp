@@ -145,7 +145,7 @@ llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Modu
         return this->is_lsh() ? loaded_val : new_val;
     }
 
-    auto* val = get_operand().codegen(TODO, module, context, builder);
+    auto* val = get_operand().codegen(scope, module, context, builder);
     if (!val) return nullptr;
 
     switch (this->get_op_type())

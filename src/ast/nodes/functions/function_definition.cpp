@@ -131,7 +131,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
 
     const auto return_type = llvm::cast<llvm::FunctionType>(function->getFunctionType())->getReturnType();
 
-    // Add default return if needed (void functions or missing return)
+    // Add a default return if needed (void functions or missing return)
     if (auto* block = builder.GetInsertBlock(); block && !block->getTerminator())
     {
         if (return_type->isVoidTy())

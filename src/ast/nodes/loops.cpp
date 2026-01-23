@@ -112,7 +112,7 @@ llvm::Value* AstLoop::codegen(const std::shared_ptr<Scope>& scope, llvm::Module*
 
     if (this->get_initializer())
     {
-        this->get_initializer()->codegen(TODO, module, context, builder);
+        this->get_initializer()->codegen(scope, module, context, builder);
     }
 
     builder->CreateBr(loop_cond_bb);
@@ -121,7 +121,7 @@ llvm::Value* AstLoop::codegen(const std::shared_ptr<Scope>& scope, llvm::Module*
     llvm::Value* condValue = nullptr;
     if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->get_condition()->codegen(TODO, module, context, builder);
+        condValue = this->get_condition()->codegen(scope, module, context, builder);
 
         if (condValue == nullptr)
         {
@@ -145,14 +145,14 @@ llvm::Value* AstLoop::codegen(const std::shared_ptr<Scope>& scope, llvm::Module*
     builder->SetInsertPoint(loop_body_bb);
     if (this->body())
     {
-        this->body()->codegen(TODO, module, context, builder);
+        this->body()->codegen(scope, module, context, builder);
     }
     builder->CreateBr(loop_incr_bb);
 
     builder->SetInsertPoint(loop_incr_bb);
     if (get_incrementor())
     {
-        this->get_incrementor()->codegen(TODO, module, context, builder);
+        this->get_incrementor()->codegen(scope, module, context, builder);
     }
     builder->CreateBr(loop_cond_bb);
 

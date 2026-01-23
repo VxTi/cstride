@@ -102,7 +102,7 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<Scope>& scope, llvm::
         );
     }
 
-    llvm::Value* cond_value = this->get_condition()->codegen(TODO, module, context, builder);
+    llvm::Value* cond_value = this->get_condition()->codegen(scope, module, context, builder);
 
     if (cond_value == nullptr)
     {
@@ -125,13 +125,13 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<Scope>& scope, llvm::
     builder->CreateCondBr(cond_value, then_body_bb, else_body_bb != nullptr ? else_body_bb : merge_bb);
 
     builder->SetInsertPoint(then_body_bb);
-    this->get_block()->codegen(TODO, module, context, builder);
+    this->get_block()->codegen(scope, module, context, builder);
     builder->CreateBr(merge_bb);
 
     if (else_body_bb != nullptr)
     {
         builder->SetInsertPoint(else_body_bb);
-        this->get_else_block()->codegen(TODO, module, context, builder);
+        this->get_else_block()->codegen(scope, module, context, builder);
         builder->CreateBr(merge_bb);
     }
 

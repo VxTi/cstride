@@ -49,7 +49,7 @@ llvm::Value* AstReturn::codegen(const std::shared_ptr<Scope>& scope, llvm::Modul
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->value()))
         {
-            llvm::Value* val = synthesisable->codegen(TODO, module, context, builder);
+            llvm::Value* val = synthesisable->codegen(scope, module, context, builder);
             // When using create ret, we also return the instruction as a value
             return builder->CreateRet(val);
         }

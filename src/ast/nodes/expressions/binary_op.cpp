@@ -131,8 +131,8 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 llvm::Value* AstBinaryArithmeticOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module,
                                             llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
-    llvm::Value* l = this->get_left().codegen(TODO, module, context, irbuilder);
-    llvm::Value* r = this->get_right().codegen(TODO, module, context, irbuilder);
+    llvm::Value* l = this->get_left().codegen(scope, module, context, irbuilder);
+    llvm::Value* r = this->get_right().codegen(scope, module, context, irbuilder);
 
     if (!l || !r)
     {

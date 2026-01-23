@@ -30,7 +30,7 @@ llvm::Value* AstBlock::codegen(const std::shared_ptr<Scope>& scope, llvm::Module
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(TODO, module, context, builder);
+            last_value = synthesisable->codegen(scope, module, context, builder);
         }
     }
 

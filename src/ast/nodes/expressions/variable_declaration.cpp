@@ -49,7 +49,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
         {
-            init_value = synthesisable->codegen(TODO, module, context, irBuilder);
+            init_value = synthesisable->codegen(scope, module, context, irBuilder);
         }
     }
 

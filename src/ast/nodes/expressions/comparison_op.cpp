@@ -40,8 +40,8 @@ std::string AstComparisonOp::to_string()
 
 llvm::Value* AstComparisonOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    llvm::Value* left = this->get_left().codegen(TODO, module, context, builder);
-    llvm::Value* right = this->get_right().codegen(TODO, module, context, builder);
+    llvm::Value* left = this->get_left().codegen(scope, module, context, builder);
+    llvm::Value* right = this->get_right().codegen(scope, module, context, builder);
 
     if (!left || !right)
     {

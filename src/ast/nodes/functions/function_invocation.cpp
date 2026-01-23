@@ -99,7 +99,7 @@ llvm::Value* AstFunctionInvocation::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
         {
-            auto* arg_val = synthesisable->codegen(TODO, module, context, builder);
+            auto* arg_val = synthesisable->codegen(scope, module, context, builder);
             if (!arg_val)
             {
                 return nullptr;

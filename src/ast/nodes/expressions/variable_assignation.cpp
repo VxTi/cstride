@@ -70,7 +70,7 @@ llvm::Value* AstVariableReassignment::codegen(
 
     if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_value()); synthesisable != nullptr)
     {
-        llvm::Value* value = synthesisable->codegen(TODO, module, context, builder);
+        llvm::Value* value = synthesisable->codegen(scope, module, context, builder);
 
         // Store the value in the variable
         builder->CreateStore(value, variable);

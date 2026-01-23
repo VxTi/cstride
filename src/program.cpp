@@ -112,7 +112,7 @@ void Program::execute(int argc, char* argv[]) const
     {
         if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
         {
-            if (const auto entry = synthesisable->codegen(TODO, module.get(), context, &builder); !entry)
+            if (const auto entry = synthesisable->codegen(scope, module.get(), context, &builder); !entry)
             {
                 throw std::runtime_error(
                     "Failed to build executable for file " + node->get_root_ast_node()->source->path
