@@ -18,7 +18,7 @@ std::optional<BinaryOpType> stride::ast::get_binary_op_type(const TokenType type
     }
 }
 
-int stride::ast::binary_operator_precedence(const BinaryOpType type)
+int stride::ast::get_binary_operator_precedence(const BinaryOpType type)
 {
     switch (type)
     {
@@ -75,7 +75,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
         {
             const auto op = binary_op.value();
 
-            const int precedence = binary_operator_precedence(op);
+            const int precedence = get_binary_operator_precedence(op);
 
             // If the precedence is lower than the minimum required, we return the lhs
             if (precedence < min_precedence)
@@ -97,7 +97,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
             // we can try to parse it with higher precedence
             if (const auto next_op = get_binary_op_type(set.peak_next_type()); next_op.has_value())
             {
-                if (const int next_precedence = binary_operator_precedence(next_op.value());
+                if (const int next_precedence = get_binary_operator_precedence(next_op.value());
                     precedence < next_precedence)
                 {
                     if (auto rhs_opt = parse_arithmetic_binary_op(scope, set, std::move(rhs), precedence + 1); rhs_opt.

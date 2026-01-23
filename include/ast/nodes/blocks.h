@@ -24,7 +24,7 @@ namespace stride::ast
 
         llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
-        void define_symbols(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        void resolve_forward_references(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }

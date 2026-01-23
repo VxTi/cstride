@@ -15,10 +15,10 @@
 
 using namespace stride::ast;
 
-void AstFunctionDeclaration::define_symbols(
+void AstFunctionDeclaration::resolve_forward_references(
+    const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
-    llvm::IRBuilder<>* builder
+    llvm::LLVMContext& context, llvm::IRBuilder<>* builder
 )
 {
     const auto fn_name = this->get_internal_name();

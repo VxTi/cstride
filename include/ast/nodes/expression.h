@@ -85,14 +85,20 @@ namespace stride::ast
             const int source_offset,
             std::vector<std::unique_ptr<IAstNode>> children
         ) :
-            IAstNode(source, source_offset), _children(std::move(children)) {};
+            IAstNode(source, source_offset),
+            _children(std::move(children)) {};
 
         ~AstExpression() override = default;
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<Scope>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         std::string to_string() override;
 
@@ -127,7 +133,8 @@ namespace stride::ast
             return this->_internal_name.empty() ? this->_name : this->_internal_name;
         }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
 
@@ -177,7 +184,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
 
@@ -243,7 +251,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
 
@@ -291,7 +300,8 @@ namespace stride::ast
         [[nodiscard]]
         BinaryOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
 
@@ -319,7 +329,8 @@ namespace stride::ast
         [[nodiscard]]
         LogicalOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };
@@ -342,7 +353,8 @@ namespace stride::ast
         [[nodiscard]]
         ComparisonOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };
@@ -376,7 +388,8 @@ namespace stride::ast
         [[nodiscard]]
         AstExpression& get_operand() const { return *this->_operand.get(); }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
 
@@ -420,7 +433,8 @@ namespace stride::ast
         [[nodiscard]]
         MutativeAssignmentType get_operator() const { return this->_operator; }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
 
@@ -429,25 +443,21 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-
-    /// Checks if the token set represents a variable declaration
-    bool is_variable_declaration(const TokenSet& set);
-
     /// Returns the precedence value for a binary arithmetic operator
-    int binary_operator_precedence(BinaryOpType type);
+    int get_binary_operator_precedence(BinaryOpType type);
 
     /// Parses a complete standalone expression from tokens
-    std::unique_ptr<AstExpression> parse_standalone_expression(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
     std::unique_ptr<AstExpression> parse_expression_ext(
         int expression_type_flags,
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<AstExpression> parse_standalone_expression_part(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression_part(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
@@ -455,6 +465,9 @@ namespace stride::ast
         std::shared_ptr<Scope> scope,
         TokenSet& set
     );
+
+    /// Parses a function invocation into an AstFunctionInvocation expression node
+    std::unique_ptr<AstExpression> parse_function_invocation(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
@@ -469,6 +482,9 @@ namespace stride::ast
         std::unique_ptr<AstExpression> lhs,
         int min_precedence
     );
+
+    /// Parses a property accessor statement, e.g., <identifier>.<accessor>
+    std::string parse_property_accessor_statement(std::shared_ptr<Scope> scope, TokenSet& set);
 
     /// Parses a unary operator expression
     std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(std::shared_ptr<Scope> scope, TokenSet& set);
@@ -489,8 +505,8 @@ namespace stride::ast
     /// e.g., <identifier>.<accessor>
     bool is_property_accessor_statement(const TokenSet& set);
 
-    /// Parses a property accessor statement, e.g., <identifier>.<accessor>
-    std::string parse_property_accessor_statement(std::shared_ptr<Scope> scope, TokenSet& set);
+    /// Checks if the token set represents a variable declaration
+    bool is_variable_declaration(const TokenSet& set);
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
     std::unique_ptr<IAstInternalFieldType> resolve_expression_internal_type(

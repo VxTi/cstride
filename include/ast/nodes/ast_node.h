@@ -19,10 +19,11 @@ namespace stride::ast
             llvm::LLVMContext& context, llvm::IRBuilder<>* builder
         ) = 0;
 
-        virtual void define_symbols(
+        /// Utility function for defining symbols before they're referenced.
+        virtual void resolve_forward_references(
+            const std::shared_ptr<Scope>& scope,
             llvm::Module* module,
-            llvm::LLVMContext& context,
-            llvm::IRBuilder<>* builder
+            llvm::LLVMContext& context, llvm::IRBuilder<>* builder
         ) {}
     };
 

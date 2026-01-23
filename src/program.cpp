@@ -104,7 +104,7 @@ void Program::execute(int argc, char* argv[]) const
     {
         if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
         {
-            synthesisable->define_symbols(module.get(), context, &builder);
+            synthesisable->define_symbols(scope, module.get(), context, &builder);
         }
     }
 

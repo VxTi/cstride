@@ -1,3 +1,4 @@
+#include <format>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -7,9 +8,9 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 
-#include "ast/identifiers.h"
+#include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/literal_values.h"
+#include "ast/nodes/functions.h"
 
 using namespace stride::ast;
 
@@ -35,7 +36,8 @@ std::string AstFunctionInvocation::to_string()
         oss << arg->to_string() << ", ";
     }
 
-    return std::format("FunctionInvocation({} ({}) [{}])", this->get_function_name(), this->get_internal_name(), oss.str());
+    return std::format("FunctionInvocation({} ({}) [{}])", this->get_function_name(), this->get_internal_name(),
+                       oss.str());
 }
 
 std::optional<std::string> resolve_type_name(AstExpression* expr)
@@ -58,7 +60,8 @@ std::optional<std::string> resolve_type_name(AstExpression* expr)
 llvm::Value* AstFunctionInvocation::codegen(
     const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context, llvm::IRBuilder<>* builder
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
 )
 {
     // 3. Attempt to find the mangled name in the LLVM module
@@ -99,7 +102,8 @@ llvm::Value* AstFunctionInvocation::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
         {
-            auto* arg_val = synthesisable->codegen(scope, module, context, builder);
+            auto arg_val = synthesisable->codegen(scope, module, context, builder);
+
             if (!arg_val)
             {
                 return nullptr;
@@ -116,17 +120,47 @@ llvm::Value* AstFunctionInvocation::codegen(
     return builder->CreateCall(callee, args_v, "calltmp");
 }
 
-std::string compose_function_name(TokenSet& tokens)
+std::unique_ptr<AstExpression> stride::ast::parse_function_invocation(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
-    const auto initial = tokens.expect(TokenType::IDENTIFIER, "Expected function name").lexeme;
-    std::vector function_segments = {initial};
+    const auto reference_token = set.next();
+    const auto candidate_function_name = reference_token.lexeme;
+    auto function_parameter_set = collect_parenthesized_block(set);
 
-    while (tokens.peak_next_eq(TokenType::DOUBLE_COLON))
+    std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
+    std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types = {};
+
+    // Parsing function parameter values
+    if (function_parameter_set.has_value())
     {
-        tokens.next();
-        const auto next = tokens.expect(TokenType::IDENTIFIER, "Expected function name segment").lexeme;
-        function_segments.push_back(next);
+        auto subset = function_parameter_set.value();
+        auto initial_arg = parse_standalone_expression_part(scope, subset);
+
+        parameter_types.push_back(std::move(resolve_expression_internal_type(scope, &*initial_arg)));
+        function_arg_nodes.push_back(std::move(initial_arg));
+
+        while (subset.has_next())
+        {
+            subset.expect(TokenType::COMMA);
+            auto next_arg = parse_standalone_expression_part(scope, subset);
+
+            parameter_types.push_back(std::move(resolve_expression_internal_type(scope, &*next_arg)));
+            function_arg_nodes.push_back(std::move(next_arg));
+        }
     }
 
-    return internal_identifier_from_segments(function_segments);
+    std::string internal_fn_name = resolve_internal_function_name(
+        parameter_types,
+        candidate_function_name
+    );
+
+    return std::make_unique<AstFunctionInvocation>(
+        set.source(),
+        reference_token.offset,
+        candidate_function_name,
+        internal_fn_name,
+        std::move(function_arg_nodes)
+    );
 }
