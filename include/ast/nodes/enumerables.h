@@ -5,7 +5,7 @@
 
 namespace stride::ast
 {
-    class AstEnumerableMember : IAstNode
+    class AstEnumerableMember : public IAstNode
     {
         friend class AstEnumerable;
 
@@ -17,10 +17,9 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::string& name, std::unique_ptr<AstLiteral> value
-        )
-            : IAstNode(source, source_offset),
-              _name(name),
-              _value(std::move(value)) {}
+        ) : IAstNode(source, source_offset),
+            _name(name),
+            _value(std::move(value)) {}
 
         [[nodiscard]]
         const std::string& get_name() const { return this->_name; }
@@ -44,9 +43,7 @@ namespace stride::ast
             const int source_offset,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
             const std::string& name
-        )
-            :
-            IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset),
             _members(std::move(members)), _name(name) {}
 
         [[nodiscard]]

@@ -21,11 +21,10 @@ namespace stride::ast
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> block,
             std::unique_ptr<AstBlock> else_block
-        )
-            : IAstNode(source, source_offset),
-              _condition(std::move(condition)),
-              _block(std::move(block)),
-              _else_block(std::move(else_block)) {}
+        ) : IAstNode(source, source_offset),
+            _condition(std::move(condition)),
+            _block(std::move(block)),
+            _else_block(std::move(else_block)) {}
 
 
         [[nodiscard]]
@@ -45,7 +44,8 @@ namespace stride::ast
 
         void validate() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };

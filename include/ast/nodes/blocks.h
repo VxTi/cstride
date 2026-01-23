@@ -7,8 +7,8 @@
 namespace stride::ast
 {
     class AstBlock :
-        public virtual IAstNode,
-        public virtual ISynthesisable
+        public IAstNode,
+        public ISynthesisable
     {
         std::vector<std::unique_ptr<IAstNode>> _children;
 
@@ -17,14 +17,24 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::vector<std::unique_ptr<IAstNode>> children
-        )
-            : IAstNode(source, source_offset), _children(std::move(children)) {};
+        ) : IAstNode(source, source_offset),
+            _children(std::move(children)) {};
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<Scope>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
-        void resolve_forward_references(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        void resolve_forward_references(
+            const std::shared_ptr<Scope>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }

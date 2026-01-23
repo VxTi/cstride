@@ -24,14 +24,18 @@ namespace stride::ast
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstExpression> increment,
             std::unique_ptr<AstBlock> body
-        ) :
-            IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset),
             _body(std::move(body)),
             _initializer(std::move(initiator)),
             _condition(std::move(condition)),
             _incrementor(std::move(increment)) {}
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<Scope>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         std::string to_string() override;
 

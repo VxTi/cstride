@@ -7,8 +7,8 @@
 namespace stride::ast
 {
     class AstReturn :
-        public virtual IAstNode,
-        public virtual ISynthesisable
+        public IAstNode,
+        public ISynthesisable
     {
         const std::unique_ptr<IAstNode> _value;
 

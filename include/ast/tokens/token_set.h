@@ -23,13 +23,13 @@ namespace stride::ast
         std::vector<Token> _tokens;
 
     public:
-        explicit TokenSet(std::shared_ptr<SourceFile> source, std::vector<Token>& tokens) :
-            _source(std::move(source)),
+        explicit TokenSet(
+            std::shared_ptr<SourceFile> source,
+            std::vector<Token>& tokens
+        ) : _source(std::move(source)),
             _cursor(0),
             _size(tokens.size()),
             _tokens(std::move(tokens)) {}
-
-        static bool should_skip_token(TokenType type);
 
         [[nodiscard]]
         TokenSet create_subset(size_t offset, size_t length) const;
@@ -84,4 +84,6 @@ namespace stride::ast
         [[noreturn]]
         void throw_error(const std::string& message) const;
     };
+
+    static bool should_skip_token(TokenType type);
 }

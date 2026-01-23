@@ -78,7 +78,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(const std::shared_ptr<Sc
 
     while (set.has_next())
     {
-        if (TokenSet::should_skip_token(set.peak_next().type))
+        if (should_skip_token(set.peak_next().type))
         {
             set.next();
             continue;

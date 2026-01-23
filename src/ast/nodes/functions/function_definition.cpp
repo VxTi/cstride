@@ -193,8 +193,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // have to parse it a little differenly
     if (!tokens.peak_next_eq(TokenType::RPAREN))
     {
-        auto initial = parse_standalone_fn_param(function_scope, tokens);
-        parameters.push_back(std::move(initial));
+        parameters.push_back(parse_standalone_fn_param(function_scope, tokens));
 
         parse_subsequent_fn_params(function_scope, tokens, parameters);
     }
@@ -203,13 +202,13 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
     auto return_type = parse_ast_type(tokens);
 
-    std::shared_ptr<IAstInternalFieldType> return_type_shared = std::move(return_type);
+    std::shared_ptr return_type_shared = std::unique_ptr<IAstInternalFieldType>(return_type.get());
 
 
     std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types = {};
     for (const auto& param : parameters)
     {
-        parameter_types.push_back(param->get_type()->clone());
+        parameter_types.push_back(param->get_type());
     }
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
@@ -232,12 +231,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     else
     {
         body = parse_block(function_scope, tokens);
-
-        if (body != nullptr && body->children().empty())
-        {
-            // Ensure we don't populate the function if it doesn't actually have resolved AST nodes
-            body = nullptr;
-        }
     }
 
     return std::make_unique<AstFunctionDeclaration>(
@@ -260,7 +253,7 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())
     {
-        auto llvm_type = internal_type_to_llvm_type(param->get_type(), module, context);
+        auto llvm_type = internal_type_to_llvm_type(param->get_type().get(), module, context);
         if (!llvm_type)
         {
             return std::nullopt;

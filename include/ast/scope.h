@@ -106,8 +106,6 @@ namespace stride::ast
             _parameter_types(std::move(parameter_types)),
             _return_type(std::move(return_type)) {}
 
-        ~SymbolFnDefinition() override;
-
         std::vector<const IAstInternalFieldType*> get_parameter_types() const
         {
             std::vector<const IAstInternalFieldType*> out;
@@ -118,6 +116,8 @@ namespace stride::ast
         }
 
         const IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
+
+        ~SymbolFnDefinition() override = default;
     };
 
     class Scope;

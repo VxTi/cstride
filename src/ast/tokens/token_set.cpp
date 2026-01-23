@@ -181,7 +181,7 @@ std::shared_ptr<stride::SourceFile> TokenSet::source() const
 }
 
 
-bool TokenSet::should_skip_token(const TokenType type)
+bool stride::ast::should_skip_token(const TokenType type)
 {
     switch (type)
     {

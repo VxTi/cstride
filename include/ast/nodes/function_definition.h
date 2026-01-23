@@ -22,7 +22,7 @@ namespace stride::ast
      *                Function parameter definitions               *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-    class AstFunctionParameter : IAstNode
+    class AstFunctionParameter : public IAstNode
     {
         const std::string _name;
         std::shared_ptr<IAstInternalFieldType> _type;
@@ -35,8 +35,7 @@ namespace stride::ast
             std::string param_name,
             std::shared_ptr<IAstInternalFieldType> param_type,
             const int flags
-        ) :
-            IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset),
             _name(std::move(param_name)),
             _type(std::move(param_type)),
             _flags(flags) {}
@@ -47,7 +46,7 @@ namespace stride::ast
         std::string get_name() const { return this->_name; }
 
         [[nodiscard]]
-        IAstInternalFieldType* get_type() const { return this->_type.get(); }
+        std::shared_ptr<IAstInternalFieldType> get_type() const { return this->_type; }
 
         ~AstFunctionParameter() override = default;
     };
@@ -89,7 +88,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void resolve_forward_references(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        void resolve_forward_references(const std::shared_ptr<Scope>& scope, llvm::Module* module,
+                                        llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         llvm::Value* codegen(
             const std::shared_ptr<Scope>& scope,

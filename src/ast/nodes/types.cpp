@@ -215,22 +215,17 @@ std::optional<std::unique_ptr<AstNamedValueType>> AstNamedValueType::parse_named
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(TokenSet& set)
 {
-    std::unique_ptr<IAstInternalFieldType> type_ptr;
-
     if (auto primitive = AstPrimitiveFieldType::parse_primitive_type_optional(set); primitive.has_value())
     {
-        type_ptr = std::move(primitive.value());
-    }
-    else if (auto named_type = AstNamedValueType::parse_named_type_optional(set); named_type.has_value())
-    {
-        type_ptr = std::move(named_type.value());
-    }
-    else
-    {
-        set.throw_error("Expected a type in function parameter declaration");
+        return std::move(primitive.value());
     }
 
-    return type_ptr;
+    if (auto named_type = AstNamedValueType::parse_named_type_optional(set); named_type.has_value())
+    {
+        return std::move(named_type.value());
+    }
+
+    set.throw_error("Expected a type in function parameter declaration");
 }
 
 llvm::Type* stride::ast::internal_type_to_llvm_type(

@@ -81,8 +81,7 @@ namespace stride::ast
         explicit AstExpression(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset
-        ) :
-            IAstNode(source, source_offset) {};
+        ) : IAstNode(source, source_offset) {};
 
         ~AstExpression() override = default;
 
@@ -112,8 +111,7 @@ namespace stride::ast
             const int source_offset,
             std::string name,
             std::string internal_name
-        ) :
-            AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset),
             _name(std::move(name)),
             _internal_name(std::move(internal_name)) {}
 
@@ -149,8 +147,7 @@ namespace stride::ast
             const int source_offset,
             std::string function_name,
             std::string internal_name
-        ) :
-            AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset),
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
 
@@ -160,8 +157,7 @@ namespace stride::ast
             std::string function_name,
             std::string internal_name,
             std::vector<std::unique_ptr<AstExpression>> arguments
-        ) :
-            AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset),
             _arguments(std::move(arguments)),
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
@@ -207,9 +203,7 @@ namespace stride::ast
             std::unique_ptr<AstExpression> initial_value,
             const int flags,
             std::string internal_name
-        ) :
-            AstExpression(source, source_offset),
-
+        ) : AstExpression(source, source_offset),
             _flags(flags),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
@@ -267,8 +261,7 @@ namespace stride::ast
             const int source_offset,
             std::unique_ptr<AstExpression> lsh,
             std::unique_ptr<AstExpression> rsh
-        ) :
-            AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
 
@@ -297,8 +290,12 @@ namespace stride::ast
         [[nodiscard]]
         BinaryOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
-                             llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<Scope>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         std::string to_string() override;
 
@@ -319,15 +316,18 @@ namespace stride::ast
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
-        ) :
-            AbstractBinaryOp(source, source_offset, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, source_offset, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
         LogicalOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
-                             llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<Scope>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         std::string to_string() override;
     };
@@ -350,8 +350,12 @@ namespace stride::ast
         [[nodiscard]]
         ComparisonOpType get_op_type() const { return this->_op_type; }
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
-                             llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<Scope>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         std::string to_string() override;
     };
@@ -370,11 +374,10 @@ namespace stride::ast
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
-        ) :
-            AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset),
             _op_type(op),
-            _is_lsh(is_lsh),
-            _operand(std::move(operand)) {}
+            _operand(std::move(operand)),
+            _is_lsh(is_lsh) {}
 
         [[nodiscard]]
         bool is_lsh() const { return this->_is_lsh; }
@@ -411,12 +414,11 @@ namespace stride::ast
             std::string internal_name,
             const MutativeAssignmentType op,
             std::unique_ptr<AstExpression> value
-        )
-            : AstExpression(source, source_offset),
-              _variable_name(std::move(variable_name)),
-              _internal_name(std::move(internal_name)),
-              _value(std::move(value)),
-              _operator(op) {}
+        ) : AstExpression(source, source_offset),
+            _variable_name(std::move(variable_name)),
+            _internal_name(std::move(internal_name)),
+            _value(std::move(value)),
+            _operator(op) {}
 
         [[nodiscard]]
         const std::string& get_variable_name() const { return _variable_name; }
