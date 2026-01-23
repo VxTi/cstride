@@ -202,7 +202,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
     auto return_type = parse_ast_type(tokens);
 
-    std::shared_ptr return_type_shared = std::unique_ptr<IAstInternalFieldType>(return_type.get());
+    std::shared_ptr<IAstInternalFieldType> return_type_shared{std::move(return_type)};
 
 
     std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types = {};

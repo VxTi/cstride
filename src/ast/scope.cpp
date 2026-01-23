@@ -3,14 +3,14 @@
 
 using namespace stride::ast;
 
-std::shared_ptr<Scope> Scope::traverse_to_root()
+Scope* Scope::traverse_to_root()
 {
     auto* global_scope = this;
     while (global_scope != nullptr && global_scope->parent_scope != nullptr)
     {
         global_scope = global_scope->parent_scope.get();
     }
-    return std::shared_ptr<Scope>(global_scope, [](Scope*) {});
+    return global_scope;
 }
 
 bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
@@ -84,11 +84,13 @@ void Scope::define_function(
 )
 {
     const auto global_scope = this->traverse_to_root();
-    global_scope->symbols.push_back(std::make_unique<SymbolFnDefinition>(
-        std::move(parameter_types),
-        std::move(return_type),
-        internal_function_name
-    ));
+    global_scope->symbols.push_back(
+        std::make_unique<SymbolFnDefinition>(
+            std::move(parameter_types),
+            std::move(return_type),
+            internal_function_name
+        )
+    );
 }
 
 void Scope::define_field(
@@ -112,7 +114,7 @@ void Scope::define_field(
     this->symbols.push_back(std::make_unique<FieldSymbolDef>(
         field_name,
         internal_name,
-        type,
+        std::move(type),
         flags
     ));
 }
@@ -127,7 +129,7 @@ void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymb
 }
 
 
-FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
+const FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
 {
     for (const auto& symbol_def : this->symbols)
     {
@@ -143,26 +145,26 @@ FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
     return nullptr;
 }
 
-IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_name) const
+const IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_name) const
 {
     for (const auto& symbol_def : this->symbols)
     {
-        if (auto* identif_def = dynamic_cast<IdentifiableSymbolDef*>(symbol_def.get()))
+        if (const auto* identifier_def = dynamic_cast<IdentifiableSymbolDef*>(symbol_def.get()))
         {
-            if (identif_def->get_internal_symbol_name() == symbol_name)
+            if (identifier_def->get_internal_symbol_name() == symbol_name)
             {
-                return identif_def;
+                return identifier_def;
             }
         }
     }
     return nullptr;
 }
 
-SymbolFnDefinition* Scope::get_function_def(const std::string& function_name) const
+const SymbolFnDefinition* Scope::get_function_def(const std::string& function_name) const
 {
     for (const auto& symbol_def : this->symbols)
     {
-        if (auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol_def.get()))
+        if (const auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol_def.get()))
         {
             if (fn_def->get_internal_symbol_name() == function_name)
             {

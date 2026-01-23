@@ -94,9 +94,9 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     const auto param_name = reference_token.lexeme;
     set.expect(TokenType::COLON);
 
-    const std::unique_ptr<IAstInternalFieldType> fn_param_type = parse_ast_type(set);
+    std::unique_ptr<IAstInternalFieldType> fn_param_type = parse_ast_type(set);
 
-    auto fn_param_type_shared = std::shared_ptr<IAstInternalFieldType>(std::move(fn_param_type.get()));
+    std::shared_ptr<IAstInternalFieldType> fn_param_type_shared{std::move(fn_param_type)};
 
     scope->define_field(param_name, reference_token.lexeme, fn_param_type_shared, flags);
 

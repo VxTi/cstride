@@ -141,11 +141,11 @@ namespace stride::ast
 
         ScopeType get_scope_type() const { return this->_type; }
 
-        FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
+        const FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
 
-        SymbolFnDefinition* get_function_def(const std::string& function_name) const;
+        const SymbolFnDefinition* get_function_def(const std::string& function_name) const;
 
-        IdentifiableSymbolDef* get_symbol_def(const std::string& symbol_name) const;
+        const IdentifiableSymbolDef* get_symbol_def(const std::string& symbol_name) const;
 
         /// Will attempt to define the function in the global scope.
         void define_function(
@@ -177,6 +177,6 @@ namespace stride::ast
         bool is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type);
 
     private:
-        std::shared_ptr<Scope> traverse_to_root();
+        Scope* traverse_to_root();
     };
 }
