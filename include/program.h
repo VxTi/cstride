@@ -2,8 +2,6 @@
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
 
-#define MAIN_FN_NAME ("main")
-
 namespace stride
 {
     class ProgramObject
@@ -53,5 +51,14 @@ namespace stride
         Program& operator=(const Program&) = delete;
         Program(Program&&) noexcept = default;
         Program& operator=(Program&&) noexcept = default;
+
+    private:
+        void resolve_forward_references(
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) const;
+
+        void generate_llvm_ir(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) const;
     };
 }

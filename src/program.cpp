@@ -11,6 +11,7 @@
 #include <llvm/TargetParser/Host.h>
 
 #include "ast/parser.h"
+#include "ast/nodes/functions.h"
 
 using namespace stride;
 
@@ -52,6 +53,42 @@ void Program::print_ast_nodes() const
     {
         std::cout << node->get_root_ast_node()->source->path;
         std::cout << node->get_root_ast_node()->to_string() << std::endl;
+    }
+}
+
+void Program::resolve_forward_references(
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
+) const
+{
+    for (const auto& node : _program_objects)
+    {
+        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
+        {
+            synthesisable->resolve_forward_references(this->get_global_scope(), module, context, builder);
+        }
+    }
+}
+
+void Program::generate_llvm_ir(
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
+) const
+{
+    for (const auto& node : _program_objects)
+    {
+        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
+        {
+            if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, context, builder); !
+                entry)
+            {
+                throw std::runtime_error(
+                    "Failed to build executable for file " + node->get_root_ast_node()->source->path
+                );
+            }
+        }
     }
 }
 
@@ -100,26 +137,9 @@ void Program::execute(int argc, char* argv[]) const
 
     // First we'll define symbols for all nodes
     // This allows for function calls even if they're defined below the callee
-    for (const auto& node : _program_objects)
-    {
-        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
-        {
-            synthesisable->resolve_forward_references(this->get_global_scope(), module.get(), context, &builder);
-        }
-    }
+    this->resolve_forward_references(module.get(), context, &builder);
 
-    for (const auto& node : _program_objects)
-    {
-        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
-        {
-            if (const auto entry = synthesisable->codegen(this->get_global_scope(), module.get(), context, &builder); !entry)
-            {
-                throw std::runtime_error(
-                    "Failed to build executable for file " + node->get_root_ast_node()->source->path
-                );
-            }
-        }
-    }
+    this->generate_llvm_ir(module.get(), context, &builder);
 
     if (llvm::verifyModule(*module, &llvm::errs()))
     {

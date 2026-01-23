@@ -134,7 +134,7 @@ namespace stride::ast
         IAstNode* reduce() override { return this; };
     };
 
-    class AstFunctionInvocation :
+    class AstFunctionCall :
         public AstExpression
     {
         std::vector<std::unique_ptr<AstExpression>> _arguments;
@@ -142,7 +142,7 @@ namespace stride::ast
         const std::string _internal_name;
 
     public:
-        explicit AstFunctionInvocation(
+        explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string function_name,
@@ -151,7 +151,7 @@ namespace stride::ast
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
 
-        explicit AstFunctionInvocation(
+        explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string function_name,
@@ -465,8 +465,8 @@ namespace stride::ast
         TokenSet& set
     );
 
-    /// Parses a function invocation into an AstFunctionInvocation expression node
-    std::unique_ptr<AstExpression> parse_function_invocation(const std::shared_ptr<Scope>& scope, TokenSet& set);
+    /// Parses a function invocation into an AstFunctionCall expression node
+    std::unique_ptr<AstExpression> parse_function_call(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
@@ -508,7 +508,7 @@ namespace stride::ast
     bool is_variable_declaration(const TokenSet& set);
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
-    std::unique_ptr<IAstInternalFieldType> resolve_expression_internal_type(
+    std::unique_ptr<IAstInternalFieldType> infer_expression_type(
         const std::shared_ptr<Scope>& scope,
         AstExpression* expr
     );

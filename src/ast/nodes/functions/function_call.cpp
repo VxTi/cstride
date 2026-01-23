@@ -14,7 +14,7 @@
 
 using namespace stride::ast;
 
-bool AstFunctionInvocation::is_reducible()
+bool AstFunctionCall::is_reducible()
 {
     // TODO: implement
     // Function calls can be reducible if the function returns
@@ -22,22 +22,31 @@ bool AstFunctionInvocation::is_reducible()
     return false;
 }
 
-IAstNode* AstFunctionInvocation::reduce()
+IAstNode* AstFunctionCall::reduce()
 {
     return this;
 }
 
-std::string AstFunctionInvocation::to_string()
+std::string AstFunctionCall::to_string()
 {
     std::ostringstream oss;
 
-    for (const auto& arg : this->get_arguments())
+    const auto& args = this->get_arguments();
+    for (size_t i = 0; i < args.size(); ++i)
     {
-        oss << arg->to_string() << ", ";
+        oss << args[i]->to_string();
+        if (i < args.size() - 1)
+        {
+            oss << ", ";
+        }
     }
 
-    return std::format("FunctionInvocation({} ({}) [{}])", this->get_function_name(), this->get_internal_name(),
-                       oss.str());
+    return std::format(
+        "FunctionCall({} ({}) [{}])",
+        this->get_function_name(),
+        this->get_internal_name(),
+        oss.str()
+    );
 }
 
 std::optional<std::string> resolve_type_name(AstExpression* expr)
@@ -57,7 +66,7 @@ std::optional<std::string> resolve_type_name(AstExpression* expr)
     return std::nullopt;
 }
 
-llvm::Value* AstFunctionInvocation::codegen(
+llvm::Value* AstFunctionCall::codegen(
     const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
@@ -120,7 +129,7 @@ llvm::Value* AstFunctionInvocation::codegen(
     return builder->CreateCall(callee, args_v, "calltmp");
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_function_invocation(
+std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     const std::shared_ptr<Scope>& scope,
     TokenSet& set
 )
@@ -139,7 +148,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_invocation(
         auto subset = function_parameter_set.value();
         auto initial_arg = parse_standalone_expression_part(scope, subset);
 
-        auto initial_type = resolve_expression_internal_type(scope, initial_arg.get());
+        auto initial_type = infer_expression_type(scope, initial_arg.get());
         parameter_types.push_back(initial_type.get());
         parameter_type_owners.push_back(std::move(initial_type));
         function_arg_nodes.push_back(std::move(initial_arg));
@@ -150,7 +159,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_invocation(
             subset.expect(TokenType::COMMA);
             auto next_arg = parse_standalone_expression_part(scope, subset);
 
-            auto next_type = resolve_expression_internal_type(scope, next_arg.get());
+            auto next_type = infer_expression_type(scope, next_arg.get());
             parameter_types.push_back(next_type.get());
             parameter_type_owners.push_back(std::move(next_type));
             function_arg_nodes.push_back(std::move(next_arg));
@@ -162,7 +171,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_invocation(
         candidate_function_name
     );
 
-    return std::make_unique<AstFunctionInvocation>(
+    return std::make_unique<AstFunctionCall>(
         set.source(),
         reference_token.offset,
         candidate_function_name,

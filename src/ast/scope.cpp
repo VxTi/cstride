@@ -174,7 +174,8 @@ const FieldSymbolDef* Scope::lookup(const std::string& name) const
 
 const SymbolFnDefinition* Scope::get_function_def(const std::string& function_name) const
 {
-    for (const auto& symbol_def : this->symbols)
+    const auto& global_scope = this->traverse_to_root();
+    for (const auto& symbol_def : global_scope.symbols)
     {
         if (const auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol_def.get()))
         {

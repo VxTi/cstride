@@ -97,7 +97,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
     {
         if (set.peak(1).type == TokenType::LPAREN)
         {
-            return parse_function_invocation(scope, set);
+            return parse_function_call(scope, set);
         }
 
         const auto reference_token = set.next();

@@ -1,11 +1,12 @@
 #include <memory>
 
+#include "ast/nodes/functions.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(AstLiteral* literal)
+std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(AstLiteral* literal)
 {
     if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
     {
@@ -49,14 +50,61 @@ std::unique_ptr<IAstInternalFieldType> resolve_expression_literal_internal_type(
     );
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_type(
+std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
+    const std::shared_ptr<Scope>& scope,
+    const AstFunctionCall* fn_call)
+{
+    const auto regular_name = fn_call->get_function_name();
+    // If we can simply get the function definition from the scope, we can return its type.
+    if (const auto fn_def = scope->get_function_def(regular_name); fn_def != nullptr)
+    {
+        return fn_def->get_return_type()->clone();
+    }
+
+    // Otherwise, it's likely that we'll have to figure out its internal name ourselves based on the inferred
+    // types from the callee's arguments
+    std::vector<std::unique_ptr<IAstInternalFieldType>> resolved_arg_types;
+    std::vector<IAstInternalFieldType*> parameter_types;
+
+    const auto& args = fn_call->get_arguments();
+    resolved_arg_types.reserve(args.size());
+    parameter_types.reserve(args.size());
+
+    for (const auto& arg : args)
+    {
+        auto expr_type = infer_expression_type(scope, arg.get());
+        parameter_types.push_back(expr_type.get());
+        resolved_arg_types.push_back(std::move(expr_type));
+    }
+
+    const auto internal_name = resolve_internal_function_name(parameter_types, regular_name);
+    const auto definition = scope->get_function_def(internal_name);
+
+    if (definition != nullptr)
+    {
+        return definition->get_return_type()->clone();
+    }
+
+    throw stride::parsing_error(
+        stride::make_ast_error(
+            *fn_call->source,
+            fn_call->source_offset,
+            std::format(
+                "Unable to resolve function invocation return type for function '{}'",
+                fn_call->get_function_name()
+            )
+        )
+    );
+}
+
+std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
     const std::shared_ptr<Scope>& scope,
     AstExpression* expr
 )
 {
     if (auto* literal = dynamic_cast<AstLiteral*>(expr))
     {
-        return resolve_expression_literal_internal_type(literal);
+        return infer_expression_literal_type(literal);
     }
 
     if (const auto* identifier = dynamic_cast<AstIdentifier*>(expr))
@@ -76,8 +124,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_
 
     if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
     {
-        auto lhs = resolve_expression_internal_type(scope, &operation->get_left());
-        const auto rhs = resolve_expression_internal_type(scope, &operation->get_right());
+        auto lhs = infer_expression_type(scope, &operation->get_left());
+        const auto rhs = infer_expression_type(scope, &operation->get_right());
 
         if (*lhs == *rhs)
         {
@@ -89,7 +137,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_
 
     if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
     {
-        return resolve_expression_internal_type(scope, &operation->get_operand());
+        return infer_expression_type(scope, &operation->get_operand());
     }
 
     if (dynamic_cast<AstLogicalOp*>(expr) || dynamic_cast<AstComparisonOp*>(expr))
@@ -102,13 +150,13 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_
 
     if (const auto* operation = dynamic_cast<AstVariableReassignment*>(expr))
     {
-        return resolve_expression_internal_type(scope, operation->get_value());
+        return infer_expression_type(scope, operation->get_value());
     }
 
     if (const auto* operation = dynamic_cast<AstVariableDeclaration*>(expr))
     {
         const auto declared = operation->get_variable_type();
-        const auto value = resolve_expression_internal_type(scope, operation->get_initial_value().get());
+        const auto value = infer_expression_type(scope, operation->get_initial_value().get());
 
         // Both the expression type and the declared type are the same (e.g., let var: i32 = 10)
         // so we can just return the declared type.
@@ -118,6 +166,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_
         }
 
         return get_dominant_type(declared, value.get());
+    }
+
+    if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(expr))
+    {
+        return infer_function_call_return_type(scope, fn_call);
     }
 
     throw parsing_error("Unable to resolve expression type" + expr->to_string());
