@@ -193,7 +193,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     scope->define_field(
         variable_name,
         internal_name,
-        type->clone(),
+        type.get(),
         flags
     );
 

@@ -25,7 +25,7 @@ namespace stride::ast
     class AstFunctionParameter : public IAstNode
     {
         const std::string _name;
-        std::shared_ptr<IAstInternalFieldType> _type;
+        std::unique_ptr<IAstInternalFieldType> _type;
         const int _flags;
 
     public:
@@ -33,7 +33,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             std::string param_name,
-            std::shared_ptr<IAstInternalFieldType> param_type,
+            std::unique_ptr<IAstInternalFieldType> param_type,
             const int flags
         ) : IAstNode(source, source_offset),
             _name(std::move(param_name)),
@@ -46,7 +46,7 @@ namespace stride::ast
         std::string get_name() const { return this->_name; }
 
         [[nodiscard]]
-        std::shared_ptr<IAstInternalFieldType> get_type() const { return this->_type; }
+        IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
         ~AstFunctionParameter() override = default;
     };

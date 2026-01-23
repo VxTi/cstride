@@ -73,7 +73,7 @@ void stride::ast::parse_subsequent_fn_params(
 std::string AstFunctionParameter::to_string()
 {
     const auto name = this->get_name();
-    const auto type_str = this->get_type()->to_string();
+    auto type_str = this->get_type()->to_string();
     return std::format("{}({})", name, type_str);
 }
 
@@ -96,15 +96,13 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
 
     std::unique_ptr<IAstInternalFieldType> fn_param_type = parse_ast_type(set);
 
-    std::shared_ptr<IAstInternalFieldType> fn_param_type_shared{std::move(fn_param_type)};
-
-    scope->define_field(param_name, reference_token.lexeme, fn_param_type_shared, flags);
+    scope->define_field(param_name, reference_token.lexeme, fn_param_type.get(), flags);
 
     return std::make_unique<AstFunctionParameter>(
         set.source(),
         reference_token.offset,
         reference_token.lexeme,
-        fn_param_type_shared,
+        std::move(fn_param_type),
         flags
     );
 }

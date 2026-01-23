@@ -202,10 +202,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
     auto return_type = parse_ast_type(tokens);
 
-    std::shared_ptr<IAstInternalFieldType> return_type_shared{std::move(return_type)};
-
-
-    std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types = {};
+    std::vector<IAstInternalFieldType*> parameter_types;
     for (const auto& param : parameters)
     {
         parameter_types.push_back(param->get_type());
@@ -220,7 +217,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     {
         internal_name = resolve_internal_function_name(parameter_types, fn_name);
     }
-    scope->define_function(fn_name, parameter_types, return_type_shared);
+    scope->define_function(fn_name, parameter_types, return_type.get());
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -240,7 +237,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         internal_name,
         std::move(parameters),
         std::move(body),
-        return_type_shared,
+        std::move(return_type),
         flags
     );
 }
@@ -253,7 +250,7 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())
     {
-        auto llvm_type = internal_type_to_llvm_type(param->get_type().get(), module, context);
+        auto llvm_type = internal_type_to_llvm_type(param->get_type(), module, context);
         if (!llvm_type)
         {
             return std::nullopt;

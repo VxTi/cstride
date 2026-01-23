@@ -130,7 +130,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_invocation(
     auto function_parameter_set = collect_parenthesized_block(set);
 
     std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
-    std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types = {};
+    std::vector<IAstInternalFieldType*> parameter_types = {};
+    std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_type_owners = {};
 
     // Parsing function parameter values
     if (function_parameter_set.has_value())
@@ -138,15 +139,20 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_invocation(
         auto subset = function_parameter_set.value();
         auto initial_arg = parse_standalone_expression_part(scope, subset);
 
-        parameter_types.push_back(std::move(resolve_expression_internal_type(scope, &*initial_arg)));
+        auto initial_type = resolve_expression_internal_type(scope, initial_arg.get());
+        parameter_types.push_back(initial_type.get());
+        parameter_type_owners.push_back(std::move(initial_type));
         function_arg_nodes.push_back(std::move(initial_arg));
 
+        // Consume next parameters
         while (subset.has_next())
         {
             subset.expect(TokenType::COMMA);
             auto next_arg = parse_standalone_expression_part(scope, subset);
 
-            parameter_types.push_back(std::move(resolve_expression_internal_type(scope, &*next_arg)));
+            auto next_type = resolve_expression_internal_type(scope, next_arg.get());
+            parameter_types.push_back(next_type.get());
+            parameter_type_owners.push_back(std::move(next_type));
             function_arg_nodes.push_back(std::move(next_arg));
         }
     }

@@ -3,14 +3,14 @@
 
 using namespace stride::ast;
 
-Scope* Scope::traverse_to_root()
+const Scope& Scope::traverse_to_root() const
 {
-    auto* global_scope = this;
-    while (global_scope != nullptr && global_scope->parent_scope != nullptr)
+    auto current = this;
+    while (current->parent_scope)
     {
-        global_scope = global_scope->parent_scope.get();
+        current = current->parent_scope.get();
     }
-    return global_scope;
+    return *current;
 }
 
 bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
@@ -42,10 +42,10 @@ bool Scope::is_variable_defined_globally(const std::string& variable_name) const
     return false;
 }
 
-bool Scope::is_function_defined_globally(const std::string& internal_function_name)
+bool Scope::is_function_defined_globally(const std::string& internal_function_name) const
 {
-    for (const auto root = this->traverse_to_root();
-         const auto& symbol : root->symbols)
+    for (const auto& root = this->traverse_to_root();
+         const auto& symbol : root.symbols)
     {
         if (const auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol.get()))
         {
@@ -59,10 +59,10 @@ bool Scope::is_function_defined_globally(const std::string& internal_function_na
     return false;
 }
 
-bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type)
+bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type) const
 {
-    for (const auto root = this->traverse_to_root();
-         const auto& symbol : root->symbols)
+    for (const auto& root = this->traverse_to_root();
+         const auto& symbol : root.symbols)
     {
         if (const auto* identifiable = dynamic_cast<IdentifiableSymbolDef*>(symbol.get()))
         {
@@ -79,24 +79,22 @@ bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, cons
 
 void Scope::define_function(
     const std::string& internal_function_name,
-    std::vector<std::shared_ptr<IAstInternalFieldType>> parameter_types,
-    std::shared_ptr<IAstInternalFieldType> return_type
-)
+    std::vector< IAstInternalFieldType*> parameter_types,
+    const IAstInternalFieldType* return_type
+) const
 {
-    const auto global_scope = this->traverse_to_root();
-    global_scope->symbols.push_back(
-        std::make_unique<SymbolFnDefinition>(
-            std::move(parameter_types),
-            std::move(return_type),
-            internal_function_name
-        )
-    );
+    auto& global_scope = const_cast<Scope&>(this->traverse_to_root());
+    global_scope.symbols.push_back(std::make_unique<SymbolFnDefinition>(
+        std::move(parameter_types),
+        return_type,
+        internal_function_name
+    ));
 }
 
 void Scope::define_field(
     const std::string& field_name,
     const std::string& internal_name,
-    const std::shared_ptr<IAstInternalFieldType>& type,
+    const IAstInternalFieldType* type,
     const int flags
 )
 {
@@ -114,15 +112,15 @@ void Scope::define_field(
     this->symbols.push_back(std::make_unique<FieldSymbolDef>(
         field_name,
         internal_name,
-        std::move(type),
+        type,
         flags
     ));
 }
 
-void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymbolType type)
+void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymbolType type) const
 {
-    const auto global_scope = this->traverse_to_root();
-    global_scope->symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
+    auto& global_scope = const_cast<Scope&>(this->traverse_to_root());
+    global_scope.symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
         type,
         symbol_name
     ));
@@ -133,12 +131,12 @@ const FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) 
 {
     for (const auto& symbol_def : this->symbols)
     {
-        if (auto* var_def = dynamic_cast<FieldSymbolDef*>(symbol_def.get()))
+        if (const auto* field_definition = dynamic_cast<FieldSymbolDef*>(symbol_def.get()))
         {
-            if (var_def->get_variable_name() == variable_name
-                || var_def->get_internal_symbol_name() == variable_name)
+            if (field_definition->get_internal_symbol_name() == variable_name ||
+                field_definition->get_variable_name() == variable_name)
             {
-                return var_def;
+                return field_definition;
             }
         }
     }

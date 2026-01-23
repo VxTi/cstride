@@ -94,8 +94,6 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        static std::optional<std::unique_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(TokenSet& set);
-
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
 
@@ -185,4 +183,6 @@ namespace stride::ast
      * @return The unique identifier (UID) associated with the given internal type.
      */
     size_t ast_type_to_internal_id(IAstInternalFieldType* type);
+
+    std::optional<std::unique_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(TokenSet& set);
 }

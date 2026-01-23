@@ -35,8 +35,7 @@ std::string AstNamedValueType::to_string()
     return std::format("Custom({}{})", this->name(), this->is_pointer() ? "*" : "");
 }
 
-std::optional<std::unique_ptr<AstPrimitiveFieldType>>
-AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
+std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primitive_type_optional(TokenSet& set)
 {
     int flags = 0;
     const auto reference_token = set.peak_next();
@@ -74,7 +73,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::INT16, 2, flags);
+                PrimitiveType::INT16,
+                2,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_INT32:
@@ -82,7 +84,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::INT32, 4, flags);
+                PrimitiveType::INT32,
+                4,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_INT64:
@@ -90,7 +95,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::INT64, 8, flags);
+                PrimitiveType::INT64,
+                8,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_UINT8:
@@ -109,7 +117,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::UINT16, 2, flags);
+                PrimitiveType::UINT16,
+                2,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_UINT32:
@@ -117,7 +128,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::UINT32, 4, flags);
+                PrimitiveType::UINT32,
+                4,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_UINT64:
@@ -125,7 +139,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::UINT64, 8, flags);
+                PrimitiveType::UINT64,
+                8,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_FLOAT32:
@@ -133,7 +150,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::FLOAT32, 4, flags);
+                PrimitiveType::FLOAT32,
+                4,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_FLOAT64:
@@ -141,7 +161,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::FLOAT64, 8, flags);
+                PrimitiveType::FLOAT64,
+                8,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_BOOL:
@@ -149,7 +172,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::BOOL, 1, flags);
+                PrimitiveType::BOOL,
+                1,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_CHAR:
@@ -157,7 +183,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::CHAR, 1, flags);
+                PrimitiveType::CHAR,
+                1,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_STRING:
@@ -165,7 +194,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::STRING, 1, flags);
+                PrimitiveType::STRING,
+                1,
+                flags
+            );
         }
         break;
     case TokenType::PRIMITIVE_VOID:
@@ -173,7 +205,10 @@ AstPrimitiveFieldType::parse_primitive_type_optional(TokenSet& set)
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
-                PrimitiveType::VOID, 0, flags);
+                PrimitiveType::VOID,
+                0,
+                flags
+            );
         }
         break;
     default:
@@ -215,7 +250,7 @@ std::optional<std::unique_ptr<AstNamedValueType>> AstNamedValueType::parse_named
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(TokenSet& set)
 {
-    if (auto primitive = AstPrimitiveFieldType::parse_primitive_type_optional(set); primitive.has_value())
+    if (auto primitive = parse_primitive_type_optional(set); primitive.has_value())
     {
         return std::move(primitive.value());
     }
@@ -294,8 +329,10 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     return nullptr;
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(const IAstInternalFieldType* lhs,
-                                                                      const IAstInternalFieldType* rhs)
+std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
+    const IAstInternalFieldType* lhs,
+    const IAstInternalFieldType* rhs
+)
 {
     const auto* lhs_primitive = dynamic_cast<const AstPrimitiveFieldType*>(lhs);
     const auto* rhs_primitive = dynamic_cast<const AstPrimitiveFieldType*>(rhs);
@@ -371,43 +408,48 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(const IAst
     );
 }
 
+size_t primitive_type_to_internal_id(const PrimitiveType type)
+{
+    switch (type)
+    {
+    case PrimitiveType::INT8:
+        return 0x01;
+    case PrimitiveType::INT16:
+        return 0x02;
+    case PrimitiveType::INT32:
+        return 0x03;
+    case PrimitiveType::INT64:
+        return 0x04;
+    case PrimitiveType::UINT8:
+        return 0x05;
+    case PrimitiveType::UINT16:
+        return 0x06;
+    case PrimitiveType::UINT32:
+        return 0x07;
+    case PrimitiveType::UINT64:
+        return 0x08;
+    case PrimitiveType::FLOAT32:
+        return 0x09;
+    case PrimitiveType::FLOAT64:
+        return 0x0A;
+    case PrimitiveType::BOOL:
+        return 0x0B;
+    case PrimitiveType::CHAR:
+        return 0x0C;
+    case PrimitiveType::STRING:
+        return 0x0D;
+    case PrimitiveType::VOID:
+        return 0x0E;
+    default:
+        return 0x00;
+    }
+}
+
 size_t stride::ast::ast_type_to_internal_id(IAstInternalFieldType* type)
 {
-    if (const auto* primitive = dynamic_cast<AstPrimitiveFieldType*>(type); primitive != nullptr)
+    if (const auto primitive = dynamic_cast<AstPrimitiveFieldType*>(type); primitive != nullptr)
     {
-        switch (primitive->type())
-        {
-        case PrimitiveType::INT8:
-            return 0x01;
-        case PrimitiveType::INT16:
-            return 0x02;
-        case PrimitiveType::INT32:
-            return 0x03;
-        case PrimitiveType::INT64:
-            return 0x04;
-        case PrimitiveType::UINT8:
-            return 0x05;
-        case PrimitiveType::UINT16:
-            return 0x06;
-        case PrimitiveType::UINT32:
-            return 0x07;
-        case PrimitiveType::UINT64:
-            return 0x08;
-        case PrimitiveType::FLOAT32:
-            return 0x09;
-        case PrimitiveType::FLOAT64:
-            return 0x0A;
-        case PrimitiveType::BOOL:
-            return 0x0B;
-        case PrimitiveType::CHAR:
-            return 0x0C;
-        case PrimitiveType::STRING:
-            return 0x0D;
-        case PrimitiveType::VOID:
-            return 0x0E;
-        default:
-            return 0x00;
-        }
+        return primitive_type_to_internal_id(primitive->type());
     }
 
     if (const auto* named = dynamic_cast<const AstNamedValueType*>(type))
