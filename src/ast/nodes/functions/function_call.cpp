@@ -73,15 +73,14 @@ llvm::Value* AstFunctionCall::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    // 3. Attempt to find the mangled name in the LLVM module
-    llvm::Function* callee = module->getFunction(this->get_function_name());
+    llvm::Function* callee = module->getFunction(this->get_internal_name());
 
-    // 4. Fallback for 'extern' functions
-    // In parse_fn_declaration, externs do not have type suffixes.
-    // If the mangled version isn't found, try the raw name.
+    // For non-extern functions,
     if (!callee)
     {
-        callee = module->getFunction(this->get_internal_name());
+        // It's possible that the function is internally registered with its normal name
+        // This always happens for extern functions.
+        callee = module->getFunction(this->get_function_name());;
     }
 
     if (!callee)

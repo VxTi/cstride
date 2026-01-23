@@ -141,6 +141,7 @@ void AstVariableDeclaration::validate()
     {
         throw parsing_error(
             make_ast_error(
+                ErrorType::TYPE_ERROR,
                 *source,
                 source_offset,
                 std::format(

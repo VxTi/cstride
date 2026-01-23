@@ -8,9 +8,9 @@ namespace stride
 {
     enum class ErrorType
     {
-        SYNTAX_ERROR = 1,
-        TYPE_ERROR = 2,
-        RUNTIME_ERROR = 3,
+        SYNTAX_ERROR   = 1,
+        TYPE_ERROR     = 2,
+        RUNTIME_ERROR  = 3,
         SEMANTIC_ERROR = 4
     };
 
@@ -27,15 +27,17 @@ namespace stride
     }
 
     static std::string make_ast_error(
-        const SourceFile &source,
+        const ErrorType error_type,
+        const SourceFile& source,
         const int offset,
         const std::string& error
-        )
+    )
     {
         if (offset >= source.source.length())
         {
             return std::format(
-                "┃ in {}\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
+                "┃ {} in {}\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
+                error_type_to_string(error_type),
                 source.path,
                 error
             );
@@ -69,12 +71,22 @@ namespace stride
         std::string line_str = source.source.substr(line_start, line_end - line_start);
 
         return std::format(
-            "┃ in \x1b[4m{}\x1b[0m:\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m\n┃",
+            "┃ {} in \x1b[4m{}\x1b[0m:\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m\n┃",
+            error_type_to_string(error_type),
             source.path,
             error,
             line_number,
             line_str
         );
+    }
+
+    static std::string make_ast_error(
+        const SourceFile& source,
+        const int offset,
+        const std::string& error
+    )
+    {
+        return make_ast_error(ErrorType::SYNTAX_ERROR, source, offset, error);
     }
 
     /**
@@ -151,13 +163,9 @@ namespace stride
         std::string what_msg;
 
     public:
-        explicit parsing_error(const char* str) : std::runtime_error(str), what_msg(str)
-        {
-        }
+        explicit parsing_error(const char* str) : std::runtime_error(str), what_msg(str) {}
 
-        explicit parsing_error(const std::string& str) : parsing_error(str.c_str())
-        {
-        }
+        explicit parsing_error(const std::string& str) : parsing_error(str.c_str()) {}
 
 
         [[nodiscard]]
