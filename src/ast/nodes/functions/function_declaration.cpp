@@ -1,4 +1,4 @@
-#include "ast/nodes/function_definition.h"
+#include "ast/nodes/function_declaration.h"
 
 #include <iostream>
 #include <llvm/IR/BasicBlock.h>
@@ -17,8 +17,12 @@ using namespace stride::ast;
 
 void AstFunctionDeclaration::validate()
 {
+    if (this->body() != nullptr)
+    {
+        this->body()->validate();
+    }
     // Check if there's a return node
- //    bool should_have_return_node = this->return_type().get() != nullptr;
+    //    bool should_have_return_node = this->return_type().get() != nullptr;
 }
 
 void AstFunctionDeclaration::resolve_forward_references(

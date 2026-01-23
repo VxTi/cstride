@@ -155,7 +155,7 @@ void Program::execute(int argc, char* argv[]) const
 
     llvm::TargetMachine* const machine = target->createTargetMachine(
         triple,
-        "generic",
+        llvm::sys::getHostCPUName(),
         "",
         llvm::TargetOptions(),
         std::optional<llvm::Reloc::Model>()
@@ -186,6 +186,7 @@ void Program::execute(int argc, char* argv[]) const
     llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))
                                    .setErrorStr(&error)
                                    .setEngineKind(llvm::EngineKind::JIT)
+                                   .setMCPU(llvm::sys::getHostCPUName())
                                    .create();
 
     if (!engine)

@@ -108,8 +108,6 @@ namespace stride::ast
         [[nodiscard]]
         size_t byte_size() const { return this->_byte_size; }
 
-        /* * * * * * * * Override fields * * * * * * * */
-
         [[nodiscard]]
         std::unique_ptr<IAstInternalFieldType> clone() const override
         {

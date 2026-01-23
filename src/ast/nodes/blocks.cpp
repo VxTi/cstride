@@ -4,7 +4,7 @@
 
 #include <sstream>
 
-#include "ast/nodes/function_definition.h"
+#include "ast/nodes/function_declaration.h"
 
 using namespace stride::ast;
 

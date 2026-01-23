@@ -17,6 +17,51 @@ bool AstVariableReassignment::is_reducible()
     return false;
 }
 
+void AstVariableReassignment::validate()
+{
+    const auto identifier_def = this->scope->get_variable_def(this->get_variable_name());
+    std::cout << "Doing assignment validation" << std::endl;
+    if (!identifier_def)
+    {
+        throw parsing_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                std::format("Unable to reassign variable, variable '{}' not found", this->get_variable_name())
+            )
+        );
+    }
+
+    const auto expression_type = infer_expression_type(this->scope, this->get_value());
+
+    if (!identifier_def->get_type()->is_mutable())
+    {
+        throw parsing_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                std::format("Variable '{}' is immutable and cannot be reassigned", this->get_variable_name())
+            )
+        );
+    }
+
+    /*if (identifier_def->get_type() != expression_type.get())
+    {
+        throw parsing_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                std::format(
+                    "Type mismatch when reassigning variable '{}', expected type '{}', got type '{}'",
+                    this->get_variable_name(),
+                    identifier_def->get_type()->to_string(),
+                    expression_type.get()->to_string()
+                )
+            )
+        );
+    }*/
+}
+
 IAstNode* AstVariableReassignment::reduce()
 {
     if (auto* reducible = dynamic_cast<IReducible*>(this->get_value()); reducible != nullptr)
@@ -50,12 +95,12 @@ llvm::Value* AstVariableReassignment::codegen(
     if (!variable)
     {
         // Try to find in global scope with regular name
-        module->getNamedGlobal(this->get_variable_name());
+        variable = module->getNamedGlobal(this->get_variable_name());
     }
     if (!variable)
     {
         // Once more try with its internal name
-        module->getNamedGlobal(this->get_internal_name());
+        variable = module->getNamedGlobal(this->get_internal_name());
     }
 
     if (!variable)
@@ -83,7 +128,7 @@ llvm::Value* AstVariableReassignment::codegen(
 
 std::string AstVariableReassignment::to_string()
 {
-    return std::format("VariableAssignment({}({}), {})",
+    return std::format("VariableReassignment({}({}), {})",
                        this->get_variable_name(),
                        this->get_internal_name(),
                        this->get_value()->to_string()
@@ -160,7 +205,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
         const auto reference_token = set.peak_next();
 
         std::string reassignment_iden_name = reference_token.lexeme;
-        auto reassign_internal_variable_name = scope->get_variable_def(reassignment_iden_name);
+        auto reassign_internal_variable_name = scope->lookup(reassignment_iden_name);
 
         if (!reassign_internal_variable_name)
         {

@@ -82,10 +82,8 @@ llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Modu
 
         if (!var_addr)
         {
-            // var_addr = module->getNamedGlobal(internal_name);
-
             // Try global
-            module->getNamedGlobal(identifier->get_name());
+            var_addr = module->getNamedGlobal(identifier->get_name());
         }
 
         if (!var_addr)
@@ -221,7 +219,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
 
         const auto operation_tok = set.next();
 
-        auto variable_def = scope->get_variable_def(iden_name);
+        auto variable_def = scope->lookup(iden_name);
         if (!variable_def)
         {
             return std::nullopt;

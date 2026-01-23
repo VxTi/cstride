@@ -471,6 +471,8 @@ namespace stride::ast
         IAstNode* reduce() override;
 
         std::string to_string() override;
+
+        void validate() override;
     };
 
     /// Returns the precedence value for a binary arithmetic operator
