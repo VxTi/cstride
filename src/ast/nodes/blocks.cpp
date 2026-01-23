@@ -12,7 +12,7 @@ void AstBlock::resolve_forward_references(const std::shared_ptr<Scope>& scope, l
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            synthesisable->define_symbols(scope, module, context, builder);
+            synthesisable->resolve_forward_references(scope, module, context, builder);
         }
     }
 }

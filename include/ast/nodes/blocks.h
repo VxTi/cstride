@@ -28,6 +28,8 @@ namespace stride::ast
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
+
+        ~AstBlock() override = default;
     };
 
     std::unique_ptr<AstBlock> parse_block(const std::shared_ptr<Scope>& scope, TokenSet& set);

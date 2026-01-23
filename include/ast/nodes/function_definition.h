@@ -125,6 +125,8 @@ namespace stride::ast
         [[nodiscard]]
         bool is_mutable() const { return this->_flags & SRFLAG_FN_DEF_MUTABLE; }
 
+        ~AstFunctionDeclaration() override = default;
+
     private:
         std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
             llvm::Module* module,

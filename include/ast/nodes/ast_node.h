@@ -1,13 +1,15 @@
 #pragma once
 
-#include <llvm/IR/Value.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Value.h>
 
 #include "files.h"
-#include "ast/scope.h"
 
 namespace stride::ast
 {
+    // If we include the header, it'll cause circular references, and it'll break everything.
+    class Scope;
+
     class ISynthesisable
     {
     public:

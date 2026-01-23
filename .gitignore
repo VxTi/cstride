@@ -1,7 +1,9 @@
-build/
-cmake-build-debug/
+build
+workspace.xml
+cmake-build-debug
 CMakeFiles/
 CMakeCache.txt
+editor/.c-cache
 *.o
 *.obj
 *.exe

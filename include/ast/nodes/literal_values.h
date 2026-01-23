@@ -44,7 +44,7 @@ namespace stride::ast
             const LiteralType type,
             const char byte_count
         )
-            : AstExpression(source, source_offset, {}),
+            : AstExpression(source, source_offset),
               _bit_count(byte_count),
               _type(type) {}
 
