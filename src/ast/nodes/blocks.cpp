@@ -1,8 +1,10 @@
 #include <iostream>
 
 #include "ast/nodes/blocks.h"
+
+#include <sstream>
+
 #include "ast/nodes/function_definition.h"
-#include "ast/nodes/import.h"
 
 using namespace stride::ast;
 

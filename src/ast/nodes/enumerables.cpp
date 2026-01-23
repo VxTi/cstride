@@ -34,6 +34,7 @@ std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(std::
     return std::make_unique<AstEnumerableMember>(
         tokens.source(),
         member_name_tok.offset,
+        scope,
         std::move(member_sym),
         std::move(value.value())
     );
@@ -93,6 +94,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(std::sh
     return std::make_unique<AstEnumerable>(
         set.source(),
         reference_token.offset,
+        scope,
         std::move(members),
         enumerable_name
     );

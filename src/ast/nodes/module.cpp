@@ -53,6 +53,7 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     return std::make_unique<AstModule>(
         tokens.source(),
         reference_token.offset,
+        scope,
         module_name
     );
 }

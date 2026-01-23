@@ -32,10 +32,11 @@ namespace stride::ast
         explicit AstFunctionParameter(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string param_name,
             std::unique_ptr<IAstInternalFieldType> param_type,
             const int flags
-        ) : IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset, scope),
             _name(std::move(param_name)),
             _type(std::move(param_type)),
             _flags(flags) {}
@@ -71,6 +72,7 @@ namespace stride::ast
         AstFunctionDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string name,
             std::string internal_name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
@@ -78,7 +80,7 @@ namespace stride::ast
             std::shared_ptr<IAstInternalFieldType> return_type,
             const int flags
         ) :
-            IAstNode(source, source_offset),
+            IAstNode(source, source_offset, scope),
             _body(std::move(body)),
             _name(std::move(name)),
             _internal_name(std::move(internal_name)),

@@ -20,39 +20,61 @@ void Program::parse_files(const std::vector<std::string>& files)
     this->_global_scope = std::make_shared<ast::Scope>(ast::ScopeType::GLOBAL);
     this->_files = files;
 
+    std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
+
     for (const auto& file : files)
     {
         auto root_node = ast::parser::parse_file(*this, file);
 
-        if (const auto reducible = dynamic_cast<ast::IReducible*>(root_node.get());
-            reducible && reducible->is_reducible())
-        {
-            // It's possible the node can be completely reduced,
-            // so we'll have to be careful here.
-            if (auto* reduced_raw = reducible->reduce())
-            {
-                std::unique_ptr<ast::IAstNode> reduced_node(reduced_raw);
+        if (!root_node)
+            continue;
 
-                this->_program_objects.push_back(
-                    std::make_unique<ProgramObject>(std::move(reduced_node))
-                );
-            }
-        }
-        else
-        {
-            this->_program_objects.push_back(
-                std::make_unique<ProgramObject>(std::move(root_node))
-            );
-        }
+        ast_nodes.push_back(std::move(root_node));
     }
+
+    if (ast_nodes.empty())
+    {
+        std::cout << "No valid stride files found" << std::endl;
+        exit(0);
+    }
+
+    auto first_node = std::move(ast_nodes.front());
+
+    // Append all other nodes into first
+    for (auto it = ast_nodes.begin() + 1; it != ast_nodes.end(); ++it)
+    {
+        first_node->aggregate_block(it->get());
+    }
+
+    this->_root_node = std::move(first_node);
 }
 
 void Program::print_ast_nodes() const
 {
-    for (const auto& node : _program_objects)
+    for (const auto& node : this->_root_node->children())
     {
-        std::cout << node->get_root_ast_node()->source->path;
-        std::cout << node->get_root_ast_node()->to_string() << std::endl;
+        std::cout << node->to_string() << std::endl;
+    }
+}
+
+void Program::optimize_ast_nodes() const
+{
+    for (int i = 0; i < this->_root_node->children().capacity(); i++)
+    {
+        ast::IAstNode * child = this->_root_node->children()[i].get();
+
+        if (auto* reducible = dynamic_cast<ast::IReducible*>(child))
+        {
+            this->_root_node->replace_child(i, std::unique_ptr<ast::IAstNode>(reducible->reduce()));
+        }
+    }
+}
+
+void Program::validate_ast_nodes() const
+{
+    for (const auto& child : this->_root_node.get()->children())
+    {
+        child->validate();
     }
 }
 
@@ -62,12 +84,9 @@ void Program::resolve_forward_references(
     llvm::IRBuilder<>* builder
 ) const
 {
-    for (const auto& node : _program_objects)
+    if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(this->_root_node.get()))
     {
-        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
-        {
-            synthesisable->resolve_forward_references(this->get_global_scope(), module, context, builder);
-        }
+        synthesisable->resolve_forward_references(this->get_global_scope(), module, context, builder);
     }
 }
 
@@ -77,17 +96,13 @@ void Program::generate_llvm_ir(
     llvm::IRBuilder<>* builder
 ) const
 {
-    for (const auto& node : _program_objects)
+    if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(this->_root_node.get()))
     {
-        if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(node->get_root_ast_node()))
+        if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, context, builder); !
+            entry)
         {
-            if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, context, builder); !
-                entry)
-            {
-                throw std::runtime_error(
-                    "Failed to build executable for file " + node->get_root_ast_node()->source->path
-                );
-            }
+            throw std::runtime_error(
+                "Failed to build executable for file " + this->_root_node->source->path);
         }
     }
 }
@@ -96,10 +111,6 @@ void Program::execute(int argc, char* argv[]) const
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    if (_program_objects.empty())
-    {
-        return;
-    }
     // For debugging purposes, comment this out to see the generated AST nodes
     this->print_ast_nodes();
 
@@ -135,10 +146,11 @@ void Program::execute(int argc, char* argv[]) const
     module->setDataLayout(machine->createDataLayout());
     module->setTargetTriple(triple);
 
-    // First we'll define symbols for all nodes
-    // This allows for function calls even if they're defined below the callee
-    this->resolve_forward_references(module.get(), context, &builder);
+    this->validate_ast_nodes();
+    this->optimize_ast_nodes();
 
+    // Ensures symbols are defined for codegen
+    this->resolve_forward_references(module.get(), context, &builder);
     this->generate_llvm_ir(module.get(), context, &builder);
 
     if (llvm::verifyModule(*module, &llvm::errs()))

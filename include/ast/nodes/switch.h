@@ -18,9 +18,10 @@ namespace stride::ast
         explicit AstSwitch(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const std::string& name
         )
-            : IAstNode(source, source_offset),
+            : IAstNode(source, source_offset, scope),
               _name(name) {}
 
         std::string to_string() override;

@@ -201,7 +201,7 @@ export const language: languages.IMonarchLanguage = {
       [/[;,]/, 'delimiter'],
 
       // Numbers
-      [/\d*\.\d+([eE][\-+]?\d+)?/, 'number.float'],
+      [/\d*\.\d+([eE][\-+]?\d+[dD]?)?/, 'number.float'],
       [/0[xX][0-9a-fA-F]+/, 'number.hex'],
       [/\d+/, 'number'],
 

@@ -133,6 +133,26 @@ llvm::Value* AstVariableDeclaration::codegen(
     return alloca;
 }
 
+void AstVariableDeclaration::validate()
+{
+    const auto internal_expr_type = infer_expression_type(scope, this->get_initial_value().get());
+
+    if (IAstInternalFieldType* rhs_type = internal_expr_type.get(); *this->get_variable_type() != *rhs_type)
+    {
+        throw parsing_error(
+            make_ast_error(
+                *source,
+                source_offset,
+                std::format(
+                    "Type mismatch in variable declaration; expected type '{}', got '{}'",
+                    this->get_variable_type()->to_string(),
+                    internal_expr_type->to_string()
+                )
+            )
+        );
+    }
+}
+
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
     const std::shared_ptr<Scope>& scope,
@@ -167,7 +187,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
     const auto variable_name = variable_name_tok.lexeme;
     set.expect(TokenType::COLON);
-    auto variable_type = parse_ast_type(set);
+    auto variable_type = parse_ast_type(scope, set);
 
     set.expect(TokenType::EQUALS);
 
@@ -175,21 +195,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         SRFLAG_EXPR_VARIABLE_ASSIGNATION,
         scope, set
     );
-
-    const auto internal_expr_type = infer_expression_type(scope, value.get());
-    IAstInternalFieldType* lhs_type = variable_type.get();
-
-    if (IAstInternalFieldType* rhs_type = internal_expr_type.get(); *lhs_type != *rhs_type)
-    {
-        set.throw_error(
-            ErrorType::TYPE_ERROR,
-            std::format(
-                "Type mismatch in variable declaration; expected type '{}', got '{}'",
-                variable_type->to_string(),
-                internal_expr_type->to_string()
-            )
-        );
-    }
 
     // If it's not an inline variable declaration (e.g., in a for loop),
     // we expect a semicolon at the end.
@@ -215,6 +220,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     return std::make_unique<AstVariableDeclaration>(
         set.source(),
         reference_token.offset,
+        scope,
         variable_name,
         std::move(variable_type),
         std::move(value),

@@ -1,11 +1,8 @@
 #pragma once
 
-#include <sstream>
-#include <utility>
-
+#include "ast/identifiers.h"
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
-#include "ast/identifiers.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -26,8 +23,9 @@ namespace stride::ast
         explicit AstImport(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const Dependency& dependency
-        ) : IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset, scope),
             _dependency(dependency) {}
 
         [[nodiscard]]

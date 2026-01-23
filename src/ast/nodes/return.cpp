@@ -21,6 +21,7 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(std::shared_ptr<S
         return std::make_unique<AstReturn>(
             set.source(),
             reference_token.offset,
+            scope,
             nullptr
         );
     }
@@ -31,6 +32,7 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(std::shared_ptr<S
     return std::make_unique<AstReturn>(
         set.source(),
         reference_token.offset,
+        scope,
         std::move(value)
     );
 }

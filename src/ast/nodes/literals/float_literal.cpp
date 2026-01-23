@@ -17,6 +17,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
         return std::make_unique<AstFpLiteral>(
             set.source(),
             reference_token.offset,
+            scope,
             std::stod(numeric),
             8
         );
@@ -27,6 +28,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
         return std::make_unique<AstFpLiteral>(
             set.source(),
             reference_token.offset,
+            scope,
             std::stof(next.lexeme),
             4
         );

@@ -46,6 +46,7 @@ IAstNode* AstVariableDeclaration::reduce()
             return std::make_unique<AstVariableDeclaration>(
                 this->source,
                 this->source_offset,
+                scope,
                 this->get_variable_name(),
                 std::move(cloned_type),
                 std::unique_ptr<AstExpression>(reduced_expr),
@@ -113,6 +114,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         return std::make_unique<AstIdentifier>(
             set.source(),
             reference_token.offset,
+            scope,
             identifier_name,
             internal_name
         );
@@ -152,6 +154,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
         return std::make_unique<AstLogicalOp>(
             set.source(),
             reference_token.offset,
+            scope,
             std::move(lhs),
             logical_op.value(),
             std::move(rhs)
@@ -171,6 +174,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
         return std::make_unique<AstComparisonOp>(
             set.source(),
             reference_token.offset,
+            scope,
             std::move(lhs),
             comparative_op.value(),
             std::move(rhs)

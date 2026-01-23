@@ -33,6 +33,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
         return std::make_unique<AstIntLiteral>(
             set.source(),
             reference_token.offset,
+            scope,
             value,
             SRFLAG_INT_UNSIGNED
         );

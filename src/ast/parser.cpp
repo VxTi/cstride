@@ -12,7 +12,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstNode> parser::parse_file(const Program& program, const std::string& source_path)
+std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::string& source_path)
 {
     const auto source_file = read_file(source_path);
     auto tokens = tokenizer::tokenize(source_file);
@@ -70,7 +70,10 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
     return parse_standalone_expression(scope, set);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_sequential(const std::shared_ptr<Scope>& scope, TokenSet& set)
+std::unique_ptr<AstBlock> stride::ast::parse_sequential(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
@@ -93,6 +96,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(const std::shared_ptr<Sc
     return std::make_unique<AstBlock>(
         set.source(),
         initial_token.offset,
+        scope,
         std::move(nodes)
     );
 }

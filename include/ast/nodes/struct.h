@@ -15,10 +15,11 @@ namespace stride::ast
         AstStructMember(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const std::string& name,
             std::unique_ptr<IAstInternalFieldType> type
         ) :
-            IAstNode(source, source_offset),
+            IAstNode(source, source_offset, scope),
             _name(name),
             _type(std::move(type)) {}
 
@@ -33,7 +34,6 @@ namespace stride::ast
     {
         std::string _name;
         std::vector<std::unique_ptr<AstStructMember>> _cases;
-        std::optional<std::unique_ptr<AstStructMember>> _default_case;
 
         // Whether this struct references another one
         // This can be used for declaring a type with the data layout
@@ -44,25 +44,25 @@ namespace stride::ast
         AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const std::string& name,
             std::unique_ptr<IAstInternalFieldType> reference
         )
             :
-            IAstNode(source, source_offset),
+            IAstNode(source, source_offset, scope),
             _name(name),
             _reference(std::move(reference)) {}
 
         AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const std::string& name,
-            std::vector<std::unique_ptr<AstStructMember>> members,
-            std::optional<std::unique_ptr<AstStructMember>> default_case = std::nullopt
+            std::vector<std::unique_ptr<AstStructMember>> members
         ) :
-            IAstNode(source, source_offset),
+            IAstNode(source, source_offset, scope),
             _name(name),
             _cases(std::move(members)),
-            _default_case(std::move(default_case)),
             _reference(std::nullopt) {}
 
         bool is_reference_type() const { return _reference.has_value(); }

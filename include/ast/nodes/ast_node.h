@@ -34,10 +34,12 @@ namespace stride::ast
     public:
         explicit IAstNode(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset
+            const int source_offset,
+            const std::shared_ptr<Scope>& scope
         )
             : source(source),
-              source_offset(source_offset) {}
+              source_offset(source_offset),
+              scope(scope) {}
 
         virtual ~IAstNode() = default;
 
@@ -46,8 +48,8 @@ namespace stride::ast
         virtual void validate() {}
 
         const std::shared_ptr<SourceFile> source;
-
         const int source_offset;
+        const std::shared_ptr<Scope> scope;
     };
 
     class IReducible

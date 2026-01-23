@@ -202,6 +202,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         return std::make_unique<AstUnaryOp>(
             set.source(),
             next.offset,
+            scope,
             op_type.value(),
             std::move(distinct_expr),
             false // Prefix
@@ -234,10 +235,12 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         return std::make_unique<AstUnaryOp>(
             set.source(),
             iden_tok.offset,
+            scope,
             type,
             std::make_unique<AstIdentifier>(
                 set.source(),
                 next.offset,
+                scope,
                 iden_name,
                 internal_name
             ),

@@ -1,6 +1,7 @@
 #pragma once
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
+#include "ast/nodes/blocks.h"
 
 namespace stride
 {
@@ -27,17 +28,12 @@ namespace stride
     {
         std::vector<std::string> _files;
         std::shared_ptr<ast::Scope> _global_scope;
-        std::vector<std::unique_ptr<ProgramObject>> _program_objects;
-
-        void print_ast_nodes() const;
+        std::unique_ptr<ast::AstBlock> _root_node;
 
     public:
         void parse_files(const std::vector<std::string>& files);
 
         void execute(int argc, char* argv[]) const;
-
-
-        std::vector<std::unique_ptr<ProgramObject>>& nodes() { return _program_objects; }
 
         const std::vector<std::string>& get_files() const { return _files; }
 
@@ -53,12 +49,22 @@ namespace stride
         Program& operator=(Program&&) noexcept = default;
 
     private:
+        void print_ast_nodes() const;
+
         void resolve_forward_references(
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
         ) const;
 
-        void generate_llvm_ir(llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) const;
+        void validate_ast_nodes() const;
+
+        void optimize_ast_nodes() const;
+
+        void generate_llvm_ir(
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) const;
     };
 }

@@ -107,6 +107,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(const std::shared
     return std::make_unique<AstImport>(
         set.source(),
         reference_token.offset,
+        scope,
         dependency
     );
 }

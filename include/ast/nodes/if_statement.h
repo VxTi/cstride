@@ -18,10 +18,11 @@ namespace stride::ast
         AstIfStatement(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> block,
             std::unique_ptr<AstBlock> else_block
-        ) : IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset, scope),
             _condition(std::move(condition)),
             _block(std::move(block)),
             _else_block(std::move(else_block)) {}

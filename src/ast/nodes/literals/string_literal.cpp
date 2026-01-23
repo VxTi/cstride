@@ -18,6 +18,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_opt
         return std::make_unique<AstStringLiteral>(
             set.source(),
             reference_token.offset,
+            scope,
             str_tok.lexeme
         );
     }

@@ -16,11 +16,20 @@ namespace stride::ast
         explicit AstBlock(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::vector<std::unique_ptr<IAstNode>> children
-        ) : IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset, scope),
             _children(std::move(children)) {};
 
         std::string to_string() override;
+
+        void validate() override
+        {
+            for (const auto& child : this->_children)
+            {
+                child->validate();
+            }
+        }
 
         llvm::Value* codegen(
             const std::shared_ptr<Scope>& scope,
@@ -36,8 +45,25 @@ namespace stride::ast
             llvm::IRBuilder<>* builder
         ) override;
 
+        void aggregate_block(AstBlock* other)
+        {
+            for (auto& child : other->_children)
+            {
+                this->_children.push_back(std::move(child));
+            }
+        }
+
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
+
+        void replace_child(const size_t index, std::unique_ptr<IAstNode> new_node)
+        {
+            if (index >= this->_children.size())
+            {
+                throw std::out_of_range("Child index out of range");
+            }
+            // this->_children[index] = std::move(new_node);
+        }
 
         ~AstBlock() override = default;
     };

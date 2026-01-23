@@ -80,8 +80,9 @@ namespace stride::ast
     public:
         explicit AstExpression(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset
-        ) : IAstNode(source, source_offset) {};
+            const int source_offset,
+            const std::shared_ptr<Scope>& scope
+        ) : IAstNode(source, source_offset, scope) {};
 
         ~AstExpression() override = default;
 
@@ -109,9 +110,10 @@ namespace stride::ast
         explicit AstIdentifier(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string name,
             std::string internal_name
-        ) : AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset, scope),
             _name(std::move(name)),
             _internal_name(std::move(internal_name)) {}
 
@@ -145,19 +147,21 @@ namespace stride::ast
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string function_name,
             std::string internal_name
-        ) : AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset, scope),
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
 
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string function_name,
             std::string internal_name,
             std::vector<std::unique_ptr<AstExpression>> arguments
-        ) : AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset, scope),
             _arguments(std::move(arguments)),
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
@@ -198,12 +202,13 @@ namespace stride::ast
         AstVariableDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string variable_name,
             std::unique_ptr<IAstInternalFieldType> variable_type,
             std::unique_ptr<AstExpression> initial_value,
             const int flags,
             std::string internal_name
-        ) : AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset, scope),
             _flags(flags),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
@@ -248,6 +253,8 @@ namespace stride::ast
         bool is_reducible() override;
 
         IAstNode* reduce() override;
+
+        void validate() override;
     };
 
     class AbstractBinaryOp : public AstExpression
@@ -259,9 +266,10 @@ namespace stride::ast
         AbstractBinaryOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::unique_ptr<AstExpression> lsh,
             std::unique_ptr<AstExpression> rsh
-        ) : AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset, scope),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
 
@@ -281,10 +289,17 @@ namespace stride::ast
         AstBinaryArithmeticOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_offset, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(
+                source,
+                source_offset,
+                scope,
+                std::move(left),
+                std::move(right)
+            ),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -313,10 +328,17 @@ namespace stride::ast
         AstLogicalOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_offset, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(
+                source,
+                source_offset,
+                scope,
+                std::move(left),
+                std::move(right)
+            ),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -341,10 +363,17 @@ namespace stride::ast
         AstComparisonOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_offset, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(
+                source,
+                source_offset,
+                scope,
+                std::move(left),
+                std::move(right)
+            ),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -371,10 +400,11 @@ namespace stride::ast
         AstUnaryOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
-        ) : AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset, scope),
             _op_type(op),
             _operand(std::move(operand)),
             _is_lsh(is_lsh) {}
@@ -410,11 +440,12 @@ namespace stride::ast
         explicit AstVariableReassignment(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
             std::unique_ptr<AstExpression> value
-        ) : AstExpression(source, source_offset),
+        ) : AstExpression(source, source_offset, scope),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
             _value(std::move(value)),

@@ -16,6 +16,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_op
         return std::make_unique<AstBooleanLiteral>(
             set.source(),
             reference_token.offset,
+            scope,
             value
         );
     }

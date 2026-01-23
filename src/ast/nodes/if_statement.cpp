@@ -28,6 +28,7 @@ std::unique_ptr<AstBlock> parse_else_optional(std::shared_ptr<Scope> scope, Toke
     return std::make_unique<AstBlock>(
         set.source(),
         reference_token.offset,
+        scope,
         std::move(nodes)
     );
 }
@@ -57,6 +58,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(std::shared_ptr<
     return std::make_unique<AstIfStatement>(
         set.source(),
         reference_token.offset,
+        scope,
         std::move(condition),
         std::move(body),
         std::move(else_statement)

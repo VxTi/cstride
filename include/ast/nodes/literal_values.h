@@ -41,11 +41,12 @@ namespace stride::ast
         AstLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const LiteralType type,
-            const char byte_count
+            const short bit_count
         )
-            : AstExpression(source, source_offset),
-              _bit_count(byte_count),
+            : AstExpression(source, source_offset, scope),
+              _bit_count(bit_count),
               _type(type) {}
 
         ~AstLiteral() override = default;
@@ -53,7 +54,7 @@ namespace stride::ast
         std::string to_string() override = 0;
 
         [[nodiscard]]
-        char bit_count() const { return this->_bit_count; }
+        short bit_count() const { return this->_bit_count; }
 
         [[nodiscard]]
         LiteralType get_type() const { return this->_type; }
@@ -68,11 +69,12 @@ namespace stride::ast
         explicit AbstractAstLiteralBase(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const LiteralType type,
             T value,
             const char byte_count
         ) :
-            AstLiteral(source, source_offset, type, byte_count),
+            AstLiteral(source, source_offset, scope, type, byte_count),
             _value(std::move(value)) {}
 
         [[nodiscard]]
@@ -85,17 +87,26 @@ namespace stride::ast
         explicit AstStringLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string val
         ) :
             // Strings are only considered to be a single byte,
             // as they're pointing to a memory location
-            AbstractAstLiteralBase(source, source_offset, LiteralType::STRING, std::move(val), 1 * BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(
+                source,
+                source_offset,
+                scope,
+                LiteralType::STRING,
+                std::move(val),
+                1 * BITS_PER_BYTE
+            ) {}
 
         ~AstStringLiteral() override = default;
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
     };
 
     class AstIntLiteral : public AbstractAstLiteralBase<int64_t>
@@ -106,12 +117,14 @@ namespace stride::ast
         explicit AstIntLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const int64_t value,
             const int flags = SRFLAG_INT_SIGNED
         ) :
             AbstractAstLiteralBase(
                 source,
                 source_offset,
+                scope,
                 LiteralType::INTEGER,
                 value,
                 BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)
@@ -126,7 +139,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
     };
 
     class AstFpLiteral : public AbstractAstLiteralBase<long double>
@@ -135,14 +149,23 @@ namespace stride::ast
         explicit AstFpLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const long double value,
             const int byte_count
         ) :
-            AbstractAstLiteralBase(source, source_offset, LiteralType::FLOAT, value, byte_count * BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(
+                source,
+                source_offset,
+                scope,
+                LiteralType::FLOAT,
+                value,
+                byte_count * BITS_PER_BYTE
+            ) {}
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
     };
 
     class AstBooleanLiteral : public AbstractAstLiteralBase<bool>
@@ -151,13 +174,22 @@ namespace stride::ast
         explicit AstBooleanLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const bool value
         ) :
-            AbstractAstLiteralBase(source, source_offset, LiteralType::BOOLEAN, value, 1 /* Single bit only*/) {}
+            AbstractAstLiteralBase(
+                source,
+                source_offset,
+                scope,
+                LiteralType::BOOLEAN,
+                value,
+                1 /* Single bit only*/
+            ) {}
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
     };
 
     class AstCharLiteral : public AbstractAstLiteralBase<char>
@@ -166,13 +198,22 @@ namespace stride::ast
         explicit AstCharLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const char value
         ) :
-            AbstractAstLiteralBase(source, source_offset, LiteralType::CHAR, value, BITS_PER_BYTE) {}
+            AbstractAstLiteralBase(
+                source,
+                source_offset,
+                scope,
+                LiteralType::CHAR,
+                value,
+                BITS_PER_BYTE
+            ) {}
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                             llvm::IRBuilder<>* builder) override;
     };
 
     std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(

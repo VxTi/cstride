@@ -6,12 +6,15 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(AstLiteral* literal)
+std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
+    const std::shared_ptr<Scope>& scope,
+    AstLiteral* literal
+)
 {
     if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            str->source, str->source_offset, PrimitiveType::STRING, 1
+            str->source, str->source_offset, scope, PrimitiveType::STRING, 1
         );
     }
 
@@ -19,7 +22,7 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(AstLiteral*
     {
         auto type = fp_lit->bit_count() > 4 ? PrimitiveType::FLOAT64 : PrimitiveType::FLOAT32;
         return std::make_unique<AstPrimitiveFieldType>(
-            fp_lit->source, fp_lit->source_offset, type, fp_lit->bit_count()
+            fp_lit->source, fp_lit->source_offset, scope, type, fp_lit->bit_count()
         );
     }
 
@@ -27,21 +30,21 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(AstLiteral*
     {
         auto type = int_lit->bit_count() > 32 ? PrimitiveType::INT64 : PrimitiveType::INT32;
         return std::make_unique<AstPrimitiveFieldType>(
-            int_lit->source, int_lit->source_offset, type, int_lit->bit_count()
+            int_lit->source, int_lit->source_offset, scope, type, int_lit->bit_count()
         );
     }
 
     if (const auto* char_lit = dynamic_cast<AstCharLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            char_lit->source, char_lit->source_offset, PrimitiveType::CHAR, char_lit->bit_count()
+            char_lit->source, char_lit->source_offset, scope, PrimitiveType::CHAR, char_lit->bit_count()
         );
     }
 
     if (const auto* bool_lit = dynamic_cast<AstBooleanLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            bool_lit->source, bool_lit->source_offset, PrimitiveType::BOOL, bool_lit->bit_count()
+            bool_lit->source, bool_lit->source_offset, scope, PrimitiveType::BOOL, bool_lit->bit_count()
         );
     }
 
@@ -78,9 +81,8 @@ std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
     }
 
     const auto internal_name = resolve_internal_function_name(parameter_types, regular_name);
-    const auto definition = scope->get_function_def(internal_name);
 
-    if (definition != nullptr)
+    if (const auto definition = scope->get_function_def(internal_name); definition != nullptr)
     {
         return definition->get_return_type()->clone();
     }
@@ -104,7 +106,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
 {
     if (auto* literal = dynamic_cast<AstLiteral*>(expr))
     {
-        return infer_expression_literal_type(literal);
+        return infer_expression_literal_type(scope, literal);
     }
 
     if (const auto* identifier = dynamic_cast<AstIdentifier*>(expr))
@@ -132,7 +134,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
             return lhs;
         }
 
-        return get_dominant_type(&*lhs, &*rhs);
+        return get_dominant_type(scope, &*lhs, &*rhs);
     }
 
     if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
@@ -144,7 +146,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
     {
         // TODO: Do some validation on lhs and rhs; cannot compare strings with one another (yet)
         return std::make_unique<AstPrimitiveFieldType>(
-            expr->source, expr->source_offset, PrimitiveType::BOOL, 1, 0
+            expr->source, expr->source_offset, scope, PrimitiveType::BOOL, 1, 0
         );
     }
 
@@ -165,7 +167,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
             return std::unique_ptr<IAstInternalFieldType>(declared);
         }
 
-        return get_dominant_type(declared, value.get());
+        return get_dominant_type(scope, declared, value.get());
     }
 
     if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(expr))

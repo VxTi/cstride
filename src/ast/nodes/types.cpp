@@ -35,7 +35,10 @@ std::string AstNamedValueType::to_string()
     return std::format("{}{}", this->name(), this->is_pointer() ? "*" : "");
 }
 
-std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primitive_type_optional(TokenSet& set)
+std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primitive_type_optional(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
     int flags = 0;
     const auto reference_token = set.peak_next();
@@ -62,6 +65,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::INT8,
                 1,
                 flags
@@ -73,6 +77,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::INT16,
                 2,
                 flags
@@ -84,6 +89,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::INT32,
                 4,
                 flags
@@ -95,6 +101,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::INT64,
                 8,
                 flags
@@ -106,6 +113,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::UINT8,
                 1,
                 flags
@@ -117,6 +125,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::UINT16,
                 2,
                 flags
@@ -128,6 +137,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::UINT32,
                 4,
                 flags
@@ -139,6 +149,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::UINT64,
                 8,
                 flags
@@ -150,6 +161,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::FLOAT32,
                 4,
                 flags
@@ -161,6 +173,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::FLOAT64,
                 8,
                 flags
@@ -172,6 +185,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::BOOL,
                 1,
                 flags
@@ -183,6 +197,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::CHAR,
                 1,
                 flags
@@ -194,6 +209,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::STRING,
                 1,
                 flags
@@ -205,6 +221,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.source(),
                 reference_token.offset,
+                scope,
                 PrimitiveType::VOID,
                 0,
                 flags
@@ -223,7 +240,10 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
     return result;
 }
 
-std::optional<std::unique_ptr<AstNamedValueType>> AstNamedValueType::parse_named_type_optional(TokenSet& set)
+std::optional<std::unique_ptr<AstNamedValueType>> stride::ast::parse_named_type_optional(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
     // Custom types are identifiers in type position.
     bool is_ptr = false;
@@ -243,19 +263,23 @@ std::optional<std::unique_ptr<AstNamedValueType>> AstNamedValueType::parse_named
     return std::make_unique<AstNamedValueType>(
         set.source(),
         reference_token.offset,
+        scope,
         name,
         is_ptr
     );
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(TokenSet& set)
+std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
-    if (auto primitive = parse_primitive_type_optional(set); primitive.has_value())
+    if (auto primitive = parse_primitive_type_optional(scope, set); primitive.has_value())
     {
         return std::move(primitive.value());
     }
 
-    if (auto named_type = AstNamedValueType::parse_named_type_optional(set); named_type.has_value())
+    if (auto named_type = parse_named_type_optional(scope, set); named_type.has_value())
     {
         return std::move(named_type.value());
     }
@@ -330,6 +354,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 }
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
+    const std::shared_ptr<Scope>& scope,
     const IAstInternalFieldType* lhs,
     const IAstInternalFieldType* rhs
 )
@@ -393,6 +418,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
         return std::make_unique<AstPrimitiveFieldType>(
             lhs_primitive->source,
             lhs_primitive->source_offset,
+            scope,
             lhs_primitive->type(),
             lhs_primitive->byte_size(),
             lhs_primitive->get_flags()
@@ -402,6 +428,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
     return std::make_unique<AstPrimitiveFieldType>(
         rhs_primitive->source,
         rhs_primitive->source_offset,
+        scope,
         rhs_primitive->type(),
         rhs_primitive->byte_size(),
         rhs_primitive->get_flags()

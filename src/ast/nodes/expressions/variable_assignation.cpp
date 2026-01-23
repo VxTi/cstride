@@ -28,6 +28,7 @@ IAstNode* AstVariableReassignment::reduce()
             return new AstVariableReassignment(
                 this->source,
                 this->source_offset,
+                scope,
                 this->get_variable_name(),
                 this->get_internal_name(),
                 this->get_operator(),
@@ -220,6 +221,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
         return std::make_unique<AstVariableReassignment>(
             set.source(),
             reference_token.offset,
+            scope,
             reassignment_iden_name,
             reassign_internal_name,
             mutative_op,

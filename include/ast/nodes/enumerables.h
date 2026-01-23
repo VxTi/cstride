@@ -16,8 +16,9 @@ namespace stride::ast
         explicit AstEnumerableMember(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const std::string& name, std::unique_ptr<AstLiteral> value
-        ) : IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset, scope),
             _name(name),
             _value(std::move(value)) {}
 
@@ -41,9 +42,10 @@ namespace stride::ast
         explicit AstEnumerable(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
             const std::string& name
-        ) : IAstNode(source, source_offset),
+        ) : IAstNode(source, source_offset, scope),
             _members(std::move(members)), _name(name) {}
 
         [[nodiscard]]

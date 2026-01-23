@@ -11,6 +11,7 @@ namespace stride::ast
 #define SRFLAG_TYPE_PTR            (0x1)
 #define SRFLAG_TYPE_REFERENCE      (0x2)
 #define SRFLAG_TYPE_MUTABLE        (0x4)
+#define SRFLAG_TYPE_OPTIONAL       (0x8)
 
 #define SRFLAG_NONE (0)
 
@@ -44,9 +45,10 @@ namespace stride::ast
         IAstInternalFieldType(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const int flags
         )
-            : IAstNode(source, source_offset),
+            : IAstNode(source, source_offset, scope),
               _flags(flags) {}
 
         ~IAstInternalFieldType() override = default;
@@ -62,6 +64,9 @@ namespace stride::ast
 
         [[nodiscard]]
         bool is_mutable() const { return this->_flags & SRFLAG_TYPE_MUTABLE; }
+
+        [[nodiscard]]
+        bool is_optional() const { return this->_flags & SRFLAG_TYPE_OPTIONAL; }
 
         [[nodiscard]]
         int get_flags() const { return this->_flags; }
@@ -84,11 +89,12 @@ namespace stride::ast
         explicit AstPrimitiveFieldType(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             const PrimitiveType type,
             const size_t byte_size,
             const int flags = SRFLAG_NONE
         ) :
-            IAstInternalFieldType(source, source_offset, flags),
+            IAstInternalFieldType(source, source_offset, scope, flags),
             _type(type),
             _byte_size(byte_size) {}
 
@@ -139,13 +145,13 @@ namespace stride::ast
         explicit AstNamedValueType(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
+            const std::shared_ptr<Scope>& scope,
             std::string name,
             const int flags
         ) :
-            IAstInternalFieldType(source, source_offset, flags),
+            IAstInternalFieldType(source, source_offset, scope, flags),
             _name(std::move(name)) {}
 
-        static std::optional<std::unique_ptr<AstNamedValueType>> parse_named_type_optional(TokenSet& set);
 
         [[nodiscard]]
         std::string name() const { return this->_name; }
@@ -173,7 +179,10 @@ namespace stride::ast
         }
     };
 
-    std::unique_ptr<IAstInternalFieldType> parse_ast_type(TokenSet& set);
+    std::unique_ptr<IAstInternalFieldType> parse_ast_type(
+        const std::shared_ptr<Scope>& scope,
+        TokenSet& set
+    );
 
     llvm::Type* internal_type_to_llvm_type(
         IAstInternalFieldType* type,
@@ -181,8 +190,11 @@ namespace stride::ast
         llvm::LLVMContext& context
     );
 
-    std::unique_ptr<IAstInternalFieldType> get_dominant_type(const IAstInternalFieldType* lhs,
-                                                             const IAstInternalFieldType* rhs);
+    std::unique_ptr<IAstInternalFieldType> get_dominant_type(
+        const std::shared_ptr<Scope>& scope,
+        const IAstInternalFieldType* lhs,
+        const IAstInternalFieldType* rhs
+    );
 
     /**
      * Resolves a unique identifier (UID) for the given internal type.
@@ -197,5 +209,13 @@ namespace stride::ast
      */
     size_t ast_type_to_internal_id(IAstInternalFieldType* type);
 
-    std::optional<std::unique_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(TokenSet& set);
+    std::optional<std::unique_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(
+        const std::shared_ptr<Scope>& scope,
+        TokenSet& set
+    );
+
+    std::optional<std::unique_ptr<AstNamedValueType>> parse_named_type_optional(
+        const std::shared_ptr<Scope>& scope,
+        TokenSet& set
+    );
 }

@@ -200,7 +200,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
-    auto return_type = parse_ast_type(tokens);
+    auto return_type = parse_ast_type(scope, tokens);
 
     std::vector<IAstInternalFieldType*> parameter_types;
     for (const auto& param : parameters)
@@ -233,6 +233,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     return std::make_unique<AstFunctionDeclaration>(
         tokens.source(),
         reference_token.offset,
+        scope,
         fn_name,
         internal_name,
         std::move(parameters),

@@ -174,6 +174,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     return std::make_unique<AstFunctionCall>(
         set.source(),
         reference_token.offset,
+        scope,
         candidate_function_name,
         internal_fn_name,
         std::move(function_arg_nodes)
