@@ -461,7 +461,7 @@ namespace stride::ast
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
         int expression_type_flags,
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 

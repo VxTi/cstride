@@ -135,7 +135,7 @@ llvm::Value* AstVariableDeclaration::codegen(
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
-    std::shared_ptr<Scope> scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& set
 )
 {

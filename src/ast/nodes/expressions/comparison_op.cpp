@@ -62,10 +62,30 @@ llvm::Value* AstComparisonOp::codegen(const std::shared_ptr<Scope>& scope, llvm:
         {
             right = builder->CreateIntCast(right, left->getType(), true, "icmp_sext");
         }
+    } else
+    {
+        // Convert both sides to floating point if they aren't already
+        if (left->getType()->isIntegerTy())
+        {
+            left = builder->CreateSIToFP(left, builder->getFloatTy(), "int_to_float");
+        }
+        else if (left->getType()->isFloatingPointTy())
+        {
+            left = builder->CreateFPCast(left, builder->getFloatTy(), "fpcast");
+        }
+
+        if (right->getType()->isIntegerTy())
+        {
+            right = builder->CreateSIToFP(right, builder->getFloatTy(), "int_to_float");
+        }
+        else if (right->getType()->isFloatingPointTy())
+        {
+            right = builder->CreateFPCast(right, builder->getFloatTy(), "fpcast");
+        }
     }
 
     // Check if operands are floating point or integer
-    const bool is_float = left->getType()->isFloatingPointTy();
+    const bool is_float = left->getType()->isFloatingPointTy() || right->getType()->isFloatingPointTy();
 
     switch (this->_op_type)
     {
