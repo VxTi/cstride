@@ -51,6 +51,22 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
     return std::nullopt;
 }
 
+void AstUnaryOp::validate()
+{
+    const auto operand_type = infer_expression_type(this->scope, this->_operand.get());
+
+    if (!operand_type.get() || !operand_type.get()->is_mutable())
+    {
+        throw parsing_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                "Cannot modify immutable value"
+            )
+        );
+    }
+}
+
 llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     if (requires_identifier_operand(this->get_op_type()))

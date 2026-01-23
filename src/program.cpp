@@ -209,7 +209,6 @@ void Program::execute(int argc, char* argv[]) const
         std::cout << "Function 'main' not found" << std::endl;
         return;
     }
-    sqrtf()
 
     llvm::GenericValue result = engine->runFunction(main, {});
     std::cout << "\nProgram exited with status " << result.IntVal.getSExtValue() << std::endl;

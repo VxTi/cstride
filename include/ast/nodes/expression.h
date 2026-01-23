@@ -426,6 +426,8 @@ namespace stride::ast
         IAstNode* reduce() override;
 
         std::string to_string() override;
+
+        void validate() override;
     };
 
     class AstVariableReassignment :

@@ -22,7 +22,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
     if (const auto is_hex_type = set.peak(offset).type == TokenType::HEX_LITERAL;
         set.peak(offset).type == TokenType::INTEGER_LITERAL || is_hex_type)
     {
-        std::string input = reference_token.lexeme + set.peak(offset).lexeme;
+        const std::string input = offset > 0 ? reference_token.lexeme + set.peak(offset).lexeme :  reference_token.lexeme;
         set.skip(offset + 1);
 
 

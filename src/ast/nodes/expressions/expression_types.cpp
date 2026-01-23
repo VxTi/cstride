@@ -57,34 +57,17 @@ std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
     const std::shared_ptr<Scope>& scope,
     const AstFunctionCall* fn_call)
 {
-    const auto regular_name = fn_call->get_function_name();
-    // If we can simply get the function definition from the scope, we can return its type.
-    if (const auto fn_def = scope->get_function_def(regular_name); fn_def != nullptr)
+    if (const auto fn_def = scope->get_function_def(fn_call->get_internal_name());
+        fn_def != nullptr)
     {
         return fn_def->get_return_type()->clone();
     }
 
-    // Otherwise, it's likely that we'll have to figure out its internal name ourselves based on the inferred
-    // types from the callee's arguments
-    std::vector<std::unique_ptr<IAstInternalFieldType>> resolved_arg_types;
-    std::vector<IAstInternalFieldType*> parameter_types;
-
-    const auto& args = fn_call->get_arguments();
-    resolved_arg_types.reserve(args.size());
-    parameter_types.reserve(args.size());
-
-    for (const auto& arg : args)
+    // It could be an extern function, in which case the function name is just as-is
+    if (const auto fn_def = scope->get_function_def(fn_call->get_function_name());
+        fn_def != nullptr)
     {
-        auto expr_type = infer_expression_type(scope, arg.get());
-        parameter_types.push_back(expr_type.get());
-        resolved_arg_types.push_back(std::move(expr_type));
-    }
-
-    const auto internal_name = resolve_internal_function_name(parameter_types, regular_name);
-
-    if (const auto definition = scope->get_function_def(internal_name); definition != nullptr)
-    {
-        return definition->get_return_type()->clone();
+        return fn_def->get_return_type()->clone();
     }
 
     throw stride::parsing_error(
