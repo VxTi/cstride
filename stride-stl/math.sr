@@ -5,93 +5,93 @@ mod stl::math;
  * Math Functions
  */
 
-extern fn __builtin_cosl(x: f64): f64;
-extern fn __builtin_cosf(x: f32): f32;
+extern fn cosl(x: f64): f64;
+extern fn cosf(x: f32): f32;
 
-extern fn __builtin_sinl(x: f64): f64;
-extern fn __builtin_sinf(x: f32): f32;
+extern fn sinl(x: f64): f64;
+extern fn sinf(x: f32): f32;
 
-extern fn __builtin_acosl(x: f64): f64;
-extern fn __builtin_acosf(x: f32): f32;
+extern fn acosl(x: f64): f64;
+extern fn acosf(x: f32): f32;
 
-extern fn __builtin_asinl(x: f64): f64;
-extern fn __builtin_asinf(x: f32): f32;
+extern fn asinl(x: f64): f64;
+extern fn asinf(x: f32): f32;
 
-extern fn __builtin_atanl(x: f64): f64;
-extern fn __builtin_atanf(x: f32): f32;
+extern fn atanl(x: f64): f64;
+extern fn atanf(x: f32): f32;
 
-extern fn __builtin_atan2l(y: f64, x: f64): f64;
-extern fn __builtin_atan2f(y: f32, x: f32): f32;
+extern fn atan2l(y: f64, x: f64): f64;
+extern fn atan2f(y: f32, x: f32): f32;
 
-extern fn __builtin_powl(x: f64, y: f64): f64;
-extern fn __builtin_powf(x: f32, y: f32): f32;
+extern fn powl(x: f64, y: f64): f64;
+extern fn powf(x: f32, y: f32): f32;
 
-extern fn __builtin_sqrtl(x: f64): f64;
-extern fn __builtin_sqrtf(x: f32): f32;
+extern fn sqrtl(x: f64): f64;
+extern fn sqrtf(x: f32): f32;
 
 
 fn cos(x: f64): f64 {
-    return __builtin_cosl(x);
+    return cosl(x);
 }
 
 fn cos(x: f32): f32 {
-    return __builtin_cosf(x);
+    return cosf(x);
 }
 
 fn sin(x: f64): f64 {
-    return __builtin_sinl(x);
+    return sinl(x);
 }
 
 fn sin(x: f32): f32 {
-    return __builtin_sinf(x);
+    return sinf(x);
 }
 
 fn acos(x: f64): f64 {
-    return __builtin_acosl(x);
+    return acosl(x);
 }
 
 fn acos(x: f32): f32 {
-    return __builtin_acosf(x);
+    return acosf(x);
 }
 
 fn asin(x: f64): f64 {
-    return __builtin_asinl(x);
+    return asinl(x);
 }
 
 fn asin(x: f32): f32 {
-    return __builtin_asinf(x);
+    return asinf(x);
 }
 
 fn atan(x: f64): f64 {
-    return __builtin_atanl(x);
+    return atanl(x);
 }
 
 fn atan(x: f32): f32 {
-    return __builtin_atanf(x);
+    return atanf(x);
 }
 
 fn atan2(x: f32, y: f32): f32 {
-    return __builtin_atan2f(x, y);
+    return atan2f(x, y);
 }
 
 fn atan2(x: f64, y: f64): f64 {
-    return __builtin_atan2l(x, y);
+    return atan2l(x, y);
 }
 
 fn pow(x: f32, y: f32): f32 {
-    return __builtin_powf(x, y);
+    return powf(x, y);
 }
 
 fn pow(x: f64, y: f64): f64 {
-    return __builtin_powl(x, y);
+    return powl(x, y);
 }
 
 fn sqrt(x: f32): f32 {
-    return __builtin_sqrtf(x);
+    return sqrtf(x);
 }
 
 fn sqrt(x: f64): f64 {
-    return __builtin_sqrtl(x);
+    return sqrtl(x);
 }
 
 let M_PI: f64 = 3.14159265358979323846264338327950288;

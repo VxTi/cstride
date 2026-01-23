@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
@@ -139,7 +140,6 @@ void Program::execute(int argc, char* argv[]) const
     LLVMLinkInInterpreter();
     LLVMLinkInMCJIT();
 
-
     llvm::LLVMContext context;
     llvm::IRBuilder builder(context);
 
@@ -180,14 +180,15 @@ void Program::execute(int argc, char* argv[]) const
 
 
     // Will print the LLVM IR
-    module->print(llvm::errs(), nullptr);
+    // module->print(llvm::errs(), nullptr);
 
     std::string error;
     llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))
                                    .setErrorStr(&error)
-                                   .setEngineKind(llvm::EngineKind::JIT)
+                                   .setEngineKind(llvm::EngineKind::Interpreter)
+                                   .setTargetOptions(llvm::TargetOptions())
                                    .setMCPU(llvm::sys::getHostCPUName())
-                                   .create();
+                                   .create(machine);
 
     if (!engine)
     {
@@ -196,19 +197,21 @@ void Program::execute(int argc, char* argv[]) const
     }
 
     engine->finalizeObject();
-    const uint64_t func_addr = engine->getFunctionAddress(MAIN_FN_NAME);
-
-    if (func_addr == 0)
-    {
+    llvm::Function* mainFunc = engine->FindFunctionNamed(MAIN_FN_NAME);
+    if (!mainFunc) {
         std::cout << "Function '" << MAIN_FN_NAME << "' not found" << std::endl;
         return;
     }
 
-    typedef int (*MainFunc)(int, char**);
-    auto main_func = reinterpret_cast<MainFunc>(func_addr);
+    llvm::Function* main = engine->FindFunctionNamed("main");
+    if (!main)
+    {
+        std::cout << "Function 'main' not found" << std::endl;
+        return;
+    }
+    sqrtf()
 
-    const int status_code = main_func(argc, argv);
-
-    // Ensure we exit this process with the same status code as the interpreted process
-    exit(status_code);
+    llvm::GenericValue result = engine->runFunction(main, {});
+    std::cout << "\nProgram exited with status " << result.IntVal.getSExtValue() << std::endl;
+    exit(result.IntVal.getSExtValue());
 }

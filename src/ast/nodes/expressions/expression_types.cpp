@@ -20,9 +20,9 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
 
     if (const auto* fp_lit = dynamic_cast<AstFpLiteral*>(literal))
     {
-        auto type = fp_lit->bit_count() > 4 ? PrimitiveType::FLOAT64 : PrimitiveType::FLOAT32;
+        auto type = fp_lit->bit_count() > 32 ? PrimitiveType::FLOAT64 : PrimitiveType::FLOAT32;
         return std::make_unique<AstPrimitiveFieldType>(
-            fp_lit->source, fp_lit->source_offset, scope, type, fp_lit->bit_count()
+            fp_lit->source, fp_lit->source_offset, scope, type, fp_lit->bit_count() / BITS_PER_BYTE
         );
     }
 
@@ -30,7 +30,7 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
     {
         auto type = int_lit->bit_count() > 32 ? PrimitiveType::INT64 : PrimitiveType::INT32;
         return std::make_unique<AstPrimitiveFieldType>(
-            int_lit->source, int_lit->source_offset, scope, type, int_lit->bit_count()
+            int_lit->source, int_lit->source_offset, scope, type, int_lit->bit_count() / BITS_PER_BYTE
         );
     }
 

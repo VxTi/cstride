@@ -79,7 +79,10 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(std::shared_ptr<S
 
 void AstLoop::validate()
 {
-    this->body()->validate();
+    if (this->body() != nullptr)
+    {
+        this->body()->validate();
+    }
 }
 
 std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(std::shared_ptr<Scope> scope, TokenSet& set)
@@ -108,7 +111,8 @@ std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(std::shared_ptr
     );
 }
 
-llvm::Value* AstLoop::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstLoop::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                              llvm::IRBuilder<>* builder)
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
 
