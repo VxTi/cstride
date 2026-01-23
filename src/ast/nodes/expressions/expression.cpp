@@ -59,14 +59,7 @@ IAstNode* AstVariableDeclaration::reduce()
 
 std::string AstExpression::to_string()
 {
-    std::string children_str;
-
-    for (const auto& child : this->children())
-    {
-        children_str += child->to_string() + ", ";
-    }
-
-    return std::format("Expression({})", children_str.substr(0, children_str.length() - 2));
+    return "AnonymousExpression";
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(

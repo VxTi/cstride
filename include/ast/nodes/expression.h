@@ -77,21 +77,14 @@ namespace stride::ast
         public ISynthesisable,
         public IReducible
     {
-        const std::vector<std::unique_ptr<IAstNode>> _children;
-
     public:
         explicit AstExpression(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
-            std::vector<std::unique_ptr<IAstNode>> children
+            const int source_offset
         ) :
-            IAstNode(source, source_offset),
-            _children(std::move(children)) {};
+            IAstNode(source, source_offset) {};
 
         ~AstExpression() override = default;
-
-        [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
 
         llvm::Value* codegen(
             const std::shared_ptr<Scope>& scope,
@@ -120,7 +113,7 @@ namespace stride::ast
             std::string name,
             std::string internal_name
         ) :
-            AstExpression(source, source_offset, {}),
+            AstExpression(source, source_offset),
             _name(std::move(name)),
             _internal_name(std::move(internal_name)) {}
 
@@ -157,7 +150,7 @@ namespace stride::ast
             std::string function_name,
             std::string internal_name
         ) :
-            AstExpression(source, source_offset, {}),
+            AstExpression(source, source_offset),
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
 
@@ -168,7 +161,7 @@ namespace stride::ast
             std::string internal_name,
             std::vector<std::unique_ptr<AstExpression>> arguments
         ) :
-            AstExpression(source, source_offset, {}),
+            AstExpression(source, source_offset),
             _arguments(std::move(arguments)),
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
@@ -211,7 +204,7 @@ namespace stride::ast
             const int flags,
             std::string internal_name
         ) :
-            AstExpression(source, source_offset, {}),
+            AstExpression(source, source_offset),
 
             _flags(flags),
             _variable_name(std::move(variable_name)),
@@ -271,7 +264,7 @@ namespace stride::ast
             std::unique_ptr<AstExpression> lsh,
             std::unique_ptr<AstExpression> rsh
         ) :
-            AstExpression(source, source_offset, {}),
+            AstExpression(source, source_offset),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
 
@@ -374,7 +367,7 @@ namespace stride::ast
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
         ) :
-            AstExpression(source, source_offset, {}),
+            AstExpression(source, source_offset),
             _op_type(op),
             _is_lsh(is_lsh),
             _operand(std::move(operand)) {}
@@ -415,7 +408,7 @@ namespace stride::ast
             const MutativeAssignmentType op,
             std::unique_ptr<AstExpression> value
         )
-            : AstExpression(source, source_offset, {}),
+            : AstExpression(source, source_offset),
               _variable_name(std::move(variable_name)),
               _internal_name(std::move(internal_name)),
               _value(std::move(value)),
