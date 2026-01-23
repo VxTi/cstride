@@ -177,10 +177,18 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     );
 
     const auto internal_expr_type = resolve_expression_internal_type(scope, value.get());
+    IAstInternalFieldType* lhs_type = variable_type.get();
+    IAstInternalFieldType* rhs_type = internal_expr_type.get();
 
-    if (internal_expr_type.get() != variable_type.get())
+    if (*lhs_type != *rhs_type)
     {
-        set.throw_error("Type mismatch in variable declaration; expected type '" + variable_type->to_string() + "', got '" + internal_expr_type->to_string() + "'");
+        set.throw_error(
+            std::format(
+                "Type mismatch in variable declaration; expected type '{}', got '{}'",
+                variable_type->to_string(),
+                internal_expr_type->to_string()
+            )
+        );
     }
 
     // If it's not an inline variable declaration (e.g., in a for loop),

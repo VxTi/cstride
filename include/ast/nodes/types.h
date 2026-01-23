@@ -70,6 +70,8 @@ namespace stride::ast
         virtual std::string get_internal_name() = 0;
 
         virtual bool operator==(IAstInternalFieldType& other) = 0;
+
+        virtual bool operator!=(IAstInternalFieldType& other) = 0;
     };
 
     class AstPrimitiveFieldType
@@ -119,6 +121,11 @@ namespace stride::ast
             }
             return false;
         }
+
+        bool operator!=(IAstInternalFieldType& other) override
+        {
+            return !(*this == other);
+        }
     };
 
     class AstNamedValueType
@@ -159,6 +166,11 @@ namespace stride::ast
             }
             return false;
         }
+
+        bool operator!=(IAstInternalFieldType& other) override
+        {
+            return !(*this == other);
+        }
     };
 
     std::unique_ptr<IAstInternalFieldType> parse_ast_type(TokenSet& set);
@@ -169,7 +181,8 @@ namespace stride::ast
         llvm::LLVMContext& context
     );
 
-    std::unique_ptr<IAstInternalFieldType> get_dominant_type(const IAstInternalFieldType* lhs, const IAstInternalFieldType* rhs);
+    std::unique_ptr<IAstInternalFieldType> get_dominant_type(const IAstInternalFieldType* lhs,
+                                                             const IAstInternalFieldType* rhs);
 
     /**
      * Resolves a unique identifier (UID) for the given internal type.

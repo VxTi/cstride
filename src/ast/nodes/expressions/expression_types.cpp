@@ -107,7 +107,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_expression_internal_
 
     if (const auto* operation = dynamic_cast<AstVariableDeclaration*>(expr))
     {
-        auto declared = operation->get_variable_type();
+        const auto declared = operation->get_variable_type();
         const auto value = resolve_expression_internal_type(scope, operation->get_initial_value().get());
 
         // Both the expression type and the declared type are the same (e.g., let var: i32 = 10)

@@ -135,7 +135,7 @@ namespace stride
         // Calculate error length (currently just 1 character)
 
         return std::format(
-            "┃ {} in \x1b[4m{}\x1b[0m:\n┃\n┃ {}\x1b[0m\n┃\n\x1b[0m┃ \x1b[0;97m{} \x1b[37m{}\x1b[0m\n┃  {} {}\n",
+            "┃ {} in \x1b[4m{}\x1b[0m\n┃\n┃ {}\n┃\n┃ \x1b[0;97m{} \x1b[37m{}\x1b[0m\n┃  {} {}\n",
             error_type_str,
             source_file.path,
             error,
