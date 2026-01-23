@@ -34,7 +34,7 @@ namespace stride::ast
     class AstLiteral :
         public AstExpression
     {
-        char _bit_count;
+        short _bit_count;
         LiteralType _type;
 
     public:

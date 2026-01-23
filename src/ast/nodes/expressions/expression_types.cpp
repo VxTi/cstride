@@ -134,12 +134,80 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
             return lhs;
         }
 
+        if (lhs->is_pointer() && !rhs->is_pointer())
+        {
+            return lhs;
+        }
+
+        if (!lhs->is_pointer() && rhs->is_pointer())
+        {
+            return rhs->clone();
+        }
+
         return get_dominant_type(scope, &*lhs, &*rhs);
     }
 
     if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
     {
-        return infer_expression_type(scope, &operation->get_operand());
+        auto type = infer_expression_type(scope, &operation->get_operand());
+        const auto op_type = operation->get_op_type();
+
+        if (op_type == UnaryOpType::ADDRESS_OF)
+        {
+            const auto flags = type->get_flags() | SRFLAG_TYPE_PTR;
+            if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
+            {
+                return std::make_unique<AstPrimitiveFieldType>(
+                    prim->source, prim->source_offset, scope,
+                    prim->type(), prim->byte_size(),
+                    flags
+                );
+            }
+            if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
+            {
+                return std::make_unique<AstNamedValueType>(
+                    named->source, named->source_offset, scope,
+                    named->name(),
+                    flags
+                );
+            }
+        }
+        else if (op_type == UnaryOpType::DEREFERENCE)
+        {
+            if (!type->is_pointer())
+            {
+                throw parsing_error(
+                    make_ast_error(*operation->source, operation->source_offset, "Cannot dereference non-pointer type")
+                );
+            }
+
+            const auto flags = type->get_flags() & ~SRFLAG_TYPE_PTR;
+
+            if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
+            {
+                return std::make_unique<AstPrimitiveFieldType>(
+                    prim->source, prim->source_offset, scope,
+                    prim->type(), prim->byte_size(),
+                    flags
+                );
+            }
+            if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
+            {
+                return std::make_unique<AstNamedValueType>(
+                    named->source, named->source_offset, scope,
+                    named->name(),
+                    flags
+                );
+            }
+        }
+        else if (op_type == UnaryOpType::LOGICAL_NOT)
+        {
+            return std::make_unique<AstPrimitiveFieldType>(
+                operation->source, operation->source_offset, scope, PrimitiveType::BOOL, 1
+            );
+        }
+
+        return type;
     }
 
     if (dynamic_cast<AstLogicalOp*>(expr) || dynamic_cast<AstComparisonOp*>(expr))
@@ -157,17 +225,17 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
 
     if (const auto* operation = dynamic_cast<AstVariableDeclaration*>(expr))
     {
-        const auto declared = operation->get_variable_type();
+        const auto lhs_variable_type = operation->get_variable_type();
         const auto value = infer_expression_type(scope, operation->get_initial_value().get());
 
         // Both the expression type and the declared type are the same (e.g., let var: i32 = 10)
         // so we can just return the declared type.
-        if (*declared == *value)
+        if (*lhs_variable_type == *value)
         {
-            return std::unique_ptr<IAstInternalFieldType>(declared);
+            return lhs_variable_type->clone();
         }
 
-        return get_dominant_type(scope, declared, value.get());
+        return get_dominant_type(scope, lhs_variable_type, value.get());
     }
 
     if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(expr))

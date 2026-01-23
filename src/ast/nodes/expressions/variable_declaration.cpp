@@ -135,7 +135,8 @@ llvm::Value* AstVariableDeclaration::codegen(
 
 void AstVariableDeclaration::validate()
 {
-    const auto internal_expr_type = infer_expression_type(scope, this->get_initial_value().get());
+    AstExpression* init_val = this->get_initial_value().get();
+    const std::unique_ptr<IAstInternalFieldType> internal_expr_type = infer_expression_type(this->scope, init_val);
 
     if (IAstInternalFieldType* rhs_type = internal_expr_type.get(); *this->get_variable_type() != *rhs_type)
     {
@@ -147,7 +148,7 @@ void AstVariableDeclaration::validate()
                 std::format(
                     "Type mismatch in variable declaration; expected type '{}', got '{}'",
                     this->get_variable_type()->to_string(),
-                    internal_expr_type->to_string()
+                    rhs_type->to_string()
                 )
             )
         );

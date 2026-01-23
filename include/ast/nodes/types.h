@@ -82,7 +82,7 @@ namespace stride::ast
     class AstPrimitiveFieldType
         : public IAstInternalFieldType
     {
-        const PrimitiveType _type;
+        PrimitiveType _type;
         size_t _byte_size;
 
     public:
@@ -121,7 +121,7 @@ namespace stride::ast
         {
             if (const auto* other_primitive = dynamic_cast<AstPrimitiveFieldType*>(&other))
             {
-                return this->_type == other_primitive->_type;
+                return this->type() == other_primitive->type();
             }
             return false;
         }
@@ -180,7 +180,7 @@ namespace stride::ast
     std::unique_ptr<IAstInternalFieldType> parse_ast_type(
         const std::shared_ptr<Scope>& scope,
         TokenSet& set,
-        const std::string &error
+        const std::string& error
     );
 
     llvm::Type* internal_type_to_llvm_type(

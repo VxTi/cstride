@@ -19,7 +19,7 @@ bool AstVariableReassignment::is_reducible()
 
 void AstVariableReassignment::validate()
 {
-    const auto identifier_def = this->scope->get_variable_def(this->get_variable_name());
+    const auto identifier_def = this->scope->lookup(this->get_variable_name());
     std::cout << "Doing assignment validation" << std::endl;
     if (!identifier_def)
     {
@@ -32,7 +32,7 @@ void AstVariableReassignment::validate()
         );
     }
 
-    const auto expression_type = infer_expression_type(this->scope, this->get_value());
+    if (this->get_value() == nullptr) return;
 
     if (!identifier_def->get_type()->is_mutable())
     {
@@ -44,6 +44,9 @@ void AstVariableReassignment::validate()
             )
         );
     }
+
+    const auto expression_type = infer_expression_type(this->scope, this->get_value());
+
 
     /*if (identifier_def->get_type() != expression_type.get())
     {

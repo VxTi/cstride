@@ -284,11 +284,12 @@ std::string AstFunctionDeclaration::to_string()
     const auto body_str = this->body() == nullptr ? "<empty>" : this->body()->to_string();
 
     return std::format(
-        "FunctionDefinition(name: {} ({}), parameters: [ {} ], body: {}{})",
+        "FunctionDeclaration(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
         this->get_name(),
         this->get_internal_name(),
         params,
         body_str,
-        this->is_extern() ? " (extern)" : ""
+        this->is_extern() ? " (extern)" : "",
+        this->return_type()->to_string()
     );
 }
