@@ -70,20 +70,20 @@ fn atan(x: f32): f32 {
     return __builtin_atanf(x);
 }
 
-fn atan2(x: f32): f32 {
-    return __builtin_atan2l(x);
+fn atan2(x: f32, y: f32): f32 {
+    return __builtin_atan2l(x, y);
 }
 
-fn atan2(x: f64): f64 {
-    return __builtin_atan2l(x);
+fn atan2(x: f64, y: f64): f64 {
+    return __builtin_atan2l(x, y);
 }
 
-fn pow(x: f32): f32 {
-    return __builtin_powf(x);
+fn pow(x: f32, y: f32): f32 {
+    return __builtin_powf(x, y);
 }
 
-fn pow(x: f64): f64 {
-    return __builtin_powl(x);
+fn pow(x: f64, y: f64): f64 {
+    return __builtin_powl(x, y);
 }
 
 fn sqrt(x: f32): f32 {
@@ -93,3 +93,7 @@ fn sqrt(x: f32): f32 {
 fn sqrt(x: f64): f64 {
     return __builtin_sqrtl(x);
 }
+
+let M_PI: f64 = 3.14159265358979323846264338327950288;
+
+let M_E: f64 = 2.71828182845904523536028747135266250;
