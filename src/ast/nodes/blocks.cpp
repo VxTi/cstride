@@ -10,7 +10,7 @@ using namespace stride::ast;
 
 void AstBlock::resolve_forward_references(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
-    for (const auto& child : children())
+    for (const auto& child : this->children())
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
@@ -23,7 +23,7 @@ llvm::Value* AstBlock::codegen(const std::shared_ptr<Scope>& scope, llvm::Module
 {
     llvm::Value* last_value = nullptr;
 
-    for (const auto& child : children())
+    for (const auto& child : this->children())
     {
         if (auto* block = builder->GetInsertBlock(); block && block->getTerminator())
         {

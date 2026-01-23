@@ -165,7 +165,7 @@ void Program::execute(int argc, char* argv[]) const
     module->setTargetTriple(triple);
 
     this->validate_ast_nodes();
-    this->optimize_ast_nodes();
+    // this->optimize_ast_nodes();
 
     // Ensures symbols are defined for codegen
     this->resolve_forward_references(module.get(), context, &builder);

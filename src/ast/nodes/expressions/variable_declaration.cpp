@@ -156,6 +156,10 @@ void AstVariableDeclaration::validate()
 
 bool AstVariableDeclaration::is_reducible()
 {
+    if (this->get_initial_value() == nullptr)
+    {
+        return false;
+    }
     // Variables are reducible only if their initial value is reducible,
     // In the future we can also check whether variables are ever refereced,
     // in which case we can optimize away the variable declaration.
