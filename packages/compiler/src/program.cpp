@@ -19,19 +19,6 @@
 
 #include "ast/parser.h"
 
-extern "C" int stride_fflush_wrapper(FILE* stream)
-{
-    if (stream == (FILE*)1)
-    {
-        return fflush(stdout);
-    }
-    if (stream == (FILE*)2)
-    {
-        return fflush(stderr);
-    }
-    return fflush(stream);
-}
-
 using namespace stride;
 
 void Program::parse_files(const std::vector<std::string>& files)
@@ -179,15 +166,7 @@ void Program::compile_jit() const
             jit->getDataLayout().getGlobalPrefix()))
     );
 
-    // Manually register the fflush wrapper to handle fflush(1) and fflush(2)
-    llvm::cantFail(jit->getMainJITDylib().define(
-        llvm::orc::absoluteSymbols({
-            {
-                jit->mangleAndIntern("fflush"),
-                {llvm::orc::ExecutorAddr::fromPtr(stride_fflush_wrapper), llvm::JITSymbolFlags::Exported}
-            }
-        })
-    ));
+    llvm_define_extern_functions(jit);
 
     // 3. Setup Module with correct DataLayout and Triple
     auto module = std::make_unique<llvm::Module>("stride_jit_module", *context);
