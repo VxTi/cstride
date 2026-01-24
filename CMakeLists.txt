@@ -4,9 +4,11 @@ project(cstride)
 set(CMAKE_CXX_STANDARD 23)
 
 find_package(LLVM CONFIG REQUIRED)
+find_package(clang CONFIG REQUIRED)
 
 # Map the components you need
 llvm_map_components_to_libnames(
+        clang
         llvm_libs
         support
         core
@@ -32,3 +34,15 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${LLVM_DEFINITIONS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${llvm_libs})
+
+# Add Clang include directories
+if (CLANG_INCLUDE_DIRS)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${CLANG_INCLUDE_DIRS})
+endif()
+
+# Link Clang libraries (modern CMake: use imported targets if available)
+if (TARGET clangTooling)
+    target_link_libraries(${PROJECT_NAME} PRIVATE clangTooling clangBasic clangAST clangFrontend)
+elseif (CLANG_LIBRARIES)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${CLANG_LIBRARIES})
+endif()

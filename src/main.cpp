@@ -25,7 +25,7 @@ int main(const int argc, char* argv[])
         stride::Program program;
         program.parse_files(files);
 
-        program.execute(argc, argv);
+        program.compile_jit();
     }
     catch (const std::exception& e)
     {

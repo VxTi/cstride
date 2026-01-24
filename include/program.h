@@ -2,6 +2,8 @@
 #include "ast/scope.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
+#include <llvm/Support/FileSystem.h>
+#include <llvm/Target/TargetMachine.h>
 
 namespace stride
 {
@@ -33,8 +35,6 @@ namespace stride
     public:
         void parse_files(const std::vector<std::string>& files);
 
-        void execute(int argc, char* argv[]) const;
-
         const std::vector<std::string>& get_files() const { return _files; }
 
         [[nodiscard]]
@@ -47,6 +47,8 @@ namespace stride
         Program& operator=(const Program&) = delete;
         Program(Program&&) noexcept = default;
         Program& operator=(Program&&) noexcept = default;
+
+        void compile_jit() const;
 
     private:
         void print_ast_nodes() const;

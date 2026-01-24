@@ -1,18 +1,36 @@
 #include "program.h"
 
+#include <cstdio>
 #include <iostream>
+#include <clang/Basic/DiagnosticIDs.h>
+#include <clang/Basic/DiagnosticOptions.h>
+#include <clang/Driver/Compilation.h>
+#include <clang/Driver/Driver.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
-#include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/VirtualFileSystem.h>
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
+#include <llvm/ExecutionEngine/Orc/ThreadSafeModule.h>
+#include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/Support/TargetSelect.h>
-#include <llvm/TargetParser/Host.h>
 
 #include "ast/parser.h"
-#include "ast/nodes/functions.h"
+
+extern "C" int stride_fflush_wrapper(FILE* stream)
+{
+    if (stream == (FILE*)1)
+    {
+        return fflush(stdout);
+    }
+    if (stream == (FILE*)2)
+    {
+        return fflush(stderr);
+    }
+    return fflush(stream);
+}
 
 using namespace stride;
 
@@ -126,91 +144,88 @@ void Program::generate_llvm_ir(
     }
 }
 
-void Program::execute(int argc, char* argv[]) const
+void Program::compile_jit() const
 {
-    setvbuf(stdout, nullptr, _IONBF, 0);
-
-    // For debugging purposes, comment this out to see the generated AST nodes
-    this->print_ast_nodes();
-
+    // 1. Initialize LLVM targets for the host machine
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
-    LLVMInitializeNativeAsmPrinter();
-    LLVMInitializeNativeAsmParser();
-    LLVMLinkInInterpreter();
-    LLVMLinkInMCJIT();
+    llvm::InitializeNativeTargetAsmParser();
 
-    llvm::LLVMContext context;
-    llvm::IRBuilder builder(context);
+    // 2. Setup Context and JIT instance
+    // ORC JIT requires a ThreadSafeContext to manage the lifetime of the IR
+    const auto thread_safe_context = std::make_unique<llvm::orc::ThreadSafeContext>(
+        std::make_unique<llvm::LLVMContext>());
+    auto* context = thread_safe_context->withContextDo([](llvm::LLVMContext* Ctx) { return Ctx; });
 
-    auto module = std::make_unique<llvm::Module>("stride_module", context);
-    const std::string target_triple_str = llvm::sys::getDefaultTargetTriple();
-    const auto triple = llvm::Triple(target_triple_str);
+    auto jtmb_expected = llvm::orc::JITTargetMachineBuilder::detectHost();
+    if (!jtmb_expected)
+    {
+        throw std::runtime_error("Failed to detect host target");
+    }
+    auto jtmb = std::move(*jtmb_expected);
 
-    std::string message;
-    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(
-        target_triple_str, message
+    auto jit_expected = llvm::orc::LLJITBuilder()
+                       .setJITTargetMachineBuilder(std::move(jtmb))
+                       .create();
+    if (!jit_expected)
+    {
+        throw std::runtime_error("Failed to create LLJIT instance");
+    }
+    const auto jit = std::move(*jit_expected);
+
+    // Add search generator for the current process
+    jit->getMainJITDylib().addGenerator(
+        llvm::cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
+            jit->getDataLayout().getGlobalPrefix()))
     );
-    if (!target) throw std::runtime_error("Couldn't find target.");
 
-    llvm::TargetMachine* const machine = target->createTargetMachine(
-        triple,
-        llvm::sys::getHostCPUName(),
-        "",
-        llvm::TargetOptions(),
-        std::optional<llvm::Reloc::Model>()
-    );
+    // Manually register the fflush wrapper to handle fflush(1) and fflush(2)
+    llvm::cantFail(jit->getMainJITDylib().define(
+        llvm::orc::absoluteSymbols({
+            {
+                jit->mangleAndIntern("fflush"),
+                {llvm::orc::ExecutorAddr::fromPtr(stride_fflush_wrapper), llvm::JITSymbolFlags::Exported}
+            }
+        })
+    ));
 
-    module->setDataLayout(machine->createDataLayout());
-    module->setTargetTriple(triple);
+    // 3. Setup Module with correct DataLayout and Triple
+    auto module = std::make_unique<llvm::Module>("stride_jit_module", *context);
+    module->setDataLayout(jit->getDataLayout());
+    module->setTargetTriple(llvm::Triple(jit->getTargetTriple().str()));
 
+    llvm::IRBuilder<> builder(*context);
+
+    // 4. Generate IR (Reusing your existing logic)
     this->validate_ast_nodes();
-    // this->optimize_ast_nodes();
-
-    // Ensures symbols are defined for codegen
-    this->resolve_forward_references(module.get(), context, &builder);
-    this->generate_llvm_ir(module.get(), context, &builder);
+    this->resolve_forward_references(module.get(), *context, &builder);
+    this->generate_llvm_ir(module.get(), *context, &builder);
 
     if (llvm::verifyModule(*module, &llvm::errs()))
     {
-        std::cerr << "Module verification failed!" << std::endl;
-        module->print(llvm::errs(), nullptr);
-        return;
+        throw std::runtime_error("LLVM IR verification failed for JIT");
     }
 
-
-    // Will print the LLVM IR
-    // module->print(llvm::errs(), nullptr);
-
-    std::string error;
-    llvm::ExecutionEngine* engine = llvm::EngineBuilder(std::move(module))
-                                   .setErrorStr(&error)
-                                   .setEngineKind(llvm::EngineKind::Interpreter)
-                                   .setTargetOptions(llvm::TargetOptions())
-                                   .setMCPU(llvm::sys::getHostCPUName())
-                                   .create(machine);
-
-    if (!engine)
+    // 5. Add the IR Module to the JIT
+    // We wrap our module in a ThreadSafeModule before handing it over
+    auto tsm = llvm::orc::ThreadSafeModule(std::move(module), std::move(*thread_safe_context));
+    if (auto err = jit->addIRModule(std::move(tsm)))
     {
-        std::cout << "Failed to create execution engine: " << error << std::endl;
-        return;
+        throw std::runtime_error("Failed to add IR module to JIT");
     }
 
-    engine->finalizeObject();
-    llvm::Function* mainFunc = engine->FindFunctionNamed(MAIN_FN_NAME);
-    if (!mainFunc) {
-        std::cout << "Function '" << MAIN_FN_NAME << "' not found" << std::endl;
-        return;
-    }
-
-    llvm::Function* main = engine->FindFunctionNamed("main");
-    if (!main)
+    // 6. Lookup the entry point (assuming "main")
+    auto main_symbol = jit->lookup("main");
+    if (!main_symbol)
     {
-        std::cout << "Function 'main' not found" << std::endl;
-        return;
+        throw std::runtime_error("JIT: Could not find 'main' function in generated IR");
     }
 
-    llvm::GenericValue result = engine->runFunction(main, {});
-    std::cout << "\nProgram exited with status " << result.IntVal.getSExtValue() << std::endl;
-    exit(result.IntVal.getSExtValue());
+    // 7. Cast and Execute
+    // Assuming 'main' has the signature: int main()
+    auto* main_fn = main_symbol->toPtr<int (*)()>();
+
+    std::cout << "--- Starting JIT Execution ---" << std::endl;
+    int result = main_fn();
+    std::cout << "--- JIT Finished with exit code: " << result << " ---" << std::endl;
 }
