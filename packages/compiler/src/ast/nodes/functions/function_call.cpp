@@ -80,7 +80,7 @@ llvm::Value* AstFunctionCall::codegen(
     {
         // It's possible that the function is internally registered with its normal name
         // This always happens for extern functions.
-        callee = module->getFunction(this->get_function_name());;
+        callee = module->getFunction(this->get_function_name());
     }
 
     if (!callee)

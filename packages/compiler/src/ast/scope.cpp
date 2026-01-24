@@ -79,7 +79,7 @@ bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, cons
 
 void Scope::define_function(
     const std::string& internal_function_name,
-    std::vector< IAstInternalFieldType*> parameter_types,
+    std::vector<IAstInternalFieldType*> parameter_types,
     const IAstInternalFieldType* return_type
 ) const
 {

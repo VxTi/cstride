@@ -1,11 +1,6 @@
 #include "program.h"
 
-#include <cstdio>
 #include <iostream>
-#include <clang/Basic/DiagnosticIDs.h>
-#include <clang/Basic/DiagnosticOptions.h>
-#include <clang/Driver/Compilation.h>
-#include <clang/Driver/Driver.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
@@ -18,6 +13,8 @@
 #include <llvm/Support/TargetSelect.h>
 
 #include "ast/parser.h"
+#include "ast/nodes/functions.h"
+#include "stl/stl_functions.h"
 
 using namespace stride;
 
@@ -76,7 +73,7 @@ void Program::optimize_ast_nodes() const
             {
                 std::cout << "Reduced node: " << reduced->to_string() << std::endl;
                 new_children.push_back(
-                    std::vector<std::unique_ptr<ast::IAstNode>>::value_type(std::move(reduced))
+                    std::vector<std::unique_ptr<ast::IAstNode>>::value_type(reduced)
                 );
             }
         }
@@ -133,6 +130,8 @@ void Program::generate_llvm_ir(
 
 void Program::compile_jit() const
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
     // 1. Initialize LLVM targets for the host machine
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -166,7 +165,7 @@ void Program::compile_jit() const
             jit->getDataLayout().getGlobalPrefix()))
     );
 
-    llvm_define_extern_functions(jit);
+   llvm_define_extern_functions(jit.get(), this->get_global_scope());
 
     // 3. Setup Module with correct DataLayout and Triple
     auto module = std::make_unique<llvm::Module>("stride_jit_module", *context);
@@ -193,18 +192,17 @@ void Program::compile_jit() const
         throw std::runtime_error("Failed to add IR module to JIT");
     }
 
-    // 6. Lookup the entry point (assuming "main")
-    auto main_symbol = jit->lookup("main");
+    // Locate the main function of the process
+    auto main_symbol = jit->lookup(MAIN_FN_NAME);
     if (!main_symbol)
     {
         throw std::runtime_error("JIT: Could not find 'main' function in generated IR");
     }
 
-    // 7. Cast and Execute
-    // Assuming 'main' has the signature: int main()
+    // Execute the main function of the process
     auto* main_fn = main_symbol->toPtr<int (*)()>();
 
     std::cout << "--- Starting JIT Execution ---" << std::endl;
-    int result = main_fn();
+    const int result = main_fn();
     std::cout << "--- JIT Finished with exit code: " << result << " ---" << std::endl;
 }

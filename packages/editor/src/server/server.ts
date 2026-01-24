@@ -15,20 +15,17 @@ const wss = new WebSocketServer({ port });
 
 console.log(`WebSocket server started on port ${port}`);
 
-const CACHE_DIR = path.join(__dirname, '../../.c-cache');
+const CACHE_DIR = path.join(__dirname, './../../.c-cache');
 
 let process: ChildProcessWithoutNullStreams | null = null;
 
-const CSTRIDE_BUILD_PATH = path.resolve(__dirname, '../../../build/cstride');
 const CSTRIDE_DEBUG_PATH = path.resolve(
   __dirname,
-  '../../../cmake-build-debug/cstride'
+  '../../../compiler/cmake-build-debug/cstride'
 );
 
 function getCstridePath() {
   if (fs.existsSync(CSTRIDE_DEBUG_PATH)) return CSTRIDE_DEBUG_PATH;
-
-  if (fs.existsSync(CSTRIDE_BUILD_PATH)) return CSTRIDE_BUILD_PATH;
 
   return 'cstride';
 }
