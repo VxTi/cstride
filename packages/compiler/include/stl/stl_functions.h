@@ -4,31 +4,25 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 
+#include "ast/scope.h"
+#include "ast/nodes/types.h"
+
 /// Standard library functions implemented using C++ STL and exposed to Stride programs.
 
 
-inline uint64_t cpp_stride_stl_sys_time_ns()
+/// Implementation of function
+inline uint64_t impl_sys_time_ns()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).
         count();
 }
 
-inline void define_sys_time_ns_function(
-    llvm::orc::LLJIT* jit,
+/// Symbol definition
+inline void symbol_def_sys_time_ns(
     const std::shared_ptr<stride::ast::Scope>& global_scope
 )
 {
-    const auto fn_name = "system_time_ns";
-    llvm::cantFail(jit->getMainJITDylib().define(
-        llvm::orc::absoluteSymbols({
-            {
-                jit->mangleAndIntern(fn_name),
-                {llvm::orc::ExecutorAddr::fromPtr(cpp_stride_stl_sys_time_ns), llvm::JITSymbolFlags::Exported}
-            }
-        })
-    ));
-
-    const auto return_type = stride::ast::AstPrimitiveFieldType(
+    auto return_type = std::make_unique<stride::ast::AstPrimitiveFieldType>(
         nullptr,
         0,
         global_scope,
@@ -36,32 +30,35 @@ inline void define_sys_time_ns_function(
         64
     );
 
-    global_scope->define_function(fn_name, {}, &return_type);
+    global_scope->define_function("system_time_ns", {}, std::move(return_type));
 }
 
+/// LLVM registration
+inline void llvm_reg_sys_time_ns(llvm::orc::LLJIT* jit)
+{
+    llvm::cantFail(jit->getMainJITDylib().define(
+        llvm::orc::absoluteSymbols({
+            {
+                jit->mangleAndIntern("system_time_ns"),
+                {llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_ns), llvm::JITSymbolFlags::Exported}
+            }
+        })
+    ));
+}
 
-inline uint64_t cpp_stride_stl_time_us()
+/// Implementation of function
+inline uint64_t impl_sys_time_us()
 {
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).
         count();
 }
 
-inline void define_sys_time_us_function(
-    llvm::orc::LLJIT* jit,
+/// Symbol definition
+inline void symbol_def_sys_time_us(
     const std::shared_ptr<stride::ast::Scope>& global_scope
 )
 {
-    const auto fn_name = "system_time_us";
-    llvm::cantFail(jit->getMainJITDylib().define(
-        llvm::orc::absoluteSymbols({
-            {
-                jit->mangleAndIntern(fn_name),
-                {llvm::orc::ExecutorAddr::fromPtr(cpp_stride_stl_time_us), llvm::JITSymbolFlags::Exported}
-            }
-        })
-    ));
-
-    const auto return_type = stride::ast::AstPrimitiveFieldType(
+    auto return_type = std::make_unique<stride::ast::AstPrimitiveFieldType>(
         nullptr,
         0,
         global_scope,
@@ -69,46 +66,82 @@ inline void define_sys_time_us_function(
         64
     );
 
-    global_scope->define_function(fn_name, {}, &return_type);
+    global_scope->define_function("system_time_us", {}, std::move(return_type));
 }
 
-inline uint64_t cpp_stride_stl_time_ms()
+/// LLVM registration
+inline void llvm_reg_sys_time_us(llvm::orc::LLJIT* jit)
+{
+    llvm::cantFail(jit->getMainJITDylib().define(
+        llvm::orc::absoluteSymbols({
+            {
+                jit->mangleAndIntern("system_time_us"),
+                {llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_us), llvm::JITSymbolFlags::Exported}
+            }
+        })
+    ));
+}
+
+inline uint64_t impl_sys_time_ms()
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).
         count();
 }
 
-inline void define_sys_time_ms_function(
-    llvm::orc::LLJIT* jit,
+inline void symbol_def_sys_time_ms(
     const std::shared_ptr<stride::ast::Scope>& global_scope
 )
 {
-    const auto fn_name = "system_time_ms";
-    llvm::cantFail(jit->getMainJITDylib().define(
-        llvm::orc::absoluteSymbols({
-            {
-                jit->mangleAndIntern(fn_name),
-                {llvm::orc::ExecutorAddr::fromPtr(cpp_stride_stl_time_ms), llvm::JITSymbolFlags::Exported}
-            }
-        })
-    ));
-
-    const auto return_type = stride::ast::AstPrimitiveFieldType(
+    auto return_type = std::make_unique<stride::ast::AstPrimitiveFieldType>(
         nullptr,
         0,
         global_scope,
         stride::ast::PrimitiveType::UINT64,
         64
     );
-    global_scope->define_function(fn_name, {}, &return_type);
+    global_scope->define_function("system_time_ms", {}, std::move(return_type));
 }
 
-inline void llvm_define_extern_functions(
-    llvm::orc::LLJIT* jit,
-    const std::shared_ptr<stride::ast::Scope>& global_scope
-)
+inline void llvm_reg_sys_time_ms(llvm::orc::LLJIT* jit)
 {
-    define_sys_time_ns_function(jit, global_scope);
-    define_sys_time_us_function(jit, global_scope);
-    define_sys_time_ms_function(jit, global_scope);
+    llvm::cantFail(jit->getMainJITDylib().define(
+        llvm::orc::absoluteSymbols({
+            {
+                jit->mangleAndIntern("system_time_ms"),
+                {llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_ms), llvm::JITSymbolFlags::Exported}
+            }
+        })
+    ));
+}
+
+inline void llvm_declare_extern_function_prototypes(llvm::Module* module, llvm::LLVMContext& context)
+{
+    // Signature: uint64_t system_time_*()
+    auto* ret_ty = llvm::Type::getInt64Ty(context);
+    auto* fn_ty = llvm::FunctionType::get(ret_ty, /*isVarArg=*/false);
+
+    // getOrInsertFunction ensures the Function exists in the module symbol table.
+    // This is what AstFunctionCall::codegen() later finds via module->getFunction(...).
+    module->getOrInsertFunction("system_time_ns", fn_ty);
+    module->getOrInsertFunction("system_time_us", fn_ty);
+    module->getOrInsertFunction("system_time_ms", fn_ty);
+}
+
+inline void llvm_predefine_symbols(const std::shared_ptr<stride::ast::Scope>& global_scope)
+{
+    symbol_def_sys_time_ns(global_scope);
+    symbol_def_sys_time_us(global_scope);
+    symbol_def_sys_time_ms(global_scope);
+}
+
+inline void llvm_define_extern_functions(llvm::orc::LLJIT* jit)
+{
+    // system_time_ns
+    llvm_reg_sys_time_ns(jit);
+
+    // system_time_us
+    llvm_reg_sys_time_us(jit);
+
+    // system_time_ms
+    llvm_reg_sys_time_ms(jit);
 }

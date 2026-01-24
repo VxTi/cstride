@@ -23,6 +23,8 @@ void Program::parse_files(const std::vector<std::string>& files)
     this->_global_scope = std::make_shared<ast::Scope>(ast::ScopeType::GLOBAL);
     this->_files = files;
 
+    llvm_predefine_symbols(this->get_global_scope());
+
     std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
 
     for (const auto& file : files)
@@ -165,14 +167,16 @@ void Program::compile_jit() const
             jit->getDataLayout().getGlobalPrefix()))
     );
 
-   llvm_define_extern_functions(jit.get(), this->get_global_scope());
-
-    // 3. Setup Module with correct DataLayout and Triple
     auto module = std::make_unique<llvm::Module>("stride_jit_module", *context);
     module->setDataLayout(jit->getDataLayout());
     module->setTargetTriple(llvm::Triple(jit->getTargetTriple().str()));
 
     llvm::IRBuilder<> builder(*context);
+
+    llvm_define_extern_functions(jit.get());
+    llvm_declare_extern_function_prototypes(module.get(), *context);
+
+    // 3. Setup Module with correct DataLayout and Triple
 
     // 4. Generate IR (Reusing your existing logic)
     this->validate_ast_nodes();

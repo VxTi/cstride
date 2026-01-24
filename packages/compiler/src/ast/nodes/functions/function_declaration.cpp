@@ -212,10 +212,10 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
     auto return_type = parse_ast_type(scope, tokens, "Expected return type in function header");
 
-    std::vector<IAstInternalFieldType*> parameter_types;
+    std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types_cloned;
     for (const auto& param : parameters)
     {
-        parameter_types.push_back(param->get_type());
+        parameter_types_cloned.push_back(param->get_type()->clone());
     }
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
@@ -225,9 +225,14 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // This prevents the linker from being unable to make a reference to this function.
     if ((flags & SRFLAG_FN_DEF_EXTERN) == 0)
     {
+        std::vector<IAstInternalFieldType*> parameter_types;
+        for (const auto& param : parameters)
+        {
+            parameter_types.push_back(param->get_type());
+        }
         internal_name = resolve_internal_function_name(parameter_types, fn_name);
     }
-    scope->define_function(fn_name, parameter_types, return_type.get());
+    scope->define_function(fn_name, std::move(parameter_types_cloned), return_type->clone());
 
     std::unique_ptr<AstBlock> body = nullptr;
 

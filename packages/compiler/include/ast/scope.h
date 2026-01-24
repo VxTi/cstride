@@ -70,7 +70,7 @@ namespace stride::ast
     class FieldSymbolDef
         : public ISymbolDef
     {
-        const IAstInternalFieldType* _type;
+        std::unique_ptr<IAstInternalFieldType> _type;
         std::string _variable_name;
         bool is_mutable;
 
@@ -78,14 +78,14 @@ namespace stride::ast
         explicit FieldSymbolDef(
             const std::string& field_name,
             const std::string& internal_name,
-            const IAstInternalFieldType* type,
+            std::unique_ptr<IAstInternalFieldType> type,
             const int flags
         ) : ISymbolDef(internal_name),
-            _type(type),
+            _type(std::move(type)),
             _variable_name(field_name),
             is_mutable(flags & SRFLAG_VAR_MUTABLE) {}
 
-        const IAstInternalFieldType* get_type() const { return this->_type; }
+        const IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
         const std::string& get_variable_name() const { return this->_variable_name; }
     };
@@ -93,29 +93,29 @@ namespace stride::ast
     class SymbolFnDefinition
         : public ISymbolDef
     {
-        std::vector<IAstInternalFieldType*> _parameter_types;
-        const IAstInternalFieldType* _return_type;
+        std::vector<std::unique_ptr<IAstInternalFieldType>> _parameter_types;
+        std::unique_ptr<IAstInternalFieldType> _return_type;
 
     public:
         explicit SymbolFnDefinition(
-            std::vector<IAstInternalFieldType*> parameter_types,
-            const IAstInternalFieldType* return_type,
+            std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
+            std::unique_ptr<IAstInternalFieldType> return_type,
             const std::string& internal_name
         ) :
             ISymbolDef(internal_name),
             _parameter_types(std::move(parameter_types)),
-            _return_type(return_type) {}
+            _return_type(std::move(return_type)) {}
 
         std::vector<const IAstInternalFieldType*> get_parameter_types() const
         {
             std::vector<const IAstInternalFieldType*> out;
             out.reserve(this->_parameter_types.size());
             for (const auto& p : this->_parameter_types)
-                out.push_back(p);
+                out.push_back(p.get());
             return out;
         }
 
-        const IAstInternalFieldType* get_return_type() const { return this->_return_type; }
+        const IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
 
         ~SymbolFnDefinition() override = default;
     };
@@ -137,6 +137,7 @@ namespace stride::ast
         explicit Scope(const ScopeType type)
             : Scope(nullptr, type) {}
 
+        [[nodiscard]]
         ScopeType get_scope_type() const { return this->_type; }
 
         const FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
@@ -150,14 +151,14 @@ namespace stride::ast
         /// Will attempt to define the function in the global scope.
         void define_function(
             const std::string& internal_function_name,
-            std::vector<IAstInternalFieldType*> parameter_types,
-            const IAstInternalFieldType* return_type
+            std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
+            std::unique_ptr<IAstInternalFieldType> return_type
         ) const;
 
         void define_field(
             const std::string& field_name,
             const std::string& internal_name,
-            const IAstInternalFieldType* type,
+            std::unique_ptr<IAstInternalFieldType> type,
             int flags
         );
 

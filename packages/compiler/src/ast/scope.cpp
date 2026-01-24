@@ -17,7 +17,7 @@ bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
 {
     for (const auto& symbol_def : this->symbols)
     {
-        if (const auto* var_def = dynamic_cast<FieldSymbolDef*>(symbol_def.get()))
+        if (const auto* var_def = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
         {
             if (var_def->get_internal_symbol_name() == variable_name)
             {
@@ -47,7 +47,7 @@ bool Scope::is_function_defined_globally(const std::string& internal_function_na
     for (const auto& root = this->traverse_to_root();
          const auto& symbol : root.symbols)
     {
-        if (const auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol.get()))
+        if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol.get()))
         {
             if (fn_def->get_internal_symbol_name() == internal_function_name)
             {
@@ -64,7 +64,7 @@ bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, cons
     for (const auto& root = this->traverse_to_root();
          const auto& symbol : root.symbols)
     {
-        if (const auto* identifiable = dynamic_cast<IdentifiableSymbolDef*>(symbol.get()))
+        if (const auto* identifiable = dynamic_cast<const IdentifiableSymbolDef*>(symbol.get()))
         {
             if (identifiable->get_symbol_type() == type
                 && identifiable->get_internal_symbol_name() == symbol_name)
@@ -79,14 +79,14 @@ bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, cons
 
 void Scope::define_function(
     const std::string& internal_function_name,
-    std::vector<IAstInternalFieldType*> parameter_types,
-    const IAstInternalFieldType* return_type
+    std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
+    std::unique_ptr<IAstInternalFieldType> return_type
 ) const
 {
     auto& global_scope = const_cast<Scope&>(this->traverse_to_root());
     global_scope.symbols.push_back(std::make_unique<SymbolFnDefinition>(
         std::move(parameter_types),
-        return_type,
+        std::move(return_type),
         internal_function_name
     ));
 }
@@ -94,7 +94,7 @@ void Scope::define_function(
 void Scope::define_field(
     const std::string& field_name,
     const std::string& internal_name,
-    const IAstInternalFieldType* type,
+    std::unique_ptr<IAstInternalFieldType> type,
     const int flags
 )
 {
@@ -112,7 +112,7 @@ void Scope::define_field(
     this->symbols.push_back(std::make_unique<FieldSymbolDef>(
         field_name,
         internal_name,
-        type,
+        std::move(type),
         flags
     ));
 }
@@ -131,7 +131,7 @@ const FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) 
 {
     for (const auto& symbol_def : this->symbols)
     {
-        if (const auto* field_definition = dynamic_cast<FieldSymbolDef*>(symbol_def.get()))
+        if (const auto* field_definition = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
         {
             if (field_definition->get_internal_symbol_name() == variable_name ||
                 field_definition->get_variable_name() == variable_name)
@@ -147,7 +147,7 @@ const IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_nam
 {
     for (const auto& symbol_def : this->symbols)
     {
-        if (const auto* identifier_def = dynamic_cast<IdentifiableSymbolDef*>(symbol_def.get()))
+        if (const auto* identifier_def = dynamic_cast<const IdentifiableSymbolDef*>(symbol_def.get()))
         {
             if (identifier_def->get_internal_symbol_name() == symbol_name)
             {
@@ -177,7 +177,7 @@ const SymbolFnDefinition* Scope::get_function_def(const std::string& function_na
     const auto& global_scope = this->traverse_to_root();
     for (const auto& symbol_def : global_scope.symbols)
     {
-        if (const auto* fn_def = dynamic_cast<SymbolFnDefinition*>(symbol_def.get()))
+        if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol_def.get()))
         {
             if (fn_def->get_internal_symbol_name() == function_name)
             {
