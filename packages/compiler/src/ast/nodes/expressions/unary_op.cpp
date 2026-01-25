@@ -67,7 +67,8 @@ void AstUnaryOp::validate()
     }
 }
 
-llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+                                 llvm::IRBuilder<>* builder)
 {
     if (requires_identifier_operand(this->get_op_type()))
     {
@@ -187,7 +188,10 @@ llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Modu
     }
 }
 
-std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(std::shared_ptr<Scope> scope, TokenSet& set)
+std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
     const auto next = set.peak_next();
 

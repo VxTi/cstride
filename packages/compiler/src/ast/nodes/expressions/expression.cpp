@@ -59,11 +59,13 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
 
     if (set.peak_next_eq(TokenType::IDENTIFIER))
     {
+        /// Function invocations
         if (set.peak(1).type == TokenType::LPAREN)
         {
             return parse_function_call(scope, set);
         }
 
+        /// Regular identifier parsing; can be variable reference
         const auto reference_token = set.next();
         std::string identifier_name = reference_token.lexeme;
         std::string internal_name;
@@ -83,13 +85,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         );
     }
 
-    throw parsing_error(
-        make_ast_error(
-            *set.source(),
-            set.peak_next().offset,
-            "Invalid expression"
-        )
-    );
+    set.throw_error("Invalid expression");
 }
 
 /**
@@ -199,8 +195,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
 /**
  * General expression parsing. These can occur in global / function scopes
  */
-std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(const std::shared_ptr<Scope>& scope,
-                                                                        TokenSet& set)
+std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
     return parse_expression_ext(
         SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION,
@@ -209,7 +207,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(const st
     );
 }
 
-std::string stride::ast::parse_property_accessor_statement(std::shared_ptr<Scope> scope, TokenSet& set)
+std::string stride::ast::parse_property_accessor_statement(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
     const auto reference_token = set.expect(TokenType::IDENTIFIER);
     auto identifier_name = reference_token.lexeme;

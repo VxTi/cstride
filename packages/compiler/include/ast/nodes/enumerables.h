@@ -1,4 +1,6 @@
 #pragma once
+#include <utility>
+
 #include "ast_node.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
@@ -17,9 +19,9 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<Scope>& scope,
-            const std::string& name, std::unique_ptr<AstLiteral> value
+            std::string name, std::unique_ptr<AstLiteral> value
         ) : IAstNode(source, source_offset, scope),
-            _name(name),
+            _name(std::move(name)),
             _value(std::move(value)) {}
 
         [[nodiscard]]
@@ -27,8 +29,6 @@ namespace stride::ast
 
         [[nodiscard]]
         AstLiteral& value() const { return *this->_value; }
-
-        static std::unique_ptr<AstEnumerableMember> try_parse_member(std::shared_ptr<Scope> scope, TokenSet& tokens);
 
         std::string to_string() override;
     };
@@ -44,9 +44,9 @@ namespace stride::ast
             const int source_offset,
             const std::shared_ptr<Scope>& scope,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
-            const std::string& name
+            std::string name
         ) : IAstNode(source, source_offset, scope),
-            _members(std::move(members)), _name(name) {}
+            _members(std::move(members)), _name(std::move(name)) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstEnumerableMember>>& get_members() const
@@ -60,7 +60,9 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::unique_ptr<AstEnumerableMember> parse_enumerable_member(const std::shared_ptr<Scope>& scope, TokenSet& tokens);
+
+    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     bool is_enumerable_declaration(const TokenSet& tokens);
 }

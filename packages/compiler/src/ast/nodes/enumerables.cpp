@@ -13,7 +13,10 @@ using namespace stride::ast;
  * IDENTIFIER: <literal value>;
  * </code>
  */
-std::unique_ptr<AstEnumerableMember> AstEnumerableMember::try_parse_member(std::shared_ptr<Scope> scope, TokenSet& tokens)
+std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& tokens
+)
 {
     const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
     auto member_sym = member_name_tok.lexeme;
@@ -65,7 +68,10 @@ std::string AstEnumerable::to_string()
 }
 
 
-std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(std::shared_ptr<Scope> scope, TokenSet& set)
+std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
+    const std::shared_ptr<Scope>& scope,
+    TokenSet& set
+)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_ENUM);
     const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
@@ -87,8 +93,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(std::sh
 
     while (enum_body_subset.has_next())
     {
-        auto member = AstEnumerableMember::try_parse_member(nested_scope, enum_body_subset);
-        members.push_back(std::move(member));
+        members.push_back(parse_enumerable_member(nested_scope, enum_body_subset));
     }
 
     return std::make_unique<AstEnumerable>(

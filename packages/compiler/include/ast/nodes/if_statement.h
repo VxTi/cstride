@@ -53,5 +53,5 @@ namespace stride::ast
 
     bool is_if_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstIfStatement> parse_if_statement(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::unique_ptr<AstIfStatement> parse_if_statement(const std::shared_ptr<Scope>& scope, TokenSet& set);
 }

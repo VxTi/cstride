@@ -197,7 +197,7 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
 }
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
-    std::shared_ptr<Scope> scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& set
 )
 {

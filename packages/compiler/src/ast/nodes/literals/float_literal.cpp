@@ -4,7 +4,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
-    std::shared_ptr<Scope> scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& set
 )
 {

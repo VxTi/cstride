@@ -1,8 +1,9 @@
 #pragma once
-#include "types.h"
+#include <utility>
+
 #include "ast_node.h"
+#include "types.h"
 #include "ast/scope.h"
-#include "ast/identifiers.h"
 
 namespace stride::ast
 {
@@ -16,17 +17,19 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<Scope>& scope,
-            const std::string& name,
+            std::string  name,
             std::unique_ptr<IAstInternalFieldType> type
         ) :
             IAstNode(source, source_offset, scope),
-            _name(name),
+            _name(std::move(name)),
             _type(std::move(type)) {}
 
         std::string to_string() override;
 
+        [[nodiscard]]
         std::string get_name() const { return this->_name; }
 
+        [[nodiscard]]
         IAstInternalFieldType& get_type() const { return *this->_type; }
     };
 
@@ -45,38 +48,42 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<Scope>& scope,
-            const std::string& name,
+            std::string  name,
             std::unique_ptr<IAstInternalFieldType> reference
         )
             :
             IAstNode(source, source_offset, scope),
-            _name(name),
+            _name(std::move(name)),
             _reference(std::move(reference)) {}
 
         AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<Scope>& scope,
-            const std::string& name,
+            std::string  name,
             std::vector<std::unique_ptr<AstStructMember>> members
         ) :
             IAstNode(source, source_offset, scope),
-            _name(name),
+            _name(std::move(name)),
             _cases(std::move(members)),
             _reference(std::nullopt) {}
 
+        [[nodiscard]]
         bool is_reference_type() const { return _reference.has_value(); }
 
+        [[nodiscard]]
         IAstInternalFieldType* get_reference_type() const { return _reference->get(); }
 
         std::string to_string() override;
 
+        [[nodiscard]]
         std::string get_name() const { return _name; }
 
+        [[nodiscard]]
         const std::vector<std::unique_ptr<AstStructMember>>& get_members() const { return this->_cases; }
     };
 
-    std::unique_ptr<AstStruct> parse_struct_declaration(std::shared_ptr<Scope> scope, TokenSet& tokens);
+    std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<Scope>& scope, TokenSet& tokens);
 
     bool is_struct_declaration(const TokenSet& tokens);
 }

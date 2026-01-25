@@ -1,4 +1,6 @@
 #pragma once
+#include <utility>
+
 #include "ast_node.h"
 #include "ast/scope.h"
 #include "ast/tokens/token_set.h"
@@ -16,10 +18,10 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<Scope>& scope,
-            const std::string& name
+            std::string name
         )
             : IAstNode(source, source_offset, scope),
-              _name(name) {}
+              _name(std::move(name)) {}
 
         [[nodiscard]]
         const std::string& get_name() const { return _name; }
@@ -27,5 +29,8 @@ namespace stride::ast
 
     bool is_module_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstModule> parse_module_statement(std::shared_ptr<Scope>, TokenSet& tokens);
+    std::unique_ptr<AstModule> parse_module_statement(
+        const std::shared_ptr<Scope>&,
+        TokenSet& tokens
+    );
 }

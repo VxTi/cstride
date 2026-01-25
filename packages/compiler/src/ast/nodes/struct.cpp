@@ -6,7 +6,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstStructMember> try_parse_struct_member(
-    std::shared_ptr<Scope> scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& set
 )
 {
@@ -34,7 +34,7 @@ bool stride::ast::is_struct_declaration(const TokenSet& tokens)
     return tokens.peak_next_eq(TokenType::KEYWORD_STRUCT);
 }
 
-std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(std::shared_ptr<Scope> scope, TokenSet& tokens)
+std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const std::shared_ptr<Scope>& scope, TokenSet& tokens)
 {
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
     const auto struct_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");

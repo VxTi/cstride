@@ -15,7 +15,7 @@ bool stride::ast::is_for_loop_statement(const TokenSet& set)
     return set.peak_next_eq(TokenType::KEYWORD_FOR);
 }
 
-std::unique_ptr<AstExpression> try_collect_initiator(std::shared_ptr<Scope> scope, TokenSet& set)
+std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<Scope>& scope, TokenSet& set)
 {
     auto initiator = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -33,7 +33,7 @@ std::unique_ptr<AstExpression> try_collect_initiator(std::shared_ptr<Scope> scop
 }
 
 
-std::unique_ptr<AstExpression> try_collect_condition(std::shared_ptr<Scope> scope, TokenSet& set)
+std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<Scope>& scope, TokenSet& set)
 {
     auto condition = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -46,7 +46,7 @@ std::unique_ptr<AstExpression> try_collect_condition(std::shared_ptr<Scope> scop
     return parse_standalone_expression(scope, condition.value());
 }
 
-std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(std::shared_ptr<Scope> scope, TokenSet& set)
+std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared_ptr<Scope>& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_FOR);
     const auto header_body_opt = collect_parenthesized_block(set);
@@ -85,7 +85,7 @@ void AstLoop::validate()
     }
 }
 
-std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(std::shared_ptr<Scope> scope, TokenSet& set)
+std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const std::shared_ptr<Scope>& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);
     const auto header_condition_opt = collect_parenthesized_block(set);

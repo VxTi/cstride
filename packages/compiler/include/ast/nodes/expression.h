@@ -505,23 +505,26 @@ namespace stride::ast
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 
     /// Parses a binary arithmetic operation using precedence climbing
     std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set,
         std::unique_ptr<AstExpression> lhs,
         int min_precedence
     );
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
-    std::string parse_property_accessor_statement(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::string parse_property_accessor_statement(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     /// Parses a unary operator expression
-    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(std::shared_ptr<Scope> scope, TokenSet& set);
+    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(
+        const std::shared_ptr<Scope>& scope,
+        TokenSet& set
+    );
 
     /// Converts a token type to its corresponding logical operator type
     std::optional<LogicalOpType> get_logical_op_type(TokenType type);

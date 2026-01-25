@@ -222,27 +222,27 @@ namespace stride::ast
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_float_literal_optional(
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_string_literal_optional(
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_char_literal_optional(
-        std::shared_ptr<Scope> scope,
+        const std::shared_ptr<Scope>& scope,
         TokenSet& set
     );
 

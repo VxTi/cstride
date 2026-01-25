@@ -1,12 +1,12 @@
 #include <iostream>
 
-#include "ast/nodes/literal_values.h"
 #include <llvm/IR/Constants.h>
+#include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_optional(
-    std::shared_ptr<Scope> scope,
+    const std::shared_ptr<Scope>& scope,
     TokenSet& set
 )
 {
