@@ -46,6 +46,13 @@ std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<Scope
     return parse_standalone_expression(scope, condition.value());
 }
 
+std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<Scope>& scope, TokenSet& set)
+{
+    if (!set.has_next()) return nullptr; // If there's no incrementor statement, we don't need to parse it.
+
+    return parse_standalone_expression(scope, set);
+}
+
 std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared_ptr<Scope>& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_FOR);
@@ -64,7 +71,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared
 
     auto initiator = try_collect_initiator(for_scope, header_body);
     auto condition = try_collect_condition(for_scope, header_body);
-    auto increment = parse_standalone_expression(for_scope, header_body);
+    auto increment = try_collect_incrementor(for_scope, header_body);
 
     return std::make_unique<AstLoop>(
         set.source(),

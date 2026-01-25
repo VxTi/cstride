@@ -7,19 +7,6 @@
 
 namespace stride::ast
 {
-#define SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION  1
-#define SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION 2 // Variables declared after initial one
-#define SRFLAG_EXPR_VARIABLE_ASSIGNATION        4
-
-#define SRFLAG_VAR_DECL_EXTERN  (0x1)
-#define SRFLAG_VAR_DECL_MUTABLE (0x2)
-#define SRFLAG_VAR_DECL_GLOBAL  (0x4)
-#define SRFLAG_VAR_DECL_ARRAY   (0x8)
-
-#define SR_PROPERTY_ACCESSOR_SEPARATOR ("@")
-
-#define SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION (100)
-
     enum class BinaryOpType
     {
         ADD,

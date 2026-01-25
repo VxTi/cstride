@@ -98,7 +98,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         if (variable_def == nullptr)
         {
             throw parsing_error(
-                make_ast_error(*identifier->source, identifier->source_offset, "Variable '" + identifier->get_name() + "' not found in scope")
+                make_ast_error(*identifier->source, identifier->source_offset,
+                               "Variable '" + identifier->get_name() + "' not found in scope")
             );
         }
 
@@ -133,9 +134,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
     if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
     {
         auto type = infer_expression_type(scope, &operation->get_operand());
-        const auto op_type = operation->get_op_type();
 
-        if (op_type == UnaryOpType::ADDRESS_OF)
+        if (const auto op_type = operation->get_op_type(); op_type == UnaryOpType::ADDRESS_OF)
         {
             const auto flags = type->get_flags() | SRFLAG_TYPE_PTR;
             if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))

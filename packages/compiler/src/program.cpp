@@ -23,7 +23,7 @@ void Program::parse_files(const std::vector<std::string>& files)
     this->_global_scope = std::make_shared<ast::Scope>(ast::ScopeType::GLOBAL);
     this->_files = files;
 
-    llvm_predefine_symbols(this->get_global_scope());
+    stl::predefine_symbols(this->get_global_scope());
 
     std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
 
@@ -173,8 +173,8 @@ void Program::compile_jit() const
 
     llvm::IRBuilder<> builder(*context);
 
-    llvm_define_extern_functions(jit.get());
-    llvm_declare_extern_function_prototypes(module.get(), *context);
+    stl::llvm_jit_define_functions(jit.get());
+    stl::llvm_insert_function_definitions(module.get(), *context);
 
     // 3. Setup Module with correct DataLayout and Triple
 

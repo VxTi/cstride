@@ -83,7 +83,7 @@ namespace stride::ast
         ) : ISymbolDef(internal_name),
             _type(std::move(type)),
             _variable_name(field_name),
-            is_mutable(flags & SRFLAG_VAR_MUTABLE) {}
+            is_mutable(flags & SRFLAG_VAR_DECL_MUTABLE) {}
 
         const IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
