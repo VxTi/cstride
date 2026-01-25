@@ -11,3 +11,5 @@ editor/.c-cache
 *.log
 
 .DS_Store
+Makefile
+cmake_install.cmake
