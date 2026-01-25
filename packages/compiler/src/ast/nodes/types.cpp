@@ -396,40 +396,48 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
         );
     }
 
-    // Both must be same category (both int or both float)
-    if (!(
-        (lhs_primitive->is_integer() && rhs_primitive->is_integer()) ||
-        (lhs_primitive->is_fp() && rhs_primitive->is_fp())))
+    const bool are_both_sides_integers = lhs_primitive->is_integer() && rhs_primitive->is_integer();
+    const bool are_both_sides_floats = lhs_primitive->is_fp() && rhs_primitive->is_fp();
+
+    // TODO: Handle unsigned / signed properly
+
+    // If both sides are the same, we'll just return the one with the highest byte count
+    // E.g., dominant type (fp32, fp64) will yield fp64, (i32, i64) will yield i64
+    if (are_both_sides_floats || are_both_sides_integers)
     {
-        throw parsing_error(
-            make_ast_error(
-                *lhs->source,
-                lhs->source_offset,
-                "Cannot compute dominant type for incompatible primitive types"
-            )
-        );
+        return lhs_primitive->byte_size() >= rhs_primitive->byte_size()
+                   ? lhs_primitive->clone()
+                   : rhs_primitive->clone();
     }
 
-    // Return type with larger byte size
-    if (lhs_primitive->byte_size() >= rhs_primitive->byte_size())
+    // If LHS is a float, but the RHS is not, we'll have to convert the resulting
+    // type into a float with the highest byte size
+    if (lhs_primitive->is_fp() && !rhs_primitive->is_fp())
     {
-        return std::make_unique<AstPrimitiveFieldType>(
-            lhs_primitive->source,
-            lhs_primitive->source_offset,
-            scope,
-            lhs_primitive->type(),
-            lhs_primitive->byte_size(),
-            lhs_primitive->get_flags()
-        );
+        // If the RHS has a higher byte size, we need to promote the RHS to a floating point type
+        // and return the highest byte size
+        if (rhs_primitive->byte_size() > lhs_primitive->byte_size())
+        {
+            return std::make_unique<AstPrimitiveFieldType>(
+                lhs_primitive->source,
+                lhs_primitive->source_offset,
+                scope,
+                PrimitiveType::FLOAT64,
+                rhs_primitive->byte_size(),
+                rhs_primitive->get_flags()
+            );
+        }
+
+        // Otherwise, just return the LHS as the dominant type (float32 / float64)
+        return lhs_primitive->clone();
     }
 
-    return std::make_unique<AstPrimitiveFieldType>(
-        rhs_primitive->source,
-        rhs_primitive->source_offset,
-        scope,
-        rhs_primitive->type(),
-        rhs_primitive->byte_size(),
-        rhs_primitive->get_flags()
+    throw parsing_error(
+        make_ast_error(
+            *rhs->source,
+            rhs->source_offset,
+            "Cannot compute dominant type for incompatible primitive types"
+        )
     );
 }
 

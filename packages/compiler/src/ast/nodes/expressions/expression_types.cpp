@@ -110,21 +110,21 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
     if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
     {
         auto lhs = infer_expression_type(scope, &operation->get_left());
-        const auto rhs = infer_expression_type(scope, &operation->get_right());
+        auto rhs = infer_expression_type(scope, &operation->get_right());
 
         if (*lhs == *rhs)
         {
-            return lhs;
+            return std::move(lhs);
         }
 
         if (lhs->is_pointer() && !rhs->is_pointer())
         {
-            return lhs;
+            return std::move(lhs);
         }
 
         if (!lhs->is_pointer() && rhs->is_pointer())
         {
-            return rhs->clone();
+            return std::move(rhs);
         }
 
         return get_dominant_type(scope, &*lhs, &*rhs);

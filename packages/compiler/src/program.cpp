@@ -206,7 +206,7 @@ void Program::compile_jit() const
     // Execute the main function of the process
     auto* main_fn = main_symbol->toPtr<int (*)()>();
 
-    std::cout << "--- Starting JIT Execution ---" << std::endl;
     const int result = main_fn();
-    std::cout << "--- JIT Finished with exit code: " << result << " ---" << std::endl;
+
+    exit(result);
 }

@@ -133,59 +133,65 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
-    llvm::IRBuilder<>* ir_builder
+    llvm::IRBuilder<>* builder
 )
 {
-    llvm::Value* l = this->get_left().codegen(scope, module, context, ir_builder);
-    llvm::Value* r = this->get_right().codegen(scope, module, context, ir_builder);
+    llvm::Value* lhs = this->get_left().codegen(scope, module, context, builder);
+    llvm::Value* rhs = this->get_right().codegen(scope, module, context, builder);
 
-    if (!l || !r)
+    if (!lhs || !rhs)
     {
         return nullptr;
     }
 
-    llvm::IRBuilder<> builder(context);
-
     llvm::Instruction* instruction;
 
     // Attempt to locate insertion point
-    if ((instruction = llvm::dyn_cast<llvm::Instruction>(l)))
+    if ((instruction = llvm::dyn_cast<llvm::Instruction>(lhs)))
     {
-        builder.SetInsertPoint(instruction->getParent());
+        builder->SetInsertPoint(instruction->getParent());
     }
-    else if ((instruction = llvm::dyn_cast<llvm::Instruction>(r)))
+    else if ((instruction = llvm::dyn_cast<llvm::Instruction>(rhs)))
     {
-        builder.SetInsertPoint(instruction->getParent());
+        builder->SetInsertPoint(instruction->getParent());
     }
 
     // Handle integer promotion for mismatched types
-    if (l->getType()->isIntegerTy() && r->getType()->isIntegerTy())
+    if (lhs->getType()->isIntegerTy() && rhs->getType()->isIntegerTy())
     {
-        const auto l_width = l->getType()->getIntegerBitWidth();
-        const auto r_width = r->getType()->getIntegerBitWidth();
+        const auto l_width = lhs->getType()->getIntegerBitWidth();
+        const auto r_width = rhs->getType()->getIntegerBitWidth();
 
         if (l_width < r_width)
         {
-            l = builder.CreateIntCast(l, r->getType(), true, "binop_sext");
+            lhs = builder->CreateIntCast(lhs, rhs->getType(), true, "binop_sext");
         }
         else if (r_width < l_width)
         {
-            r = builder.CreateIntCast(r, l->getType(), true, "binop_sext");
+            rhs = builder->CreateIntCast(rhs, lhs->getType(), true, "binop_sext");
         }
     }
 
-    bool is_float = l->getType()->isFloatingPointTy();
+    bool is_float = lhs->getType()->isFloatingPointTy();
 
     switch (this->get_op_type())
     {
     case BinaryOpType::ADD:
-        return is_float ? builder.CreateFAdd(l, r, "addtmp") : builder.CreateAdd(l, r, "addtmp");
+        return is_float
+                   ? builder->CreateFAdd(lhs, rhs, "addtmp")
+                   : builder->CreateAdd(lhs, rhs, "addtmp");
     case BinaryOpType::SUBTRACT:
-        return is_float ? builder.CreateFSub(l, r, "subtmp") : builder.CreateSub(l, r, "subtmp");
+        return is_float
+                   ? builder->CreateFSub(lhs, rhs, "subtmp")
+                   : builder->CreateSub(lhs, rhs, "subtmp");
     case BinaryOpType::MULTIPLY:
-        return is_float ? builder.CreateFMul(l, r, "multmp") : builder.CreateMul(l, r, "multmp");
+        return is_float
+                   ? builder->CreateFMul(lhs, rhs, "multmp")
+                   : builder->CreateMul(lhs, rhs, "multmp");
     case BinaryOpType::DIVIDE:
-        return is_float ? builder.CreateFDiv(l, r, "divtmp") : builder.CreateSDiv(l, r, "divtmp");
+        return is_float
+                   ? builder->CreateFDiv(lhs, rhs, "divtmp")
+                   : builder->CreateSDiv(lhs, rhs, "divtmp");
     default:
         return nullptr;
     }
