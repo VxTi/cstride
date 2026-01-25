@@ -24,6 +24,7 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::COMMENT, R"(//[^\n]*)"),
     TOKEN(TokenType::COMMENT_MULTILINE, R"(/\*[\s\S]*?\*/)"),
 
+
     // Keywords
     TOKEN(TokenType::KEYWORD_LET, R"(\blet\b)"),
     TOKEN(TokenType::KEYWORD_USE, R"(\buse\b)"),
@@ -45,7 +46,7 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::KEYWORD_CLASS, R"(\bclass\b)"),
     TOKEN(TokenType::KEYWORD_THIS, R"(\bthis\b)"),
     TOKEN(TokenType::KEYWORD_PUBLIC, R"(\bpublic\b)"),
-    TOKEN(TokenType::KEYWORD_MODULE, R"(\bmod\b)"),
+    TOKEN(TokenType::KEYWORD_MOD, R"(\bmod\b)"),
     TOKEN(TokenType::KEYWORD_EXTERN, R"(\bextern\b)"),
     TOKEN(TokenType::KEYWORD_OVERRIDE, R"(\boverride\b)"),
     TOKEN(TokenType::KEYWORD_AS, R"(\bas\b)"),
@@ -73,6 +74,16 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::PRIMITIVE_STRING, R"(\bstring\b)"),
     TOKEN(TokenType::PRIMITIVE_VOID, R"(\bvoid\b)"),
     TOKEN(TokenType::PRIMITIVE_AUTO, R"(\bauto\b)"),
+
+    // Literals (string and char literals before identifiers)
+    TOKEN(TokenType::STRING_LITERAL, R"("([^"\\]|\\.)*")"),
+    TOKEN(TokenType::CHAR_LITERAL, R"('([^'\\]|\\.)')"),
+    TOKEN(TokenType::IDENTIFIER, R"([$a-zA-Z_][$a-zA-Z0-9_]*)"),
+    TOKEN(TokenType::BOOLEAN_LITERAL, R"(\b(true|false)\b)"),
+    TOKEN(TokenType::DOUBLE_LITERAL, R"(\d*\.\d+[dD])"),
+    TOKEN(TokenType::FLOAT_LITERAL, R"(\d*\.\d+)"),
+    TOKEN(TokenType::INTEGER_LITERAL, R"(\d+)"),
+    TOKEN(TokenType::HEX_LITERAL, R"(\b0x[0-9a-fA-F]+\b)"),
 
     // Multi-character operators (must come before single-char operators)
     TOKEN(TokenType::DOUBLE_STAR_EQUALS, R"(\*\*=)"),
@@ -130,14 +141,4 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::COMMA, R"(,)"),
     TOKEN(TokenType::SEMICOLON, R"(;)"),
     TOKEN(TokenType::COLON, R"(:)"),
-
-    // Literals (string and char literals before identifiers)
-    TOKEN(TokenType::STRING_LITERAL, R"("([^"\\]|\\.)*")"),
-    TOKEN(TokenType::CHAR_LITERAL, R"('([^'\\]|\\.)')"),
-    TOKEN(TokenType::BOOLEAN_LITERAL, R"(\b(true|false)\b)"),
-    TOKEN(TokenType::DOUBLE_LITERAL, R"(\d+\.\d+[dD])"),
-    TOKEN(TokenType::FLOAT_LITERAL, R"(\d+\.\d+)"),
-    TOKEN(TokenType::INTEGER_LITERAL, R"(\d+)"),
-    TOKEN(TokenType::HEX_LITERAL, R"(\b0x[0-9a-fA-F]+\b)"),
-    TOKEN(TokenType::IDENTIFIER, R"([$a-zA-Z_][$a-zA-Z0-9_]*)"),
 };

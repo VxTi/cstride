@@ -71,24 +71,19 @@ namespace stride::ast
     {
         std::unique_ptr<IAstInternalFieldType> _type;
         std::string _variable_name;
-        int _flags;
 
     public:
         explicit FieldSymbolDef(
             const std::string& field_name,
             const std::string& internal_name,
-            std::unique_ptr<IAstInternalFieldType> type,
-            const int flags
+            std::unique_ptr<IAstInternalFieldType> type
         ) : ISymbolDef(internal_name),
             _type(std::move(type)),
-            _variable_name(field_name),
-            _flags(flags) {}
+            _variable_name(field_name) {}
 
         const IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
         const std::string& get_variable_name() const { return this->_variable_name; }
-
-        int get_flags() const { return this->_flags; }
     };
 
     class SymbolFnDefinition
@@ -159,8 +154,7 @@ namespace stride::ast
         void define_field(
             const std::string& field_name,
             const std::string& internal_name,
-            std::unique_ptr<IAstInternalFieldType> type,
-            int flags
+            std::unique_ptr<IAstInternalFieldType> type
         );
 
         void define_symbol(const std::string& symbol_name, IdentifiableSymbolType type) const;

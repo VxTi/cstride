@@ -16,3 +16,6 @@
 #define SRFLAG_TYPE_ARRAY          (0x20)
 #define SRFLAG_TYPE_GLOBAL         (0x40)
 #define SRFLAG_TYPE_EXTERN         (0x80)
+#define SRFLAG_TYPE_VARIADIC       (0x100)
+
+#define SRFLAG_FN_VARIADIC (0x1)

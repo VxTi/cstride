@@ -94,8 +94,7 @@ void Scope::define_function(
 void Scope::define_field(
     const std::string& field_name,
     const std::string& internal_name,
-    std::unique_ptr<IAstInternalFieldType> type,
-    const int flags
+    std::unique_ptr<IAstInternalFieldType> type
 )
 {
     if (is_variable_defined_in_scope(field_name))
@@ -112,8 +111,7 @@ void Scope::define_field(
     this->symbols.push_back(std::make_unique<FieldSymbolDef>(
         field_name,
         internal_name,
-        std::move(type),
-        flags
+        std::move(type)
     ));
 }
 

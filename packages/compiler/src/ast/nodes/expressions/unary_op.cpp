@@ -78,8 +78,12 @@ void AstUnaryOp::validate()
     }
 }
 
-llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
-                                 llvm::IRBuilder<>* builder)
+llvm::Value* AstUnaryOp::codegen(
+    const std::shared_ptr<Scope>& scope,
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
+)
 {
     if (requires_identifier_operand(this->get_op_type()))
     {
@@ -114,6 +118,7 @@ llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Modu
             var_addr = module->getNamedGlobal(identifier->get_name());
         }
 
+        // Welp, that's it I guess
         if (!var_addr)
         {
             throw parsing_error(
@@ -153,16 +158,28 @@ llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Modu
 
         // Increment / Decrement
         auto* loaded_val = builder->CreateLoad(loaded_type, var_addr, "loadtmp");
-        llvm::Value* one = llvm::ConstantInt::get(loaded_val->getType(), 1);
+        const bool is_fp = loaded_type->isFloatingPointTy();
+
+        llvm::Value* one =
+            is_fp
+                ? llvm::ConstantFP::get(loaded_type, 1.0)
+                : llvm::ConstantInt::get(loaded_val->getType(), 1);
+
         llvm::Value* new_val;
 
         if (this->get_op_type() == UnaryOpType::INCREMENT)
         {
-            new_val = builder->CreateAdd(loaded_val, one, "inctmp");
+            new_val =
+                is_fp
+                    ? builder->CreateFAdd(loaded_val, one, "inctmp")
+                    : builder->CreateAdd(loaded_val, one, "inctmp");
         }
         else
         {
-            new_val = builder->CreateSub(loaded_val, one, "dectmp");
+            new_val =
+                is_fp
+                    ? builder->CreateFSub(loaded_val, one, "dectmp")
+                    : builder->CreateSub(loaded_val, one, "dectmp");
         }
 
         builder->CreateStore(new_val, var_addr);
@@ -172,6 +189,7 @@ llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Modu
     }
 
     auto* val = get_operand().codegen(scope, module, context, builder);
+
     if (!val) return nullptr;
 
     switch (this->get_op_type())
@@ -179,7 +197,12 @@ llvm::Value* AstUnaryOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Modu
     case UnaryOpType::LOGICAL_NOT:
         {
             // !x equivalent to (x == 0)
-            auto* cmp = builder->CreateICmpEQ(val, llvm::ConstantInt::get(val->getType(), 0), "lognotcmp");
+            auto* cmp = builder->CreateICmpEQ(
+                val,
+                llvm::ConstantInt::get(val->getType(), 0),
+                "lognotcmp"
+            );
+
             return builder->CreateZExt(cmp, val->getType(), "lognot");
         }
     case UnaryOpType::NEGATE:

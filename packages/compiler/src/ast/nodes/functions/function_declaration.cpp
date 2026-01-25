@@ -181,11 +181,11 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 )
 {
     // TODO: Add support for variadic arguments
-    int flags = 0;
+    int function_flags = 0;
     if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERN))
     {
         tokens.expect(TokenType::KEYWORD_EXTERN);
-        flags |= SRFLAG_FN_DEF_EXTERN;
+        function_flags |= SRFLAG_FN_DEF_EXTERN;
     }
 
     auto reference_token = tokens.expect(TokenType::KEYWORD_FN); // fn
@@ -215,14 +215,16 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         parse_subsequent_fn_params(function_scope, tokens, parameters);
     }
 
-    if (!parameters.empty() && (parameters.back()->get_flags() & SRFLAG_FN_PARAM_DEF_VARIADIC))
+    if (!parameters.empty() && parameters.back()->get_type()->is_variadic())
     {
-        flags |= SRFLAG_FN_DEF_VARIADIC;
+        function_flags |= SRFLAG_FN_DEF_VARIADIC;
     }
 
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
     tokens.expect(TokenType::COLON, "Expected a colon after function header type");
-    auto return_type = parse_ast_type(scope, tokens, "Expected return type in function header");
+
+    // Return type doesn't have the same flags as the function, hence NONE
+    auto return_type = parse_ast_type(scope, tokens, "Expected return type in function header", SRFLAG_NONE);
 
     std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types_cloned;
     for (const auto& param : parameters)
@@ -235,7 +237,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
-    if ((flags & SRFLAG_FN_DEF_EXTERN) == 0)
+    if ((function_flags & SRFLAG_FN_DEF_EXTERN) == 0)
     {
         std::vector<IAstInternalFieldType*> parameter_types;
         for (const auto& param : parameters)
@@ -248,7 +250,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     std::unique_ptr<AstBlock> body = nullptr;
 
-    if (flags & SRFLAG_FN_DEF_EXTERN)
+    if (function_flags & SRFLAG_FN_DEF_EXTERN)
     {
         tokens.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
     }
@@ -266,7 +268,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         std::move(parameters),
         std::move(body),
         std::move(return_type),
-        flags
+        function_flags
     );
 }
 

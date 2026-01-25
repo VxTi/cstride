@@ -9,11 +9,6 @@
 
 namespace stride::ast
 {
-#define SRFLAG_TYPE_PTR            (0x1)
-#define SRFLAG_TYPE_REFERENCE      (0x2)
-#define SRFLAG_TYPE_MUTABLE        (0x4)
-#define SRFLAG_TYPE_OPTIONAL       (0x8)
-
     enum class PrimitiveType
     {
         INT8,
@@ -38,7 +33,7 @@ namespace stride::ast
     class IAstInternalFieldType :
         public IAstNode
     {
-        const int _flags;
+        int _flags;
 
     public:
         IAstInternalFieldType(
@@ -68,7 +63,18 @@ namespace stride::ast
         bool is_optional() const { return this->_flags & SRFLAG_TYPE_OPTIONAL; }
 
         [[nodiscard]]
+        bool is_global() const { return this->_flags & SRFLAG_TYPE_GLOBAL; }
+
+        [[nodiscard]]
+        bool is_variadic() const { return this->_flags & SRFLAG_TYPE_VARIADIC; }
+
+        [[nodiscard]]
         int get_flags() const { return this->_flags; }
+
+        void set_flags(const int flags)
+        {
+            this->_flags = flags;
+        }
 
         [[nodiscard]]
         virtual std::string get_internal_name() = 0;
@@ -103,6 +109,32 @@ namespace stride::ast
 
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
+
+        bool is_integer() const
+        {
+            switch (this->_type)
+            {
+            case PrimitiveType::INT8:
+            case PrimitiveType::INT16:
+            case PrimitiveType::INT32:
+            case PrimitiveType::INT64:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        bool is_fp() const
+        {
+            switch (this->_type)
+            {
+            case PrimitiveType::FLOAT32:
+            case PrimitiveType::FLOAT64:
+                return true;
+            default:
+                return false;
+            }
+        }
 
         [[nodiscard]]
         size_t byte_size() const { return this->_byte_size; }
@@ -179,7 +211,8 @@ namespace stride::ast
     std::unique_ptr<IAstInternalFieldType> parse_ast_type(
         const std::shared_ptr<Scope>& scope,
         TokenSet& set,
-        const std::string& error
+        const std::string& error,
+        int context_flags = SRFLAG_NONE
     );
 
     llvm::Type* internal_type_to_llvm_type(
@@ -209,11 +242,13 @@ namespace stride::ast
 
     std::optional<std::unique_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(
         const std::shared_ptr<Scope>& scope,
-        TokenSet& set
+        TokenSet& set,
+        int context_type_flags = SRFLAG_NONE
     );
 
     std::optional<std::unique_ptr<AstNamedValueType>> parse_named_type_optional(
         const std::shared_ptr<Scope>& scope,
-        TokenSet& set
+        TokenSet& set,
+        int context_type_flags = SRFLAG_NONE
     );
 }

@@ -49,7 +49,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(const std::shar
     if (tokens.peak_next_eq(TokenType::EQUALS))
     {
         tokens.next();
-        auto reference_sym = parse_ast_type(scope, tokens, "Expected reference struct type");
+        auto reference_sym = parse_ast_type(scope, tokens, "Expected reference struct type", SRFLAG_NONE);
 
         tokens.expect(TokenType::SEMICOLON);
 

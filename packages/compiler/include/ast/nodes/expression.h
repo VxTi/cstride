@@ -179,7 +179,6 @@ namespace stride::ast
     class AstVariableDeclaration :
         public AstExpression
     {
-        const int _flags;
         const std::string _variable_name;
         const std::string _internal_name;
         const std::unique_ptr<IAstInternalFieldType> _variable_type;
@@ -191,12 +190,10 @@ namespace stride::ast
             const int source_offset,
             const std::shared_ptr<Scope>& scope,
             std::string variable_name,
+            std::string internal_name,
             std::unique_ptr<IAstInternalFieldType> variable_type,
-            std::unique_ptr<AstExpression> initial_value,
-            const int flags,
-            std::string internal_name
+            std::unique_ptr<AstExpression> initial_value
         ) : AstExpression(source, source_offset, scope),
-            _flags(flags),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
             _variable_type(std::move(variable_type)),
@@ -224,12 +221,6 @@ namespace stride::ast
         const std::unique_ptr<AstExpression>& get_initial_value() const
         {
             return this->_initial_value;
-        }
-
-        [[nodiscard]]
-        int get_flags() const
-        {
-            return this->_flags;
         }
 
         std::string to_string() override;

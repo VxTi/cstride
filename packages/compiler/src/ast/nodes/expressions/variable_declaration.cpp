@@ -64,8 +64,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         var_type = llvm::PointerType::get(context, 0);
     }
 
-    // Check if this is a global variable declaration
-    if ((this->get_flags() & SRFLAG_TYPE_GLOBAL) != 0)
+    if (this->get_variable_type()->is_global())
     {
         // Create a global variable
         llvm::Constant* initializer = nullptr;
@@ -90,7 +89,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         return new llvm::GlobalVariable(
             *module,
             var_type,
-            (this->get_flags() & SRFLAG_TYPE_MUTABLE) == 0, // isConstant
+            !this->get_variable_type()->is_mutable(), // isConstant
             llvm::GlobalValue::ExternalLinkage,
             initializer,
             this->get_internal_name()
@@ -189,10 +188,9 @@ IAstNode* AstVariableDeclaration::reduce()
                 this->source_offset,
                 scope,
                 this->get_variable_name(),
+                this->get_internal_name(),
                 std::move(cloned_type),
-                std::unique_ptr<AstExpression>(reduced_expr),
-                this->get_flags(),
-                this->get_internal_name()
+                std::unique_ptr<AstExpression>(reduced_expr)
             ).release();
         }
     }
@@ -206,7 +204,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 )
 {
     // Ensure we're allowed to parse standalone expressions
-    if ((expression_type_flags & SRFLAG_EXPR_TYPE_STANDALONE) == 0)
+    if ((expression_type_flags & SRFLAG_EXPR_TYPE_STANDALONE) != 0)
     {
         set.throw_error("Variable declarations are not allowed in this context");
     }
@@ -234,7 +232,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
     const auto variable_name = variable_name_tok.lexeme;
     set.expect(TokenType::COLON);
-    auto variable_type = parse_ast_type(scope, set, "Expected variable type in variable declaration");
+    auto variable_type = parse_ast_type(scope, set, "Expected variable type after variable name", flags);
 
     set.expect(TokenType::EQUALS);
 
@@ -257,8 +255,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     scope->define_field(
         variable_name,
         internal_name,
-        variable_type->clone(),
-        flags
+        variable_type->clone()
     );
 
     return std::make_unique<AstVariableDeclaration>(
@@ -266,10 +263,9 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         reference_token.offset,
         scope,
         variable_name,
+        internal_name,
         std::move(variable_type),
-        std::move(value),
-        flags,
-        internal_name
+        std::move(value)
     );
 }
 

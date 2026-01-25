@@ -133,11 +133,11 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     const std::shared_ptr<Scope>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
-    llvm::IRBuilder<>* irbuilder
+    llvm::IRBuilder<>* ir_builder
 )
 {
-    llvm::Value* l = this->get_left().codegen(scope, module, context, irbuilder);
-    llvm::Value* r = this->get_right().codegen(scope, module, context, irbuilder);
+    llvm::Value* l = this->get_left().codegen(scope, module, context, ir_builder);
+    llvm::Value* r = this->get_right().codegen(scope, module, context, ir_builder);
 
     if (!l || !r)
     {

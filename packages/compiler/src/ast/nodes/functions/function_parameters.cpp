@@ -9,19 +9,18 @@ void stride::ast::parse_variadic_fn_param(
 )
 {
     const auto reference_token = tokens.expect(TokenType::THREE_DOTS);
-    auto param = parse_standalone_fn_param(scope, tokens);
-    
+    const auto param = parse_standalone_fn_param(scope, tokens);
+
+    param->get_type()->set_flags(param->get_type()->get_flags() | SRFLAG_TYPE_VARIADIC);
+
     // Create a new parameter with the variadic flag
-    auto variadic_param = std::make_unique<AstFunctionParameter>(
+    parameters.push_back(std::make_unique<AstFunctionParameter>(
         param->source,
         param->source_offset,
         param->scope,
         param->get_name(),
-        std::unique_ptr<IAstInternalFieldType>(param->get_type()->clone()),
-        param->get_flags() | SRFLAG_FN_PARAM_DEF_VARIADIC
-    );
-
-    parameters.push_back(std::move(variadic_param));
+        param->get_type()->clone()
+    ));
 }
 
 void stride::ast::parse_subsequent_fn_params(
@@ -104,16 +103,16 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     set.expect(TokenType::COLON);
 
     std::unique_ptr<IAstInternalFieldType> fn_param_type = parse_ast_type(
-        scope, set, "Expected function parameter type");
+        scope, set, "Expected function parameter type", flags
+    );
 
-    scope->define_field(param_name, reference_token.lexeme, fn_param_type->clone(), flags);
+    scope->define_field(param_name, reference_token.lexeme, fn_param_type->clone());
 
     return std::make_unique<AstFunctionParameter>(
         set.source(),
         reference_token.offset,
         scope,
         reference_token.lexeme,
-        std::move(fn_param_type),
-        flags
+        std::move(fn_param_type)
     );
 }

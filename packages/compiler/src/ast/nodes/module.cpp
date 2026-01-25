@@ -11,7 +11,7 @@ std::string AstModule::to_string()
 
 bool stride::ast::is_module_statement(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_MODULE);
+    return tokens.peak_next_eq(TokenType::KEYWORD_MOD);
 }
 
 std::unique_ptr<AstModule> stride::ast::parse_module_statement(
@@ -19,11 +19,9 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     TokenSet& tokens
 )
 {
-    const auto reference_token = tokens.expect(TokenType::KEYWORD_MODULE);
+    const auto reference_token = tokens.expect(TokenType::KEYWORD_MOD);
 
-    if (
-        reference_token.offset != 0
-    )
+    if (reference_token.offset != 0)
     {
         tokens.throw_error(
             reference_token,
@@ -37,7 +35,7 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
         TokenType::IDENTIFIER,
         "Expected module name after 'mod' keyword"
     );
-    std::vector segments = {module_name_token.lexeme};
+    std::vector<std::string> segments = {module_name_token.lexeme};
 
     while (tokens.peak_next_eq(TokenType::DOUBLE_COLON))
     {

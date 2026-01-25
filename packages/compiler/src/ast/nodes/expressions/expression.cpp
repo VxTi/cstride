@@ -53,7 +53,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
     if (set.peak_next_eq(TokenType::LPAREN))
     {
         set.next();
-        auto expr = parse_standalone_expression_part(scope, set);
+        auto expr = parse_expression_extended(0, scope, set);
         set.expect(TokenType::RPAREN);
         return expr;
     }

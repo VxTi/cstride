@@ -109,7 +109,7 @@ namespace stride::ast
         KEYWORD_STRUCT,   // struct
         KEYWORD_IMPORT,   // import
         KEYWORD_PUBLIC,   // public
-        KEYWORD_MODULE,   // module
+        KEYWORD_MOD,      // module
         KEYWORD_EXTERN,   // external
         KEYWORD_NIL,      // nil
         KEYWORD_OVERRIDE, // override
@@ -244,7 +244,7 @@ namespace stride::ast
         case TokenType::KEYWORD_STRUCT: return "struct";
         case TokenType::KEYWORD_IMPORT: return "import";
         case TokenType::KEYWORD_PUBLIC: return "public";
-        case TokenType::KEYWORD_MODULE: return "module";
+        case TokenType::KEYWORD_MOD: return "module";
         case TokenType::KEYWORD_EXTERN: return "extern";
         case TokenType::KEYWORD_NIL: return "nil";
         case TokenType::KEYWORD_OVERRIDE: return "override";

@@ -37,27 +37,31 @@ std::string AstNamedValueType::to_string()
 
 std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primitive_type_optional(
     const std::shared_ptr<Scope>& scope,
-    TokenSet& set
+    TokenSet& set,
+    int context_type_flags
 )
 {
-    int flags = 0;
     const auto reference_token = set.peak_next();
     const bool is_ptr = set.peak_next_eq(TokenType::STAR);
     const bool is_reference = set.peak_next_eq(TokenType::AMPERSAND);
 
+    int additional_flags = 0;
+
     if (is_ptr)
     {
-        flags |= SRFLAG_TYPE_PTR;
+        additional_flags |= SRFLAG_TYPE_PTR;
     }
     else if (is_reference)
     {
-        flags |= SRFLAG_TYPE_REFERENCE;
+        additional_flags |= SRFLAG_TYPE_REFERENCE;
     }
 
     // If it has flags, we'll have to offset the next token peaking by one
-    const int offset = flags ? 1 : 0;
+    const int offset = additional_flags ? 1 : 0;
+    context_type_flags |= additional_flags;
 
     std::optional<std::unique_ptr<AstPrimitiveFieldType>> result = std::nullopt;
+
     switch (set.peak(offset).type)
     {
     case TokenType::PRIMITIVE_INT8:
@@ -68,7 +72,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::INT8,
                 1,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -80,7 +84,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::INT16,
                 2,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -92,7 +96,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::INT32,
                 4,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -104,7 +108,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::INT64,
                 8,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -116,7 +120,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::UINT8,
                 1,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -128,7 +132,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::UINT16,
                 2,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -140,7 +144,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::UINT32,
                 4,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -152,7 +156,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::UINT64,
                 8,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -164,7 +168,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::FLOAT32,
                 4,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -176,7 +180,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::FLOAT64,
                 8,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -188,7 +192,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::BOOL,
                 1,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -200,7 +204,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::CHAR,
                 1,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -212,7 +216,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::STRING,
                 1,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -224,7 +228,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
                 scope,
                 PrimitiveType::VOID,
                 0,
-                flags
+                context_type_flags
             );
         }
         break;
@@ -242,17 +246,17 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
 
 std::optional<std::unique_ptr<AstNamedValueType>> stride::ast::parse_named_type_optional(
     const std::shared_ptr<Scope>& scope,
-    TokenSet& set
+    TokenSet& set,
+    int context_type_flags
 )
 {
     // Custom types are identifiers in type position.
-    bool is_ptr = false;
     const auto reference_token = set.peak_next();
 
     if (set.peak_next_eq(TokenType::STAR))
     {
         set.next();
-        is_ptr = true;
+        context_type_flags |= SRFLAG_TYPE_PTR;
     }
     if (set.peak_next().type != TokenType::IDENTIFIER)
     {
@@ -265,22 +269,25 @@ std::optional<std::unique_ptr<AstNamedValueType>> stride::ast::parse_named_type_
         reference_token.offset,
         scope,
         name,
-        is_ptr
+        context_type_flags
     );
 }
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(
     const std::shared_ptr<Scope>& scope,
     TokenSet& set,
-    const std::string& error
+    const std::string& error,
+    const int context_flags
 )
 {
-    if (auto primitive = parse_primitive_type_optional(scope, set); primitive.has_value())
+    if (auto primitive = parse_primitive_type_optional(scope, set, context_flags);
+        primitive.has_value())
     {
         return std::move(primitive.value());
     }
 
-    if (auto named_type = parse_named_type_optional(scope, set); named_type.has_value())
+    if (auto named_type = parse_named_type_optional(scope, set, context_flags);
+        named_type.has_value())
     {
         return std::move(named_type.value());
     }
@@ -389,20 +396,10 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
         );
     }
 
-    // Check if both are integer types (signed or unsigned)
-    const bool lhs_is_int = lhs_primitive->type() >= PrimitiveType::INT8 &&
-        lhs_primitive->type() <= PrimitiveType::UINT64;
-    const bool rhs_is_int = rhs_primitive->type() >= PrimitiveType::INT8 &&
-        rhs_primitive->type() <= PrimitiveType::UINT64;
-
-    // Check if both are float types
-    const bool lhs_is_float = lhs_primitive->type() == PrimitiveType::FLOAT32 ||
-        lhs_primitive->type() == PrimitiveType::FLOAT64;
-    const bool rhs_is_float = rhs_primitive->type() == PrimitiveType::FLOAT32 ||
-        rhs_primitive->type() == PrimitiveType::FLOAT64;
-
     // Both must be same category (both int or both float)
-    if (!((lhs_is_int && rhs_is_int) || (lhs_is_float && rhs_is_float)))
+    if (!(
+        (lhs_primitive->is_integer() && rhs_primitive->is_integer()) ||
+        (lhs_primitive->is_fp() && rhs_primitive->is_fp())))
     {
         throw parsing_error(
             make_ast_error(
