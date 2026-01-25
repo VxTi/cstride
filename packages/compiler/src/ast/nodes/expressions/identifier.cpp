@@ -11,7 +11,7 @@ llvm::Value* AstIdentifier::codegen(const std::shared_ptr<Scope>& scope, llvm::M
 
     std::string internal_name;
 
-    if (const auto definition = scope->lookup(this->get_name()))
+    if (const auto definition = scope->field_lookup(this->get_name()))
     {
         internal_name = definition->get_internal_symbol_name();
     }

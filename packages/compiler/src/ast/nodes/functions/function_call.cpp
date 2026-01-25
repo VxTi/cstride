@@ -94,7 +94,11 @@ llvm::Value* AstFunctionCall::codegen(
         );
     }
 
-    if (callee->arg_size() != this->get_arguments().size())
+    // Reduce last argument if variadic
+    const auto minimum_arg_count = callee->arg_size() - (callee->isVarArg() ? 1 : 0);
+    const auto provided_arg_count = this->get_arguments().size();
+
+    if (provided_arg_count < minimum_arg_count)
     {
         throw parsing_error(
             make_ast_error(
@@ -141,11 +145,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     std::vector<IAstInternalFieldType*> parameter_types = {};
     std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_type_owners = {};
 
+    int expr_flags =
+        SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION | SRFLAG_EXPR_VARIABLE_ASSIGNATION;
+
     // Parsing function parameter values
     if (function_parameter_set.has_value())
     {
         auto subset = function_parameter_set.value();
-        auto initial_arg = parse_standalone_expression_part(scope, subset);
+        auto initial_arg = parse_expression_ext(expr_flags, scope, subset);
 
         auto initial_type = infer_expression_type(scope, initial_arg.get());
         parameter_types.push_back(initial_type.get());
@@ -156,7 +163,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         while (subset.has_next())
         {
             subset.expect(TokenType::COMMA);
-            auto next_arg = parse_standalone_expression_part(scope, subset);
+            auto next_arg = parse_expression_ext(expr_flags, scope, subset);
 
             auto next_type = infer_expression_type(scope, next_arg.get());
             parameter_types.push_back(next_type.get());

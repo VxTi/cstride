@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdio>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 
@@ -9,6 +10,45 @@
 
 /// Standard library functions implemented using C++ STL and exposed to Stride programs.
 
+/// Implementation of printf function
+inline int impl_printf(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int result = std::vprintf(format, args);
+    va_end(args);
+    return result;
+}
+
+/// Symbol definition for printf
+inline void symbol_def_printf(
+    const std::shared_ptr<stride::ast::Scope>& global_scope
+)
+{
+    auto return_type = std::make_unique<stride::ast::AstPrimitiveFieldType>(
+        nullptr,
+        0,
+        global_scope,
+        stride::ast::PrimitiveType::INT32,
+        32
+    );
+
+    // Define printf with variadic arguments support
+    global_scope->define_function("printf", {}, std::move(return_type));
+}
+
+/// LLVM registration for printf
+inline void llvm_reg_printf(llvm::orc::LLJIT* jit)
+{
+    llvm::cantFail(jit->getMainJITDylib().define(
+        llvm::orc::absoluteSymbols({
+            {
+                jit->mangleAndIntern("printf"),
+                {llvm::orc::ExecutorAddr::fromPtr(reinterpret_cast<void*>(impl_printf)), llvm::JITSymbolFlags::Exported}
+            }
+        })
+    ));
+}
 
 /// Implementation of function
 inline uint64_t impl_sys_time_ns()
@@ -125,6 +165,15 @@ inline void llvm_declare_extern_function_prototypes(llvm::Module* module, llvm::
     module->getOrInsertFunction("system_time_ns", fn_ty);
     module->getOrInsertFunction("system_time_us", fn_ty);
     module->getOrInsertFunction("system_time_ms", fn_ty);
+
+    // Signature: int printf(const char* format, ...)
+    auto* printf_ret_ty = llvm::Type::getInt32Ty(context);
+    auto* printf_fn_ty = llvm::FunctionType::get(
+        printf_ret_ty,
+        {llvm::PointerType::get(context, 0)},
+        /*isVarArg=*/true
+    );
+    module->getOrInsertFunction("printf", printf_fn_ty);
 }
 
 inline void llvm_predefine_symbols(const std::shared_ptr<stride::ast::Scope>& global_scope)
@@ -132,6 +181,7 @@ inline void llvm_predefine_symbols(const std::shared_ptr<stride::ast::Scope>& gl
     symbol_def_sys_time_ns(global_scope);
     symbol_def_sys_time_us(global_scope);
     symbol_def_sys_time_ms(global_scope);
+    symbol_def_printf(global_scope);
 }
 
 inline void llvm_define_extern_functions(llvm::orc::LLJIT* jit)
@@ -144,4 +194,7 @@ inline void llvm_define_extern_functions(llvm::orc::LLJIT* jit)
 
     // system_time_ms
     llvm_reg_sys_time_ms(jit);
+
+    // printf
+    llvm_reg_printf(jit);
 }

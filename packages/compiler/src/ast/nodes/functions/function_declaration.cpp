@@ -203,9 +203,21 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // have to parse it a little differenly
     if (!tokens.peak_next_eq(TokenType::RPAREN))
     {
-        parameters.push_back(parse_standalone_fn_param(function_scope, tokens));
+        if (tokens.peak_next_eq(TokenType::THREE_DOTS))
+        {
+            parse_variadic_fn_param(function_scope, tokens, parameters);
+        }
+        else
+        {
+            parameters.push_back(parse_standalone_fn_param(function_scope, tokens));
+        }
 
         parse_subsequent_fn_params(function_scope, tokens, parameters);
+    }
+
+    if (!parameters.empty() && (parameters.back()->get_flags() & SRFLAG_FN_PARAM_DEF_VARIADIC))
+    {
+        flags |= SRFLAG_FN_DEF_VARIADIC;
     }
 
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");

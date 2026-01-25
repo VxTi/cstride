@@ -69,7 +69,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(std::shared_ptr<S
     return std::make_unique<AstLoop>(
         set.source(),
         reference_token.offset,
-        scope,
+        for_scope,
         std::move(initiator),
         std::move(condition),
         std::move(increment),

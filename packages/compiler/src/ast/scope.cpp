@@ -158,7 +158,7 @@ const IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_nam
     return nullptr;
 }
 
-const FieldSymbolDef* Scope::lookup(const std::string& name) const
+const FieldSymbolDef* Scope::field_lookup(const std::string& name) const
 {
     auto current = this;
     while (current != nullptr)

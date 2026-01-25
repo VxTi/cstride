@@ -19,7 +19,7 @@ bool AstVariableReassignment::is_reducible()
 
 void AstVariableReassignment::validate()
 {
-    const auto identifier_def = this->scope->lookup(this->get_variable_name());
+    const auto identifier_def = this->scope->field_lookup(this->get_variable_name());
     std::cout << "Doing assignment validation" << std::endl;
     if (!identifier_def)
     {
@@ -208,7 +208,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
         const auto reference_token = set.peak_next();
 
         std::string reassignment_iden_name = reference_token.lexeme;
-        auto reassign_internal_variable_name = scope->lookup(reassignment_iden_name);
+        auto reassign_internal_variable_name = scope->field_lookup(reassignment_iden_name);
 
         if (!reassign_internal_variable_name)
         {

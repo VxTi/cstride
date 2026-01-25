@@ -94,11 +94,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
 
     if (const auto* identifier = dynamic_cast<AstIdentifier*>(expr))
     {
-        const auto variable_def = scope->get_variable_def(identifier->get_name());
+        const auto variable_def = scope->field_lookup(identifier->get_name());
         if (variable_def == nullptr)
         {
             throw parsing_error(
-                make_ast_error(*identifier->source, identifier->source_offset, "Variable not found in scope")
+                make_ast_error(*identifier->source, identifier->source_offset, "Variable '" + identifier->get_name() + "' not found in scope")
             );
         }
 

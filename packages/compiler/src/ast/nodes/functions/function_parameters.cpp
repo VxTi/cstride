@@ -10,7 +10,18 @@ void stride::ast::parse_variadic_fn_param(
 {
     const auto reference_token = tokens.expect(TokenType::THREE_DOTS);
     auto param = parse_standalone_fn_param(scope, tokens);
-    parameters.push_back(std::move(param));
+    
+    // Create a new parameter with the variadic flag
+    auto variadic_param = std::make_unique<AstFunctionParameter>(
+        param->source,
+        param->source_offset,
+        param->scope,
+        param->get_name(),
+        std::unique_ptr<IAstInternalFieldType>(param->get_type()->clone()),
+        param->get_flags() | SRFLAG_FN_PARAM_DEF_VARIADIC
+    );
+
+    parameters.push_back(std::move(variadic_param));
 }
 
 void stride::ast::parse_subsequent_fn_params(
@@ -33,9 +44,7 @@ void stride::ast::parse_subsequent_fn_params(
             ));
         }
 
-        // If the next token is `...`, then we assume it's variadic. This parsing is done elsewhere.
-        /* TODO: Further implement
-         *if (next.type == TokenType::THREE_DOTS)
+        if (next.type == TokenType::THREE_DOTS)
         {
             parse_variadic_fn_param(scope, set, parameters);
             if (!set.peak_next_eq(TokenType::RPAREN))
@@ -47,7 +56,7 @@ void stride::ast::parse_subsequent_fn_params(
                 );
             }
             return;
-        }*/
+        }
 
         auto param = parse_standalone_fn_param(scope, set);
 

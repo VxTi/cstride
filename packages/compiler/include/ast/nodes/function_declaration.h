@@ -50,6 +50,9 @@ namespace stride::ast
         [[nodiscard]]
         IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
+        [[nodiscard]]
+        int get_flags() const { return this->_flags; }
+
         ~AstFunctionParameter() override = default;
     };
 
