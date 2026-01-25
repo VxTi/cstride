@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "ast/nodes/functions.h"
+#include "ast/flags.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
 
@@ -14,8 +14,7 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
     if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            str->source, str->source_offset, scope, PrimitiveType::STRING, 1
-        );
+            str->source, str->source_offset, scope, PrimitiveType::STRING, 1);
     }
 
     if (const auto* fp_lit = dynamic_cast<AstFpLiteral*>(literal))

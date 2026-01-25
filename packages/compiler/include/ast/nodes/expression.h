@@ -471,7 +471,7 @@ namespace stride::ast
     std::unique_ptr<AstExpression> parse_standalone_expression(const std::shared_ptr<Scope>& scope, TokenSet& set);
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
-    std::unique_ptr<AstExpression> parse_expression_ext(
+    std::unique_ptr<AstExpression> parse_expression_extended(
         int expression_type_flags,
         const std::shared_ptr<Scope>& scope,
         TokenSet& set

@@ -8,6 +8,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 
+#include "ast/flags.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/functions.h"
@@ -145,14 +146,11 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     std::vector<IAstInternalFieldType*> parameter_types = {};
     std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_type_owners = {};
 
-    int expr_flags =
-        SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION | SRFLAG_EXPR_VARIABLE_ASSIGNATION;
-
     // Parsing function parameter values
     if (function_parameter_set.has_value())
     {
         auto subset = function_parameter_set.value();
-        auto initial_arg = parse_expression_ext(expr_flags, scope, subset);
+        auto initial_arg = parse_expression_extended(0, scope, subset);
 
         auto initial_type = infer_expression_type(scope, initial_arg.get());
         parameter_types.push_back(initial_type.get());
@@ -163,7 +161,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         while (subset.has_next())
         {
             subset.expect(TokenType::COMMA);
-            auto next_arg = parse_expression_ext(expr_flags, scope, subset);
+            auto next_arg = parse_expression_extended(0, scope, subset);
 
             auto next_type = infer_expression_type(scope, next_arg.get());
             parameter_types.push_back(next_type.get());

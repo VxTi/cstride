@@ -1,5 +1,6 @@
 #include "ast/nodes/loops.h"
 
+#include "ast/flags.h"
 #include "ast/parser.h"
 #include "ast/nodes/blocks.h"
 
@@ -24,9 +25,8 @@ std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<Scope
         return nullptr;
     }
 
-    return parse_expression_ext(
-        SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION |
-        SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION,
+    return parse_expression_extended(
+        SRFLAG_EXPR_TYPE_INLINE,
         scope,
         initiator.value()
     );

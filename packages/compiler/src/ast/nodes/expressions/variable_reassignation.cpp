@@ -2,6 +2,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
+#include "ast/flags.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 

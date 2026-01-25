@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "ast_node.h"
+#include "ast/flags.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -12,8 +13,6 @@ namespace stride::ast
 #define SRFLAG_TYPE_REFERENCE      (0x2)
 #define SRFLAG_TYPE_MUTABLE        (0x4)
 #define SRFLAG_TYPE_OPTIONAL       (0x8)
-
-#define SRFLAG_NONE (0)
 
     enum class PrimitiveType
     {

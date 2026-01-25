@@ -5,6 +5,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
+#include "ast/flags.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
@@ -144,7 +145,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
 }
 
 
-std::unique_ptr<AstExpression> stride::ast::parse_expression_ext(
+std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     const int expression_type_flags,
     const std::shared_ptr<Scope>& scope,
     TokenSet& set
@@ -200,8 +201,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
     TokenSet& set
 )
 {
-    return parse_expression_ext(
-        SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION,
+    return parse_expression_extended(
+        SRFLAG_EXPR_TYPE_STANDALONE,
         scope,
         set
     );

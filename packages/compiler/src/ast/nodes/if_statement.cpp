@@ -1,6 +1,8 @@
 #include <memory>
 
 #include "ast/nodes/if_statement.h"
+
+#include "ast/flags.h"
 #include "ast/parser.h"
 
 using namespace stride::ast;
@@ -45,8 +47,8 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
         set.throw_error("Expected condition block after 'if' keyword");
     }
 
-    auto condition = parse_expression_ext(
-        SRFLAG_EXPR_VARIABLE_ASSIGNATION,
+    auto condition = parse_expression_extended(
+        0,
         if_header_scope,
         if_header_body.value()
     );

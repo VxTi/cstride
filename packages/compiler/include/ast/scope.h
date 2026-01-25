@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "flags.h"
 #include "ast/nodes/types.h"
 
 namespace stride::ast
@@ -72,7 +71,7 @@ namespace stride::ast
     {
         std::unique_ptr<IAstInternalFieldType> _type;
         std::string _variable_name;
-        bool is_mutable;
+        int _flags;
 
     public:
         explicit FieldSymbolDef(
@@ -83,11 +82,13 @@ namespace stride::ast
         ) : ISymbolDef(internal_name),
             _type(std::move(type)),
             _variable_name(field_name),
-            is_mutable(flags & SRFLAG_VAR_DECL_MUTABLE) {}
+            _flags(flags) {}
 
         const IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
         const std::string& get_variable_name() const { return this->_variable_name; }
+
+        int get_flags() const { return this->_flags; }
     };
 
     class SymbolFnDefinition

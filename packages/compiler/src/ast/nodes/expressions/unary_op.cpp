@@ -55,7 +55,18 @@ void AstUnaryOp::validate()
 {
     const auto operand_type = infer_expression_type(this->scope, this->_operand.get());
 
-    if (!operand_type.get() || !operand_type.get()->is_mutable())
+    if (!operand_type.get())
+    {
+        throw parsing_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                "Cannot infer type of operand"
+            )
+        );
+    }
+
+    if (!operand_type.get()->is_mutable())
     {
         throw parsing_error(
             make_ast_error(

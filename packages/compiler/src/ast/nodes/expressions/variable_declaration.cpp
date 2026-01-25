@@ -3,6 +3,8 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
 
+#include "ast/flags.h"
+
 using namespace stride::ast;
 
 /**
@@ -63,7 +65,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     }
 
     // Check if this is a global variable declaration
-    if ((this->get_flags() & SRFLAG_VAR_DECL_GLOBAL) != 0)
+    if ((this->get_flags() & SRFLAG_TYPE_GLOBAL) != 0)
     {
         // Create a global variable
         llvm::Constant* initializer = nullptr;
@@ -88,7 +90,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         return new llvm::GlobalVariable(
             *module,
             var_type,
-            (this->get_flags() & SRFLAG_VAR_DECL_MUTABLE) == 0, // isConstant
+            (this->get_flags() & SRFLAG_TYPE_MUTABLE) == 0, // isConstant
             llvm::GlobalValue::ExternalLinkage,
             initializer,
             this->get_internal_name()
@@ -203,7 +205,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     TokenSet& set
 )
 {
-    if ((expression_type_flags & SRFLAG_EXPR_ALLOW_VARIABLE_DECLARATION) == 0)
+    // Ensure we're allowed to parse standalone expressions
+    if ((expression_type_flags & SRFLAG_EXPR_TYPE_STANDALONE) == 0)
     {
         set.throw_error("Variable declarations are not allowed in this context");
     }
@@ -212,14 +215,14 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     if (scope->get_scope_type() == ScopeType::GLOBAL)
     {
-        flags |= SRFLAG_VAR_DECL_GLOBAL;
+        flags |= SRFLAG_TYPE_GLOBAL;
     }
 
     auto reference_token = set.peak_next();
 
     if (set.peak_next_eq(TokenType::KEYWORD_MUT))
     {
-        flags |= SRFLAG_VAR_DECL_MUTABLE;
+        flags |= SRFLAG_TYPE_MUTABLE;
         set.next();
     }
     else
@@ -235,14 +238,11 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     set.expect(TokenType::EQUALS);
 
-    auto value = parse_expression_ext(
-        SRFLAG_EXPR_VARIABLE_ASSIGNATION,
-        scope, set
-    );
+    auto value = parse_expression_extended(0, scope, set);
 
     // If it's not an inline variable declaration (e.g., in a for loop),
     // we expect a semicolon at the end.
-    if ((expression_type_flags & SRFLAG_EXPR_INLINE_VARIABLE_DECLARATION) == 0)
+    if ((expression_type_flags & SRFLAG_EXPR_TYPE_INLINE) == 0)
     {
         set.expect(TokenType::SEMICOLON, "Expected ';' after variable declaration");
     }
