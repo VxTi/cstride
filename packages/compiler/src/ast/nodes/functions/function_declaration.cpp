@@ -26,7 +26,7 @@ void AstFunctionDeclaration::validate()
 }
 
 void AstFunctionDeclaration::resolve_forward_references(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context, llvm::IRBuilder<>* builder
 )
@@ -76,7 +76,7 @@ void AstFunctionDeclaration::resolve_forward_references(
 }
 
 llvm::Value* AstFunctionDeclaration::codegen(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder
 )
@@ -176,7 +176,7 @@ bool stride::ast::is_fn_declaration(const TokenSet& tokens)
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& tokens
 )
 {
@@ -194,7 +194,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
     const auto fn_name = fn_name_tok.lexeme;
 
-    auto function_scope = std::make_shared<Scope>(scope, ScopeType::FUNCTION);
+    auto function_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::FUNCTION);
 
     tokens.expect(TokenType::LPAREN);
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};

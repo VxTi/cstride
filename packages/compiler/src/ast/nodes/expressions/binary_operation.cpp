@@ -61,7 +61,7 @@ std::string AstBinaryArithmeticOp::to_string()
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
 std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_binary_op(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs,
     const int min_precedence
@@ -130,7 +130,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 }
 
 llvm::Value* AstBinaryArithmeticOp::codegen(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
@@ -172,7 +172,7 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
         }
     }
 
-    bool is_float = lhs->getType()->isFloatingPointTy();
+    const bool is_float = lhs->getType()->isFloatingPointTy();
 
     switch (this->get_op_type())
     {

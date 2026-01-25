@@ -4,7 +4,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_optional(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {
@@ -28,7 +28,7 @@ std::string AstBooleanLiteral::to_string()
     return std::format("BooleanLiteral({})", value());
 }
 
-llvm::Value* AstBooleanLiteral::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstBooleanLiteral::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     return llvm::ConstantInt::get(
         context,

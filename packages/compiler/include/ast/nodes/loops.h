@@ -2,7 +2,7 @@
 #include "ast_node.h"
 #include "blocks.h"
 #include "expression.h"
-#include "ast/scope.h"
+#include "ast/SymbolRegistry.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -20,7 +20,7 @@ namespace stride::ast
         AstLoop(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> initiator,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstExpression> increment,
@@ -32,7 +32,7 @@ namespace stride::ast
             _incrementor(std::move(increment)) {}
 
         llvm::Value* codegen(
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
@@ -59,7 +59,7 @@ namespace stride::ast
 
     bool is_while_loop_statement(const TokenSet& set);
 
-    std::unique_ptr<AstLoop> parse_for_loop_statement(const std::shared_ptr<Scope>& scope, TokenSet& set);
+    std::unique_ptr<AstLoop> parse_for_loop_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
 
-    std::unique_ptr<AstLoop> parse_while_loop_statement(const std::shared_ptr<Scope>& scope, TokenSet& set);
+    std::unique_ptr<AstLoop> parse_while_loop_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
 }

@@ -15,7 +15,7 @@ bool stride::ast::is_module_statement(const TokenSet& tokens)
 }
 
 std::unique_ptr<AstModule> stride::ast::parse_module_statement(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& tokens
 )
 {

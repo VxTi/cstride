@@ -7,7 +7,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_optional(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {
@@ -31,7 +31,7 @@ std::string AstStringLiteral::to_string()
 }
 
 llvm::Value* AstStringLiteral::codegen(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* irBuilder

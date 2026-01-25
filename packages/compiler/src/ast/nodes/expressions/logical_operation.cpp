@@ -28,7 +28,7 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
     }
 }
 
-llvm::Value* AstLogicalOp::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
+llvm::Value* AstLogicalOp::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
 {
     // Implementation following short-circuiting logic
     llvm::Value* lhValue = this->get_left().codegen(scope, module, context, irbuilder);

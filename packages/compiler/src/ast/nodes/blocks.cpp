@@ -4,11 +4,12 @@
 
 #include <sstream>
 
+#include "ast/parser.h"
 #include "ast/nodes/function_declaration.h"
 
 using namespace stride::ast;
 
-void AstBlock::resolve_forward_references(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+void AstBlock::resolve_forward_references(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     for (const auto& child : this->children())
     {
@@ -19,7 +20,7 @@ void AstBlock::resolve_forward_references(const std::shared_ptr<Scope>& scope, l
     }
 }
 
-llvm::Value* AstBlock::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstBlock::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     llvm::Value* last_value = nullptr;
 
@@ -115,7 +116,7 @@ std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
     return collect_block_variant(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_block(const std::shared_ptr<Scope>& scope, TokenSet& set)
+std::unique_ptr<AstBlock> stride::ast::parse_block(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 

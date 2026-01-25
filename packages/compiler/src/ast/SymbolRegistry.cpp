@@ -1,19 +1,19 @@
-#include "ast/scope.h"
+#include "ast/SymbolRegistry.h"
 #include "errors.h"
 
 using namespace stride::ast;
 
-const Scope& Scope::traverse_to_root() const
+const SymbolRegistry& SymbolRegistry::traverse_to_root() const
 {
     auto current = this;
-    while (current->parent_scope)
+    while (current->_parent_registry)
     {
-        current = current->parent_scope.get();
+        current = current->_parent_registry.get();
     }
     return *current;
 }
 
-bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
+bool SymbolRegistry::is_variable_defined_in_scope(const std::string& variable_name) const
 {
     for (const auto& symbol_def : this->symbols)
     {
@@ -28,7 +28,7 @@ bool Scope::is_variable_defined_in_scope(const std::string& variable_name) const
     return false;
 }
 
-bool Scope::is_variable_defined_globally(const std::string& variable_name) const
+bool SymbolRegistry::is_variable_defined_globally(const std::string& variable_name) const
 {
     auto current = this;
     while (current != nullptr)
@@ -37,12 +37,12 @@ bool Scope::is_variable_defined_globally(const std::string& variable_name) const
         {
             return true;
         }
-        current = current->parent_scope.get();
+        current = current->_parent_registry.get();
     }
     return false;
 }
 
-bool Scope::is_function_defined_globally(const std::string& internal_function_name) const
+bool SymbolRegistry::is_function_defined_globally(const std::string& internal_function_name) const
 {
     for (const auto& root = this->traverse_to_root();
          const auto& symbol : root.symbols)
@@ -59,7 +59,7 @@ bool Scope::is_function_defined_globally(const std::string& internal_function_na
     return false;
 }
 
-bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type) const
+bool SymbolRegistry::is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type) const
 {
     for (const auto& root = this->traverse_to_root();
          const auto& symbol : root.symbols)
@@ -77,13 +77,13 @@ bool Scope::is_symbol_type_defined_globally(const std::string& symbol_name, cons
     return false;
 }
 
-void Scope::define_function(
+void SymbolRegistry::define_function(
     const std::string& internal_function_name,
     std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
     std::unique_ptr<IAstInternalFieldType> return_type
 ) const
 {
-    auto& global_scope = const_cast<Scope&>(this->traverse_to_root());
+    auto& global_scope = const_cast<SymbolRegistry&>(this->traverse_to_root());
     global_scope.symbols.push_back(std::make_unique<SymbolFnDefinition>(
         std::move(parameter_types),
         std::move(return_type),
@@ -91,7 +91,7 @@ void Scope::define_function(
     ));
 }
 
-void Scope::define_field(
+void SymbolRegistry::define_field(
     const std::string& field_name,
     const std::string& internal_name,
     std::unique_ptr<IAstInternalFieldType> type
@@ -115,9 +115,9 @@ void Scope::define_field(
     ));
 }
 
-void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymbolType type) const
+void SymbolRegistry::define_symbol(const std::string& symbol_name, const IdentifiableSymbolType type) const
 {
-    auto& global_scope = const_cast<Scope&>(this->traverse_to_root());
+    auto& global_scope = const_cast<SymbolRegistry&>(this->traverse_to_root());
     global_scope.symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
         type,
         symbol_name
@@ -125,7 +125,7 @@ void Scope::define_symbol(const std::string& symbol_name, const IdentifiableSymb
 }
 
 
-const FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) const
+const FieldSymbolDef* SymbolRegistry::get_variable_def(const std::string& variable_name) const
 {
     for (const auto& symbol_def : this->symbols)
     {
@@ -141,7 +141,7 @@ const FieldSymbolDef* Scope::get_variable_def(const std::string& variable_name) 
     return nullptr;
 }
 
-const IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_name) const
+const IdentifiableSymbolDef* SymbolRegistry::get_symbol_def(const std::string& symbol_name) const
 {
     for (const auto& symbol_def : this->symbols)
     {
@@ -156,7 +156,7 @@ const IdentifiableSymbolDef* Scope::get_symbol_def(const std::string& symbol_nam
     return nullptr;
 }
 
-const FieldSymbolDef* Scope::field_lookup(const std::string& name) const
+const FieldSymbolDef* SymbolRegistry::field_lookup(const std::string& name) const
 {
     auto current = this;
     while (current != nullptr)
@@ -165,12 +165,12 @@ const FieldSymbolDef* Scope::field_lookup(const std::string& name) const
         {
             return def;
         }
-        current = current->parent_scope.get();
+        current = current->_parent_registry.get();
     }
     return nullptr;
 }
 
-const SymbolFnDefinition* Scope::get_function_def(const std::string& function_name) const
+const SymbolFnDefinition* SymbolRegistry::get_function_def(const std::string& function_name) const
 {
     const auto& global_scope = this->traverse_to_root();
     for (const auto& symbol_def : global_scope.symbols)

@@ -1,5 +1,5 @@
 #pragma once
-#include "ast/scope.h"
+#include "ast/SymbolRegistry.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
 #include <llvm/Support/FileSystem.h>
@@ -29,7 +29,7 @@ namespace stride
     class Program
     {
         std::vector<std::string> _files;
-        std::shared_ptr<ast::Scope> _global_scope;
+        std::shared_ptr<ast::SymbolRegistry> _global_scope;
         std::unique_ptr<ast::AstBlock> _root_node;
 
     public:
@@ -38,7 +38,7 @@ namespace stride
         const std::vector<std::string>& get_files() const { return _files; }
 
         [[nodiscard]]
-        std::shared_ptr<ast::Scope> get_global_scope() const { return this->_global_scope; }
+        std::shared_ptr<ast::SymbolRegistry> get_global_scope() const { return this->_global_scope; }
 
         Program() = default;
         ~Program() = default;

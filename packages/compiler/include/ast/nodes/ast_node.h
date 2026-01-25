@@ -8,7 +8,7 @@
 namespace stride::ast
 {
     // If we include the header, it'll cause circular references, and it'll break everything.
-    class Scope;
+    class SymbolRegistry;
 
     class ISynthesisable
     {
@@ -16,14 +16,14 @@ namespace stride::ast
         virtual ~ISynthesisable() = default;
 
         virtual llvm::Value* codegen(
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context, llvm::IRBuilder<>* builder
         ) = 0;
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context, llvm::IRBuilder<>* builder
         ) {}
@@ -35,7 +35,7 @@ namespace stride::ast
         explicit IAstNode(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope
+            const std::shared_ptr<SymbolRegistry>& scope
         )
             : source(source),
               source_offset(source_offset),
@@ -49,7 +49,7 @@ namespace stride::ast
 
         const std::shared_ptr<SourceFile> source;
         const int source_offset;
-        const std::shared_ptr<Scope> scope;
+        const std::shared_ptr<SymbolRegistry> scope;
     };
 
     class IReducible

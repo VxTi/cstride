@@ -20,7 +20,7 @@ std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::
     return std::move(parse_sequential(program.get_global_scope(), tokens));
 }
 
-std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<Scope>& scope, TokenSet& set)
+std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
 {
     if (is_module_statement(set))
     {
@@ -71,7 +71,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
 }
 
 std::unique_ptr<AstBlock> stride::ast::parse_sequential(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {

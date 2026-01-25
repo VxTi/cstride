@@ -2,7 +2,7 @@
 #include <utility>
 
 #include "ast_node.h"
-#include "ast/scope.h"
+#include "ast/SymbolRegistry.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -17,7 +17,7 @@ namespace stride::ast
         explicit AstModule(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string name
         )
             : IAstNode(source, source_offset, scope),
@@ -30,7 +30,7 @@ namespace stride::ast
     bool is_module_statement(const TokenSet& tokens);
 
     std::unique_ptr<AstModule> parse_module_statement(
-        const std::shared_ptr<Scope>&,
+        const std::shared_ptr<SymbolRegistry>&,
         TokenSet& tokens
     );
 }

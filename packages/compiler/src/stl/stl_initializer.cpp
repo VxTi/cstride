@@ -53,7 +53,7 @@ void stride::stl::llvm_insert_function_definitions(llvm::Module* module, llvm::L
     module->getOrInsertFunction("printf", printf_fn_ty);
 }
 
-void stride::stl::predefine_symbols(const std::shared_ptr<ast::Scope>& global_scope)
+void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& global_scope)
 {
     /// Printf definition
     global_scope->define_function(

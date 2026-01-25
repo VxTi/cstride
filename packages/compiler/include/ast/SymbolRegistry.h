@@ -74,15 +74,17 @@ namespace stride::ast
 
     public:
         explicit FieldSymbolDef(
-            const std::string& field_name,
+            std::string field_name,
             const std::string& internal_name,
             std::unique_ptr<IAstInternalFieldType> type
         ) : ISymbolDef(internal_name),
             _type(std::move(type)),
-            _variable_name(field_name) {}
+            _variable_name(std::move(field_name)) {}
 
+        [[nodiscard]]
         const IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
+        [[nodiscard]]
         const std::string& get_variable_name() const { return this->_variable_name; }
     };
 
@@ -102,6 +104,7 @@ namespace stride::ast
             _parameter_types(std::move(parameter_types)),
             _return_type(std::move(return_type)) {}
 
+        [[nodiscard]]
         std::vector<const IAstInternalFieldType*> get_parameter_types() const
         {
             std::vector<const IAstInternalFieldType*> out;
@@ -111,37 +114,42 @@ namespace stride::ast
             return out;
         }
 
+        [[nodiscard]]
         const IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
 
         ~SymbolFnDefinition() override = default;
     };
 
-    class Scope
+    class SymbolRegistry
     {
     public:
-        ScopeType _type;
-        std::shared_ptr<Scope> parent_scope;
+        ScopeType _current_scope;
+        std::shared_ptr<SymbolRegistry> _parent_registry;
 
         std::vector<std::unique_ptr<ISymbolDef>> symbols;
 
-        explicit Scope(
-            std::shared_ptr<Scope> parent,
+        explicit SymbolRegistry(
+            std::shared_ptr<SymbolRegistry> parent,
             const ScopeType type
-        ) : _type(type),
-            parent_scope(std::move(parent)) {}
+        ) : _current_scope(type),
+            _parent_registry(std::move(parent)) {}
 
-        explicit Scope(const ScopeType type)
-            : Scope(nullptr, type) {}
+        explicit SymbolRegistry(const ScopeType type)
+            : SymbolRegistry(nullptr, type) {}
 
         [[nodiscard]]
-        ScopeType get_scope_type() const { return this->_type; }
+        ScopeType get_current_scope() const { return this->_current_scope; }
 
+        [[nodiscard]]
         const FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
 
+        [[nodiscard]]
         const SymbolFnDefinition* get_function_def(const std::string& function_name) const;
 
+        [[nodiscard]]
         const IdentifiableSymbolDef* get_symbol_def(const std::string& symbol_name) const;
 
+        [[nodiscard]]
         const FieldSymbolDef* field_lookup(const std::string& name) const;
 
         /// Will attempt to define the function in the global scope.
@@ -160,19 +168,24 @@ namespace stride::ast
         void define_symbol(const std::string& symbol_name, IdentifiableSymbolType type) const;
 
         /// Checks whether the provided variable name is defined in the current scope.
+        [[nodiscard]]
         bool is_variable_defined_in_scope(const std::string& variable_name) const;
 
         /// Checks whether the provided variable name is defined in the global scope.
+        [[nodiscard]]
         bool is_variable_defined_globally(const std::string& variable_name) const;
 
         /// Checks whether the provided internal function name is defined in the global scope.
         /// Do note that the internal name is not the name that you would use in
         /// source code, but rather the mangled name used for code generation.
+        [[nodiscard]]
         bool is_function_defined_globally(const std::string& internal_function_name) const;
 
+        [[nodiscard]]
         bool is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type) const;
 
     private:
-        const Scope& traverse_to_root() const;
+        [[nodiscard]]
+        const SymbolRegistry& traverse_to_root() const;
     };
 }

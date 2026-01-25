@@ -3,7 +3,7 @@
 
 #include "ast_node.h"
 #include "types.h"
-#include "ast/scope.h"
+#include "ast/SymbolRegistry.h"
 
 namespace stride::ast
 {
@@ -16,7 +16,7 @@ namespace stride::ast
         AstStructMember(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string  name,
             std::unique_ptr<IAstInternalFieldType> type
         ) :
@@ -47,7 +47,7 @@ namespace stride::ast
         AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string  name,
             std::unique_ptr<IAstInternalFieldType> reference
         )
@@ -59,7 +59,7 @@ namespace stride::ast
         AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string  name,
             std::vector<std::unique_ptr<AstStructMember>> members
         ) :
@@ -83,7 +83,7 @@ namespace stride::ast
         const std::vector<std::unique_ptr<AstStructMember>>& get_members() const { return this->_cases; }
     };
 
-    std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<Scope>& scope, TokenSet& tokens);
+    std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& tokens);
 
     bool is_struct_declaration(const TokenSet& tokens);
 }

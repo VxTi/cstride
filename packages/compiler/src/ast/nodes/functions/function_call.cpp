@@ -68,7 +68,7 @@ std::optional<std::string> resolve_type_name(AstExpression* expr)
 }
 
 llvm::Value* AstFunctionCall::codegen(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
@@ -134,7 +134,7 @@ llvm::Value* AstFunctionCall::codegen(
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_function_call(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {

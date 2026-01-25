@@ -10,7 +10,7 @@ bool stride::ast::is_return_statement(const TokenSet& tokens)
     return tokens.peak_next_eq(TokenType::KEYWORD_RETURN);
 }
 
-std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared_ptr<Scope>& scope, TokenSet& set)
+std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_RETURN);
 
@@ -45,7 +45,7 @@ std::string AstReturn::to_string()
     );
 }
 
-llvm::Value* AstReturn::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstReturn::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     if (this->value())
     {

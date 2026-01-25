@@ -4,7 +4,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {
@@ -41,7 +41,7 @@ std::string AstFpLiteral::to_string()
     return std::format("FpLiteral({} ({} bit))", this->value(), this->bit_count());
 }
 
-llvm::Value* AstFpLiteral::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstFpLiteral::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     if (this->bit_count() > 32)
     {

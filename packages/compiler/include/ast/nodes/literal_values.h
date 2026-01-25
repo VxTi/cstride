@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "ast/nodes/expression.h"
-#include "ast/scope.h"
+#include "ast/SymbolRegistry.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
 
@@ -41,7 +41,7 @@ namespace stride::ast
         AstLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             const LiteralType type,
             const short bit_count
         )
@@ -69,7 +69,7 @@ namespace stride::ast
         explicit AbstractAstLiteralBase(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             const LiteralType type,
             T value,
             const char byte_count
@@ -87,7 +87,7 @@ namespace stride::ast
         explicit AstStringLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string val
         ) :
             // Strings are only considered to be a single byte,
@@ -105,7 +105,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -117,7 +117,7 @@ namespace stride::ast
         explicit AstIntLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             const int64_t value,
             const int flags = SRFLAG_INT_SIGNED
         ) :
@@ -139,7 +139,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -149,7 +149,7 @@ namespace stride::ast
         explicit AstFpLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             const long double value,
             const int byte_count
         ) :
@@ -164,7 +164,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -174,7 +174,7 @@ namespace stride::ast
         explicit AstBooleanLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             const bool value
         ) :
             AbstractAstLiteralBase(
@@ -188,7 +188,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -198,7 +198,7 @@ namespace stride::ast
         explicit AstCharLiteral(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<Scope>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             const char value
         ) :
             AbstractAstLiteralBase(
@@ -212,37 +212,37 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
     std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(
-        const std::shared_ptr<Scope>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& tokens
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
-        const std::shared_ptr<Scope>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_float_literal_optional(
-        const std::shared_ptr<Scope>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(
-        const std::shared_ptr<Scope>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_string_literal_optional(
-        const std::shared_ptr<Scope>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_char_literal_optional(
-        const std::shared_ptr<Scope>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set
     );
 

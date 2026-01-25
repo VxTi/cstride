@@ -7,7 +7,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<Scope>& scope, TokenSet& set)
+std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
 {
     if (!set.peak_next_eq(TokenType::KEYWORD_ELSE))
     {
@@ -35,11 +35,11 @@ std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<Scope>& scop
     );
 }
 
-std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::shared_ptr<Scope>& scope, TokenSet& set)
+std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IF);
 
-    auto if_header_scope = std::make_shared<Scope>(scope, ScopeType::BLOCK);
+    auto if_header_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::BLOCK);
     auto if_header_body = collect_parenthesized_block(set);
 
     if (!if_header_body.has_value())
@@ -82,7 +82,7 @@ bool AstIfStatement::is_reducible()
     return this->get_condition()->is_reducible();
 }
 
-llvm::Value* AstIfStatement::codegen(const std::shared_ptr<Scope>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
 {
     if (this->get_condition() == nullptr)
     {

@@ -79,7 +79,7 @@ void AstUnaryOp::validate()
 }
 
 llvm::Value* AstUnaryOp::codegen(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
@@ -223,7 +223,7 @@ llvm::Value* AstUnaryOp::codegen(
 }
 
 std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {

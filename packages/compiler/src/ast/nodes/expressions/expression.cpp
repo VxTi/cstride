@@ -13,7 +13,7 @@
 using namespace stride::ast;
 
 llvm::Value* AstExpression::codegen(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
     llvm::IRBuilder<>* irBuilder
@@ -28,7 +28,7 @@ std::string AstExpression::to_string()
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {
@@ -94,7 +94,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
  * This can be either binary expressions, e.g., 1 + 1, or comparative expressions, e.g., 1 < 2
  */
 std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs
 )
@@ -147,7 +147,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
 
 std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     const int expression_type_flags,
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {
@@ -197,7 +197,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
  * General expression parsing. These can occur in global / function scopes
  */
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {
@@ -209,7 +209,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
 }
 
 std::string stride::ast::parse_property_accessor_statement(
-    const std::shared_ptr<Scope>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {
