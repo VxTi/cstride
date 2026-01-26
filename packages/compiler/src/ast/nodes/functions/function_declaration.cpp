@@ -65,24 +65,12 @@ void AstFunctionDeclaration::resolve_forward_references(
     );
 
     // Create the function
-    const llvm::Function* function = llvm::Function::Create(
+    llvm::Function::Create(
         function_type,
         llvm::Function::ExternalLinkage,
         fn_name,
         module
     );
-
-    // We'll only verify external functions
-    if (this->is_extern() && llvm::verifyFunction(*function, &llvm::errs()))
-    {
-        throw std::runtime_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Failed to verify function '{}'", this->get_name())
-            )
-        );
-    }
 }
 
 llvm::Value* AstFunctionDeclaration::codegen(
@@ -162,12 +150,15 @@ llvm::Value* AstFunctionDeclaration::codegen(
         }
     }
 
-    // Extern functions are checked earlier on
-    if (!this->is_extern() && llvm::verifyFunction(*function, &llvm::errs()))
+    if (llvm::verifyFunction(*function, &llvm::errs()))
     {
-        std::cerr << "Function " << this->get_name() << " verification failed!" << std::endl;
-        std::cerr << &llvm::errs() << std::endl;
-        return nullptr;
+        throw std::runtime_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                std::format("Function '{}' verification failed", this->get_name())
+            )
+        );
     }
 
     return function;

@@ -27,7 +27,6 @@ namespace stride::ast
     ((x >> 12) & 0xFF) ? 2 : \
     ((x >> 6) & 0xFF) ? 1 : 0
 
-#define SRFLAG_INT_SIGNED   (0x1)
 #define SRFLAG_INT_UNSIGNED (0x2)
 
 
@@ -121,7 +120,7 @@ namespace stride::ast
             const std::shared_ptr<SymbolRegistry>& scope,
             const int64_t value,
             const short bit_count,
-            const int flags = SRFLAG_INT_SIGNED
+            const int flags = SRFLAG_NONE
         ) :
             AbstractAstLiteralBase(
                 source,
@@ -137,7 +136,7 @@ namespace stride::ast
         int get_flags() const { return this->_flags; }
 
         [[nodiscard]]
-        bool is_signed() const { return this->_flags & SRFLAG_INT_SIGNED; }
+        bool is_signed() const { return this->_flags & SRFLAG_TYPE_INT_SIGNED; }
 
         std::string to_string() override;
 

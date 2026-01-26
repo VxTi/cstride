@@ -139,8 +139,9 @@ void AstVariableDeclaration::validate()
     AstExpression* init_val = this->get_initial_value().get();
     const std::unique_ptr<IAstInternalFieldType> internal_expr_type = infer_expression_type(this->scope, init_val);
     const auto lhs_type = this->get_variable_type();
+    const auto rhs_type = internal_expr_type.get();
 
-    if (IAstInternalFieldType* rhs_type = internal_expr_type.get(); *lhs_type != *rhs_type)
+    if (*lhs_type != *rhs_type)
     {
         // Store to_string() results in local variables to ensure valid lifetime
         const std::string lhs_type_str = lhs_type->to_string();

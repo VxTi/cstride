@@ -39,8 +39,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
                 reference_token.offset,
                 scope,
                 value,
-                bit_count,
-                SRFLAG_INT_SIGNED
+                bit_count
             );
         }
     default:

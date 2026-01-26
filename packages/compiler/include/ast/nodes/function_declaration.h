@@ -9,13 +9,6 @@
 
 namespace stride::ast
 {
-#define SRFLAG_FN_DEF_EXTERN   (0x1)
-#define SRFLAG_FN_DEF_VARIADIC (0x2)
-#define SRFLAG_FN_DEF_MUTABLE  (0x3)
-
-#define SRFLAG_FN_PARAM_DEF_VARIADIC (0x1)
-#define SRFLAG_FN_PARAM_DEF_MUTABLE  (0x2)
-
 #define MAX_FUNCTION_PARAMETERS      (32)
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

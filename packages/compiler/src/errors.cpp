@@ -196,8 +196,18 @@ std::string stride::make_source_error(
     const size_t line_nr_width = line_nr_str.length();
 
     // Build the underline and message lines
-    std::string underline_str(line_str.length() + line_nr_width + 1, ' ');
-    std::string message_str(line_str.length() + line_nr_width + 1, ' ');
+    const size_t base_width = line_str.length() + line_nr_width + 1;
+    size_t message_width = base_width;
+
+    for (const auto& ref : references)
+    {
+        if (ref.offset < line_start || ref.offset >= line_end) continue;
+        const size_t col_start = ref.offset - line_start;
+        message_width = std::max(message_width, col_start + line_nr_width + 1 + ref.message.length());
+    }
+
+    std::string underline_str(base_width, ' ');
+    std::string message_str(message_width, ' ');
 
     for (const auto& ref : references)
     {
@@ -214,10 +224,9 @@ std::string stride::make_source_error(
         }
 
         // Add message below the carets if provided
-        if (!ref.message.empty() && col_start + line_nr_width + 1 + ref.message.length() <= message_str.length())
+        if (!ref.message.empty())
         {
-            for (size_t i = 0; i < ref.message.length() && col_start + line_nr_width + 1 + i < message_str.length();
-                 ++i)
+            for (size_t i = 0; i < ref.message.length(); ++i)
             {
                 message_str[col_start + line_nr_width + 1 + i] = ref.message[i];
             }
