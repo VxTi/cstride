@@ -96,18 +96,20 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
 
     if (const auto* identifier = dynamic_cast<AstIdentifier*>(expr))
     {
-        const auto variable_def = scope->field_lookup(identifier->get_name());
-        if (variable_def == nullptr)
+        const auto reference_variable = scope->field_lookup(identifier->get_name());
+        if (!reference_variable)
         {
             throw parsing_error(
-                make_ast_error(*identifier->source, identifier->source_offset,
-                               "Variable '" + identifier->get_name() + "' not found in scope")
+                make_ast_error(
+                    *identifier->source, identifier->source_offset,
+                    std::format("Variable '{}' not found in scope", identifier->get_name())
+                )
             );
         }
 
         // Assumes `get_type()` returns a pointer to a long-lived type.
         // If not, this needs a clone/copy API instead.
-        return variable_def->get_type()->clone();
+        return reference_variable->get_type()->clone();
     }
 
     if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))

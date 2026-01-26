@@ -3,6 +3,19 @@
 
 using namespace stride::ast;
 
+std::string stride::ast::scope_type_to_str(const ScopeType& type)
+{
+    switch (type)
+    {
+    case ScopeType::GLOBAL: return "global";
+    case ScopeType::FUNCTION: return "function";
+    case ScopeType::CLASS: return "class";
+    case ScopeType::BLOCK: return "block";
+    case ScopeType::MODULE: return "module";
+    }
+    return "unknown";
+}
+
 const SymbolRegistry& SymbolRegistry::traverse_to_root() const
 {
     auto current = this;

@@ -29,17 +29,18 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
                     : type == TokenType::LONG_INTEGER_LITERAL
                     ? std::stoll(input)
                     : std::stoi(input);
-            const int byte_count = reference_token.type == TokenType::LONG_INTEGER_LITERAL
-                                        ? 64
-                                        : INFER_INT_BYTE_COUNT(value);
+            const short bit_count =
+                reference_token.type == TokenType::LONG_INTEGER_LITERAL
+                    ? 64
+                    : INFER_INT_BIT_COUNT(value);
 
             return std::make_unique<AstIntLiteral>(
                 set.source(),
                 reference_token.offset,
                 scope,
                 value,
-                byte_count,
-                SRFLAG_INT_UNSIGNED
+                bit_count,
+                SRFLAG_INT_SIGNED
             );
         }
     default:

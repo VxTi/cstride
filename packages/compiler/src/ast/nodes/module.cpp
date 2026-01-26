@@ -1,8 +1,12 @@
 #include "ast/nodes/module.h"
 
 #include "ast/identifiers.h"
+#include "ast/parser.h"
+#include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
+
+// TODO: Ensure symbols are prefixed with module for proper lookup
 
 std::string AstModule::to_string()
 {
@@ -11,47 +15,61 @@ std::string AstModule::to_string()
 
 bool stride::ast::is_module_statement(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_MOD);
+    return tokens.peak_next_eq(TokenType::KEYWORD_MODULE);
 }
 
 std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     const std::shared_ptr<SymbolRegistry>& scope,
-    TokenSet& tokens
+    TokenSet& set
 )
 {
-    const auto reference_token = tokens.expect(TokenType::KEYWORD_MOD);
+    const auto reference_token = set.expect(TokenType::KEYWORD_MODULE);
 
-    if (reference_token.offset != 0)
-    {
-        tokens.throw_error(
-            reference_token,
-            ErrorType::SYNTAX_ERROR,
-            "Module declaration must be at the beginning of the file"
-        );
-    }
-
-
-    const auto module_name_token = tokens.expect(
+    const auto module_name = set.expect(
         TokenType::IDENTIFIER,
-        "Expected module name after 'mod' keyword"
-    );
-    std::vector<std::string> segments = {module_name_token.lexeme};
+        "Expected module name after 'module' keyword"
+    ).lexeme;
 
-    while (tokens.peak_next_eq(TokenType::DOUBLE_COLON))
-    {
-        tokens.next();
-        const auto next = tokens.expect(TokenType::IDENTIFIER, "Expected module name segment");
-
-        segments.push_back(next.lexeme);
-    }
-
-    tokens.expect(TokenType::SEMICOLON);
-    const auto module_name = internal_identifier_from_segments(segments);
+    const auto module_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::MODULE);
+    auto module_body = parse_block(module_scope, set);
 
     return std::make_unique<AstModule>(
-        tokens.source(),
+        set.source(),
         reference_token.offset,
         scope,
-        module_name
+        module_name,
+        std::move(module_body)
     );
+}
+
+llvm::Value* AstModule::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
+)
+{
+    if (!this->_body)
+    {
+        return nullptr;
+    }
+
+    return this->_body->codegen(
+        scope, module, context, builder
+    );
+}
+
+void AstModule::resolve_forward_references(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
+)
+{
+    if (!this->_body)
+    {
+        return;
+    }
+
+    this->_body->resolve_forward_references(scope, module, context, builder);
 }

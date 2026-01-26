@@ -10,6 +10,7 @@ namespace stride::ast
     enum class ScopeType
     {
         GLOBAL,
+        MODULE,
         FUNCTION,
         CLASS,
         BLOCK
@@ -25,17 +26,7 @@ namespace stride::ast
         STRUCT_MEMBER
     };
 
-    static std::string scope_type_to_str(const ScopeType& type)
-    {
-        switch (type)
-        {
-        case ScopeType::GLOBAL: return "global";
-        case ScopeType::FUNCTION: return "function";
-        case ScopeType::CLASS: return "class";
-        case ScopeType::BLOCK: return "block";
-        }
-        return "unknown";
-    }
+    std::string scope_type_to_str(const ScopeType& type);
 
     class ISymbolDef
     {

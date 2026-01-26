@@ -65,7 +65,7 @@ std::vector<std::string> consume_import_submodules(TokenSet& tokens)
         submodules.push_back(submodule_iden.lexeme);
     }
 
-    tokens.expect(TokenType::RBRACE);
+    tokens.expect(TokenType::RBRACE, "Expected closing brace after import list");
 
     if (submodules.empty())
     {

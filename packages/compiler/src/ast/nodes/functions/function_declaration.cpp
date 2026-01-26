@@ -37,17 +37,26 @@ void AstFunctionDeclaration::resolve_forward_references(
     const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(module, context);
     if (!param_types)
     {
-        std::cerr << "Failed to resolve parameter types for function " << fn_name << std::endl;
-        return;
+        throw std::runtime_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                std::format("Failed to resolve parameter types for function '{}'", this->get_name())
+            )
+        );
     }
 
     // Create function type
     llvm::Type* return_type = internal_type_to_llvm_type(this->return_type().get(), module, context);
     if (!return_type)
     {
-        // This can currently happen when unidentified symbols are used as types
-        std::cerr << "Failed to resolve return type for function " << fn_name << std::endl;
-        return;
+        throw std::runtime_error(
+            make_ast_error(
+                *this->source,
+                this->source_offset,
+                std::format("Failed to resolve return type for function '{}'", this->get_name())
+            )
+        );
     }
     llvm::FunctionType* function_type = llvm::FunctionType::get(
         return_type,
@@ -73,6 +82,11 @@ void AstFunctionDeclaration::resolve_forward_references(
             )
         );
     }
+
+    module->getOrInsertFunction(
+        fn_name,
+        function_type
+    );
 }
 
 llvm::Value* AstFunctionDeclaration::codegen(
@@ -86,9 +100,10 @@ llvm::Value* AstFunctionDeclaration::codegen(
     {
         throw parsing_error(
             make_ast_error(
+                ErrorType::RUNTIME_ERROR,
                 *this->source,
                 this->source_offset,
-                "Function '" + this->get_internal_name() + "' was not found in this scope"
+                std::format("Function '{}' was not found in this scope", this->get_internal_name())
             )
         );
     }
@@ -105,9 +120,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
         function
     );
 
-    // Set up IR builder
-    llvm::IRBuilder builder(context);
-    builder.SetInsertPoint(entry_block);
+    irBuilder->SetInsertPoint(entry_block);
 
     // Register function arguments in the symbol table
     auto arg_it = function->arg_begin();
@@ -121,14 +134,13 @@ llvm::Value* AstFunctionDeclaration::codegen(
         ++arg_it;
     }
 
-    // Generate body code
     llvm::Value* ret_val = nullptr;
 
     if (this->body() != nullptr)
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
         {
-            ret_val = synthesisable->codegen(scope, module, context, &builder);
+            ret_val = synthesisable->codegen(scope, module, context, irBuilder);
 
             // Void instructions cannot have a name, but the generator might have assigned one
             // This way, we prevent LLVM from complaining
@@ -142,15 +154,15 @@ llvm::Value* AstFunctionDeclaration::codegen(
     const auto return_type = llvm::cast<llvm::FunctionType>(function->getFunctionType())->getReturnType();
 
     // Add a default return if needed (void functions or missing return)
-    if (auto* block = builder.GetInsertBlock(); block && !block->getTerminator())
+    if (auto* block = irBuilder->GetInsertBlock(); block && !block->getTerminator())
     {
         if (return_type->isVoidTy())
         {
-            builder.CreateRetVoid();
+            irBuilder->CreateRetVoid();
         }
         else if (ret_val)
         {
-            builder.CreateRet(ret_val);
+            irBuilder->CreateRet(ret_val);
         }
     }
 
@@ -184,7 +196,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     int function_flags = 0;
     if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERN))
     {
-        tokens.expect(TokenType::KEYWORD_EXTERN);
+        tokens.next();
         function_flags |= SRFLAG_FN_DEF_EXTERN;
     }
 

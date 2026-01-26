@@ -234,8 +234,6 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 
                 if (!accessor_internal_name_def)
                 {
-                    std::cout << "Warning - Accessor '" << accessor_token.lexeme <<
-                        "' not found in scope. Skipping reassignment.\n";
                     return std::nullopt;
                 }
 

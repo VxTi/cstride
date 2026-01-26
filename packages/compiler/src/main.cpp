@@ -19,7 +19,7 @@ int main(const int argc, char* argv[])
         std::vector<std::string> files;
         for (int i = 1; i < argc; ++i)
         {
-            files.emplace_back(argv[i]);
+            files.push_back(argv[i]);
         }
 
         stride::Program program;

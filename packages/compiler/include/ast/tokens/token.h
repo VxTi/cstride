@@ -87,6 +87,7 @@ namespace stride::ast
 
         /* Keywords */
         KEYWORD_USE,      // use
+        KEYWORD_PACKAGE,  // package
         KEYWORD_AS,       // as
         KEYWORD_ASYNC,    // async
         KEYWORD_FN,       // fn
@@ -109,7 +110,7 @@ namespace stride::ast
         KEYWORD_STRUCT,   // struct
         KEYWORD_IMPORT,   // import
         KEYWORD_PUBLIC,   // public
-        KEYWORD_MOD,      // module
+        KEYWORD_MODULE,   // module
         KEYWORD_EXTERN,   // external
         KEYWORD_NIL,      // nil
         KEYWORD_OVERRIDE, // override
@@ -246,7 +247,7 @@ namespace stride::ast
         case TokenType::KEYWORD_STRUCT: return "struct";
         case TokenType::KEYWORD_IMPORT: return "import";
         case TokenType::KEYWORD_PUBLIC: return "public";
-        case TokenType::KEYWORD_MOD: return "module";
+        case TokenType::KEYWORD_MODULE: return "module";
         case TokenType::KEYWORD_EXTERN: return "extern";
         case TokenType::KEYWORD_NIL: return "nil";
         case TokenType::KEYWORD_OVERRIDE: return "override";

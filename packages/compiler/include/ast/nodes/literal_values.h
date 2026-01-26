@@ -19,8 +19,8 @@ namespace stride::ast
     };
 
 #define BITS_PER_BYTE (8)
-#define INFER_INT_BYTE_COUNT(x) \
-    ((x > 0xFFFFFFFF) ? 8 : 4)
+#define INFER_INT_BIT_COUNT(x) \
+    ((x > 0xFFFFFFFF) ? 64 : 32)
 
 #define INFER_FLOAT_BYTE_COUNT(x) \
     ((x >> 23) & 0xFF) ? 4 : \
@@ -72,9 +72,9 @@ namespace stride::ast
             const std::shared_ptr<SymbolRegistry>& scope,
             const LiteralType type,
             T value,
-            const char byte_count
+            const short bit_count
         ) :
-            AstLiteral(source, source_offset, scope, type, byte_count * 8),
+            AstLiteral(source, source_offset, scope, type, bit_count),
             _value(std::move(value)) {}
 
         [[nodiscard]]
@@ -98,20 +98,21 @@ namespace stride::ast
                 scope,
                 LiteralType::STRING,
                 std::move(val),
-                1 * BITS_PER_BYTE
+                1
             ) {}
 
         ~AstStringLiteral() override = default;
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
     class AstIntLiteral : public AbstractAstLiteralBase<int64_t>
     {
-        const int flags;
+        const int _flags;
 
     public:
         explicit AstIntLiteral(
@@ -119,7 +120,7 @@ namespace stride::ast
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
             const int64_t value,
-            const int byte_count,
+            const short bit_count,
             const int flags = SRFLAG_INT_SIGNED
         ) :
             AbstractAstLiteralBase(
@@ -128,19 +129,20 @@ namespace stride::ast
                 scope,
                 LiteralType::INTEGER,
                 value,
-                BITS_PER_BYTE * byte_count
+                bit_count
             ),
-            flags(flags) {}
+            _flags(flags) {}
 
         [[nodiscard]]
-        int get_flags() const { return this->flags; }
+        int get_flags() const { return this->_flags; }
 
         [[nodiscard]]
-        bool is_signed() const { return this->flags & SRFLAG_INT_SIGNED; }
+        bool is_signed() const { return this->_flags & SRFLAG_INT_SIGNED; }
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -152,7 +154,7 @@ namespace stride::ast
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
             const long double value,
-            const int byte_count
+            const short bit_count
         ) :
             AbstractAstLiteralBase(
                 source,
@@ -160,12 +162,13 @@ namespace stride::ast
                 scope,
                 LiteralType::FLOAT,
                 value,
-                byte_count * BITS_PER_BYTE
+                bit_count
             ) {}
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -189,7 +192,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -208,12 +212,13 @@ namespace stride::ast
                 scope,
                 LiteralType::CHAR,
                 value,
-                BITS_PER_BYTE
+                8
             ) {}
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
     };
 

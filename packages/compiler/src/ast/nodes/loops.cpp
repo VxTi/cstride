@@ -67,11 +67,12 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared
     const auto for_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::BLOCK);
 
 
-    auto body = parse_block(for_scope, set);
 
     auto initiator = try_collect_initiator(for_scope, header_body);
     auto condition = try_collect_condition(for_scope, header_body);
     auto increment = try_collect_incrementor(for_scope, header_body);
+
+    auto body = parse_block(for_scope, set);
 
     return std::make_unique<AstLoop>(
         set.source(),

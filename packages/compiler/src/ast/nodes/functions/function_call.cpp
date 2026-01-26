@@ -88,9 +88,10 @@ llvm::Value* AstFunctionCall::codegen(
     {
         throw parsing_error(
             make_ast_error(
+                ErrorType::RUNTIME_ERROR,
                 *this->source,
                 this->source_offset,
-                "Function '" + this->get_function_name() + "' was not found in this scope"
+                std::format("Function '{}' was not found in this scope", this->get_function_name())
             )
         );
     }
@@ -105,7 +106,7 @@ llvm::Value* AstFunctionCall::codegen(
             make_ast_error(
                 *this->source,
                 this->source_offset,
-                "Incorrect arguments passed for function '" + this->get_function_name() + "'"
+                std::format("Incorrect arguments passed for function '{}'", this->get_function_name())
             )
         );
     }

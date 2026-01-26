@@ -6,6 +6,7 @@
 #include "ast/nodes/import.h"
 #include "ast/nodes/loops.h"
 #include "ast/nodes/module.h"
+#include "ast/nodes/package.h"
 #include "ast/nodes/return.h"
 #include "ast/nodes/struct.h"
 #include "ast/tokens/tokenizer.h"
@@ -22,6 +23,10 @@ std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::
 
 std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
 {
+    if (is_package_declaration(set))
+    {
+        return parse_package_declaration(scope, set);
+    }
     if (is_module_statement(set))
     {
         return parse_module_statement(scope, set);
