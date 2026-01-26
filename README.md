@@ -1,33 +1,64 @@
-# C++ Stride Compiler
+# Stride Language Compiler and Editor
 
-This project implements a basic compiler for the Stride language
+This project implements a basic compiler for the Stride programming language, along with a web-based code editor featuring syntax highlighting.
 
-## Structure
-- `include/`: Header files for tokens, tokenizer, parser, AST nodes
-- `src/`: Source files for implementation
-- `editor`: A Monaco based editor with code highlighting for the language
+## Project Structure
 
-## Build
+```
+cstride/
+└── packages/
+    ├── compiler/
+    │   └── ... (compiler source files)
+    ├── standard-library/
+    │   └── ... (standard library files)
+    └── editor/
+        └── ... (web-based editorfiles)  
+```
 
-Use CMake to build the project:
+## Building the Compiler
 
+1. Navigate to the compiler directory:
+   ```sh
+   cd packages/compiler
+   ```
+2. Build using CMake:
+   ```sh
+   cmake -S . -B cmake-build-debug
+   cmake --build cmake-build-debug --target cstride
+   ```
+
+## Running the Compiler
+
+From the `packages/compiler` directory, you can either run it directly:
 ```sh
-cmake --build cmake-build-debug --target cstride
+./cmake-build-debug/cstride <file1> <file2> ...
+```
+Or move the executable to a directory in your PATH and run:
+```sh
+cstride <file1> <file2> ...
 ```
 
-## Usage
+Replace `<file>` with your Stride source file.
 
-You can start using the stride compiler by running:
-```shell
-./cmake-build-debug/cstride <file>
-```
-(Assuming you are in the build directory)
+## Using the Editor
 
-To make coding easier, you can use the editor in the `editor` directory.
-This you can start by running the command
+The editor is a web-based IDE for Stride, built with Monaco Editor.
 
-```shell
-npm run dev
-```
+1. Navigate to the editor directory and install dependencies:
+   ```sh
+   cd packages/editor
+   npm install
+   ```
+2. Start the development server:
+   ```sh
+   npm start
+   ```
+3. Open the provided local URL in your browser.
 
+## Standard Library
 
+Stride's standard library is located in `packages/standard-library/` and includes math, memory, and I/O modules.
+
+## Contributing
+
+Contributions are welcome! Please open issues or submit pull requests for improvements or bug fixes.
