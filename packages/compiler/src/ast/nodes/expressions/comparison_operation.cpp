@@ -64,23 +64,23 @@ llvm::Value* AstComparisonOp::codegen(const std::shared_ptr<SymbolRegistry>& sco
         }
     } else
     {
-        // Convert both sides to floating point if they aren't already
-        if (left->getType()->isIntegerTy())
-        {
-            left = builder->CreateSIToFP(left, builder->getFloatTy(), "int_to_float");
-        }
-        else if (left->getType()->isFloatingPointTy())
-        {
-            left = builder->CreateFPCast(left, builder->getFloatTy(), "fpcast");
+        llvm::Type* target_type = builder->getDoubleTy();
+        if (left->getType()->isFloatTy() && right->getType()->isFloatTy()) {
+            target_type = builder->getFloatTy();
         }
 
-        if (right->getType()->isIntegerTy())
-        {
-            right = builder->CreateSIToFP(right, builder->getFloatTy(), "int_to_float");
+        // 2. Cast Left
+        if (left->getType()->isIntegerTy()) {
+            left = builder->CreateSIToFP(left, target_type, "sitofp");
+        } else {
+            left = builder->CreateFPCast(left, target_type, "fpcast");
         }
-        else if (right->getType()->isFloatingPointTy())
-        {
-            right = builder->CreateFPCast(right, builder->getFloatTy(), "fpcast");
+
+        // 3. Cast Right
+        if (right->getType()->isIntegerTy()) {
+            right = builder->CreateSIToFP(right, target_type, "sitofp");
+        } else {
+            right = builder->CreateFPCast(right, target_type, "fpcast");
         }
     }
 

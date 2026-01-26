@@ -139,26 +139,15 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     llvm::Value* lhs = this->get_left().codegen(scope, module, context, builder);
     llvm::Value* rhs = this->get_right().codegen(scope, module, context, builder);
 
-
-
     if (!lhs || !rhs)
     {
         return nullptr;
     }
 
-    llvm::Instruction* instruction;
+    // Determine if the result should be floating point
+    bool is_float = lhs->getType()->isFloatingPointTy() || rhs->getType()->isFloatingPointTy();
 
-    // Attempt to locate insertion point
-    if ((instruction = llvm::dyn_cast<llvm::Instruction>(lhs)))
-    {
-        builder->SetInsertPoint(instruction->getParent());
-    }
-    else if ((instruction = llvm::dyn_cast<llvm::Instruction>(rhs)))
-    {
-        builder->SetInsertPoint(instruction->getParent());
-    }
-
-    // Handle integer promotion for mismatched types
+    // 1. Handle Integer Promotion (Int <-> Int)
     if (lhs->getType()->isIntegerTy() && rhs->getType()->isIntegerTy())
     {
         const auto l_width = lhs->getType()->getIntegerBitWidth();
@@ -173,8 +162,28 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
             rhs = builder->CreateIntCast(rhs, lhs->getType(), true, "binop_sext");
         }
     }
-
-    const bool is_float = lhs->getType()->isFloatingPointTy();
+    // 2. Handle Mixed Types (Int <-> Float) and Float Promotion
+    else if (is_float)
+    {
+        if (lhs->getType()->isIntegerTy())
+        {
+            // Cast LHS integer to match RHS float type
+            lhs = builder->CreateSIToFP(lhs, rhs->getType(), "sitofp_unary");
+        }
+        else if (rhs->getType()->isIntegerTy())
+        {
+            // Cast RHS integer to match LHS float type
+            rhs = builder->CreateSIToFP(rhs, lhs->getType(), "sitofp_unary");
+        }
+        else if (lhs->getType() != rhs->getType())
+        {
+            // Promote smaller float to larger float (e.g. float -> double)
+            if (lhs->getType()->getPrimitiveSizeInBits() < rhs->getType()->getPrimitiveSizeInBits())
+                lhs = builder->CreateFPExt(lhs, rhs->getType(), "fpext");
+            else
+                rhs = builder->CreateFPExt(rhs, lhs->getType(), "fpext");
+        }
+    }
 
     switch (this->get_op_type())
     {

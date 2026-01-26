@@ -33,38 +33,20 @@ void AstFunctionDeclaration::resolve_forward_references(
 {
     const auto fn_name = this->get_internal_name();
 
-    // Create parameter types vector
     const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(module, context);
-    if (!param_types)
+    llvm::Type* return_type = internal_type_to_llvm_type(this->return_type().get(), module, context);
+
+    if (!param_types || !return_type)
     {
-        throw std::runtime_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Failed to resolve parameter types for function '{}'", this->get_name())
-            )
-        );
+        throw std::runtime_error("Failed to resolve types for " + fn_name);
     }
 
-    // Create function type
-    llvm::Type* return_type = internal_type_to_llvm_type(this->return_type().get(), module, context);
-    if (!return_type)
-    {
-        throw std::runtime_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Failed to resolve return type for function '{}'", this->get_name())
-            )
-        );
-    }
     llvm::FunctionType* function_type = llvm::FunctionType::get(
         return_type,
         param_types.value(),
         this->is_variadic()
     );
 
-    // Create the function
     llvm::Function::Create(
         function_type,
         llvm::Function::ExternalLinkage,
@@ -82,83 +64,78 @@ llvm::Value* AstFunctionDeclaration::codegen(
     llvm::Function* function = module->getFunction(this->get_internal_name());
     if (!function)
     {
-        throw parsing_error(
-            make_ast_error(
-                ErrorType::RUNTIME_ERROR,
-                *this->source,
-                this->source_offset,
-                std::format("Function '{}' was not found in this scope", this->get_internal_name())
-            )
-        );
+        throw std::runtime_error("Function symbol missing: " + this->get_internal_name());
     }
 
-    if (this->is_extern())
-    {
-        return function;
-    }
+    if (this->is_extern()) return function;
 
-    // Create entry basic block (already appended to function by passing function as 3rd arg)
-    llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(
-        context,
-        "entry",
-        function
-    );
+    llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(context, "entry", function);
+    builder->SetInsertPoint(entry_bb);
 
-    builder->SetInsertPoint(entry_block);
+    // We create a new builder for the prologue to ensure allocas are at the very top
+    llvm::IRBuilder<> prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
 
-    // Register function arguments in the symbol table
     auto arg_it = function->arg_begin();
     for (const auto& param : this->get_parameters())
     {
-        if (arg_it == function->arg_end())
+        if (arg_it != function->arg_end())
         {
-            break;
+            arg_it->setName(param->get_name());
+
+            // Create memory slot on the stack for the parameter
+            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
+                arg_it->getType(), nullptr, param->get_name() + ".addr"
+            );
+
+            // Store the initial argument value into the alloca
+            builder->CreateStore(&*arg_it, alloca);
+
+            ++arg_it;
         }
-        arg_it->setName(param->get_name());
-        ++arg_it;
     }
 
-    llvm::Value* ret_val = nullptr;
-
-    if (this->body() != nullptr)
+    // Generate Body
+    llvm::Value* last_val = nullptr;
+    if (this->body())
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
         {
-            ret_val = synthesisable->codegen(scope, module, context, builder);
-
-            // Void instructions cannot have a name, but the generator might have assigned one
-            // This way, we prevent LLVM from complaining
-            if (ret_val && ret_val->getType()->isVoidTy() && ret_val->hasName())
-            {
-                ret_val->setName("");
-            }
+            last_val = synthesisable->codegen(scope, module, context, builder);
         }
     }
 
-    const auto return_type = llvm::cast<llvm::FunctionType>(function->getFunctionType())->getReturnType();
-
-    // Add a default return if needed (void functions or missing return)
-    if (auto* block = builder->GetInsertBlock(); block && !block->getTerminator())
+    // Final Safety: Implicit Return
+    // If the body didn't explicitly return (no terminator found), add one.
+    llvm::BasicBlock* current_bb = builder->GetInsertBlock();
+    if (current_bb && !current_bb->getTerminator())
     {
-        if (return_type->isVoidTy())
+        llvm::Type* ret_type = function->getReturnType();
+
+        if (ret_type->isVoidTy())
         {
             builder->CreateRetVoid();
         }
-        else if (ret_val)
+        else if (last_val && last_val->getType() == ret_type)
         {
-            builder->CreateRet(ret_val);
+            builder->CreateRet(last_val);
+        }
+        else
+        {
+            // Default return to keep IR valid (useful for main or incomplete functions)
+            if (ret_type->isFloatingPointTy())
+                builder->CreateRet(llvm::ConstantFP::get(ret_type, 0.0));
+            else if (ret_type->isIntegerTy())
+                builder->CreateRet(llvm::ConstantInt::get(ret_type, 0));
+            else
+                throw std::runtime_error("Function " + this->get_name() + " missing return path.");
         }
     }
 
+    // 5. Verification
     if (llvm::verifyFunction(*function, &llvm::errs()))
     {
-        throw std::runtime_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Function '{}' verification failed", this->get_name())
-            )
-        );
+        function->print(llvm::errs(), nullptr); // Print IR to console to see what's wrong
+        throw std::runtime_error("LLVM Function Verification Failed for: " + this->get_name());
     }
 
     return function;

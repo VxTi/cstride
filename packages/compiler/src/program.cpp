@@ -214,6 +214,8 @@ int Program::compile_jit() const
         module->print(llvm::errs(), nullptr);
         throw std::runtime_error("LLVM IR verification failed");
     }
+    // Debugging : Uncomment when necessary
+    module->print(llvm::errs(), nullptr);
 
     llvm::LoopAnalysisManager loop_analysis_manager;
     llvm::FunctionAnalysisManager function_analysis_manager;
