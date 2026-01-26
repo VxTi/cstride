@@ -29,7 +29,7 @@ namespace stride
     class Program
     {
         std::vector<std::string> _files;
-        std::shared_ptr<ast::symbol_registry> _global_scope;
+        std::shared_ptr<ast::SymbolRegistry> _global_scope;
         std::unique_ptr<ast::AstBlock> _root_node;
 
     public:
@@ -38,7 +38,7 @@ namespace stride
         const std::vector<std::string>& get_files() const { return _files; }
 
         [[nodiscard]]
-        std::shared_ptr<ast::symbol_registry> get_global_scope() const { return this->_global_scope; }
+        std::shared_ptr<ast::SymbolRegistry> get_global_scope() const { return this->_global_scope; }
 
         Program() = default;
         ~Program() = default;

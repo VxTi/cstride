@@ -40,7 +40,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 }
 
 llvm::Value* AstVariableDeclaration::codegen(
-    const std::shared_ptr<symbol_registry>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder
 )
@@ -214,7 +214,7 @@ IAstNode* AstVariableDeclaration::reduce()
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
-    const std::shared_ptr<symbol_registry>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {

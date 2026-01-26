@@ -16,7 +16,7 @@ namespace stride::ast
         explicit AstBlock(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::vector<std::unique_ptr<IAstNode>> children
         ) : IAstNode(source, source_offset, scope),
             _children(std::move(children)) {};
@@ -32,14 +32,14 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
         ) override;
 
         void resolve_forward_references(
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
@@ -59,7 +59,7 @@ namespace stride::ast
         ~AstBlock() override = default;
     };
 
-    std::unique_ptr<AstBlock> parse_block(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
+    std::unique_ptr<AstBlock> parse_block(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
 
     std::optional<TokenSet> collect_block(TokenSet& set);
 

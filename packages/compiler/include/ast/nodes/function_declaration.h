@@ -32,7 +32,7 @@ namespace stride::ast
         explicit AstFunctionParameter(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string param_name,
             std::unique_ptr<IAstInternalFieldType> param_type
         ) : IAstNode(source, source_offset, scope),
@@ -70,7 +70,7 @@ namespace stride::ast
         AstFunctionDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
             std::string internal_name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
@@ -88,11 +88,11 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void resolve_forward_references(const std::shared_ptr<symbol_registry>& scope, llvm::Module* module,
+        void resolve_forward_references(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
                                         llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
@@ -139,23 +139,23 @@ namespace stride::ast
     bool is_fn_declaration(const TokenSet& tokens);
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
-        const std::shared_ptr<symbol_registry>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& tokens
     );
 
     std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(
-        const std::shared_ptr<symbol_registry>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set
     );
 
     void parse_subsequent_fn_params(
-        const std::shared_ptr<symbol_registry>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
     void parse_variadic_fn_param(
-        const std::shared_ptr<symbol_registry>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& tokens,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );

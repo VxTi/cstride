@@ -47,6 +47,7 @@ namespace stride::ast
 
         virtual ~ISymbolDef() = default;
 
+        [[nodiscard]]
         std::string get_internal_symbol_name() const { return this->_internal_name; }
     };
 
@@ -62,6 +63,7 @@ namespace stride::ast
         ) : ISymbolDef(symbol_name),
             _type(type) {}
 
+        [[nodiscard]]
         IdentifiableSymbolType get_symbol_type() const { return this->_type; }
     };
 
@@ -120,22 +122,22 @@ namespace stride::ast
         ~SymbolFnDefinition() override = default;
     };
 
-    class symbol_registry
+    class SymbolRegistry
     {
     public:
         ScopeType _current_scope;
-        std::shared_ptr<symbol_registry> _parent_registry;
+        std::shared_ptr<SymbolRegistry> _parent_registry;
 
         std::vector<std::unique_ptr<ISymbolDef>> symbols;
 
-        explicit symbol_registry(
-            std::shared_ptr<symbol_registry> parent,
+        explicit SymbolRegistry(
+            std::shared_ptr<SymbolRegistry> parent,
             const ScopeType type
         ) : _current_scope(type),
             _parent_registry(std::move(parent)) {}
 
-        explicit symbol_registry(const ScopeType type)
-            : symbol_registry(nullptr, type) {}
+        explicit SymbolRegistry(const ScopeType type)
+            : SymbolRegistry(nullptr, type) {}
 
         [[nodiscard]]
         ScopeType get_current_scope() const { return this->_current_scope; }
@@ -186,6 +188,6 @@ namespace stride::ast
 
     private:
         [[nodiscard]]
-        const symbol_registry& traverse_to_root() const;
+        const SymbolRegistry& traverse_to_root() const;
     };
 }

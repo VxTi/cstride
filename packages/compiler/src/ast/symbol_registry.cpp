@@ -1,4 +1,4 @@
-#include "ast/SymbolRegistry.h"
+#include "ast/symbol_registry.h"
 #include "errors.h"
 
 using namespace stride::ast;

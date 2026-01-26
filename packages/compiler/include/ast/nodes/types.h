@@ -39,7 +39,7 @@ namespace stride::ast
         IAstInternalFieldType(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             const int flags
         )
             : IAstNode(source, source_offset, scope),
@@ -94,7 +94,7 @@ namespace stride::ast
         explicit AstPrimitiveFieldType(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             const PrimitiveType type,
             const size_t byte_size,
             const int flags = SRFLAG_NONE
@@ -110,6 +110,7 @@ namespace stride::ast
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
 
+        [[nodiscard]]
         bool is_integer() const
         {
             switch (this->_type)
@@ -124,6 +125,7 @@ namespace stride::ast
             }
         }
 
+        [[nodiscard]]
         bool is_fp() const
         {
             switch (this->_type)
@@ -174,7 +176,7 @@ namespace stride::ast
         explicit AstNamedValueType(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
             const int flags
         ) :
@@ -209,7 +211,7 @@ namespace stride::ast
     };
 
     std::unique_ptr<IAstInternalFieldType> parse_ast_type(
-        const std::shared_ptr<symbol_registry>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         const std::string& error,
         int context_flags = SRFLAG_NONE
@@ -222,7 +224,7 @@ namespace stride::ast
     );
 
     std::unique_ptr<IAstInternalFieldType> get_dominant_type(
-        const std::shared_ptr<symbol_registry>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         const IAstInternalFieldType* lhs,
         const IAstInternalFieldType* rhs
     );
@@ -241,13 +243,13 @@ namespace stride::ast
     size_t ast_type_to_internal_id(IAstInternalFieldType* type);
 
     std::optional<std::unique_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(
-        const std::shared_ptr<symbol_registry>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE
     );
 
     std::optional<std::unique_ptr<AstNamedValueType>> parse_named_type_optional(
-        const std::shared_ptr<symbol_registry>& scope,
+        const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE
     );

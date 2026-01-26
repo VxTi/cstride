@@ -17,7 +17,7 @@ namespace stride::ast
         explicit AstModule(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<symbol_registry>& scope,
+            const std::shared_ptr<SymbolRegistry>& scope,
             std::string name
         )
             : IAstNode(source, source_offset, scope),
@@ -30,7 +30,7 @@ namespace stride::ast
     bool is_module_statement(const TokenSet& tokens);
 
     std::unique_ptr<AstModule> parse_module_statement(
-        const std::shared_ptr<symbol_registry>&,
+        const std::shared_ptr<SymbolRegistry>&,
         TokenSet& tokens
     );
 }

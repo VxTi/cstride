@@ -23,7 +23,7 @@ using namespace stride;
 
 void Program::parse_files(const std::vector<std::string>& files)
 {
-    this->_global_scope = std::make_shared<ast::symbol_registry>(ast::ScopeType::GLOBAL);
+    this->_global_scope = std::make_shared<ast::SymbolRegistry>(ast::ScopeType::GLOBAL);
     this->_files = files;
 
     stl::predefine_symbols(this->get_global_scope());

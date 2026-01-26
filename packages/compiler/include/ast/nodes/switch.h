@@ -1,4 +1,6 @@
 #pragma once
+#include <utility>
+
 #include "ast_node.h"
 #include "ast/symbol_registry.h"
 #include "ast/tokens/token_set.h"
@@ -18,18 +20,18 @@ namespace stride::ast
         explicit AstSwitch(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<symbol_registry>& scope,
-            const std::string& name
+            const std::shared_ptr<SymbolRegistry>& scope,
+            std::string  name
         )
             : IAstNode(source, source_offset, scope),
-              _name(name) {}
+              _name(std::move(name)) {}
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<symbol_registry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
 
         static bool can_parse(const TokenSet& tokens);
 
-        static std::unique_ptr<AstSwitch> try_parse(const symbol_registry& scope, TokenSet& set);
+        static std::unique_ptr<AstSwitch> try_parse(const SymbolRegistry& scope, TokenSet& set);
     };
 }

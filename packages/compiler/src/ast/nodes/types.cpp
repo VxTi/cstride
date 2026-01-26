@@ -43,7 +43,7 @@ std::string AstNamedValueType::to_string()
 }
 
 std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primitive_type_optional(
-    const std::shared_ptr<symbol_registry>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     int context_type_flags
 )
@@ -252,7 +252,7 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
 }
 
 std::optional<std::unique_ptr<AstNamedValueType>> stride::ast::parse_named_type_optional(
-    const std::shared_ptr<symbol_registry>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     int context_type_flags
 )
@@ -281,7 +281,7 @@ std::optional<std::unique_ptr<AstNamedValueType>> stride::ast::parse_named_type_
 }
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(
-    const std::shared_ptr<symbol_registry>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     const std::string& error,
     const int context_flags
@@ -369,7 +369,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 }
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
-    const std::shared_ptr<symbol_registry>& scope,
+    const std::shared_ptr<SymbolRegistry>& scope,
     const IAstInternalFieldType* lhs,
     const IAstInternalFieldType* rhs
 )
