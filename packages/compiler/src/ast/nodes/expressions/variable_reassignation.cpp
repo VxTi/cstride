@@ -21,7 +21,6 @@ bool AstVariableReassignment::is_reducible()
 void AstVariableReassignment::validate()
 {
     const auto identifier_def = this->scope->field_lookup(this->get_variable_name());
-    std::cout << "Doing assignment validation" << std::endl;
     if (!identifier_def)
     {
         throw parsing_error(
@@ -93,40 +92,87 @@ llvm::Value* AstVariableReassignment::codegen(
     llvm::LLVMContext& context, llvm::IRBuilder<>* builder
 )
 {
-    // Get the variable allocation
+    // 1. Locate the variable (AllocaInst or GlobalVariable)
     llvm::Value* variable = builder->GetInsertBlock()->getValueSymbolTable()->lookup(this->get_internal_name());
     if (!variable)
     {
-        // Try to find in global scope with regular name
         variable = module->getNamedGlobal(this->get_variable_name());
     }
     if (!variable)
     {
-        // Once more try with its internal name
         variable = module->getNamedGlobal(this->get_internal_name());
     }
 
     if (!variable)
     {
-        throw std::runtime_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Variable '{}' not found", this->get_variable_name())
-            )
-        );
+        throw std::runtime_error(std::format("Variable '{}' not found", this->get_variable_name()));
     }
 
-    if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_value()); synthesisable != nullptr)
+    auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_value());
+    if (!synthesisable) return nullptr;
+
+    // 2. Generate the RHS value
+    llvm::Value* rhsValue = synthesisable->codegen(scope, module, context, builder);
+
+    // Placeholder logic for type checking
+    // You mentioned you'll manage the types, but we need this check to branch instructions
+    bool is_float = rhsValue->getType()->isFloatingPointTy();
+
+    llvm::Value* finalValue = rhsValue;
+
+    // 3. Handle Compound Assignments (+=, -=, etc.)
+    if (this->get_operator() != MutativeAssignmentType::ASSIGN)
     {
-        llvm::Value* value = synthesisable->codegen(scope, module, context, builder);
+        // Load the current value using the RHS type (works for 32/64 bit specifically)
+        llvm::Value* currentValue = builder->CreateLoad(rhsValue->getType(), variable, "load_tmp");
 
-        // Store the value in the variable
-        builder->CreateStore(value, variable);
-        return value;
+        switch (this->get_operator())
+        {
+        case MutativeAssignmentType::ADD:
+            finalValue = is_float
+                             ? builder->CreateFAdd(currentValue, rhsValue, "fadd_tmp")
+                             : builder->CreateAdd(currentValue, rhsValue, "add_tmp");
+            break;
+        case MutativeAssignmentType::SUBTRACT:
+            finalValue = is_float
+                             ? builder->CreateFSub(currentValue, rhsValue, "fsub_tmp")
+                             : builder->CreateSub(currentValue, rhsValue, "sub_tmp");
+            break;
+        case MutativeAssignmentType::MULTIPLY:
+            finalValue = is_float
+                             ? builder->CreateFMul(currentValue, rhsValue, "fmul_tmp")
+                             : builder->CreateMul(currentValue, rhsValue, "mul_tmp");
+            break;
+        case MutativeAssignmentType::DIVIDE:
+            finalValue = is_float
+                             ? builder->CreateFDiv(currentValue, rhsValue, "fdiv_tmp")
+                             : builder->CreateSDiv(currentValue, rhsValue, "div_tmp");
+            break;
+        case MutativeAssignmentType::MODULO:
+            finalValue = is_float
+                             ? builder->CreateFRem(currentValue, rhsValue, "frem_tmp")
+                             : builder->CreateSRem(currentValue, rhsValue, "mod_tmp");
+            break;
+
+        // Bitwise operations are generally not defined for floats in IR
+        // and usually require a bitcast or are disallowed by the frontend.
+        case MutativeAssignmentType::BITWISE_AND:
+            finalValue = builder->CreateAnd(currentValue, rhsValue, "and_tmp");
+            break;
+        case MutativeAssignmentType::BITWISE_OR:
+            finalValue = builder->CreateOr(currentValue, rhsValue, "or_tmp");
+            break;
+        case MutativeAssignmentType::BITWISE_XOR:
+            finalValue = builder->CreateXor(currentValue, rhsValue, "xor_tmp");
+            break;
+        default:
+            break;
+        }
     }
 
-    return nullptr;
+    // 4. Store the final result
+    builder->CreateStore(finalValue, variable);
+    return finalValue;
 }
 
 std::string AstVariableReassignment::to_string()
