@@ -2,7 +2,6 @@
 
 #include "files.h"
 #include "errors.h"
-#include "ast/nodes/ast_node.h"
 
 using namespace stride;
 

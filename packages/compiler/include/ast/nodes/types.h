@@ -227,7 +227,7 @@ namespace stride::ast
         llvm::LLVMContext& context
     );
 
-    std::unique_ptr<IAstInternalFieldType> get_dominant_type(
+    std::unique_ptr<IAstInternalFieldType> get_dominant_field_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         IAstInternalFieldType* lhs,
         IAstInternalFieldType* rhs

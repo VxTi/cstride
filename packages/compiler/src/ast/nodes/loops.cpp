@@ -187,17 +187,33 @@ std::string AstLoop::to_string()
     {
         result += "init: " + get_initializer()->to_string() + ", ";
     }
+    else
+    {
+        result += "init: nullptr, ";
+    }
     if (get_condition())
     {
         result += "cond: " + get_condition()->to_string() + ", ";
+    }
+    else
+    {
+        result += "cond: nullptr, ";
     }
     if (get_incrementor())
     {
         result += "incr: " + get_incrementor()->to_string() + ", ";
     }
+    else
+    {
+        result += "incr: nullptr, ";
+    }
     if (body())
     {
         result += "body: " + body()->to_string();
+    }
+    else
+    {
+        result += "body: nullptr";
     }
     result += ")";
     return result;

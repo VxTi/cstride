@@ -132,7 +132,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
             return std::move(rhs);
         }
 
-        return get_dominant_type(scope, lhs.get(), rhs.get());
+        return get_dominant_field_type(scope, lhs.get(), rhs.get());
     }
 
     if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
@@ -222,7 +222,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
             return lhs_variable_type->clone();
         }
 
-        return get_dominant_type(scope, lhs_variable_type, value.get());
+        return get_dominant_field_type(scope, lhs_variable_type, value.get());
     }
 
     if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(expr))

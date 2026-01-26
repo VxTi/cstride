@@ -142,18 +142,22 @@ void AstVariableDeclaration::validate()
 
     if (IAstInternalFieldType* rhs_type = internal_expr_type.get(); *lhs_type != *rhs_type)
     {
+        // Store to_string() results in local variables to ensure valid lifetime
+        std::string lhs_type_str = lhs_type->to_string();
+        std::string rhs_type_str = rhs_type->to_string();
+        std::string init_val_str = init_val->to_string();
         const std::vector references = {
             error_source_reference_t{
                 .source  = *this->source,
                 .offset  = this->source_offset,
-                .length  = lhs_type->source_offset + lhs_type->to_string().size() - this->source_offset,
-                .message = lhs_type->to_string()
+                .length  = lhs_type->source_offset + lhs_type_str.size() - this->source_offset,
+                .message = lhs_type_str
             },
             error_source_reference_t{
                 .source  = *this->source,
                 .offset  = init_val->source_offset,
-                .length  = init_val->to_string().size(),
-                .message = rhs_type->to_string()
+                .length  = init_val_str.size(),
+                .message = rhs_type_str
             }
         };
 

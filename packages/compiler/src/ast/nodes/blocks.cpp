@@ -44,7 +44,7 @@ std::string AstBlock::to_string()
 {
     std::ostringstream result;
     result << "AstBlock";
-    for (const auto& child : children())
+    for (const auto& child : this->children())
     {
         result << "\n  " << child->to_string();
     }
@@ -53,7 +53,7 @@ std::string AstBlock::to_string()
 
 std::optional<TokenSet> stride::ast::collect_until_token(TokenSet& set, TokenType token)
 {
-    const int64_t initial_offset = set.position();
+    const size_t initial_offset = set.position();
 
     for (int64_t relative_offset = 0; set.has_next(); relative_offset++)
     {

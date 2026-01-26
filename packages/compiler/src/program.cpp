@@ -21,26 +21,30 @@
 
 using namespace stride;
 
-void Program::parse_files(const std::vector<std::string>& files)
+void Program::parse_files(std::vector<std::string> files)
 {
+    std::cout << "Program constructor called with files: ";
+    for (const auto& f : files) std::cout << f << ", ";
+    std::cout << std::endl;
     this->_global_scope = std::make_shared<ast::SymbolRegistry>(ast::ScopeType::GLOBAL);
-    this->_files = files;
+    this->_files = std::move(files);
 
     stl::predefine_symbols(this->get_global_scope());
 
     std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
 
-    for (const auto& file : files)
+    for (const auto& file : this->_files)
     {
-        auto root_node = ast::parser::parse_file(*this, file);
-
-        if (!root_node)
-            continue;
-
-        ast_nodes.push_back(std::move(root_node));
+         auto parsed =ast::parser::parse_file(*this, file);
+        if (!parsed)
+        {
+            std::cout << "Failed to parse file: " << file << std::endl;
+            exit(1);
+        }
+        ast_nodes.push_back(std::move(parsed));
     }
 
-    if (ast_nodes.empty())
+    if (this->_files.empty())
     {
         std::cout << "No valid stride files found" << std::endl;
         exit(0);
@@ -79,6 +83,7 @@ void Program::optimize_ast_nodes()
                 // Note: Assuming reduce() returns a new raw pointer or
                 // you manage ownership correctly in your AST implementation.
                 new_children.push_back(std::unique_ptr<ast::IAstNode>(reduced));
+                std::cout << "Optimized node: " << child->to_string() << " to " << reduced->to_string() << std::endl;
                 continue;
             }
         }
@@ -161,18 +166,20 @@ int Program::compile_jit() const
         std::make_unique<llvm::LLVMContext>()
     );
 
-    auto* context = thread_safe_context->withContextDo([](llvm::LLVMContext* C)
+    auto* context = thread_safe_context->withContextDo([](llvm::LLVMContext* ctx)
     {
-        return C;
+        return ctx;
     });
 
-    auto jtmbOrErr = llvm::orc::JITTargetMachineBuilder::detectHost();
-    if (!jtmbOrErr)
+    auto jit_target_machine_builder = llvm::orc::JITTargetMachineBuilder::detectHost();
+
+    if (!jit_target_machine_builder)
     {
-        llvm::logAllUnhandledErrors(jtmbOrErr.takeError(), llvm::errs(), "JITTargetMachineBuilder error: ");
+        llvm::logAllUnhandledErrors(jit_target_machine_builder.takeError(), llvm::errs(),
+                                    "JITTargetMachineBuilder error: ");
         return 1;
     }
-    auto jtmb = std::move(*jtmbOrErr);
+    auto jtmb = std::move(*jit_target_machine_builder);
 
 
     // We explicitly create the TargetMachine to use it for both the JIT and the Optimizer
@@ -207,22 +214,27 @@ int Program::compile_jit() const
         throw std::runtime_error("LLVM IR verification failed");
     }
 
-    llvm::LoopAnalysisManager LAM;
-    llvm::FunctionAnalysisManager FAM;
-    llvm::CGSCCAnalysisManager CGAM;
-    llvm::ModuleAnalysisManager MAM;
+    llvm::LoopAnalysisManager loop_analysis_manager;
+    llvm::FunctionAnalysisManager function_analysis_manager;
+    llvm::CGSCCAnalysisManager cgscc_analysis_manager;
+    llvm::ModuleAnalysisManager module_analysis_manager;
 
     // Use the target_machine we created earlier
     llvm::PassBuilder PB(target_machine.get());
 
-    PB.registerModuleAnalyses(MAM);
-    PB.registerCGSCCAnalyses(CGAM);
-    PB.registerFunctionAnalyses(FAM);
-    PB.registerLoopAnalyses(LAM);
-    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+    PB.registerModuleAnalyses(module_analysis_manager);
+    PB.registerCGSCCAnalyses(cgscc_analysis_manager);
+    PB.registerFunctionAnalyses(function_analysis_manager);
+    PB.registerLoopAnalyses(loop_analysis_manager);
+    PB.crossRegisterProxies(
+        loop_analysis_manager,
+        function_analysis_manager,
+        cgscc_analysis_manager,
+        module_analysis_manager
+    );
 
     llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
-    MPM.run(*module, MAM);
+    MPM.run(*module, module_analysis_manager);
 
     auto tsm = llvm::orc::ThreadSafeModule(std::move(module), std::move(*thread_safe_context));
     llvm::cantFail(jit->addIRModule(std::move(tsm)));
