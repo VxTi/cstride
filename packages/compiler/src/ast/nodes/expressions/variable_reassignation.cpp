@@ -48,10 +48,6 @@ void AstVariableReassignment::validate()
 
     const auto expression_type = infer_expression_type(this->scope, this->get_value());
 
-
-    const auto i=0;
-
-
     /*if (identifier_def->get_type() != expression_type.get())
     {
         throw parsing_error(

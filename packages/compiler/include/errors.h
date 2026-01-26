@@ -31,7 +31,8 @@ namespace stride
         ErrorType error_type,
         const SourceFile& source,
         int offset,
-        const std::string& error
+        const std::string& error,
+        std::string suggestion = ""
     );
 
     std::string make_ast_error(

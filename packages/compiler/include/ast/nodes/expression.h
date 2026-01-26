@@ -113,7 +113,8 @@ namespace stride::ast
             return this->_internal_name.empty() ? this->_name : this->_internal_name;
         }
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
@@ -225,7 +226,8 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
@@ -396,7 +398,8 @@ namespace stride::ast
         [[nodiscard]]
         AstExpression& get_operand() const { return *this->_operand.get(); }
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
@@ -443,7 +446,8 @@ namespace stride::ast
         [[nodiscard]]
         MutativeAssignmentType get_operator() const { return this->_operator; }
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
@@ -459,7 +463,8 @@ namespace stride::ast
     int get_binary_operator_precedence(BinaryOpType type);
 
     /// Parses a complete standalone expression from tokens
-    std::unique_ptr<AstExpression> parse_standalone_expression(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression(const std::shared_ptr<SymbolRegistry>& scope,
+                                                               TokenSet& set);
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
     std::unique_ptr<AstExpression> parse_expression_extended(
@@ -469,7 +474,8 @@ namespace stride::ast
     );
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<AstExpression> parse_standalone_expression_part(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression_part(const std::shared_ptr<SymbolRegistry>& scope,
+                                                                    TokenSet& set);
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(

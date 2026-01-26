@@ -18,7 +18,8 @@ std::string stride::make_ast_error(
     const ErrorType error_type,
     const SourceFile& source,
     const int offset,
-    const std::string& error
+    const std::string& error,
+    const std::string suggestion
 )
 {
     if (source.source.empty() || offset >= source.source.length() || offset < 0)
@@ -59,12 +60,13 @@ std::string stride::make_ast_error(
     std::string line_str = source.source.substr(line_start, line_end - line_start);
 
     return std::format(
-        "┃ {} in \x1b[4m{}\x1b[0m:\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m\n┃",
+        "┃ {} in \x1b[4m{}\x1b[0m:\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m\n┃{}",
         error_type_to_string(error_type),
         source.path,
         error,
         line_number,
-        line_str
+        line_str,
+        suggestion.empty() ? "" : std::format("\n┃ {}", suggestion)
     );
 }
 

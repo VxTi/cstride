@@ -15,6 +15,7 @@
 
 using namespace stride::ast;
 
+
 bool AstFunctionCall::is_reducible()
 {
     // TODO: implement
@@ -86,12 +87,20 @@ llvm::Value* AstFunctionCall::codegen(
 
     if (!callee)
     {
+        auto suggested_alternative = scope->fuzzy_find(this->get_function_name());
+
         throw parsing_error(
             make_ast_error(
                 ErrorType::RUNTIME_ERROR,
                 *this->source,
                 this->source_offset,
-                std::format("Function '{}' was not found in this scope", this->get_function_name())
+                std::format("Function '{}' was not found in this scope", this->get_function_name()),
+                suggested_alternative
+                    ? std::format(
+                        "Did you mean '{}'?",
+                        suggested_alternative->get_internal_symbol_name()
+                    )
+                    : ""
             )
         );
     }

@@ -1,4 +1,6 @@
 #include "ast/symbol_registry.h"
+
+#include <algorithm>
 #include "errors.h"
 
 using namespace stride::ast;
@@ -28,17 +30,14 @@ const SymbolRegistry& SymbolRegistry::traverse_to_root() const
 
 bool SymbolRegistry::is_variable_defined_in_scope(const std::string& variable_name) const
 {
-    for (const auto& symbol_def : this->symbols)
+    return std::ranges::any_of(this->symbols, [&](const auto& symbol_def)
     {
         if (const auto* var_def = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
         {
-            if (var_def->get_internal_symbol_name() == variable_name)
-            {
-                return true;
-            }
+            return var_def->get_internal_symbol_name() == variable_name;
         }
-    }
-    return false;
+        return false;
+    });
 }
 
 bool SymbolRegistry::is_variable_defined_globally(const std::string& variable_name) const
@@ -72,7 +71,8 @@ bool SymbolRegistry::is_function_defined_globally(const std::string& internal_fu
     return false;
 }
 
-bool SymbolRegistry::is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type) const
+bool SymbolRegistry::is_symbol_type_defined_globally(const std::string& symbol_name,
+                                                     const IdentifiableSymbolType& type) const
 {
     for (const auto& root = this->traverse_to_root();
          const auto& symbol : root.symbols)
@@ -196,5 +196,94 @@ const SymbolFnDefinition* SymbolRegistry::get_function_def(const std::string& fu
             }
         }
     }
+    return nullptr;
+}
+
+static size_t levenshtein_distance(const std::string& a, const std::string& b)
+{
+    const size_t len_a = a.size();
+    const size_t len_b = b.size();
+    std::vector<size_t> prev(len_b + 1), curr(len_b + 1);
+
+    for (size_t j = 0; j <= len_b; ++j)
+        prev[j] = j;
+
+    for (size_t i = 1; i <= len_a; ++i)
+    {
+        curr[0] = i;
+        for (size_t j = 1; j <= len_b; ++j)
+        {
+            size_t cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
+            curr[j] = std::min({prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost});
+        }
+        std::swap(prev, curr);
+    }
+    return prev[len_b];
+}
+
+ISymbolDef* SymbolRegistry::fuzzy_find(const std::string& symbol_name) const
+{
+    ISymbolDef* best_match = nullptr;
+    size_t best_distance = std::numeric_limits<size_t>::max();
+
+    // We track the best length difference to break ties between multiple substring matches.
+    // (e.g. preferring "fact" over "factor" if input is "factorial", or vice versa depending on preference)
+    size_t best_len_diff = std::numeric_limits<size_t>::max();
+
+    const SymbolRegistry* current = this;
+    while (current != nullptr)
+    {
+        for (const auto& symbol_def : current->symbols)
+        {
+            std::string candidate_name;
+            // (Your casting logic remains the same)
+            if (const auto* field_def = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
+                candidate_name = field_def->get_internal_symbol_name();
+            else if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol_def.get()))
+                candidate_name = fn_def->get_internal_symbol_name();
+            else if (const auto* id_def = dynamic_cast<const IdentifiableSymbolDef*>(symbol_def.get()))
+                candidate_name = id_def->get_internal_symbol_name();
+            else
+                continue;
+
+            size_t dist = levenshtein_distance(symbol_name, candidate_name);
+
+            // Calculate absolute length difference
+            size_t len_diff = (symbol_name.size() > candidate_name.size())
+                                  ? symbol_name.size() - candidate_name.size()
+                                  : candidate_name.size() - symbol_name.size();
+
+            // Heuristic: If the edit distance is EXACTLY the length difference,
+            // it implies one string is a substring of the other (no internal typos).
+            // Example: "factorial_recursive" vs "factorial" -> dist 10, len_diff 10.
+            const bool is_substring = (dist == len_diff);
+
+            // If it is a substring, we treat the distance as 0 (or very low)
+            // to ensure it passes the threshold.
+            const size_t effective_dist = is_substring ? 0 : dist;
+
+            // Update Best Match
+            if (effective_dist < best_distance)
+            {
+                best_distance = effective_dist;
+                best_len_diff = len_diff;
+                best_match = symbol_def.get();
+            }
+            // Tie-breaker: If distances are equal (e.g., two substring matches),
+            // prefer the one with the smaller length difference (closer match).
+            else if (effective_dist == best_distance && len_diff < best_len_diff)
+            {
+                best_len_diff = len_diff;
+                best_match = symbol_def.get();
+            }
+        }
+        current = current->_parent_registry.get();
+    }
+
+    // Threshold: standard threshold is 4, but
+    // substring matches will have effective_dist of 0, so they always pass.
+    if (best_distance <= 4)
+        return best_match;
+
     return nullptr;
 }

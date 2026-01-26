@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ast/nodes/types.h"
@@ -33,8 +34,8 @@ namespace stride::ast
         std::string _internal_name;
 
     public:
-        explicit ISymbolDef(const std::string& symbol_name) :
-            _internal_name(symbol_name) {}
+        explicit ISymbolDef(std::string  symbol_name) :
+            _internal_name(std::move(symbol_name)) {}
 
         virtual ~ISymbolDef() = default;
 
@@ -157,6 +158,8 @@ namespace stride::ast
             const std::string& internal_name,
             std::unique_ptr<IAstInternalFieldType> type
         );
+
+        ISymbolDef* fuzzy_find(const std::string& symbol_name) const;
 
         void define_symbol(const std::string& symbol_name, IdentifiableSymbolType type) const;
 
