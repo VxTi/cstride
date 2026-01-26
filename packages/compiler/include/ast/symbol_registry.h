@@ -34,7 +34,7 @@ namespace stride::ast
         std::string _internal_name;
 
     public:
-        explicit ISymbolDef(std::string  symbol_name) :
+        explicit ISymbolDef(std::string symbol_name) :
             _internal_name(std::move(symbol_name)) {}
 
         virtual ~ISymbolDef() = default;
@@ -159,6 +159,7 @@ namespace stride::ast
             std::unique_ptr<IAstInternalFieldType> type
         );
 
+        [[nodiscard]]
         ISymbolDef* fuzzy_find(const std::string& symbol_name) const;
 
         void define_symbol(const std::string& symbol_name, IdentifiableSymbolType type) const;

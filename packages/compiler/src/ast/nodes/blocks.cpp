@@ -26,14 +26,19 @@ llvm::Value* AstBlock::codegen(const std::shared_ptr<SymbolRegistry>& scope, llv
 
     for (const auto& child : this->children())
     {
+        // Don't generate unreachable code, unless it's a function declaration
+        // (which defines a new code block / function)
         if (auto* block = builder->GetInsertBlock(); block && block->getTerminator())
         {
-            break;
+            if (dynamic_cast<AstFunctionDeclaration*>(child.get()) == nullptr)
+            {
+                continue;
+            }
         }
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(scope, module, context, builder);
+            last_value = synthesisable->codegen(this->scope, module, context, builder);
         }
     }
 

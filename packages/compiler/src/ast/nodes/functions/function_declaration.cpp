@@ -67,7 +67,10 @@ llvm::Value* AstFunctionDeclaration::codegen(
         throw std::runtime_error("Function symbol missing: " + this->get_internal_name());
     }
 
-    if (this->is_extern()) return function;
+    if (this->is_extern())
+    {
+        return function;
+    }
 
     llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(context, "entry", function);
     builder->SetInsertPoint(entry_bb);
@@ -80,11 +83,11 @@ llvm::Value* AstFunctionDeclaration::codegen(
     {
         if (arg_it != function->arg_end())
         {
-            arg_it->setName(param->get_name());
+            arg_it->setName(param->get_name() + ".arg");
 
             // Create memory slot on the stack for the parameter
             llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
-                arg_it->getType(), nullptr, param->get_name() + ".addr"
+                arg_it->getType(), nullptr, param->get_name()
             );
 
             // Store the initial argument value into the alloca
@@ -98,7 +101,8 @@ llvm::Value* AstFunctionDeclaration::codegen(
     llvm::Value* last_val = nullptr;
     if (this->body())
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body());
+            synthesisable != nullptr)
         {
             last_val = synthesisable->codegen(scope, module, context, builder);
         }
@@ -123,11 +127,17 @@ llvm::Value* AstFunctionDeclaration::codegen(
         {
             // Default return to keep IR valid (useful for main or incomplete functions)
             if (ret_type->isFloatingPointTy())
+            {
                 builder->CreateRet(llvm::ConstantFP::get(ret_type, 0.0));
+            }
             else if (ret_type->isIntegerTy())
+            {
                 builder->CreateRet(llvm::ConstantInt::get(ret_type, 0));
+            }
             else
+            {
                 throw std::runtime_error("Function " + this->get_name() + " missing return path.");
+            }
         }
     }
 
@@ -222,6 +232,9 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         }
         internal_name = resolve_internal_function_name(parameter_types, fn_name);
     }
+
+    // Function will be defined in the parent scope (global, perhaps)
+    // its children will reside in the function scope. This is intentional
     scope->define_function(fn_name, std::move(parameter_types_cloned), return_type->clone());
 
     std::unique_ptr<AstBlock> body = nullptr;

@@ -62,7 +62,8 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
 
 std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
     const std::shared_ptr<SymbolRegistry>& scope,
-    const AstFunctionCall* fn_call)
+    const AstFunctionCall* fn_call
+)
 {
     if (const auto fn_def = scope->get_function_def(fn_call->get_internal_name());
         fn_def != nullptr)
