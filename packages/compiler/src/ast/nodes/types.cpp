@@ -15,13 +15,20 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
     case PrimitiveType::INT16: return "i16";
     case PrimitiveType::INT32: return "i32";
     case PrimitiveType::INT64: return "i64";
+    case PrimitiveType::UINT8: return "u8";
+    case PrimitiveType::UINT16: return "u16";
+    case PrimitiveType::UINT32: return "u32";
+    case PrimitiveType::UINT64: return "u64";
     case PrimitiveType::FLOAT32: return "f32";
     case PrimitiveType::FLOAT64: return "f64";
     case PrimitiveType::BOOL: return "bool";
     case PrimitiveType::CHAR: return "char";
     case PrimitiveType::STRING: return "string";
     case PrimitiveType::VOID: return "void";
-    default: return "unknown";
+    default:
+        {
+            return "unknown";
+        }
     }
 }
 

@@ -19,19 +19,17 @@ int main(const int argc, char* argv[])
         std::vector<std::string> files;
         for (int i = 1; i < argc; ++i)
         {
-            files.push_back(argv[i]);
+            files.emplace_back(argv[i]);
         }
 
         stride::Program program;
         program.parse_files(files);
 
-        program.compile_jit();
+        return program.compile_jit();
     }
     catch (const std::exception& e)
     {
         std::cerr << e.what() << std::endl;
         return 1;
     }
-
-    return 0;
 }

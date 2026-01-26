@@ -138,8 +138,9 @@ void AstVariableDeclaration::validate()
 {
     AstExpression* init_val = this->get_initial_value().get();
     const std::unique_ptr<IAstInternalFieldType> internal_expr_type = infer_expression_type(this->scope, init_val);
+    const auto lhs_type = this->get_variable_type();
 
-    if (IAstInternalFieldType* rhs_type = internal_expr_type.get(); *this->get_variable_type() != *rhs_type)
+    if (IAstInternalFieldType* rhs_type = internal_expr_type.get(); *lhs_type != *rhs_type)
     {
         throw parsing_error(
             make_ast_error(
@@ -148,7 +149,7 @@ void AstVariableDeclaration::validate()
                 source_offset,
                 std::format(
                     "Type mismatch in variable declaration; expected type '{}', got '{}'",
-                    this->get_variable_type()->to_string(),
+                    lhs_type->to_string(),
                     rhs_type->to_string()
                 )
             )

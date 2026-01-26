@@ -19,16 +19,14 @@ uint64_t impl_sys_time_ns()
 
 uint64_t impl_sys_time_us()
 {
-    return std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).
-        count();
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch())
+       .count();
 }
 
 uint64_t impl_sys_time_ms()
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).
-        count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+       .count();
 }
 
 void stride::stl::llvm_insert_function_definitions(llvm::Module* module, llvm::LLVMContext& context)

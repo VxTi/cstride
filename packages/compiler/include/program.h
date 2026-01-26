@@ -48,7 +48,7 @@ namespace stride
         Program(Program&&) noexcept = default;
         Program& operator=(Program&&) noexcept = default;
 
-        void compile_jit() const;
+        int compile_jit() const;
 
     private:
         void print_ast_nodes() const;
@@ -61,7 +61,7 @@ namespace stride
 
         void validate_ast_nodes() const;
 
-        void optimize_ast_nodes() const;
+        void optimize_ast_nodes();
 
         void generate_llvm_ir(
             llvm::Module* module,
