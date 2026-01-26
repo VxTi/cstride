@@ -74,7 +74,7 @@ namespace stride::ast
             T value,
             const char byte_count
         ) :
-            AstLiteral(source, source_offset, scope, type, byte_count),
+            AstLiteral(source, source_offset, scope, type, byte_count * 8),
             _value(std::move(value)) {}
 
         [[nodiscard]]
@@ -119,6 +119,7 @@ namespace stride::ast
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
             const int64_t value,
+            const int byte_count,
             const int flags = SRFLAG_INT_SIGNED
         ) :
             AbstractAstLiteralBase(
@@ -127,7 +128,7 @@ namespace stride::ast
                 scope,
                 LiteralType::INTEGER,
                 value,
-                BITS_PER_BYTE * INFER_INT_BYTE_COUNT(value)
+                BITS_PER_BYTE * byte_count
             ),
             flags(flags) {}
 

@@ -118,14 +118,15 @@ namespace stride::ast
         KEYWORD_DEFAULT,  // default
         KEYWORD_BREAK,    // break
 
-        IDENTIFIER,      // variableName
-        STRING_LITERAL,  // "hello"
-        CHAR_LITERAL,    // 'a'
-        INTEGER_LITERAL, // 42
-        HEX_LITERAL,     // 0xFF
-        FLOAT_LITERAL,   // 3.14
-        DOUBLE_LITERAL,  // 3.14159D
-        BOOLEAN_LITERAL, // true, false
+        IDENTIFIER,           // variableName
+        STRING_LITERAL,       // "hello"
+        CHAR_LITERAL,         // 'a'
+        INTEGER_LITERAL,      // 42
+        LONG_INTEGER_LITERAL, // 42L
+        HEX_LITERAL,          // 0xFF
+        FLOAT_LITERAL,        // 3.14
+        DOUBLE_LITERAL,       // 3.14159D
+        BOOLEAN_LITERAL,      // true, false
     };
 
     static bool is_literal(TokenType type)
@@ -133,6 +134,7 @@ namespace stride::ast
         switch (type)
         {
         case TokenType::INTEGER_LITERAL:
+        case TokenType::LONG_INTEGER_LITERAL:
         case TokenType::HEX_LITERAL:
 
         case TokenType::FLOAT_LITERAL:

@@ -27,7 +27,10 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
 
     if (const auto* int_lit = dynamic_cast<AstIntLiteral*>(literal))
     {
-        auto type = int_lit->bit_count() > 32 ? PrimitiveType::INT64 : PrimitiveType::INT32;
+        auto type = int_lit->is_signed()
+                        ? (int_lit->bit_count() > 32 ? PrimitiveType::INT64 : PrimitiveType::INT32)
+                        : (int_lit->bit_count() > 32 ? PrimitiveType::UINT64 : PrimitiveType::UINT32);
+
         return std::make_unique<AstPrimitiveFieldType>(
             int_lit->source, int_lit->source_offset, scope, type, int_lit->bit_count() / BITS_PER_BYTE
         );
@@ -127,7 +130,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
             return std::move(rhs);
         }
 
-        return get_dominant_type(scope, &*lhs, &*rhs);
+        return get_dominant_type(scope, lhs.get(), rhs.get());
     }
 
     if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))

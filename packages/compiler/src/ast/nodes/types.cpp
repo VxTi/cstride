@@ -370,14 +370,14 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
     const std::shared_ptr<SymbolRegistry>& scope,
-    const IAstInternalFieldType* lhs,
-    const IAstInternalFieldType* rhs
+    IAstInternalFieldType* lhs,
+    IAstInternalFieldType* rhs
 )
 {
-    const auto* lhs_primitive = dynamic_cast<const AstPrimitiveFieldType*>(lhs);
-    const auto* rhs_primitive = dynamic_cast<const AstPrimitiveFieldType*>(rhs);
-    const auto* lhs_named = dynamic_cast<const AstNamedValueType*>(lhs);
-    const auto* rhs_named = dynamic_cast<const AstNamedValueType*>(rhs);
+    auto* lhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(lhs);
+    auto* rhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(rhs);
+    const auto* lhs_named = dynamic_cast<AstNamedValueType*>(lhs);
+    const auto* rhs_named = dynamic_cast<AstNamedValueType*>(rhs);
 
     // Error if one is named and the other is primitive
     if ((lhs_named && rhs_primitive) || (lhs_primitive && rhs_named))
@@ -419,7 +419,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
 
     // If LHS is a float, but the RHS is not, we'll have to convert the resulting
     // type into a float with the highest byte size
-    if (lhs_primitive->is_fp() && !rhs_primitive->is_fp())
+    // The same holds true for visa vesa.
+    if (
+        (lhs_primitive->is_fp() && !rhs_primitive->is_fp()) ||
+        (rhs_primitive->is_fp() && !lhs_primitive->is_fp())
+    )
     {
         // If the RHS has a higher byte size, we need to promote the RHS to a floating point type
         // and return the highest byte size
@@ -439,11 +443,26 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_type(
         return lhs_primitive->clone();
     }
 
+    const std::vector references = {
+        error_source_reference_t{
+            .source  = *rhs->source,
+            .offset  = lhs->source_offset,
+            .length  = lhs->to_string().size(),
+            .message = lhs->to_string()
+        },
+        error_source_reference_t{
+            .source  = *rhs->source,
+            .offset  = rhs->source_offset,
+            .length  = rhs->get_internal_name().size(),
+            .message = rhs->get_internal_name()
+        }
+    };
+
     throw parsing_error(
-        make_ast_error(
-            *rhs->source,
-            rhs->source_offset,
-            "Cannot compute dominant type for incompatible primitive types"
+        make_source_error(
+            ErrorType::TYPE_ERROR,
+            "Cannot compute dominant type for incompatible primitive types",
+            references
         )
     );
 }

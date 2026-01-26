@@ -139,6 +139,8 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     llvm::Value* lhs = this->get_left().codegen(scope, module, context, builder);
     llvm::Value* rhs = this->get_right().codegen(scope, module, context, builder);
 
+
+
     if (!lhs || !rhs)
     {
         return nullptr;

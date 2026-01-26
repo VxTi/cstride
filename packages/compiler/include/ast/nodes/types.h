@@ -119,6 +119,10 @@ namespace stride::ast
             case PrimitiveType::INT16:
             case PrimitiveType::INT32:
             case PrimitiveType::INT64:
+            case PrimitiveType::UINT8:
+            case PrimitiveType::UINT16:
+            case PrimitiveType::UINT32:
+            case PrimitiveType::UINT64:
                 return true;
             default:
                 return false;
@@ -225,8 +229,8 @@ namespace stride::ast
 
     std::unique_ptr<IAstInternalFieldType> get_dominant_type(
         const std::shared_ptr<SymbolRegistry>& scope,
-        const IAstInternalFieldType* lhs,
-        const IAstInternalFieldType* rhs
+        IAstInternalFieldType* lhs,
+        IAstInternalFieldType* rhs
     );
 
     /**
