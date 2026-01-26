@@ -2,6 +2,10 @@ import Editor from '@monaco-editor/react';
 import { useMemo, useState } from 'react';
 import { useCodeContext } from '../context/code-execution-context';
 import { strideLanguageId } from '../lib/stride-language/language-config';
+import {
+  installStrideOneDarkTheme,
+  oneDarkThemeName,
+} from './editor-theme';
 
 export default function EditorWindow() {
   const [initialCode] = useState(
@@ -30,7 +34,8 @@ export default function EditorWindow() {
       className="absolute left-0 top-0 size-full bg-neutral-950"
       defaultLanguage={strideLanguageId}
       defaultValue={initialCode}
-      theme="vs-dark"
+      theme={oneDarkThemeName}
+      beforeMount={installStrideOneDarkTheme}
       onMount={onEditorMount}
       onChange={debounceSave}
       options={{

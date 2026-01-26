@@ -174,6 +174,15 @@ export const language: languages.IMonarchLanguage = {
     root: [
       // Identifiers and keywords
       [
+        /[a-zA-Z_]\w*(?=\s*\()/,
+        {
+          cases: {
+            '@keywords': 'keyword',
+            '@default': 'function',
+          },
+        },
+      ],
+      [
         /[a-zA-Z_]\w*/,
         {
           cases: {
@@ -202,9 +211,9 @@ export const language: languages.IMonarchLanguage = {
       [/[;,]/, 'delimiter'],
 
       // Numbers
-      [/\d*\.\d+([eE][\-+]?\d+[dD]?)?/, 'number.float'],
+      [/\d*\.\d+([eE][\-+]?\d+)?[dD]?/, 'number.float'],
       [/0[xX][0-9a-fA-F]+/, 'number.hex'],
-      [/\d+/, 'number'],
+      [/\d+[lL]?/, 'number'],
 
       // Strings
       [/"([^"\\]|\\.)*$/, 'string.invalid'], // non-terminated string

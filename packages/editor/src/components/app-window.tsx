@@ -8,7 +8,7 @@ function AppWindow() {
   const { terminalResizing } = useCodeContext();
 
   return (
-    <div className="w-screen h-screen flex flex-col m-0 p-0 bg-[#1E1E1E]">
+    <div className="w-screen h-screen flex flex-col m-0 p-0 bg-[#121418]">
       <div
         className={twMerge(
           'flex-1 relative',

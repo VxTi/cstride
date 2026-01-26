@@ -55,7 +55,7 @@ export default function TerminalWindow() {
       fontSize: 14,
       allowTransparency: true,
       theme: {
-        background: '#171717',
+        background: '#121418',
       },
     });
     const fitAddon = new FitAddon();
@@ -94,7 +94,7 @@ export default function TerminalWindow() {
     <div
       style={{ height: `${height}px` }}
       className={twMerge(
-        'bg-neutral-900 flex flex-col rounded-t-3xl mx-1 border border-neutral-700',
+        'bg-[#121418] flex flex-col rounded-t-3xl mx-1 border border-neutral-700',
         terminalResizing && 'border-t-blue-500'
       )}
     >
