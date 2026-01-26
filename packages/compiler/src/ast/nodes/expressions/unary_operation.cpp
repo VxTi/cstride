@@ -125,7 +125,7 @@ llvm::Value* AstUnaryOp::codegen(
                 make_ast_error(
                     *this->source,
                     this->source_offset,
-                    "Unknown variable: " + internal_name
+                    std::format("Unknown variable '{}'", internal_name)
                 )
             );
         }
@@ -151,7 +151,7 @@ llvm::Value* AstUnaryOp::codegen(
                 make_ast_error(
                     *this->source,
                     this->source_offset,
-                    "Cannot determine type of variable: " + internal_name
+                    std::format("Cannot determine type of variable '{}'", internal_name)
                 )
             );
         }

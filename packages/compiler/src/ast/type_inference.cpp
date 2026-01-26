@@ -32,7 +32,12 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
                         : (int_lit->bit_count() > 32 ? PrimitiveType::UINT64 : PrimitiveType::UINT32);
 
         return std::make_unique<AstPrimitiveFieldType>(
-            int_lit->source, int_lit->source_offset, scope, type, int_lit->bit_count() / BITS_PER_BYTE
+            int_lit->source,
+            int_lit->source_offset,
+            scope,
+            type,
+            int_lit->bit_count() / BITS_PER_BYTE,
+            int_lit->get_flags()
         );
     }
 
@@ -230,5 +235,12 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         return infer_function_call_return_type(scope, fn_call);
     }
 
-    throw parsing_error("Unable to resolve expression type" + expr->to_string());
+    throw parsing_error(
+        make_ast_error(
+            ErrorType::SEMANTIC_ERROR,
+            *expr->source,
+            expr->source_offset,
+            "Unable to resolve expression type"
+        )
+    );
 }

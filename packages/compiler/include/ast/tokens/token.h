@@ -322,9 +322,9 @@ namespace stride::ast
     class Token
     {
     public:
-        TokenType type;
-        size_t offset;
-        const std::string lexeme;
+        const TokenType type;
+        const size_t offset;
+        const std::string lexeme{};
 
 
         explicit Token(

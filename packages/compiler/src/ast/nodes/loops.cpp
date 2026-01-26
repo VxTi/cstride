@@ -53,7 +53,8 @@ std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<Sym
     return parse_standalone_expression(scope, set);
 }
 
-std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared_ptr<SymbolRegistry>& scope,
+                                                               TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_FOR);
     const auto header_body_opt = collect_parenthesized_block(set);
@@ -65,7 +66,6 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared
 
     auto header_body = header_body_opt.value();
     const auto for_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::BLOCK);
-
 
 
     auto initiator = try_collect_initiator(for_scope, header_body);
@@ -93,7 +93,8 @@ void AstLoop::validate()
     }
 }
 
-std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const std::shared_ptr<SymbolRegistry>& scope,
+                                                                 TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);
     const auto header_condition_opt = collect_parenthesized_block(set);
@@ -119,7 +120,8 @@ std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const std::shar
     );
 }
 
-llvm::Value* AstLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+llvm::Value* AstLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                              llvm::LLVMContext& context,
                               llvm::IRBuilder<>* builder)
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
@@ -182,39 +184,11 @@ llvm::Value* AstLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm
 
 std::string AstLoop::to_string()
 {
-    std::string result = "Loop(";
-    if (get_initializer())
-    {
-        result += "init: " + get_initializer()->to_string() + ", ";
-    }
-    else
-    {
-        result += "init: nullptr, ";
-    }
-    if (get_condition())
-    {
-        result += "cond: " + get_condition()->to_string() + ", ";
-    }
-    else
-    {
-        result += "cond: nullptr, ";
-    }
-    if (get_incrementor())
-    {
-        result += "incr: " + get_incrementor()->to_string() + ", ";
-    }
-    else
-    {
-        result += "incr: nullptr, ";
-    }
-    if (body())
-    {
-        result += "body: " + body()->to_string();
-    }
-    else
-    {
-        result += "body: nullptr";
-    }
-    result += ")";
-    return result;
+    return std::format(
+        "Loop(init: {}, cond: {}, incr: {}, body: {})",
+        get_initializer() ? get_initializer()->to_string() : "<empty>",
+        get_condition() ? get_condition()->to_string() : "<empty>",
+        get_incrementor() ? get_incrementor()->to_string() : "<empty>",
+        body() ? body()->to_string() : "<empty>"
+    );
 }

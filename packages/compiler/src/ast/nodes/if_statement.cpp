@@ -150,8 +150,8 @@ std::string AstIfStatement::to_string()
 {
     return std::format(
         "IfStatement({}) {} {}",
-        this->get_condition() != nullptr ? this->get_condition()->to_string() : "nullptr",
-        this->get_block() != nullptr ? this->get_block()->to_string() : "nullptr",
+        this->get_condition() != nullptr ? this->get_condition()->to_string() : "<empty>",
+        this->get_block() != nullptr ? this->get_block()->to_string() : "<empty>",
         this->get_else_block() != nullptr ? get_else_block()->to_string() : ""
     );
 }

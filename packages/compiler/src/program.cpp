@@ -35,7 +35,7 @@ void Program::parse_files(std::vector<std::string> files)
 
     for (const auto& file : this->_files)
     {
-         auto parsed =ast::parser::parse_file(*this, file);
+        auto parsed = ast::parser::parse_file(*this, file);
         if (!parsed)
         {
             std::cout << "Failed to parse file: " << file << std::endl;
@@ -125,11 +125,12 @@ void Program::generate_llvm_ir(
 {
     if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(this->_root_node.get()))
     {
-        if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, context, builder); !
-            entry)
+        if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, context, builder);
+            entry == nullptr)
         {
             throw std::runtime_error(
-                "Failed to build executable for file " + this->_root_node->source->path);
+                std::format("Failed to build executable for file '{}'", this->_root_node->source->path)
+            );
         }
     }
 }
@@ -156,17 +157,16 @@ llvm::Expected<llvm::orc::ExecutorAddr> locate_main_fn(llvm::orc::LLJIT* jit)
 
 int Program::compile_jit() const
 {
+    llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
     setvbuf(stdout, nullptr, _IONBF, 0);
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
 
-    auto thread_safe_context = std::make_unique<llvm::orc::ThreadSafeContext>(
-        std::make_unique<llvm::LLVMContext>()
-    );
+    auto tsc = llvm::orc::ThreadSafeContext(std::make_unique<llvm::LLVMContext>());
 
-    auto* context = thread_safe_context->withContextDo([](llvm::LLVMContext* ctx)
+    auto* context = tsc.withContextDo([](llvm::LLVMContext* ctx)
     {
         return ctx;
     });
@@ -211,6 +211,7 @@ int Program::compile_jit() const
 
     if (llvm::verifyModule(*module, &llvm::errs()))
     {
+        module->print(llvm::errs(), nullptr);
         throw std::runtime_error("LLVM IR verification failed");
     }
 
@@ -220,26 +221,36 @@ int Program::compile_jit() const
     llvm::ModuleAnalysisManager module_analysis_manager;
 
     // Use the target_machine we created earlier
-    llvm::PassBuilder PB(target_machine.get());
+    llvm::PassBuilder pass_builder(target_machine.get());
 
-    PB.registerModuleAnalyses(module_analysis_manager);
-    PB.registerCGSCCAnalyses(cgscc_analysis_manager);
-    PB.registerFunctionAnalyses(function_analysis_manager);
-    PB.registerLoopAnalyses(loop_analysis_manager);
-    PB.crossRegisterProxies(
+    pass_builder.registerModuleAnalyses(module_analysis_manager);
+    pass_builder.registerCGSCCAnalyses(cgscc_analysis_manager);
+    pass_builder.registerFunctionAnalyses(function_analysis_manager);
+    pass_builder.registerLoopAnalyses(loop_analysis_manager);
+    pass_builder.crossRegisterProxies(
         loop_analysis_manager,
         function_analysis_manager,
         cgscc_analysis_manager,
         module_analysis_manager
     );
 
-    llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
-    MPM.run(*module, module_analysis_manager);
+    llvm::ModulePassManager module_pass_manager = pass_builder.buildPerModuleDefaultPipeline(
+        llvm::OptimizationLevel::O3);
+    module_pass_manager.run(*module, module_analysis_manager);
 
-    auto tsm = llvm::orc::ThreadSafeModule(std::move(module), std::move(*thread_safe_context));
-    llvm::cantFail(jit->addIRModule(std::move(tsm)));
+    llvm::orc::ThreadSafeModule thread_safe_module(
+        std::move(module),
+        std::move(tsc)
+    );
+    llvm::cantFail(jit->addIRModule(std::move(thread_safe_module)));
 
     const auto main_fn_executor = locate_main_fn(jit.get());
+
+    if (!main_fn_executor.get())
+    {
+        throw std::runtime_error("Main function not found");
+    }
+    fflush(stdout);
 
     auto main_fn = main_fn_executor->toPtr<int (*)()>();
     return main_fn();

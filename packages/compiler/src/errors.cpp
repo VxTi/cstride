@@ -74,7 +74,7 @@ std::string stride::make_ast_error(
     const std::string& error
 )
 {
-    return make_ast_error(ErrorType::SYNTAX_ERROR, source, offset, error);
+    return make_ast_error(ErrorType::SEMANTIC_ERROR, source, offset, error);
 }
 
 std::string stride::make_source_error(

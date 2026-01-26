@@ -72,27 +72,23 @@ void AstFunctionDeclaration::resolve_forward_references(
         module
     );
 
-    if (llvm::verifyFunction(*function, &llvm::errs()))
+    // We'll only verify external functions
+    if (this->is_extern() && llvm::verifyFunction(*function, &llvm::errs()))
     {
         throw std::runtime_error(
             make_ast_error(
                 *this->source,
                 this->source_offset,
-                "Failed to verify function " + this->get_name()
+                std::format("Failed to verify function '{}'", this->get_name())
             )
         );
     }
-
-    module->getOrInsertFunction(
-        fn_name,
-        function_type
-    );
 }
 
 llvm::Value* AstFunctionDeclaration::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder
+    llvm::LLVMContext& context, llvm::IRBuilder<>* builder
 )
 {
     llvm::Function* function = module->getFunction(this->get_internal_name());
@@ -120,7 +116,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
         function
     );
 
-    irBuilder->SetInsertPoint(entry_block);
+    builder->SetInsertPoint(entry_block);
 
     // Register function arguments in the symbol table
     auto arg_it = function->arg_begin();
@@ -140,7 +136,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body()))
         {
-            ret_val = synthesisable->codegen(scope, module, context, irBuilder);
+            ret_val = synthesisable->codegen(scope, module, context, builder);
 
             // Void instructions cannot have a name, but the generator might have assigned one
             // This way, we prevent LLVM from complaining
@@ -154,19 +150,20 @@ llvm::Value* AstFunctionDeclaration::codegen(
     const auto return_type = llvm::cast<llvm::FunctionType>(function->getFunctionType())->getReturnType();
 
     // Add a default return if needed (void functions or missing return)
-    if (auto* block = irBuilder->GetInsertBlock(); block && !block->getTerminator())
+    if (auto* block = builder->GetInsertBlock(); block && !block->getTerminator())
     {
         if (return_type->isVoidTy())
         {
-            irBuilder->CreateRetVoid();
+            builder->CreateRetVoid();
         }
         else if (ret_val)
         {
-            irBuilder->CreateRet(ret_val);
+            builder->CreateRet(ret_val);
         }
     }
 
-    if (llvm::verifyFunction(*function, &llvm::errs()))
+    // Extern functions are checked earlier on
+    if (!this->is_extern() && llvm::verifyFunction(*function, &llvm::errs()))
     {
         std::cerr << "Function " << this->get_name() << " verification failed!" << std::endl;
         std::cerr << &llvm::errs() << std::endl;
@@ -192,7 +189,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     TokenSet& tokens
 )
 {
-    // TODO: Add support for variadic arguments
     int function_flags = 0;
     if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERN))
     {

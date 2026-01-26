@@ -36,11 +36,13 @@ void stride::ast::parse_subsequent_fn_params(
 
         if (parameters.size() > MAX_FUNCTION_PARAMETERS)
         {
-            throw parsing_error(make_ast_error(
-                *set.source(),
-                next.offset,
-                "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters"
-            ));
+            throw parsing_error(
+                make_ast_error(
+                    *set.source(),
+                    next.offset,
+                    "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters"
+                )
+            );
         }
 
         if (next.type == TokenType::THREE_DOTS)

@@ -357,7 +357,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
                 make_ast_error(
                     *custom->source,
                     custom->source_offset,
-                    "Custom type '" + custom->name() + "' not found"
+                    std::format("Custom type '{}' not found", custom->name())
                 )
             );
         }

@@ -49,6 +49,7 @@ void AstVariableReassignment::validate()
     const auto expression_type = infer_expression_type(this->scope, this->get_value());
 
 
+
     /*if (identifier_def->get_type() != expression_type.get())
     {
         throw parsing_error(
@@ -113,7 +114,7 @@ llvm::Value* AstVariableReassignment::codegen(
             make_ast_error(
                 *this->source,
                 this->source_offset,
-                "Variable '" + this->get_variable_name() + "' not found: "
+                std::format("Variable '{}' not found", this->get_variable_name())
             )
         );
     }
