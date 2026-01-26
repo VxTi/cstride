@@ -4,7 +4,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<symbol_registry>& scope,
     TokenSet& tokens
 )
 {

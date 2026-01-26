@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ast/identifiers.h"
-#include "ast/SymbolRegistry.h"
+#include "ast/symbol_registry.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
 
@@ -23,7 +23,7 @@ namespace stride::ast
         explicit AstImport(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             const Dependency& dependency
         ) : IAstNode(source, source_offset, scope),
             _dependency(dependency) {}
@@ -42,5 +42,5 @@ namespace stride::ast
 
     bool is_import_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstImport> parse_import_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstImport> parse_import_statement(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
 }

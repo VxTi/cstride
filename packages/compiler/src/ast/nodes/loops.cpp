@@ -16,7 +16,7 @@ bool stride::ast::is_for_loop_statement(const TokenSet& set)
     return set.peak_next_eq(TokenType::KEYWORD_FOR);
 }
 
-std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<symbol_registry>& scope, TokenSet& set)
 {
     auto initiator = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -33,7 +33,7 @@ std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<Symbo
 }
 
 
-std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<symbol_registry>& scope, TokenSet& set)
 {
     auto condition = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -46,14 +46,14 @@ std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<Symbo
     return parse_standalone_expression(scope, condition.value());
 }
 
-std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<symbol_registry>& scope, TokenSet& set)
 {
     if (!set.has_next()) return nullptr; // If there's no incrementor statement, we don't need to parse it.
 
     return parse_standalone_expression(scope, set);
 }
 
-std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared_ptr<symbol_registry>& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_FOR);
     const auto header_body_opt = collect_parenthesized_block(set);
@@ -64,7 +64,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared
     }
 
     auto header_body = header_body_opt.value();
-    const auto for_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::BLOCK);
+    const auto for_scope = std::make_shared<symbol_registry>(scope, ScopeType::BLOCK);
 
 
     auto body = parse_block(for_scope, set);
@@ -92,7 +92,7 @@ void AstLoop::validate()
     }
 }
 
-std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const std::shared_ptr<symbol_registry>& scope, TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);
     const auto header_condition_opt = collect_parenthesized_block(set);
@@ -118,7 +118,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const std::shar
     );
 }
 
-llvm::Value* AstLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+llvm::Value* AstLoop::codegen(const std::shared_ptr<symbol_registry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                               llvm::IRBuilder<>* builder)
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();

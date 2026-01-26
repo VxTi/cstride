@@ -3,7 +3,7 @@
 using namespace stride::ast;
 
 void stride::ast::parse_variadic_fn_param(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<symbol_registry>& scope,
     TokenSet& tokens,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
@@ -24,7 +24,7 @@ void stride::ast::parse_variadic_fn_param(
 }
 
 void stride::ast::parse_subsequent_fn_params(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<symbol_registry>& scope,
     TokenSet& set,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
@@ -86,7 +86,7 @@ std::string AstFunctionParameter::to_string()
 }
 
 std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<symbol_registry>& scope,
     TokenSet& set
 )
 {

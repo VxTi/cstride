@@ -1,6 +1,7 @@
 #pragma once
 #include <format>
 #include <string>
+#include <vector>
 
 #include "files.h"
 
@@ -14,6 +15,15 @@ namespace stride
         SEMANTIC_ERROR = 4
     };
 
+    typedef struct
+    {
+        const SourceFile& source;
+        int offset;
+        size_t length;
+        std::string message;
+    }
+    error_source_reference_t;
+
     inline std::string error_type_to_string(const ErrorType error_type)
     {
         switch (error_type)
@@ -25,6 +35,7 @@ namespace stride
         }
         return "Unknown Error";
     }
+
 
     static std::string make_ast_error(
         const ErrorType error_type,
@@ -155,6 +166,104 @@ namespace stride
             line_str,
             std::string(column_offset, ' '),
             std::string(length, '^')
+        );
+    }
+
+    /**
+     * Will produce an error for the given source file with multiple highlighted sections.
+     * Each reference includes offset, length, and an optional message to display below.
+     */
+    static std::string make_source_error(
+        const ErrorType error_type,
+        const std::string& error,
+        const std::vector<error_source_reference_t>& references
+    )
+    {
+        if (references.empty())
+        {
+            return std::format("┃ {}\n┃ \x1b[31m{}\x1b[0m\n┃\n┃", error_type_to_string(error_type), error);
+        }
+
+        const auto& first_ref = references[0];
+        const auto& source_file = first_ref.source;
+        const auto error_type_str = error_type_to_string(error_type);
+
+        if (first_ref.offset >= source_file.source.length())
+        {
+            return std::format(
+                "┃ {} in {}\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
+                error_type_str,
+                source_file.path,
+                error
+            );
+        }
+
+        // Find the start of the line
+        size_t line_start = first_ref.offset;
+        while (line_start > 0 && line_start < source_file.source.length() && source_file.source[line_start - 1] != '\n')
+        {
+            line_start--;
+        }
+
+        // Find the end of the line
+        size_t line_end = first_ref.offset;
+        while (line_end < source_file.source.length() && source_file.source[line_end] != '\n')
+        {
+            line_end++;
+        }
+
+        // Calculate line number
+        size_t line_number = 1;
+        for (size_t i = 0; i < line_start; i++)
+        {
+            if (source_file.source[i] == '\n')
+            {
+                line_number++;
+            }
+        }
+
+        const std::string line_str = source_file.source.substr(line_start, line_end - line_start);
+        const auto line_nr_str = std::to_string(line_number);
+        const size_t line_nr_width = line_nr_str.length();
+
+        // Build the underline and message lines
+        std::string underline_str(line_str.length() + line_nr_width + 1, ' ');
+        std::string message_str(line_str.length() + line_nr_width + 1, ' ');
+
+        for (const auto& ref : references)
+        {
+            if (ref.offset < line_start || ref.offset >= line_end) continue;
+
+            const size_t col_start = ref.offset - line_start;
+            const size_t col_end = std::min(col_start + ref.length, line_str.length());
+            const size_t actual_length = col_end - col_start;
+
+            // Add underline carets
+            for (size_t i = 0; i < actual_length; ++i)
+            {
+                underline_str[col_start + line_nr_width + 1 + i] = '^';
+            }
+
+            // Add message below the carets if provided
+            if (!ref.message.empty() && col_start + line_nr_width + 1 + ref.message.length() <= message_str.length())
+            {
+                for (size_t i = 0; i < ref.message.length() && col_start + line_nr_width + 1 + i < message_str.length();
+                     ++i)
+                {
+                    message_str[col_start + line_nr_width + 1 + i] = ref.message[i];
+                }
+            }
+        }
+
+        return std::format(
+            "┃ {} in \x1b[4m{}\x1b[0m:\n┃\n┃ {}\n┃\n┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m\n┃ {}\n┃ {}",
+            error_type_str,
+            source_file.path,
+            error,
+            line_number,
+            line_str,
+            underline_str,
+            message_str
         );
     }
 

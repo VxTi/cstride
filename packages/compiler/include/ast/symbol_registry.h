@@ -120,22 +120,22 @@ namespace stride::ast
         ~SymbolFnDefinition() override = default;
     };
 
-    class SymbolRegistry
+    class symbol_registry
     {
     public:
         ScopeType _current_scope;
-        std::shared_ptr<SymbolRegistry> _parent_registry;
+        std::shared_ptr<symbol_registry> _parent_registry;
 
         std::vector<std::unique_ptr<ISymbolDef>> symbols;
 
-        explicit SymbolRegistry(
-            std::shared_ptr<SymbolRegistry> parent,
+        explicit symbol_registry(
+            std::shared_ptr<symbol_registry> parent,
             const ScopeType type
         ) : _current_scope(type),
             _parent_registry(std::move(parent)) {}
 
-        explicit SymbolRegistry(const ScopeType type)
-            : SymbolRegistry(nullptr, type) {}
+        explicit symbol_registry(const ScopeType type)
+            : symbol_registry(nullptr, type) {}
 
         [[nodiscard]]
         ScopeType get_current_scope() const { return this->_current_scope; }
@@ -186,6 +186,6 @@ namespace stride::ast
 
     private:
         [[nodiscard]]
-        const SymbolRegistry& traverse_to_root() const;
+        const symbol_registry& traverse_to_root() const;
     };
 }

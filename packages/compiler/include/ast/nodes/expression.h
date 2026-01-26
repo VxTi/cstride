@@ -2,7 +2,7 @@
 
 #include "ast_node.h"
 #include "types.h"
-#include "ast/SymbolRegistry.h"
+#include "ast/symbol_registry.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -68,13 +68,13 @@ namespace stride::ast
         explicit AstExpression(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope
+            const std::shared_ptr<symbol_registry>& scope
         ) : IAstNode(source, source_offset, scope) {};
 
         ~AstExpression() override = default;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
@@ -97,7 +97,7 @@ namespace stride::ast
         explicit AstIdentifier(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::string name,
             std::string internal_name
         ) : AstExpression(source, source_offset, scope),
@@ -113,7 +113,7 @@ namespace stride::ast
             return this->_internal_name.empty() ? this->_name : this->_internal_name;
         }
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<symbol_registry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
@@ -134,7 +134,7 @@ namespace stride::ast
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::string function_name,
             std::string internal_name
         ) : AstExpression(source, source_offset, scope),
@@ -144,7 +144,7 @@ namespace stride::ast
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::string function_name,
             std::string internal_name,
             std::vector<std::unique_ptr<AstExpression>> arguments
@@ -165,7 +165,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
@@ -188,7 +188,7 @@ namespace stride::ast
         AstVariableDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::string variable_name,
             std::string internal_name,
             std::unique_ptr<IAstInternalFieldType> variable_type,
@@ -225,7 +225,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<symbol_registry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
@@ -244,7 +244,7 @@ namespace stride::ast
         AbstractBinaryOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::unique_ptr<AstExpression> lsh,
             std::unique_ptr<AstExpression> rsh
         ) : AstExpression(source, source_offset, scope),
@@ -267,7 +267,7 @@ namespace stride::ast
         AstBinaryArithmeticOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<AstExpression> right
@@ -284,7 +284,7 @@ namespace stride::ast
         BinaryOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
@@ -306,7 +306,7 @@ namespace stride::ast
         AstLogicalOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
@@ -323,7 +323,7 @@ namespace stride::ast
         LogicalOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
@@ -341,7 +341,7 @@ namespace stride::ast
         AstComparisonOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
@@ -358,7 +358,7 @@ namespace stride::ast
         ComparisonOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             llvm::Module* module,
             llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
@@ -378,7 +378,7 @@ namespace stride::ast
         AstUnaryOp(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
@@ -396,7 +396,7 @@ namespace stride::ast
         [[nodiscard]]
         AstExpression& get_operand() const { return *this->_operand.get(); }
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<symbol_registry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
@@ -420,7 +420,7 @@ namespace stride::ast
         explicit AstVariableReassignment(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
@@ -443,7 +443,7 @@ namespace stride::ast
         [[nodiscard]]
         MutativeAssignmentType get_operator() const { return this->_operator; }
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<symbol_registry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         bool is_reducible() override;
@@ -459,48 +459,48 @@ namespace stride::ast
     int get_binary_operator_precedence(BinaryOpType type);
 
     /// Parses a complete standalone expression from tokens
-    std::unique_ptr<AstExpression> parse_standalone_expression(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
     std::unique_ptr<AstExpression> parse_expression_extended(
         int expression_type_flags,
-        const std::shared_ptr<SymbolRegistry>& scope,
+        const std::shared_ptr<symbol_registry>& scope,
         TokenSet& set
     );
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<AstExpression> parse_standalone_expression_part(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression_part(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
         int expression_type_flags,
-        const std::shared_ptr<SymbolRegistry>& scope,
+        const std::shared_ptr<symbol_registry>& scope,
         TokenSet& set
     );
 
     /// Parses a function invocation into an AstFunctionCall expression node
-    std::unique_ptr<AstExpression> parse_function_call(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_function_call(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
-        const std::shared_ptr<SymbolRegistry>& scope,
+        const std::shared_ptr<symbol_registry>& scope,
         TokenSet& set
     );
 
     /// Parses a binary arithmetic operation using precedence climbing
     std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(
-        const std::shared_ptr<SymbolRegistry>& scope,
+        const std::shared_ptr<symbol_registry>& scope,
         TokenSet& set,
         std::unique_ptr<AstExpression> lhs,
         int min_precedence
     );
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
-    std::string parse_property_accessor_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::string parse_property_accessor_statement(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
 
     /// Parses a unary operator expression
     std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(
-        const std::shared_ptr<SymbolRegistry>& scope,
+        const std::shared_ptr<symbol_registry>& scope,
         TokenSet& set
     );
 
@@ -525,7 +525,7 @@ namespace stride::ast
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
     std::unique_ptr<IAstInternalFieldType> infer_expression_type(
-        const std::shared_ptr<SymbolRegistry>& scope,
+        const std::shared_ptr<symbol_registry>& scope,
         AstExpression* expr
     );
 }

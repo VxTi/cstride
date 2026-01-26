@@ -90,7 +90,7 @@ IAstNode* AstVariableReassignment::reduce()
 }
 
 llvm::Value* AstVariableReassignment::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+    const std::shared_ptr<symbol_registry>& scope, llvm::Module* module,
     llvm::LLVMContext& context, llvm::IRBuilder<>* builder
 )
 {
@@ -198,7 +198,7 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
 }
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<symbol_registry>& scope,
     TokenSet& set
 )
 {

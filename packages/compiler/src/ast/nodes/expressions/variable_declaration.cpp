@@ -40,7 +40,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 }
 
 llvm::Value* AstVariableDeclaration::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<symbol_registry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder
 )
@@ -142,16 +142,30 @@ void AstVariableDeclaration::validate()
 
     if (IAstInternalFieldType* rhs_type = internal_expr_type.get(); *lhs_type != *rhs_type)
     {
+        const std::vector references = {
+            error_source_reference_t{
+                .source  = *this->source,
+                .offset  = this->source_offset,
+                .length  = lhs_type->source_offset + lhs_type->to_string().size() - this->source_offset,
+                .message = lhs_type->to_string()
+            },
+            error_source_reference_t{
+                .source  = *this->source,
+                .offset  = init_val->source_offset,
+                .length  = init_val->to_string().size(),
+                .message = rhs_type->to_string()
+            }
+        };
+
         throw parsing_error(
-            make_ast_error(
+            make_source_error(
                 ErrorType::TYPE_ERROR,
-                *source,
-                source_offset,
                 std::format(
                     "Type mismatch in variable declaration; expected type '{}', got '{}'",
                     lhs_type->to_string(),
                     rhs_type->to_string()
-                )
+                ),
+                references
             )
         );
     }
@@ -200,7 +214,7 @@ IAstNode* AstVariableDeclaration::reduce()
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<symbol_registry>& scope,
     TokenSet& set
 )
 {

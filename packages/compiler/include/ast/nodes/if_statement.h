@@ -18,7 +18,7 @@ namespace stride::ast
         AstIfStatement(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<symbol_registry>& scope,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> block,
             std::unique_ptr<AstBlock> else_block
@@ -45,7 +45,7 @@ namespace stride::ast
 
         void validate() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<symbol_registry>& scope, llvm::Module* module, llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
@@ -53,5 +53,5 @@ namespace stride::ast
 
     bool is_if_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstIfStatement> parse_if_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstIfStatement> parse_if_statement(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
 }

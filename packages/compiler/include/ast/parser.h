@@ -14,7 +14,7 @@ namespace stride::ast
         std::unique_ptr<AstBlock> parse_file(const Program &program, const std::string& source_path);
     }
 
-    std::unique_ptr<IAstNode> parse_next_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<IAstNode> parse_next_statement(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
 
-    std::unique_ptr<AstBlock> parse_sequential(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstBlock> parse_sequential(const std::shared_ptr<symbol_registry>& scope, TokenSet& set);
 }
