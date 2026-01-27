@@ -19,7 +19,7 @@ std::string stride::make_ast_error(
     const SourceFile& source,
     const int offset,
     const std::string& error,
-    const std::string suggestion
+    const std::string& suggestion
 )
 {
     if (source.source.empty() || offset >= source.source.length() || offset < 0)

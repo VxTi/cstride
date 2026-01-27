@@ -207,7 +207,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
 
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
-    tokens.expect(TokenType::COLON, "Expected a colon after function header type");
+    tokens.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
     auto return_type = parse_ast_type(scope, tokens, "Expected return type in function header", SRFLAG_NONE);

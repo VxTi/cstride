@@ -55,7 +55,7 @@ void AstUnaryOp::validate()
 {
     const auto operand_type = infer_expression_type(this->scope, this->_operand.get());
 
-    if (!operand_type.get())
+    if (!operand_type)
     {
         throw parsing_error(
             make_ast_error(
@@ -66,13 +66,15 @@ void AstUnaryOp::validate()
         );
     }
 
-    if (!operand_type.get()->is_mutable())
+    if (!operand_type->is_mutable())
     {
         throw parsing_error(
-            make_ast_error(
+            make_source_error(
                 *this->source,
+                ErrorType::TYPE_ERROR,
+                "Cannot modify immutable value",
                 this->source_offset,
-                "Cannot modify immutable value"
+                unary_op_type_to_str(this->_op_type).length()
             )
         );
     }

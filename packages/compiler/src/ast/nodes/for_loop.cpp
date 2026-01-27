@@ -1,15 +1,6 @@
-#include "ast/nodes/loops.h"
-
-#include "ast/flags.h"
-#include "ast/parser.h"
-#include "ast/nodes/blocks.h"
+#include "ast/nodes/for_loop.h"
 
 using namespace stride::ast;
-
-bool stride::ast::is_while_loop_statement(const TokenSet& set)
-{
-    return set.peak_next_eq(TokenType::KEYWORD_WHILE);
-}
 
 bool stride::ast::is_for_loop_statement(const TokenSet& set)
 {
@@ -32,7 +23,6 @@ std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<Symbo
     );
 }
 
-
 std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
 {
     auto condition = collect_until_token(set, TokenType::SEMICOLON);
@@ -53,8 +43,10 @@ std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<Sym
     return parse_standalone_expression(scope, set);
 }
 
-std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared_ptr<SymbolRegistry>& scope,
-                                                               TokenSet& set)
+std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    TokenSet& set
+)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_FOR);
     const auto header_body_opt = collect_parenthesized_block(set);
@@ -74,7 +66,7 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared
 
     auto body = parse_block(for_scope, set);
 
-    return std::make_unique<AstLoop>(
+    return std::make_unique<AstForLoop>(
         set.source(),
         reference_token.offset,
         for_scope,
@@ -85,44 +77,12 @@ std::unique_ptr<AstLoop> stride::ast::parse_for_loop_statement(const std::shared
     );
 }
 
-void AstLoop::validate()
-{
-    if (this->body() != nullptr)
-    {
-        this->body()->validate();
-    }
-}
-
-std::unique_ptr<AstLoop> stride::ast::parse_while_loop_statement(const std::shared_ptr<SymbolRegistry>& scope,
-                                                                 TokenSet& set)
-{
-    const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);
-    const auto header_condition_opt = collect_parenthesized_block(set);
-
-    if (!header_condition_opt.has_value())
-    {
-        set.throw_error("Expected while loop condition");
-    }
-
-    auto header_condition = header_condition_opt.value();
-
-    auto condition = parse_standalone_expression(scope, header_condition);
-    auto body = parse_block(scope, set);
-
-    return std::make_unique<AstLoop>(
-        set.source(),
-        reference_token.offset,
-        scope,
-        nullptr,
-        std::move(condition),
-        nullptr,
-        std::move(body)
-    );
-}
-
-llvm::Value* AstLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                              llvm::LLVMContext& context,
-                              llvm::IRBuilder<>* builder)
+llvm::Value* AstForLoop::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
+)
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
 
@@ -182,10 +142,22 @@ llvm::Value* AstLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm
     return nullptr;
 }
 
-std::string AstLoop::to_string()
+void AstForLoop::validate()
+{
+    if (this->_initializer != nullptr) this->_initializer->validate();
+
+    if (this->_condition != nullptr) this->_condition->validate();
+
+    if (this->_incrementor != nullptr) this->_incrementor->validate();
+
+    if (this->body() != nullptr) this->body()->validate();
+}
+
+
+std::string AstForLoop::to_string()
 {
     return std::format(
-        "Loop(init: {}, cond: {}, incr: {}, body: {})",
+        "ForLoop(init: {}, cond: {}, incr: {}, body: {})",
         get_initializer() ? get_initializer()->to_string() : "<empty>",
         get_condition() ? get_condition()->to_string() : "<empty>",
         get_incrementor() ? get_incrementor()->to_string() : "<empty>",

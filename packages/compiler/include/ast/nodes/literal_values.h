@@ -120,7 +120,7 @@ namespace stride::ast
             const std::shared_ptr<SymbolRegistry>& scope,
             const int64_t value,
             const short bit_count,
-            const int flags = SRFLAG_NONE
+            const int flags = SRFLAG_TYPE_INT_SIGNED
         ) :
             AbstractAstLiteralBase(
                 source,

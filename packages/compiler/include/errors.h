@@ -32,7 +32,7 @@ namespace stride
         const SourceFile& source,
         int offset,
         const std::string& error,
-        std::string suggestion = ""
+        const std::string& suggestion = ""
     );
 
     std::string make_ast_error(
