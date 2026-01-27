@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
+std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_literal_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     AstLiteral* literal
 )
@@ -56,11 +56,11 @@ std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
     }
 
     throw std::runtime_error(
-        stride::make_ast_error(*literal->source, literal->source_offset, "Unable to resolve expression literal type")
+        make_ast_error(*literal->source, literal->source_offset, "Unable to resolve expression literal type")
     );
 }
 
-std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
+std::unique_ptr<IAstInternalFieldType> stride::ast::infer_function_call_return_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstFunctionCall* fn_call
 )
@@ -78,8 +78,8 @@ std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
         return fn_def->get_return_type()->clone();
     }
 
-    throw stride::parsing_error(
-        stride::make_ast_error(
+    throw parsing_error(
+        make_ast_error(
             *fn_call->source,
             fn_call->source_offset,
             std::format(
@@ -88,6 +88,119 @@ std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
             )
         )
     );
+}
+
+std::unique_ptr<IAstInternalFieldType> stride::ast::infer_binary_arithmetic_op_type(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    const AstBinaryArithmeticOp* operation
+)
+{
+    auto lhs = infer_expression_type(scope, &operation->get_left());
+    auto rhs = infer_expression_type(scope, &operation->get_right());
+
+    if (*lhs == *rhs)
+    {
+        return std::move(lhs);
+    }
+
+    if (lhs->is_pointer() && !rhs->is_pointer())
+    {
+        return std::move(lhs);
+    }
+
+    if (!lhs->is_pointer() && rhs->is_pointer())
+    {
+        return std::move(rhs);
+    }
+
+    return get_dominant_field_type(scope, lhs.get(), rhs.get());
+}
+
+std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_unary_op_type(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    const AstUnaryOp* operation
+)
+{
+    auto type = infer_expression_type(scope, &operation->get_operand());
+
+    if (const auto op_type = operation->get_op_type(); op_type == UnaryOpType::ADDRESS_OF)
+    {
+        const auto flags = type->get_flags() | SRFLAG_TYPE_PTR;
+        if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
+        {
+            return std::make_unique<AstPrimitiveFieldType>(
+                prim->source, prim->source_offset, scope,
+                prim->type(), prim->byte_size(),
+                flags
+            );
+        }
+        if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
+        {
+            return std::make_unique<AstNamedValueType>(
+                named->source, named->source_offset, scope,
+                named->name(),
+                flags
+            );
+        }
+    }
+    else if (op_type == UnaryOpType::DEREFERENCE)
+    {
+        if (!type->is_pointer())
+        {
+            throw parsing_error(
+                make_ast_error(*operation->source, operation->source_offset, "Cannot dereference non-pointer type")
+            );
+        }
+
+        const auto flags = type->get_flags() & ~SRFLAG_TYPE_PTR;
+
+        if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
+        {
+            return std::make_unique<AstPrimitiveFieldType>(
+                prim->source, prim->source_offset, scope,
+                prim->type(), prim->byte_size(),
+                flags
+            );
+        }
+        if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
+        {
+            return std::make_unique<AstNamedValueType>(
+                named->source, named->source_offset, scope,
+                named->name(),
+                flags
+            );
+        }
+    }
+    else if (op_type == UnaryOpType::LOGICAL_NOT)
+    {
+        return std::make_unique<AstPrimitiveFieldType>(
+            operation->source, operation->source_offset, scope, PrimitiveType::BOOL, 1
+        );
+    }
+
+    return type;
+}
+
+std::unique_ptr<IAstInternalFieldType> stride::ast::infer_array_member_type(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    AstArray* array
+)
+{
+    if (array->get_elements().empty())
+    {
+        // This is one of those cases where it's impossible to deduce the type
+        // Therefore, we have an UNKNOWN type.
+        return std::make_unique<AstPrimitiveFieldType>(
+            array->source,
+            array->source_offset,
+            scope,
+            PrimitiveType::UNKNOWN,
+            8, // Always a pointer
+            0
+        );
+    }
+
+    return infer_expression_type(scope, array->get_elements().front().get());
 }
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
@@ -102,6 +215,9 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
 
     if (const auto* identifier = dynamic_cast<AstIdentifier*>(expr))
     {
+        // TODO: Add generic support.
+        // Right now we just do a lookup for `identifier`'s name, though we might want to extend
+        // the lookup for generics.
         const auto reference_variable = scope->field_lookup(identifier->get_name());
         if (!reference_variable)
         {
@@ -113,94 +229,17 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
             );
         }
 
-        // Assumes `get_type()` returns a pointer to a long-lived type.
-        // If not, this needs a clone/copy API instead.
         return reference_variable->get_type()->clone();
     }
 
     if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
     {
-        auto lhs = infer_expression_type(scope, &operation->get_left());
-        auto rhs = infer_expression_type(scope, &operation->get_right());
-
-        if (*lhs == *rhs)
-        {
-            return std::move(lhs);
-        }
-
-        if (lhs->is_pointer() && !rhs->is_pointer())
-        {
-            return std::move(lhs);
-        }
-
-        if (!lhs->is_pointer() && rhs->is_pointer())
-        {
-            return std::move(rhs);
-        }
-
-        return get_dominant_field_type(scope, lhs.get(), rhs.get());
+        return infer_binary_arithmetic_op_type(scope, operation);
     }
 
     if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
     {
-        auto type = infer_expression_type(scope, &operation->get_operand());
-
-        if (const auto op_type = operation->get_op_type(); op_type == UnaryOpType::ADDRESS_OF)
-        {
-            const auto flags = type->get_flags() | SRFLAG_TYPE_PTR;
-            if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
-            {
-                return std::make_unique<AstPrimitiveFieldType>(
-                    prim->source, prim->source_offset, scope,
-                    prim->type(), prim->byte_size(),
-                    flags
-                );
-            }
-            if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
-            {
-                return std::make_unique<AstNamedValueType>(
-                    named->source, named->source_offset, scope,
-                    named->name(),
-                    flags
-                );
-            }
-        }
-        else if (op_type == UnaryOpType::DEREFERENCE)
-        {
-            if (!type->is_pointer())
-            {
-                throw parsing_error(
-                    make_ast_error(*operation->source, operation->source_offset, "Cannot dereference non-pointer type")
-                );
-            }
-
-            const auto flags = type->get_flags() & ~SRFLAG_TYPE_PTR;
-
-            if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
-            {
-                return std::make_unique<AstPrimitiveFieldType>(
-                    prim->source, prim->source_offset, scope,
-                    prim->type(), prim->byte_size(),
-                    flags
-                );
-            }
-            if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
-            {
-                return std::make_unique<AstNamedValueType>(
-                    named->source, named->source_offset, scope,
-                    named->name(),
-                    flags
-                );
-            }
-        }
-        else if (op_type == UnaryOpType::LOGICAL_NOT)
-        {
-            return std::make_unique<AstPrimitiveFieldType>(
-                operation->source, operation->source_offset, scope, PrimitiveType::BOOL, 1
-            );
-        }
-
-        return type;
+        return resolve_unary_op_type(scope, operation);
     }
 
     if (dynamic_cast<AstLogicalOp*>(expr) || dynamic_cast<AstComparisonOp*>(expr))
@@ -236,12 +275,26 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         return infer_function_call_return_type(scope, fn_call);
     }
 
+    if (auto* array_expr = dynamic_cast<AstArray*>(expr))
+    {
+        auto member_type = infer_array_member_type(scope, array_expr);
+
+        return std::make_unique<AstArrayType>(
+            array_expr->source,
+            array_expr->source_offset,
+            scope,
+            std::move(member_type),
+            array_expr->get_elements().size()
+        );
+    }
+
     throw parsing_error(
-        make_ast_error(
-            ErrorType::SEMANTIC_ERROR,
+        make_source_error(
             *expr->source,
+            ErrorType::SEMANTIC_ERROR,
+            "Unable to resolve expression type",
             expr->source_offset,
-            "Unable to resolve expression type"
+            expr->to_string().size()
         )
     );
 }

@@ -25,6 +25,7 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
     case PrimitiveType::CHAR: return "char";
     case PrimitiveType::STRING: return "string";
     case PrimitiveType::VOID: return "void";
+    case PrimitiveType::UNKNOWN:
     default:
         {
             return "unknown";
@@ -32,17 +33,7 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
     }
 }
 
-std::string AstPrimitiveFieldType::to_string()
-{
-    return std::format("{}{}", primitive_type_to_str(this->type()), this->is_pointer() ? "*" : "");
-}
-
-std::string AstNamedValueType::to_string()
-{
-    return std::format("{}{}", this->name(), this->is_pointer() ? "*" : "");
-}
-
-std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primitive_type_optional(
+std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primitive_type_optional(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     int context_type_flags
@@ -246,12 +237,26 @@ std::optional<std::unique_ptr<AstPrimitiveFieldType>> stride::ast::parse_primiti
     if (result.has_value())
     {
         set.skip(offset + 1);
+
+        // Array parsing
+        if (set.peak_eq(TokenType::LSQUARE_BRACKET, 0) && set.peak_eq(TokenType::RSQUARE_BRACKET, 1))
+        {
+            set.skip(2);
+
+            return std::make_unique<AstArrayType>(
+                result.value()->source,
+                result.value()->source_offset,
+                result.value()->scope,
+                std::move(result.value()),
+                0
+            );
+        }
     }
 
     return result;
 }
 
-std::optional<std::unique_ptr<AstNamedValueType>> stride::ast::parse_named_type_optional(
+std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_type_optional(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     int context_type_flags
@@ -271,16 +276,32 @@ std::optional<std::unique_ptr<AstNamedValueType>> stride::ast::parse_named_type_
     }
 
     const auto name = set.next().lexeme;
-    return std::make_unique<AstNamedValueType>(
+
+    auto named_type = std::make_unique<AstNamedValueType>(
         set.source(),
         reference_token.offset,
         scope,
         name,
         context_type_flags
     );
+
+    if (set.peak_eq(TokenType::LSQUARE_BRACKET, 0) && set.peak_eq(TokenType::RSQUARE_BRACKET, 1))
+    {
+        set.skip(2);
+
+        return std::make_unique<AstArrayType>(
+            set.source(),
+            reference_token.offset,
+            scope,
+            std::move(named_type),
+            0
+        );
+    }
+
+    return std::move(named_type);
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(
+std::unique_ptr<IAstInternalFieldType> stride::ast::parse_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     const std::string& error,
@@ -304,10 +325,28 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::parse_ast_type(
 
 llvm::Type* stride::ast::internal_type_to_llvm_type(
     IAstInternalFieldType* type,
-    [[maybe_unused]] llvm::Module* module,
+    llvm::Module* module,
     llvm::LLVMContext& context
 )
 {
+    if (const auto *array = dynamic_cast<AstArrayType*>(type))
+    {
+        llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module, context);
+
+        if (!element_type)
+        {
+            throw parsing_error(
+                make_ast_error(
+                    *array->source,
+                    array->source_offset,
+                    "Unable to resolve internal type for array element"
+                )
+            );
+        }
+
+        return llvm::ArrayType::get(element_type, array->get_initial_length());
+    }
+
     if (const auto* primitive = dynamic_cast<AstPrimitiveFieldType*>(type))
     {
         switch (primitive->type())

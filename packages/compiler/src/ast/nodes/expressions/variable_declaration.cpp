@@ -14,28 +14,16 @@ using namespace stride::ast;
  */
 bool stride::ast::is_variable_declaration(const TokenSet& set)
 {
-    // External variables cannot have initializers
-    if (set.peak_next_eq(TokenType::KEYWORD_EXTERN))
-    {
-        return set.peak_eq(TokenType::KEYWORD_LET, 1) &&
-            set.peak_eq(TokenType::IDENTIFIER, 2) &&
-            set.peak_eq(TokenType::COLON, 3) &&
-            (
-                // Type can be either a primitive or a user-defined identifier
-                set.peak_eq(TokenType::IDENTIFIER, 4) || is_primitive_type(set.peak(4).type)
-            )
-            && set.peak_eq(TokenType::SEMICOLON, 5);
-    }
+    const int offset = set.peak_next_eq(TokenType::KEYWORD_EXTERN) ? 1 : 0; // Offset the initial token
 
+    // This assumes one of the following sequences is a "variable declaration":
+    // extern k:
+    // mut k:
+    // let k:
     return (
-        (set.peak_eq(TokenType::KEYWORD_LET, 0) || set.peak_eq(TokenType::KEYWORD_MUT, 0)) &&
-        set.peak_eq(TokenType::IDENTIFIER, 1) &&
-        set.peak_eq(TokenType::COLON, 2) &&
-        (
-            // Type can be either a primitive or a user-defined identifier
-            set.peak_eq(TokenType::IDENTIFIER, 3) || is_primitive_type(set.peak(3).type)
-        )
-        && set.peak_eq(TokenType::EQUALS, 4)
+        (set.peak_eq(TokenType::KEYWORD_LET, offset) || set.peak_eq(TokenType::KEYWORD_MUT, offset)) &&
+        set.peak_eq(TokenType::IDENTIFIER, offset + 1) &&
+        set.peak_eq(TokenType::COLON, offset + 2)
     );
 }
 
@@ -137,6 +125,12 @@ llvm::Value* AstVariableDeclaration::codegen(
 void AstVariableDeclaration::validate()
 {
     AstExpression* init_val = this->get_initial_value().get();
+    if (!init_val)
+    {
+        // It's possible that there's no initializer value.
+        return;
+    }
+
     const std::unique_ptr<IAstInternalFieldType> internal_expr_type = infer_expression_type(this->scope, init_val);
     const auto lhs_type = this->get_variable_type();
     const auto rhs_type = internal_expr_type.get();
@@ -176,7 +170,6 @@ void AstVariableDeclaration::validate()
         );
     }
 }
-
 
 bool AstVariableDeclaration::is_reducible()
 {
@@ -253,11 +246,17 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
     const auto variable_name = variable_name_tok.lexeme;
     set.expect(TokenType::COLON);
-    auto variable_type = parse_ast_type(scope, set, "Expected variable type after variable name", flags);
+    auto variable_type = parse_type(scope, set, "Expected variable type after variable name", flags);
 
-    set.expect(TokenType::EQUALS);
 
-    auto value = parse_expression_extended(0, scope, set);
+    std::unique_ptr<AstExpression> value = nullptr;
+
+    if (set.peak_next_eq(TokenType::EQUALS))
+    {
+        set.next();
+        value = parse_expression_extended(0, scope, set);
+    }
+
 
     // If it's not an inline variable declaration (e.g., in a for loop),
     // we expect a semicolon at the end.

@@ -24,11 +24,15 @@ namespace stride::ast
         BOOL,
         CHAR,
         STRING,
-        VOID
+        VOID,
+        // Reserved type for empty arrays;
+        // It's impossible to deduce the type from an empty array,
+        // as it would otherwise be done by inferring the type of its members.
+        // Therefore, we'll leave it as a special case.
+        UNKNOWN
     };
 
     std::string primitive_type_to_str(PrimitiveType type);
-
 
     class IAstInternalFieldType :
         public IAstNode
@@ -105,8 +109,6 @@ namespace stride::ast
 
         ~AstPrimitiveFieldType() override = default;
 
-        std::string to_string() override;
-
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
 
@@ -153,6 +155,11 @@ namespace stride::ast
 
         std::string get_internal_name() override { return primitive_type_to_str(_type); }
 
+        std::string to_string() override
+        {
+            return std::format("{}{}", primitive_type_to_str(this->type()), this->is_pointer() ? "*" : "");
+        }
+
         // For primitives, we can easily compare whether another is equal by comparing the `PrimitiveType` enumerable
         bool operator==(IAstInternalFieldType& other) override
         {
@@ -175,8 +182,6 @@ namespace stride::ast
         std::string _name;
 
     public:
-        std::string to_string() override;
-
         explicit AstNamedValueType(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
@@ -187,9 +192,11 @@ namespace stride::ast
             IAstInternalFieldType(source, source_offset, scope, flags),
             _name(std::move(name)) {}
 
-
         [[nodiscard]]
-        std::string name() const { return this->_name; }
+        std::string name() const
+        {
+            return this->_name;
+        }
 
         [[nodiscard]]
         std::unique_ptr<IAstInternalFieldType> clone() const override
@@ -198,6 +205,11 @@ namespace stride::ast
         }
 
         std::string get_internal_name() override { return this->_name; }
+
+        std::string to_string() override
+        {
+            return std::format("{}{}", this->name(), this->is_pointer() ? "*" : "");
+        }
 
         bool operator==(IAstInternalFieldType& other) override
         {
@@ -214,7 +226,79 @@ namespace stride::ast
         }
     };
 
-    std::unique_ptr<IAstInternalFieldType> parse_ast_type(
+    class AstArrayType
+        : public IAstInternalFieldType
+    {
+        std::unique_ptr<IAstInternalFieldType> _element_type;
+        size_t _initial_length;
+
+    public:
+        explicit AstArrayType(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const std::shared_ptr<SymbolRegistry>& scope,
+            std::unique_ptr<IAstInternalFieldType> element_type,
+            const size_t initial_length
+        ) : IAstInternalFieldType(
+                source,
+                source_offset,
+                scope,
+                (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR
+            ),
+            // Arrays are always ptrs
+            _element_type(std::move(element_type)),
+            _initial_length(initial_length) {}
+
+        [[nodiscard]]
+        std::unique_ptr<IAstInternalFieldType> clone() const override
+        {
+            auto element_clone = this->_element_type
+                                     ? this->_element_type->clone()
+                                     : nullptr;
+
+            return std::make_unique<AstArrayType>(
+                this->source,
+                this->source_offset,
+                this->scope,
+                std::move(element_clone),
+                this->_initial_length
+            );
+        }
+
+        IAstInternalFieldType* get_element_type() const { return this->_element_type.get(); }
+
+        [[nodiscard]]
+        size_t get_initial_length() const { return this->_initial_length; }
+
+        std::string to_string() override
+        {
+            return std::format("Array[{}]", this->_element_type->to_string());
+        }
+
+        [[nodiscard]]
+        std::string get_internal_name() override
+        {
+            return std::format("[{}]", this->_element_type->get_internal_name());
+        }
+
+        bool operator==(IAstInternalFieldType& other) override
+        {
+            if (const auto* other_array = dynamic_cast<AstArrayType*>(&other))
+            {
+                // Length here doesn't matter; merely the types should be the same.
+                return *this->_element_type == *other_array->_element_type;
+            }
+            return false;
+        }
+
+        bool operator!=(IAstInternalFieldType& other) override
+        {
+            return !(*this == other);
+        }
+    };
+
+
+    std::unique_ptr<IAstInternalFieldType> parse_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         const std::string& error,
@@ -246,13 +330,13 @@ namespace stride::ast
      */
     size_t ast_type_to_internal_id(IAstInternalFieldType* type);
 
-    std::optional<std::unique_ptr<AstPrimitiveFieldType>> parse_primitive_type_optional(
+    std::optional<std::unique_ptr<IAstInternalFieldType>> parse_primitive_type_optional(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE
     );
 
-    std::optional<std::unique_ptr<AstNamedValueType>> parse_named_type_optional(
+    std::optional<std::unique_ptr<IAstInternalFieldType>> parse_named_type_optional(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE

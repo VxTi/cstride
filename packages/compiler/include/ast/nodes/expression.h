@@ -7,6 +7,8 @@
 
 namespace stride::ast
 {
+    class AstLiteral;
+
     enum class BinaryOpType
     {
         ADD,
@@ -85,6 +87,34 @@ namespace stride::ast
         bool is_reducible() override { return false; };
 
         IAstNode* reduce() override { return this; };
+    };
+
+    class AstArray
+        : public AstExpression
+    {
+        std::vector<std::unique_ptr<AstExpression>> _elements;
+
+    public:
+        explicit AstArray(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const std::shared_ptr<SymbolRegistry>& scope,
+            std::vector<std::unique_ptr<AstExpression>> elements
+        ) : AstExpression(source, source_offset, scope), _elements(std::move(elements)) {}
+
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<AstExpression>>& get_elements() const { return this->_elements; }
+
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
+
+        void validate() override;
+
+        std::string to_string() override;
     };
 
     class AstIdentifier
@@ -533,5 +563,30 @@ namespace stride::ast
     std::unique_ptr<IAstInternalFieldType> infer_expression_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         AstExpression* expr
+    );
+
+    std::unique_ptr<IAstInternalFieldType> infer_array_member_type(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        AstArray* array
+    );
+
+    std::unique_ptr<IAstInternalFieldType> resolve_unary_op_type(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        const AstUnaryOp* operation
+    );
+
+    std::unique_ptr<IAstInternalFieldType> infer_binary_arithmetic_op_type(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        const AstBinaryArithmeticOp* operation
+    );
+
+    std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        AstLiteral* literal
+    );
+
+    std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        const AstFunctionCall* fn_call
     );
 }

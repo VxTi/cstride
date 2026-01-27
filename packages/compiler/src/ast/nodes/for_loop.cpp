@@ -59,6 +59,8 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     auto header_body = header_body_opt.value();
     const auto for_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::BLOCK);
 
+    // We can potentially parse a for (<identifier> .. <identifier> { ... }
+
 
     auto initiator = try_collect_initiator(for_scope, header_body);
     auto condition = try_collect_condition(for_scope, header_body);
