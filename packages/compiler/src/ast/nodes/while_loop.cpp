@@ -35,8 +35,8 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
     auto body = parse_block(scope, set);
 
     return std::make_unique<AstWhileLoop>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         std::move(condition),
         std::move(body)
@@ -64,10 +64,11 @@ llvm::Value* AstWhileLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope,
         if (condValue == nullptr)
         {
             throw parsing_error(
-                make_ast_error(
-                    *this->source,
-                    this->source_offset,
-                    "Failed to codegen loop condition"
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::RUNTIME_ERROR,
+                    "Failed to codegen loop condition",
+                    this->get_source_position()
                 )
             );
         }

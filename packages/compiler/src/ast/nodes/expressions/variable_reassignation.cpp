@@ -20,14 +20,15 @@ bool AstVariableReassignment::is_reducible()
 
 void AstVariableReassignment::validate()
 {
-    const auto identifier_def = this->scope->field_lookup(this->get_variable_name());
+    const auto identifier_def = this->get_registry()->field_lookup(this->get_variable_name());
     if (!identifier_def)
     {
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Unable to reassign variable, variable '{}' not found", this->get_variable_name())
+            make_source_error(
+                *this->get_source(),
+                ErrorType::SEMANTIC_ERROR,
+                std::format("Unable to reassign variable, variable '{}' not found", this->get_variable_name()),
+                this->get_source_position()
             )
         );
     }
@@ -37,21 +38,22 @@ void AstVariableReassignment::validate()
     if (!identifier_def->get_type()->is_mutable())
     {
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Variable '{}' is immutable and cannot be reassigned", this->get_variable_name())
+            make_source_error(
+                *this->get_source(),
+                ErrorType::SEMANTIC_ERROR,
+                std::format("Variable '{}' is immutable and cannot be reassigned", this->get_variable_name()),
+                this->get_source_position()
             )
         );
     }
 
-    const auto expression_type = infer_expression_type(this->scope, this->get_value());
+    const auto expression_type = infer_expression_type(this->get_registry(), this->get_value());
 
     /*if (identifier_def->get_type() != expression_type.get())
     {
         throw parsing_error(
             make_ast_error(
-                *this->source,
+                *this->get_source,
                 this->source_offset,
                 std::format(
                     "Type mismatch when reassigning variable '{}', expected type '{}', got type '{}'",
@@ -73,9 +75,9 @@ IAstNode* AstVariableReassignment::reduce()
         if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced); reduced_expr != nullptr)
         {
             return new AstVariableReassignment(
-                this->source,
-                this->source_offset,
-                scope,
+                this->get_source(),
+                this->get_source_position(),
+                this->get_registry(),
                 this->get_variable_name(),
                 this->get_internal_name(),
                 this->get_operator(),
@@ -213,7 +215,7 @@ bool is_variable_mutative_token(const TokenType type)
 
 MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const Token& token)
 {
-    switch (token.type)
+    switch (token.get_type())
     {
     case TokenType::EQUALS:
         return MutativeAssignmentType::ASSIGN;
@@ -253,7 +255,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     {
         const auto reference_token = set.peak_next();
 
-        std::string reassignment_iden_name = reference_token.lexeme;
+        std::string reassignment_iden_name = reference_token.get_lexeme();
         auto reassign_internal_variable_name = scope->field_lookup(reassignment_iden_name);
 
         if (!reassign_internal_variable_name)
@@ -275,7 +277,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
                 offset += 2;
                 const auto accessor_token = set.peak(offset + 1);
 
-                const auto accessor_internal_name_def = scope->get_variable_def(accessor_token.lexeme);
+                const auto accessor_internal_name_def = scope->get_variable_def(accessor_token.get_lexeme());
 
                 if (!accessor_internal_name_def)
                 {
@@ -285,7 +287,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 
                 const std::string accessor_internal_name = accessor_internal_name_def->get_internal_symbol_name();
 
-                reassignment_iden_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.lexeme;
+                reassignment_iden_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.get_lexeme();
                 reassign_internal_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_internal_name;
             }
             else break;
@@ -298,7 +300,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 
         const auto mutative_token = set.peak(offset);
 
-        if (!is_variable_mutative_token(mutative_token.type))
+        if (!is_variable_mutative_token(mutative_token.get_type()))
         {
             return std::nullopt;
         }
@@ -311,8 +313,8 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
         auto expression = parse_standalone_expression(scope, set);
 
         return std::make_unique<AstVariableReassignment>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
             reassignment_iden_name,
             reassign_internal_name,

@@ -2,6 +2,7 @@
 
 #include <regex>
 #include <utility>
+#include "files.h"
 
 #define TOKEN(type, pattern) { TokenDefinition(type, std::regex(pattern)) }
 
@@ -321,27 +322,35 @@ namespace stride::ast
 
     class Token
     {
+        SourcePosition _position;
+        std::string _lexeme{};
+        TokenType _type;
+
     public:
-        const TokenType type;
-        const size_t offset;
-        const std::string lexeme{};
-
-
-        explicit Token(
+        explicit  Token(
             const TokenType type,
-            const size_t offset,
+            SourcePosition position,
             std::string lexeme
-        ) : type(type),
-            offset(offset),
-            lexeme(std::move(lexeme)) {}
+        ) : _position(std::move(position)),
+            _lexeme(std::move(lexeme)),
+            _type(type) {}
+
+        [[nodiscard]]
+        const TokenType& get_type() const { return _type; }
+
+        [[nodiscard]]
+        const std::string& get_lexeme() const { return _lexeme; }
+
+        [[nodiscard]]
+        const SourcePosition& get_source_position() const { return _position; }
 
         bool operator ==(const TokenType& other) const
         {
-            return type == other;
+            return _type == other;
         }
     };
 
     extern std::vector<TokenDefinition> tokenTypes;
 
-    static auto END_OF_FILE = Token(TokenType::END_OF_FILE, -1, "\0");
+    static auto END_OF_FILE = Token(TokenType::END_OF_FILE, {static_cast<size_t>(-1), 0}, "\0");
 }

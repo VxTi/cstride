@@ -20,13 +20,13 @@ namespace stride::ast
     public:
         AstForLoop(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> initiator,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstExpression> increment,
             std::unique_ptr<AstBlock> body
-        ) : IAstNode(source, source_offset, scope),
+        ) : IAstNode(source, source_position, scope),
             _body(std::move(body)),
             _initializer(std::move(initiator)),
             _condition(std::move(condition)),

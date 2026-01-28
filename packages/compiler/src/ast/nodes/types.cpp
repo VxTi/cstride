@@ -60,13 +60,13 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
 
     std::optional<std::unique_ptr<AstPrimitiveFieldType>> result = std::nullopt;
 
-    switch (set.peak(offset).type)
+    switch (set.peak(offset).get_type())
     {
     case TokenType::PRIMITIVE_INT8:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::INT8,
                 1,
@@ -77,8 +77,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_INT16:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::INT16,
                 2,
@@ -89,8 +89,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_INT32:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::INT32,
                 4,
@@ -101,8 +101,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_INT64:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::INT64,
                 8,
@@ -113,8 +113,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_UINT8:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::UINT8,
                 1,
@@ -125,8 +125,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_UINT16:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::UINT16,
                 2,
@@ -137,8 +137,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_UINT32:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::UINT32,
                 4,
@@ -149,8 +149,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_UINT64:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::UINT64,
                 8,
@@ -161,8 +161,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_FLOAT32:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::FLOAT32,
                 4,
@@ -173,8 +173,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_FLOAT64:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::FLOAT64,
                 8,
@@ -185,8 +185,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_BOOL:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::BOOL,
                 1,
@@ -197,8 +197,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_CHAR:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::CHAR,
                 1,
@@ -209,8 +209,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_STRING:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::STRING,
                 1,
@@ -221,8 +221,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     case TokenType::PRIMITIVE_VOID:
         {
             result = std::make_unique<AstPrimitiveFieldType>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 PrimitiveType::VOID,
                 0,
@@ -244,9 +244,9 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
             set.skip(2);
 
             return std::make_unique<AstArrayType>(
-                result.value()->source,
-                result.value()->source_offset,
-                result.value()->scope,
+                result.value()->get_source(),
+                result.value()->get_source_position(),
+                result.value()->get_registry(),
                 std::move(result.value()),
                 0
             );
@@ -270,16 +270,16 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_t
         set.next();
         context_type_flags |= SRFLAG_TYPE_PTR;
     }
-    if (set.peak_next().type != TokenType::IDENTIFIER)
+    if (set.peak_next().get_type() != TokenType::IDENTIFIER)
     {
         return std::nullopt;
     }
 
-    const auto name = set.next().lexeme;
+    const auto name = set.next().get_lexeme();
 
     auto named_type = std::make_unique<AstNamedValueType>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         name,
         context_type_flags
@@ -292,8 +292,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_t
         set.skip(2);
 
         return std::make_unique<AstArrayType>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
             std::move(named_type),
             0
@@ -338,10 +338,11 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         if (!element_type)
         {
             throw parsing_error(
-                make_ast_error(
-                    *array->source,
-                    array->source_offset,
-                    "Unable to resolve internal type for array element"
+                make_source_error(
+                    *array->get_source(),
+                    ErrorType::RUNTIME_ERROR,
+                    "Unable to resolve internal type for array element",
+                    array->get_source_position()
                 )
             );
         }
@@ -396,11 +397,10 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         {
             throw parsing_error(
                 make_source_error(
-                    *custom->source,
+                    *custom->get_source(),
                     ErrorType::RUNTIME_ERROR,
                     std::format("Custom type '{}' not found", custom->name()),
-                    custom->source_offset,
-                    custom->name().length()
+                    custom->get_source_position()
                 )
             );
         }
@@ -426,10 +426,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
     if ((lhs_named && rhs_primitive) || (lhs_primitive && rhs_named))
     {
         throw parsing_error(
-            make_ast_error(
-                *lhs->source,
-                lhs->source_offset,
-                "Cannot mix primitive type with named type"
+            make_source_error(
+                *lhs->get_source(),
+                ErrorType::TYPE_ERROR,
+                "Cannot mix primitive type with named type",
+                lhs->get_source_position()
             )
         );
     }
@@ -438,10 +439,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
     if (!lhs_primitive || !rhs_primitive)
     {
         throw parsing_error(
-            make_ast_error(
-                *lhs->source,
-                lhs->source_offset,
-                "Cannot compute dominant type for non-primitive types"
+            make_source_error(
+                *lhs->get_source(),
+                ErrorType::TYPE_ERROR,
+                "Cannot compute dominant type for non-primitive types",
+                lhs->get_source_position()
             )
         );
     }
@@ -473,8 +475,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
         if (rhs_primitive->byte_size() > lhs_primitive->byte_size())
         {
             return std::make_unique<AstPrimitiveFieldType>(
-                lhs_primitive->source,
-                lhs_primitive->source_offset,
+                lhs_primitive->get_source(),
+                lhs_primitive->get_source_position(),
                 scope,
                 PrimitiveType::FLOAT64,
                 rhs_primitive->byte_size(),
@@ -488,15 +490,13 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
 
     const std::vector references = {
         error_source_reference_t{
-            .source  = *rhs->source,
-            .offset  = lhs->source_offset,
-            .length  = lhs->to_string().size(),
+            .source  = *rhs->get_source(),
+            .source_position = lhs->get_source_position(),
             .message = lhs->to_string()
         },
         error_source_reference_t{
-            .source  = *rhs->source,
-            .offset  = rhs->source_offset,
-            .length  = rhs->get_internal_name().size(),
+            .source  = *rhs->get_source(),
+            .source_position = rhs->get_source_position(),
             .message = rhs->get_internal_name()
         }
     };

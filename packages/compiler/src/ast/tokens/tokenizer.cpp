@@ -44,7 +44,13 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                     std::string raw_val = src.substr(string_start, length);
                     std::string val = escape_string(raw_val);
 
-                    tokens.emplace_back(TokenType::STRING_LITERAL, string_start - 1, val);
+                    tokens.push_back(
+                        Token(
+                            TokenType::STRING_LITERAL,
+                            SourcePosition(string_start - 1, length),
+                            val
+                        )
+                    );
 
                     is_string = false;
                 }
@@ -86,7 +92,11 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
             )
             {
                 std::string value = match.str(0);
-                tokens.emplace_back(tokenDefinition.type, i, value);
+                tokens.emplace_back(
+                    tokenDefinition.type,
+                    SourcePosition(i, value.length()),
+                    value
+                );
 
                 i += value.length();
                 matched = true;
@@ -101,7 +111,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                     *source_file,
                     ErrorType::SYNTAX_ERROR,
                     "Unexpected character encountered",
-                    i, 1
+                    SourcePosition(i, 1)
                 )
             );
         }

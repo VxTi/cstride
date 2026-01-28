@@ -14,7 +14,7 @@ std::unique_ptr<AstStructMember> parse_struct_member(
 )
 {
     const auto struct_member_name_tok = set.expect(TokenType::IDENTIFIER, "Expected struct member name");
-    const auto struct_member_name = struct_member_name_tok.lexeme;
+    const auto struct_member_name = struct_member_name_tok.get_lexeme();
 
     set.expect(TokenType::COLON);
 
@@ -25,8 +25,8 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     scope->define_field(struct_member_name, struct_member_name, struct_member_type->clone());
 
     return std::make_unique<AstStructMember>(
-        set.source(),
-        struct_member_name_tok.offset,
+        set.get_source(),
+        struct_member_name_tok.get_source_position(),
         scope,
         struct_member_name,
         std::move(struct_member_type)
@@ -50,7 +50,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
     const auto struct_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");
-    const auto struct_name = struct_name_tok.lexeme;
+    const auto struct_name = struct_name_tok.get_lexeme();
 
     // Might be a reference to another type
     // This will parse a definition like:
@@ -66,8 +66,8 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         scope->define_struct(struct_name, reference_sym->get_internal_name());
 
         return std::make_unique<AstStruct>(
-            tokens.source(),
-            reference_token.offset,
+            tokens.get_source(),
+            reference_token.get_source_position(),
             scope,
             struct_name,
             std::move(reference_sym)
@@ -106,8 +106,8 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     scope->define_struct(struct_name, std::move(fields));
 
     return std::make_unique<AstStruct>(
-        tokens.source(),
-        reference_token.offset,
+        tokens.get_source(),
+        reference_token.get_source_position(),
         scope,
         struct_name,
         std::move(members)
@@ -121,13 +121,16 @@ void AstStructMember::validate()
         // If it's not a primitive, it must be a struct, as we currently don't support other types.
         // TODO: Support enums
 
-        if (const auto member = this->scope->get_struct_def(non_primitive_type->get_internal_name()); member == nullptr)
+        if (const auto member = this->get_registry()->get_struct_def(non_primitive_type->get_internal_name());
+            member == nullptr)
         {
             throw parsing_error(
-                make_ast_error(
-                    *this->source,
-                    this->source_offset,
-                    std::format("Undefined struct type for member '{}'", this->get_name()))
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::TYPE_ERROR,
+                    std::format("Undefined struct type for member '{}'", this->get_name()),
+                    this->get_source_position()
+                )
             );
         }
     }
@@ -139,20 +142,20 @@ void AstStruct::validate()
     if (this->is_reference_type())
     {
         // Check whether we can find the other field
-        if (const auto reference = this->scope->get_struct_def(this->get_reference_type()->get_internal_name());
+        if (const auto reference = this->get_registry()->get_struct_def(this->get_reference_type()->get_internal_name())
+            ;
             reference == nullptr)
         {
             throw parsing_error(
                 make_source_error(
-                    *this->source,
+                    *this->get_source(),
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Unable to determine type of struct '{}': referenced struct type '{}' is undefined",
                         this->get_name(),
                         this->_reference.value()->get_internal_name()
                     ),
-                    this->_reference.value()->source_offset,
-                    this->_reference.value()->get_internal_name().length()
+                    this->_reference.value()->get_source_position()
                 )
             );
         }
@@ -226,21 +229,27 @@ llvm::Value* AstStruct::codegen(
 
         if (!ref_struct)
         {
-            throw parsing_error(make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Referenced struct type '{}' not found during codegen", ref_name)
-            ));
+            throw parsing_error(
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::RUNTIME_ERROR,
+                    std::format("Referenced struct type '{}' not found during codegen", ref_name),
+                    this->get_source_position()
+                )
+            );
         }
 
         // If the referenced struct is still opaque/incomplete, we cannot alias it yet.
         if (ref_struct->isOpaque())
         {
-            throw parsing_error(make_ast_error(
-                *this->source,
-                this->source_offset,
-                std::format("Referenced struct type '{}' is not fully defined", ref_name)
-            ));
+            throw parsing_error(
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::TYPE_ERROR,
+                    std::format("Referenced struct type '{}' is not fully defined", ref_name),
+                    this->get_source_position()
+                )
+            );
         }
 
         member_types = ref_struct->elements();
@@ -256,12 +265,15 @@ llvm::Value* AstStruct::codegen(
             {
                 // Note: If you support pointers to self (recursive structs), usually
                 // you would find the opaque type created in step 1 here.
-                throw parsing_error(make_ast_error(
-                    *this->source,
-                    member->source_offset,
-                    std::format("Unknown internal type '{}' for struct member '{}'",
-                                member->get_type().get_internal_name(), member->get_name())
-                ));
+                throw parsing_error(
+                    make_source_error(
+                        *this->get_source(),
+                        ErrorType::TYPE_ERROR,
+                        std::format("Unknown internal type '{}' for struct member '{}'",
+                                    member->get_type().get_internal_name(), member->get_name()),
+                        member->get_source_position()
+                    )
+                );
             }
 
             member_types.push_back(llvm_type);

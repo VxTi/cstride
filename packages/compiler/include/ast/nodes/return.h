@@ -15,18 +15,22 @@ namespace stride::ast
     public:
         explicit AstReturn(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<IAstNode> value
         )
             :
-            IAstNode(source, source_offset, scope),
+            IAstNode(source, source_position, scope),
             _value(std::move(value)) {}
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
-                             llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
 
         [[nodiscard]]

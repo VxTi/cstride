@@ -8,14 +8,14 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optio
     TokenSet& set
 )
 {
-    if (const auto reference_token = set.peak_next(); reference_token.type == TokenType::CHAR_LITERAL)
+    if (const auto reference_token = set.peak_next(); reference_token.get_type() == TokenType::CHAR_LITERAL)
     {
         const auto next = set.next();
-        const char value = next.lexeme[0];
+        const char value = next.get_lexeme()[0];
 
         return std::make_unique<AstCharLiteral>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
             value
         );

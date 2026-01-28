@@ -87,7 +87,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
 
     while (set.has_next())
     {
-        if (should_skip_token(set.peak_next().type))
+        if (should_skip_token(set.peak_next().get_type()))
         {
             set.next();
             continue;
@@ -100,8 +100,8 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
     }
 
     return std::make_unique<AstBlock>(
-        set.source(),
-        initial_token.offset,
+        set.get_source(),
+        initial_token.get_source_position(),
         scope,
         std::move(nodes)
     );

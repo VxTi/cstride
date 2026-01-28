@@ -17,12 +17,12 @@ namespace stride::ast
     public:
         explicit AstIfStatement(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<AstBlock> else_body
-        ) : IAstNode(source, source_offset, scope),
+        ) : IAstNode(source, source_position, scope),
             _condition(std::move(condition)),
             _body(std::move(body)),
             _else_body(std::move(else_body)) {}

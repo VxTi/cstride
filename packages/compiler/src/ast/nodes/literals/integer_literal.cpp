@@ -12,13 +12,13 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
 {
     const auto reference_token = set.peak_next();
 
-    switch (const auto type = reference_token.type)
+    switch (const auto type = reference_token.get_type())
     {
     case TokenType::INTEGER_LITERAL:
     case TokenType::LONG_INTEGER_LITERAL:
     case TokenType::HEX_LITERAL:
         {
-            const std::string input = reference_token.lexeme;
+            const std::string input = reference_token.get_lexeme();
             set.skip(1);
 
 
@@ -29,13 +29,13 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
                     ? std::stoll(input)
                     : std::stoi(input);
             const short bit_count =
-                reference_token.type == TokenType::LONG_INTEGER_LITERAL
+                reference_token.get_type() == TokenType::LONG_INTEGER_LITERAL
                     ? 64
                     : INFER_INT_BIT_COUNT(value);
 
             return std::make_unique<AstIntLiteral>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 value,
                 bit_count

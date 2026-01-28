@@ -134,7 +134,8 @@ void AstVariableDeclaration::validate()
 
     init_val->validate();
 
-    const std::unique_ptr<IAstInternalFieldType> internal_expr_type = infer_expression_type(this->scope, init_val);
+    const std::unique_ptr<IAstInternalFieldType> internal_expr_type = infer_expression_type(
+        this->get_registry(), init_val);
     const auto lhs_type = this->get_variable_type();
     const auto rhs_type = internal_expr_type.get();
 
@@ -147,16 +148,14 @@ void AstVariableDeclaration::validate()
 
         const std::vector references = {
             error_source_reference_t{
-                .source  = *this->source,
-                .offset  = this->source_offset,
-                .length  = lhs_type->source_offset + lhs_type_str.size() - this->source_offset,
-                .message = lhs_type_str
+                .source          = *this->get_source(),
+                .source_position = this->get_source_position(),
+                .message         = lhs_type_str
             },
             error_source_reference_t{
-                .source  = *this->source,
-                .offset  = init_val->source_offset,
-                .length  = init_val_str.size(),
-                .message = rhs_type_str
+                .source          = *this->get_source(),
+                .source_position = init_val->get_source_position(),
+                .message         = rhs_type_str
             }
         };
 
@@ -172,7 +171,6 @@ void AstVariableDeclaration::validate()
             )
         );
     }
-
 }
 
 bool AstVariableDeclaration::is_reducible()
@@ -202,9 +200,9 @@ IAstNode* AstVariableDeclaration::reduce()
         if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced_value); reduced_expr != nullptr)
         {
             return std::make_unique<AstVariableDeclaration>(
-                this->source,
-                this->source_offset,
-                scope,
+                this->get_source(),
+                this->get_source_position(),
+                this->get_registry(),
                 this->get_variable_name(),
                 this->get_internal_name(),
                 std::move(cloned_type),
@@ -248,7 +246,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
 
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
-    const auto variable_name = variable_name_tok.lexeme;
+    const auto variable_name = variable_name_tok.get_lexeme();
     set.expect(TokenType::COLON);
     auto variable_type = parse_type(scope, set, "Expected variable type after variable name", flags);
 
@@ -275,8 +273,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     );
 
     return std::make_unique<AstVariableDeclaration>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         variable_name,
         internal_name,

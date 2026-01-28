@@ -20,8 +20,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
     auto index_expression = parse_standalone_expression(scope, expression_block.value());
 
     return std::make_unique<AstArrayMemberAccessor>(
-        array_identifier->source,
-        array_identifier->source_offset,
+        array_identifier->get_source(),
+        array_identifier->get_source_position(),
         scope,
         std::move(array_identifier),
         std::move(index_expression)
@@ -30,27 +30,29 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
 
 void AstArrayMemberAccessor::validate()
 {
-    const auto index_accessor_type = infer_expression_type(this->scope, this->_index_accessor_expr.get());
+    const auto index_accessor_type = infer_expression_type(this->get_registry(), this->_index_accessor_expr.get());
 
     if (const auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(index_accessor_type.get()))
     {
         if (!primitive_type->is_integer_ty())
         {
             throw parsing_error(
-                make_ast_error(
-                    *this->source,
-                    this->source_offset,
-                    std::format("Array index accessor must be of type int, got '{}'", primitive_type->to_string())
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::SEMANTIC_ERROR,
+                    std::format("Array index accessor must be of type int, got '{}'", primitive_type->to_string()),
+                    this->get_source_position()
                 )
             );
         }
     }
 
     throw parsing_error(
-        make_ast_error(
-            *this->source,
-            this->source_offset,
-            "Array index accessor must be of type 'int', got '" + index_accessor_type->to_string() + "'"
+        make_source_error(
+            *this->get_source(),
+            ErrorType::SEMANTIC_ERROR,
+            "Array index accessor must be of type 'int', got '" + index_accessor_type->to_string() + "'",
+            this->get_source_position()
         )
     );
 }
@@ -62,7 +64,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    const auto array_iden_type = infer_expression_type(this->scope, this->_array_identifier.get());
+    const auto array_iden_type = infer_expression_type(this->get_registry(), this->_array_identifier.get());
 
     llvm::Value* base_ptr = this->_array_identifier->codegen(scope, module, context, builder);
     llvm::Value* index_val = this->_index_accessor_expr->codegen(scope, module, context, builder);
@@ -73,10 +75,11 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     if (!array_ty)
     {
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                "Array member accessor used on non-array type"
+            make_source_error(
+                *this->get_source(),
+                ErrorType::SEMANTIC_ERROR,
+                "Array member accessor used on non-array type",
+                this->get_source_position()
             )
         );
     }

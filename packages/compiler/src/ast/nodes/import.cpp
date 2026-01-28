@@ -7,7 +7,7 @@ using namespace stride::ast;
 
 bool stride::ast::is_import_statement(const TokenSet& tokens)
 {
-    return tokens.peak_next().type == TokenType::KEYWORD_USE;
+    return tokens.peak_next().get_type() == TokenType::KEYWORD_USE;
 }
 
 /**
@@ -22,14 +22,14 @@ bool stride::ast::is_import_statement(const TokenSet& tokens)
 std::string consume_import_module_base(TokenSet& tokens)
 {
     const auto base = tokens.expect(TokenType::IDENTIFIER);
-    std::vector<std::string> parts = {base.lexeme};
+    std::vector<std::string> parts = {base.get_lexeme()};
 
     while (tokens.peak(0) == TokenType::DOUBLE_COLON && tokens.peak(1) == TokenType::IDENTIFIER)
     {
         tokens.expect(TokenType::DOUBLE_COLON);
         const auto part = tokens.expect(TokenType::IDENTIFIER);
 
-        parts.push_back(part.lexeme);
+        parts.push_back(part.get_lexeme());
     }
 
     std::ostringstream imploded;
@@ -55,14 +55,14 @@ std::vector<std::string> consume_import_submodules(TokenSet& tokens)
     tokens.expect(TokenType::LBRACE);
     const auto first = tokens.expect(TokenType::IDENTIFIER, "Expected symbol in import list");
 
-    std::vector<std::string> submodules = {first.lexeme};
+    std::vector<std::string> submodules = {first.get_lexeme()};
 
     while (tokens.peak(0) == TokenType::COMMA && tokens.peak(1) == TokenType::IDENTIFIER)
     {
         tokens.expect(TokenType::COMMA);
         const auto submodule_iden = tokens.expect(TokenType::IDENTIFIER, "Expected symbol in import list");
 
-        submodules.push_back(submodule_iden.lexeme);
+        submodules.push_back(submodule_iden.get_lexeme());
     }
 
     tokens.expect(TokenType::RBRACE, "Expected closing brace after import list");
@@ -105,8 +105,8 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(const std::shared
 
 
     return std::make_unique<AstImport>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         dependency
     );

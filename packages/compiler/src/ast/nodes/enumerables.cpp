@@ -19,7 +19,7 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
 )
 {
     const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
-    auto member_sym = member_name_tok.lexeme;
+    auto member_sym = member_name_tok.get_lexeme();
 
     scope->define_symbol(member_sym, SymbolType::ENUM_MEMBER);
 
@@ -35,8 +35,8 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     tokens.expect(TokenType::COMMA, "Expected a comma after enum member value");
 
     return std::make_unique<AstEnumerableMember>(
-        tokens.source(),
-        member_name_tok.offset,
+        tokens.get_source(),
+        member_name_tok.get_source_position(),
         scope,
         std::move(member_sym),
         std::move(value.value())
@@ -75,7 +75,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_ENUM);
     const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
-    auto enumerable_name = enumerable_name_tok.lexeme;
+    auto enumerable_name = enumerable_name_tok.get_lexeme();
 
     scope->define_symbol(enumerable_name, SymbolType::ENUM);
 
@@ -97,8 +97,8 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     }
 
     return std::make_unique<AstEnumerable>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         std::move(members),
         enumerable_name

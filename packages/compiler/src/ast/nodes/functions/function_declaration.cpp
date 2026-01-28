@@ -176,7 +176,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     // Here we expect to receive the function name
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
-    const auto fn_name = fn_name_tok.lexeme;
+    const auto fn_name = fn_name_tok.get_lexeme();
 
     auto function_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::FUNCTION);
 
@@ -247,8 +247,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
 
     return std::make_unique<AstFunctionDeclaration>(
-        tokens.source(),
-        reference_token.offset,
+        tokens.get_source(),
+        reference_token.get_source_position(),
         scope,
         fn_name,
         internal_name,

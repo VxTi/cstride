@@ -70,8 +70,8 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     auto body = parse_block(for_scope, set);
 
     return std::make_unique<AstForLoop>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         for_scope,
         std::move(initiator),
         std::move(condition),
@@ -110,10 +110,11 @@ llvm::Value* AstForLoop::codegen(
         if (condValue == nullptr)
         {
             throw parsing_error(
-                make_ast_error(
-                    *this->source,
-                    this->source_offset,
-                    "Failed to codegen loop condition"
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::RUNTIME_ERROR,
+                    "Failed to codegen loop condition",
+                    this->get_source_position()
                 )
             );
         }

@@ -79,7 +79,7 @@ std::string AstFunctionCall::format_function_name() const
 
     for (const auto& arg : this->_arguments)
     {
-        const auto type = infer_expression_type(this->scope, arg.get());
+        const auto type = infer_expression_type(this->get_registry(), arg.get());
 
         arg_types.push_back(type->get_internal_name());
     }
@@ -115,11 +115,10 @@ llvm::Value* AstFunctionCall::codegen(
 
         throw parsing_error(
             make_source_error(
-                *this->source,
+                *this->get_source(),
                 ErrorType::RUNTIME_ERROR,
                 std::format("Function '{}' was not found in this scope", this->format_function_name()),
-                this->source_offset,
-                this->get_function_name().length(),
+                this->get_source_position(),
                 suggested_alternative
             )
         );
@@ -132,9 +131,11 @@ llvm::Value* AstFunctionCall::codegen(
         provided_arg_count < minimum_arg_count)
     {
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
+            make_source_error(
+                *this->get_source(),
+                ErrorType::RUNTIME_ERROR,
+                std::format("Incorrect arguments passed for function '{}'", this->get_function_name()),
+                this->get_source_position(),
                 std::format("Incorrect arguments passed for function '{}'", this->get_function_name())
             )
         );
@@ -169,7 +170,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
 )
 {
     const auto reference_token = set.next();
-    const auto candidate_function_name = reference_token.lexeme;
+    const auto candidate_function_name = reference_token.get_lexeme();
     auto function_parameter_set = collect_parenthesized_block(set);
 
     std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
@@ -206,8 +207,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     );
 
     return std::make_unique<AstFunctionCall>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         candidate_function_name,
         internal_fn_name,

@@ -20,12 +20,12 @@ namespace stride::ast
 
         explicit AstModule(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
             std::unique_ptr<AstBlock> body
         )
-            : IAstNode(source, source_offset, scope),
+            : IAstNode(source, source_position, scope),
               _name(std::move(name)),
               _body(std::move(body)) {}
 

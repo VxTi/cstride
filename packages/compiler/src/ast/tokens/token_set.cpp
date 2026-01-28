@@ -15,9 +15,11 @@ TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
         throw std::out_of_range("Invalid range for TokenSet copy");
     }
 
-    std::vector copied_tokens(this->_tokens.begin() + static_cast<std::ptrdiff_t>(offset),
-                              this->_tokens.begin() + static_cast<std::ptrdiff_t>(offset +
-                                  length));
+    std::vector copied_tokens(
+        this->_tokens.begin() + static_cast<std::ptrdiff_t>(offset),
+        this->_tokens.begin() + static_cast<std::ptrdiff_t>(offset +
+            length)
+    );
 
     return std::move(TokenSet(this->_source, copied_tokens));
 }
@@ -44,7 +46,7 @@ Token TokenSet::peak(const size_t offset) const
 
 TokenType TokenSet::peak_next_type() const
 {
-    return this->peak_next().type;
+    return this->peak_next().get_type();
 }
 
 Token TokenSet::peak_next() const
@@ -60,7 +62,7 @@ bool TokenSet::peak_next_eq(const TokenType type) const
 
 bool TokenSet::peak_eq(const TokenType type, const size_t offset) const
 {
-    return this->peak(offset).type == type;
+    return this->peak(offset).get_type() == type;
 }
 
 void TokenSet::skip(const size_t amount)
@@ -81,7 +83,7 @@ Token TokenSet::expect(const TokenType type)
         );
     }
 
-    if (const auto next_type = this->peak_next().type; next_type != type)
+    if (const auto next_type = this->peak_next().get_type(); next_type != type)
     {
         if (should_skip_token(next_type))
         {
@@ -114,7 +116,7 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
         );
     }
 
-    if (const auto next_type = this->peak_next().type; next_type != type)
+    if (const auto next_type = this->peak_next().get_type(); next_type != type)
     {
         if (should_skip_token(next_type))
         {
@@ -157,7 +159,7 @@ bool TokenSet::has_next() const
         && !this->peak_next_eq(TokenType::END_OF_FILE);
 }
 
-std::shared_ptr<stride::SourceFile> TokenSet::source() const
+std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
 {
     return this->_source;
 }
@@ -170,11 +172,10 @@ std::shared_ptr<stride::SourceFile> TokenSet::source() const
 {
     throw parsing_error(
         make_source_error(
-            *this->source(),
+            *this->get_source(),
             error_type,
             message,
-            token.offset,
-            token.lexeme.size()
+            token.get_source_position()
         )
     );
 }

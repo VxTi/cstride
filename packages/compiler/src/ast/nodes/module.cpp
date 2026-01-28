@@ -28,14 +28,14 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     const auto module_name = set.expect(
         TokenType::IDENTIFIER,
         "Expected module name after 'module' keyword"
-    ).lexeme;
+    ).get_lexeme();
 
     const auto module_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::MODULE);
     auto module_body = parse_block(module_scope, set);
 
     return std::make_unique<AstModule>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         module_name,
         std::move(module_body)

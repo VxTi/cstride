@@ -69,9 +69,9 @@ namespace stride::ast
     public:
         explicit AstExpression(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope
-        ) : IAstNode(source, source_offset, scope) {}
+        ) : IAstNode(source, source_position, scope) {}
 
         ~AstExpression() override = default;
 
@@ -97,10 +97,11 @@ namespace stride::ast
     public:
         explicit AstArray(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::vector<std::unique_ptr<AstExpression>> elements
-        ) : AstExpression(source, source_offset, scope), _elements(std::move(elements)) {}
+        ) : AstExpression(source, source_position, scope),
+            _elements(std::move(elements)) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstExpression>>& get_elements() const { return this->_elements; }
@@ -126,11 +127,11 @@ namespace stride::ast
     public:
         explicit AstIdentifier(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
             std::string internal_name
-        ) : AstExpression(source, source_offset, scope),
+        ) : AstExpression(source, source_position, scope),
             _name(std::move(name)),
             _internal_name(std::move(internal_name)) {}
 
@@ -162,11 +163,11 @@ namespace stride::ast
     public:
         explicit AstArrayMemberAccessor(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstIdentifier> array_identifier,
             std::unique_ptr<AstExpression> index
-        ) : AstExpression(source, source_offset, scope),
+        ) : AstExpression(source, source_position, scope),
             _array_identifier(std::move(array_identifier)),
             _index_accessor_expr(std::move(index)) {}
 
@@ -202,22 +203,22 @@ namespace stride::ast
     public:
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string function_name,
             std::string internal_name
-        ) : AstExpression(source, source_offset, scope),
+        ) : AstExpression(source, source_position, scope),
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
 
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string function_name,
             std::string internal_name,
             std::vector<std::unique_ptr<AstExpression>> arguments
-        ) : AstExpression(source, source_offset, scope),
+        ) : AstExpression(source, source_position, scope),
             _arguments(std::move(arguments)),
             _function_name(std::move(function_name)),
             _internal_name(std::move(internal_name)) {}
@@ -261,13 +262,13 @@ namespace stride::ast
     public:
         AstVariableDeclaration(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string variable_name,
             std::string internal_name,
             std::unique_ptr<IAstInternalFieldType> variable_type,
             std::unique_ptr<AstExpression> initial_value
-        ) : AstExpression(source, source_offset, scope),
+        ) : AstExpression(source, source_position, scope),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
             _variable_type(std::move(variable_type)),
@@ -318,11 +319,11 @@ namespace stride::ast
     public:
         AbstractBinaryOp(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> lsh,
             std::unique_ptr<AstExpression> rsh
-        ) : AstExpression(source, source_offset, scope),
+        ) : AstExpression(source, source_position, scope),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
 
@@ -341,18 +342,12 @@ namespace stride::ast
     public:
         AstBinaryArithmeticOp(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(
-                source,
-                source_offset,
-                scope,
-                std::move(left),
-                std::move(right)
-            ),
+        ) : AbstractBinaryOp(source, source_position, scope, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -380,18 +375,12 @@ namespace stride::ast
     public:
         AstLogicalOp(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(
-                source,
-                source_offset,
-                scope,
-                std::move(left),
-                std::move(right)
-            ),
+        ) : AbstractBinaryOp(source, source_position, scope, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -415,18 +404,12 @@ namespace stride::ast
     public:
         AstComparisonOp(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(
-                source,
-                source_offset,
-                scope,
-                std::move(left),
-                std::move(right)
-            ),
+        ) : AbstractBinaryOp(source, source_position, scope, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -452,12 +435,12 @@ namespace stride::ast
     public:
         AstUnaryOp(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
-        ) : AstExpression(source, source_offset, scope),
+        ) : AstExpression(source, source_position, scope),
             _op_type(op),
             _operand(std::move(operand)),
             _is_lsh(is_lsh) {}
@@ -471,9 +454,12 @@ namespace stride::ast
         [[nodiscard]]
         AstExpression& get_operand() const { return *this->_operand.get(); }
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                             llvm::LLVMContext& context,
-                             llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         bool is_reducible() override;
 
@@ -495,13 +481,13 @@ namespace stride::ast
     public:
         explicit AstVariableReassignment(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
             std::unique_ptr<AstExpression> value
-        ) : AstExpression(source, source_offset, scope),
+        ) : AstExpression(source, source_position, scope),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
             _value(std::move(value)),
@@ -541,12 +527,12 @@ namespace stride::ast
     public:
         explicit AstStructInitializer(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string struct_name,
             std::unordered_map<std::string, std::unique_ptr<AstExpression>> initializers
         ) :
-            AstExpression(source, source_offset, scope),
+            AstExpression(source, source_position, scope),
             _struct_name(std::move(struct_name)),
             _initializers(std::move(initializers)) {}
 

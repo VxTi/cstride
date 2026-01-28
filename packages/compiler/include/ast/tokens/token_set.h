@@ -73,7 +73,7 @@ namespace stride::ast
         bool has_next() const;
 
         [[nodiscard]]
-        std::shared_ptr<SourceFile> source() const;
+        std::shared_ptr<SourceFile> get_source() const;
 
         [[noreturn]]
         void throw_error(const Token& token, ErrorType error_type, const std::string& message) const;

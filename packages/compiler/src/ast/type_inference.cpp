@@ -14,14 +14,15 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_literal_typ
     if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            str->source, str->source_offset, scope, PrimitiveType::STRING, 1);
+            str->get_source(), str->get_source_position(), scope, PrimitiveType::STRING, 1
+        );
     }
 
     if (const auto* fp_lit = dynamic_cast<AstFpLiteral*>(literal))
     {
         auto type = fp_lit->bit_count() > 32 ? PrimitiveType::FLOAT64 : PrimitiveType::FLOAT32;
         return std::make_unique<AstPrimitiveFieldType>(
-            fp_lit->source, fp_lit->source_offset, scope, type, fp_lit->bit_count() / BITS_PER_BYTE
+            fp_lit->get_source(), fp_lit->get_source_position(), scope, type, fp_lit->bit_count() / BITS_PER_BYTE
         );
     }
 
@@ -32,8 +33,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_literal_typ
                         : (int_lit->bit_count() > 32 ? PrimitiveType::UINT64 : PrimitiveType::UINT32);
 
         return std::make_unique<AstPrimitiveFieldType>(
-            int_lit->source,
-            int_lit->source_offset,
+            int_lit->get_source(),
+            int_lit->get_source_position(),
             scope,
             type,
             int_lit->bit_count() / BITS_PER_BYTE,
@@ -44,19 +45,24 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_literal_typ
     if (const auto* char_lit = dynamic_cast<AstCharLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            char_lit->source, char_lit->source_offset, scope, PrimitiveType::CHAR, char_lit->bit_count()
+            char_lit->get_source(), char_lit->get_source_position(), scope, PrimitiveType::CHAR, char_lit->bit_count()
         );
     }
 
     if (const auto* bool_lit = dynamic_cast<AstBooleanLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            bool_lit->source, bool_lit->source_offset, scope, PrimitiveType::BOOL, bool_lit->bit_count()
+            bool_lit->get_source(), bool_lit->get_source_position(), scope, PrimitiveType::BOOL, bool_lit->bit_count()
         );
     }
 
     throw std::runtime_error(
-        make_ast_error(*literal->source, literal->source_offset, "Unable to resolve expression literal type")
+        make_source_error(
+            *literal->get_source(),
+            ErrorType::TYPE_ERROR,
+            "Unable to resolve expression literal type",
+            literal->get_source_position()
+        )
     );
 }
 
@@ -79,13 +85,14 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_function_call_return_t
     }
 
     throw parsing_error(
-        make_ast_error(
-            *fn_call->source,
-            fn_call->source_offset,
+        make_source_error(
+            *fn_call->get_source(),
+            ErrorType::TYPE_ERROR,
             std::format(
                 "Unable to resolve function invocation return type for function '{}'",
                 fn_call->get_function_name()
-            )
+            ),
+            fn_call->get_source_position()
         )
     );
 }
@@ -129,15 +136,20 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
         if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
         {
             return std::make_unique<AstPrimitiveFieldType>(
-                prim->source, prim->source_offset, scope,
-                prim->type(), prim->byte_size(),
+                prim->get_source(),
+                prim->get_source_position(),
+                scope,
+                prim->type(),
+                prim->byte_size(),
                 flags
             );
         }
         if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
         {
             return std::make_unique<AstNamedValueType>(
-                named->source, named->source_offset, scope,
+                named->get_source(),
+                named->get_source_position(),
+                scope,
                 named->name(),
                 flags
             );
@@ -148,7 +160,12 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
         if (!type->is_pointer())
         {
             throw parsing_error(
-                make_ast_error(*operation->source, operation->source_offset, "Cannot dereference non-pointer type")
+                make_source_error(
+                    *operation->get_source(),
+                    ErrorType::TYPE_ERROR,
+                    "Cannot dereference non-pointer type",
+                    operation->get_source_position()
+                )
             );
         }
 
@@ -157,15 +174,20 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
         if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
         {
             return std::make_unique<AstPrimitiveFieldType>(
-                prim->source, prim->source_offset, scope,
-                prim->type(), prim->byte_size(),
+                prim->get_source(),
+                prim->get_source_position(),
+                scope,
+                prim->type(),
+                prim->byte_size(),
                 flags
             );
         }
         if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
         {
             return std::make_unique<AstNamedValueType>(
-                named->source, named->source_offset, scope,
+                named->get_source(),
+                named->get_source_position(),
+                scope,
                 named->name(),
                 flags
             );
@@ -174,7 +196,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
     else if (op_type == UnaryOpType::LOGICAL_NOT)
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            operation->source, operation->source_offset, scope, PrimitiveType::BOOL, 1
+            operation->get_source(),
+            operation->get_source_position(),
+            scope,
+            PrimitiveType::BOOL,
+            1
         );
     }
 
@@ -191,8 +217,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_array_member_type(
         // This is one of those cases where it's impossible to deduce the type
         // Therefore, we have an UNKNOWN type.
         return std::make_unique<AstPrimitiveFieldType>(
-            array->source,
-            array->source_offset,
+            array->get_source(),
+            array->get_source_position(),
             scope,
             PrimitiveType::UNKNOWN,
             8, // Always a pointer
@@ -209,8 +235,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_struct_initializer_typ
 )
 {
     return std::make_unique<AstNamedValueType>(
-        initializer->source,
-        initializer->source_offset,
+        initializer->get_source(),
+        initializer->get_source_position(),
         scope,
         initializer->get_struct_name()
     );
@@ -235,9 +261,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         if (!reference_variable)
         {
             throw parsing_error(
-                make_ast_error(
-                    *identifier->source, identifier->source_offset,
-                    std::format("Variable '{}' not found in scope", identifier->get_name())
+                make_source_error(
+                    *identifier->get_source(),
+                    ErrorType::SEMANTIC_ERROR,
+                    std::format("Variable '{}' not found in scope", identifier->get_name()),
+                    identifier->get_source_position()
                 )
             );
         }
@@ -259,7 +287,12 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
     {
         // TODO: Do some validation on lhs and rhs; cannot compare strings with one another (yet)
         return std::make_unique<AstPrimitiveFieldType>(
-            expr->source, expr->source_offset, scope, PrimitiveType::BOOL, 1, 0
+            expr->get_source(),
+            expr->get_source_position(),
+            scope,
+            PrimitiveType::BOOL,
+            1,
+            0
         );
     }
 
@@ -293,8 +326,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         auto member_type = infer_array_member_type(scope, array_expr);
 
         return std::make_unique<AstArrayType>(
-            array_expr->source,
-            array_expr->source_offset,
+            array_expr->get_source(),
+            array_expr->get_source_position(),
             scope,
             std::move(member_type),
             array_expr->get_elements().size()
@@ -318,11 +351,10 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
 
     throw parsing_error(
         make_source_error(
-            *expr->source,
+            *expr->get_source(),
             ErrorType::SEMANTIC_ERROR,
             "Unable to resolve expression type",
-            expr->source_offset,
-            expr->to_string().size()
+            expr->get_source_position()
         )
     );
 }

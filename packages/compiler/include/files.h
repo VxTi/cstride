@@ -10,15 +10,16 @@ namespace stride
         std::string source;
 
         SourceFile(std::string path, std::string source)
-            : path(std::move(path)), source(std::move(source))
-        {
-        }
+            : path(std::move(path)), source(std::move(source)) {}
     };
 
     struct SourcePosition
     {
-        const int offset;
-        const int length;
+        size_t offset;
+        size_t length;
+
+        SourcePosition(const size_t offset, const size_t length)
+            : offset(offset), length(length) {}
     };
 
     std::shared_ptr<SourceFile> read_file(const std::string& path);

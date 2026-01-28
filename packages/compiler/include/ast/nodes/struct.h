@@ -15,12 +15,12 @@ namespace stride::ast
     public:
         AstStructMember(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
             std::unique_ptr<IAstInternalFieldType> type
         ) :
-            IAstNode(source, source_offset, scope),
+            IAstNode(source, source_position, scope),
             _name(std::move(name)),
             _type(std::move(type)) {}
 
@@ -48,26 +48,26 @@ namespace stride::ast
         std::optional<std::unique_ptr<IAstInternalFieldType>> _reference;
 
     public:
-        AstStruct(
+        explicit AstStruct(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
             std::unique_ptr<IAstInternalFieldType> reference
         )
             :
-            IAstNode(source, source_offset, scope),
+            IAstNode(source, source_position, scope),
             _name(std::move(name)),
             _reference(std::move(reference)) {}
 
-        AstStruct(
+        explicit AstStruct(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
             std::vector<std::unique_ptr<AstStructMember>> members
         ) :
-            IAstNode(source, source_offset, scope),
+            IAstNode(source, source_position, scope),
             _name(std::move(name)),
             _members(std::move(members)),
             _reference(std::nullopt) {}

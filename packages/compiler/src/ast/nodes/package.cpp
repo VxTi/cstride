@@ -23,7 +23,7 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
 {
     const size_t initial_offset = set.position();
     const auto reference_token = set.expect(TokenType::KEYWORD_PACKAGE);
-    const auto package_name = set.expect(TokenType::IDENTIFIER, "Expected package name").lexeme;
+    const auto package_name = set.expect(TokenType::IDENTIFIER, "Expected package name").get_lexeme();
 
     if (initial_offset != 0)
     {
@@ -33,8 +33,8 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
     set.expect(TokenType::SEMICOLON, "Expected semicolon after package declaration");
 
     return std::make_unique<AstPackage>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         package_name
     );

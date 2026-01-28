@@ -7,7 +7,18 @@
 
 namespace stride::ast
 {
-    class AstSwitchBranch : public IAstNode {};
+    // TODO: Implement
+    class AstSwitchBranch
+        : public IAstNode
+    {
+    public:
+        AstSwitchBranch(
+            const std::shared_ptr<SourceFile>& source,
+            const SourcePosition source_position,
+            const std::shared_ptr<SymbolRegistry>& scope
+        )
+            : IAstNode(source, source_position, scope) {}
+    };
 
     class AstSwitch :
         public IAstNode,
@@ -19,16 +30,21 @@ namespace stride::ast
     public:
         explicit AstSwitch(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
-            std::string  name
+            std::string name
         )
-            : IAstNode(source, source_offset, scope),
+            : IAstNode(source, source_position, scope),
               _name(std::move(name)) {}
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         static bool can_parse(const TokenSet& tokens);
 

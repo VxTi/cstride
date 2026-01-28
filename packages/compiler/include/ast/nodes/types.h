@@ -42,11 +42,11 @@ namespace stride::ast
     public:
         IAstInternalFieldType(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             const int flags
         )
-            : IAstNode(source, source_offset, scope),
+            : IAstNode(source, source_position, scope),
               _flags(flags) {}
 
         ~IAstInternalFieldType() override = default;
@@ -97,13 +97,13 @@ namespace stride::ast
     public:
         explicit AstPrimitiveFieldType(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             const PrimitiveType type,
             const size_t byte_size,
             const int flags = SRFLAG_NONE
         ) :
-            IAstInternalFieldType(source, source_offset, scope, flags),
+            IAstInternalFieldType(source, source_position, scope, flags),
             _type(type),
             _byte_size(byte_size) {}
 
@@ -184,12 +184,12 @@ namespace stride::ast
     public:
         explicit AstNamedValueType(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
             const int flags = SRFLAG_NONE
         ) :
-            IAstInternalFieldType(source, source_offset, scope, flags),
+            IAstInternalFieldType(source, source_position, scope, flags),
             _name(std::move(name)) {}
 
         [[nodiscard]]
@@ -235,13 +235,13 @@ namespace stride::ast
     public:
         explicit AstArrayType(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<IAstInternalFieldType> element_type,
             const size_t initial_length
         ) : IAstInternalFieldType(
                 source,
-                source_offset,
+                source_position,
                 scope,
                 (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR
             ),
@@ -257,9 +257,9 @@ namespace stride::ast
                                      : nullptr;
 
             return std::make_unique<AstArrayType>(
-                this->source,
-                this->source_offset,
-                this->scope,
+                this->get_source(),
+                this->get_source_position(),
+                this->get_registry(),
                 std::move(element_clone),
                 this->_initial_length
             );

@@ -60,7 +60,7 @@ void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& 
     global_scope->define_function(
         "printf", {}, std::make_unique<ast::AstPrimitiveFieldType>(
             nullptr,
-            0,
+            SourcePosition(0, 0),
             global_scope,
             ast::PrimitiveType::INT32,
             32
@@ -71,7 +71,7 @@ void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& 
         "system_time_ns", {},
         std::make_unique<ast::AstPrimitiveFieldType>(
             nullptr,
-            0,
+            SourcePosition(0, 0),
             global_scope,
             ast::PrimitiveType::UINT64,
             64
@@ -81,7 +81,7 @@ void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& 
     global_scope->define_function(
         "system_time_us", {}, std::make_unique<ast::AstPrimitiveFieldType>(
             nullptr,
-            0,
+            SourcePosition(0, 0),
             global_scope,
             ast::PrimitiveType::UINT64,
             64
@@ -91,7 +91,7 @@ void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& 
     global_scope->define_function(
         "system_time_ms", {}, std::make_unique<ast::AstPrimitiveFieldType>(
             nullptr,
-            0,
+            SourcePosition(0, 0),
             global_scope,
             ast::PrimitiveType::UINT64,
             64

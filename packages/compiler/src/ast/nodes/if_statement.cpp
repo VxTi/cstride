@@ -28,8 +28,8 @@ std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<SymbolRegist
 
     // Otherwise, we can just parse_file it as a next statement.
     return std::make_unique<AstBlock>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         std::move(nodes)
     );
@@ -65,8 +65,8 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
         nodes.push_back(std::move(if_body_expr));
 
         auto if_body = std::make_unique<AstBlock>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             if_header_scope,
             std::move(nodes)
         );
@@ -80,8 +80,8 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
         auto else_statement = parse_else_optional(if_header_scope, set);
 
         return std::make_unique<AstIfStatement>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
             std::move(condition),
             std::move(if_body),
@@ -95,8 +95,8 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
     auto else_statement = parse_else_optional(scope, set);
 
     return std::make_unique<AstIfStatement>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         std::move(condition),
         std::move(body),
@@ -125,10 +125,11 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     if (this->get_condition() == nullptr)
     {
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                "If statement condition is empty"
+            make_source_error(
+                *this->get_source(),
+                ErrorType::TYPE_ERROR,
+                "If statement condition is empty",
+                this->get_source_position()
             )
         );
     }
@@ -136,10 +137,11 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     if (this->get_body() == nullptr)
     {
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                "If statement body is empty"
+            make_source_error(
+                *this->get_source(),
+                ErrorType::TYPE_ERROR,
+                "If statement body is empty",
+                this->get_source_position()
             )
         );
     }
@@ -150,10 +152,11 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     if (cond_value == nullptr)
     {
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                "Unable to generate condition value"
+            make_source_error(
+                *this->get_source(),
+                ErrorType::RUNTIME_ERROR,
+                "Unable to generate condition value",
+                this->get_source_position()
             )
         );
     }

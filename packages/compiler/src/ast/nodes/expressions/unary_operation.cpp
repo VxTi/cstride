@@ -53,15 +53,16 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
 
 void AstUnaryOp::validate()
 {
-    const auto operand_type = infer_expression_type(this->scope, this->_operand.get());
+    const auto operand_type = infer_expression_type(this->get_registry(), this->_operand.get());
 
     if (!operand_type)
     {
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                "Cannot infer type of operand"
+            make_source_error(
+                *this->get_source(),
+                ErrorType::TYPE_ERROR,
+                "Cannot infer type of operand",
+                this->get_source_position()
             )
         );
     }
@@ -70,11 +71,10 @@ void AstUnaryOp::validate()
     {
         throw parsing_error(
             make_source_error(
-                *this->source,
+                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 "Cannot modify immutable value",
-                this->source_offset,
-                unary_op_type_to_str(this->_op_type).length()
+                this->get_source_position()
             )
         );
     }
@@ -95,10 +95,11 @@ llvm::Value* AstUnaryOp::codegen(
         if (!identifier)
         {
             throw parsing_error(
-                make_ast_error(
-                    *this->source,
-                    this->source_offset,
-                    "Operand must be an identifier for this operation"
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::RUNTIME_ERROR,
+                    "Operand must be an identifier for this operation",
+                    this->get_source_position()
                 )
             );
         }
@@ -124,10 +125,11 @@ llvm::Value* AstUnaryOp::codegen(
         if (!var_addr)
         {
             throw parsing_error(
-                make_ast_error(
-                    *this->source,
-                    this->source_offset,
-                    std::format("Unknown variable '{}'", internal_name)
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::RUNTIME_ERROR,
+                    std::format("Unknown variable '{}'", internal_name),
+                    this->get_source_position()
                 )
             );
         }
@@ -150,10 +152,11 @@ llvm::Value* AstUnaryOp::codegen(
         else
         {
             throw parsing_error(
-                make_ast_error(
-                    *this->source,
-                    this->source_offset,
-                    std::format("Cannot determine type of variable '{}'", internal_name)
+                make_source_error(
+                    *this->get_source(),
+                    ErrorType::RUNTIME_ERROR,
+                    std::format("Cannot determine type of variable '{}'", internal_name),
+                    this->get_source_position()
                 )
             );
         }
@@ -214,10 +217,12 @@ llvm::Value* AstUnaryOp::codegen(
     case UnaryOpType::DEREFERENCE:
         // Requires type system to know what we are pointing to
         throw parsing_error(
-            make_ast_error(
-                *this->source,
-                this->source_offset,
-                "Dereference not implemented yet due to opaque pointers")
+            make_source_error(
+                *this->get_source(),
+                ErrorType::RUNTIME_ERROR,
+                "Dereference not implemented yet due to opaque pointers",
+                this->get_source_position()
+            )
         );
     default:
         return nullptr;
@@ -232,7 +237,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
     const auto next = set.peak_next();
 
     // Prefix Parsing
-    if (const auto op_type = get_unary_op_type(next.type); op_type.has_value())
+    if (const auto op_type = get_unary_op_type(next.get_type()); op_type.has_value())
     {
         set.next(); // Consume operator
 
@@ -254,8 +259,8 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         }
 
         return std::make_unique<AstUnaryOp>(
-            set.source(),
-            next.offset,
+            set.get_source(),
+            next.get_source_position(),
             scope,
             op_type.value(),
             std::move(distinct_expr),
@@ -268,10 +273,10 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
     // However, we can peek if we have Identifier -> PostfixOp
     if (set.peak_next_eq(TokenType::IDENTIFIER) && (
         // Check if the token AFTER identifier is ++ or --
-        set.peak(1).type == TokenType::DOUBLE_PLUS || set.peak(1).type == TokenType::DOUBLE_MINUS))
+        set.peak(1).get_type() == TokenType::DOUBLE_PLUS || set.peak(1).get_type() == TokenType::DOUBLE_MINUS))
     {
         const auto iden_tok = set.next();
-        const auto iden_name = iden_tok.lexeme;
+        const auto iden_name = iden_tok.get_lexeme();
 
         const auto operation_tok = set.next();
 
@@ -282,18 +287,18 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         }
         const auto internal_name = variable_def->get_internal_symbol_name();
 
-        UnaryOpType type = (operation_tok.type == TokenType::DOUBLE_PLUS)
+        UnaryOpType type = (operation_tok.get_type() == TokenType::DOUBLE_PLUS)
                                ? UnaryOpType::INCREMENT
                                : UnaryOpType::DECREMENT;
 
         return std::make_unique<AstUnaryOp>(
-            set.source(),
-            iden_tok.offset,
+            set.get_source(),
+            iden_tok.get_source_position(),
             scope,
             type,
             std::make_unique<AstIdentifier>(
-                set.source(),
-                next.offset,
+                set.get_source(),
+                next.get_source_position(),
                 scope,
                 iden_name,
                 internal_name

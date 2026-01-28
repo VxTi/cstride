@@ -19,8 +19,8 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared
     if (!set.has_next())
     {
         return std::make_unique<AstReturn>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
             nullptr
         );
@@ -29,8 +29,8 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared
     auto value = parse_standalone_expression(scope, set);
 
     return std::make_unique<AstReturn>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         std::move(value)
     );

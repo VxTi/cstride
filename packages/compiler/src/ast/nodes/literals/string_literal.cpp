@@ -11,15 +11,15 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_opt
     TokenSet& set
 )
 {
-    if (const auto reference_token = set.peak_next(); reference_token.type == TokenType::STRING_LITERAL)
+    if (const auto reference_token = set.peak_next(); reference_token.get_type() == TokenType::STRING_LITERAL)
     {
         const auto str_tok = set.next();
 
         return std::make_unique<AstStringLiteral>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
-            str_tok.lexeme
+            str_tok.get_lexeme()
         );
     }
     return std::nullopt;

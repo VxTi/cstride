@@ -18,8 +18,7 @@ namespace stride
     typedef struct
     {
         const SourceFile& source;
-        int offset;
-        size_t length;
+        const SourcePosition source_position;
         std::string message;
     }
     error_source_reference_t;
@@ -49,8 +48,7 @@ namespace stride
         const SourceFile& source_file,
         ErrorType error_type,
         const std::string& error,
-        size_t offset,
-        size_t length,
+        SourcePosition source_position,
         const std::string& suggestion = ""
     );
 

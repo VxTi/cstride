@@ -84,14 +84,13 @@ std::string stride::make_source_error(
     const SourceFile& source_file,
     const ErrorType error_type,
     const std::string& error,
-    const size_t offset,
-    const size_t length,
+    const SourcePosition source_position,
     const std::string& suggestion
 )
 {
     const auto error_type_str = error_type_to_string(error_type);
 
-    if (source_file.source.empty() || offset >= source_file.source.length())
+    if (source_file.source.empty() || source_position.offset >= source_file.source.length())
     {
         return std::format(
             "┃ in {}\n┃ {}\n┃ \x1b[31m{}\x1b[0m\n┃\n{}",
@@ -103,14 +102,14 @@ std::string stride::make_source_error(
     }
 
     // Find the start of the line
-    size_t line_start = offset;
+    size_t line_start = source_position.offset;
     while (line_start > 0 && line_start < source_file.source.length() && source_file.source[line_start - 1] != '\n')
     {
         line_start--;
     }
 
     // Find the end of the line
-    size_t line_end = offset;
+    size_t line_end = source_position.offset;
     while (line_end < source_file.source.length() && source_file.source[line_end] != '\n')
     {
         line_end++;
@@ -131,7 +130,7 @@ std::string stride::make_source_error(
 
     // Calculate column offset from line start
     const auto line_nr_str = std::to_string(line_number);
-    const size_t column_offset = offset - line_start + line_nr_str.length() - 1;
+    const size_t column_offset = source_position.offset - line_start + line_nr_str.length() - 1;
 
     // Calculate error length (currently just 1 character)
 
@@ -143,7 +142,7 @@ std::string stride::make_source_error(
         line_number,
         line_str,
         std::string(column_offset, ' '),
-        std::string(length, '^'),
+        std::string(source_position.length, '^'),
         suggestion.empty() ? "" : std::format("\n┃ {}", suggestion)
     );
 }
@@ -163,7 +162,7 @@ std::string stride::make_source_error(
     const auto& source_file = first_ref.source;
     const auto error_type_str = error_type_to_string(error_type);
 
-    if (first_ref.offset >= source_file.source.length())
+    if (first_ref.source_position.offset >= source_file.source.length())
     {
         return std::format(
             "┃ {} in {}\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
@@ -174,14 +173,14 @@ std::string stride::make_source_error(
     }
 
     // Find the start of the line
-    size_t line_start = first_ref.offset;
+    size_t line_start = first_ref.source_position.offset;
     while (line_start > 0 && line_start < source_file.source.length() && source_file.source[line_start - 1] != '\n')
     {
         line_start--;
     }
 
     // Find the end of the line
-    size_t line_end = first_ref.offset;
+    size_t line_end = first_ref.source_position.offset;
     while (line_end < source_file.source.length() && source_file.source[line_end] != '\n')
     {
         line_end++;
@@ -207,8 +206,8 @@ std::string stride::make_source_error(
 
     for (const auto& ref : references)
     {
-        if (ref.offset < line_start || ref.offset >= line_end) continue;
-        const size_t col_start = ref.offset - line_start;
+        if (ref.source_position.offset < line_start || ref.source_position.offset >= line_end) continue;
+        const size_t col_start = ref.source_position.offset - line_start;
         message_width = std::max(message_width, col_start + line_nr_width + 1 + ref.message.length());
     }
 
@@ -217,10 +216,10 @@ std::string stride::make_source_error(
 
     for (const auto& ref : references)
     {
-        if (ref.offset < line_start || ref.offset >= line_end) continue;
+        if (ref.source_position.offset < line_start || ref.source_position.offset >= line_end) continue;
 
-        const size_t col_start = ref.offset - line_start;
-        const size_t col_end = std::min(col_start + ref.length, line_str.length());
+        const size_t col_start = ref.source_position.offset - line_start;
+        const size_t col_end = std::min(col_start + ref.source_position.length, line_str.length());
         const size_t actual_length = col_end - col_start;
 
         // Add underline carets

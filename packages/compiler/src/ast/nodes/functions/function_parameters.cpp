@@ -15,9 +15,9 @@ void stride::ast::parse_variadic_fn_param(
 
     // Create a new parameter with the variadic flag
     parameters.push_back(std::make_unique<AstFunctionParameter>(
-        param->source,
-        param->source_offset,
-        param->scope,
+        param->get_source(),
+        param->get_source_position(),
+        param->get_registry(),
         param->get_name(),
         param->get_type()->clone()
     ));
@@ -37,15 +37,16 @@ void stride::ast::parse_subsequent_fn_params(
         if (parameters.size() > MAX_FUNCTION_PARAMETERS)
         {
             throw parsing_error(
-                make_ast_error(
-                    *set.source(),
-                    next.offset,
-                    "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters"
+                make_source_error(
+                    *set.get_source(),
+                    ErrorType::SYNTAX_ERROR,
+                    "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters",
+                    next.get_source_position()
                 )
             );
         }
 
-        if (next.type == TokenType::THREE_DOTS)
+        if (next.get_type() == TokenType::THREE_DOTS)
         {
             parse_variadic_fn_param(scope, set, parameters);
             if (!set.peak_next_eq(TokenType::RPAREN))
@@ -101,20 +102,20 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     }
 
     const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected a function parameter name");
-    const auto param_name = reference_token.lexeme;
+    const auto param_name = reference_token.get_lexeme();
     set.expect(TokenType::COLON);
 
     std::unique_ptr<IAstInternalFieldType> fn_param_type = parse_type(
         scope, set, "Expected function parameter type", flags
     );
 
-    scope->define_field(param_name, reference_token.lexeme, fn_param_type->clone());
+    scope->define_field(param_name, reference_token.get_lexeme(), fn_param_type->clone());
 
     return std::make_unique<AstFunctionParameter>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
-        reference_token.lexeme,
+        reference_token.get_lexeme(),
         std::move(fn_param_type)
     );
 }

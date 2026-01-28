@@ -7,7 +7,6 @@
 
 namespace stride::ast
 {
-
     typedef struct Dependency
     {
         std::string module_base;
@@ -22,10 +21,10 @@ namespace stride::ast
     public:
         explicit AstImport(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             const Dependency& dependency
-        ) : IAstNode(source, source_offset, scope),
+        ) : IAstNode(source, source_position, scope),
             _dependency(dependency) {}
 
         [[nodiscard]]

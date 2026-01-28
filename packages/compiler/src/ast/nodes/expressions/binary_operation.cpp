@@ -71,7 +71,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
     {
         const auto reference_token = set.peak_next();
         // First, we'll check if the next token is a binary operator
-        if (auto binary_op = get_binary_op_type(reference_token.type); binary_op.has_value())
+        if (auto binary_op = get_binary_op_type(reference_token.get_type()); binary_op.has_value())
         {
             const auto op = binary_op.value();
 
@@ -114,8 +114,8 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
             }
 
             lhs = std::make_unique<AstBinaryArithmeticOp>(
-                set.source(),
-                reference_token.offset,
+                set.get_source(),
+                reference_token.get_source_position(),
                 scope,
                 std::move(lhs),
                 binary_op.value(),

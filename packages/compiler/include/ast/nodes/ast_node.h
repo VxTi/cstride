@@ -31,25 +31,34 @@ namespace stride::ast
 
     class IAstNode
     {
-    public:
-        const std::shared_ptr<SourceFile> source;
-        const int source_offset;
-        const std::shared_ptr<SymbolRegistry> scope;
+        const std::shared_ptr<SourceFile> _source;
+        const SourcePosition _source_position;
+        const std::shared_ptr<SymbolRegistry> _scope;
 
+    public:
         explicit IAstNode(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope
         )
-            : source(source),
-              source_offset(source_offset),
-              scope(scope) {}
+            : _source(source),
+              _source_position(source_position),
+              _scope(scope) {}
 
         virtual ~IAstNode() = default;
 
         virtual std::string to_string() = 0;
 
         virtual void validate() {}
+
+        [[nodiscard]]
+        std::shared_ptr<SourceFile> get_source() const { return this->_source; }
+
+        [[nodiscard]]
+        std::shared_ptr<SymbolRegistry> get_registry() const { return this->_scope; }
+
+        [[nodiscard]]
+        SourcePosition get_source_position() const { return this->_source_position; }
     };
 
     class IReducible

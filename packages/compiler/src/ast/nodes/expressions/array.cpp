@@ -17,7 +17,7 @@ llvm::Value* AstArray::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    const auto resolved_type = infer_expression_type(this->scope, this);
+    const auto resolved_type = infer_expression_type(this->get_registry(), this);
 
     llvm::Type* llvm_array_type = internal_type_to_llvm_type(resolved_type.get(), module, context);
 

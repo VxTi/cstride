@@ -60,14 +60,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
     if (set.peak_next_eq(TokenType::IDENTIFIER))
     {
         /// Function invocations
-        if (set.peak(1).type == TokenType::LPAREN)
+        if (set.peak(1).get_type() == TokenType::LPAREN)
         {
             return parse_function_call(scope, set);
         }
 
         /// Regular identifier parsing; can be variable reference
         const auto reference_token = set.next();
-        std::string identifier_name = reference_token.lexeme;
+        std::string identifier_name = reference_token.get_lexeme();
         std::string internal_name;
 
         if (const auto variable_definition = scope->field_lookup(identifier_name);
@@ -77,8 +77,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         }
 
         auto identifier = std::make_unique<AstIdentifier>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
             identifier_name,
             internal_name
@@ -107,7 +107,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
 {
     const auto reference_token = set.peak_next();
 
-    if (auto logical_op = get_logical_op_type(reference_token.type); logical_op.has_value())
+    if (auto logical_op = get_logical_op_type(reference_token.get_type()); logical_op.has_value())
     {
         set.next();
 
@@ -118,8 +118,8 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
         }
 
         return std::make_unique<AstLogicalOp>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
             std::move(lhs),
             logical_op.value(),
@@ -127,7 +127,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
         );
     }
 
-    if (auto comparative_op = get_comparative_op_type(reference_token.type); comparative_op.has_value())
+    if (auto comparative_op = get_comparative_op_type(reference_token.get_type()); comparative_op.has_value())
     {
         set.next();
 
@@ -138,8 +138,8 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
         }
 
         return std::make_unique<AstComparisonOp>(
-            set.source(),
-            reference_token.offset,
+            set.get_source(),
+            reference_token.get_source_position(),
             scope,
             std::move(lhs),
             comparative_op.value(),
@@ -247,7 +247,7 @@ std::string stride::ast::parse_property_accessor_statement(
 )
 {
     const auto reference_token = set.expect(TokenType::IDENTIFIER);
-    auto identifier_name = reference_token.lexeme;
+    auto identifier_name = reference_token.get_lexeme();
 
     int iterations = 0;
     while (true)
@@ -256,7 +256,7 @@ std::string stride::ast::parse_property_accessor_statement(
         {
             set.next();
             const auto accessor_token = set.expect(TokenType::IDENTIFIER);
-            identifier_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.lexeme;
+            identifier_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.get_lexeme();
         }
         else break;
 

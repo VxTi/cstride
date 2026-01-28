@@ -28,7 +28,7 @@ std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initi
 
     auto member_expr = parse_inline_expression(scope, set);
 
-    return {member_iden.lexeme, std::move(member_expr)};
+    return {member_iden.get_lexeme(), std::move(member_expr)};
 }
 
 std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
@@ -76,10 +76,10 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     }
 
     return std::make_unique<AstStructInitializer>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
-        reference_token.lexeme,
+        reference_token.get_lexeme(),
         std::move(member_map)
     );
 }
@@ -108,17 +108,16 @@ StructSymbolDef* get_root_reference_struct_def(
 
 void AstStructInitializer::validate()
 {
-    const auto definition = get_root_reference_struct_def(this->scope, this->_struct_name);
+    const auto definition = get_root_reference_struct_def(this->get_registry(), this->_struct_name);
     // Check whether the struct we're trying to assign actually exists
     if (definition == nullptr)
     {
         throw parsing_error(
             make_source_error(
-                *this->source,
+                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 std::format("Struct '{}' does not exist", this->_struct_name),
-                this->source_offset,
-                this->_struct_name.length()
+                this->get_source_position()
             )
         );
     }
@@ -130,7 +129,7 @@ void AstStructInitializer::validate()
     {
         throw parsing_error(
             make_source_error(
-                *this->source,
+                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Too {} members found in struct '{}': expected {}, got {}",
@@ -138,8 +137,7 @@ void AstStructInitializer::validate()
                     this->_struct_name,
                     fields.size(), this->_initializers.size()
                 ),
-                this->source_offset,
-                this->_struct_name.length()
+                this->get_source_position()
             )
         );
     }
@@ -152,21 +150,21 @@ void AstStructInitializer::validate()
         {
             throw parsing_error(
                 make_source_error(
-                    *this->source,
+                    *this->get_source(),
                     ErrorType::TYPE_ERROR,
                     std::format("Struct '{}' has no member named '{}'", this->_struct_name, member_name),
-                    this->source_offset,
-                    member_name.length()
+                    this->get_source_position()
                 )
             );
         }
 
-        if (auto member_type = infer_expression_type(this->scope, member_expr.get()); *member_type != *found_member->
+        if (auto member_type = infer_expression_type(this->get_registry(), member_expr.get()); *member_type != *
+            found_member->
             second)
         {
             throw parsing_error(
                 make_source_error(
-                    *this->source,
+                    *this->get_source(),
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Type mismatch for member '{}' in struct '{}': expected '{}', got '{}'",
@@ -175,8 +173,7 @@ void AstStructInitializer::validate()
                         found_member->second->to_string(),
                         member_type->to_string()
                     ),
-                    found_member->second->source_offset,
-                    member_type->to_string().length()
+                    found_member->second->get_source_position()
                 )
             );
         }
@@ -216,11 +213,14 @@ llvm::Value* AstStructInitializer::codegen(
 
     if (!struct_type)
     {
-        throw parsing_error(make_ast_error(
-            *this->source,
-            this->source_offset,
-            std::format("Struct type '{}' is undefined", this->_struct_name)
-        ));
+        throw parsing_error(
+            make_source_error(
+                *this->get_source(),
+                ErrorType::RUNTIME_ERROR,
+                std::format("Struct type '{}' is undefined", this->_struct_name),
+                this->get_source_position()
+            )
+        );
     }
 
     // Generate the struct value

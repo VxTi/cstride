@@ -38,7 +38,7 @@ llvm::Value* AstBlock::codegen(const std::shared_ptr<SymbolRegistry>& scope, llv
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(this->scope, module, context, builder);
+            last_value = synthesisable->codegen(this->get_registry(), module, context, builder);
         }
     }
 
@@ -56,13 +56,13 @@ std::string AstBlock::to_string()
     return result.str();
 }
 
-std::optional<TokenSet> stride::ast::collect_until_token(TokenSet& set, TokenType token)
+std::optional<TokenSet> stride::ast::collect_until_token(TokenSet& set, const TokenType token)
 {
     const size_t initial_offset = set.position();
 
     for (int64_t relative_offset = 0; set.has_next(); relative_offset++)
     {
-        if (const auto next = set.next(); next.type == token)
+        if (const auto next = set.next(); next.get_type() == token)
         {
             // If we immediately find the requested token,
             // then there's no point in creating a new subset
@@ -85,11 +85,11 @@ std::optional<TokenSet> stride::ast::collect_block_variant(
     set.expect(start_token);
     for (int64_t level = 1, offset = 0; level > 0 && offset < set.size(); ++offset)
     {
-        if (const auto next = set.peak(offset); next.type == start_token)
+        if (const auto next = set.peak(offset); next.get_type() == start_token)
         {
             level++;
         }
-        else if (next.type == end_token)
+        else if (next.get_type() == end_token)
         {
             level--;
         }

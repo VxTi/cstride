@@ -40,8 +40,8 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
     }
 
     return std::make_unique<AstArray>(
-        set.source(),
-        reference_token.offset,
+        set.get_source(),
+        reference_token.get_source_position(),
         scope,
         std::move(elements)
     );

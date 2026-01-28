@@ -18,14 +18,13 @@ namespace stride::ast
     public:
         AstWhileLoop(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> body
-        ) : IAstNode(source, source_offset, scope),
+        ) : IAstNode(source, source_position, scope),
             _body(std::move(body)),
-            _condition(std::move(condition))
-        {}
+            _condition(std::move(condition)) {}
 
         llvm::Value* codegen(
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -47,5 +46,6 @@ namespace stride::ast
 
     bool is_while_loop_statement(const TokenSet& set);
 
-    std::unique_ptr<AstWhileLoop> parse_while_loop_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstWhileLoop> parse_while_loop_statement(const std::shared_ptr<SymbolRegistry>& scope,
+                                                             TokenSet& set);
 }

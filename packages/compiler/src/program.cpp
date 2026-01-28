@@ -90,8 +90,8 @@ void Program::optimize_ast_nodes()
     }
 
     this->_root_node = std::make_unique<ast::AstBlock>(
-        this->_root_node->source,
-        this->_root_node->source_offset,
+        this->_root_node->get_source(),
+        this->_root_node->get_source_position(),
         this->get_global_scope(),
         std::move(new_children)
     );
@@ -126,7 +126,7 @@ void Program::generate_llvm_ir(
             entry == nullptr)
         {
             throw std::runtime_error(
-                std::format("Failed to build executable for file '{}'", this->_root_node->source->path)
+                std::format("Failed to build executable for file '{}'", this->_root_node->get_source()->path)
             );
         }
     }

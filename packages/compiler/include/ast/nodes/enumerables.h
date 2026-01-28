@@ -17,10 +17,10 @@ namespace stride::ast
     public:
         explicit AstEnumerableMember(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name, std::unique_ptr<AstLiteral> value
-        ) : IAstNode(source, source_offset, scope),
+        ) : IAstNode(source, source_position, scope),
             _name(std::move(name)),
             _value(std::move(value)) {}
 
@@ -41,11 +41,11 @@ namespace stride::ast
     public:
         explicit AstEnumerable(
             const std::shared_ptr<SourceFile>& source,
-            const int source_offset,
+            const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
             std::string name
-        ) : IAstNode(source, source_offset, scope),
+        ) : IAstNode(source, source_position, scope),
             _members(std::move(members)), _name(std::move(name)) {}
 
         [[nodiscard]]
@@ -60,9 +60,15 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstEnumerableMember> parse_enumerable_member(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& tokens);
+    std::unique_ptr<AstEnumerableMember> parse_enumerable_member(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& tokens
+    );
 
-    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstEnumerable> parse_enumerable_declaration(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set
+    );
 
     bool is_enumerable_declaration(const TokenSet& tokens);
 }
