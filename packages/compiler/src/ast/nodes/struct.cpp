@@ -72,6 +72,13 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     }
 
     auto struct_body_set = collect_block(tokens);
+
+    // Ensure we have at least one member in the struct body
+    if (!struct_body_set.has_value() || !struct_body_set.value().has_next())
+    {
+        tokens.throw_error("Expected struct body");
+    }
+
     std::vector<std::unique_ptr<AstStructMember>> members = {};
     std::vector<std::unique_ptr<IAstInternalFieldType>> fields = {};
 
@@ -85,6 +92,12 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
             fields.push_back(member->get_type().clone());
             members.push_back(std::move(member));
         }
+    }
+
+    // Re-verification
+    if (members.empty())
+    {
+        tokens.throw_error("Struct must have at least one member");
     }
 
     scope->define_struct(struct_name, std::move(fields));

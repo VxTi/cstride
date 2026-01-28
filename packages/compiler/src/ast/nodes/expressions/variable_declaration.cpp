@@ -218,7 +218,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 )
 {
     // Ensure we're allowed to parse standalone expressions
-    if ((expression_type_flags & SRFLAG_EXPR_TYPE_STANDALONE) != 0)
+    if ((expression_type_flags & SRFLAG_EXPR_TYPE_STANDALONE) == 0)
     {
         set.throw_error("Variable declarations are not allowed in this context");
     }

@@ -116,7 +116,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_binary_arithmetic_op_t
     return get_dominant_field_type(scope, lhs.get(), rhs.get());
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::resolve_unary_op_type(
+std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstUnaryOp* operation
 )
@@ -239,7 +239,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
 
     if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
     {
-        return resolve_unary_op_type(scope, operation);
+        return infer_unary_op_type(scope, operation);
     }
 
     if (dynamic_cast<AstLogicalOp*>(expr) || dynamic_cast<AstComparisonOp*>(expr))

@@ -15,5 +15,11 @@ namespace stride
         }
     };
 
+    struct SourcePosition
+    {
+        const int offset;
+        const int length;
+    };
+
     std::shared_ptr<SourceFile> read_file(const std::string& path);
 }

@@ -151,55 +151,17 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
     return lhs;
 }
 
-bool is_array_initializer(const TokenSet& set)
-{
-    return set.peak_next_eq(TokenType::LSQUARE_BRACKET);
-}
-
-std::unique_ptr<AstArray> parse_array_initializer(
-    const std::shared_ptr<SymbolRegistry>& scope,
-    TokenSet& set
-)
-{
-    const auto reference_token = set.peak_next();
-    auto expression_block = collect_block_variant(set, TokenType::LSQUARE_BRACKET, TokenType::RSQUARE_BRACKET);
-
-    if (!expression_block.has_value())
-    {
-        set.throw_error("Expected array initializer block after '['");
-    }
-
-    auto subset = expression_block.value();
-
-    std::vector<std::unique_ptr<AstExpression>> elements;
-
-    /// Here we'll parse the subset of tokens (the actual array initializer)
-    if (auto first_initializer = parse_standalone_expression(scope, subset);
-        first_initializer != nullptr)
-    {
-        elements.push_back(std::move(first_initializer));
-    }
-
-    while (subset.has_next())
-    {
-        subset.expect(TokenType::COMMA, "Expected ',' between array elements");
-        elements.push_back(parse_standalone_expression(scope, subset));
-    }
-
-    return std::make_unique<AstArray>(
-        set.source(),
-        reference_token.offset,
-        scope,
-        std::move(elements)
-    );
-}
-
 std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     const int expression_type_flags,
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
 )
 {
+    if (is_struct_initializer(set))
+    {
+        return parse_struct_initializer(scope, set);
+    }
+
     if (is_array_initializer(set))
     {
         return parse_array_initializer(scope, set);
@@ -262,6 +224,19 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
     );
 }
 
+std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    TokenSet& set
+)
+{
+    return parse_expression_extended(
+        SRFLAG_EXPR_TYPE_INLINE,
+        scope,
+        set
+    );
+}
+
+/// TODO: Implement
 std::string stride::ast::parse_property_accessor_statement(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set

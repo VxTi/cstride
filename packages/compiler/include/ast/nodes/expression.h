@@ -247,7 +247,7 @@ namespace stride::ast
     private:
         std::string format_function_name() const;
 
-        static std::string format_suggestion(const ISymbolDef *suggestion);
+        static std::string format_suggestion(const ISymbolDef* suggestion);
     };
 
     class AstVariableDeclaration :
@@ -532,12 +532,53 @@ namespace stride::ast
         void validate() override;
     };
 
-    /// Returns the precedence value for a binary arithmetic operator
-    int get_binary_operator_precedence(BinaryOpType type);
+    class AstStructInitializer
+        : public AstExpression
+    {
+        std::unordered_map<std::string, std::unique_ptr<AstExpression>> _initializers;
+
+    public:
+        explicit AstStructInitializer(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const std::shared_ptr<SymbolRegistry>& scope,
+            std::unordered_map<std::string, std::unique_ptr<AstExpression>> initializers
+        ) :
+            AstExpression(source, source_offset, scope),
+            _initializers(std::move(initializers)) {}
+
+        [[nodiscard]]
+        const std::unordered_map<std::string, std::unique_ptr<AstExpression>>& get_initializers() const
+        {
+            return _initializers;
+        }
+
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+            llvm::LLVMContext& context, llvm::IRBuilder<>* builder
+        ) override;
+
+        std::string to_string() override;
+
+        // void validate() override;
+    };
+
+    /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
+     #                                                           #
+     *                    PARSER FUNCTIONS                       *
+     #                                                           #
+     * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
 
     /// Parses a complete standalone expression from tokens
-    std::unique_ptr<AstExpression> parse_standalone_expression(const std::shared_ptr<SymbolRegistry>& scope,
-                                                               TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set
+    );
+
+    std::unique_ptr<AstExpression> parse_inline_expression(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set
+    );
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
     std::unique_ptr<AstExpression> parse_expression_extended(
@@ -547,8 +588,10 @@ namespace stride::ast
     );
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<AstExpression> parse_standalone_expression_part(const std::shared_ptr<SymbolRegistry>& scope,
-                                                                    TokenSet& set);
+    std::unique_ptr<AstExpression> parse_standalone_expression_part(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set
+    );
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
@@ -558,7 +601,10 @@ namespace stride::ast
     );
 
     /// Parses a function invocation into an AstFunctionCall expression node
-    std::unique_ptr<AstExpression> parse_function_call(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstExpression> parse_function_call(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set
+    );
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
@@ -575,7 +621,10 @@ namespace stride::ast
     );
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
-    std::string parse_property_accessor_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::string parse_property_accessor_statement(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set
+    );
 
     /// Parses a unary operator expression
     std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(
@@ -583,11 +632,32 @@ namespace stride::ast
         TokenSet& set
     );
 
+    /// Parses an array initializer expression, e.g., [1, 2, 3]
+    std::unique_ptr<AstArray> parse_array_initializer(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set
+    );
+
+    /// Parses an array member accessor expression, e.g., <array_identifier>[<index_expression>]
     std::unique_ptr<AstExpression> parse_array_member_accessor(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         std::unique_ptr<AstIdentifier> array_identifier
     );
+
+    std::unique_ptr<AstStructInitializer> parse_struct_initializer(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set
+    );
+
+    /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
+     #                                                           #
+     *                    GETTER FUNCTIONS                       *
+     #                                                           #
+     * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
+
+    /// Returns the precedence value for a binary arithmetic operator
+    int get_binary_operator_precedence(BinaryOpType type);
 
     /// Converts a token type to its corresponding logical operator type
     std::optional<LogicalOpType> get_logical_op_type(TokenType type);
@@ -601,12 +671,31 @@ namespace stride::ast
     /// Converts a token type to its corresponding unary operator type
     std::optional<UnaryOpType> get_unary_op_type(TokenType type);
 
+    /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
+     #                                                           #
+     *                    DEDUCTION FUNCTIONS                    *
+     #                                                           #
+     * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
+
     /// Whether the next sequence of tokens is a variable/function access by property reference
     /// e.g., <identifier>.<accessor>
     bool is_property_accessor_statement(const TokenSet& set);
 
     /// Checks if the token set represents a variable declaration
     bool is_variable_declaration(const TokenSet& set);
+
+    /// Checks if the token set represents an array initializer
+    bool is_array_initializer(const TokenSet& set);
+
+    /// Checks if the token set represents a struct initializer
+    /// This is the case if an expression starts with `{ <member> }`
+    bool is_struct_initializer(const TokenSet& set);
+
+    /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
+     #                                                           #
+     *           EXPRESSION TYPE INFERENCE FUNCTIONS             *
+     #                                                           #
+     * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
     std::unique_ptr<IAstInternalFieldType> infer_expression_type(
@@ -619,7 +708,7 @@ namespace stride::ast
         AstArray* array
     );
 
-    std::unique_ptr<IAstInternalFieldType> resolve_unary_op_type(
+    std::unique_ptr<IAstInternalFieldType> infer_unary_op_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstUnaryOp* operation
     );

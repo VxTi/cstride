@@ -285,6 +285,8 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_t
         context_type_flags
     );
 
+    // If the next tokens are square brackets, it's an array type
+    // So we'll wrap the initial NamedValueType in the ArrayType.
     if (set.peak_eq(TokenType::LSQUARE_BRACKET, 0) && set.peak_eq(TokenType::RSQUARE_BRACKET, 1))
     {
         set.skip(2);

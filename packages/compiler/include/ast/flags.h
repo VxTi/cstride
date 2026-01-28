@@ -1,7 +1,7 @@
 #pragma once
 
-#define SRFLAG_EXPR_TYPE_STANDALONE (0x0)
-#define SRFLAG_EXPR_TYPE_INLINE     (0x1)
+#define SRFLAG_EXPR_TYPE_STANDALONE (0x1)
+#define SRFLAG_EXPR_TYPE_INLINE     (0x2)
 
 #define SR_PROPERTY_ACCESSOR_SEPARATOR ("@")
 
