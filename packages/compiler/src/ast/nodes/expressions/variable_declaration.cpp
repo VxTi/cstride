@@ -257,14 +257,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         value = parse_expression_extended(0, scope, set);
     }
 
-
-    // If it's not an inline variable declaration (e.g., in a for loop),
-    // we expect a semicolon at the end.
-    if ((expression_type_flags & SRFLAG_EXPR_TYPE_INLINE) == 0)
-    {
-        set.expect(TokenType::SEMICOLON, "Expected ';' after variable declaration");
-    }
-
     std::string internal_name = variable_name;
     if (scope->get_current_scope() != ScopeType::GLOBAL)
     {

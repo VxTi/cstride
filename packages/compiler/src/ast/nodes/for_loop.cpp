@@ -16,8 +16,9 @@ std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<Symbo
         return nullptr;
     }
 
-    return parse_expression_extended(
-        SRFLAG_EXPR_TYPE_INLINE,
+    // The initializer is allowed to have variable declarations,
+    // hence 'standalone'
+    return parse_standalone_expression(
         scope,
         initiator.value()
     );
@@ -32,7 +33,7 @@ std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<Symbo
         return nullptr;
     }
 
-
+    // This one doesn't allow variable declarations
     return parse_standalone_expression(scope, condition.value());
 }
 

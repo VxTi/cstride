@@ -15,10 +15,9 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_RETURN);
 
-    // If parsing a void return: `return;`
-    if (set.peak_next_eq(TokenType::SEMICOLON))
+    // If parsing a void return: `return`
+    if (!set.has_next())
     {
-        set.expect(TokenType::SEMICOLON);
         return std::make_unique<AstReturn>(
             set.source(),
             reference_token.offset,
@@ -28,7 +27,6 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared
     }
 
     auto value = parse_standalone_expression(scope, set);
-    set.expect(TokenType::SEMICOLON, "Expected ';' after return expression");
 
     return std::make_unique<AstReturn>(
         set.source(),

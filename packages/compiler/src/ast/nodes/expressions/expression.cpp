@@ -93,7 +93,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         return std::move(identifier);
     }
 
-    set.throw_error("Invalid expression");
+    set.throw_error("Invalid token found in expression");
 }
 
 /**

@@ -3,6 +3,22 @@
 
 using namespace stride::ast;
 
+std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initializer(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    TokenSet& set
+)
+{
+    const auto member_iden = set.expect(
+        TokenType::IDENTIFIER,
+        "Expected identifier in struct initializer"
+    );
+    set.expect(TokenType::COLON, "Expected ':' after identifier in struct initializer");
+
+    auto member_expr = parse_inline_expression(scope, set);
+
+    return {member_iden.lexeme, std::move(member_expr)};
+}
+
 std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set
@@ -18,17 +34,31 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         set.throw_error("Expected struct initializer body after '{'");
     }
 
+    // Parse initial member
+    auto [initial_member_iden, initial_member_expr] = parse_struct_member_initializer(
+            scope,
+            member_set.value()
+        );
+    member_map[initial_member_iden] = std::move(initial_member_expr);
+
     while (member_set->has_next())
     {
-        const auto member_iden = member_set.value().expect(
-            TokenType::IDENTIFIER,
-            "Expected identifier in struct initializer"
+        member_set->expect(TokenType::COMMA, "Expected ',' between struct initializer members");
+
+        // It's possible that this previous comma *was* the trailing one, so we'll have to do an additional check
+        if (!member_set->has_next()) break;
+
+        auto [member_iden, member_expr] = parse_struct_member_initializer(
+            scope,
+            member_set.value()
         );
-        member_set.value().expect(TokenType::EQUALS, "Expected '=' after identifier in struct initializer");
+        member_map[member_iden] = std::move(member_expr);
+    }
 
-        auto member_expr = parse_inline_expression(scope, member_set.value());
-
-        member_map[member_iden.lexeme] = std::move(member_expr);
+    // Optionally consume trailing comma
+    if (member_set->peak_next_eq(TokenType::COMMA))
+    {
+        member_set->next();
     }
 
     return std::make_unique<AstStructInitializer>(
