@@ -16,7 +16,7 @@ namespace stride::ast
     enum class CompilationMode
     {
         INTERPRET,
-        COMPILE
+        COMPILE_JIT
     };
 
     typedef struct CompilationOptions
