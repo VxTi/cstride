@@ -8,7 +8,6 @@
 #include "ast/flags.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
-#include "ast/nodes/types.h"
 
 using namespace stride::ast;
 
@@ -16,7 +15,7 @@ llvm::Value* AstExpression::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
-    llvm::IRBuilder<>* irBuilder
+    llvm::IRBuilder<>* ir_builder
 )
 {
     throw parsing_error("Expression codegen not implemented, this must be implemented by subclasses");
@@ -182,13 +181,18 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
         set.throw_error("Unexpected token in expression");
     }
 
+    if (const auto literal = dynamic_cast<AstLiteral*>(lhs.get()); literal != nullptr)
+    {
+        return std::move(lhs);
+    }
+
     // Attempt to parse arithmetic binary operations first
 
     // If we have a result from arithmetic parsing, update lhs.
     // Note: parse_arithmetic_binary_op returns the lhs if no arithmetic op is found,
     // so it effectively passes through unless an error occurs (returns nullopt).
-    if (auto arithmetic_result = parse_arithmetic_binary_op(scope, set, std::move(lhs), 1); arithmetic_result.
-        has_value())
+    if (auto arithmetic_result = parse_arithmetic_binary_op(scope, set, std::move(lhs), 1);
+        arithmetic_result.has_value())
     {
         lhs = std::move(arithmetic_result.value());
     }

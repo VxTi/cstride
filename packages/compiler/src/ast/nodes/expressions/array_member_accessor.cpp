@@ -32,7 +32,7 @@ void AstArrayMemberAccessor::validate()
 {
     const auto index_accessor_type = infer_expression_type(this->scope, this->_index_accessor_expr.get());
 
-    if (auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(index_accessor_type.get()))
+    if (const auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(index_accessor_type.get()))
     {
         if (!primitive_type->is_integer_ty())
         {
@@ -62,14 +62,14 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    auto array_iden_type = infer_expression_type(this->scope, this->_array_identifier.get());
+    const auto array_iden_type = infer_expression_type(this->scope, this->_array_identifier.get());
 
     llvm::Value* base_ptr = this->_array_identifier->codegen(scope, module, context, builder);
     llvm::Value* index_val = this->_index_accessor_expr->codegen(scope, module, context, builder);
 
     // Element type, not the array type.
     // Assumes `array_iden_type` is something like "T[]" and has an element type you can extract.
-    auto* array_ty = dynamic_cast<AstArrayType*>(array_iden_type.get());
+    const auto* array_ty = dynamic_cast<AstArrayType*>(array_iden_type.get());
     if (!array_ty)
     {
         throw parsing_error(

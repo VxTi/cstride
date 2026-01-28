@@ -12,8 +12,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
 {
     const auto reference_token = set.peak_next();
 
-    const auto type = reference_token.type;
-    switch (type)
+    switch (const auto type = reference_token.type)
     {
     case TokenType::INTEGER_LITERAL:
     case TokenType::LONG_INTEGER_LITERAL:

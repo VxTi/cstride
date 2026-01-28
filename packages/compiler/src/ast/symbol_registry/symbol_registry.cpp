@@ -170,7 +170,7 @@ ISymbolDef* SymbolRegistry::fuzzy_find(const std::string& symbol_name) const
     // (e.g. preferring "fact" over "factor" if input is "factorial", or vice versa depending on preference)
     size_t best_len_diff = std::numeric_limits<size_t>::max();
 
-    const SymbolRegistry* current = this;
+    auto current = this;
     while (current != nullptr)
     {
         for (const auto& symbol_def : current->symbols)

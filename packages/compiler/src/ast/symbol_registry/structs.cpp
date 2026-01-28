@@ -24,6 +24,8 @@ const StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) c
                 }
             }
         }
+
+        current = current->_parent_registry.get();
     }
 
     return nullptr;

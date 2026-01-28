@@ -116,7 +116,7 @@ llvm::Value* AstVariableReassignment::codegen(
 
     // Placeholder logic for type checking
     // You mentioned you'll manage the types, but we need this check to branch instructions
-    bool is_float = rhsValue->getType()->isFloatingPointTy();
+    const bool is_float = rhsValue->getType()->isFloatingPointTy();
 
     llvm::Value* finalValue = rhsValue;
 

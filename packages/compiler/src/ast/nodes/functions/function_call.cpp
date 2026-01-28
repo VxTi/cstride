@@ -61,6 +61,8 @@ std::string AstFunctionCall::format_suggestion(const ISymbolDef* suggestion)
             arg_types.push_back(arg->get_internal_name());
         }
 
+        if (arg_types.empty()) arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
+
         return std::format(
             "{}({})",
             fn_call->get_internal_symbol_name(),
@@ -81,6 +83,7 @@ std::string AstFunctionCall::format_function_name() const
 
         arg_types.push_back(type->get_internal_name());
     }
+    if (arg_types.empty()) arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
 
     return std::format("{}({})", this->get_function_name(), join(arg_types, ", "));
 }
@@ -111,11 +114,12 @@ llvm::Value* AstFunctionCall::codegen(
                 : "";
 
         throw parsing_error(
-            make_ast_error(
-                ErrorType::RUNTIME_ERROR,
+            make_source_error(
                 *this->source,
-                this->source_offset,
+                ErrorType::RUNTIME_ERROR,
                 std::format("Function '{}' was not found in this scope", this->format_function_name()),
+                this->source_offset,
+                this->get_function_name().length(),
                 suggested_alternative
             )
         );
@@ -123,9 +127,9 @@ llvm::Value* AstFunctionCall::codegen(
 
     // Reduce last argument if variadic
     const auto minimum_arg_count = callee->arg_size() - (callee->isVarArg() ? 1 : 0);
-    const auto provided_arg_count = this->get_arguments().size();
 
-    if (provided_arg_count < minimum_arg_count)
+    if (const auto provided_arg_count = this->get_arguments().size();
+        provided_arg_count < minimum_arg_count)
     {
         throw parsing_error(
             make_ast_error(

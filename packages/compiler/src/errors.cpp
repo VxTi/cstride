@@ -25,10 +25,11 @@ std::string stride::make_ast_error(
     if (source.source.empty() || offset >= source.source.length() || offset < 0)
     {
         return std::format(
-            "┃ {} in {}\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
+            "┃ {} in {}\n┃ \x1b[31m{}\x1b[0m\n┃\n{}",
             error_type_to_string(error_type),
             source.path.empty() ? "unknown" : source.path,
-            error
+            error,
+            suggestion.empty() ? "" : std::format("\n┃ {}", suggestion)
         );
     }
 
@@ -84,7 +85,8 @@ std::string stride::make_source_error(
     const ErrorType error_type,
     const std::string& error,
     const size_t offset,
-    const size_t length
+    const size_t length,
+    const std::string& suggestion
 )
 {
     const auto error_type_str = error_type_to_string(error_type);
@@ -92,10 +94,11 @@ std::string stride::make_source_error(
     if (source_file.source.empty() || offset >= source_file.source.length())
     {
         return std::format(
-            "┃ in {}\n┃ {}\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
+            "┃ in {}\n┃ {}\n┃ \x1b[31m{}\x1b[0m\n┃\n{}",
             source_file.path.empty() ? "unknown" : source_file.path,
             error_type_str,
-            error
+            error,
+            suggestion.empty() ? "" : std::format("┃ {}", suggestion)
         );
     }
 
@@ -133,14 +136,15 @@ std::string stride::make_source_error(
     // Calculate error length (currently just 1 character)
 
     return std::format(
-        "┃ {} in \x1b[4m{}\x1b[0m\n┃\n┃ {}\n┃\n┃ \x1b[0;97m{} \x1b[37m{}\x1b[0m\n┃  {} {}\n",
+        "┃ {} in \x1b[4m{}\x1b[0m\n┃\n┃ {}\n┃\n┃ \x1b[0;97m{} \x1b[37m{}\x1b[0m\n┃  {} {}{}",
         error_type_str,
         source_file.path,
         error,
         line_number,
         line_str,
         std::string(column_offset, ' '),
-        std::string(length, '^')
+        std::string(length, '^'),
+        suggestion.empty() ? "" : std::format("\n┃ {}", suggestion)
     );
 }
 

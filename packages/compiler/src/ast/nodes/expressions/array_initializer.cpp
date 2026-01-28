@@ -15,7 +15,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
 )
 {
     const auto reference_token = set.peak_next();
-    auto expression_block = collect_block_variant(set, TokenType::LSQUARE_BRACKET, TokenType::RSQUARE_BRACKET);
+    const auto expression_block = collect_block_variant(set, TokenType::LSQUARE_BRACKET, TokenType::RSQUARE_BRACKET);
 
     if (!expression_block.has_value())
     {

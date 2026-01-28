@@ -1,5 +1,5 @@
-#include "ast/nodes/literal_values.h"
 #include <llvm/IR/Constants.h>
+#include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
 

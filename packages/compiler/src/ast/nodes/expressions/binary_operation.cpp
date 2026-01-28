@@ -145,15 +145,14 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     }
 
     // Determine if the result should be floating point
-    bool is_float = lhs->getType()->isFloatingPointTy() || rhs->getType()->isFloatingPointTy();
+    const bool is_float = lhs->getType()->isFloatingPointTy() || rhs->getType()->isFloatingPointTy();
 
     // 1. Handle Integer Promotion (Int <-> Int)
     if (lhs->getType()->isIntegerTy() && rhs->getType()->isIntegerTy())
     {
         const auto l_width = lhs->getType()->getIntegerBitWidth();
-        const auto r_width = rhs->getType()->getIntegerBitWidth();
 
-        if (l_width < r_width)
+        if (const auto r_width = rhs->getType()->getIntegerBitWidth(); l_width < r_width)
         {
             lhs = builder->CreateIntCast(lhs, rhs->getType(), true, "binop_sext");
         }

@@ -110,12 +110,10 @@ llvm::Value* AstFunctionDeclaration::codegen(
 
     // Final Safety: Implicit Return
     // If the body didn't explicitly return (no terminator found), add one.
-    llvm::BasicBlock* current_bb = builder->GetInsertBlock();
-    if (current_bb && !current_bb->getTerminator())
+    if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();
+        current_bb && !current_bb->getTerminator())
     {
-        llvm::Type* ret_type = function->getReturnType();
-
-        if (ret_type->isVoidTy())
+        if (llvm::Type* ret_type = function->getReturnType(); ret_type->isVoidTy())
         {
             builder->CreateRetVoid();
         }

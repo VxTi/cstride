@@ -1,7 +1,7 @@
 #include "ast/nodes/enumerables.h"
 
-#include <sstream>
 #include <format>
+#include <sstream>
 
 #include "ast/nodes/blocks.h"
 

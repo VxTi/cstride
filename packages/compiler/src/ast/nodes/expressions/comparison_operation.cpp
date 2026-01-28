@@ -52,9 +52,9 @@ llvm::Value* AstComparisonOp::codegen(const std::shared_ptr<SymbolRegistry>& sco
     if (left->getType()->isIntegerTy() && right->getType()->isIntegerTy())
     {
         const auto left_width = left->getType()->getIntegerBitWidth();
-        const auto right_width = right->getType()->getIntegerBitWidth();
 
-        if (left_width < right_width)
+        if (const auto right_width = right->getType()->getIntegerBitWidth();
+            left_width < right_width)
         {
             left = builder->CreateIntCast(left, right->getType(), true, "icmp_sext");
         }

@@ -71,7 +71,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope
-        ) : IAstNode(source, source_offset, scope) {};
+        ) : IAstNode(source, source_offset, scope) {}
 
         ~AstExpression() override = default;
 
@@ -84,9 +84,9 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        bool is_reducible() override { return false; };
+        bool is_reducible() override { return false; }
 
-        IAstNode* reduce() override { return this; };
+        IAstNode* reduce() override { return this; }
     };
 
     class AstArray
@@ -149,9 +149,9 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        bool is_reducible() override { return false; };
+        bool is_reducible() override { return false; }
 
-        IAstNode* reduce() override { return this; };
+        IAstNode* reduce() override { return this; }
     };
 
     class AstArrayMemberAccessor : public AstExpression

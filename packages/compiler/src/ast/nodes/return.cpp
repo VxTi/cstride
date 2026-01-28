@@ -1,7 +1,7 @@
 #include "ast/nodes/return.h"
-#include "ast/nodes/expression.h"
-#include <llvm/IR/IRBuilder.h>
 #include <format>
+#include <llvm/IR/IRBuilder.h>
+#include "ast/nodes/expression.h"
 
 using namespace stride::ast;
 

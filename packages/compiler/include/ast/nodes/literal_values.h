@@ -2,9 +2,9 @@
 
 #include <utility>
 
-#include "ast/nodes/expression.h"
 #include "ast/symbol_registry.h"
 #include "ast/nodes/ast_node.h"
+#include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -20,12 +20,12 @@ namespace stride::ast
 
 #define BITS_PER_BYTE (8)
 #define INFER_INT_BIT_COUNT(x) \
-    ((x > 0xFFFFFFFF) ? (short)64 : (short)32)
+    (((x) > 0xFFFFFFFF) ? ((short)64) : ((short)32))
 
 #define INFER_FLOAT_BYTE_COUNT(x) \
-    ((x >> 23) & 0xFF) ? 4 : \
-    ((x >> 12) & 0xFF) ? 2 : \
-    ((x >> 6) & 0xFF) ? 1 : 0
+    (((x) >> 23) & 0xFF) ? 4 : \
+    (((x) >> 12) & 0xFF) ? 2 : \
+    (((x) >> 6) & 0xFF) ? 1 : 0
 
 #define SRFLAG_INT_UNSIGNED (0x2)
 

@@ -92,11 +92,15 @@ void AstStructInitializer::validate()
     // Check whether the struct we're trying to assign actually exists
     if (this->scope->get_struct_def(this->_struct_name) == nullptr)
     {
-        throw parsing_error(make_ast_error(
-            *this->source,
-            this->source_offset,
-            std::format("Struct '{}' does not exist", this->_struct_name)
-        ));
+        throw parsing_error(
+            make_source_error(
+                *this->source,
+                ErrorType::TYPE_ERROR,
+                std::format("Struct '{}' does not exist", this->_struct_name),
+                this->source_offset,
+                this->_struct_name.length()
+            )
+        );
     }
 }
 

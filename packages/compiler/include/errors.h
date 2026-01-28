@@ -50,7 +50,8 @@ namespace stride
         ErrorType error_type,
         const std::string& error,
         size_t offset,
-        size_t length
+        size_t length,
+        const std::string& suggestion = ""
     );
 
     /**
