@@ -17,7 +17,7 @@ namespace stride::ast
         BLOCK
     };
 
-    enum class IdentifiableSymbolType
+    enum class SymbolType
     {
         CLASS,
         VARIABLE,
@@ -46,17 +46,40 @@ namespace stride::ast
     class IdentifiableSymbolDef
         : public ISymbolDef
     {
-        IdentifiableSymbolType _type;
+        SymbolType _type;
 
     public:
         explicit IdentifiableSymbolDef(
-            const IdentifiableSymbolType type,
+            const SymbolType type,
             const std::string& symbol_name
         ) : ISymbolDef(symbol_name),
             _type(type) {}
 
         [[nodiscard]]
-        IdentifiableSymbolType get_symbol_type() const { return this->_type; }
+        SymbolType get_symbol_type() const { return this->_type; }
+    };
+
+    class StructSymbolDef
+        : public ISymbolDef
+    {
+        std::optional<std::string> _reference_struct_name;
+        std::vector<std::unique_ptr<IAstInternalFieldType>> _fields;
+
+    public:
+        explicit StructSymbolDef(
+            const std::string& symbol_name,
+            std::vector<std::unique_ptr<IAstInternalFieldType>> fields
+        ) : ISymbolDef(symbol_name), _fields(std::move(fields)) {}
+
+        explicit StructSymbolDef(
+            const std::string& symbol_name,
+            const std::string& reference_struct_name
+        )
+            : ISymbolDef(symbol_name),
+              _reference_struct_name(reference_struct_name) {}
+
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<IAstInternalFieldType>>& get_fields() const { return this->_fields; }
     };
 
     /// Can be either a variable or a field in a struct/class
@@ -109,7 +132,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-         IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
+        IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
 
         ~SymbolFnDefinition() override = default;
     };
@@ -144,33 +167,46 @@ namespace stride::ast
         const IdentifiableSymbolDef* get_symbol_def(const std::string& symbol_name) const;
 
         [[nodiscard]]
+        const StructSymbolDef* get_struct_def(const std::string& name) const;
+
+        [[nodiscard]]
         const FieldSymbolDef* field_lookup(const std::string& name) const;
 
         /// Will attempt to define the function in the global scope.
         void define_function(
-            const std::string& internal_function_name,
+            std::string internal_function_name,
             std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
             std::unique_ptr<IAstInternalFieldType> return_type
         ) const;
 
+        void define_struct(
+            std::string internal_name,
+            std::vector<std::unique_ptr<IAstInternalFieldType>> fields
+        ) const;
+
+        void define_struct(
+            std::string internal_name,
+            std::string reference_struct_name
+        ) const;
+
         void define_field(
-            const std::string& field_name,
-            const std::string& internal_name,
+            std::string field_name,
+            std::string internal_name,
             std::unique_ptr<IAstInternalFieldType> type
         );
 
         [[nodiscard]]
         ISymbolDef* fuzzy_find(const std::string& symbol_name) const;
 
-        void define_symbol(const std::string& symbol_name, IdentifiableSymbolType type) const;
+        void define_symbol(const std::string& symbol_name, SymbolType type);
 
         /// Checks whether the provided variable name is defined in the current scope.
         [[nodiscard]]
-        bool is_variable_defined_in_scope(const std::string& variable_name) const;
+        bool is_field_defined_in_scope(const std::string& variable_name) const;
 
         /// Checks whether the provided variable name is defined in the global scope.
         [[nodiscard]]
-        bool is_variable_defined_globally(const std::string& variable_name) const;
+        bool is_field_defined_globally(const std::string& field_name) const;
 
         /// Checks whether the provided internal function name is defined in the global scope.
         /// Do note that the internal name is not the name that you would use in
@@ -179,7 +215,7 @@ namespace stride::ast
         bool is_function_defined_globally(const std::string& internal_function_name) const;
 
         [[nodiscard]]
-        bool is_symbol_type_defined_globally(const std::string& symbol_name, const IdentifiableSymbolType& type) const;
+        bool is_symbol_type_defined_globally(const std::string& symbol_name, const SymbolType& type) const;
 
     private:
         [[nodiscard]]

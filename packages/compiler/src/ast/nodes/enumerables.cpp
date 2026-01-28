@@ -21,7 +21,7 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
     auto member_sym = member_name_tok.lexeme;
 
-    scope->define_symbol(member_sym, IdentifiableSymbolType::ENUM_MEMBER);
+    scope->define_symbol(member_sym, SymbolType::ENUM_MEMBER);
 
     tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
 
@@ -77,7 +77,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
     auto enumerable_name = enumerable_name_tok.lexeme;
 
-    scope->define_symbol(enumerable_name, IdentifiableSymbolType::ENUM);
+    scope->define_symbol(enumerable_name, SymbolType::ENUM);
 
     const auto opt_enum_body_subset = collect_block(set);
 

@@ -28,32 +28,6 @@ const SymbolRegistry& SymbolRegistry::traverse_to_root() const
     return *current;
 }
 
-bool SymbolRegistry::is_variable_defined_in_scope(const std::string& variable_name) const
-{
-    return std::ranges::any_of(this->symbols, [&](const auto& symbol_def)
-    {
-        if (const auto* var_def = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
-        {
-            return var_def->get_internal_symbol_name() == variable_name;
-        }
-        return false;
-    });
-}
-
-bool SymbolRegistry::is_variable_defined_globally(const std::string& variable_name) const
-{
-    auto current = this;
-    while (current != nullptr)
-    {
-        if (current->is_variable_defined_in_scope(variable_name))
-        {
-            return true;
-        }
-        current = current->_parent_registry.get();
-    }
-    return false;
-}
-
 bool SymbolRegistry::is_function_defined_globally(const std::string& internal_function_name) const
 {
     for (const auto& root = this->traverse_to_root();
@@ -71,8 +45,10 @@ bool SymbolRegistry::is_function_defined_globally(const std::string& internal_fu
     return false;
 }
 
-bool SymbolRegistry::is_symbol_type_defined_globally(const std::string& symbol_name,
-                                                     const IdentifiableSymbolType& type) const
+bool SymbolRegistry::is_symbol_type_defined_globally(
+    const std::string& symbol_name,
+    const SymbolType& type
+) const
 {
     for (const auto& root = this->traverse_to_root();
          const auto& symbol : root.symbols)
@@ -91,52 +67,29 @@ bool SymbolRegistry::is_symbol_type_defined_globally(const std::string& symbol_n
 }
 
 void SymbolRegistry::define_function(
-    const std::string& internal_function_name,
+    std::string internal_function_name,
     std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
     std::unique_ptr<IAstInternalFieldType> return_type
 ) const
 {
     auto& global_scope = const_cast<SymbolRegistry&>(this->traverse_to_root());
-    global_scope.symbols.push_back(std::make_unique<SymbolFnDefinition>(
-        std::move(parameter_types),
-        std::move(return_type),
-        internal_function_name
-    ));
+    global_scope.symbols.push_back(
+        std::make_unique<SymbolFnDefinition>(
+            std::move(parameter_types),
+            std::move(return_type),
+            std::move(internal_function_name)
+        )
+    );
 }
 
-void SymbolRegistry::define_field(
-    const std::string& field_name,
-    const std::string& internal_name,
-    std::unique_ptr<IAstInternalFieldType> type
-)
-{
-    if (is_variable_defined_in_scope(field_name))
-    {
-        throw parsing_error(
-            make_ast_error(
-                *type->source,
-                type->source_offset,
-                "Variable '" + field_name + "' is already defined in this scope"
-            )
-        );
-    }
 
-    this->symbols.push_back(std::make_unique<FieldSymbolDef>(
-        field_name,
-        internal_name,
-        std::move(type)
-    ));
-}
-
-void SymbolRegistry::define_symbol(const std::string& symbol_name, const IdentifiableSymbolType type) const
+void SymbolRegistry::define_symbol(const std::string& symbol_name, const SymbolType type)
 {
-    auto& global_scope = const_cast<SymbolRegistry&>(this->traverse_to_root());
-    global_scope.symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
+    this->symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
         type,
         symbol_name
     ));
 }
-
 
 const FieldSymbolDef* SymbolRegistry::get_variable_def(const std::string& variable_name) const
 {
@@ -169,19 +122,6 @@ const IdentifiableSymbolDef* SymbolRegistry::get_symbol_def(const std::string& s
     return nullptr;
 }
 
-const FieldSymbolDef* SymbolRegistry::field_lookup(const std::string& name) const
-{
-    auto current = this;
-    while (current != nullptr)
-    {
-        if (const auto def = current->get_variable_def(name))
-        {
-            return def;
-        }
-        current = current->_parent_registry.get();
-    }
-    return nullptr;
-}
 
 const SymbolFnDefinition* SymbolRegistry::get_function_def(const std::string& function_name) const
 {

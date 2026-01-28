@@ -35,39 +35,18 @@ std::string AstFunctionCall::to_string()
 {
     std::ostringstream oss;
 
-    const auto& args = this->get_arguments();
-    for (size_t i = 0; i < args.size(); ++i)
+    std::vector<std::string> arg_types;
+    for (const auto& arg : this->get_arguments())
     {
-        oss << args[i]->to_string();
-        if (i < args.size() - 1)
-        {
-            oss << ", ";
-        }
+        arg_types.push_back(arg->to_string());
     }
 
     return std::format(
         "FunctionCall({} ({}) [{}])",
         this->get_function_name(),
         this->get_internal_name(),
-        oss.str()
+        join(arg_types, ", ")
     );
-}
-
-std::optional<std::string> resolve_type_name(AstExpression* expr)
-{
-    if (!expr) return std::nullopt;
-
-    if (const auto* primitive = dynamic_cast<AstPrimitiveFieldType*>(expr))
-    {
-        return primitive_type_to_str(primitive->type());
-    }
-
-    if (const auto* custom_type = dynamic_cast<AstNamedValueType*>(expr))
-    {
-        return custom_type->name();
-    }
-
-    return std::nullopt;
 }
 
 std::string AstFunctionCall::format_suggestion(const ISymbolDef* suggestion)

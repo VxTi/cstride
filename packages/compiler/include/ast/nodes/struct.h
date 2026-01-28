@@ -31,12 +31,14 @@ namespace stride::ast
 
         [[nodiscard]]
         IAstInternalFieldType& get_type() const { return *this->_type; }
+
+        void validate() override;
     };
 
     class AstStruct : public IAstNode
     {
         std::string _name;
-        std::vector<std::unique_ptr<AstStructMember>> _cases;
+        std::vector<std::unique_ptr<AstStructMember>> _members;
 
         // Whether this struct references another one
         // This can be used for declaring a type with the data layout
@@ -65,7 +67,7 @@ namespace stride::ast
         ) :
             IAstNode(source, source_offset, scope),
             _name(std::move(name)),
-            _cases(std::move(members)),
+            _members(std::move(members)),
             _reference(std::nullopt) {}
 
         [[nodiscard]]
@@ -80,7 +82,9 @@ namespace stride::ast
         std::string get_name() const { return _name; }
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<AstStructMember>>& get_members() const { return this->_cases; }
+        const std::vector<std::unique_ptr<AstStructMember>>& get_members() const { return this->_members; }
+
+        void validate() override;
     };
 
     std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& tokens);
