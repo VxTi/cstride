@@ -92,7 +92,7 @@ function handleCompile(ws: WebSocket, code: string) {
 
     console.log(`Code saved to ${filePath}, executing cstride...`);
 
-    process = spawn(cstrideExe, [filePath]);
+    process = spawn(cstrideExe, ['--compile', filePath]);
 
     process.stdout.on('data', (data: Buffer) => {
       sendMessage(ws, WsMessageType.PROCESS_STDOUT, data.toString());

@@ -1,3 +1,4 @@
+#include <complex>
 #include <format>
 #include <iostream>
 #include <sstream>
@@ -8,6 +9,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 
+#include "formatting.h"
 #include "ast/flags.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
@@ -68,6 +70,42 @@ std::optional<std::string> resolve_type_name(AstExpression* expr)
     return std::nullopt;
 }
 
+std::string AstFunctionCall::format_suggestion(const ISymbolDef* suggestion)
+{
+    if (const auto fn_call = dynamic_cast<const SymbolFnDefinition*>(suggestion))
+    {
+        // We'll format the arguments
+        std::vector<std::string> arg_types;
+
+        for (const auto& arg : fn_call->get_parameter_types())
+        {
+            arg_types.push_back(arg->get_internal_name());
+        }
+
+        return std::format(
+            "{}({})",
+            fn_call->get_internal_symbol_name(),
+            join(arg_types, ", ")
+        );
+    }
+
+    return suggestion->get_internal_symbol_name();
+}
+
+std::string AstFunctionCall::format_function_name() const
+{
+    std::vector<std::string> arg_types;
+
+    for (const auto& arg : this->_arguments)
+    {
+        const auto type = infer_expression_type(this->scope, arg.get());
+
+        arg_types.push_back(type->get_internal_name());
+    }
+
+    return std::format("{}({})", this->get_function_name(), join(arg_types, ", "));
+}
+
 llvm::Value* AstFunctionCall::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
@@ -87,20 +125,19 @@ llvm::Value* AstFunctionCall::codegen(
 
     if (!callee)
     {
-        auto suggested_alternative = scope->fuzzy_find(this->get_function_name());
+        const auto suggested_alternative_symbol = scope->fuzzy_find(this->get_function_name());
+        const auto suggested_alternative =
+            suggested_alternative_symbol
+                ? std::format("Did you mean '{}'?", this->format_suggestion(suggested_alternative_symbol))
+                : "";
 
         throw parsing_error(
             make_ast_error(
                 ErrorType::RUNTIME_ERROR,
                 *this->source,
                 this->source_offset,
-                std::format("Function '{}' was not found in this scope", this->get_function_name()),
+                std::format("Function '{}' was not found in this scope", this->format_function_name()),
                 suggested_alternative
-                    ? std::format(
-                        "Did you mean '{}'?",
-                        suggested_alternative->get_internal_symbol_name()
-                    )
-                    : ""
             )
         );
     }

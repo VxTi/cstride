@@ -99,9 +99,9 @@ namespace stride::ast
             _return_type(std::move(return_type)) {}
 
         [[nodiscard]]
-        std::vector<const IAstInternalFieldType*> get_parameter_types() const
+        std::vector<IAstInternalFieldType*> get_parameter_types() const
         {
-            std::vector<const IAstInternalFieldType*> out;
+            std::vector<IAstInternalFieldType*> out;
             out.reserve(this->_parameter_types.size());
             for (const auto& p : this->_parameter_types)
                 out.push_back(p.get());
@@ -109,7 +109,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
+         IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
 
         ~SymbolFnDefinition() override = default;
     };

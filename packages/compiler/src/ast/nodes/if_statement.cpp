@@ -47,13 +47,49 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
     {
         set.throw_error("Expected condition block after 'if' keyword");
     }
+    auto condition = parse_standalone_expression(if_header_scope, if_header_body.value());
 
-    auto condition = parse_expression_extended(
-        0,
-        if_header_scope,
-        if_header_body.value()
-    );
+    // Thus far, we've collected `if (...)
 
+    if (!set.peak_next_eq(TokenType::LBRACE))
+    {
+        // Here we might have an `if (...) ...` statement.
+        auto if_body_expr = parse_next_statement(if_header_scope, set);
+
+        if (if_body_expr == nullptr)
+        {
+            set.throw_error("Expected condition after 'if' keyword");
+        }
+
+        std::vector<std::unique_ptr<IAstNode>> nodes;
+        nodes.push_back(std::move(if_body_expr));
+
+        auto if_body = std::make_unique<AstBlock>(
+            set.source(),
+            reference_token.offset,
+            if_header_scope,
+            std::move(nodes)
+        );
+
+        // dangling `else`, still possible.
+        // This would allow one to write statements like:
+        // if ( ... )
+        //   <some expression>
+        // else
+        //   <some other expression>
+        auto else_statement = parse_else_optional(if_header_scope, set);
+
+        return std::make_unique<AstIfStatement>(
+            set.source(),
+            reference_token.offset,
+            scope,
+            std::move(condition),
+            std::move(if_body),
+            std::move(else_statement)
+        );
+    }
+
+    // Now we're parsing an `if (...) { ... }` statement
     auto body = parse_block(if_header_scope, set);
 
     auto else_statement = parse_else_optional(scope, set);
@@ -97,7 +133,7 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
         );
     }
 
-    if (this->get_block() == nullptr)
+    if (this->get_body() == nullptr)
     {
         throw parsing_error(
             make_ast_error(
@@ -126,7 +162,7 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
 
     // 2. Create Blocks
     llvm::BasicBlock* then_body_bb = llvm::BasicBlock::Create(context, "then_body", parent_function);
-    llvm::BasicBlock* else_body_bb = this->get_else_block() != nullptr
+    llvm::BasicBlock* else_body_bb = this->get_else_body() != nullptr
                                          ? llvm::BasicBlock::Create(context, "else_body", parent_function)
                                          : nullptr;
     llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(context, "if_merge", parent_function);
@@ -136,7 +172,7 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
 
     // 4. Generate 'Then' Block
     builder->SetInsertPoint(then_body_bb);
-    this->get_block()->codegen(scope, module, context, builder);
+    this->get_body()->codegen(scope, module, context, builder);
 
     // Only create a branch to the merge block if the current block
     // does not already have a terminator (like a 'ret' or 'break').
@@ -148,7 +184,7 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     if (else_body_bb != nullptr)
     {
         builder->SetInsertPoint(else_body_bb);
-        this->get_else_block()->codegen(scope, module, context, builder);
+        this->get_else_body()->codegen(scope, module, context, builder);
 
         // Same check for the else block
         if (builder->GetInsertBlock()->getTerminator() == nullptr)
@@ -174,7 +210,7 @@ std::string AstIfStatement::to_string()
     return std::format(
         "IfStatement({}) {} {}",
         this->get_condition() != nullptr ? this->get_condition()->to_string() : "<empty>",
-        this->get_block() != nullptr ? this->get_block()->to_string() : "<empty>",
-        this->get_else_block() != nullptr ? get_else_block()->to_string() : ""
+        this->get_body() != nullptr ? this->get_body()->to_string() : "<empty>",
+        this->get_else_body() != nullptr ? get_else_body()->to_string() : ""
     );
 }

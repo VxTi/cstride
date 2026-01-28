@@ -243,6 +243,11 @@ namespace stride::ast
         bool is_reducible() override;
 
         IAstNode* reduce() override;
+
+    private:
+        std::string format_function_name() const;
+
+        static std::string format_suggestion(const ISymbolDef *suggestion);
     };
 
     class AstVariableDeclaration :

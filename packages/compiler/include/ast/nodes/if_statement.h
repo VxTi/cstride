@@ -11,31 +11,31 @@ namespace stride::ast
           public IReducible
     {
         std::unique_ptr<AstExpression> _condition;
-        std::unique_ptr<AstBlock> _block;
-        std::unique_ptr<AstBlock> _else_block;
+        std::unique_ptr<AstBlock> _body;
+        std::unique_ptr<AstBlock> _else_body;
 
     public:
-        AstIfStatement(
+        explicit AstIfStatement(
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::unique_ptr<AstExpression> condition,
-            std::unique_ptr<AstBlock> block,
-            std::unique_ptr<AstBlock> else_block
+            std::unique_ptr<AstBlock> body,
+            std::unique_ptr<AstBlock> else_body
         ) : IAstNode(source, source_offset, scope),
             _condition(std::move(condition)),
-            _block(std::move(block)),
-            _else_block(std::move(else_block)) {}
+            _body(std::move(body)),
+            _else_body(std::move(else_body)) {}
 
 
         [[nodiscard]]
         AstExpression* get_condition() const { return this->_condition.get(); }
 
         [[nodiscard]]
-        AstBlock* get_block() const { return this->_block.get(); }
+        AstBlock* get_body() const { return this->_body.get(); }
 
         [[nodiscard]]
-        AstBlock* get_else_block() const { return this->_else_block.get(); }
+        AstBlock* get_else_body() const { return this->_else_body.get(); }
 
         ~AstIfStatement() override = default;
 
@@ -45,7 +45,8 @@ namespace stride::ast
 
         void validate() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context,
+        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
