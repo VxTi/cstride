@@ -187,7 +187,7 @@ namespace stride::ast
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
-            const int flags
+            const int flags = SRFLAG_NONE
         ) :
             IAstInternalFieldType(source, source_offset, scope, flags),
             _name(std::move(name)) {}

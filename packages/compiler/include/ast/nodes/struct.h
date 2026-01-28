@@ -17,7 +17,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
-            std::string  name,
+            std::string name,
             std::unique_ptr<IAstInternalFieldType> type
         ) :
             IAstNode(source, source_offset, scope),
@@ -35,7 +35,9 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AstStruct : public IAstNode
+    class AstStruct
+        : public IAstNode,
+          public ISynthesisable
     {
         std::string _name;
         std::vector<std::unique_ptr<AstStructMember>> _members;
@@ -50,7 +52,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
-            std::string  name,
+            std::string name,
             std::unique_ptr<IAstInternalFieldType> reference
         )
             :
@@ -62,7 +64,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
-            std::string  name,
+            std::string name,
             std::vector<std::unique_ptr<AstStructMember>> members
         ) :
             IAstNode(source, source_offset, scope),
@@ -85,6 +87,13 @@ namespace stride::ast
         const std::vector<std::unique_ptr<AstStructMember>>& get_members() const { return this->_members; }
 
         void validate() override;
+
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
     };
 
     std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& tokens);

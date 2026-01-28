@@ -331,7 +331,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     llvm::LLVMContext& context
 )
 {
-    if (const auto *array = dynamic_cast<AstArrayType*>(type))
+    if (const auto* array = dynamic_cast<AstArrayType*>(type))
     {
         llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module, context);
 
@@ -395,10 +395,12 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         if (!struct_type)
         {
             throw parsing_error(
-                make_ast_error(
+                make_source_error(
                     *custom->source,
+                    ErrorType::RUNTIME_ERROR,
+                    std::format("Custom type '{}' not found", custom->name()),
                     custom->source_offset,
-                    std::format("Custom type '{}' not found", custom->name())
+                    custom->name().length()
                 )
             );
         }

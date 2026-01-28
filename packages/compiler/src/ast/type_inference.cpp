@@ -183,7 +183,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::infer_array_member_type(
     const std::shared_ptr<SymbolRegistry>& scope,
-    AstArray* array
+    const AstArray* array
 )
 {
     if (array->get_elements().empty())
@@ -201,6 +201,19 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_array_member_type(
     }
 
     return infer_expression_type(scope, array->get_elements().front().get());
+}
+
+std::unique_ptr<IAstInternalFieldType> stride::ast::infer_struct_initializer_type(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    const AstStructInitializer* initializer
+)
+{
+    return std::make_unique<AstNamedValueType>(
+        initializer->source,
+        initializer->source_offset,
+        scope,
+        initializer->get_struct_name()
+    );
 }
 
 std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
@@ -275,7 +288,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         return infer_function_call_return_type(scope, fn_call);
     }
 
-    if (auto* array_expr = dynamic_cast<AstArray*>(expr))
+    if (const auto* array_expr = dynamic_cast<AstArray*>(expr))
     {
         auto member_type = infer_array_member_type(scope, array_expr);
 
@@ -290,12 +303,17 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
 
     if (const auto* array_accessor = dynamic_cast<AstArrayMemberAccessor*>(expr))
     {
-         const auto array_type = infer_expression_type(scope, array_accessor->get_array_identifier());
+        const auto array_type = infer_expression_type(scope, array_accessor->get_array_identifier());
 
         if (const auto array = dynamic_cast<AstArrayType*>(array_type.get()); array != nullptr)
         {
             return array->get_element_type()->clone();
         }
+    }
+
+    if (const auto* struct_init = dynamic_cast<AstStructInitializer*>(expr))
+    {
+        return infer_struct_initializer_type(scope, struct_init);
     }
 
     throw parsing_error(

@@ -1,6 +1,9 @@
 #include <sstream>
 
 #include "ast/nodes/struct.h"
+
+#include <llvm/IR/Module.h>
+
 #include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
@@ -187,4 +190,88 @@ std::string AstStruct::to_string()
         imploded << "\n  " << this->get_members()[i]->to_string();
     }
     return std::format("Struct({}) (\n  {}\n)", this->get_name(), imploded.str());
+}
+
+llvm::Value* AstStruct::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::LLVMContext& context,
+    llvm::IRBuilder<>* builder
+)
+{
+    // Retrieve or Create the named struct type (Opaque)
+    // We check if it already exists to support forward declarations or multi-pass compilation.
+    llvm::StructType* struct_type = llvm::StructType::getTypeByName(context, this->get_name());
+    if (!struct_type)
+    {
+        struct_type = llvm::StructType::create(context, this->get_name());
+    }
+
+    // If the body is already defined, we stop here to avoid re-definition errors.
+    if (!struct_type->isOpaque())
+    {
+        return nullptr;
+    }
+
+    std::vector<llvm::Type*> member_types;
+
+    //  Resolve Member Types
+    if (this->is_reference_type())
+    {
+        // Case: struct Alias = Original;
+        // We look up the original struct and copy its layout.
+        // TODO: Mangle ref name
+        std::string ref_name = this->get_reference_type()->get_internal_name();
+        const llvm::StructType* ref_struct = llvm::StructType::getTypeByName(context, ref_name);
+
+        if (!ref_struct)
+        {
+            throw parsing_error(make_ast_error(
+                *this->source,
+                this->source_offset,
+                std::format("Referenced struct type '{}' not found during codegen", ref_name)
+            ));
+        }
+
+        // If the referenced struct is still opaque/incomplete, we cannot alias it yet.
+        if (ref_struct->isOpaque())
+        {
+            throw parsing_error(make_ast_error(
+                *this->source,
+                this->source_offset,
+                std::format("Referenced struct type '{}' is not fully defined", ref_name)
+            ));
+        }
+
+        member_types = ref_struct->elements();
+    }
+    else
+    {
+        // Case: struct Name { members... }
+        for (const auto& member : this->get_members())
+        {
+            llvm::Type* llvm_type = internal_type_to_llvm_type(&member->get_type(), module, context);
+
+            if (!llvm_type)
+            {
+                // Note: If you support pointers to self (recursive structs), usually
+                // you would find the opaque type created in step 1 here.
+                throw parsing_error(make_ast_error(
+                    *this->source,
+                    member->source_offset,
+                    std::format("Unknown internal type '{}' for struct member '{}'",
+                                member->get_type().get_internal_name(), member->get_name())
+                ));
+            }
+
+            member_types.push_back(llvm_type);
+        }
+    }
+
+    // 3. Set the Body
+    // This finalizes the layout of the struct.
+    // 'isPacked' is false by default unless you have specific packing rules.
+    struct_type->setBody(member_types, /*isPacked=*/false);
+
+    return nullptr;
 }

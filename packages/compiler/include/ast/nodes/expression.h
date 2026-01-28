@@ -535,6 +535,7 @@ namespace stride::ast
     class AstStructInitializer
         : public AstExpression
     {
+        std::string _struct_name;
         std::unordered_map<std::string, std::unique_ptr<AstExpression>> _initializers;
 
     public:
@@ -542,15 +543,23 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const int source_offset,
             const std::shared_ptr<SymbolRegistry>& scope,
+            std::string struct_name,
             std::unordered_map<std::string, std::unique_ptr<AstExpression>> initializers
         ) :
             AstExpression(source, source_offset, scope),
+            _struct_name(std::move(struct_name)),
             _initializers(std::move(initializers)) {}
 
         [[nodiscard]]
         const std::unordered_map<std::string, std::unique_ptr<AstExpression>>& get_initializers() const
         {
             return _initializers;
+        }
+
+        [[nodiscard]]
+        const std::string& get_struct_name() const
+        {
+            return _struct_name;
         }
 
         llvm::Value* codegen(
@@ -560,7 +569,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        // void validate() override;
+        void validate() override;
     };
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
@@ -705,7 +714,7 @@ namespace stride::ast
 
     std::unique_ptr<IAstInternalFieldType> infer_array_member_type(
         const std::shared_ptr<SymbolRegistry>& scope,
-        AstArray* array
+        const AstArray* array
     );
 
     std::unique_ptr<IAstInternalFieldType> infer_unary_op_type(
@@ -726,5 +735,10 @@ namespace stride::ast
     std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstFunctionCall* fn_call
+    );
+
+    std::unique_ptr<IAstInternalFieldType> infer_struct_initializer_type(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        const AstStructInitializer* initializer
     );
 }
