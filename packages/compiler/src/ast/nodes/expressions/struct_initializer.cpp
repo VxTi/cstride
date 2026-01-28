@@ -133,7 +133,7 @@ void AstStructInitializer::validate()
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Too {} members found in struct '{}': expected {}, got {}",
-                    fields.size() < this->_initializers.size() ? "few" : "many",
+                    fields.size() > this->_initializers.size() ? "few" : "many",
                     this->_struct_name,
                     fields.size(), this->_initializers.size()
                 ),
