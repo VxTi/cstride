@@ -77,13 +77,20 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
             internal_name = variable_definition->get_internal_symbol_name();
         }
 
-        return std::make_unique<AstIdentifier>(
+        auto identifier = std::make_unique<AstIdentifier>(
             set.source(),
             reference_token.offset,
             scope,
             identifier_name,
             internal_name
         );
+
+        if (set.peak_next_eq(TokenType::LSQUARE_BRACKET))
+        {
+            return parse_array_member_accessor(scope, set, std::move(identifier));
+        }
+
+        return std::move(identifier);
     }
 
     set.throw_error("Invalid expression");

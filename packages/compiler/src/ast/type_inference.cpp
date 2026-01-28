@@ -288,6 +288,16 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         );
     }
 
+    if (const auto* array_accessor = dynamic_cast<AstArrayMemberAccessor*>(expr))
+    {
+         const auto array_type = infer_expression_type(scope, array_accessor->get_array_identifier());
+
+        if (const auto array = dynamic_cast<AstArrayType*>(array_type.get()); array != nullptr)
+        {
+            return array->get_element_type()->clone();
+        }
+    }
+
     throw parsing_error(
         make_source_error(
             *expr->source,

@@ -442,7 +442,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
         );
     }
 
-    const bool are_both_sides_integers = lhs_primitive->is_integer() && rhs_primitive->is_integer();
+    const bool are_both_sides_integers = lhs_primitive->is_integer_ty() && rhs_primitive->is_integer_ty();
     const bool are_both_sides_floats = lhs_primitive->is_fp() && rhs_primitive->is_fp();
 
     // TODO: Handle unsigned / signed properly

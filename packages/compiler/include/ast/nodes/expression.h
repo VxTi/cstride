@@ -154,6 +154,44 @@ namespace stride::ast
         IAstNode* reduce() override { return this; };
     };
 
+    class AstArrayMemberAccessor : public AstExpression
+    {
+        std::unique_ptr<AstIdentifier> _array_identifier;
+        std::unique_ptr<AstExpression> _index_accessor_expr;
+
+    public:
+        explicit AstArrayMemberAccessor(
+            const std::shared_ptr<SourceFile>& source,
+            const int source_offset,
+            const std::shared_ptr<SymbolRegistry>& scope,
+            std::unique_ptr<AstIdentifier> array_identifier,
+            std::unique_ptr<AstExpression> index
+        ) : AstExpression(source, source_offset, scope),
+            _array_identifier(std::move(array_identifier)),
+            _index_accessor_expr(std::move(index)) {}
+
+        [[nodiscard]]
+        AstIdentifier* get_array_identifier() const { return this->_array_identifier.get(); }
+
+        [[nodiscard]]
+        const AstExpression* get_index() const { return this->_index_accessor_expr.get(); }
+
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
+
+        std::string to_string() override;
+
+        bool is_reducible() override;
+
+        IAstNode* reduce() override;
+
+        void validate() override;
+    };
+
     class AstFunctionCall :
         public AstExpression
     {
@@ -538,6 +576,12 @@ namespace stride::ast
     std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set
+    );
+
+    std::unique_ptr<AstExpression> parse_array_member_accessor(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set,
+        std::unique_ptr<AstIdentifier> array_identifier
     );
 
     /// Converts a token type to its corresponding logical operator type

@@ -113,7 +113,7 @@ namespace stride::ast
         PrimitiveType type() const { return this->_type; }
 
         [[nodiscard]]
-        bool is_integer() const
+        bool is_integer_ty() const
         {
             switch (this->_type)
             {
