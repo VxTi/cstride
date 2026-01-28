@@ -25,21 +25,6 @@ namespace stride
 
     std::string error_type_to_string(ErrorType error_type);
 
-
-    std::string make_ast_error(
-        ErrorType error_type,
-        const SourceFile& source,
-        int offset,
-        const std::string& error,
-        const std::string& suggestion = ""
-    );
-
-    std::string make_ast_error(
-        const SourceFile& source,
-        int offset,
-        const std::string& error
-    );
-
     /**
      * Will produce an error for the given source file, at the provided
      * position and length.
