@@ -2,7 +2,7 @@
 
 using namespace stride::ast;
 
-const StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
+StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
 {
     auto current = this;
 
@@ -16,7 +16,7 @@ const StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) c
 
         for (const auto& definition : current->symbols)
         {
-            if (const auto* struct_def = dynamic_cast<const StructSymbolDef*>(definition.get()))
+            if (auto* struct_def = dynamic_cast<StructSymbolDef*>(definition.get()))
             {
                 if (struct_def->get_internal_symbol_name() == name)
                 {
@@ -33,7 +33,7 @@ const StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) c
 
 void SymbolRegistry::define_struct(
     std::string internal_name,
-    std::vector<std::unique_ptr<IAstInternalFieldType>> fields
+    std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
 ) const
 {
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());

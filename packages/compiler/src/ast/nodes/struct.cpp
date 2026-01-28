@@ -83,7 +83,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     }
 
     std::vector<std::unique_ptr<AstStructMember>> members = {};
-    std::vector<std::unique_ptr<IAstInternalFieldType>> fields = {};
+    std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields = {};
 
     if (struct_body_set.has_value())
     {
@@ -92,7 +92,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         {
             auto member = parse_struct_member(nested_scope, struct_body_set.value());
 
-            fields.push_back(member->get_type().clone());
+            fields[member->get_name()] = member->get_type().clone();
             members.push_back(std::move(member));
         }
     }

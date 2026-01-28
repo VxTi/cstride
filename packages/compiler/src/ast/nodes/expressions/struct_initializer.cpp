@@ -1,3 +1,4 @@
+#include <iostream>
 #include <ranges>
 
 #include "ast/nodes/blocks.h"
@@ -53,6 +54,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     );
     member_map[initial_member_iden] = std::move(initial_member_expr);
 
+    // Subsequent member parsing
     while (member_set->has_next())
     {
         member_set->expect(TokenType::COMMA, "Expected ',' between struct initializer members");
@@ -87,10 +89,28 @@ std::string AstStructInitializer::to_string()
     return std::format("StructInit{{...}}");
 }
 
+StructSymbolDef* get_root_reference_struct_def(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::string& struct_name
+)
+{
+    const auto definition = scope->get_struct_def(struct_name);
+
+    if (!definition) return nullptr;
+
+    if (definition->is_reference_struct())
+    {
+        return get_root_reference_struct_def(scope, definition->get_reference_struct_name().value());
+    }
+
+    return definition;
+}
+
 void AstStructInitializer::validate()
 {
+    const auto definition = get_root_reference_struct_def(this->scope, this->_struct_name);
     // Check whether the struct we're trying to assign actually exists
-    if (this->scope->get_struct_def(this->_struct_name) == nullptr)
+    if (definition == nullptr)
     {
         throw parsing_error(
             make_source_error(
@@ -101,6 +121,65 @@ void AstStructInitializer::validate()
                 this->_struct_name.length()
             )
         );
+    }
+
+    // Now we'll check whether all fields are right
+    const auto& fields = definition->get_fields();
+
+    if (fields.size() != this->_initializers.size())
+    {
+        throw parsing_error(
+            make_source_error(
+                *this->source,
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Too {} members found in struct '{}': expected {}, got {}",
+                    fields.size() < this->_initializers.size() ? "few" : "many",
+                    this->_struct_name,
+                    fields.size(), this->_initializers.size()
+                ),
+                this->source_offset,
+                this->_struct_name.length()
+            )
+        );
+    }
+
+    for (const auto& [member_name, member_expr] : this->_initializers)
+    {
+        const auto found_member = fields.find(member_name);
+
+        if (found_member == fields.end())
+        {
+            throw parsing_error(
+                make_source_error(
+                    *this->source,
+                    ErrorType::TYPE_ERROR,
+                    std::format("Struct '{}' has no member named '{}'", this->_struct_name, member_name),
+                    this->source_offset,
+                    member_name.length()
+                )
+            );
+        }
+
+        if (auto member_type = infer_expression_type(this->scope, member_expr.get()); *member_type != *found_member->
+            second)
+        {
+            throw parsing_error(
+                make_source_error(
+                    *this->source,
+                    ErrorType::TYPE_ERROR,
+                    std::format(
+                        "Type mismatch for member '{}' in struct '{}': expected '{}', got '{}'",
+                        member_name,
+                        this->_struct_name,
+                        found_member->second->to_string(),
+                        member_type->to_string()
+                    ),
+                    found_member->second->source_offset,
+                    member_type->to_string().length()
+                )
+            );
+        }
     }
 }
 

@@ -63,13 +63,14 @@ namespace stride::ast
         : public ISymbolDef
     {
         std::optional<std::string> _reference_struct_name;
-        std::vector<std::unique_ptr<IAstInternalFieldType>> _fields;
+        std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> _fields;
 
     public:
         explicit StructSymbolDef(
             const std::string& symbol_name,
-            std::vector<std::unique_ptr<IAstInternalFieldType>> fields
-        ) : ISymbolDef(symbol_name), _fields(std::move(fields)) {}
+            std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
+        ) : ISymbolDef(symbol_name),
+            _fields(std::move(fields)) {}
 
         explicit StructSymbolDef(
             const std::string& symbol_name,
@@ -79,7 +80,21 @@ namespace stride::ast
               _reference_struct_name(reference_struct_name) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstInternalFieldType>>& get_fields() const { return this->_fields; }
+        const std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>>& get_fields() const
+        {
+            return this->_fields;
+        }
+
+        [[nodiscard]]
+        bool is_reference_struct() const
+        {
+            return _reference_struct_name.has_value();
+        }
+
+        std::optional<std::string> get_reference_struct_name() const
+        {
+            return _reference_struct_name;
+        }
     };
 
     /// Can be either a variable or a field in a struct/class
@@ -167,7 +182,7 @@ namespace stride::ast
         const IdentifiableSymbolDef* get_symbol_def(const std::string& symbol_name) const;
 
         [[nodiscard]]
-        const StructSymbolDef* get_struct_def(const std::string& name) const;
+        StructSymbolDef* get_struct_def(const std::string& name) const;
 
         [[nodiscard]]
         const FieldSymbolDef* field_lookup(const std::string& name) const;
@@ -181,7 +196,7 @@ namespace stride::ast
 
         void define_struct(
             std::string internal_name,
-            std::vector<std::unique_ptr<IAstInternalFieldType>> fields
+            std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
         ) const;
 
         void define_struct(

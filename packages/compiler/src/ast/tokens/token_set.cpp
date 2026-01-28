@@ -85,7 +85,8 @@ Token TokenSet::expect(const TokenType type)
     {
         if (should_skip_token(next_type))
         {
-            return this->next();
+            this->next();
+            return this->expect(type);
         }
         this->throw_error(
             ErrorType::SYNTAX_ERROR,
@@ -115,6 +116,11 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 
     if (const auto next_type = this->peak_next().type; next_type != type)
     {
+        if (should_skip_token(next_type))
+        {
+            this->next();
+            return this->expect(type);
+        }
         this->throw_error(ErrorType::SYNTAX_ERROR, message);
     }
 

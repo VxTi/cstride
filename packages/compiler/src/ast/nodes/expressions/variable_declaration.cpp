@@ -128,8 +128,11 @@ void AstVariableDeclaration::validate()
     if (!init_val)
     {
         // It's possible that there's no initializer value.
+        // No need to further validate then
         return;
     }
+
+    init_val->validate();
 
     const std::unique_ptr<IAstInternalFieldType> internal_expr_type = infer_expression_type(this->scope, init_val);
     const auto lhs_type = this->get_variable_type();
@@ -169,6 +172,7 @@ void AstVariableDeclaration::validate()
             )
         );
     }
+
 }
 
 bool AstVariableDeclaration::is_reducible()

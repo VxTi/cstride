@@ -255,7 +255,7 @@ namespace stride::ast
         case TokenType::KEYWORD_CASE: return "case";
         case TokenType::KEYWORD_DEFAULT: return "default";
         case TokenType::KEYWORD_BREAK: return "break";
-        case TokenType::IDENTIFIER: return "<identifier>";
+        case TokenType::IDENTIFIER: return "identifier";
         case TokenType::STRING_LITERAL: return "String Literal";
         case TokenType::CHAR_LITERAL: return "Char Literal";
         case TokenType::INTEGER_LITERAL: return "Integer";
