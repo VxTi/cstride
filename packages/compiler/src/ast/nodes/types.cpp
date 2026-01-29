@@ -490,14 +490,14 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
 
     const std::vector references = {
         error_source_reference_t{
-            .source  = *rhs->get_source(),
+            .source          = *rhs->get_source(),
             .source_position = lhs->get_source_position(),
-            .message = lhs->to_string()
+            .message         = lhs->to_string()
         },
         error_source_reference_t{
-            .source  = *rhs->get_source(),
+            .source          = *rhs->get_source(),
             .source_position = rhs->get_source_position(),
-            .message = rhs->get_internal_name()
+            .message         = rhs->get_internal_name()
         }
     };
 
@@ -549,12 +549,14 @@ size_t primitive_type_to_internal_id(const PrimitiveType type)
 
 size_t stride::ast::ast_type_to_internal_id(IAstInternalFieldType* type)
 {
-    if (const auto primitive = dynamic_cast<AstPrimitiveFieldType*>(type); primitive != nullptr)
+    if (const auto primitive = dynamic_cast<AstPrimitiveFieldType*>(type);
+        primitive != nullptr)
     {
         return primitive_type_to_internal_id(primitive->type());
     }
 
-    if (const auto* named = dynamic_cast<const AstNamedValueType*>(type))
+    if (const auto* named = dynamic_cast<const AstNamedValueType*>(type);
+        named != nullptr)
     {
         return std::hash<std::string>{}(named->name());
     }

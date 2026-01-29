@@ -1,7 +1,7 @@
 #include "program.h"
 
 #include <iostream>
-#include <ast/nodes/functions.h>
+#include <../include/ast/internal_names.h>
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>

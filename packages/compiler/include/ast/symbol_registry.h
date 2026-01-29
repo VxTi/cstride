@@ -64,13 +64,16 @@ namespace stride::ast
     {
         std::optional<std::string> _reference_struct_name;
         std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> _fields;
+        std::string _name;
 
     public:
         explicit StructSymbolDef(
-            const std::string& symbol_name,
+            const std::string& struct_name,
+            const std::string& internal_name,
             std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
-        ) : ISymbolDef(symbol_name),
-            _fields(std::move(fields)) {}
+        ) : ISymbolDef(internal_name),
+            _fields(std::move(fields)),
+            _name(struct_name) {}
 
         explicit StructSymbolDef(
             const std::string& symbol_name,
@@ -95,6 +98,8 @@ namespace stride::ast
         {
             return _reference_struct_name;
         }
+
+        std::string get_name() const { return this->_name; }
     };
 
     /// Can be either a variable or a field in a struct/class
@@ -195,6 +200,7 @@ namespace stride::ast
         ) const;
 
         void define_struct(
+            std::string struct_name,
             std::string internal_name,
             std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
         ) const;

@@ -13,7 +13,7 @@
 #include "ast/flags.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/functions.h"
+#include "../../../../include/ast/internal_names.h"
 
 using namespace stride::ast;
 

@@ -18,7 +18,9 @@ StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
         {
             if (auto* struct_def = dynamic_cast<StructSymbolDef*>(definition.get()))
             {
-                if (struct_def->get_internal_symbol_name() == name)
+                // Here we don't check for the internal name, as we don't always know what the data
+                // layout is initially (which is used for resolving the actual internal name)
+                if (struct_def->get_name() == name)
                 {
                     return struct_def;
                 }
@@ -32,12 +34,26 @@ StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
 }
 
 void SymbolRegistry::define_struct(
+    std::string struct_name,
     std::string internal_name,
     std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
 ) const
 {
+    if (const auto existing_def = this->get_struct_def(struct_name); existing_def != nullptr)
+    {
+        throw parsing_error(
+            make_source_error(
+                ErrorType::SEMANTIC_ERROR,
+                std::format("Struct '{}' is already defined in this scope", struct_name),
+                *fields.begin()->second->get_source(),
+                fields.begin()->second->get_source_position()
+            )
+        );
+    }
+
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
     root.symbols.push_back(std::make_unique<StructSymbolDef>(
+        std::move(struct_name),
         std::move(internal_name),
         std::move(fields)
     ));

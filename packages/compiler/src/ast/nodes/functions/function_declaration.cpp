@@ -10,7 +10,7 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include "ast/nodes/blocks.h"
-#include "ast/nodes/functions.h"
+#include "ast/internal_names.h"
 
 
 using namespace stride::ast;

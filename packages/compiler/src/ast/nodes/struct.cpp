@@ -4,6 +4,7 @@
 
 #include <llvm/IR/Module.h>
 
+#include "ast/internal_names.h"
 #include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
@@ -103,7 +104,11 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         tokens.throw_error("Struct must have at least one member");
     }
 
-    scope->define_struct(struct_name, std::move(fields));
+    scope->define_struct(
+        struct_name,
+        resolve_internal_struct_name(fields, struct_name),
+        std::move(fields)
+        );
 
     return std::make_unique<AstStruct>(
         tokens.get_source(),
