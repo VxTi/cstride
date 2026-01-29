@@ -49,17 +49,19 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         return std::move(reassignment.value());
     }
 
+    // If the next token is a '(', we'll try to descend into it
+    // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
     if (set.peak_next_eq(TokenType::LPAREN))
     {
         set.next();
-        auto expr = parse_expression_extended(0, scope, set);
+        auto expr = parse_standalone_expression_part(scope, set);
         set.expect(TokenType::RPAREN);
         return expr;
     }
 
     if (set.peak_next_eq(TokenType::IDENTIFIER))
     {
-        /// Function invocations
+        /// Function invocations, e.g., `<identifier>(...)`
         if (set.peak(1).get_type() == TokenType::LPAREN)
         {
             return parse_function_call(scope, set);
@@ -95,11 +97,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
     set.throw_error("Invalid token found in expression");
 }
 
-/**
- * Parsing of an expression that does not require precedence, but has a LHS and RHS, and an operator.
- * This can be either binary expressions, e.g., 1 + 1, or comparative expressions, e.g., 1 < 2
- */
-std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
+std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs
@@ -126,6 +124,18 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_or_comparative_op(
             std::move(rhs)
         );
     }
+
+    return lhs;
+}
+
+// Will yield `lhs` if no comparative operation is found
+std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_optional(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    TokenSet& set,
+    std::unique_ptr<AstExpression> lhs
+)
+{
+    const auto reference_token = set.peak_next();
 
     if (auto comparative_op = get_comparative_op_type(reference_token.get_type()); comparative_op.has_value())
     {
@@ -156,16 +166,19 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     TokenSet& set
 )
 {
+    // Will try to parse <name>::{ ... }
     if (is_struct_initializer(set))
     {
         return parse_struct_initializer(scope, set);
     }
 
+    // Will try to parse [ ... ]
     if (is_array_initializer(set))
     {
         return parse_array_initializer(scope, set);
     }
 
+    // let <name>: <type> = <...>
     if (is_variable_declaration(set))
     {
         return parse_variable_declaration(
@@ -181,17 +194,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
         set.throw_error("Unexpected token in expression");
     }
 
-    if (const auto literal = dynamic_cast<AstLiteral*>(lhs.get()); literal != nullptr)
-    {
-        return std::move(lhs);
-    }
+    // if (const auto iden)
 
     // Attempt to parse arithmetic binary operations first
 
     // If we have a result from arithmetic parsing, update lhs.
-    // Note: parse_arithmetic_binary_op returns the lhs if no arithmetic op is found,
+    // Note: parse_arithmetic_binary_operation_optional returns the lhs if no arithmetic op is found,
     // so it effectively passes through unless an error occurs (returns nullopt).
-    if (auto arithmetic_result = parse_arithmetic_binary_op(scope, set, std::move(lhs), 1);
+    if (auto arithmetic_result = parse_arithmetic_binary_operation_optional(scope, set, std::move(lhs), 1);
         arithmetic_result.has_value())
     {
         lhs = std::move(arithmetic_result.value());
@@ -202,12 +212,17 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
         set.throw_error("Invalid arithmetic expression");
     }
 
-    // Now attempt to parse logical or comparative operations using the result
-
-    if (auto logical_result = parse_logical_or_comparative_op(scope, set, std::move(lhs));
-        logical_result.has_value())
+    // These methods optionally wrap the existing expression in another expression, e.g., Expr<lhs> -> ComparativeExpr<Expr<lhs>, Expr<rhs>>
+    if (auto comparative_expr = parse_comparative_operation_optional(scope, set, std::move(lhs));
+        comparative_expr.has_value())
     {
-        return std::move(logical_result.value());
+        return std::move(comparative_expr.value());
+    }
+
+    // Similar case here
+    if (auto logical_expr = parse_logical_operation_optional(scope, set, std::move(lhs)))
+    {
+        return std::move(logical_expr.value());
     }
 
     set.throw_error("Unexpected token in expression");
