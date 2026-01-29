@@ -60,12 +60,14 @@ void SymbolRegistry::define_struct(
 }
 
 void SymbolRegistry::define_struct(
+    std::string struct_name,
     std::string internal_name,
     std::string reference_struct_name
 ) const
 {
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
     root.symbols.push_back(std::make_unique<StructSymbolDef>(
+        std::move(struct_name),
         std::move(internal_name),
         std::move(reference_struct_name)
     ));

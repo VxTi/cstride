@@ -64,7 +64,11 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         tokens.expect(TokenType::SEMICOLON);
 
         // We define it as a reference to `reference_sym`. Validation happens later
-        scope->define_struct(struct_name, reference_sym->get_internal_name());
+        scope->define_struct(
+            struct_name,
+            struct_name, // We don't know its internal name, so we'll just provide the name as placeholder
+            reference_sym->get_internal_name()
+        );
 
         return std::make_unique<AstStruct>(
             tokens.get_source(),
@@ -108,7 +112,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         struct_name,
         resolve_internal_struct_name(fields, struct_name),
         std::move(fields)
-        );
+    );
 
     return std::make_unique<AstStruct>(
         tokens.get_source(),
