@@ -65,9 +65,9 @@ llvm::Value* AstWhileLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope,
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::RUNTIME_ERROR,
                     "Failed to codegen loop condition",
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );

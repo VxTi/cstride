@@ -59,9 +59,9 @@ void AstUnaryOp::validate()
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 "Cannot infer type of operand",
+                *this->get_source(),
                 this->get_source_position()
             )
         );
@@ -71,9 +71,9 @@ void AstUnaryOp::validate()
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 "Cannot modify immutable value",
+                *this->get_source(),
                 this->get_source_position()
             )
         );
@@ -96,9 +96,9 @@ llvm::Value* AstUnaryOp::codegen(
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::RUNTIME_ERROR,
                     "Operand must be an identifier for this operation",
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );
@@ -126,9 +126,9 @@ llvm::Value* AstUnaryOp::codegen(
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::RUNTIME_ERROR,
                     std::format("Unknown variable '{}'", internal_name),
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );
@@ -153,9 +153,9 @@ llvm::Value* AstUnaryOp::codegen(
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::RUNTIME_ERROR,
                     std::format("Cannot determine type of variable '{}'", internal_name),
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );
@@ -218,9 +218,9 @@ llvm::Value* AstUnaryOp::codegen(
         // Requires type system to know what we are pointing to
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::RUNTIME_ERROR,
                 "Dereference not implemented yet due to opaque pointers",
+                *this->get_source(),
                 this->get_source_position()
             )
         );

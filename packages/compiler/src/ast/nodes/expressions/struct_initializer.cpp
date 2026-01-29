@@ -114,9 +114,9 @@ void AstStructInitializer::validate()
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 std::format("Struct '{}' does not exist", this->_struct_name),
+                *this->get_source(),
                 this->get_source_position()
             )
         );
@@ -129,7 +129,6 @@ void AstStructInitializer::validate()
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Too {} members found in struct '{}': expected {}, got {}",
@@ -137,6 +136,7 @@ void AstStructInitializer::validate()
                     this->_struct_name,
                     fields.size(), this->_initializers.size()
                 ),
+                *this->get_source(),
                 this->get_source_position()
             )
         );
@@ -150,21 +150,19 @@ void AstStructInitializer::validate()
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::TYPE_ERROR,
                     std::format("Struct '{}' has no member named '{}'", this->_struct_name, member_name),
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );
         }
 
-        if (auto member_type = infer_expression_type(this->get_registry(), member_expr.get()); *member_type != *
-            found_member->
-            second)
+        if (auto member_type = infer_expression_type(this->get_registry(), member_expr.get());
+            *member_type != *found_member->second)
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Type mismatch for member '{}' in struct '{}': expected '{}', got '{}'",
@@ -173,6 +171,7 @@ void AstStructInitializer::validate()
                         found_member->second->to_string(),
                         member_type->to_string()
                     ),
+                    *this->get_source(),
                     found_member->second->get_source_position()
                 )
             );
@@ -215,9 +214,9 @@ llvm::Value* AstStructInitializer::codegen(
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::RUNTIME_ERROR,
                 std::format("Struct type '{}' is undefined", this->_struct_name),
+                *this->get_source(),
                 this->get_source_position()
             )
         );

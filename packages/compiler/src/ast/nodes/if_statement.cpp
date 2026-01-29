@@ -126,9 +126,9 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 "If statement condition is empty",
+                *this->get_source(),
                 this->get_source_position()
             )
         );
@@ -138,9 +138,9 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::TYPE_ERROR,
                 "If statement body is empty",
+                *this->get_source(),
                 this->get_source_position()
             )
         );
@@ -153,9 +153,9 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::RUNTIME_ERROR,
                 "Unable to generate condition value",
+                *this->get_source(),
                 this->get_source_position()
             )
         );

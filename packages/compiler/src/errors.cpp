@@ -15,9 +15,9 @@ std::string stride::error_type_to_string(const ErrorType error_type)
 }
 
 std::string stride::make_source_error(
-    const SourceFile& source_file,
     const ErrorType error_type,
     const std::string& error,
+    const SourceFile& source_file,
     const SourcePosition source_position,
     const std::string& suggestion
 )

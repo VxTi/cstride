@@ -38,9 +38,9 @@ void stride::ast::parse_subsequent_fn_params(
         {
             throw parsing_error(
                 make_source_error(
-                    *set.get_source(),
                     ErrorType::SYNTAX_ERROR,
                     "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters",
+                    *set.get_source(),
                     next.get_source_position()
                 )
             );

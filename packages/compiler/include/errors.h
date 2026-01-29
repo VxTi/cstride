@@ -30,9 +30,9 @@ namespace stride
      * position and length.
      */
     std::string make_source_error(
-        const SourceFile& source_file,
         ErrorType error_type,
         const std::string& error,
+        const SourceFile& source_file,
         SourcePosition source_position,
         const std::string& suggestion = ""
     );

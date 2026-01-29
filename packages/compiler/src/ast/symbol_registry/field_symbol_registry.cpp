@@ -39,9 +39,9 @@ void SymbolRegistry::define_field(
     {
         throw parsing_error(
             make_source_error(
-                *type->get_source(),
                 ErrorType::SEMANTIC_ERROR,
                 std::format("Field '{}' is already defined in this scope", field_name),
+                *type->get_source(),
                 type->get_source_position()
             )
         );

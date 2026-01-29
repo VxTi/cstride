@@ -126,9 +126,9 @@ void AstStructMember::validate()
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::TYPE_ERROR,
                     std::format("Undefined struct type for member '{}'", this->get_name()),
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );
@@ -148,13 +148,13 @@ void AstStruct::validate()
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Unable to determine type of struct '{}': referenced struct type '{}' is undefined",
                         this->get_name(),
                         this->_reference.value()->get_internal_name()
                     ),
+                    *this->get_source(),
                     this->_reference.value()->get_source_position()
                 )
             );
@@ -231,9 +231,9 @@ llvm::Value* AstStruct::codegen(
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::RUNTIME_ERROR,
                     std::format("Referenced struct type '{}' not found during codegen", ref_name),
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );
@@ -244,9 +244,9 @@ llvm::Value* AstStruct::codegen(
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::TYPE_ERROR,
                     std::format("Referenced struct type '{}' is not fully defined", ref_name),
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );
@@ -267,10 +267,12 @@ llvm::Value* AstStruct::codegen(
                 // you would find the opaque type created in step 1 here.
                 throw parsing_error(
                     make_source_error(
-                        *this->get_source(),
                         ErrorType::TYPE_ERROR,
-                        std::format("Unknown internal type '{}' for struct member '{}'",
-                                    member->get_type().get_internal_name(), member->get_name()),
+                        std::format(
+                            "Unknown internal type '{}' for struct member '{}'",
+                            member->get_type().get_internal_name(), member->get_name()
+                        ),
+                        *this->get_source(),
                         member->get_source_position()
                     )
                 );

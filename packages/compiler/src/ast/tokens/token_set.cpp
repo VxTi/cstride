@@ -172,9 +172,9 @@ std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
 {
     throw parsing_error(
         make_source_error(
-            *this->get_source(),
             error_type,
             message,
+            *this->get_source(),
             token.get_source_position()
         )
     );

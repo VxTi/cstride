@@ -38,9 +38,9 @@ void AstArrayMemberAccessor::validate()
         {
             throw parsing_error(
                 make_source_error(
-                    *this->get_source(),
                     ErrorType::SEMANTIC_ERROR,
                     std::format("Array index accessor must be of type int, got '{}'", primitive_type->to_string()),
+                    *this->get_source(),
                     this->get_source_position()
                 )
             );
@@ -49,9 +49,9 @@ void AstArrayMemberAccessor::validate()
 
     throw parsing_error(
         make_source_error(
-            *this->get_source(),
             ErrorType::SEMANTIC_ERROR,
             "Array index accessor must be of type 'int', got '" + index_accessor_type->to_string() + "'",
+            *this->get_source(),
             this->get_source_position()
         )
     );
@@ -76,9 +76,9 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     {
         throw parsing_error(
             make_source_error(
-                *this->get_source(),
                 ErrorType::SEMANTIC_ERROR,
                 "Array member accessor used on non-array type",
+                *this->get_source(),
                 this->get_source_position()
             )
         );

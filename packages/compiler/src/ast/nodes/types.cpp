@@ -339,9 +339,9 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         {
             throw parsing_error(
                 make_source_error(
-                    *array->get_source(),
                     ErrorType::RUNTIME_ERROR,
                     "Unable to resolve internal type for array element",
+                    *array->get_source(),
                     array->get_source_position()
                 )
             );
@@ -397,9 +397,9 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         {
             throw parsing_error(
                 make_source_error(
-                    *custom->get_source(),
                     ErrorType::RUNTIME_ERROR,
                     std::format("Custom type '{}' not found", custom->name()),
+                    *custom->get_source(),
                     custom->get_source_position()
                 )
             );
@@ -427,9 +427,9 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
     {
         throw parsing_error(
             make_source_error(
-                *lhs->get_source(),
                 ErrorType::TYPE_ERROR,
                 "Cannot mix primitive type with named type",
+                *lhs->get_source(),
                 lhs->get_source_position()
             )
         );
@@ -440,9 +440,9 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
     {
         throw parsing_error(
             make_source_error(
-                *lhs->get_source(),
                 ErrorType::TYPE_ERROR,
                 "Cannot compute dominant type for non-primitive types",
+                *lhs->get_source(),
                 lhs->get_source_position()
             )
         );
