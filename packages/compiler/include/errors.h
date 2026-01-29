@@ -56,6 +56,14 @@ namespace stride
 
         explicit parsing_error(const std::string& str) : parsing_error(str.c_str()) {}
 
+        explicit parsing_error(
+            const ErrorType error_type,
+            const std::string& error,
+            const SourceFile& source_file,
+            const SourcePosition source_position,
+            const std::string& suggestion = ""
+        ) : parsing_error(make_source_error(error_type, error, source_file, source_position, suggestion)) {}
+
 
         [[nodiscard]]
         const char* what() const noexcept override

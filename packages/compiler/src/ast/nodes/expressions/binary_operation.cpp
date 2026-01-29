@@ -60,7 +60,7 @@ std::string AstBinaryArithmeticOp::to_string()
  * This parses expressions that requires precedence, such as binary expressions.
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
-std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_binary_op(
+std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_binary_operation_optional(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs,
@@ -100,7 +100,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
                 if (const int next_precedence = get_binary_operator_precedence(next_op.value());
                     precedence < next_precedence)
                 {
-                    if (auto rhs_opt = parse_arithmetic_binary_op(scope, set, std::move(rhs), precedence + 1); rhs_opt.
+                    if (auto rhs_opt = parse_arithmetic_binary_operation_optional(scope, set, std::move(rhs), precedence + 1); rhs_opt.
                         has_value())
                     {
                         rhs = std::move(rhs_opt.value());
@@ -216,6 +216,7 @@ bool AstBinaryArithmeticOp::is_reducible()
         || this->get_right().is_reducible();
 }
 
+// TODO: Implement literal reduction
 std::unique_ptr<IAstNode> reduce_literal_binary_op(
     const AstBinaryArithmeticOp* self,
     AstLiteral* left_lit,
@@ -248,6 +249,7 @@ std::unique_ptr<IAstNode> reduce_literal_binary_op(
     return nullptr;
 }
 
+// TODO: Implement literal reduction
 std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
     AstBinaryArithmeticOp* self,
     AstExpression* left_lit,
@@ -270,6 +272,7 @@ std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
     return std::nullopt;
 }
 
+// TODO: Implement
 IAstNode* AstBinaryArithmeticOp::reduce()
 {
     /*if (!this->is_reducible()) return this;

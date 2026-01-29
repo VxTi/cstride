@@ -102,6 +102,11 @@ namespace stride::ast
         }
 
         std::string get_name() const { return this->_name; }
+
+        bool has_member(const std::string& member_name) const
+        {
+            return this->_fields.contains(member_name);
+        }
     };
 
     /// Can be either a variable or a field in a struct/class

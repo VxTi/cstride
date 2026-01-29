@@ -193,6 +193,45 @@ namespace stride::ast
         void validate() override;
     };
 
+    class AstMemberAccessor
+        : public AstExpression
+    {
+        std::unique_ptr<AstExpression> _base_expr;
+        std::unique_ptr<AstExpression> _member_expr;
+
+    public:
+        explicit AstMemberAccessor(
+            const std::shared_ptr<SourceFile>& source,
+            const SourcePosition source_position,
+            const std::shared_ptr<SymbolRegistry>& scope,
+            std::unique_ptr<AstExpression> base_expr,
+            std::unique_ptr<AstExpression> member_expr
+        ) : AstExpression(source, source_position, scope),
+            _base_expr(std::move(base_expr)),
+            _member_expr(std::move(member_expr)) {}
+
+        [[nodiscard]]
+        AstExpression* get_base_expr() const { return this->_base_expr.get(); }
+
+        [[nodiscard]]
+        AstExpression* get_member_expr() const { return this->_member_expr.get(); }
+
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
+
+        std::string to_string() override;
+
+        bool is_reducible() override;
+
+        IAstNode* reduce() override;
+
+        void validate() override;
+    };
+
     class AstFunctionCall :
         public AstExpression
     {
@@ -246,6 +285,7 @@ namespace stride::ast
         IAstNode* reduce() override;
 
     private:
+        [[nodiscard]]
         std::string format_function_name() const;
 
         static std::string format_suggestion(const ISymbolDef* suggestion);
@@ -260,7 +300,7 @@ namespace stride::ast
         const std::unique_ptr<AstExpression> _initial_value;
 
     public:
-        AstVariableDeclaration(
+        explicit AstVariableDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -317,7 +357,7 @@ namespace stride::ast
         std::unique_ptr<AstExpression> _rsh;
 
     public:
-        AbstractBinaryOp(
+        explicit AbstractBinaryOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -340,7 +380,7 @@ namespace stride::ast
         const BinaryOpType _op_type;
 
     public:
-        AstBinaryArithmeticOp(
+        explicit AstBinaryArithmeticOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -373,7 +413,7 @@ namespace stride::ast
         LogicalOpType _op_type;
 
     public:
-        AstLogicalOp(
+        explicit AstLogicalOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -402,7 +442,7 @@ namespace stride::ast
         ComparisonOpType _op_type;
 
     public:
-        AstComparisonOp(
+        explicit AstComparisonOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -433,7 +473,7 @@ namespace stride::ast
         const bool _is_lsh;
 
     public:
-        AstUnaryOp(
+        explicit AstUnaryOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -452,7 +492,7 @@ namespace stride::ast
         UnaryOpType get_op_type() const { return this->_op_type; }
 
         [[nodiscard]]
-        AstExpression& get_operand() const { return *this->_operand.get(); }
+        AstExpression& get_operand() const { return *this->_operand; }
 
         llvm::Value* codegen(
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -608,11 +648,18 @@ namespace stride::ast
     );
 
     /// Parses a binary arithmetic operation using precedence climbing
-    std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_op(
+    std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_operation_optional(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         std::unique_ptr<AstExpression> lhs,
         int min_precedence
+    );
+
+    /// This parses both function call chaining, and struct member access
+    std::optional<std::unique_ptr<AstExpression>> parse_chained_member_access_optional(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        TokenSet& set,
+        std::unique_ptr<AstExpression> lhs
     );
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
