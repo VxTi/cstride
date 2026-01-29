@@ -9,6 +9,7 @@ editor/.c-cache
 *.exe
 *.out
 *.log
+dist
 
 .DS_Store
 Makefile
