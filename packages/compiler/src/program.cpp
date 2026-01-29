@@ -1,7 +1,7 @@
 #include "program.h"
 
 #include <iostream>
-#include <../include/ast/internal_names.h>
+#include <ast/internal_names.h>
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
@@ -152,7 +152,7 @@ llvm::Expected<llvm::orc::ExecutorAddr> locate_main_fn(llvm::orc::LLJIT* jit)
     return main_symbol_or_err;
 }
 
-int Program::compile_jit() const
+int Program::compile_jit(const cli::CompilationOptions& options) const
 {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
     setvbuf(stdout, nullptr, _IONBF, 0);
@@ -212,7 +212,10 @@ int Program::compile_jit() const
         throw std::runtime_error("LLVM IR verification failed");
     }
     // Debugging : Uncomment when necessary
-    // module->print(llvm::errs(), nullptr);
+    if (options.debug_mode)
+    {
+        module->print(llvm::errs(), nullptr);
+    }
 
     llvm::LoopAnalysisManager loop_analysis_manager;
     llvm::FunctionAnalysisManager function_analysis_manager;

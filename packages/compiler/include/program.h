@@ -5,6 +5,8 @@
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Target/TargetMachine.h>
 
+#include "cli.h"
+
 namespace stride
 {
     class ProgramObject
@@ -46,7 +48,7 @@ namespace stride
         Program& operator=(const Program&) = delete;
 
         [[nodiscard]]
-        int compile_jit() const;
+        int compile_jit(const cli::CompilationOptions& options) const;
 
     private:
         void print_ast_nodes() const;
