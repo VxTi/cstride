@@ -2,9 +2,7 @@
 
 #include <format>
 #include <iostream>
-#include <vector>
 
-#include "compilation_options.h"
 #include "program.h"
 
 using namespace stride::cli;
@@ -59,10 +57,11 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
     return 1;
 }
 
-stride::ast::CompilationOptions resolve_compilation_options(const int argc, char** argv)
+stride::cli::CompilationOptions resolve_compilation_options(const int argc, char** argv)
 {
-    stride::ast::CompilationOptions options = {
-        .mode = stride::ast::CompilationMode::COMPILE_JIT
+    CompilationOptions options = {
+        .mode = CompilationMode::COMPILE_JIT,
+        .debug_mode = false
     };
 
     for (int i = 0; i < argc; ++i)
@@ -81,8 +80,8 @@ stride::ast::CompilationOptions resolve_compilation_options(const int argc, char
             const auto mode = argument.substr(7);
             options.mode =
                 mode == "interpret"
-                    ? stride::ast::CompilationMode::INTERPRET
-                    : stride::ast::CompilationMode::COMPILE_JIT;
+                    ? CompilationMode::INTERPRET
+                    : CompilationMode::COMPILE_JIT;
         }
 
         // Handle other flags here in the future
@@ -100,7 +99,7 @@ int stride::cli::resolve_compile_command(const int argc, char** argv)
 
     program.parse_files(options.include_paths);
 
-    return program.compile_jit();
+    return program.compile_jit(options);
 }
 
 // `cstride install` or `cstride i`

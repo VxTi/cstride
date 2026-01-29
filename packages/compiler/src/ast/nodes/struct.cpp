@@ -20,7 +20,7 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     set.expect(TokenType::COLON);
 
     auto struct_member_type = parse_type(scope, set, "Expected struct member type");
-    set.expect(TokenType::SEMICOLON);
+    set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
 
     // TODO: Replace with struct-field-specific method
     scope->define_field(struct_member_name, struct_member_name, struct_member_type->clone());
