@@ -13,7 +13,7 @@ namespace stride::ast
     );
 
     std::string resolve_internal_struct_name(
-        const std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>>& struct_members,
+        const std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>>& struct_members,
         const std::string& struct_name
     );
 }

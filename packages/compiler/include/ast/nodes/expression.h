@@ -196,25 +196,35 @@ namespace stride::ast
     class AstMemberAccessor
         : public AstExpression
     {
-        std::unique_ptr<AstExpression> _base_expr;
-        std::unique_ptr<AstExpression> _member_expr;
+        // When adding function chaining support,
+        // these types will have to be changed to AstExpression
+        std::unique_ptr<AstIdentifier> _base;
+        std::vector<std::unique_ptr<AstIdentifier>> _members;
 
     public:
         explicit AstMemberAccessor(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
-            std::unique_ptr<AstExpression> base_expr,
-            std::unique_ptr<AstExpression> member_expr
+            std::unique_ptr<AstIdentifier> base,
+            std::vector<std::unique_ptr<AstIdentifier>> members
         ) : AstExpression(source, source_position, scope),
-            _base_expr(std::move(base_expr)),
-            _member_expr(std::move(member_expr)) {}
+            _base(std::move(base)),
+            _members(std::move(members)) {}
 
         [[nodiscard]]
-        AstExpression* get_base_expr() const { return this->_base_expr.get(); }
+        AstIdentifier* get_base() const { return this->_base.get(); }
 
         [[nodiscard]]
-        AstExpression* get_member_expr() const { return this->_member_expr.get(); }
+        std::vector<AstIdentifier*> get_member() const
+        {
+            // We don't wanna transfer ownership to anyone else...
+            std::vector<AstIdentifier*> result;
+            result.reserve(this->_members.size());
+            std::ranges::transform(this->_members, std::back_inserter(result),
+                                   [](const std::unique_ptr<AstIdentifier>& member) { return member.get(); });
+            return result;
+        }
 
         llvm::Value* codegen(
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -656,7 +666,7 @@ namespace stride::ast
     );
 
     /// This parses both function call chaining, and struct member access
-    std::optional<std::unique_ptr<AstExpression>> parse_chained_member_access_optional(
+    std::unique_ptr<AstExpression> parse_chained_member_access(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         std::unique_ptr<AstExpression> lhs
@@ -732,6 +742,10 @@ namespace stride::ast
     /// Checks if the token set represents a struct initializer
     /// This is the case if an expression starts with `{ <member> }`
     bool is_struct_initializer(const TokenSet& set);
+
+    /// Checks whether the subsequent tokens might be member accessors
+    /// e.g., <identifier>.<accessor>
+    bool is_member_accessor(AstExpression* lhs, const TokenSet& set);
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
      #                                                           #

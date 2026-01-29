@@ -144,9 +144,9 @@ void AstStructInitializer::validate()
 
     for (const auto& [member_name, member_expr] : this->_initializers)
     {
-        const auto found_member = fields.find(member_name);
+        const auto found_member = definition->get_field(member_name);
 
-        if (found_member == fields.end())
+        if (!found_member)
         {
             throw parsing_error(
                 make_source_error(
@@ -159,7 +159,7 @@ void AstStructInitializer::validate()
         }
 
         if (auto member_type = infer_expression_type(this->get_registry(), member_expr.get());
-            *member_type != *found_member->second)
+            *member_type != *found_member)
         {
             throw parsing_error(
                 make_source_error(
@@ -168,11 +168,11 @@ void AstStructInitializer::validate()
                         "Type mismatch for member '{}' in struct '{}': expected '{}', got '{}'",
                         member_name,
                         this->_struct_name,
-                        found_member->second->to_string(),
+                        found_member->to_string(),
                         member_type->to_string()
                     ),
                     *this->get_source(),
-                    found_member->second->get_source_position()
+                    found_member->get_source_position()
                 )
             );
         }
