@@ -87,7 +87,108 @@ The editor is a web-based IDE for Stride, built with Monaco Editor.
 3. Open the provided local URL in your browser.
    This will likely be `http://localhost:3000/`
 
-   
+## Language Reference
+
+### Syntax
+
+### Creating variables
+
+```stride
+// Creating a mutable 32 bit int variable
+mut x: i32 = 10
+
+// Creating a constant variable - by default, variables are constant
+let y: f64 = 3.0D
+
+// There are a few different kinds of integer literals, like so:
+let hex: i32 = 0x12345
+
+// 64-bit integer literal, suffixed with an 'L'
+let large_int: i64 = 12345678901234567890L
+```
+
+### Integer Literals
+
+Stride supports various integer literal formats, including decimal, hexadecimal, and binary.
+For example, `0x12345` is a hexadecimal integer literal, and `0b101010` is a binary integer literal.
+
+### Floating Point Literals
+
+Floating point literals can be suffixed with 'F' for single precision or 'D' for double precision.
+For example, `3.14F` is a single precision float, and `2.71828D` is a double precision float.
+
+### Operators
+
+The language uses the traditional arithmetic operators, as well as comparison operators.
+An example of these operators is shown below:
+```stride
+let x: i32 = 10
+let y: f64 = 3.0D
+
+// Arithmetic operators
+let sum: f64 = x + y
+let difference: f64 = x - y
+let product: f64 = x * y
+let quotient: f64 = x / y
+let remainder: f64 = x % y
+
+// Comparison operators
+let is_equal: bool = x == y
+let is_not_equal: bool = x != y
+let is_less_than: bool = x < y
+let is_greater_than: bool = x > y
+let is_less_than_or_equal: bool = x <= y
+let is_greater_than_or_equal: bool = x >= y
+```
+
+### Creating and invoking functions 
+
+Functions are declared using the `fn` keyword, followed by the function name,
+a list of parameters (optionally), and the return type. For example:
+```stride
+fn add(a: i32, b: i32): i32 {
+    return a + b
+}
+
+// You can also create externally linked functions,
+// if they are defined in another library.
+extern fn some_c_function(x: i32): i32;
+
+
+// You can invoke functions using the following syntax:
+let result: i32 = add(10, 5)
+```
+
+### Comments
+
+Comments in Stride are denoted by `//` for single-line comments, and `/* ... */` for multi-line comments.
+```stride
+// This is a single-line comment
+/*
+This is a multi-line comment
+*/
+```
+
+### Structs
+
+Structs are still in development, but they are similar to classes in other languages.
+The current syntax is as follows:
+```stride
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+let p = Point::{ x: 10, y: 20 }
+
+// You can also create structs that reference other structs.
+// These still function as separate types, and will cause a type error if they are used inappropriately.
+struct Vector2d = Point
+
+let p2: Vector2d = Vector2d::{ x: 5, y: 15 } // This is valid
+
+let p3: Point = p2 // This is invalid,
+```
 
 ## Standard Library
 
