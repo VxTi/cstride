@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
@@ -63,14 +64,15 @@ namespace stride::ast
         : public ISymbolDef
     {
         std::optional<std::string> _reference_struct_name;
-        std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> _fields;
+        std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> _fields;
         std::string _name;
 
     public:
         explicit StructSymbolDef(
             const std::string& struct_name,
             const std::string& internal_name,
-            std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
+            // We wish to preserve order.
+            std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields
         ) : ISymbolDef(internal_name),
             _fields(std::move(fields)),
             _name(struct_name) {}
@@ -85,9 +87,21 @@ namespace stride::ast
               _name(struct_name) {}
 
         [[nodiscard]]
-        const std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>>& get_fields() const
+        const std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>>& get_fields() const
         {
             return this->_fields;
+        }
+
+        IAstInternalFieldType* get_field(const std::string& field_name) const
+        {
+            for (const auto& [name, type] : this->_fields)
+            {
+                if (name == field_name)
+                {
+                    return type.get();
+                }
+            }
+            return nullptr;
         }
 
         [[nodiscard]]
@@ -105,7 +119,26 @@ namespace stride::ast
 
         bool has_member(const std::string& member_name) const
         {
-            return this->_fields.contains(member_name);
+            for (const auto& name : this->_fields | std::views::keys)
+            {
+                if (name == member_name)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        std::optional<int> get_member_index(const std::string& member_name) const
+        {
+            for (size_t i = 0; i < this->_fields.size(); i++)
+            {
+                if (this->_fields[i].first == member_name)
+                {
+                    return static_cast<int>(i);
+                }
+            }
+            return std::nullopt;
         }
     };
 
@@ -209,7 +242,7 @@ namespace stride::ast
         void define_struct(
             std::string struct_name,
             std::string internal_name,
-            std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
+            std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields
         ) const;
 
         void define_struct(

@@ -36,7 +36,7 @@ StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
 void SymbolRegistry::define_struct(
     std::string struct_name,
     std::string internal_name,
-    std::unordered_map<std::string, std::unique_ptr<IAstInternalFieldType>> fields
+    std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields
 ) const
 {
     if (const auto existing_def = this->get_struct_def(struct_name); existing_def != nullptr)

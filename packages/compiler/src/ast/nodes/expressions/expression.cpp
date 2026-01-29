@@ -194,7 +194,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
         set.throw_error("Unexpected token in expression");
     }
 
-    // if (const auto iden)
+    if (is_member_accessor(lhs.get(), set))
+    {
+        return parse_chained_member_access(scope, set, std::move(lhs));
+    }
 
     // Attempt to parse arithmetic binary operations first
 
