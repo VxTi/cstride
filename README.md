@@ -71,6 +71,8 @@ This CLI tool is also still in development.
 
 ### Using the Editor
 
+<img width="678" height="641" alt="Screenshot 2026-01-29 at 17 21 54" src="https://github.com/user-attachments/assets/ade3bee2-4bcb-44d9-8c61-04d5cbc99ff1" />
+
 The editor is a web-based IDE for Stride, built with Monaco Editor.
 
 1. Navigate to the editor directory and install dependencies:
