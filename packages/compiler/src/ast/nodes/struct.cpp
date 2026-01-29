@@ -51,7 +51,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
     const auto struct_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");
-    const auto struct_name = struct_name_tok.get_lexeme();
+    const auto& struct_name = struct_name_tok.get_lexeme();
 
     // Might be a reference to another type
     // This will parse a definition like:

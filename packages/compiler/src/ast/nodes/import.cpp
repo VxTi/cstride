@@ -21,13 +21,13 @@ bool stride::ast::is_import_statement(const TokenSet& tokens)
  */
 std::string consume_import_module_base(TokenSet& tokens)
 {
-    const auto base = tokens.expect(TokenType::IDENTIFIER);
+    const auto base = tokens.expect(TokenType::IDENTIFIER, "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'");
     std::vector<std::string> parts = {base.get_lexeme()};
 
     while (tokens.peak(0) == TokenType::DOUBLE_COLON && tokens.peak(1) == TokenType::IDENTIFIER)
     {
-        tokens.expect(TokenType::DOUBLE_COLON);
-        const auto part = tokens.expect(TokenType::IDENTIFIER);
+        tokens.next();
+        const auto part = tokens.next();
 
         parts.push_back(part.get_lexeme());
     }
@@ -51,16 +51,16 @@ std::string consume_import_module_base(TokenSet& tokens)
  */
 std::vector<std::string> consume_import_submodules(TokenSet& tokens)
 {
-    tokens.expect(TokenType::DOUBLE_COLON);
-    tokens.expect(TokenType::LBRACE);
-    const auto first = tokens.expect(TokenType::IDENTIFIER, "Expected symbol in import list");
+    tokens.expect(TokenType::DOUBLE_COLON, "Expected a '::' before import submodule list");
+    tokens.expect(TokenType::LBRACE, "Expected opening brace with modules after '::', e.g., {module1, module2, ...}");
+    const auto first = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
 
     std::vector<std::string> submodules = {first.get_lexeme()};
 
     while (tokens.peak(0) == TokenType::COMMA && tokens.peak(1) == TokenType::IDENTIFIER)
     {
-        tokens.expect(TokenType::COMMA);
-        const auto submodule_iden = tokens.expect(TokenType::IDENTIFIER, "Expected symbol in import list");
+        tokens.expect(TokenType::COMMA, "Expected comma between module names in import list");
+        const auto submodule_iden = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
 
         submodules.push_back(submodule_iden.get_lexeme());
     }
@@ -80,7 +80,10 @@ std::vector<std::string> consume_import_submodules(TokenSet& tokens)
 /**
  * Attempts to parse an import expression from the given TokenSet.
  */
-std::unique_ptr<AstImport> stride::ast::parse_import_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstImport> stride::ast::parse_import_statement(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    TokenSet& set
+)
 {
     if (scope->get_current_scope() != ScopeType::GLOBAL)
     {
@@ -91,16 +94,14 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(const std::shared
             )
         );
     }
-    const auto reference_token = set.expect(TokenType::KEYWORD_USE);
+    const auto reference_token = set.expect(TokenType::KEYWORD_USE); // With the guard clause, this will always be the case.
 
     const auto import_module = consume_import_module_base(set);
     const auto import_list = consume_import_submodules(set);
 
-    set.expect(TokenType::SEMICOLON);
-
     const Dependency dependency = {
         .module_base = import_module,
-        .submodules = import_list
+        .submodules  = import_list
     };
 
 
