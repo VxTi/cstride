@@ -57,7 +57,7 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
     return 1;
 }
 
-stride::cli::CompilationOptions resolve_compilation_options(const int argc, char** argv)
+CompilationOptions resolve_compilation_options(const int argc, char** argv)
 {
     CompilationOptions options = {
         .mode = CompilationMode::COMPILE_JIT,
@@ -75,13 +75,18 @@ stride::cli::CompilationOptions resolve_compilation_options(const int argc, char
         }
 
         // Currently, this doesn't really do anything else, as we don't support
-        if (argument == "--mode=")
+        if (argument.starts_with("--mode="))
         {
             const auto mode = argument.substr(7);
             options.mode =
                 mode == "interpret"
                     ? CompilationMode::INTERPRET
                     : CompilationMode::COMPILE_JIT;
+        }
+
+        if (argument == "--debug")
+        {
+            options.debug_mode = true;
         }
 
         // Handle other flags here in the future
