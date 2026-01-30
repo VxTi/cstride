@@ -111,8 +111,16 @@ llvm::Value* AstMemberAccessor::codegen(
 
         for (const auto& accessor : this->get_members())
         {
-            const auto struct_def = scope->get_struct_def(current_struct_name);
-            if (!struct_def) return nullptr;
+            auto struct_def_opt = scope->get_struct_def(current_struct_name);
+            if (!struct_def_opt.has_value()) return nullptr;
+
+            auto struct_def = struct_def_opt.value();
+            while (struct_def->is_reference_struct())
+            {
+                struct_def_opt = scope->get_struct_def(struct_def->get_reference_struct_name().value());
+                if (!struct_def_opt.has_value()) return nullptr;
+                struct_def = struct_def_opt.value();
+            }
 
             const auto member_index = struct_def->get_member_index(accessor->get_name());
             if (!member_index.has_value()) return nullptr;
@@ -121,8 +129,10 @@ llvm::Value* AstMemberAccessor::codegen(
             current_const = current_const->getAggregateElement(member_index.value());
             if (!current_const) return nullptr; // Index out of bounds or invalid aggregate
 
-            const IAstType* member_field_type = struct_def->get_field_type(accessor->get_name());
-            current_ast_type = member_field_type->clone();
+            auto member_field_type = struct_def->get_field_type(accessor->get_name());
+            if (!member_field_type.has_value()) return nullptr;
+
+            current_ast_type = member_field_type.value()->clone();
             current_struct_name = current_ast_type->get_internal_name();
         }
 
@@ -145,8 +155,8 @@ llvm::Value* AstMemberAccessor::codegen(
 
     for (const auto& accessor : this->get_members())
     {
-        const auto struct_def = scope->get_struct_def(current_struct_name);
-        if (!struct_def)
+        auto struct_def_opt = scope->get_struct_def(current_struct_name);
+        if (!struct_def_opt.has_value())
         {
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
@@ -154,6 +164,22 @@ llvm::Value* AstMemberAccessor::codegen(
                 *this->get_source(),
                 this->get_source_position()
             );
+        }
+
+        auto struct_def = struct_def_opt.value();
+        while (struct_def->is_reference_struct())
+        {
+            struct_def_opt = scope->get_struct_def(struct_def->get_reference_struct_name().value());
+            if (!struct_def_opt.has_value())
+            {
+                throw parsing_error(
+                    ErrorType::RUNTIME_ERROR,
+                    std::format("Unknown struct type '{}' during codegen", struct_def->get_reference_struct_name().value()),
+                    *this->get_source(),
+                    this->get_source_position()
+                );
+            }
+            struct_def = struct_def_opt.value();
         }
 
         const auto member_index = struct_def->get_member_index(accessor->get_name());
@@ -193,9 +219,10 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         // Update loop state
-        const IAstType* member_field_type = struct_def->get_field_type(accessor->get_name());
+        auto member_field_type = struct_def->get_field_type(accessor->get_name());
+        if (!member_field_type.has_value()) return nullptr;
 
-        current_ast_type = member_field_type->clone();
+        current_ast_type = member_field_type.value()->clone();
         current_struct_name = current_ast_type->get_internal_name();
     }
 

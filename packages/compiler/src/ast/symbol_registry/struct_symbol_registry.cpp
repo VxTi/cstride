@@ -2,7 +2,7 @@
 
 using namespace stride::ast;
 
-StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
+std::optional<StructSymbolDef*> SymbolRegistry::get_struct_def(const std::string& name) const
 {
     auto current = this;
 
@@ -20,7 +20,7 @@ StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
             {
                 // Here we don't check for the internal name, as we don't always know what the data
                 // layout is initially (which is used for resolving the actual internal name)
-                if (struct_def->get_name() == name)
+                if (struct_def->get_internal_symbol_name() == name)
                 {
                     return struct_def;
                 }
@@ -33,9 +33,32 @@ StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
     return nullptr;
 }
 
+std::optional<std::vector<std::pair<std::string, IAstType*>>> SymbolRegistry::get_struct_fields(
+    const std::string& name
+) const
+{
+    auto definition = get_struct_def(name);
+
+    if (!definition)
+    {
+        return std::nullopt;
+    }
+
+    while (definition.value()->is_reference_struct())
+    {
+        definition = get_struct_def(definition.value()->get_reference_struct_name().value());
+
+        if (!definition)
+        {
+            return std::nullopt;
+        }
+    }
+
+    return definition.value()->get_fields();
+}
+
 void SymbolRegistry::define_struct(
     std::string struct_name,
-    const std::string& internal_name,
     std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
 ) const
 {
@@ -52,14 +75,12 @@ void SymbolRegistry::define_struct(
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
     root._symbols.push_back(std::make_unique<StructSymbolDef>(
         std::move(struct_name),
-        internal_name,
         std::move(fields)
     ));
 }
 
 void SymbolRegistry::define_struct(
     const std::string& struct_name,
-    const std::string& internal_name,
     const std::string& reference_struct_name
 ) const
 {
@@ -82,7 +103,6 @@ void SymbolRegistry::define_struct(
     root._symbols.push_back(
         std::make_unique<StructSymbolDef>(
             struct_name,
-            internal_name,
             reference_struct_name
         )
     );
@@ -101,7 +121,23 @@ std::vector<std::pair<std::string, IAstType*>> StructSymbolDef::get_fields() con
     return std::move(copy);
 }
 
-IAstType* StructSymbolDef::get_field_type(const std::string& field_name)
+std::optional<IAstType*> StructSymbolDef::get_field_type(
+    const std::string& field_name,
+    const std::vector<std::pair<std::string, IAstType*>>& fields
+)
+{
+    for (const auto& [name, type] : fields)
+    {
+        if (name == field_name)
+        {
+            return type;
+        }
+    }
+    return nullptr;
+}
+
+// Note that if this struct is a reference struct, this will return nullptr
+std::optional<IAstType*> StructSymbolDef::get_field_type(const std::string& field_name)
 {
     for (const auto& [name, type] : this->_fields)
     {

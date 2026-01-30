@@ -90,7 +90,7 @@ std::string AstStructInitializer::to_string()
     return std::format("StructInit{{...}}");
 }
 
-StructSymbolDef* get_root_reference_struct_def(
+StructSymbolDef* get_super_referencing_struct_def(
     const std::shared_ptr<SymbolRegistry>& scope,
     const std::string& struct_name
 )
@@ -99,17 +99,17 @@ StructSymbolDef* get_root_reference_struct_def(
 
     if (!definition) return nullptr;
 
-    if (definition->is_reference_struct())
+    if (definition.value()->is_reference_struct())
     {
-        return get_root_reference_struct_def(scope, definition->get_reference_struct_name().value());
+        return get_super_referencing_struct_def(scope, definition.value()->get_reference_struct_name().value());
     }
 
-    return definition;
+    return definition.value();
 }
 
 void AstStructInitializer::validate()
 {
-    const auto definition = get_root_reference_struct_def(this->get_registry(), this->_struct_name);
+    const auto definition = get_super_referencing_struct_def(this->get_registry(), this->_struct_name);
     // Check whether the struct we're trying to assign actually exists
     if (definition == nullptr)
     {
@@ -166,7 +166,7 @@ void AstStructInitializer::validate()
     {
         const auto found_member = definition->get_field_type(member_name);
 
-        if (!found_member)
+        if (!found_member.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -177,7 +177,7 @@ void AstStructInitializer::validate()
         }
 
         if (auto member_type = infer_expression_type(this->get_registry(), member_expr.get());
-            *member_type != *found_member)
+            *member_type != *found_member.value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -185,7 +185,7 @@ void AstStructInitializer::validate()
                     "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got '{}'",
                     member_name,
                     this->_struct_name,
-                    found_member->to_string(),
+                    found_member.value()->to_string(),
                     member_type->to_string()
                 ),
                 *this->get_source(),
@@ -227,7 +227,22 @@ llvm::Value* AstStructInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), this->_struct_name);
+    auto struct_def_opt = scope->get_struct_def(this->_struct_name);
+    std::string actual_struct_name = this->_struct_name;
+
+    if (struct_def_opt.has_value())
+    {
+        auto struct_def = struct_def_opt.value();
+        while (struct_def->is_reference_struct())
+        {
+            actual_struct_name = struct_def->get_reference_struct_name().value();
+            struct_def_opt = scope->get_struct_def(actual_struct_name);
+            if (!struct_def_opt.has_value()) break;
+            struct_def = struct_def_opt.value();
+        }
+    }
+
+    llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), actual_struct_name);
 
     if (!struct_type)
     {

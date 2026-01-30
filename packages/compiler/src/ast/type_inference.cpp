@@ -232,27 +232,36 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     const auto base_iden = dynamic_cast<AstIdentifier*>(expr->get_base());
     if (!base_iden)
     {
-        throw parsing_error(ErrorType::TYPE_ERROR, "Member access base must be an identifier",
-                            *expr->get_source(), expr->get_source_position());
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Member access base must be an identifier",
+            *expr->get_source(),
+            expr->get_source_position()
+        );
     }
 
     // 2. Look up the base variable in the symbol table/registry
     const auto field_definition = expr->get_registry()->field_lookup(base_iden->get_internal_name());
     if (!field_definition)
     {
-        throw parsing_error(ErrorType::TYPE_ERROR,
-                            std::format("Variable '{}' not found in current scope", base_iden->get_name()),
-                            *expr->get_source(), expr->get_source_position());
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Variable '{}' not found in current scope", base_iden->get_name()
+            ),
+            *expr->get_source(),
+            expr->get_source_position()
+        );
     }
 
     // Start with the type of the base identifier
     auto current_type = field_definition->get_type();
 
     // Iterate through all member segments (e.g., .b, .c)
-    const auto& members = expr->get_members();
-    for (size_t i = 0; i < members.size(); ++i)
+    for (const auto& members = expr->get_members();
+         const auto member : members)
     {
-        // A: Ensure the current 'node' we are looking inside is actually a struct
+        // Ensure the current 'node' we are looking inside is actually a struct
         const auto struct_type = dynamic_cast<AstStructType*>(current_type);
         if (!struct_type)
         {
@@ -266,17 +275,22 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             );
         }
 
-        // B: Get the definition of that struct to look up its fields
+        // Root fields, for if the struct is a reference
         auto struct_def = expr->get_registry()->get_struct_def(struct_type->get_internal_name());
-        if (!struct_def)
+        const auto root_ref_struct_fields = expr->get_registry()->get_struct_fields(struct_type->get_internal_name());
+
+        if (!struct_def.has_value() || !root_ref_struct_fields.has_value())
         {
-            throw parsing_error(ErrorType::TYPE_ERROR,
-                                std::format("Undefined struct '{}'", struct_type->name()),
-                                *expr->get_source(), expr->get_source_position());
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format("Undefined struct '{}'", struct_type->name()),
+                *expr->get_source(),
+                expr->get_source_position()
+            );
         }
 
-        // C: Resolve the member identifier (e.g., 'b')
-        const auto segment_iden = dynamic_cast<AstIdentifier*>(members[i]);
+        // Resolve the member identifier (e.g., 'b')
+        const auto segment_iden = dynamic_cast<AstIdentifier*>(member);
         if (!segment_iden)
         {
             throw parsing_error(
@@ -287,15 +301,18 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             );
         }
 
-        // D: Look up the field within the struct
-        const auto field_type = struct_def->get_field_type(segment_iden->get_name());
-        if (!field_type)
+        const auto field_type = StructSymbolDef::get_field_type(
+            segment_iden->get_name(),
+            root_ref_struct_fields.value()
+        );
+
+        if (!field_type.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Struct '{}' has no member named '{}'",
-                    struct_def->get_name(),
+                    struct_def.value()->get_internal_symbol_name(),
                     segment_iden->get_name()
                 ),
                 *expr->get_source(),
@@ -303,8 +320,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             );
         }
 
-        // E: Update current_type for the next iteration (or for the final return)
-        current_type = field_type;
+        // Update current_type for the next iteration (or for the final return)
+        current_type = field_type.value();
     }
 
     // 5. Return the final inferred type

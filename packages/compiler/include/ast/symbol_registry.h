@@ -64,31 +64,31 @@ namespace stride::ast
     {
         std::optional<std::string> _reference_struct_name;
         std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> _fields;
-        std::string _name;
 
     public:
         explicit StructSymbolDef(
-            std::string  struct_name,
-            const std::string& internal_name,
+            std::string struct_name,
             std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields // We wish to preserve order.
-        ) : ISymbolDef(internal_name),
-            _fields(std::move(fields)),
-            _name(std::move(struct_name)) {}
+        ) : ISymbolDef(std::move(struct_name)),
+            _fields(std::move(fields)) {}
 
         explicit StructSymbolDef(
-            std::string  struct_name,
-            const std::string& internal_name,
+            const std::string& struct_name,
             const std::string& reference_struct_name
         )
-            : ISymbolDef(internal_name),
-              _reference_struct_name(reference_struct_name),
-              _name(std::move(struct_name)) {}
+            : ISymbolDef(struct_name),
+              _reference_struct_name(reference_struct_name) {}
 
         [[nodiscard]]
         std::vector<std::pair<std::string, IAstType*>> get_fields() const;
 
         [[nodiscard]]
-        IAstType* get_field_type(const std::string& field_name);
+        std::optional<IAstType*> get_field_type(const std::string& field_name);
+
+        static std::optional<IAstType*> get_field_type(
+            const std::string& field_name,
+            const std::vector<std::pair<std::string, IAstType*>>& fields
+        );
 
         [[nodiscard]]
         bool is_reference_struct() const;
@@ -100,10 +100,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::string get_name() const { return this->_name; }
-
-        [[nodiscard]]
-        bool has_member(const std::string& member_name) const
+        bool has_member(const std::string& member_name)
         {
             return get_field_type(member_name) != nullptr;
         }
@@ -173,8 +170,8 @@ namespace stride::ast
         std::shared_ptr<SymbolRegistry> _parent_registry;
 
         std::vector<std::unique_ptr<ISymbolDef>> _symbols;
-    public:
 
+    public:
         explicit SymbolRegistry(
             std::shared_ptr<SymbolRegistry> parent,
             const ScopeType type
@@ -197,7 +194,10 @@ namespace stride::ast
         const IdentifiableSymbolDef* get_symbol_def(const std::string& symbol_name) const;
 
         [[nodiscard]]
-        StructSymbolDef* get_struct_def(const std::string& name) const;
+        std::optional<StructSymbolDef*> get_struct_def(const std::string& name) const;
+
+        [[nodiscard]]
+        std::optional<std::vector<std::pair<std::string, IAstType*>>> get_struct_fields(const std::string& name) const;
 
         [[nodiscard]]
         const FieldSymbolDef* field_lookup(const std::string& name) const;
@@ -211,13 +211,11 @@ namespace stride::ast
 
         void define_struct(
             std::string struct_name,
-            const std::string& internal_name,
             std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
         ) const;
 
         void define_struct(
             const std::string& struct_name,
-            const std::string& internal_name,
             const std::string& reference_struct_name
         ) const;
 

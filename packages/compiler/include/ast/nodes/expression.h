@@ -795,6 +795,6 @@ namespace stride::ast
 
     std::unique_ptr<IAstType> infer_member_accessor_type(
         const std::shared_ptr<SymbolRegistry>& scope,
-        const AstMemberAccessor* initializer
+        const AstMemberAccessor* expr
     );
 }
