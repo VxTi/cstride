@@ -53,6 +53,17 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
         );
     }
 
+    const auto lhs_identifier = dynamic_cast<AstIdentifier*>(lhs.get());
+    if (!lhs_identifier)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Member access base must be an identifier",
+            *set.get_source(),
+            lhs->get_source_position()
+        );
+    }
+
     return std::make_unique<AstMemberAccessor>(
         set.get_source(),
         SourcePosition(
@@ -60,7 +71,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             set.position() - reference_token.get_source_position().offset
         ),
         scope,
-        std::unique_ptr<AstIdentifier>(dynamic_cast<AstIdentifier*>(lhs.release())),
+        std::unique_ptr<AstIdentifier>(lhs_identifier),
         std::move(chained_accessors)
     );
 }
@@ -153,7 +164,8 @@ llvm::Value* AstMemberAccessor::codegen(
         if (s_is_pointer)
         {
             // Get the LLVM type for the current struct to generate the GEP
-            llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(module->getContext(), current_struct_name);
+            llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(
+                module->getContext(), current_struct_name);
 
             // Create the GEP (GetElementPtr) instruction: &current_ptr->member
             current_val = builder->CreateStructGEP(
