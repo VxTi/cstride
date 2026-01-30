@@ -195,11 +195,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
         set.throw_error("Unexpected token in expression");
     }
 
-    if (is_member_accessor(lhs.get(), set))
-    {
-        return parse_chained_member_access(scope, set, std::move(lhs));
-    }
-
     // Attempt to parse arithmetic binary operations first
 
     // If we have a result from arithmetic parsing, update lhs.
@@ -227,6 +222,11 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     if (auto logical_expr = parse_logical_operation_optional(scope, set, std::move(lhs)))
     {
         return std::move(logical_expr.value());
+    }
+
+    if (is_member_accessor(lhs.get(), set))
+    {
+        return parse_chained_member_access(scope, set, std::move(lhs));
     }
 
     set.throw_error("Unexpected token in expression");

@@ -289,7 +289,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Struct member '{}' accessor does not exist", segment_identifier->get_name()),
+                std::format("Struct member accessor '{}' does not exist", segment_identifier->get_name()),
                 *member_accessor->get_source(),
                 member_accessor->get_source_position()
             );
@@ -303,7 +303,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Struct member '{}' accessor does not exist", base_iden->get_name()),
+                std::format("Struct member accessor '{}' does not exist", segment_identifier->get_name()),
                 *member_accessor->get_source(),
                 member_accessor->get_source_position()
             );
@@ -368,7 +368,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         {
             throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
-                std::format("Variable '{}' not found in scope", identifier->get_name()),
+                std::format("Variable '{}' was not found in this scope", identifier->get_name()),
                 *identifier->get_source(),
                 identifier->get_source_position()
             );

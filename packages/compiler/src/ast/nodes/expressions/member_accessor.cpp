@@ -176,16 +176,6 @@ llvm::Value* AstMemberAccessor::codegen(
         // Update loop state
         const IAstInternalFieldType* member_field_type = struct_def->get_field_type(accessor->get_name());
 
-        if (!member_field_type)
-        {
-            throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
-                std::format("Unknown member '{}' in struct '{}'", accessor->get_name(), current_struct_name),
-                *this->get_source(),
-                this->get_source_position()
-            );
-        }
-
         current_ast_type = member_field_type->clone();
         current_struct_name = current_ast_type->get_internal_name();
     }
