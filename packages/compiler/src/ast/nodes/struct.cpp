@@ -134,12 +134,10 @@ void AstStructMember::validate()
             member == nullptr)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::TYPE_ERROR,
-                    std::format("Undefined struct type for member '{}'", this->get_name()),
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::TYPE_ERROR,
+                std::format("Undefined struct type for member '{}'", this->get_name()),
+                *this->get_source(),
+                this->get_source_position()
             );
         }
     }
@@ -156,16 +154,14 @@ void AstStruct::validate()
             reference == nullptr)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::TYPE_ERROR,
-                    std::format(
-                        "Unable to determine type of struct '{}': referenced struct type '{}' is undefined",
-                        this->get_name(),
-                        this->_reference.value()->get_internal_name()
-                    ),
-                    *this->get_source(),
-                    this->_reference.value()->get_source_position()
-                )
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Unable to determine type of struct '{}': referenced struct type '{}' is undefined",
+                    this->get_name(),
+                    this->_reference.value()->get_internal_name()
+                ),
+                *this->get_source(),
+                this->_reference.value()->get_source_position()
             );
         }
         return;
@@ -239,12 +235,10 @@ llvm::Value* AstStruct::codegen(
         if (!ref_struct)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::RUNTIME_ERROR,
-                    std::format("Referenced struct type '{}' not found during codegen", ref_name),
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::RUNTIME_ERROR,
+                std::format("Referenced struct type '{}' not found during codegen", ref_name),
+                *this->get_source(),
+                this->get_source_position()
             );
         }
 
@@ -252,12 +246,10 @@ llvm::Value* AstStruct::codegen(
         if (ref_struct->isOpaque())
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::TYPE_ERROR,
-                    std::format("Referenced struct type '{}' is not fully defined", ref_name),
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::TYPE_ERROR,
+                std::format("Referenced struct type '{}' is not fully defined", ref_name),
+                *this->get_source(),
+                this->get_source_position()
             );
         }
 
@@ -275,15 +267,13 @@ llvm::Value* AstStruct::codegen(
                 // Note: If you support pointers to self (recursive structs), usually
                 // you would find the opaque type created in step 1 here.
                 throw parsing_error(
-                    make_source_error(
-                        ErrorType::TYPE_ERROR,
-                        std::format(
-                            "Unknown internal type '{}' for struct member '{}'",
-                            member->get_type().get_internal_name(), member->get_name()
-                        ),
-                        *this->get_source(),
-                        member->get_source_position()
-                    )
+                    ErrorType::TYPE_ERROR,
+                    std::format(
+                        "Unknown internal type '{}' for struct member '{}'",
+                        member->get_type().get_internal_name(), member->get_name()
+                    ),
+                    *this->get_source(),
+                    member->get_source_position()
                 );
             }
 

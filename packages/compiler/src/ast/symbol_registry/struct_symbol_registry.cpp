@@ -42,12 +42,10 @@ void SymbolRegistry::define_struct(
     if (const auto existing_def = this->get_struct_def(struct_name); existing_def != nullptr)
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::SEMANTIC_ERROR,
-                std::format("Struct '{}' is already defined in this scope", struct_name),
-                *fields.begin()->second->get_source(),
-                fields.begin()->second->get_source_position()
-            )
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Struct '{}' is already defined in this scope", struct_name),
+            *fields.begin()->second->get_source(),
+            fields.begin()->second->get_source_position()
         );
     }
 

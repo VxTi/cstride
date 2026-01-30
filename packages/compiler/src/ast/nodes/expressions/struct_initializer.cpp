@@ -113,12 +113,10 @@ void AstStructInitializer::validate()
     if (definition == nullptr)
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::TYPE_ERROR,
-                std::format("Struct '{}' does not exist", this->_struct_name),
-                *this->get_source(),
-                this->get_source_position()
-            )
+            ErrorType::TYPE_ERROR,
+            std::format("Struct '{}' does not exist", this->_struct_name),
+            *this->get_source(),
+            this->get_source_position()
         );
     }
 
@@ -128,17 +126,15 @@ void AstStructInitializer::validate()
     if (fields.size() != this->_initializers.size())
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Too {} members found in struct '{}': expected {}, got {}",
-                    fields.size() > this->_initializers.size() ? "few" : "many",
-                    this->_struct_name,
-                    fields.size(), this->_initializers.size()
-                ),
-                *this->get_source(),
-                this->get_source_position()
-            )
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Too {} members found in struct '{}': expected {}, got {}",
+                fields.size() > this->_initializers.size() ? "few" : "many",
+                this->_struct_name,
+                fields.size(), this->_initializers.size()
+            ),
+            *this->get_source(),
+            this->get_source_position()
         );
     }
 
@@ -149,12 +145,10 @@ void AstStructInitializer::validate()
         if (!found_member)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::TYPE_ERROR,
-                    std::format("Struct '{}' has no member named '{}'", this->_struct_name, member_name),
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::TYPE_ERROR,
+                std::format("Struct '{}' has no member named '{}'", this->_struct_name, member_name),
+                *this->get_source(),
+                this->get_source_position()
             );
         }
 
@@ -162,18 +156,16 @@ void AstStructInitializer::validate()
             *member_type != *found_member)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::TYPE_ERROR,
-                    std::format(
-                        "Type mismatch for member '{}' in struct '{}': expected '{}', got '{}'",
-                        member_name,
-                        this->_struct_name,
-                        found_member->to_string(),
-                        member_type->to_string()
-                    ),
-                    *this->get_source(),
-                    found_member->get_source_position()
-                )
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Type mismatch for member '{}' in struct '{}': expected '{}', got '{}'",
+                    member_name,
+                    this->_struct_name,
+                    found_member->to_string(),
+                    member_type->to_string()
+                ),
+                *this->get_source(),
+                found_member->get_source_position()
             );
         }
     }
@@ -213,12 +205,10 @@ llvm::Value* AstStructInitializer::codegen(
     if (!struct_type)
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::RUNTIME_ERROR,
-                std::format("Struct type '{}' is undefined", this->_struct_name),
-                *this->get_source(),
-                this->get_source_position()
-            )
+            ErrorType::RUNTIME_ERROR,
+            std::format("Struct type '{}' is undefined", this->_struct_name),
+            *this->get_source(),
+            this->get_source_position()
         );
     }
 

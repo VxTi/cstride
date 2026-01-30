@@ -338,12 +338,10 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         if (!element_type)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::RUNTIME_ERROR,
-                    "Unable to resolve internal type for array element",
-                    *array->get_source(),
-                    array->get_source_position()
-                )
+                ErrorType::RUNTIME_ERROR,
+                "Unable to resolve internal type for array element",
+                *array->get_source(),
+                array->get_source_position()
             );
         }
 
@@ -396,12 +394,10 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         if (!struct_type)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::RUNTIME_ERROR,
-                    std::format("Custom type '{}' not found", custom->name()),
-                    *custom->get_source(),
-                    custom->get_source_position()
-                )
+                ErrorType::RUNTIME_ERROR,
+                std::format("Custom type '{}' not found", custom->name()),
+                *custom->get_source(),
+                custom->get_source_position()
             );
         }
 
@@ -426,12 +422,10 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
     if ((lhs_named && rhs_primitive) || (lhs_primitive && rhs_named))
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::TYPE_ERROR,
-                "Cannot mix primitive type with named type",
-                *lhs->get_source(),
-                lhs->get_source_position()
-            )
+            ErrorType::TYPE_ERROR,
+            "Cannot mix primitive type with named type",
+            *lhs->get_source(),
+            lhs->get_source_position()
         );
     }
 
@@ -439,12 +433,10 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
     if (!lhs_primitive || !rhs_primitive)
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::TYPE_ERROR,
-                "Cannot compute dominant type for non-primitive types",
-                *lhs->get_source(),
-                lhs->get_source_position()
-            )
+            ErrorType::TYPE_ERROR,
+            "Cannot compute dominant type for non-primitive types",
+            *lhs->get_source(),
+            lhs->get_source_position()
         );
     }
 
@@ -502,11 +494,9 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
     };
 
     throw parsing_error(
-        make_source_error(
-            ErrorType::TYPE_ERROR,
-            "Cannot compute dominant type for incompatible primitive types",
-            references
-        )
+        ErrorType::TYPE_ERROR,
+        "Cannot compute dominant type for incompatible primitive types",
+        references
     );
 }
 

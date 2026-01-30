@@ -56,13 +56,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_literal_typ
         );
     }
 
-    throw std::runtime_error(
-        make_source_error(
-            ErrorType::TYPE_ERROR,
-            "Unable to resolve expression literal type",
-            *literal->get_source(),
-            literal->get_source_position()
-        )
+    throw parsing_error(
+        ErrorType::TYPE_ERROR,
+        "Unable to resolve expression literal type",
+        *literal->get_source(),
+        literal->get_source_position()
     );
 }
 
@@ -85,15 +83,13 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_function_call_return_t
     }
 
     throw parsing_error(
-        make_source_error(
-            ErrorType::TYPE_ERROR,
-            std::format(
-                "Unable to resolve function invocation return type for function '{}'",
-                fn_call->get_function_name()
-            ),
-            *fn_call->get_source(),
-            fn_call->get_source_position()
-        )
+        ErrorType::TYPE_ERROR,
+        std::format(
+            "Unable to resolve function invocation return type for function '{}'",
+            fn_call->get_function_name()
+        ),
+        *fn_call->get_source(),
+        fn_call->get_source_position()
     );
 }
 
@@ -160,12 +156,10 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
         if (!type->is_pointer())
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::TYPE_ERROR,
-                    "Cannot dereference non-pointer type",
-                    *operation->get_source(),
-                    operation->get_source_position()
-                )
+                ErrorType::TYPE_ERROR,
+                "Cannot dereference non-pointer type",
+                *operation->get_source(),
+                operation->get_source_position()
             );
         }
 
@@ -261,12 +255,10 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
         if (!reference_variable)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::SEMANTIC_ERROR,
-                    std::format("Variable '{}' not found in scope", identifier->get_name()),
-                    *identifier->get_source(),
-                    identifier->get_source_position()
-                )
+                ErrorType::SEMANTIC_ERROR,
+                std::format("Variable '{}' not found in scope", identifier->get_name()),
+                *identifier->get_source(),
+                identifier->get_source_position()
             );
         }
 
@@ -350,11 +342,9 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
     }
 
     throw parsing_error(
-        make_source_error(
-            ErrorType::SEMANTIC_ERROR,
-            "Unable to resolve expression type",
-            *expr->get_source(),
-            expr->get_source_position()
-        )
+        ErrorType::SEMANTIC_ERROR,
+        "Unable to resolve expression type",
+        *expr->get_source(),
+        expr->get_source_position()
     );
 }

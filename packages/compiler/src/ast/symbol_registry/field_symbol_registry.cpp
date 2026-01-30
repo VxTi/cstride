@@ -38,12 +38,10 @@ void SymbolRegistry::define_field(
     if (is_field_defined_in_scope(field_name))
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::SEMANTIC_ERROR,
-                std::format("Field '{}' is already defined in this scope", field_name),
-                *type->get_source(),
-                type->get_source_position()
-            )
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Field '{}' is already defined in this scope", field_name),
+            *type->get_source(),
+            type->get_source_position()
         );
     }
 

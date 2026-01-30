@@ -114,13 +114,11 @@ llvm::Value* AstFunctionCall::codegen(
                 : "";
 
         throw parsing_error(
-            make_source_error(
-                ErrorType::RUNTIME_ERROR,
-                std::format("Function '{}' was not found in this scope", this->format_function_name()),
-                *this->get_source(),
-                this->get_source_position(),
-                suggested_alternative
-            )
+            ErrorType::RUNTIME_ERROR,
+            std::format("Function '{}' was not found in this scope", this->format_function_name()),
+            *this->get_source(),
+            this->get_source_position(),
+            suggested_alternative
         );
     }
 
@@ -131,13 +129,11 @@ llvm::Value* AstFunctionCall::codegen(
         provided_arg_count < minimum_arg_count)
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::RUNTIME_ERROR,
-                std::format("Incorrect arguments passed for function '{}'", this->get_function_name()),
-                *this->get_source(),
-                this->get_source_position(),
-                std::format("Incorrect arguments passed for function '{}'", this->get_function_name())
-            )
+            ErrorType::RUNTIME_ERROR,
+            std::format("Incorrect arguments passed for function '{}'", this->get_function_name()),
+            *this->get_source(),
+            this->get_source_position(),
+            std::format("Incorrect arguments passed for function '{}'", this->get_function_name())
         );
     }
 
@@ -210,7 +206,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                 parameter_type_owners.push_back(std::move(next_type));
                 function_arg_nodes.push_back(std::move(next_arg));
             }
-        } while (false);
+        }
+        while (false);
     }
 
     std::string internal_fn_name = resolve_internal_function_name(
