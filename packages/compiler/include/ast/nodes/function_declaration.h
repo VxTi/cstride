@@ -19,7 +19,7 @@ namespace stride::ast
     class AstFunctionParameter : public IAstNode
     {
         const std::string _name;
-        std::unique_ptr<IAstInternalFieldType> _type;
+        std::unique_ptr<IAstType> _type;
 
     public:
         explicit AstFunctionParameter(
@@ -27,7 +27,7 @@ namespace stride::ast
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string param_name,
-            std::unique_ptr<IAstInternalFieldType> param_type
+            std::unique_ptr<IAstType> param_type
         ) : IAstNode(source, source_position, scope),
             _name(std::move(param_name)),
             _type(std::move(param_type)) {}
@@ -38,7 +38,7 @@ namespace stride::ast
         std::string get_name() const { return this->_name; }
 
         [[nodiscard]]
-        IAstInternalFieldType* get_type() const { return this->_type.get(); }
+        IAstType* get_type() const { return this->_type.get(); }
 
         ~AstFunctionParameter() override = default;
     };
@@ -56,7 +56,7 @@ namespace stride::ast
         std::string _name;
         std::string _internal_name;
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
-        std::shared_ptr<IAstInternalFieldType> _return_type;
+        std::shared_ptr<IAstType> _return_type;
         int _flags;
 
     public:
@@ -68,7 +68,7 @@ namespace stride::ast
             std::string internal_name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
-            std::shared_ptr<IAstInternalFieldType> return_type,
+            std::shared_ptr<IAstType> return_type,
             const int flags
         ) :
             IAstNode(source, source_position, scope),
@@ -109,7 +109,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::shared_ptr<IAstInternalFieldType>& return_type() const { return this->_return_type; }
+        const std::shared_ptr<IAstType>& return_type() const { return this->_return_type; }
 
         [[nodiscard]]
         bool is_extern() const { return this->_flags & SRFLAG_FN_DEF_EXTERN; }

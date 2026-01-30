@@ -309,7 +309,7 @@ namespace stride::ast
     {
         const std::string _variable_name;
         const std::string _internal_name;
-        const std::unique_ptr<IAstInternalFieldType> _variable_type;
+        const std::unique_ptr<IAstType> _variable_type;
         const std::unique_ptr<AstExpression> _initial_value;
 
     public:
@@ -319,7 +319,7 @@ namespace stride::ast
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string variable_name,
             std::string internal_name,
-            std::unique_ptr<IAstInternalFieldType> variable_type,
+            std::unique_ptr<IAstType> variable_type,
             std::unique_ptr<AstExpression> initial_value
         ) : AstExpression(source, source_position, scope),
             _variable_name(std::move(variable_name)),
@@ -340,7 +340,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        IAstInternalFieldType* get_variable_type() const
+        IAstType* get_variable_type() const
         {
             return this->_variable_type.get();
         }
@@ -758,42 +758,42 @@ namespace stride::ast
      * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
-    std::unique_ptr<IAstInternalFieldType> infer_expression_type(
+    std::unique_ptr<IAstType> infer_expression_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         AstExpression* expr
     );
 
-    std::unique_ptr<IAstInternalFieldType> infer_array_member_type(
+    std::unique_ptr<IAstType> infer_array_member_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstArray* array
     );
 
-    std::unique_ptr<IAstInternalFieldType> infer_unary_op_type(
+    std::unique_ptr<IAstType> infer_unary_op_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstUnaryOp* operation
     );
 
-    std::unique_ptr<IAstInternalFieldType> infer_binary_arithmetic_op_type(
+    std::unique_ptr<IAstType> infer_binary_arithmetic_op_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstBinaryArithmeticOp* operation
     );
 
-    std::unique_ptr<IAstInternalFieldType> infer_expression_literal_type(
+    std::unique_ptr<IAstType> infer_expression_literal_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         AstLiteral* literal
     );
 
-    std::unique_ptr<IAstInternalFieldType> infer_function_call_return_type(
+    std::unique_ptr<IAstType> infer_function_call_return_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstFunctionCall* fn_call
     );
 
-    std::unique_ptr<IAstInternalFieldType> infer_struct_initializer_type(
+    std::unique_ptr<IAstType> infer_struct_initializer_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstStructInitializer* initializer
     );
 
-    std::unique_ptr<IAstInternalFieldType> infer_member_accessor_type(
+    std::unique_ptr<IAstType> infer_member_accessor_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstMemberAccessor* initializer
     );

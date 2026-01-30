@@ -33,7 +33,7 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
     }
 }
 
-std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primitive_type_optional(
+std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     int context_type_flags
@@ -256,7 +256,7 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     return result;
 }
 
-std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_type_optional(
+std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     int context_type_flags
@@ -303,7 +303,7 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_t
     return std::move(named_type);
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::parse_type(
+std::unique_ptr<IAstType> stride::ast::parse_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
     const std::string& error,
@@ -326,7 +326,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::parse_type(
 }
 
 llvm::Type* stride::ast::internal_type_to_llvm_type(
-    IAstInternalFieldType* type,
+    IAstType* type,
     llvm::Module* module
 )
 {
@@ -406,10 +406,10 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     return nullptr;
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
+std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     const std::shared_ptr<SymbolRegistry>& scope,
-    IAstInternalFieldType* lhs,
-    IAstInternalFieldType* rhs
+    IAstType* lhs,
+    IAstType* rhs
 )
 {
     auto* lhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(lhs);
@@ -536,7 +536,7 @@ size_t primitive_type_to_internal_id(const PrimitiveType type)
     }
 }
 
-size_t stride::ast::ast_type_to_internal_id(IAstInternalFieldType* type)
+size_t stride::ast::ast_type_to_internal_id(IAstType* type)
 {
     if (const auto primitive = dynamic_cast<AstPrimitiveFieldType*>(type);
         primitive != nullptr)

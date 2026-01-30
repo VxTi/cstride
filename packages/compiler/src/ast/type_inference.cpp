@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_literal_type(
+std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     AstLiteral* literal
 )
@@ -64,7 +64,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_literal_typ
     );
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::infer_function_call_return_type(
+std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstFunctionCall* fn_call
 )
@@ -93,7 +93,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_function_call_return_t
     );
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::infer_binary_arithmetic_op_type(
+std::unique_ptr<IAstType> stride::ast::infer_binary_arithmetic_op_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstBinaryArithmeticOp* operation
 )
@@ -119,7 +119,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_binary_arithmetic_op_t
     return get_dominant_field_type(scope, lhs.get(), rhs.get());
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
+std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstUnaryOp* operation
 )
@@ -201,7 +201,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
     return type;
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::infer_array_member_type(
+std::unique_ptr<IAstType> stride::ast::infer_array_member_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstArray* array
 )
@@ -223,7 +223,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_array_member_type(
     return infer_expression_type(scope, array->get_elements().front().get());
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
+std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstMemberAccessor* expr
 )
@@ -308,10 +308,10 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
     }
 
     // 5. Return the final inferred type
-    return std::unique_ptr<IAstInternalFieldType>(current_type->clone());
+    return std::unique_ptr<IAstType>(current_type->clone());
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::infer_struct_initializer_type(
+std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstStructInitializer* initializer
 )
@@ -324,7 +324,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_struct_initializer_typ
     );
 }
 
-std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
+std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     AstExpression* expr
 )

@@ -63,14 +63,14 @@ namespace stride::ast
         : public ISymbolDef
     {
         std::optional<std::string> _reference_struct_name;
-        std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> _fields;
+        std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> _fields;
         std::string _name;
 
     public:
         explicit StructSymbolDef(
             std::string  struct_name,
             const std::string& internal_name,
-            std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields // We wish to preserve order.
+            std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields // We wish to preserve order.
         ) : ISymbolDef(internal_name),
             _fields(std::move(fields)),
             _name(std::move(struct_name)) {}
@@ -85,10 +85,10 @@ namespace stride::ast
               _name(std::move(struct_name)) {}
 
         [[nodiscard]]
-        std::vector<std::pair<std::string, IAstInternalFieldType*>> get_fields() const;
+        std::vector<std::pair<std::string, IAstType*>> get_fields() const;
 
         [[nodiscard]]
-        IAstInternalFieldType* get_field_type(const std::string& field_name);
+        IAstType* get_field_type(const std::string& field_name);
 
         [[nodiscard]]
         bool is_reference_struct() const;
@@ -116,20 +116,20 @@ namespace stride::ast
     class FieldSymbolDef
         : public ISymbolDef
     {
-        std::unique_ptr<IAstInternalFieldType> _type;
+        std::unique_ptr<IAstType> _type;
         std::string _variable_name;
 
     public:
         explicit FieldSymbolDef(
             std::string field_name,
             const std::string& internal_name,
-            std::unique_ptr<IAstInternalFieldType> type
+            std::unique_ptr<IAstType> type
         ) : ISymbolDef(internal_name),
             _type(std::move(type)),
             _variable_name(std::move(field_name)) {}
 
         [[nodiscard]]
-        IAstInternalFieldType* get_type() const { return this->_type.get(); }
+        IAstType* get_type() const { return this->_type.get(); }
 
         [[nodiscard]]
         const std::string& get_variable_name() const { return this->_variable_name; }
@@ -138,13 +138,13 @@ namespace stride::ast
     class SymbolFnDefinition
         : public ISymbolDef
     {
-        std::vector<std::unique_ptr<IAstInternalFieldType>> _parameter_types;
-        std::unique_ptr<IAstInternalFieldType> _return_type;
+        std::vector<std::unique_ptr<IAstType>> _parameter_types;
+        std::unique_ptr<IAstType> _return_type;
 
     public:
         explicit SymbolFnDefinition(
-            std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
-            std::unique_ptr<IAstInternalFieldType> return_type,
+            std::vector<std::unique_ptr<IAstType>> parameter_types,
+            std::unique_ptr<IAstType> return_type,
             const std::string& internal_name
         ) :
             ISymbolDef(internal_name),
@@ -152,9 +152,9 @@ namespace stride::ast
             _return_type(std::move(return_type)) {}
 
         [[nodiscard]]
-        std::vector<IAstInternalFieldType*> get_parameter_types() const
+        std::vector<IAstType*> get_parameter_types() const
         {
-            std::vector<IAstInternalFieldType*> out;
+            std::vector<IAstType*> out;
             out.reserve(this->_parameter_types.size());
             for (const auto& p : this->_parameter_types)
                 out.push_back(p.get());
@@ -162,7 +162,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        IAstInternalFieldType* get_return_type() const { return this->_return_type.get(); }
+        IAstType* get_return_type() const { return this->_return_type.get(); }
 
         ~SymbolFnDefinition() override = default;
     };
@@ -205,14 +205,14 @@ namespace stride::ast
         /// Will attempt to define the function in the global scope.
         void define_function(
             std::string internal_function_name,
-            std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
-            std::unique_ptr<IAstInternalFieldType> return_type
+            std::vector<std::unique_ptr<IAstType>> parameter_types,
+            std::unique_ptr<IAstType> return_type
         ) const;
 
         void define_struct(
             std::string struct_name,
             const std::string& internal_name,
-            std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields
+            std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
         ) const;
 
         void define_struct(
@@ -224,7 +224,7 @@ namespace stride::ast
         void define_field(
             std::string field_name,
             std::string internal_name,
-            std::unique_ptr<IAstInternalFieldType> type
+            std::unique_ptr<IAstType> type
         );
 
         [[nodiscard]]
