@@ -57,5 +57,5 @@ llvm::Value* AstStringLiteral::codegen(
         }
     }
 
-    return ir_builder->CreateGlobalString(this->value());
+    return ir_builder->CreateGlobalString(this->value(), "", 0, module);
 }

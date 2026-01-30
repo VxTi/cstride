@@ -175,13 +175,11 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     // Parsing function parameter values
     if (function_parameter_set.has_value())
     {
-        do
+        auto subset = function_parameter_set.value();
+        auto initial_arg = parse_inline_expression(scope, subset);
+
+        if (initial_arg)
         {
-            auto subset = function_parameter_set.value();
-            auto initial_arg = parse_inline_expression(scope, subset);
-
-            if (!initial_arg) break;
-
             auto initial_type = infer_expression_type(scope, initial_arg.get());
 
             parameter_types.push_back(initial_type.get());
@@ -199,14 +197,15 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                 {
                     // Since the RParen is already consumed, we have to manually extract its position with the following assumption
                     // It's possible this yields END_OF_FILE
-                    const auto len = set.at(set.position() - 1).get_source_position().offset - 1 - preceding.get_source_position().offset;
+                    const auto len = set.at(set.position() - 1).get_source_position().offset - 1 - preceding.
+                        get_source_position().offset;
                     throw parsing_error(
                         ErrorType::SYNTAX_ERROR,
                         "Expected expression for function argument",
                         *subset.get_source(),
                         SourcePosition(
                             preceding.get_source_position().offset + 1,
-                         len
+                            len
                         )
                     );
                 }
@@ -217,7 +216,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                 function_arg_nodes.push_back(std::move(next_arg));
             }
         }
-        while (false);
     }
 
     std::string internal_fn_name = resolve_internal_function_name(

@@ -54,7 +54,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
     {
         set.next();
         auto expr = parse_standalone_expression_part(scope, set);
-        set.expect(TokenType::RPAREN);
+        set.expect(TokenType::RPAREN, "Expected ')' after expression");
         return expr;
     }
 
@@ -88,6 +88,11 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         if (set.peak_next_eq(TokenType::LSQUARE_BRACKET))
         {
             return parse_array_member_accessor(scope, set, std::move(identifier));
+        }
+
+        if (is_member_accessor(identifier.get(), set))
+        {
+            return parse_chained_member_access(scope, set, std::move(identifier));
         }
 
         return std::move(identifier);
@@ -222,11 +227,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     if (auto logical_expr = parse_logical_operation_optional(scope, set, std::move(lhs)))
     {
         return std::move(logical_expr.value());
-    }
-
-    if (is_member_accessor(lhs.get(), set))
-    {
-        return parse_chained_member_access(scope, set, std::move(lhs));
     }
 
     set.throw_error("Unexpected token in expression");

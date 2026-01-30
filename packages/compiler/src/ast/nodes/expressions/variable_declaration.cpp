@@ -273,6 +273,11 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         variable_type->clone()
     );
 
+    if (set.peak_next_eq(TokenType::SEMICOLON))
+    {
+        set.next();
+    }
+
     return std::make_unique<AstVariableDeclaration>(
         set.get_source(),
         reference_token.get_source_position(),
