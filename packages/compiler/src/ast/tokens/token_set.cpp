@@ -83,12 +83,16 @@ Token TokenSet::expect(const TokenType type)
 {
     if (!this->has_next())
     {
-        this->throw_error(
+        const auto last_token_pos = this->last().get_source_position();
+
+        throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             std::format(
                 "Expected '{}', but reached end of block",
                 token_type_to_str(type)
-            )
+            ),
+            *this->get_source(),
+            SourcePosition(last_token_pos.offset + last_token_pos.length - 1, 1)
         );
     }
 
@@ -111,12 +115,16 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 {
     if (!this->has_next())
     {
-        this->throw_error(
+        const auto last_token_pos = this->last().get_source_position();
+
+        throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             std::format(
                 "Expected '{}', but reached end of block",
                 token_type_to_str(type)
-            )
+            ),
+            *this->get_source(),
+            SourcePosition(last_token_pos.offset + last_token_pos.length - 1, 1)
         );
     }
 
