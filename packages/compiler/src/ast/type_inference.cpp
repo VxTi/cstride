@@ -245,7 +245,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
-            std::format("Member access base '{}' was not found", base_iden->get_name()),
+            std::format("Member access base '{}' was not found in this scope", base_iden->get_name()),
             *member_accessor->get_source(),
             member_accessor->get_source_position()
         );

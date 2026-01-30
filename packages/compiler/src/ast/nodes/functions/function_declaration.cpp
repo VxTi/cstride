@@ -175,12 +175,12 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     auto reference_token = tokens.expect(TokenType::KEYWORD_FN); // fn
 
     // Here we expect to receive the function name
-    const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER);
+    const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected function name after 'fn'");
     const auto fn_name = fn_name_tok.get_lexeme();
 
     auto function_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::FUNCTION);
 
-    tokens.expect(TokenType::LPAREN);
+    tokens.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
     // If we don't receive a ')', the function has parameters, so we'll

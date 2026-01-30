@@ -71,7 +71,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             set.position() - reference_token.get_source_position().offset
         ),
         scope,
-        std::unique_ptr<AstIdentifier>(lhs_identifier),
+        std::unique_ptr<AstIdentifier>(std::move(lhs_identifier)),
         std::move(chained_accessors)
     );
 }
