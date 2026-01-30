@@ -7,6 +7,16 @@
 
 using namespace stride::ast;
 
+bool should_ignore_token_type(TokenType type)
+{
+    switch (type)
+    {
+    case TokenType::COMMENT:
+    case TokenType::COMMENT_MULTILINE: return true;
+    default: return false;
+    }
+}
+
 TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
 {
     auto tokens = std::vector<Token>();
@@ -37,7 +47,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                     check_index--;
                 }
 
-                // If odd number of backslashes, the quote is escaped.
+                // If there's an odd number of backslashes, the quote is escaped.
                 if (backslash_count % 2 == 0)
                 {
                     size_t length = i - string_start;
@@ -91,14 +101,18 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                 )
             )
             {
-                std::string value = match.str(0);
-                tokens.emplace_back(
-                    tokenDefinition.type,
-                    SourcePosition(i, value.length()),
-                    value
-                );
+                std::string lexeme = match.str(0);
 
-                i += value.length();
+                if (!should_ignore_token_type(tokenDefinition.type))
+                {
+                    tokens.emplace_back(
+                        tokenDefinition.type,
+                        SourcePosition(i, lexeme.length()),
+                        lexeme
+                    );
+                }
+
+                i += lexeme.length();
                 matched = true;
                 break;
             }
@@ -120,6 +134,8 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
     return TokenSet(source_file, tokens);
 }
 
+// This allows one to type `\0` in a string and have it actually
+// result in a null character, instead of two separate characters. (`\` and `0`)
 std::string tokenizer::escape_string(const std::string& raw_string)
 {
     std::string result;

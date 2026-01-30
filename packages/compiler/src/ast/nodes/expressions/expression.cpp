@@ -70,7 +70,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         /// Regular identifier parsing; can be variable reference
         const auto reference_token = set.next();
         std::string identifier_name = reference_token.get_lexeme();
-        std::string internal_name;
+        std::string internal_name = identifier_name;
 
         if (const auto variable_definition = scope->field_lookup(identifier_name);
             variable_definition != nullptr)
@@ -166,6 +166,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     TokenSet& set
 )
 {
+    if (!set.has_next()) return nullptr;
+
     // Will try to parse <name>::{ ... }
     if (is_struct_initializer(set))
     {

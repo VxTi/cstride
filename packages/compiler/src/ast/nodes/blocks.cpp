@@ -113,7 +113,7 @@ std::optional<TokenSet> stride::ast::collect_block_variant(
         }
     }
     set.skip(-1); // Ensure we don't point to a random next token that's unrelated
-    set.throw_error(std::format("Unmatched closing {}", token_type_to_str(end_token)));
+    set.throw_error(std::format("Unmatched closing '{}' found", token_type_to_str(end_token)));
 }
 
 std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)

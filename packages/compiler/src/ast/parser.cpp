@@ -87,12 +87,6 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
 
     while (set.has_next())
     {
-        if (should_skip_token(set.peak_next().get_type()))
-        {
-            set.next();
-            continue;
-        }
-
         if (auto result = parse_next_statement(scope, set))
         {
             nodes.push_back(std::move(result));

@@ -335,6 +335,8 @@ namespace stride::ast
             _lexeme(std::move(lexeme)),
             _type(type) {}
 
+        ~Token() = default;
+
         [[nodiscard]]
         const TokenType& get_type() const { return _type; }
 
