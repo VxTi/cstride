@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export enum WsMessageType {
+  GET_CONFIG = 'get_config',
   UPDATE_CONFIG = 'update_config',
   EXECUTE_CODE = 'run',
   TERMINATE_PROCESS = 'terminate',
