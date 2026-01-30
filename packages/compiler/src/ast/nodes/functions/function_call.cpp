@@ -192,13 +192,24 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
             // Consume next parameters
             while (subset.has_next())
             {
-                subset.expect(TokenType::COMMA, "Expected ',' between function arguments");
+                const auto preceding = subset.expect(TokenType::COMMA, "Expected ',' between function arguments");
 
                 auto next_arg = parse_inline_expression(scope, subset);
 
                 if (!next_arg)
                 {
-                    subset.throw_error("Expected expression for function argument");
+                    // Since the RParen is already consumed, we have to manually extract its position with the following assumption
+                    // It's possible this yields END_OF_FILE
+                    const auto len = set.at(set.position() - 1).get_source_position().offset - 1 - preceding.get_source_position().offset;
+                    throw parsing_error(
+                        ErrorType::SYNTAX_ERROR,
+                        "Expected expression for function argument",
+                        *subset.get_source(),
+                        SourcePosition(
+                            preceding.get_source_position().offset + 1,
+                         len
+                        )
+                    );
                 }
 
                 auto next_type = infer_expression_type(scope, next_arg.get());

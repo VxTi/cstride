@@ -159,7 +159,7 @@ namespace stride::ast
             _variable_name(std::move(field_name)) {}
 
         [[nodiscard]]
-        const IAstInternalFieldType* get_type() const { return this->_type.get(); }
+        IAstInternalFieldType* get_type() const { return this->_type.get(); }
 
         [[nodiscard]]
         const std::string& get_variable_name() const { return this->_variable_name; }

@@ -35,21 +35,18 @@ std::string stride::make_source_error(
         );
     }
 
-    // Find the start of the line
     size_t line_start = source_position.offset;
-    while (line_start > 0 && line_start < source_file.source.length() && source_file.source[line_start - 1] != '\n')
+    while (line_start > 0 && source_file.source[line_start - 1] != '\n')
     {
         line_start--;
     }
 
-    // Find the end of the line
     size_t line_end = source_position.offset;
     while (line_end < source_file.source.length() && source_file.source[line_end] != '\n')
     {
         line_end++;
     }
 
-    // Calculate line number by counting newlines before offset
     size_t line_number = 1;
     for (size_t i = 0; i < line_start; i++)
     {
@@ -59,14 +56,17 @@ std::string stride::make_source_error(
         }
     }
 
-    // Extract the line as a string
-    static std::string line_str = source_file.source.substr(line_start, line_end - line_start);
+    // Not static: must reflect the current call's source/offset.
+    const std::string line_str = source_file.source.substr(line_start, line_end - line_start);
 
-    // Calculate column offset from line start
     const auto line_nr_str = std::to_string(line_number);
-    const size_t column_offset = source_position.offset - line_start + line_nr_str.length() - 1;
+    const size_t column_in_line = source_position.offset - line_start;
 
-    // Calculate error length (currently just 1 character)
+    // Clamp underline length to the current line.
+    const size_t max_len = line_str.size() > column_in_line ? (line_str.size() - column_in_line) : 0;
+    const size_t underline_len = std::min(source_position.length, max_len);
+
+    const size_t column_offset = column_in_line + line_nr_str.length() - 1;
 
     return std::format(
         "┃ {} in \x1b[4m{}\x1b[0m\n┃\n┃ {}\n┃\n┃ \x1b[0;97m{} \x1b[37m{}\x1b[0m\n┃  {} {}{}",
@@ -76,7 +76,7 @@ std::string stride::make_source_error(
         line_number,
         line_str,
         std::string(column_offset, ' '),
-        std::string(source_position.length, '^'),
+        std::string(underline_len, '^'),
         suggestion.empty() ? "" : std::format("\n┃ {}", suggestion)
     );
 }

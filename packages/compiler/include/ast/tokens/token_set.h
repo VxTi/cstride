@@ -35,6 +35,9 @@ namespace stride::ast
         TokenSet create_subset(size_t offset, size_t length) const;
 
         [[nodiscard]]
+        Token last() const;
+
+        [[nodiscard]]
         Token at(size_t index) const;
 
         [[nodiscard]]

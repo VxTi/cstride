@@ -140,9 +140,9 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
                 flags
             );
         }
-        if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
+        if (const auto* named = dynamic_cast<AstStructType*>(type.get()))
         {
-            return std::make_unique<AstNamedValueType>(
+            return std::make_unique<AstStructType>(
                 named->get_source(),
                 named->get_source_position(),
                 scope,
@@ -176,9 +176,9 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_unary_op_type(
                 flags
             );
         }
-        if (const auto* named = dynamic_cast<AstNamedValueType*>(type.get()))
+        if (const auto* named = dynamic_cast<AstStructType*>(type.get()))
         {
-            return std::make_unique<AstNamedValueType>(
+            return std::make_unique<AstStructType>(
                 named->get_source(),
                 named->get_source_position(),
                 scope,
@@ -223,12 +223,113 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_array_member_type(
     return infer_expression_type(scope, array->get_elements().front().get());
 }
 
+std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    const AstMemberAccessor* member_accessor
+)
+{
+    const auto base_iden = dynamic_cast<AstIdentifier*>(member_accessor->get_base());
+    if (!base_iden)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Member access base must be an identifier",
+            *member_accessor->get_source(),
+            member_accessor->get_source_position()
+        );
+    }
+
+    const auto field_definition = member_accessor->get_registry()->field_lookup(base_iden->get_internal_name());
+
+    if (!field_definition)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format("Member access base '{}' was not found", base_iden->get_name()),
+            *member_accessor->get_source(),
+            member_accessor->get_source_position()
+        );
+    }
+
+    const auto struct_type = dynamic_cast<AstStructType*>(field_definition->get_type());
+
+    if (!struct_type)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format("Member access base '{}' is not a struct", base_iden->get_name()),
+            *member_accessor->get_source(),
+            member_accessor->get_source_position()
+        );
+    }
+
+    auto prev_struct_definition = member_accessor->get_registry()->get_struct_def(struct_type->get_internal_name());
+
+    // We'll iterate over all middle accessors. If there's just a single accessor,
+    // it gets skipped here.
+    for (int i = 0; i < member_accessor->get_members().size() - 1; i++)
+    {
+        // Member is in between a chain (<...>.<sub1>.<sub2>.<...>),
+        const auto segment_identifier = dynamic_cast<AstIdentifier*>(member_accessor->get_members()[i]);
+
+        if (!segment_identifier)
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                "Member access submember must be an identifier",
+                *member_accessor->get_source(),
+                member_accessor->get_source_position()
+            );
+        }
+
+        // The type of the struct member is the name of the referring struct
+        const auto segment_identifier_field_type = prev_struct_definition->get_field(segment_identifier->get_name());
+        prev_struct_definition = member_accessor->get_registry()->get_struct_def(segment_identifier_field_type->get_internal_name());
+
+        // If `prev_struct_definition` is `nullptr` here, we already know it's not a struct type,
+        // as it's not registered
+        if (!prev_struct_definition)
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format("Struct member '{}' accessor does not exist", base_iden->get_name()),
+                *member_accessor->get_source(),
+                member_accessor->get_source_position()
+            );
+        }
+    }
+
+    const auto last_segment_identifier = dynamic_cast<AstIdentifier*>(member_accessor->get_members().back());
+    if (!last_segment_identifier)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Member access submember must be an identifier",
+            *member_accessor->get_source(),
+            member_accessor->get_source_position()
+        );
+    }
+
+    const auto last_segment_field_type = prev_struct_definition->get_field(last_segment_identifier->get_name());
+    if (!last_segment_field_type)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format("Struct member '{}' accessor does not exist", last_segment_identifier->get_name()),
+            *member_accessor->get_source(),
+            member_accessor->get_source_position()
+        );
+    }
+
+    return std::unique_ptr(last_segment_field_type->clone());
+}
+
 std::unique_ptr<IAstInternalFieldType> stride::ast::infer_struct_initializer_type(
     const std::shared_ptr<SymbolRegistry>& scope,
     const AstStructInitializer* initializer
 )
 {
-    return std::make_unique<AstNamedValueType>(
+    return std::make_unique<AstStructType>(
         initializer->get_source(),
         initializer->get_source_position(),
         scope,
@@ -339,6 +440,11 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_expression_type(
     if (const auto* struct_init = dynamic_cast<AstStructInitializer*>(expr))
     {
         return infer_struct_initializer_type(scope, struct_init);
+    }
+
+    if (const auto* member_accessor = dynamic_cast<AstMemberAccessor*>(expr))
+    {
+        return infer_member_accessor_type(scope, member_accessor);
     }
 
     throw parsing_error(

@@ -37,12 +37,22 @@ llvm::Value* AstIdentifier::codegen(const std::shared_ptr<SymbolRegistry>& scope
     if (auto* alloca = llvm::dyn_cast_or_null<llvm::AllocaInst>(val))
     {
         // Load the value from the allocated variable
+        // Note: This is safe because 'val' is only found if GetInsertBlock() was not null
         return builder->CreateLoad(alloca->getAllocatedType(), alloca, internal_name);
     }
 
     if (const auto global = module->getNamedGlobal(internal_name))
     {
-        return builder->CreateLoad(global->getValueType(), global, internal_name);
+        // Only generate a Load instruction if we are inside a BasicBlock (Function Scope).
+        if (builder->GetInsertBlock())
+        {
+            return builder->CreateLoad(global->getValueType(), global, internal_name);
+        }
+
+        // If we are in Global Scope (initializing a global variable), we cannot generate instructions.
+        // We return the GlobalVariable* itself. This allows parent nodes (like MemberAccessor)
+        // to perform Constant Folding or ConstantExpr GEPs on the address.
+        return global;
     }
 
     if (auto* function = module->getFunction(internal_name))
