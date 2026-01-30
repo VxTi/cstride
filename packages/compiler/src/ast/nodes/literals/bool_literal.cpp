@@ -30,7 +30,11 @@ std::string AstBooleanLiteral::to_string()
     return std::format("BooleanLiteral({})", value());
 }
 
-llvm::Value* AstBooleanLiteral::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstBooleanLiteral::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
     return llvm::ConstantInt::get(
         module->getContext(),

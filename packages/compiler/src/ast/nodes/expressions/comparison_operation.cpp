@@ -38,7 +38,11 @@ std::string AstComparisonOp::to_string()
     );
 }
 
-llvm::Value* AstComparisonOp::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstComparisonOp::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
     llvm::Value* left = this->get_left().codegen(scope, module, builder);
     llvm::Value* right = this->get_right().codegen(scope, module, builder);
@@ -62,24 +66,32 @@ llvm::Value* AstComparisonOp::codegen(const std::shared_ptr<SymbolRegistry>& sco
         {
             right = builder->CreateIntCast(right, left->getType(), true, "icmp_sext");
         }
-    } else
+    }
+    else
     {
         llvm::Type* target_type = builder->getDoubleTy();
-        if (left->getType()->isFloatTy() && right->getType()->isFloatTy()) {
+        if (left->getType()->isFloatTy() && right->getType()->isFloatTy())
+        {
             target_type = builder->getFloatTy();
         }
 
         // 2. Cast Left
-        if (left->getType()->isIntegerTy()) {
+        if (left->getType()->isIntegerTy())
+        {
             left = builder->CreateSIToFP(left, target_type, "sitofp");
-        } else {
+        }
+        else
+        {
             left = builder->CreateFPCast(left, target_type, "fpcast");
         }
 
         // 3. Cast Right
-        if (right->getType()->isIntegerTy()) {
+        if (right->getType()->isIntegerTy())
+        {
             right = builder->CreateSIToFP(right, target_type, "sitofp");
-        } else {
+        }
+        else
+        {
             right = builder->CreateFPCast(right, target_type, "fpcast");
         }
     }

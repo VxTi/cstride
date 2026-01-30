@@ -30,7 +30,11 @@ std::string AstCharLiteral::to_string()
     return std::format("CharLiteral({})", value());
 }
 
-llvm::Value* AstCharLiteral::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstCharLiteral::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
     return llvm::ConstantInt::get(
         module->getContext(),
