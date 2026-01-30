@@ -159,7 +159,7 @@ void AstStructInitializer::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Type mismatch for member '{}' in struct '{}': expected '{}', got '{}'",
+                    "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got '{}'",
                     member_name,
                     this->_struct_name,
                     found_member->to_string(),
