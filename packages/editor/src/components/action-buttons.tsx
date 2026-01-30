@@ -5,6 +5,7 @@ import {
   PlayIcon,
   SquareIcon,
   Trash2Icon,
+  MinusIcon,
 } from 'lucide-react';
 import { type ComponentProps, useCallback, useEffect } from 'react';
 import { twMerge } from 'tailwind-merge';
@@ -18,9 +19,13 @@ export default function ActionButtons() {
     xtermRef,
     processActive,
     setProcessActive,
-    debugMode,
-    setDebugMode,
+    config,
+    setConfig,
+    setTerminalState,
+    terminalState,
   } = useCodeContext();
+
+  const { debugMode } = config;
 
   const runCode = useCallback(() => {
     if (editorRef.current && ws) {
@@ -48,15 +53,19 @@ export default function ActionButtons() {
   };
 
   const toggleDebugMode = () => {
-    setDebugMode(prev => {
+    setConfig(prev => {
       if (ws)
         sendMessage(
           ws,
           WsMessageType.UPDATE_CONFIG,
-          JSON.stringify({ debugMode: !prev })
+          JSON.stringify({ debugMode: !prev.debugMode })
         );
-      return !prev;
+      return { ...prev, debugMode: !prev.debugMode };
     });
+  };
+
+  const toggleVisibility = () => {
+    setTerminalState(prev => ({ ...prev, visible: !prev.visible }));
   };
 
   const Icon = processActive ? SquareIcon : debugMode ? BugPlayIcon : PlayIcon;
@@ -64,39 +73,54 @@ export default function ActionButtons() {
 
   return (
     <div className="flex items-center w-full z-1000 px-3 pt-0.5">
-      <div className="flex flex-row items-center justify-end gap-1 grow">
-        <ActionButton
-          keybind="Ctrl+Shift+C"
-          tooltip="Clear terminal"
-          onClick={clearTerminal}
-        >
-          <Trash2Icon className="stroke-2 stroke-white" />
-        </ActionButton>
-        <ActionButton
-          keybind="Ctrl+Shift+B"
-          tooltip={debugMode ? 'Disable debug mode' : 'Enable debug mode'}
-          onClick={toggleDebugMode}
-        >
-          <DebugIcon />
-        </ActionButton>
-        <ActionButton
-          keybind="Ctrl+R"
-          tooltip={
-            processActive
-              ? 'Stop process'
-              : debugMode
-                ? 'Debug code'
-                : 'Run code'
-          }
-          onClick={runCode}
-        >
-          <Icon
-            className={twMerge(
-              processActive ? 'stroke-red-500' : 'stroke-green-500',
-              'stroke-2'
-            )}
-          />
-        </ActionButton>
+      <div className="flex flex-row items-center justify-between grow">
+        <div className="flex items-center">
+          <ActionButton
+            tooltipSide="top-right"
+            keybind="Ctrl+Shift+_"
+            tooltip={terminalState.visible ? 'Hide terminal' : 'Show terminal'}
+            onClick={toggleVisibility}
+          >
+            <MinusIcon className="stroke-2 stroke-white" />
+          </ActionButton>
+        </div>
+        <div className="flex flex-row items-center justify-end gap-1 grow">
+          <ActionButton
+            tooltipSide="top-left"
+            keybind="Ctrl+Shift+C"
+            tooltip="Clear terminal"
+            onClick={clearTerminal}
+          >
+            <Trash2Icon className="stroke-2 stroke-white" />
+          </ActionButton>
+          <ActionButton
+            keybind="Ctrl+Shift+B"
+            tooltipSide="top-left"
+            tooltip={debugMode ? 'Disable debug mode' : 'Enable debug mode'}
+            onClick={toggleDebugMode}
+          >
+            <DebugIcon />
+          </ActionButton>
+          <ActionButton
+            keybind="Ctrl+R"
+            tooltipSide="top-left"
+            tooltip={
+              processActive
+                ? 'Stop process'
+                : debugMode
+                  ? 'Debug code'
+                  : 'Run code'
+            }
+            onClick={runCode}
+          >
+            <Icon
+              className={twMerge(
+                processActive ? 'stroke-red-500' : 'stroke-green-500',
+                'stroke-2'
+              )}
+            />
+          </ActionButton>
+        </div>
       </div>
     </div>
   );
@@ -104,13 +128,15 @@ export default function ActionButtons() {
 
 type ActionButtonProps = Omit<ComponentProps<'button'>, 'onClick'> & {
   tooltip: string;
+  tooltipSide?: 'top-left' | 'top-right';
   keybind?: string;
   onClick: () => void;
 };
 
-function ActionButton({
+export function ActionButton({
   className,
   tooltip,
+  tooltipSide,
   keybind,
   onClick,
   ...props
@@ -174,7 +200,12 @@ function ActionButton({
 
   return (
     <div className="relative group" title={tooltip}>
-      <div className="absolute top-0 right-0 -translate-y-full pointer-events-none">
+      <div
+        className={twMerge(
+          'absolute top-0 -translate-y-full pointer-events-none',
+          tooltipSide === 'top-right' ? 'left-0' : 'right-0'
+        )}
+      >
         <div className="bg-neutral-900 max-w-46 w-max flex gap-2 items-center wrap-break-word text-white rounded-xl border border-neutral-700 px-2.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <span className="grow">{tooltip}</span>
           {keybind && (

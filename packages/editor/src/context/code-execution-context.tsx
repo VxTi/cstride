@@ -10,26 +10,35 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { websocketMessageDecoder, WsMessageType } from '../common';
+import {
+  type RunConfig,
+  websocketMessageDecoder,
+  WsMessageType,
+} from '../common';
 import { registerLanguage } from '../lib/stride-language/stride-language';
+
+interface TerminalState {
+  visible: boolean;
+  resizing: boolean;
+  ref: RefObject<HTMLDivElement>;
+}
 
 interface CodeExecutionContextType {
   monaco: typeof import('monaco-editor') | null;
-  terminalRef: RefObject<HTMLDivElement>;
   editorRef: RefObject<editor.IStandaloneCodeEditor>;
   ws: WebSocket | null;
   xtermRef: MutableRefObject<Terminal | null>;
 
-  terminalResizing: boolean;
-  setTerminalResizing: React.Dispatch<React.SetStateAction<boolean>>;
+  terminalState: TerminalState;
+  setTerminalState: React.Dispatch<React.SetStateAction<TerminalState>>;
 
   onEditorMount: (editor: editor.IStandaloneCodeEditor) => void;
 
   processActive: boolean;
   setProcessActive: React.Dispatch<React.SetStateAction<boolean>>;
 
-  debugMode: boolean;
-  setDebugMode: React.Dispatch<React.SetStateAction<boolean>>;
+  config: RunConfig;
+  setConfig: React.Dispatch<React.SetStateAction<RunConfig>>;
 }
 
 const CodeExecutionContext = createContext<CodeExecutionContextType | null>(
@@ -55,12 +64,18 @@ export function CodeContextProvider({
 }) {
   const monaco = useMonaco();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
-  const [terminalResizing, setTerminalResizing] = useState(false);
+
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const [terminalState, setTerminalState] = useState<TerminalState>({
+    visible: true,
+    resizing: false,
+    ref: terminalRef,
+  });
+
   const [processActive, setProcessActive] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
+  const [config, setConfig] = useState<RunConfig>({ debugMode: false });
 
   useEffect(() => {
     if (!monaco) return;
@@ -128,13 +143,12 @@ export function CodeContextProvider({
         monaco,
         processActive,
         setProcessActive,
-        terminalRef,
         editorRef,
         xtermRef,
-        terminalResizing,
-        setTerminalResizing,
-        debugMode,
-        setDebugMode,
+        terminalState,
+        setTerminalState,
+        config,
+        setConfig,
       }}
     >
       {children}
