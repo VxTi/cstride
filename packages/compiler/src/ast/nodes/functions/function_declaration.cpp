@@ -28,12 +28,12 @@ void AstFunctionDeclaration::validate()
 void AstFunctionDeclaration::resolve_forward_references(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context, llvm::IRBuilder<>* builder
+    llvm::IRBuilder<>* builder
 )
 {
     const auto fn_name = this->get_internal_name();
 
-    const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(module, context);
+    const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(module);
     llvm::Type* return_type = internal_type_to_llvm_type(this->return_type().get(), module);
 
     if (!param_types || !return_type)
@@ -259,10 +259,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     );
 }
 
-std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(
-    llvm::Module* module,
-    llvm::LLVMContext& context
-) const
+std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(llvm::Module* module) const
 {
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())

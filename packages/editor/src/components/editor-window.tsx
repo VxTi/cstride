@@ -5,7 +5,7 @@ import { strideLanguageId } from '../lib/stride-language/language-config';
 import {
   installStrideOneDarkTheme,
   oneDarkThemeName,
-} from './editor-theme';
+} from '../lib/editor-theme';
 
 export default function EditorWindow() {
   const [initialCode] = useState(

@@ -40,7 +40,6 @@ namespace stride::ast
         void resolve_forward_references(
             const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
-            llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
         ) override;
 
