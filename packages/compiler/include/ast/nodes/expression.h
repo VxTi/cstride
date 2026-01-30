@@ -735,7 +735,7 @@ namespace stride::ast
 
     /// Whether the next sequence of tokens is a variable/function access by property reference
     /// e.g., <identifier>.<accessor>
-    bool is_property_accessor_statement(const TokenSet& set);
+    bool is_variable_reassignment_statement(const TokenSet& set);
 
     /// Checks if the token set represents a variable declaration
     bool is_variable_declaration(const TokenSet& set);
