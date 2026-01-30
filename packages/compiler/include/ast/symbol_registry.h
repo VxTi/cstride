@@ -87,32 +87,16 @@ namespace stride::ast
               _name(struct_name) {}
 
         [[nodiscard]]
-        const std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>>& get_fields() const
-        {
-            return this->_fields;
-        }
+        std::vector<std::pair<std::string, IAstInternalFieldType*>> get_fields() const;
 
-        IAstInternalFieldType* get_field_type(const std::string& field_name) const
-        {
-            for (const auto& [name, type] : this->_fields)
-            {
-                if (name == field_name)
-                {
-                    return type.get();
-                }
-            }
-            return nullptr;
-        }
+        IAstInternalFieldType* get_field_type(const std::string& field_name) const;
 
         [[nodiscard]]
-        bool is_reference_struct() const
-        {
-            return _reference_struct_name.has_value();
-        }
+        bool is_reference_struct() const;
 
         std::optional<std::string> get_reference_struct_name() const
         {
-            return _reference_struct_name;
+            return this->_reference_struct_name;
         }
 
         std::string get_name() const { return this->_name; }
@@ -122,17 +106,7 @@ namespace stride::ast
             return get_field_type(member_name) != nullptr;
         }
 
-        std::optional<int> get_member_index(const std::string& member_name) const
-        {
-            for (size_t i = 0; i < this->_fields.size(); i++)
-            {
-                if (this->_fields[i].first == member_name)
-                {
-                    return static_cast<int>(i);
-                }
-            }
-            return std::nullopt;
-        }
+        std::optional<int> get_member_index(const std::string& member_name) const;
     };
 
     /// Can be either a variable or a field in a struct/class

@@ -141,7 +141,7 @@ llvm::Value* AstMemberAccessor::codegen(
 
     // With opaque pointers, we need to know if we are operating on an address (L-value)
     // or a loaded struct value (R-value). Pointers allow GEP, values require ExtractValue.
-    bool s_is_pointer = current_val->getType()->isPointerTy();
+    const bool is_pointer_ty = current_val->getType()->isPointerTy();
 
     for (const auto& accessor : this->get_members())
     {
@@ -168,7 +168,7 @@ llvm::Value* AstMemberAccessor::codegen(
             );
         }
 
-        if (s_is_pointer)
+        if (is_pointer_ty)
         {
             // Get the LLVM type for the current struct to generate the GEP
             llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(
@@ -200,7 +200,7 @@ llvm::Value* AstMemberAccessor::codegen(
     }
 
     // if we were working with pointers, we need to load the final result
-    if (s_is_pointer)
+    if (is_pointer_ty)
     {
         llvm::Type* final_llvm_type = internal_type_to_llvm_type(current_ast_type.get(), module);
         return builder->CreateLoad(

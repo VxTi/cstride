@@ -70,3 +70,45 @@ void SymbolRegistry::define_struct(
         std::move(reference_struct_name)
     ));
 }
+
+std::vector<std::pair<std::string, IAstInternalFieldType*>> StructSymbolDef::get_fields() const
+{
+    std::vector<std::pair<std::string, IAstInternalFieldType*>> copy{};
+    copy.reserve(this->_fields.size());
+
+    for (const auto& [name, type] : this->_fields)
+    {
+        copy.push_back({name, type.get()});
+    }
+
+    return std::move(copy);
+}
+
+IAstInternalFieldType* StructSymbolDef::get_field_type(const std::string& field_name) const
+{
+    for (const auto& [name, type] : this->_fields)
+    {
+        if (name == field_name)
+        {
+            return type.get();
+        }
+    }
+    return nullptr;
+}
+
+bool StructSymbolDef::is_reference_struct() const
+{
+    return _reference_struct_name.has_value();
+}
+
+std::optional<int> StructSymbolDef::get_member_index(const std::string& member_name) const
+{
+    for (size_t i = 0; i < this->_fields.size(); i++)
+    {
+        if (this->_fields[i].first == member_name)
+        {
+            return static_cast<int>(i);
+        }
+    }
+    return std::nullopt;
+}

@@ -121,9 +121,9 @@ void AstStructInitializer::validate()
         );
     }
 
-    // Now we'll check whether all fields are right
-    const auto& fields = definition->get_fields();
+    const auto fields =definition->get_fields();
 
+    // Quick check: Ensure the number of members matches (no type comparisons required)
     if (fields.size() != this->_initializers.size())
     {
         throw parsing_error(
@@ -139,6 +139,29 @@ void AstStructInitializer::validate()
         );
     }
 
+    // Second quick check: Order validation - This is required to ensure consistent data layout.
+    size_t index = 0;
+    for (const auto& member_name : this->_initializers | std::views::keys)
+    {
+        const auto [field_name, field_type] = fields[index];
+
+        if (member_name != field_name)
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Struct member order mismatch at index {}: expected '{}', got '{}'",
+                    index,
+                    field_name,
+                    member_name
+                ),
+                *this->get_source(),
+                field_type->get_source_position()
+            );
+        }
+
+        index++;
+    }
     for (const auto& [member_name, member_expr] : this->_initializers)
     {
         const auto found_member = definition->get_field_type(member_name);
