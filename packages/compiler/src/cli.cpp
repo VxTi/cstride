@@ -75,6 +75,7 @@ CompilationOptions resolve_compilation_options(const int argc, char** argv)
         }
 
         // Currently, this doesn't really do anything else, as we don't support
+        // interpreting yet.
         if (argument.starts_with("--mode="))
         {
             const auto mode = argument.substr(7);
