@@ -34,7 +34,7 @@ llvm::Value* AstStringLiteral::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
     llvm::LLVMContext& context,
-    llvm::IRBuilder<>* irBuilder
+    llvm::IRBuilder<>* ir_builder
 )
 {
     // Check if a global variable already exists with the same value
@@ -44,19 +44,19 @@ llvm::Value* AstStringLiteral::codegen(
     {
         if (!global.hasInitializer()) { continue; }
 
-        if (const auto* constData = llvm::dyn_cast<llvm::ConstantDataArray>(global.getInitializer()))
+        if (const auto* const_entry = llvm::dyn_cast<llvm::ConstantDataArray>(global.getInitializer()))
         {
-            if (constData->isCString() && constData->getAsString().drop_back() == this->value())
+            if (const_entry->isCString() && const_entry->getAsString().drop_back() == this->value())
             {
                 // Return a pointer to the existing global string
-                return irBuilder->CreateInBoundsGEP(
+                return ir_builder->CreateInBoundsGEP(
                     global.getValueType(),
                     &global,
-                    {irBuilder->getInt32(0), irBuilder->getInt32(0)}
+                    {ir_builder->getInt32(0), ir_builder->getInt32(0)}
                 );
             }
         }
     }
 
-    return irBuilder->CreateGlobalString(this->value());
+    return ir_builder->CreateGlobalString(this->value());
 }

@@ -140,7 +140,7 @@ void AstStructInitializer::validate()
 
     for (const auto& [member_name, member_expr] : this->_initializers)
     {
-        const auto found_member = definition->get_field(member_name);
+        const auto found_member = definition->get_field_type(member_name);
 
         if (!found_member)
         {

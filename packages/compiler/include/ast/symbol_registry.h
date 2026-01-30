@@ -92,7 +92,7 @@ namespace stride::ast
             return this->_fields;
         }
 
-        IAstInternalFieldType* get_field(const std::string& field_name) const
+        IAstInternalFieldType* get_field_type(const std::string& field_name) const
         {
             for (const auto& [name, type] : this->_fields)
             {

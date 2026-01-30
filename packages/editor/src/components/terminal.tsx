@@ -56,6 +56,7 @@ export default function TerminalWindow() {
       allowTransparency: true,
       theme: {
         background: '#121418',
+        red: '#ff5555',
       },
     });
     const fitAddon = new FitAddon();

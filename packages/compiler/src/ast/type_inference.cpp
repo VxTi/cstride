@@ -283,7 +283,18 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
         }
 
         // The type of the struct member is the name of the referring struct
-        const auto segment_identifier_field_type = prev_struct_definition->get_field(segment_identifier->get_name());
+        const auto segment_identifier_field_type = prev_struct_definition->get_field_type(segment_identifier->get_name());
+
+        if (!segment_identifier_field_type)
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format("Struct member '{}' accessor does not exist", segment_identifier->get_name()),
+                *member_accessor->get_source(),
+                member_accessor->get_source_position()
+            );
+        }
+
         prev_struct_definition = member_accessor->get_registry()->get_struct_def(segment_identifier_field_type->get_internal_name());
 
         // If `prev_struct_definition` is `nullptr` here, we already know it's not a struct type,
@@ -310,7 +321,7 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
         );
     }
 
-    const auto last_segment_field_type = prev_struct_definition->get_field(last_segment_identifier->get_name());
+    const auto last_segment_field_type = prev_struct_definition->get_field_type(last_segment_identifier->get_name());
     if (!last_segment_field_type)
     {
         throw parsing_error(

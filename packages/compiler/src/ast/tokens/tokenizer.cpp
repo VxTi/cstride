@@ -57,7 +57,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                     tokens.push_back(
                         Token(
                             TokenType::STRING_LITERAL,
-                            SourcePosition(string_start - 1, length),
+                            SourcePosition(string_start - 1, length + 2),
                             val
                         )
                     );

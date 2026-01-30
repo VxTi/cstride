@@ -104,7 +104,7 @@ llvm::Value* AstMemberAccessor::codegen(
             current_const = current_const->getAggregateElement(member_index.value());
             if (!current_const) return nullptr; // Index out of bounds or invalid aggregate
 
-            const IAstInternalFieldType* member_field_type = struct_def->get_field(accessor->get_name());
+            const IAstInternalFieldType* member_field_type = struct_def->get_field_type(accessor->get_name());
             current_ast_type = member_field_type->clone();
             current_struct_name = current_ast_type->get_internal_name();
         }
@@ -175,7 +175,7 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         // Update loop state
-        const IAstInternalFieldType* member_field_type = struct_def->get_field(accessor->get_name());
+        const IAstInternalFieldType* member_field_type = struct_def->get_field_type(accessor->get_name());
 
         if (!member_field_type)
         {
