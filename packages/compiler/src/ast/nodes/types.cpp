@@ -1,4 +1,5 @@
 #include "ast/nodes/types.h"
+#include "ast/symbol_registry.h"
 
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
@@ -330,6 +331,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     llvm::Module* module
 )
 {
+    const auto scope = type->get_registry();
     if (const auto* array = dynamic_cast<AstArrayType*>(type))
     {
         llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module);
@@ -389,7 +391,21 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
             return llvm::PointerType::get(module->getContext(), 0); // Replaces PointerType::get(struct_type, 0)
         }
 
-        llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), custom->name());
+        std::string actual_name = custom->name();
+        auto struct_def_opt = scope->get_struct_def(actual_name);
+        if (struct_def_opt.has_value())
+        {
+            auto struct_def = struct_def_opt.value();
+            while (struct_def->is_reference_struct())
+            {
+                actual_name = struct_def->get_reference_struct_name().value();
+                struct_def_opt = scope->get_struct_def(actual_name);
+                if (!struct_def_opt.has_value()) break;
+                struct_def = struct_def_opt.value();
+            }
+        }
+
+        llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), actual_name);
         if (!struct_type)
         {
             throw parsing_error(

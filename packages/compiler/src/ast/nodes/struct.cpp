@@ -66,7 +66,6 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         // We define it as a reference to `reference_sym`. Validation happens later
         scope->define_struct(
             struct_name,
-            struct_name, // We don't know its internal name, so we'll just provide the name as placeholder
             reference_sym->get_internal_name()
         );
 
@@ -110,7 +109,6 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
     scope->define_struct(
         struct_name,
-        resolve_internal_struct_name(fields, struct_name),
         std::move(fields)
     );
 
@@ -131,7 +129,7 @@ void AstStructMember::validate()
         // TODO: Support enums
 
         if (const auto member = this->get_registry()->get_struct_def(non_primitive_type->get_internal_name());
-            member == nullptr)
+            !member.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
