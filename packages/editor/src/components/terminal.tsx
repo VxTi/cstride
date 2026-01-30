@@ -4,12 +4,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { TerminalIcon } from 'lucide-react';
 import React, { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
+import { sendMessage, WsMessageType } from '../common';
 import { useCodeContext } from '../context/code-execution-context';
 import ActionButtons from './action-buttons';
 import Tooltip from './tooltip';
 
 export default function TerminalWindow() {
-  const { terminalState, xtermRef, setTerminalState } = useCodeContext();
+  const { terminalState, xtermRef, ws, setTerminalState } = useCodeContext();
 
   const { ref, resizing, visible } = terminalState;
 
@@ -85,7 +86,15 @@ export default function TerminalWindow() {
     if (!fitAddonRef.current || !terminalState.visible) return;
 
     requestAnimationFrame(() => fitAddonRef.current?.fit());
-  }, [height, terminalState.visible]);
+  }, [height, terminalState.visible, ws]);
+
+  useEffect(() => {
+    if (!terminalState.visible || !ws || ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    sendMessage(ws, WsMessageType.GET_CONFIG);
+  }, [ws, terminalState.visible]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setTerminalState(prev => ({ ...prev, resizing: true }));

@@ -12,6 +12,7 @@ import React, {
 } from 'react';
 import {
   type RunConfig,
+  websocketMessageConfigDecoder,
   websocketMessageDecoder,
   WsMessageType,
 } from '../common';
@@ -113,6 +114,16 @@ export function CodeContextProvider({
             break;
           case WsMessageType.PROCESS_STDOUT:
             term.writeln(data.message || 'Success (No output)');
+            break;
+          case WsMessageType.UPDATE_CONFIG:
+            const result = websocketMessageConfigDecoder.safeParse(
+              JSON.parse(data.message)
+            );
+            if (!result.success) {
+              term.writeln('\x1b[31mFailed to decode config message\x1b[0m');
+              return;
+            }
+            setConfig(result.data);
             break;
           case WsMessageType.PROCESS_STDERR:
             data.message
