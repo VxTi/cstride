@@ -279,18 +279,28 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::infer_member_accessor_type(
         const auto segment_iden = dynamic_cast<AstIdentifier*>(members[i]);
         if (!segment_iden)
         {
-            throw parsing_error(ErrorType::TYPE_ERROR, "Member accessor must be an identifier",
-                                *expr->get_source(), expr->get_source_position());
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                "Member accessor must be an identifier",
+                *expr->get_source(),
+                expr->get_source_position()
+            );
         }
 
         // D: Look up the field within the struct
         const auto field_type = struct_def->get_field_type(segment_iden->get_name());
         if (!field_type)
         {
-            throw parsing_error(ErrorType::TYPE_ERROR,
-                                std::format("Struct '{}' has no member named '{}'",
-                                            struct_def->get_name(), segment_iden->get_name()),
-                                *expr->get_source(), expr->get_source_position());
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Struct '{}' has no member named '{}'",
+                    struct_def->get_name(),
+                    segment_iden->get_name()
+                ),
+                *expr->get_source(),
+                expr->get_source_position()
+            );
         }
 
         // E: Update current_type for the next iteration (or for the final return)

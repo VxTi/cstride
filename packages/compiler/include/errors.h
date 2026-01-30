@@ -52,9 +52,11 @@ namespace stride
         std::string what_msg;
 
     public:
-        explicit parsing_error(const char* str) : std::runtime_error(str), what_msg(str) {}
+        explicit parsing_error(const char* str)
+            : std::runtime_error(str), what_msg(str) {}
 
-        explicit parsing_error(const std::string& str) : parsing_error(str.c_str()) {}
+        explicit parsing_error(const std::string& str)
+            : parsing_error(str.c_str()) {}
 
         explicit parsing_error(
             const ErrorType error_type,
