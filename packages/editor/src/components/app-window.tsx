@@ -5,14 +5,14 @@ import TerminalWindow from './terminal';
 import { useCodeContext } from '../context/code-execution-context';
 
 function AppWindow() {
-  const { terminalResizing } = useCodeContext();
+  const { terminalState } = useCodeContext();
 
   return (
     <div className="w-screen h-screen flex flex-col m-0 p-0 bg-[#121418]">
       <div
         className={twMerge(
           'flex-1 relative',
-          terminalResizing ? 'pointer-events-none' : 'pointer-events-auto'
+          terminalState.resizing ? 'pointer-events-none' : 'pointer-events-auto'
         )}
       >
         <EditorWindow />

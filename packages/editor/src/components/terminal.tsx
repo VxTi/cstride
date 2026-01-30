@@ -1,13 +1,16 @@
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
-import { type ComponentProps, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { TerminalIcon } from 'lucide-react';
+import React, { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { useCodeContext } from '../context/code-execution-context';
-import ActionButtons from './action-buttons';
+import ActionButtons, { ActionButton } from './action-buttons';
 
 export default function TerminalWindow() {
-  const { terminalRef, xtermRef, terminalResizing, setTerminalResizing } =
-    useCodeContext();
+  const { terminalState, xtermRef, setTerminalState } = useCodeContext();
+
+  const { ref, resizing, visible } = terminalState;
 
   const fitAddonRef = useRef<FitAddon | null>(null);
   const [height, setHeight] = useState(300);
@@ -17,7 +20,7 @@ export default function TerminalWindow() {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!terminalResizing || !dragStartRef.current) return;
+      if (!resizing || !dragStartRef.current) return;
 
       const delta = dragStartRef.current.startY - e.clientY;
       const newHeight = dragStartRef.current.startHeight + delta;
@@ -28,7 +31,7 @@ export default function TerminalWindow() {
     };
 
     const handleMouseUp = () => {
-      setTerminalResizing(false);
+      setTerminalState(prev => ({ ...prev, resizing: false }));
       dragStartRef.current = null;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
@@ -41,13 +44,13 @@ export default function TerminalWindow() {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [setTerminalResizing, terminalResizing]);
+  }, [setTerminalState, resizing]);
 
   /*
    * xterm initialization
    */
   useEffect(() => {
-    if (!terminalRef.current) return;
+    if (!ref.current) return;
 
     const term = new Terminal({
       convertEol: true,
@@ -62,7 +65,7 @@ export default function TerminalWindow() {
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
 
-    term.open(terminalRef.current);
+    term.open(ref.current);
     fitAddon.fit();
 
     xtermRef.current = term;
@@ -75,16 +78,16 @@ export default function TerminalWindow() {
       term.dispose();
       window.removeEventListener('resize', handleResize);
     };
-  }, [terminalRef, xtermRef]);
+  }, [ref, xtermRef]);
 
   useEffect(() => {
-    if (!fitAddonRef.current) return;
+    if (!fitAddonRef.current || !terminalState.visible) return;
 
     requestAnimationFrame(() => fitAddonRef.current?.fit());
-  }, [height]);
+  }, [height, terminalState.visible]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    setTerminalResizing(true);
+    setTerminalState(prev => ({ ...prev, resizing: true }));
     dragStartRef.current = { startY: e.clientY, startHeight: height };
     document.body.style.cursor = 'ns-resize';
     document.body.style.userSelect = 'none';
@@ -92,19 +95,67 @@ export default function TerminalWindow() {
   };
 
   return (
-    <div
-      style={{ height: `${height}px` }}
-      className={twMerge(
-        'bg-[#121418] flex flex-col rounded-t-3xl mx-1 border border-neutral-700',
-        terminalResizing && 'border-t-blue-500'
-      )}
-    >
-      <TerminalResizeBar onMouseDown={handleMouseDown} />
-      <ActionButtons />
-      <div className="p-2.5 overflow-hidden flex-1 min-h-0">
-        <div ref={terminalRef} className="size-full" />
+    <>
+      <div
+        className={twMerge(
+          'origin-bottom-left',
+          !visible && 'hidden pointer-events-none'
+        )}
+      >
+        <motion.div
+          key="terminal-open"
+          initial={{ opacity: 0, transform: 'scale(0)' }}
+          animate={
+            visible
+              ? { opacity: 1, transform: 'scale(1)' }
+              : { opacity: 0, transform: 'scale(0)' }
+          }
+          transition={{ duration: 0.2 }}
+          className="origin-bottom-left"
+        >
+          <div
+            style={{ height: `${height}px` }}
+            className={twMerge(
+              'bg-[#121418] flex flex-col rounded-t-3xl mx-1 border border-neutral-700',
+              resizing && 'border-t-blue-500'
+            )}
+          >
+            <TerminalResizeBar onMouseDown={handleMouseDown} />
+            <ActionButtons />
+            <div className="p-2.5 overflow-hidden flex-1 min-h-0">
+              <div ref={ref} className="size-full" />
+            </div>
+          </div>
+        </motion.div>
       </div>
-    </div>
+
+      <AnimatePresence>
+        {!visible && (
+          <motion.div
+            key="terminal-closed"
+            initial={{ opacity: 0, transform: 'scale(1.1)' }}
+            animate={{ opacity: 1, transform: 'scale(1)' }}
+            exit={{ opacity: 0, transform: 'scale(1.1)' }}
+            transition={{
+              duration: 0.1,
+            }}
+            className="origin-bottom-left max-w-max"
+          >
+            <ActionButton
+              keybind="Ctrl+="
+              tooltipSide="top-right"
+              className="bg-neutral-900 border-white/50 rounded-2xl border-2 p-1"
+              tooltip="Open Terminal"
+              onClick={() =>
+                setTerminalState(prev => ({ ...prev, visible: true }))
+              }
+            >
+              <TerminalIcon className="stroke-white" />
+            </ActionButton>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
