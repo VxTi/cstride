@@ -144,7 +144,6 @@ void AstVariableDeclaration::validate()
 
     if (*lhs_type != *rhs_type)
     {
-        // Store to_string() results in local variables to ensure valid lifetime
         const std::string lhs_type_str = lhs_type->to_string();
         const std::string rhs_type_str = rhs_type->to_string();
         const std::string init_val_str = init_val->to_string();
@@ -280,7 +279,12 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     return std::make_unique<AstVariableDeclaration>(
         set.get_source(),
-        reference_token.get_source_position(),
+        SourcePosition(
+            reference_token.get_source_position().offset,
+            variable_type->get_source_position().offset
+            + variable_type->get_source_position().length
+            - reference_token.get_source_position().offset
+        ),
         scope,
         variable_name,
         internal_name,

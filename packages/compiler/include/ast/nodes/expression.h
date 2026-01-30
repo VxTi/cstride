@@ -575,7 +575,7 @@ namespace stride::ast
         : public AstExpression
     {
         std::string _struct_name;
-        std::unordered_map<std::string, std::unique_ptr<AstExpression>> _initializers;
+        std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>> _initializers;
 
     public:
         explicit AstStructInitializer(
@@ -583,14 +583,14 @@ namespace stride::ast
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string struct_name,
-            std::unordered_map<std::string, std::unique_ptr<AstExpression>> initializers
+            std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>> initializers
         ) :
             AstExpression(source, source_position, scope),
             _struct_name(std::move(struct_name)),
             _initializers(std::move(initializers)) {}
 
         [[nodiscard]]
-        const std::unordered_map<std::string, std::unique_ptr<AstExpression>>& get_initializers() const
+        const std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>>& get_initializers() const
         {
             return _initializers;
         }
@@ -673,7 +673,7 @@ namespace stride::ast
     std::unique_ptr<AstExpression> parse_chained_member_access(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
-        std::unique_ptr<AstExpression> lhs
+        const std::unique_ptr<AstExpression>& lhs
     );
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>

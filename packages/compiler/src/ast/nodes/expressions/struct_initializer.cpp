@@ -40,7 +40,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected struct name in struct initializer");
     set.expect(TokenType::DOUBLE_COLON, "Expected '::' after struct name in struct initializer");
 
-    std::unordered_map<std::string, std::unique_ptr<AstExpression>> member_map = {};
+    std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>> member_map = {};
     auto member_set = collect_block(set);
 
     if (!member_set.has_value())
@@ -53,7 +53,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         scope,
         member_set.value()
     );
-    member_map[initial_member_iden] = std::move(initial_member_expr);
+    member_map.push_back({std::move(initial_member_iden), std::move(initial_member_expr)});
 
     // Subsequent member parsing
     while (member_set->has_next())
@@ -67,7 +67,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
             scope,
             member_set.value()
         );
-        member_map[member_iden] = std::move(member_expr);
+        member_map.push_back({std::move(member_iden), std::move(member_expr)});
     }
 
     // Optionally consume trailing comma

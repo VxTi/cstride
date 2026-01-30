@@ -25,7 +25,7 @@ bool stride::ast::is_member_accessor(AstExpression* lhs, const TokenSet& set)
 std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
     const std::shared_ptr<SymbolRegistry>& scope,
     TokenSet& set,
-    std::unique_ptr<AstExpression> lhs
+    const std::unique_ptr<AstExpression>& lhs
 )
 {
     std::vector<std::unique_ptr<AstIdentifier>> chained_accessors = {};
@@ -53,6 +53,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
         );
     }
 
+    const auto lhs_source_pos = lhs->get_source_position();
     const auto lhs_identifier = dynamic_cast<AstIdentifier*>(lhs.get());
     if (!lhs_identifier)
     {
@@ -60,20 +61,20 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             ErrorType::TYPE_ERROR,
             "Member access base must be an identifier",
             *set.get_source(),
-            lhs->get_source_position()
+            lhs_source_pos
         );
     }
 
     return std::make_unique<AstMemberAccessor>(
         set.get_source(),
         SourcePosition(
-            reference_token.get_source_position().offset,
-            set.position() - reference_token.get_source_position().offset
+            lhs_source_pos.offset,
+            set.position() - lhs_source_pos.offset
         ),
         scope,
         std::make_unique<AstIdentifier>(
             set.get_source(),
-            lhs_identifier->get_source_position(),
+            lhs_source_pos,
             lhs_identifier->get_registry(),
             lhs_identifier->get_name(),
             lhs_identifier->get_internal_name()
