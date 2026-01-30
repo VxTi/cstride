@@ -61,18 +61,18 @@ export default function ActionButtons() {
     <div className="flex items-center w-full z-1000 px-3 pt-0.5">
       <div className="flex flex-row items-center justify-end gap-1 grow">
         <ActionButton
-          keybind="Cmd+Shift+B"
-          tooltip={debugMode ? 'Disable debug mode' : 'Enable debug mode'}
-          onClick={toggleDebugMode}
-        >
-          <DebugIcon />
-        </ActionButton>
-        <ActionButton
           keybind="Cmd+Shift+T"
           tooltip="Clear terminal"
           onClick={clearTerminal}
         >
           <Trash2Icon className="stroke-2 stroke-white" />
+        </ActionButton>
+        <ActionButton
+          keybind="Cmd+Shift+B"
+          tooltip={debugMode ? 'Disable debug mode' : 'Enable debug mode'}
+          onClick={toggleDebugMode}
+        >
+          <DebugIcon />
         </ActionButton>
         <ActionButton
           keybind="Ctrl+R"
