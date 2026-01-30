@@ -39,9 +39,9 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
     int context_type_flags
 )
 {
-    const auto reference_token = set.peak_next();
-    const bool is_ptr = set.peak_next_eq(TokenType::STAR);
-    const bool is_reference = set.peak_next_eq(TokenType::AMPERSAND);
+    const auto reference_token = set.peek_next();
+    const bool is_ptr = set.peek_next_eq(TokenType::STAR);
+    const bool is_reference = set.peek_next_eq(TokenType::AMPERSAND);
 
     int additional_flags = 0;
 
@@ -54,13 +54,13 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
         additional_flags |= SRFLAG_TYPE_REFERENCE;
     }
 
-    // If it has flags, we'll have to offset the next token peaking by one
+    // If it has flags, we'll have to offset the next token peeking by one
     const int offset = additional_flags ? 1 : 0;
     context_type_flags |= additional_flags;
 
     std::optional<std::unique_ptr<AstPrimitiveFieldType>> result = std::nullopt;
 
-    switch (set.peak(offset).get_type())
+    switch (set.peek(offset).get_type())
     {
     case TokenType::PRIMITIVE_INT8:
         {
@@ -239,7 +239,7 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_primiti
         set.skip(offset + 1);
 
         // Array parsing
-        if (set.peak_eq(TokenType::LSQUARE_BRACKET, 0) && set.peak_eq(TokenType::RSQUARE_BRACKET, 1))
+        if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
         {
             set.skip(2);
 
@@ -263,14 +263,14 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_t
 )
 {
     // Custom types are identifiers in type position.
-    const auto reference_token = set.peak_next();
+    const auto reference_token = set.peek_next();
 
-    if (set.peak_next_eq(TokenType::STAR))
+    if (set.peek_next_eq(TokenType::STAR))
     {
         set.next();
         context_type_flags |= SRFLAG_TYPE_PTR;
     }
-    if (set.peak_next().get_type() != TokenType::IDENTIFIER)
+    if (set.peek_next().get_type() != TokenType::IDENTIFIER)
     {
         return std::nullopt;
     }
@@ -287,7 +287,7 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_t
 
     // If the next tokens are square brackets, it's an array type
     // So we'll wrap the initial NamedValueType in the ArrayType.
-    if (set.peak_eq(TokenType::LSQUARE_BRACKET, 0) && set.peak_eq(TokenType::RSQUARE_BRACKET, 1))
+    if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
     {
         set.skip(2);
 

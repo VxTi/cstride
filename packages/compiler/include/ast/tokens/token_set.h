@@ -41,19 +41,19 @@ namespace stride::ast
         Token at(size_t index) const;
 
         [[nodiscard]]
-        Token peak(size_t offset) const;
+        Token peek(size_t offset) const;
 
         [[nodiscard]]
-        Token peak_next() const;
+        Token peek_next() const;
 
         [[nodiscard]]
-        TokenType peak_next_type() const;
+        TokenType peek_next_type() const;
 
         [[nodiscard]]
-        bool peak_next_eq(TokenType type) const;
+        bool peek_next_eq(TokenType type) const;
 
         [[nodiscard]]
-        bool peak_eq(TokenType type, size_t offset) const;
+        bool peek_eq(TokenType type, size_t offset) const;
 
         void skip(size_t amount);
 

@@ -11,7 +11,7 @@ using namespace stride::ast;
 
 std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
 {
-    if (!set.peak_next_eq(TokenType::KEYWORD_ELSE))
+    if (!set.peek_next_eq(TokenType::KEYWORD_ELSE))
     {
         return nullptr;
     }
@@ -20,7 +20,7 @@ std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<SymbolRegist
 
     // In case we encounter a `{` after an `if ... else {`, we'll
     // have to parse_file the block separately
-    if (set.peak_next_eq(TokenType::LBRACE))
+    if (set.peek_next_eq(TokenType::LBRACE))
     {
         return parse_block(scope, set);
     }
@@ -53,7 +53,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
 
     // Thus far, we've collected `if (...)
 
-    if (!set.peak_next_eq(TokenType::LBRACE))
+    if (!set.peek_next_eq(TokenType::LBRACE))
     {
         // Here we might have an `if (...) ...` statement.
         auto if_body_expr = parse_next_statement(if_header_scope, set);
@@ -108,7 +108,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
 
 bool stride::ast::is_if_statement(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_IF);
+    return tokens.peek_next_eq(TokenType::KEYWORD_IF);
 }
 
 IAstNode* AstIfStatement::reduce()

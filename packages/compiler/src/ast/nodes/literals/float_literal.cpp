@@ -8,7 +8,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
     TokenSet& set
 )
 {
-    if (const auto reference_token = set.peak_next(); reference_token.get_type() == TokenType::DOUBLE_LITERAL)
+    if (const auto reference_token = set.peek_next(); reference_token.get_type() == TokenType::DOUBLE_LITERAL)
     {
         const auto next = set.next();
         const auto numeric = next.get_lexeme().substr(0, next.get_lexeme().length() - 1);
@@ -22,7 +22,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
             64
         );
     }
-    if (const auto reference_token = set.peak_next(); reference_token.get_type() == TokenType::FLOAT_LITERAL)
+    if (const auto reference_token = set.peek_next(); reference_token.get_type() == TokenType::FLOAT_LITERAL)
     {
         const auto next = set.next();
         return std::make_unique<AstFpLiteral>(

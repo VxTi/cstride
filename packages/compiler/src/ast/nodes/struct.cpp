@@ -36,7 +36,7 @@ std::unique_ptr<AstStructMember> parse_struct_member(
 
 bool stride::ast::is_struct_declaration(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_STRUCT);
+    return tokens.peek_next_eq(TokenType::KEYWORD_STRUCT);
 }
 
 std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
@@ -57,7 +57,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     // This will parse a definition like:
     //
     // struct Foo = Bar;
-    if (tokens.peak_next_eq(TokenType::EQUALS))
+    if (tokens.peek_next_eq(TokenType::EQUALS))
     {
         tokens.next();
         auto reference_sym = parse_type(scope, tokens, "Expected reference struct type", SRFLAG_NONE);

@@ -50,7 +50,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
 
     // If the next token is a '(', we'll try to descend into it
     // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
-    if (set.peak_next_eq(TokenType::LPAREN))
+    if (set.peek_next_eq(TokenType::LPAREN))
     {
         set.next();
         auto expr = parse_standalone_expression_part(scope, set);
@@ -58,10 +58,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         return expr;
     }
 
-    if (set.peak_next_eq(TokenType::IDENTIFIER))
+    if (set.peek_next_eq(TokenType::IDENTIFIER))
     {
         /// Function invocations, e.g., `<identifier>(...)`
-        if (set.peak(1).get_type() == TokenType::LPAREN)
+        if (set.peek(1).get_type() == TokenType::LPAREN)
         {
             return parse_function_call(scope, set);
         }
@@ -85,7 +85,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
             internal_name
         );
 
-        if (set.peak_next_eq(TokenType::LSQUARE_BRACKET))
+        if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
         {
             return parse_array_member_accessor(scope, set, std::move(identifier));
         }
@@ -107,7 +107,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
     std::unique_ptr<AstExpression> lhs
 )
 {
-    const auto reference_token = set.peak_next();
+    const auto reference_token = set.peek_next();
 
     if (auto logical_op = get_logical_op_type(reference_token.get_type()); logical_op.has_value())
     {
@@ -139,7 +139,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
     std::unique_ptr<AstExpression> lhs
 )
 {
-    const auto reference_token = set.peak_next();
+    const auto reference_token = set.peek_next();
 
     if (auto comparative_op = get_comparative_op_type(reference_token.get_type()); comparative_op.has_value())
     {
@@ -271,7 +271,7 @@ std::string stride::ast::parse_property_accessor_statement(
     int iterations = 0;
     while (true)
     {
-        if (set.peak_next_eq(TokenType::DOT) && set.peak_eq(TokenType::IDENTIFIER, 1))
+        if (set.peek_next_eq(TokenType::DOT) && set.peek_eq(TokenType::IDENTIFIER, 1))
         {
             set.next();
             const auto accessor_token = set.expect(TokenType::IDENTIFIER);
@@ -290,9 +290,9 @@ std::string stride::ast::parse_property_accessor_statement(
 
 bool stride::ast::is_property_accessor_statement(const TokenSet& set)
 {
-    const bool initial_identifier = set.peak_next_eq(TokenType::IDENTIFIER);
-    const bool is_followup_accessor = set.peak_eq(TokenType::DOT, 1)
-        && set.peak_eq(TokenType::IDENTIFIER, 2);
+    const bool initial_identifier = set.peek_next_eq(TokenType::IDENTIFIER);
+    const bool is_followup_accessor = set.peek_eq(TokenType::DOT, 1)
+        && set.peek_eq(TokenType::IDENTIFIER, 2);
 
     return initial_identifier && (is_followup_accessor || true);
 }

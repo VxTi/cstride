@@ -15,7 +15,7 @@ std::string AstModule::to_string()
 
 bool stride::ast::is_module_statement(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_MODULE);
+    return tokens.peek_next_eq(TokenType::KEYWORD_MODULE);
 }
 
 std::unique_ptr<AstModule> stride::ast::parse_module_statement(

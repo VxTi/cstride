@@ -151,9 +151,9 @@ llvm::Value* AstFunctionDeclaration::codegen(
 
 bool stride::ast::is_fn_declaration(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_FN)
-        || (tokens.peak_eq(TokenType::KEYWORD_EXTERN, 0)
-            && tokens.peak_eq(TokenType::KEYWORD_FN, 1));
+    return tokens.peek_next_eq(TokenType::KEYWORD_FN)
+        || (tokens.peek_eq(TokenType::KEYWORD_EXTERN, 0)
+            && tokens.peek_eq(TokenType::KEYWORD_FN, 1));
 }
 
 
@@ -166,7 +166,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 )
 {
     int function_flags = 0;
-    if (tokens.peak_next_eq(TokenType::KEYWORD_EXTERN))
+    if (tokens.peek_next_eq(TokenType::KEYWORD_EXTERN))
     {
         tokens.next();
         function_flags |= SRFLAG_FN_DEF_EXTERN;
@@ -185,9 +185,9 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     // If we don't receive a ')', the function has parameters, so we'll
     // have to parse it a little differenly
-    if (!tokens.peak_next_eq(TokenType::RPAREN))
+    if (!tokens.peek_next_eq(TokenType::RPAREN))
     {
-        if (tokens.peak_next_eq(TokenType::THREE_DOTS))
+        if (tokens.peek_next_eq(TokenType::THREE_DOTS))
         {
             parse_variadic_fn_param(function_scope, tokens, parameters);
         }

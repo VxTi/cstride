@@ -48,30 +48,30 @@ Token TokenSet::at(const size_t index) const
     return this->_tokens[index];
 }
 
-Token TokenSet::peak(const size_t offset) const
+Token TokenSet::peek(const size_t offset) const
 {
     return this->at(this->position() + offset);
 }
 
-TokenType TokenSet::peak_next_type() const
+TokenType TokenSet::peek_next_type() const
 {
-    return this->peak_next().get_type();
+    return this->peek_next().get_type();
 }
 
-Token TokenSet::peak_next() const
+Token TokenSet::peek_next() const
 {
     return this->at(this->position());
 }
 
 
-bool TokenSet::peak_next_eq(const TokenType type) const
+bool TokenSet::peek_next_eq(const TokenType type) const
 {
-    return this->peak_eq(type, 0);
+    return this->peek_eq(type, 0);
 }
 
-bool TokenSet::peak_eq(const TokenType type, const size_t offset) const
+bool TokenSet::peek_eq(const TokenType type, const size_t offset) const
 {
-    return this->peak(offset).get_type() == type;
+    return this->peek(offset).get_type() == type;
 }
 
 void TokenSet::skip(const size_t amount)
@@ -96,7 +96,7 @@ Token TokenSet::expect(const TokenType type)
         );
     }
 
-    if (const auto next_type = this->peak_next().get_type(); next_type != type)
+    if (const auto next_type = this->peek_next().get_type(); next_type != type)
     {
         this->throw_error(
             ErrorType::SYNTAX_ERROR,
@@ -128,7 +128,7 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
         );
     }
 
-    if (this->peak_next().get_type() != type)
+    if (this->peek_next().get_type() != type)
     {
         this->throw_error(ErrorType::SYNTAX_ERROR, message);
     }
@@ -163,7 +163,7 @@ size_t TokenSet::remaining() const
 bool TokenSet::has_next() const
 {
     return this->remaining() > 0
-        && !this->peak_next_eq(TokenType::END_OF_FILE);
+        && !this->peek_next_eq(TokenType::END_OF_FILE);
 }
 
 std::shared_ptr<stride::SourceFile> TokenSet::get_source() const

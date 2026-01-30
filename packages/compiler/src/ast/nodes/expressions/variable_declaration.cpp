@@ -15,16 +15,16 @@ using namespace stride::ast;
  */
 bool stride::ast::is_variable_declaration(const TokenSet& set)
 {
-    const int offset = set.peak_next_eq(TokenType::KEYWORD_EXTERN) ? 1 : 0; // Offset the initial token
+    const int offset = set.peek_next_eq(TokenType::KEYWORD_EXTERN) ? 1 : 0; // Offset the initial token
 
     // This assumes one of the following sequences is a "variable declaration":
     // extern k:
     // mut k:
     // let k:
     return (
-        (set.peak_eq(TokenType::KEYWORD_LET, offset) || set.peak_eq(TokenType::KEYWORD_MUT, offset)) &&
-        set.peak_eq(TokenType::IDENTIFIER, offset + 1) &&
-        set.peak_eq(TokenType::COLON, offset + 2)
+        (set.peek_eq(TokenType::KEYWORD_LET, offset) || set.peek_eq(TokenType::KEYWORD_MUT, offset)) &&
+        set.peek_eq(TokenType::IDENTIFIER, offset + 1) &&
+        set.peek_eq(TokenType::COLON, offset + 2)
     );
 }
 
@@ -233,9 +233,9 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         flags |= SRFLAG_TYPE_GLOBAL;
     }
 
-    auto reference_token = set.peak_next();
+    auto reference_token = set.peek_next();
 
-    if (set.peak_next_eq(TokenType::KEYWORD_MUT))
+    if (set.peek_next_eq(TokenType::KEYWORD_MUT))
     {
         flags |= SRFLAG_TYPE_MUTABLE;
         set.next();
@@ -254,7 +254,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     std::unique_ptr<AstExpression> value = nullptr;
 
-    if (set.peak_next_eq(TokenType::EQUALS))
+    if (set.peek_next_eq(TokenType::EQUALS))
     {
         set.next();
         value = parse_expression_extended(0, scope, set);
@@ -273,7 +273,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         variable_type->clone()
     );
 
-    if (set.peak_next_eq(TokenType::SEMICOLON))
+    if (set.peek_next_eq(TokenType::SEMICOLON))
     {
         set.next();
     }

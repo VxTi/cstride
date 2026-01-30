@@ -249,7 +249,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     // or member access, e.g., <member>.<field>
     if (is_property_accessor_statement(set))
     {
-        const auto reference_token = set.peak_next();
+        const auto reference_token = set.peek_next();
 
         std::string reassignment_iden_name = reference_token.get_lexeme();
         auto reassign_internal_variable_name = scope->field_lookup(reassignment_iden_name);
@@ -262,16 +262,16 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 
         std::string reassign_internal_name = reassign_internal_variable_name->get_internal_symbol_name();
 
-        // Instead of moving the cursor over in the set, we peak forward.
+        // Instead of moving the cursor over in the set, we peek forward.
         // This way, if it appears we don't have a mutative operation,
         // the standalone expression parser can continue with another expression variant
         int iterations = 0, offset = 1;
         while (true)
         {
-            if (set.peak_eq(TokenType::DOT, offset) && set.peak_eq(TokenType::IDENTIFIER, offset + 1))
+            if (set.peek_eq(TokenType::DOT, offset) && set.peek_eq(TokenType::IDENTIFIER, offset + 1))
             {
                 offset += 2;
-                const auto accessor_token = set.peak(offset + 1);
+                const auto accessor_token = set.peek(offset + 1);
 
                 const auto accessor_internal_name_def = scope->get_variable_def(accessor_token.get_lexeme());
 
@@ -294,7 +294,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
             }
         }
 
-        const auto mutative_token = set.peak(offset);
+        const auto mutative_token = set.peek(offset);
 
         if (!is_variable_mutative_token(mutative_token.get_type()))
         {
