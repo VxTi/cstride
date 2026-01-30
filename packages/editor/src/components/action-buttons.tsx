@@ -11,6 +11,7 @@ import { type ComponentProps, useCallback, useEffect } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { sendMessage, WsMessageType } from '../common';
 import { useCodeContext } from '../context/code-execution-context';
+import Tooltip from './tooltip';
 
 export default function ActionButtons() {
   const {
@@ -199,22 +200,19 @@ export function ActionButton({
     : undefined;
 
   return (
-    <div className="relative group" title={tooltip}>
-      <div
-        className={twMerge(
-          'absolute top-0 -translate-y-full pointer-events-none',
-          tooltipSide === 'top-right' ? 'left-0' : 'right-0'
-        )}
-      >
-        <div className="bg-neutral-900 max-w-46 w-max flex gap-2 items-center wrap-break-word text-white rounded-xl border border-neutral-700 px-2.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+    <Tooltip
+      tooltipSide={tooltipSide}
+      tooltip={
+        <>
           <span className="grow">{tooltip}</span>
           {keybind && (
             <span className="mx-0.5 justify-end font-mono text-neutral-300 bg-neutral-800 rounded-lg px-1">
               {formattedKeybind}
             </span>
           )}
-        </div>
-      </div>
+        </>
+      }
+    >
       <button
         onClick={onClick}
         className={twMerge(
@@ -222,7 +220,7 @@ export function ActionButton({
             ' cursor-pointer *:stroke-2 size-8 *:size-full'
         )}
         {...props}
-      ></button>
-    </div>
+      />
+    </Tooltip>
   );
 }

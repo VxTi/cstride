@@ -5,7 +5,8 @@ import { TerminalIcon } from 'lucide-react';
 import React, { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { useCodeContext } from '../context/code-execution-context';
-import ActionButtons, { ActionButton } from './action-buttons';
+import ActionButtons from './action-buttons';
+import Tooltip from './tooltip';
 
 export default function TerminalWindow() {
   const { terminalState, xtermRef, setTerminalState } = useCodeContext();
@@ -133,7 +134,7 @@ export default function TerminalWindow() {
         {!visible && (
           <motion.div
             key="terminal-closed"
-            initial={{ opacity: 0, transform: 'scale(1.1)' }}
+            initial={{ opacity: 0, transform: 'scale(2)' }}
             animate={{ opacity: 1, transform: 'scale(1)' }}
             exit={{ opacity: 0, transform: 'scale(1.1)' }}
             transition={{
@@ -141,17 +142,17 @@ export default function TerminalWindow() {
             }}
             className="origin-bottom-left max-w-max"
           >
-            <ActionButton
-              keybind="Ctrl+="
-              tooltipSide="top-right"
-              className="bg-neutral-900 border-white/50 rounded-2xl border-2 p-1"
-              tooltip="Open Terminal"
-              onClick={() =>
-                setTerminalState(prev => ({ ...prev, visible: true }))
-              }
-            >
-              <TerminalIcon className="stroke-white" />
-            </ActionButton>
+            <Tooltip tooltip="Open Terminal" tooltipSide="top-right">
+              <button
+                className="bg-neutral-900 border-neutral-600 rounded-2xl border-2 p-1 cursor-pointer"
+                title="Open Terminal"
+                onClick={() =>
+                  setTerminalState(prev => ({ ...prev, visible: true }))
+                }
+              >
+                <TerminalIcon className="stroke-white" />
+              </button>
+            </Tooltip>
           </motion.div>
         )}
       </AnimatePresence>
