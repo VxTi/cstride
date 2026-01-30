@@ -48,7 +48,10 @@ export default function ActionButtons() {
   };
 
   const toggleDebugMode = () => {
-    setDebugMode(prev => !prev);
+    setDebugMode(prev => {
+      if (ws) sendMessage(ws, WsMessageType.UPDATE_CONFIG, JSON.stringify({ debugMode: !prev }));
+      return !prev;
+    });
   };
 
   const Icon = processActive ? SquareIcon : debugMode ? BugPlayIcon : PlayIcon;

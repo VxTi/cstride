@@ -5,8 +5,14 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type z } from 'zod';
-import { sendMessage, websocketMessageDecoder, WsMessageType } from '../common';
+import { type z }                                                         from 'zod';
+import {
+  RunConfig,
+  sendMessage,
+  websocketMessageConfigDecoder,
+  websocketMessageDecoder,
+  WsMessageType,
+} from '../common';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,6 +20,10 @@ const port = 8080;
 const wss = new WebSocketServer({ port });
 
 console.log(`WebSocket server started on port ${port}`);
+
+const config: RunConfig = {
+  debugMode: false,
+};
 
 const CACHE_DIR = path.join(__dirname, './../../.cache');
 
@@ -45,8 +55,9 @@ wss.on('connection', (ws: WebSocket) => {
 
   ws.on('message', (message: string) => {
     try {
-      const json: unknown = JSON.parse(message);
-      const data: CompileMessage = websocketMessageDecoder.parse(json);
+      const data: CompileMessage = websocketMessageDecoder.parse(
+        JSON.parse(message)
+      );
 
       switch (data.type) {
         case WsMessageType.EXECUTE_CODE:
@@ -56,6 +67,18 @@ wss.on('connection', (ws: WebSocket) => {
           process?.kill('SIGTERM');
           sendMessage(ws, WsMessageType.PROCESS_TERMINATED);
           break;
+        case WsMessageType.UPDATE_CONFIG:
+          const decoded = websocketMessageConfigDecoder.safeParse(JSON.parse(data.message));
+
+          if (!decoded.success) {
+            sendMessage(ws, WsMessageType.PROCESS_STDERR, 'Failed to parse config JSON: ' + decoded.error.message);
+            break;
+          }
+
+          Object.assign(config, decoded.data);
+
+          break;
+
       }
     } catch (e) {
       console.error('Failed to parse message', e);
@@ -92,7 +115,11 @@ function handleCompile(ws: WebSocket, code: string) {
 
     console.log(`Code saved to ${filePath}, executing cstride...`);
 
-    process = spawn(cstrideExe, ['--compile', filePath]);
+    const args = ['--compile', filePath];
+
+    if (config.debugMode) args.push('--debug');
+
+    process = spawn(cstrideExe, args);
 
     process.stdout.on('data', (data: Buffer) => {
       sendMessage(ws, WsMessageType.PROCESS_STDOUT, data.toString());
