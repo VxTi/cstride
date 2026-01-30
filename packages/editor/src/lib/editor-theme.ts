@@ -77,4 +77,3 @@ export function installStrideOneDarkTheme(monaco: { editor: typeof editor }) {
     },
   });
 }
-

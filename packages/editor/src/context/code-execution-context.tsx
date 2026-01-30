@@ -27,6 +27,9 @@ interface CodeExecutionContextType {
 
   processActive: boolean;
   setProcessActive: React.Dispatch<React.SetStateAction<boolean>>;
+
+  debugMode: boolean;
+  setDebugMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const CodeExecutionContext = createContext<CodeExecutionContextType | null>(
@@ -57,6 +60,7 @@ export function CodeContextProvider({
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [terminalResizing, setTerminalResizing] = useState(false);
   const [processActive, setProcessActive] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
     if (!monaco) return;
@@ -129,6 +133,8 @@ export function CodeContextProvider({
         xtermRef,
         terminalResizing,
         setTerminalResizing,
+        debugMode,
+        setDebugMode,
       }}
     >
       {children}

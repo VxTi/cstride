@@ -61,7 +61,6 @@ llvm::Value* AstModule::codegen(
 void AstModule::resolve_forward_references(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
@@ -70,5 +69,5 @@ void AstModule::resolve_forward_references(
         return;
     }
 
-    this->_body->resolve_forward_references(scope, module, context, builder);
+    this->_body->resolve_forward_references(scope, module, builder);
 }

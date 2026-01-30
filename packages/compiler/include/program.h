@@ -55,7 +55,6 @@ namespace stride
 
         void resolve_forward_references(
             llvm::Module* module,
-            llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
         ) const;
 

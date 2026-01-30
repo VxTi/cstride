@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM  from 'react-dom/client';
+import ReactDOM from 'react-dom/client';
 import AppWindow from './components/app-window';
 import './index.css';
 import { CodeContextProvider } from './context/code-execution-context';

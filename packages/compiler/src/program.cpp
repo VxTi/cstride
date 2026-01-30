@@ -105,13 +105,9 @@ void Program::validate_ast_nodes() const
     }
 }
 
-void Program::resolve_forward_references(
-    llvm::Module* module,
-    llvm::LLVMContext& context,
-    llvm::IRBuilder<>* builder
-) const
+void Program::resolve_forward_references(llvm::Module* module,llvm::IRBuilder<>* builder) const
 {
-    this->_root_node->resolve_forward_references(this->get_global_scope(), module, context, builder);
+    this->_root_node->resolve_forward_references(this->get_global_scope(), module, builder);
 }
 
 void Program::generate_llvm_ir(
@@ -203,7 +199,7 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     stl::llvm_insert_function_definitions(module.get());
 
     this->validate_ast_nodes();
-    this->resolve_forward_references(module.get(), *context, &builder);
+    this->resolve_forward_references(module.get(), &builder);
     this->generate_llvm_ir(module.get(), *context, &builder);
 
     if (llvm::verifyModule(*module, &llvm::errs()))

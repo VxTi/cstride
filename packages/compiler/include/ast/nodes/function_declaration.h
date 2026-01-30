@@ -84,7 +84,6 @@ namespace stride::ast
         void resolve_forward_references(
             const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
-            llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
         ) override;
 
@@ -126,10 +125,7 @@ namespace stride::ast
         ~AstFunctionDeclaration() override = default;
 
     private:
-        std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
-            llvm::Module* module,
-            llvm::LLVMContext& context
-        ) const;
+        std::optional<std::vector<llvm::Type*>> resolve_parameter_types(llvm::Module* module) const;
     };
 
     bool is_fn_declaration(const TokenSet& tokens);

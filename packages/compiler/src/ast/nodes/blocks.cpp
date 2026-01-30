@@ -9,14 +9,17 @@
 
 using namespace stride::ast;
 
-void AstBlock::resolve_forward_references(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                                          llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+void AstBlock::resolve_forward_references(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
     for (const auto& child : this->children())
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            synthesisable->resolve_forward_references(scope, module, context, builder);
+            synthesisable->resolve_forward_references(scope, module, builder);
         }
     }
 }
