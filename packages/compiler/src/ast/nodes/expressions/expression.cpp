@@ -288,11 +288,7 @@ std::string stride::ast::parse_property_accessor_statement(
     return identifier_name;
 }
 
-bool stride::ast::is_property_accessor_statement(const TokenSet& set)
+bool stride::ast::is_variable_reassignment_statement(const TokenSet& set)
 {
-    const bool initial_identifier = set.peek_next_eq(TokenType::IDENTIFIER);
-    const bool is_followup_accessor = set.peek_eq(TokenType::DOT, 1)
-        && set.peek_eq(TokenType::IDENTIFIER, 2);
-
-    return initial_identifier && (is_followup_accessor || true);
+    return set.peek_next_eq(TokenType::IDENTIFIER);
 }

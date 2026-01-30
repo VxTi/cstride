@@ -247,76 +247,77 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 {
     // Can be either a singular field, e.g., a regular variable,
     // or member access, e.g., <member>.<field>
-    if (is_property_accessor_statement(set))
+    if (!is_variable_reassignment_statement(set)) return std::nullopt;
+
+    const auto reference_token = set.peek_next();
+
+    std::string reassignment_iden_name = reference_token.get_lexeme();
+    auto reassign_internal_variable_name = scope->field_lookup(reassignment_iden_name);
+
+    if (!reassign_internal_variable_name)
     {
-        const auto reference_token = set.peek_next();
-
-        std::string reassignment_iden_name = reference_token.get_lexeme();
-        auto reassign_internal_variable_name = scope->field_lookup(reassignment_iden_name);
-
-        if (!reassign_internal_variable_name)
-        {
-            return std::nullopt;
-        }
-
-
-        std::string reassign_internal_name = reassign_internal_variable_name->get_internal_symbol_name();
-
-        // Instead of moving the cursor over in the set, we peek forward.
-        // This way, if it appears we don't have a mutative operation,
-        // the standalone expression parser can continue with another expression variant
-        int iterations = 0, offset = 1;
-        while (true)
-        {
-            if (set.peek_eq(TokenType::DOT, offset) && set.peek_eq(TokenType::IDENTIFIER, offset + 1))
-            {
-                offset += 2;
-                const auto accessor_token = set.peek(offset + 1);
-
-                const auto accessor_internal_name_def = scope->get_variable_def(accessor_token.get_lexeme());
-
-                if (!accessor_internal_name_def)
-                {
-                    return std::nullopt;
-                }
-
-
-                const std::string accessor_internal_name = accessor_internal_name_def->get_internal_symbol_name();
-
-                reassignment_iden_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.get_lexeme();
-                reassign_internal_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_internal_name;
-            }
-            else break;
-
-            if (++iterations > SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION)
-            {
-                set.throw_error("Maximum identifier resolution exceeded in variable reassignment");
-            }
-        }
-
-        const auto mutative_token = set.peek(offset);
-
-        if (!is_variable_mutative_token(mutative_token.get_type()))
-        {
-            return std::nullopt;
-        }
-
-        set.skip(offset);
-
-        auto mutative_op = parse_mutative_assignment_type(set, mutative_token);
-        set.next();
-
-        auto expression = parse_standalone_expression(scope, set);
-
-        return std::make_unique<AstVariableReassignment>(
-            set.get_source(),
-            reference_token.get_source_position(),
-            scope,
-            reassignment_iden_name,
-            reassign_internal_name,
-            mutative_op,
-            std::move(expression)
-        );
+        return std::nullopt;
     }
-    return std::nullopt;
+
+
+    std::string reassign_internal_name = reassign_internal_variable_name->get_internal_symbol_name();
+
+    // Instead of moving the cursor over in the set, we peek forward.
+    // This way, if it appears we don't have a mutative operation,
+    // the standalone expression parser can continue with another expression variant
+    // TODO: Unf*ck this, it's not compatible with struct member re-assignment.
+    //  Structs are also non-mutative by nature, so this would have to clone the existing struct
+    //  and re-assign the member in the clone before re-assigning the entire struct back.
+    int iterations = 0, offset = 1;
+    while (true)
+    {
+        if (set.peek_eq(TokenType::DOT, offset) && set.peek_eq(TokenType::IDENTIFIER, offset + 1))
+        {
+            offset += 2;
+            const auto accessor_token = set.peek(offset + 1);
+
+            const auto accessor_internal_name_def = scope->get_variable_def(accessor_token.get_lexeme());
+
+            if (!accessor_internal_name_def)
+            {
+                return std::nullopt;
+            }
+
+
+            const std::string accessor_internal_name = accessor_internal_name_def->get_internal_symbol_name();
+
+            reassignment_iden_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.get_lexeme();
+            reassign_internal_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_internal_name;
+        }
+        else break;
+
+        if (++iterations > SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION)
+        {
+            set.throw_error("Maximum identifier resolution exceeded in variable reassignment");
+        }
+    }
+
+    const auto mutative_token = set.peek(offset);
+
+    if (!is_variable_mutative_token(mutative_token.get_type()))
+    {
+        return std::nullopt;
+    }
+
+    set.skip(offset);
+
+    auto mutative_op = parse_mutative_assignment_type(set, mutative_token);
+    set.next();
+
+    auto expression = parse_standalone_expression(scope, set);
+
+    return std::make_unique<AstVariableReassignment>(
+        set.get_source(),
+        reference_token.get_source_position(),
+        scope,
+        reassignment_iden_name,
+        reassign_internal_name,
+        mutative_op,
+        std::move(expression)
+    );
 }
