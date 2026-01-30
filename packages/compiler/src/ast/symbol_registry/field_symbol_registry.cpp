@@ -4,7 +4,7 @@ using namespace stride::ast;
 
 bool SymbolRegistry::is_field_defined_in_scope(const std::string& variable_name) const
 {
-    return std::ranges::any_of(this->symbols, [&](const auto& symbol_def)
+    return std::ranges::any_of(this->_symbols, [&](const auto& symbol_def)
     {
         if (const auto* var_def = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
         {
@@ -45,7 +45,7 @@ void SymbolRegistry::define_field(
         );
     }
 
-    this->symbols.push_back(
+    this->_symbols.push_back(
         std::make_unique<FieldSymbolDef>(
             std::move(field_name),
             std::move(internal_name),

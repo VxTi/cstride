@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
@@ -69,43 +68,47 @@ namespace stride::ast
 
     public:
         explicit StructSymbolDef(
-            const std::string& struct_name,
+            std::string  struct_name,
             const std::string& internal_name,
-            // We wish to preserve order.
-            std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields
+            std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields // We wish to preserve order.
         ) : ISymbolDef(internal_name),
             _fields(std::move(fields)),
-            _name(struct_name) {}
+            _name(std::move(struct_name)) {}
 
         explicit StructSymbolDef(
-            const std::string& struct_name,
+            std::string  struct_name,
             const std::string& internal_name,
             const std::string& reference_struct_name
         )
             : ISymbolDef(internal_name),
               _reference_struct_name(reference_struct_name),
-              _name(struct_name) {}
+              _name(std::move(struct_name)) {}
 
         [[nodiscard]]
         std::vector<std::pair<std::string, IAstInternalFieldType*>> get_fields() const;
 
-        IAstInternalFieldType* get_field_type(const std::string& field_name) const;
+        [[nodiscard]]
+        IAstInternalFieldType* get_field_type(const std::string& field_name);
 
         [[nodiscard]]
         bool is_reference_struct() const;
 
+        [[nodiscard]]
         std::optional<std::string> get_reference_struct_name() const
         {
             return this->_reference_struct_name;
         }
 
+        [[nodiscard]]
         std::string get_name() const { return this->_name; }
 
+        [[nodiscard]]
         bool has_member(const std::string& member_name) const
         {
             return get_field_type(member_name) != nullptr;
         }
 
+        [[nodiscard]]
         std::optional<int> get_member_index(const std::string& member_name) const;
     };
 
@@ -166,11 +169,11 @@ namespace stride::ast
 
     class SymbolRegistry
     {
-    public:
         ScopeType _current_scope;
         std::shared_ptr<SymbolRegistry> _parent_registry;
 
-        std::vector<std::unique_ptr<ISymbolDef>> symbols;
+        std::vector<std::unique_ptr<ISymbolDef>> _symbols;
+    public:
 
         explicit SymbolRegistry(
             std::shared_ptr<SymbolRegistry> parent,
@@ -208,14 +211,14 @@ namespace stride::ast
 
         void define_struct(
             std::string struct_name,
-            std::string internal_name,
+            const std::string& internal_name,
             std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields
         ) const;
 
         void define_struct(
-            std::string struct_name,
-            std::string internal_name,
-            std::string reference_struct_name
+            const std::string& struct_name,
+            const std::string& internal_name,
+            const std::string& reference_struct_name
         ) const;
 
         void define_field(

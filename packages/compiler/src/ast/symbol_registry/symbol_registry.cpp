@@ -31,7 +31,7 @@ const SymbolRegistry& SymbolRegistry::traverse_to_root() const
 bool SymbolRegistry::is_function_defined_globally(const std::string& internal_function_name) const
 {
     for (const auto& root = this->traverse_to_root();
-         const auto& symbol : root.symbols)
+         const auto& symbol : root._symbols)
     {
         if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol.get()))
         {
@@ -51,7 +51,7 @@ bool SymbolRegistry::is_symbol_type_defined_globally(
 ) const
 {
     for (const auto& root = this->traverse_to_root();
-         const auto& symbol : root.symbols)
+         const auto& symbol : root._symbols)
     {
         if (const auto* identifiable = dynamic_cast<const IdentifiableSymbolDef*>(symbol.get()))
         {
@@ -73,7 +73,7 @@ void SymbolRegistry::define_function(
 ) const
 {
     auto& global_scope = const_cast<SymbolRegistry&>(this->traverse_to_root());
-    global_scope.symbols.push_back(
+    global_scope._symbols.push_back(
         std::make_unique<SymbolFnDefinition>(
             std::move(parameter_types),
             std::move(return_type),
@@ -85,7 +85,7 @@ void SymbolRegistry::define_function(
 
 void SymbolRegistry::define_symbol(const std::string& symbol_name, const SymbolType type)
 {
-    this->symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
+    this->_symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
         type,
         symbol_name
     ));
@@ -93,7 +93,7 @@ void SymbolRegistry::define_symbol(const std::string& symbol_name, const SymbolT
 
 const FieldSymbolDef* SymbolRegistry::get_variable_def(const std::string& variable_name) const
 {
-    for (const auto& symbol_def : this->symbols)
+    for (const auto& symbol_def : this->_symbols)
     {
         if (const auto* field_definition = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
         {
@@ -109,7 +109,7 @@ const FieldSymbolDef* SymbolRegistry::get_variable_def(const std::string& variab
 
 const IdentifiableSymbolDef* SymbolRegistry::get_symbol_def(const std::string& symbol_name) const
 {
-    for (const auto& symbol_def : this->symbols)
+    for (const auto& symbol_def : this->_symbols)
     {
         if (const auto* identifier_def = dynamic_cast<const IdentifiableSymbolDef*>(symbol_def.get()))
         {
@@ -126,7 +126,7 @@ const IdentifiableSymbolDef* SymbolRegistry::get_symbol_def(const std::string& s
 const SymbolFnDefinition* SymbolRegistry::get_function_def(const std::string& function_name) const
 {
     const auto& global_scope = this->traverse_to_root();
-    for (const auto& symbol_def : global_scope.symbols)
+    for (const auto& symbol_def : global_scope._symbols)
     {
         if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol_def.get()))
         {
@@ -173,7 +173,7 @@ ISymbolDef* SymbolRegistry::fuzzy_find(const std::string& symbol_name) const
     auto current = this;
     while (current != nullptr)
     {
-        for (const auto& symbol_def : current->symbols)
+        for (const auto& symbol_def : current->_symbols)
         {
             std::string candidate_name;
             // (Your casting logic remains the same)

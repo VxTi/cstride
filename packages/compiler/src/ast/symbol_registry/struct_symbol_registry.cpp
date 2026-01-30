@@ -14,7 +14,7 @@ StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
             continue;
         }
 
-        for (const auto& definition : current->symbols)
+        for (const auto& definition : current->_symbols)
         {
             if (auto* struct_def = dynamic_cast<StructSymbolDef*>(definition.get()))
             {
@@ -35,7 +35,7 @@ StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
 
 void SymbolRegistry::define_struct(
     std::string struct_name,
-    std::string internal_name,
+    const std::string& internal_name,
     std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields
 ) const
 {
@@ -50,25 +50,42 @@ void SymbolRegistry::define_struct(
     }
 
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
-    root.symbols.push_back(std::make_unique<StructSymbolDef>(
+    root._symbols.push_back(std::make_unique<StructSymbolDef>(
         std::move(struct_name),
-        std::move(internal_name),
+        internal_name,
         std::move(fields)
     ));
 }
 
 void SymbolRegistry::define_struct(
-    std::string struct_name,
-    std::string internal_name,
-    std::string reference_struct_name
+    const std::string& struct_name,
+    const std::string& internal_name,
+    const std::string& reference_struct_name
 ) const
 {
+    if (this->_current_scope != ScopeType::GLOBAL && this->_current_scope != ScopeType::MODULE)
+    {
+        throw parsing_error(
+            "Reference structs can only be defined in the global or module scope"
+        );
+    }
+
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
-    root.symbols.push_back(std::make_unique<StructSymbolDef>(
-        std::move(struct_name),
-        std::move(internal_name),
-        std::move(reference_struct_name)
-    ));
+
+    if (const auto existing_def = this->get_struct_def(struct_name); existing_def != nullptr)
+    {
+        throw parsing_error(
+            std::format("Struct '{}' is already defined in this scope", struct_name)
+        );
+    }
+
+    root._symbols.push_back(
+        std::make_unique<StructSymbolDef>(
+            struct_name,
+            internal_name,
+            reference_struct_name
+        )
+    );
 }
 
 std::vector<std::pair<std::string, IAstInternalFieldType*>> StructSymbolDef::get_fields() const
@@ -78,13 +95,13 @@ std::vector<std::pair<std::string, IAstInternalFieldType*>> StructSymbolDef::get
 
     for (const auto& [name, type] : this->_fields)
     {
-        copy.push_back({name, type.get()});
+        copy.emplace_back(name, type.get());
     }
 
     return std::move(copy);
 }
 
-IAstInternalFieldType* StructSymbolDef::get_field_type(const std::string& field_name) const
+IAstInternalFieldType* StructSymbolDef::get_field_type(const std::string& field_name)
 {
     for (const auto& [name, type] : this->_fields)
     {
