@@ -68,8 +68,8 @@ bool SymbolRegistry::is_symbol_type_defined_globally(
 
 void SymbolRegistry::define_function(
     std::string internal_function_name,
-    std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types,
-    std::unique_ptr<IAstInternalFieldType> return_type
+    std::vector<std::unique_ptr<IAstType>> parameter_types,
+    std::unique_ptr<IAstType> return_type
 ) const
 {
     auto& global_scope = const_cast<SymbolRegistry&>(this->traverse_to_root());

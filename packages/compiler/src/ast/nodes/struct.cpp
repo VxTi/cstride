@@ -88,7 +88,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     }
 
     std::vector<std::unique_ptr<AstStructMember>> members = {};
-    std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields = {};
+    std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields = {};
 
     if (struct_body_set.has_value())
     {

@@ -36,7 +36,7 @@ StructSymbolDef* SymbolRegistry::get_struct_def(const std::string& name) const
 void SymbolRegistry::define_struct(
     std::string struct_name,
     const std::string& internal_name,
-    std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>> fields
+    std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
 ) const
 {
     if (const auto existing_def = this->get_struct_def(struct_name); existing_def != nullptr)
@@ -88,9 +88,9 @@ void SymbolRegistry::define_struct(
     );
 }
 
-std::vector<std::pair<std::string, IAstInternalFieldType*>> StructSymbolDef::get_fields() const
+std::vector<std::pair<std::string, IAstType*>> StructSymbolDef::get_fields() const
 {
-    std::vector<std::pair<std::string, IAstInternalFieldType*>> copy{};
+    std::vector<std::pair<std::string, IAstType*>> copy{};
     copy.reserve(this->_fields.size());
 
     for (const auto& [name, type] : this->_fields)
@@ -101,7 +101,7 @@ std::vector<std::pair<std::string, IAstInternalFieldType*>> StructSymbolDef::get
     return std::move(copy);
 }
 
-IAstInternalFieldType* StructSymbolDef::get_field_type(const std::string& field_name)
+IAstType* StructSymbolDef::get_field_type(const std::string& field_name)
 {
     for (const auto& [name, type] : this->_fields)
     {

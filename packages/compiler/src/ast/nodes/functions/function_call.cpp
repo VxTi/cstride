@@ -169,8 +169,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     auto function_parameter_set = collect_parenthesized_block(set);
 
     std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
-    std::vector<IAstInternalFieldType*> parameter_types = {};
-    std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_type_owners = {};
+    std::vector<IAstType*> parameter_types = {};
+    std::vector<std::unique_ptr<IAstType>> parameter_type_owners = {};
 
     // Parsing function parameter values
     if (function_parameter_set.has_value())

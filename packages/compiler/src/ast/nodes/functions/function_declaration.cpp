@@ -210,7 +210,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // Return type doesn't have the same flags as the function, hence NONE
     auto return_type = parse_type(scope, tokens, "Expected return type in function header", SRFLAG_NONE);
 
-    std::vector<std::unique_ptr<IAstInternalFieldType>> parameter_types_cloned;
+    std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
     for (const auto& param : parameters)
     {
         parameter_types_cloned.push_back(param->get_type()->clone());
@@ -223,7 +223,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // This prevents the linker from being unable to make a reference to this function.
     if ((function_flags & SRFLAG_FN_DEF_EXTERN) == 0)
     {
-        std::vector<IAstInternalFieldType*> parameter_types;
+        std::vector<IAstType*> parameter_types;
         for (const auto& param : parameters)
         {
             parameter_types.push_back(param->get_type());

@@ -10,7 +10,7 @@ namespace stride::ast
     class AstStructMember : public IAstNode
     {
         std::string _name;
-        std::unique_ptr<IAstInternalFieldType> _type;
+        std::unique_ptr<IAstType> _type;
 
     public:
         AstStructMember(
@@ -18,7 +18,7 @@ namespace stride::ast
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
-            std::unique_ptr<IAstInternalFieldType> type
+            std::unique_ptr<IAstType> type
         ) :
             IAstNode(source, source_position, scope),
             _name(std::move(name)),
@@ -30,7 +30,7 @@ namespace stride::ast
         std::string get_name() const { return this->_name; }
 
         [[nodiscard]]
-        IAstInternalFieldType& get_type() const { return *this->_type; }
+        IAstType& get_type() const { return *this->_type; }
 
         void validate() override;
     };
@@ -45,7 +45,7 @@ namespace stride::ast
         // Whether this struct references another one
         // This can be used for declaring a type with the data layout
         // of another
-        std::optional<std::unique_ptr<IAstInternalFieldType>> _reference;
+        std::optional<std::unique_ptr<IAstType>> _reference;
 
     public:
         explicit AstStruct(
@@ -53,7 +53,7 @@ namespace stride::ast
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
             std::string name,
-            std::unique_ptr<IAstInternalFieldType> reference
+            std::unique_ptr<IAstType> reference
         )
             :
             IAstNode(source, source_position, scope),
@@ -76,7 +76,7 @@ namespace stride::ast
         bool is_reference_type() const { return _reference.has_value(); }
 
         [[nodiscard]]
-        IAstInternalFieldType* get_reference_type() const { return _reference->get(); }
+        IAstType* get_reference_type() const { return _reference->get(); }
 
         std::string to_string() override;
 

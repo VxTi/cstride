@@ -135,7 +135,7 @@ void AstVariableDeclaration::validate()
 
     init_val->validate();
 
-    const std::unique_ptr<IAstInternalFieldType> internal_expr_type = infer_expression_type(
+    const std::unique_ptr<IAstType> internal_expr_type = infer_expression_type(
         this->get_registry(),
         init_val
     );

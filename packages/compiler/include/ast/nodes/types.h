@@ -34,13 +34,13 @@ namespace stride::ast
 
     std::string primitive_type_to_str(PrimitiveType type);
 
-    class IAstInternalFieldType :
+    class IAstType :
         public IAstNode
     {
         int _flags;
 
     public:
-        IAstInternalFieldType(
+        IAstType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -49,10 +49,10 @@ namespace stride::ast
             : IAstNode(source, source_position, scope),
               _flags(flags) {}
 
-        ~IAstInternalFieldType() override = default;
+        ~IAstType() override = default;
 
         [[nodiscard]]
-        virtual std::unique_ptr<IAstInternalFieldType> clone() const = 0;
+        virtual std::unique_ptr<IAstType> clone() const = 0;
 
         [[nodiscard]]
         bool is_pointer() const { return this->_flags & SRFLAG_TYPE_PTR; }
@@ -83,13 +83,13 @@ namespace stride::ast
         [[nodiscard]]
         virtual std::string get_internal_name() = 0;
 
-        virtual bool operator==(IAstInternalFieldType& other) = 0;
+        virtual bool operator==(IAstType& other) = 0;
 
-        virtual bool operator!=(IAstInternalFieldType& other) = 0;
+        virtual bool operator!=(IAstType& other) = 0;
     };
 
     class AstPrimitiveFieldType
-        : public IAstInternalFieldType
+        : public IAstType
     {
         PrimitiveType _type;
         size_t _byte_size;
@@ -103,7 +103,7 @@ namespace stride::ast
             const size_t byte_size,
             const int flags = SRFLAG_NONE
         ) :
-            IAstInternalFieldType(source, source_position, scope, flags),
+            IAstType(source, source_position, scope, flags),
             _type(type),
             _byte_size(byte_size) {}
 
@@ -148,7 +148,7 @@ namespace stride::ast
         size_t byte_size() const { return this->_byte_size; }
 
         [[nodiscard]]
-        std::unique_ptr<IAstInternalFieldType> clone() const override
+        std::unique_ptr<IAstType> clone() const override
         {
             return std::make_unique<AstPrimitiveFieldType>(*this);
         }
@@ -161,7 +161,7 @@ namespace stride::ast
         }
 
         // For primitives, we can easily compare whether another is equal by comparing the `PrimitiveType` enumerable
-        bool operator==(IAstInternalFieldType& other) override
+        bool operator==(IAstType& other) override
         {
             if (const auto* other_primitive = dynamic_cast<AstPrimitiveFieldType*>(&other))
             {
@@ -170,14 +170,14 @@ namespace stride::ast
             return false;
         }
 
-        bool operator!=(IAstInternalFieldType& other) override
+        bool operator!=(IAstType& other) override
         {
             return !(*this == other);
         }
     };
 
     class AstStructType
-        : public IAstInternalFieldType
+        : public IAstType
     {
         std::string _name;
 
@@ -189,7 +189,7 @@ namespace stride::ast
             std::string name,
             const int flags = SRFLAG_NONE
         ) :
-            IAstInternalFieldType(source, source_position, scope, flags),
+            IAstType(source, source_position, scope, flags),
             _name(std::move(name)) {}
 
         [[nodiscard]]
@@ -199,7 +199,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstInternalFieldType> clone() const override
+        std::unique_ptr<IAstType> clone() const override
         {
             return std::make_unique<AstStructType>(*this);
         }
@@ -211,7 +211,7 @@ namespace stride::ast
             return std::format("{}{}", this->name(), this->is_pointer() ? "*" : "");
         }
 
-        bool operator==(IAstInternalFieldType& other) override
+        bool operator==(IAstType& other) override
         {
             if (const auto* other_named = dynamic_cast<AstStructType*>(&other))
             {
@@ -220,16 +220,16 @@ namespace stride::ast
             return false;
         }
 
-        bool operator!=(IAstInternalFieldType& other) override
+        bool operator!=(IAstType& other) override
         {
             return !(*this == other);
         }
     };
 
     class AstArrayType
-        : public IAstInternalFieldType
+        : public IAstType
     {
-        std::unique_ptr<IAstInternalFieldType> _element_type;
+        std::unique_ptr<IAstType> _element_type;
         size_t _initial_length;
 
     public:
@@ -237,9 +237,9 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
-            std::unique_ptr<IAstInternalFieldType> element_type,
+            std::unique_ptr<IAstType> element_type,
             const size_t initial_length
-        ) : IAstInternalFieldType(
+        ) : IAstType(
                 source,
                 source_position,
                 scope,
@@ -250,7 +250,7 @@ namespace stride::ast
             _initial_length(initial_length) {}
 
         [[nodiscard]]
-        std::unique_ptr<IAstInternalFieldType> clone() const override
+        std::unique_ptr<IAstType> clone() const override
         {
             auto element_clone = this->_element_type
                                      ? this->_element_type->clone()
@@ -265,7 +265,7 @@ namespace stride::ast
             );
         }
 
-        IAstInternalFieldType* get_element_type() const { return this->_element_type.get(); }
+        IAstType* get_element_type() const { return this->_element_type.get(); }
 
         [[nodiscard]]
         size_t get_initial_length() const { return this->_initial_length; }
@@ -281,7 +281,7 @@ namespace stride::ast
             return std::format("[{}]", this->_element_type->get_internal_name());
         }
 
-        bool operator==(IAstInternalFieldType& other) override
+        bool operator==(IAstType& other) override
         {
             if (const auto* other_array = dynamic_cast<AstArrayType*>(&other))
             {
@@ -291,14 +291,14 @@ namespace stride::ast
             return false;
         }
 
-        bool operator!=(IAstInternalFieldType& other) override
+        bool operator!=(IAstType& other) override
         {
             return !(*this == other);
         }
     };
 
 
-    std::unique_ptr<IAstInternalFieldType> parse_type(
+    std::unique_ptr<IAstType> parse_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         const std::string& error,
@@ -306,20 +306,20 @@ namespace stride::ast
     );
 
     llvm::Type* internal_type_to_llvm_type(
-        IAstInternalFieldType* type,
+        IAstType* type,
         llvm::Module* module
     );
 
-    std::unique_ptr<IAstInternalFieldType> get_dominant_field_type(
+    std::unique_ptr<IAstType> get_dominant_field_type(
         const std::shared_ptr<SymbolRegistry>& scope,
-        IAstInternalFieldType* lhs,
-        IAstInternalFieldType* rhs
+        IAstType* lhs,
+        IAstType* rhs
     );
 
     /**
      * Resolves a unique identifier (UID) for the given internal type.
      *
-     * This function generates a unique identifier for the provided IAstInternalFieldType object.
+     * This function generates a unique identifier for the provided IAstType object.
      * The UID is determined based on the specific characteristics of the type,
      * such as whether it is a primitive type, custom type, pointer, or reference.
      *
@@ -327,15 +327,15 @@ namespace stride::ast
      *             The AstType can represent either a primitive or a custom type.
      * @return The unique identifier (UID) associated with the given internal type.
      */
-    size_t ast_type_to_internal_id(IAstInternalFieldType* type);
+    size_t ast_type_to_internal_id(IAstType* type);
 
-    std::optional<std::unique_ptr<IAstInternalFieldType>> parse_primitive_type_optional(
+    std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE
     );
 
-    std::optional<std::unique_ptr<IAstInternalFieldType>> parse_named_type_optional(
+    std::optional<std::unique_ptr<IAstType>> parse_named_type_optional(
         const std::shared_ptr<SymbolRegistry>& scope,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE

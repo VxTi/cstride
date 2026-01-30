@@ -106,7 +106,7 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         llvm::Constant* current_const = global_var->getInitializer();
-        std::unique_ptr<IAstInternalFieldType> current_ast_type = infer_expression_type(scope, this->get_base());
+        std::unique_ptr<IAstType> current_ast_type = infer_expression_type(scope, this->get_base());
         std::string current_struct_name = current_ast_type->get_internal_name();
 
         for (const auto& accessor : this->get_members())
@@ -121,7 +121,7 @@ llvm::Value* AstMemberAccessor::codegen(
             current_const = current_const->getAggregateElement(member_index.value());
             if (!current_const) return nullptr; // Index out of bounds or invalid aggregate
 
-            const IAstInternalFieldType* member_field_type = struct_def->get_field_type(accessor->get_name());
+            const IAstType* member_field_type = struct_def->get_field_type(accessor->get_name());
             current_ast_type = member_field_type->clone();
             current_struct_name = current_ast_type->get_internal_name();
         }
@@ -136,7 +136,7 @@ llvm::Value* AstMemberAccessor::codegen(
         return nullptr;
     }
 
-    std::unique_ptr<IAstInternalFieldType> current_ast_type = infer_expression_type(scope, this->get_base());
+    std::unique_ptr<IAstType> current_ast_type = infer_expression_type(scope, this->get_base());
     std::string current_struct_name = current_ast_type->get_internal_name();
 
     // With opaque pointers, we need to know if we are operating on an address (L-value)
@@ -193,7 +193,7 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         // Update loop state
-        const IAstInternalFieldType* member_field_type = struct_def->get_field_type(accessor->get_name());
+        const IAstType* member_field_type = struct_def->get_field_type(accessor->get_name());
 
         current_ast_type = member_field_type->clone();
         current_struct_name = current_ast_type->get_internal_name();

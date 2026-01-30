@@ -4,7 +4,7 @@
 #include <__ranges/views.h>
 
 std::string stride::ast::resolve_internal_function_name(
-    const std::vector<IAstInternalFieldType*>& parameter_types,
+    const std::vector<IAstType*>& parameter_types,
     const std::string& function_name
 )
 {
@@ -27,7 +27,7 @@ std::string stride::ast::resolve_internal_function_name(
 }
 
 std::string stride::ast::resolve_internal_struct_name(
-    const std::vector<std::pair<std::string, std::unique_ptr<IAstInternalFieldType>>>& struct_members,
+    const std::vector<std::pair<std::string, std::unique_ptr<IAstType>>>& struct_members,
     const std::string& struct_name
 )
 {

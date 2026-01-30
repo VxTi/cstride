@@ -32,7 +32,7 @@ bool SymbolRegistry::is_field_defined_globally(const std::string& field_name) co
 void SymbolRegistry::define_field(
     std::string field_name,
     std::string internal_name,
-    std::unique_ptr<IAstInternalFieldType> type
+    std::unique_ptr<IAstType> type
 )
 {
     if (is_field_defined_in_scope(field_name))
