@@ -34,7 +34,7 @@ void AstFunctionDeclaration::resolve_forward_references(
     const auto fn_name = this->get_internal_name();
 
     const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(module, context);
-    llvm::Type* return_type = internal_type_to_llvm_type(this->return_type().get(), module, context);
+    llvm::Type* return_type = internal_type_to_llvm_type(this->return_type().get(), module);
 
     if (!param_types || !return_type)
     {
@@ -58,7 +58,7 @@ void AstFunctionDeclaration::resolve_forward_references(
 llvm::Value* AstFunctionDeclaration::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context, llvm::IRBuilder<>* builder
+    llvm::IRBuilder<>* builder
 )
 {
     llvm::Function* function = module->getFunction(this->get_internal_name());
@@ -72,7 +72,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
         return function;
     }
 
-    llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(context, "entry", function);
+    llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(module->getContext(), "entry", function);
     builder->SetInsertPoint(entry_bb);
 
     // We create a new builder for the prologue to ensure allocas are at the very top
@@ -104,7 +104,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body());
             synthesisable != nullptr)
         {
-            last_val = synthesisable->codegen(scope, module, context, builder);
+            last_val = synthesisable->codegen(scope, module, builder);
         }
     }
 
@@ -267,7 +267,7 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())
     {
-        auto llvm_type = internal_type_to_llvm_type(param->get_type(), module, context);
+        auto llvm_type = internal_type_to_llvm_type(param->get_type(), module);
         if (!llvm_type)
         {
             return std::nullopt;

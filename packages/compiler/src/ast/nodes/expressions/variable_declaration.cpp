@@ -2,6 +2,7 @@
 
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
 
 #include "ast/flags.h"
 
@@ -30,7 +31,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 llvm::Value* AstVariableDeclaration::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context, llvm::IRBuilder<>* irBuilder
+    llvm::IRBuilder<>* irBuilder
 )
 {
     // Generate code for the initial value
@@ -39,17 +40,17 @@ llvm::Value* AstVariableDeclaration::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
         {
-            init_value = synthesisable->codegen(scope, module, context, irBuilder);
+            init_value = synthesisable->codegen(scope, module, irBuilder);
         }
     }
 
     // Get the LLVM type for the variable
-    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module, context);
+    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
 
     // If this is a pointer type, convert to pointer
     if (this->get_variable_type()->is_pointer())
     {
-        var_type = llvm::PointerType::get(context, 0);
+        var_type = llvm::PointerType::get(module->getContext(), 0);
     }
 
     if (this->get_variable_type()->is_global())

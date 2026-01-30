@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ranges>
+#include <llvm/IR/Module.h>
 
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
@@ -174,7 +175,6 @@ void AstStructInitializer::validate()
 llvm::Value* AstStructInitializer::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
@@ -185,7 +185,7 @@ llvm::Value* AstStructInitializer::codegen(
 
     for (const auto& expr : this->_initializers | std::views::values)
     {
-        llvm::Value* val = expr->codegen(scope, module, context, builder);
+        llvm::Value* val = expr->codegen(scope, module, builder);
         if (!val) return nullptr;
 
         if (auto* c = llvm::dyn_cast<llvm::Constant>(val))
@@ -200,7 +200,7 @@ llvm::Value* AstStructInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    llvm::StructType* struct_type = llvm::StructType::getTypeByName(context, this->_struct_name);
+    llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), this->_struct_name);
 
     if (!struct_type)
     {

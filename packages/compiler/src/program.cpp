@@ -122,7 +122,7 @@ void Program::generate_llvm_ir(
 {
     if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(this->_root_node.get()))
     {
-        if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, context, builder);
+        if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, builder);
             entry == nullptr)
         {
             throw std::runtime_error(
@@ -200,7 +200,7 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
 
     llvm::IRBuilder<> builder(*context);
     stl::llvm_jit_define_functions(jit.get());
-    stl::llvm_insert_function_definitions(module.get(), *context);
+    stl::llvm_insert_function_definitions(module.get());
 
     this->validate_ast_nodes();
     this->resolve_forward_references(module.get(), *context, &builder);

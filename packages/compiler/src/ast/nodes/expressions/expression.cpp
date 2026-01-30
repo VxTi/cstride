@@ -14,7 +14,6 @@ using namespace stride::ast;
 llvm::Value* AstExpression::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* ir_builder
 )
 {

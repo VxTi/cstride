@@ -1,5 +1,7 @@
 #include "ast/nodes/for_loop.h"
 
+#include <llvm/IR/Module.h>
+
 using namespace stride::ast;
 
 bool stride::ast::is_for_loop_statement(const TokenSet& set)
@@ -83,20 +85,19 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
 llvm::Value* AstForLoop::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
 
-    llvm::BasicBlock* loop_cond_bb = llvm::BasicBlock::Create(context, "loop.cond", function);
-    llvm::BasicBlock* loop_body_bb = llvm::BasicBlock::Create(context, "loop.body", function);
-    llvm::BasicBlock* loop_incr_bb = llvm::BasicBlock::Create(context, "loop.incr", function);
-    llvm::BasicBlock* loop_end_bb = llvm::BasicBlock::Create(context, "loop.end", function);
+    llvm::BasicBlock* loop_cond_bb = llvm::BasicBlock::Create(module->getContext(), "loop.cond", function);
+    llvm::BasicBlock* loop_body_bb = llvm::BasicBlock::Create(module->getContext(), "loop.body", function);
+    llvm::BasicBlock* loop_incr_bb = llvm::BasicBlock::Create(module->getContext(), "loop.incr", function);
+    llvm::BasicBlock* loop_end_bb = llvm::BasicBlock::Create(module->getContext(), "loop.end", function);
 
     if (this->get_initializer())
     {
-        this->get_initializer()->codegen(scope, module, context, builder);
+        this->get_initializer()->codegen(scope, module, builder);
     }
 
     builder->CreateBr(loop_cond_bb);
@@ -105,7 +106,7 @@ llvm::Value* AstForLoop::codegen(
     llvm::Value* condValue = nullptr;
     if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->get_condition()->codegen(scope, module, context, builder);
+        condValue = this->get_condition()->codegen(scope, module, builder);
 
         if (condValue == nullptr)
         {
@@ -120,7 +121,7 @@ llvm::Value* AstForLoop::codegen(
     else
     {
         // If no condition is provided, default to true (infinite loop)
-        condValue = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+        condValue = llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 1));
     }
 
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
@@ -128,14 +129,14 @@ llvm::Value* AstForLoop::codegen(
     builder->SetInsertPoint(loop_body_bb);
     if (this->body())
     {
-        this->body()->codegen(scope, module, context, builder);
+        this->body()->codegen(scope, module, builder);
     }
     builder->CreateBr(loop_incr_bb);
 
     builder->SetInsertPoint(loop_incr_bb);
     if (get_incrementor())
     {
-        this->get_incrementor()->codegen(scope, module, context, builder);
+        this->get_incrementor()->codegen(scope, module, builder);
     }
     builder->CreateBr(loop_cond_bb);
 

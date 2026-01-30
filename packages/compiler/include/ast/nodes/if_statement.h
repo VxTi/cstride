@@ -46,7 +46,6 @@ namespace stride::ast
         void validate() override;
 
         llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                             llvm::LLVMContext& context,
                              llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;

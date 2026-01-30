@@ -33,7 +33,6 @@ std::string AstStringLiteral::to_string()
 llvm::Value* AstStringLiteral::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* ir_builder
 )
 {

@@ -18,14 +18,15 @@ namespace stride::ast
         virtual llvm::Value* codegen(
             const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
-            llvm::LLVMContext& context, llvm::IRBuilder<>* builder
+            llvm::IRBuilder<>* builder
         ) = 0;
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
             const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
-            llvm::LLVMContext& context, llvm::IRBuilder<>* builder
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
         ) {}
     };
 

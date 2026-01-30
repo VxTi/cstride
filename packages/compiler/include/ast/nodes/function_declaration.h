@@ -81,13 +81,16 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void resolve_forward_references(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                                        llvm::LLVMContext& context, llvm::IRBuilder<>* builder) override;
+        void resolve_forward_references(
+            const std::shared_ptr<SymbolRegistry>& scope,
+            llvm::Module* module,
+            llvm::LLVMContext& context,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         llvm::Value* codegen(
             const std::shared_ptr<SymbolRegistry>& scope,
             llvm::Module* module,
-            llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
         ) override;
 

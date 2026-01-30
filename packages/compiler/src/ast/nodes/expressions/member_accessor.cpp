@@ -68,7 +68,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 llvm::Value* AstMemberAccessor::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
@@ -78,7 +77,7 @@ llvm::Value* AstMemberAccessor::codegen(
     // and returns the GlobalVariable* (pointer) rather than loading it.
     if (!builder->GetInsertBlock())
     {
-        llvm::Value* base_val = this->get_base()->codegen(scope, module, context, builder);
+        llvm::Value* base_val = this->get_base()->codegen(scope, module, builder);
 
         // We look for a GlobalVariable with an initializer
         auto* global_var = llvm::dyn_cast_or_null<llvm::GlobalVariable>(base_val);
@@ -113,7 +112,7 @@ llvm::Value* AstMemberAccessor::codegen(
     }
 
     // Standard Code Generation (Function Scope)
-    llvm::Value* current_val = this->get_base()->codegen(scope, module, context, builder);
+    llvm::Value* current_val = this->get_base()->codegen(scope, module, builder);
     if (!current_val)
     {
         return nullptr;
@@ -154,7 +153,7 @@ llvm::Value* AstMemberAccessor::codegen(
         if (s_is_pointer)
         {
             // Get the LLVM type for the current struct to generate the GEP
-            llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(context, current_struct_name);
+            llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(module->getContext(), current_struct_name);
 
             // Create the GEP (GetElementPtr) instruction: &current_ptr->member
             current_val = builder->CreateStructGEP(
@@ -194,7 +193,7 @@ llvm::Value* AstMemberAccessor::codegen(
     // if we were working with pointers, we need to load the final result
     if (s_is_pointer)
     {
-        llvm::Type* final_llvm_type = internal_type_to_llvm_type(current_ast_type.get(), module, context);
+        llvm::Type* final_llvm_type = internal_type_to_llvm_type(current_ast_type.get(), module);
         return builder->CreateLoad(
             final_llvm_type,
             current_val,

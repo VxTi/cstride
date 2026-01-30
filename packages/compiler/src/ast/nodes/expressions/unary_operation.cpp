@@ -79,7 +79,6 @@ void AstUnaryOp::validate()
 llvm::Value* AstUnaryOp::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
@@ -183,7 +182,7 @@ llvm::Value* AstUnaryOp::codegen(
         return this->is_lsh() ? loaded_val : new_val;
     }
 
-    auto* val = get_operand().codegen(scope, module, context, builder);
+    auto* val = get_operand().codegen(scope, module, builder);
 
     if (!val) return nullptr;
 
