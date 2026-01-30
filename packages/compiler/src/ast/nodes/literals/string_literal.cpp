@@ -11,7 +11,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_opt
     TokenSet& set
 )
 {
-    if (const auto reference_token = set.peak_next(); reference_token.get_type() == TokenType::STRING_LITERAL)
+    if (const auto reference_token = set.peek_next(); reference_token.get_type() == TokenType::STRING_LITERAL)
     {
         const auto str_tok = set.next();
 

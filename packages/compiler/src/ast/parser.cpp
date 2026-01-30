@@ -83,7 +83,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
-    const auto initial_token = set.peak_next();
+    const auto initial_token = set.peek_next();
 
     while (set.has_next())
     {

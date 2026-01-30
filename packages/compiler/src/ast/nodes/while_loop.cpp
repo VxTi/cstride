@@ -9,7 +9,7 @@ using namespace stride::ast;
 
 bool stride::ast::is_while_loop_statement(const TokenSet& set)
 {
-    return set.peak_next_eq(TokenType::KEYWORD_WHILE);
+    return set.peek_next_eq(TokenType::KEYWORD_WHILE);
 }
 
 void AstWhileLoop::validate()

@@ -221,7 +221,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
     TokenSet& set
 )
 {
-    const auto next = set.peak_next();
+    const auto next = set.peek_next();
 
     // Prefix Parsing
     if (const auto op_type = get_unary_op_type(next.get_type()); op_type.has_value())
@@ -258,9 +258,9 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
     // Check for Postfix Unary (only Identifier supported for provided context/examples)
     // We can't easily hijack arbitrary expression parsing for postfix here without restructuring `parse_standalone_expression_part`.
     // However, we can peek if we have Identifier -> PostfixOp
-    if (set.peak_next_eq(TokenType::IDENTIFIER) && (
+    if (set.peek_next_eq(TokenType::IDENTIFIER) && (
         // Check if the token AFTER identifier is ++ or --
-        set.peak(1).get_type() == TokenType::DOUBLE_PLUS || set.peak(1).get_type() == TokenType::DOUBLE_MINUS))
+        set.peek(1).get_type() == TokenType::DOUBLE_PLUS || set.peek(1).get_type() == TokenType::DOUBLE_MINUS))
     {
         const auto iden_tok = set.next();
         const auto iden_name = iden_tok.get_lexeme();

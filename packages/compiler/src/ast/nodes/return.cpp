@@ -7,7 +7,7 @@ using namespace stride::ast;
 
 bool stride::ast::is_return_statement(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_RETURN);
+    return tokens.peek_next_eq(TokenType::KEYWORD_RETURN);
 }
 
 std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared_ptr<SymbolRegistry>& scope,

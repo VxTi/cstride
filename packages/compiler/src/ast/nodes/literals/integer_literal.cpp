@@ -12,7 +12,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
     TokenSet& set
 )
 {
-    const auto reference_token = set.peak_next();
+    const auto reference_token = set.peek_next();
 
     switch (const auto type = reference_token.get_type())
     {

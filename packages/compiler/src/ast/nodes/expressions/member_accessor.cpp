@@ -12,7 +12,7 @@ bool stride::ast::is_member_accessor(AstExpression* lhs, const TokenSet& set)
     // E.g., `struct_var.member`
     if (dynamic_cast<AstIdentifier*>(lhs))
     {
-        return set.peak_eq(TokenType::DOT, 0) && set.peak_eq(TokenType::IDENTIFIER, 1);
+        return set.peek_eq(TokenType::DOT, 0) && set.peek_eq(TokenType::IDENTIFIER, 1);
     }
     return false;
 }
@@ -31,9 +31,9 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
     std::vector<std::unique_ptr<AstIdentifier>> chained_accessors = {};
 
     // Initial accessors
-    const auto reference_token = set.peak_next();
+    const auto reference_token = set.peek_next();
 
-    while (set.peak_next_eq(TokenType::DOT))
+    while (set.peek_next_eq(TokenType::DOT))
     {
         set.expect(TokenType::DOT, "Expected '.' after identifier in member access");
 

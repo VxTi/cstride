@@ -7,7 +7,7 @@ using namespace stride::ast;
 
 bool stride::ast::is_import_statement(const TokenSet& tokens)
 {
-    return tokens.peak_next().get_type() == TokenType::KEYWORD_USE;
+    return tokens.peek_next().get_type() == TokenType::KEYWORD_USE;
 }
 
 /**
@@ -24,7 +24,7 @@ std::string consume_import_module_base(TokenSet& tokens)
     const auto base = tokens.expect(TokenType::IDENTIFIER, "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'");
     std::vector<std::string> parts = {base.get_lexeme()};
 
-    while (tokens.peak(0) == TokenType::DOUBLE_COLON && tokens.peak(1) == TokenType::IDENTIFIER)
+    while (tokens.peek(0) == TokenType::DOUBLE_COLON && tokens.peek(1) == TokenType::IDENTIFIER)
     {
         tokens.next();
         const auto part = tokens.next();
@@ -57,7 +57,7 @@ std::vector<std::string> consume_import_submodules(TokenSet& tokens)
 
     std::vector<std::string> submodules = {first.get_lexeme()};
 
-    while (tokens.peak(0) == TokenType::COMMA && tokens.peak(1) == TokenType::IDENTIFIER)
+    while (tokens.peek(0) == TokenType::COMMA && tokens.peek(1) == TokenType::IDENTIFIER)
     {
         tokens.expect(TokenType::COMMA, "Expected comma between module names in import list");
         const auto submodule_iden = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");

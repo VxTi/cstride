@@ -13,7 +13,7 @@ std::string AstPackage::to_string()
 
 bool stride::ast::is_package_declaration(const TokenSet& set)
 {
-    return set.peak_next_eq(TokenType::KEYWORD_PACKAGE);
+    return set.peek_next_eq(TokenType::KEYWORD_PACKAGE);
 }
 
 std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(

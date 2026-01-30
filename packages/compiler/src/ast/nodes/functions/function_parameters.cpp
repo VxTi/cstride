@@ -29,10 +29,10 @@ void stride::ast::parse_subsequent_fn_params(
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
 {
-    while (set.peak_next_eq(TokenType::COMMA))
+    while (set.peek_next_eq(TokenType::COMMA))
     {
         set.next(); // Skip comma
-        const auto next = set.peak_next();
+        const auto next = set.peek_next();
 
         if (parameters.size() > MAX_FUNCTION_PARAMETERS)
         {
@@ -47,7 +47,7 @@ void stride::ast::parse_subsequent_fn_params(
         if (next.get_type() == TokenType::THREE_DOTS)
         {
             parse_variadic_fn_param(scope, set, parameters);
-            if (!set.peak_next_eq(TokenType::RPAREN))
+            if (!set.peek_next_eq(TokenType::RPAREN))
             {
                 set.throw_error(
                     next,
@@ -93,7 +93,7 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
 {
     int flags = 0;
 
-    if (set.peak_next_eq(TokenType::KEYWORD_MUT))
+    if (set.peek_next_eq(TokenType::KEYWORD_MUT))
     {
         flags |= SRFLAG_FN_PARAM_DEF_MUTABLE;
         set.next();

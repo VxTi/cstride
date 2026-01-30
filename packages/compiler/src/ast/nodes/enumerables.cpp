@@ -107,5 +107,5 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
 
 bool stride::ast::is_enumerable_declaration(const TokenSet& tokens)
 {
-    return tokens.peak_next_eq(TokenType::KEYWORD_ENUM);
+    return tokens.peek_next_eq(TokenType::KEYWORD_ENUM);
 }

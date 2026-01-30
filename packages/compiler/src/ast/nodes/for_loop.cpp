@@ -6,7 +6,7 @@ using namespace stride::ast;
 
 bool stride::ast::is_for_loop_statement(const TokenSet& set)
 {
-    return set.peak_next_eq(TokenType::KEYWORD_FOR);
+    return set.peek_next_eq(TokenType::KEYWORD_FOR);
 }
 
 std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)

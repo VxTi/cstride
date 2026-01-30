@@ -85,7 +85,7 @@ std::optional<TokenSet> stride::ast::collect_block_variant(
     set.expect(start_token);
     for (int64_t level = 1, offset = 0; level > 0 && offset < set.size(); ++offset)
     {
-        if (const auto next = set.peak(offset); next.get_type() == start_token)
+        if (const auto next = set.peek(offset); next.get_type() == start_token)
         {
             level++;
         }

@@ -69,7 +69,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 {
     while (true)
     {
-        const auto reference_token = set.peak_next();
+        const auto reference_token = set.peek_next();
         // First, we'll check if the next token is a binary operator
         if (auto binary_op = get_binary_op_type(reference_token.get_type()); binary_op.has_value())
         {
@@ -95,7 +95,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 
             // If the followup token is also a binary expression,
             // we can try to parse it with higher precedence
-            if (const auto next_op = get_binary_op_type(set.peak_next_type()); next_op.has_value())
+            if (const auto next_op = get_binary_op_type(set.peek_next_type()); next_op.has_value())
             {
                 if (const int next_precedence = get_binary_operator_precedence(next_op.value());
                     precedence < next_precedence)

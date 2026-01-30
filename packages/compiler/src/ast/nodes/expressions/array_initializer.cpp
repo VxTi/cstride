@@ -6,7 +6,7 @@ using namespace stride::ast;
 
 bool stride::ast::is_array_initializer(const TokenSet& set)
 {
-    return set.peak_next_eq(TokenType::LSQUARE_BRACKET);
+    return set.peek_next_eq(TokenType::LSQUARE_BRACKET);
 }
 
 std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
@@ -14,7 +14,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
     TokenSet& set
 )
 {
-    const auto reference_token = set.peak_next();
+    const auto reference_token = set.peek_next();
     const auto expression_block = collect_block_variant(set, TokenType::LSQUARE_BRACKET, TokenType::RSQUARE_BRACKET);
 
     if (!expression_block.has_value())

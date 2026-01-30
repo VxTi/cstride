@@ -11,9 +11,9 @@ bool stride::ast::is_struct_initializer(const TokenSet& set)
 {
     // We assume an expression is a struct initializer if it starts with `<name>::{ <identifier`
     // Obviously, this can also be a block, but we will disambiguate that during parsing
-    return set.peak_eq(TokenType::IDENTIFIER, 0)
-        && set.peak_eq(TokenType::DOUBLE_COLON, 1)
-        && set.peak_eq(TokenType::LBRACE, 2);
+    return set.peek_eq(TokenType::IDENTIFIER, 0)
+        && set.peek_eq(TokenType::DOUBLE_COLON, 1)
+        && set.peek_eq(TokenType::LBRACE, 2);
 }
 
 std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initializer(
@@ -71,7 +71,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     }
 
     // Optionally consume trailing comma
-    if (member_set->peak_next_eq(TokenType::COMMA))
+    if (member_set->peek_next_eq(TokenType::COMMA))
     {
         member_set->next();
     }
