@@ -180,25 +180,37 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     // Parsing function parameter values
     if (function_parameter_set.has_value())
     {
-        auto subset = function_parameter_set.value();
-        auto initial_arg = parse_expression_extended(0, scope, subset);
-
-        auto initial_type = infer_expression_type(scope, initial_arg.get());
-        parameter_types.push_back(initial_type.get());
-        parameter_type_owners.push_back(std::move(initial_type));
-        function_arg_nodes.push_back(std::move(initial_arg));
-
-        // Consume next parameters
-        while (subset.has_next())
+        do
         {
-            subset.expect(TokenType::COMMA);
-            auto next_arg = parse_expression_extended(0, scope, subset);
+            auto subset = function_parameter_set.value();
+            auto initial_arg = parse_inline_expression(scope, subset);
 
-            auto next_type = infer_expression_type(scope, next_arg.get());
-            parameter_types.push_back(next_type.get());
-            parameter_type_owners.push_back(std::move(next_type));
-            function_arg_nodes.push_back(std::move(next_arg));
-        }
+            if (!initial_arg) break;
+
+            auto initial_type = infer_expression_type(scope, initial_arg.get());
+
+            parameter_types.push_back(initial_type.get());
+            parameter_type_owners.push_back(std::move(initial_type));
+            function_arg_nodes.push_back(std::move(initial_arg));
+
+            // Consume next parameters
+            while (subset.has_next())
+            {
+                subset.expect(TokenType::COMMA, "Expected ',' between function arguments");
+
+                auto next_arg = parse_inline_expression(scope, subset);
+
+                if (!next_arg)
+                {
+                    subset.throw_error("Expected expression for function argument");
+                }
+
+                auto next_type = infer_expression_type(scope, next_arg.get());
+                parameter_types.push_back(next_type.get());
+                parameter_type_owners.push_back(std::move(next_type));
+                function_arg_nodes.push_back(std::move(next_arg));
+            }
+        } while (false);
     }
 
     std::string internal_fn_name = resolve_internal_function_name(

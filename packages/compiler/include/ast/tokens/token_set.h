@@ -84,6 +84,4 @@ namespace stride::ast
         [[noreturn]]
         void throw_error(const std::string& message) const;
     };
-
-    bool should_skip_token(TokenType type);
 }

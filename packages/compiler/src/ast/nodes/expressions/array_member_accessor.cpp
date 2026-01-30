@@ -37,23 +37,19 @@ void AstArrayMemberAccessor::validate()
         if (!primitive_type->is_integer_ty())
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::SEMANTIC_ERROR,
-                    std::format("Array index accessor must be of type int, got '{}'", primitive_type->to_string()),
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::SEMANTIC_ERROR,
+                std::format("Array index accessor must be of type int, got '{}'", primitive_type->to_string()),
+                *this->get_source(),
+                this->get_source_position()
             );
         }
     }
 
     throw parsing_error(
-        make_source_error(
-            ErrorType::SEMANTIC_ERROR,
-            "Array index accessor must be of type 'int', got '" + index_accessor_type->to_string() + "'",
-            *this->get_source(),
-            this->get_source_position()
-        )
+        ErrorType::SEMANTIC_ERROR,
+        "Array index accessor must be of type 'int', got '" + index_accessor_type->to_string() + "'",
+        *this->get_source(),
+        this->get_source_position()
     );
 }
 
@@ -75,12 +71,10 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     if (!array_ty)
     {
         throw parsing_error(
-            make_source_error(
                 ErrorType::SEMANTIC_ERROR,
                 "Array member accessor used on non-array type",
                 *this->get_source(),
                 this->get_source_position()
-            )
         );
     }
 
@@ -89,7 +83,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     // Treat base_ptr as elem*
     llvm::Value* typed_base_ptr = builder->CreateBitCast(
         base_ptr,
-        llvm::PointerType::getUnqual(elem_llvm_ty),
+        llvm::PointerType::getUnqual(context),
         "array_base_cast"
     );
 

@@ -51,7 +51,7 @@ TokenType TokenSet::peak_next_type() const
 
 Token TokenSet::peak_next() const
 {
-    return this->at(this->_cursor);
+    return this->at(this->position());
 }
 
 
@@ -85,11 +85,6 @@ Token TokenSet::expect(const TokenType type)
 
     if (const auto next_type = this->peak_next().get_type(); next_type != type)
     {
-        if (should_skip_token(next_type))
-        {
-            this->next();
-            return this->expect(type);
-        }
         this->throw_error(
             ErrorType::SYNTAX_ERROR,
             std::format(
@@ -116,13 +111,8 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
         );
     }
 
-    if (const auto next_type = this->peak_next().get_type(); next_type != type)
+    if (this->peak_next().get_type() != type)
     {
-        if (should_skip_token(next_type))
-        {
-            this->next();
-            return this->expect(type);
-        }
         this->throw_error(ErrorType::SYNTAX_ERROR, message);
     }
 
@@ -171,12 +161,10 @@ std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
 ) const
 {
     throw parsing_error(
-        make_source_error(
-            error_type,
-            message,
-            *this->get_source(),
-            token.get_source_position()
-        )
+        error_type,
+        message,
+        *this->get_source(),
+        token.get_source_position()
     );
 }
 
@@ -188,16 +176,4 @@ std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
 [[noreturn]] void TokenSet::throw_error(const std::string& message) const
 {
     this->throw_error(ErrorType::SYNTAX_ERROR, message);
-}
-
-
-bool stride::ast::should_skip_token(const TokenType type)
-{
-    switch (type)
-    {
-    case TokenType::COMMENT:
-    case TokenType::COMMENT_MULTILINE:
-    case TokenType::END_OF_FILE: return true;
-    default: return false;
-    }
 }
