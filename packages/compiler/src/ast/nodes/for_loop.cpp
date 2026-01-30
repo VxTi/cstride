@@ -110,12 +110,10 @@ llvm::Value* AstForLoop::codegen(
         if (condValue == nullptr)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::RUNTIME_ERROR,
-                    "Failed to codegen loop condition",
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::RUNTIME_ERROR,
+                "Failed to codegen loop condition",
+                *this->get_source(),
+                this->get_source_position()
             );
         }
     }

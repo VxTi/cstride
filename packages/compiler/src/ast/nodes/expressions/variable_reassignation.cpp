@@ -24,12 +24,10 @@ void AstVariableReassignment::validate()
     if (!identifier_def)
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::SEMANTIC_ERROR,
-                std::format("Unable to reassign variable, variable '{}' not found", this->get_variable_name()),
-                *this->get_source(),
-                this->get_source_position()
-            )
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Unable to reassign variable, variable '{}' not found", this->get_variable_name()),
+            *this->get_source(),
+            this->get_source_position()
         );
     }
 
@@ -38,12 +36,10 @@ void AstVariableReassignment::validate()
     if (!identifier_def->get_type()->is_mutable())
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::SEMANTIC_ERROR,
-                std::format("Variable '{}' is immutable and cannot be reassigned", this->get_variable_name()),
-                *this->get_source(),
-                this->get_source_position()
-            )
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Variable '{}' is immutable and cannot be reassigned", this->get_variable_name()),
+            *this->get_source(),
+            this->get_source_position()
         );
     }
 

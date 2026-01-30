@@ -160,15 +160,13 @@ void AstVariableDeclaration::validate()
         };
 
         throw parsing_error(
-            make_source_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Type mismatch in variable declaration; expected type '{}', got '{}'",
-                    lhs_type->to_string(),
-                    rhs_type->to_string()
-                ),
-                references
-            )
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Type mismatch in variable declaration; expected type '{}', got '{}'",
+                lhs_type->to_string(),
+                rhs_type->to_string()
+            ),
+            references
         );
     }
 }

@@ -58,24 +58,20 @@ void AstUnaryOp::validate()
     if (!operand_type)
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::TYPE_ERROR,
-                "Cannot infer type of operand",
-                *this->get_source(),
-                this->get_source_position()
-            )
+            ErrorType::TYPE_ERROR,
+            "Cannot infer type of operand",
+            *this->get_source(),
+            this->get_source_position()
         );
     }
 
     if (!operand_type->is_mutable())
     {
         throw parsing_error(
-            make_source_error(
-                ErrorType::TYPE_ERROR,
-                "Cannot modify immutable value",
-                *this->get_source(),
-                this->get_source_position()
-            )
+            ErrorType::TYPE_ERROR,
+            "Cannot modify immutable value",
+            *this->get_source(),
+            this->get_source_position()
         );
     }
 }
@@ -95,12 +91,10 @@ llvm::Value* AstUnaryOp::codegen(
         if (!identifier)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::RUNTIME_ERROR,
-                    "Operand must be an identifier for this operation",
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::RUNTIME_ERROR,
+                "Operand must be an identifier for this operation",
+                *this->get_source(),
+                this->get_source_position()
             );
         }
 
@@ -125,12 +119,10 @@ llvm::Value* AstUnaryOp::codegen(
         if (!var_addr)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::RUNTIME_ERROR,
-                    std::format("Unknown variable '{}'", internal_name),
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::RUNTIME_ERROR,
+                std::format("Unknown variable '{}'", internal_name),
+                *this->get_source(),
+                this->get_source_position()
             );
         }
 
@@ -152,12 +144,10 @@ llvm::Value* AstUnaryOp::codegen(
         else
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::RUNTIME_ERROR,
-                    std::format("Cannot determine type of variable '{}'", internal_name),
-                    *this->get_source(),
-                    this->get_source_position()
-                )
+                ErrorType::RUNTIME_ERROR,
+                std::format("Cannot determine type of variable '{}'", internal_name),
+                *this->get_source(),
+                this->get_source_position()
             );
         }
 
@@ -217,12 +207,10 @@ llvm::Value* AstUnaryOp::codegen(
     case UnaryOpType::DEREFERENCE:
         // Requires type system to know what we are pointing to
         throw parsing_error(
-            make_source_error(
-                ErrorType::RUNTIME_ERROR,
-                "Dereference not implemented yet due to opaque pointers",
-                *this->get_source(),
-                this->get_source_position()
-            )
+            ErrorType::RUNTIME_ERROR,
+            "Dereference not implemented yet due to opaque pointers",
+            *this->get_source(),
+            this->get_source_position()
         );
     default:
         return nullptr;

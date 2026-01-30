@@ -121,12 +121,10 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
         if (!matched)
         {
             throw parsing_error(
-                make_source_error(
-                    ErrorType::SYNTAX_ERROR,
-                    "Unexpected character encountered",
-                    *source_file,
-                    SourcePosition(i, 1)
-                )
+                ErrorType::SYNTAX_ERROR,
+                "Unexpected character encountered",
+                *source_file,
+                SourcePosition(i, 1)
             );
         }
     }
