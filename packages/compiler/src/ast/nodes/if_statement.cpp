@@ -121,8 +121,11 @@ bool AstIfStatement::is_reducible()
     return this->get_condition()->is_reducible();
 }
 
-llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                                     llvm::IRBuilder<>* builder)
+llvm::Value* AstIfStatement::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
     if (this->get_condition() == nullptr)
     {

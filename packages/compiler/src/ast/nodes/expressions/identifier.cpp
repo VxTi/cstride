@@ -5,7 +5,11 @@
 
 using namespace stride::ast;
 
-llvm::Value* AstIdentifier::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstIdentifier::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
     llvm::Value* val = nullptr;
 
