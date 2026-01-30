@@ -166,9 +166,13 @@ void AstStructInitializer::validate()
                     member_type->to_string()
                 ),
                 *this->get_source(),
-                found_member->get_source_position()
+                member_expr->get_source_position()
             );
         }
+
+        // Further validate child nodes. It's possible that we have nested struct definitions,
+        // which also have to conform to their types.
+        member_expr->validate();
     }
 }
 
