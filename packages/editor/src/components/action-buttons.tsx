@@ -66,7 +66,7 @@ export default function ActionButtons() {
     <div className="flex items-center w-full z-1000 px-3 pt-0.5">
       <div className="flex flex-row items-center justify-end gap-1 grow">
         <ActionButton
-          keybind="Cmd+Shift+T"
+          keybind="Ctrl+Shift+C"
           tooltip="Clear terminal"
           onClick={clearTerminal}
         >
