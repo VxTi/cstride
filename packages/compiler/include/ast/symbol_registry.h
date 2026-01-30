@@ -119,14 +119,7 @@ namespace stride::ast
 
         bool has_member(const std::string& member_name) const
         {
-            for (const auto& name : this->_fields | std::views::keys)
-            {
-                if (name == member_name)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return get_field_type(member_name) != nullptr;
         }
 
         std::optional<int> get_member_index(const std::string& member_name) const
