@@ -73,7 +73,7 @@ std::string stride::make_source_error(
         error_type_str,
         source_file.path,
         error,
-        line_number,
+        line_nr_str,
         line_str,
         std::string(column_offset, ' '),
         std::string(underline_len, '^'),

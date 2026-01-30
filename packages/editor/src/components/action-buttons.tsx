@@ -73,7 +73,7 @@ export default function ActionButtons() {
           <Trash2Icon className="stroke-2 stroke-white" />
         </ActionButton>
         <ActionButton
-          keybind="Cmd+Shift+B"
+          keybind="Ctrl+Shift+B"
           tooltip={debugMode ? 'Disable debug mode' : 'Enable debug mode'}
           onClick={toggleDebugMode}
         >
@@ -85,8 +85,8 @@ export default function ActionButtons() {
             processActive
               ? 'Stop process'
               : debugMode
-                ? 'Run code'
-                : 'Debug code'
+                ? 'Debug code'
+                : 'Run code'
           }
           onClick={runCode}
         >

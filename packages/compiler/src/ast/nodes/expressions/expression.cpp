@@ -53,6 +53,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
     if (set.peek_next_eq(TokenType::LPAREN))
     {
         set.next();
+        // TODO: Potentially fix possibility of stack overflow if expression is too large
         auto expr = parse_standalone_expression_part(scope, set);
         set.expect(TokenType::RPAREN, "Expected ')' after expression");
         return expr;
