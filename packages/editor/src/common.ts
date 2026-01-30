@@ -16,7 +16,7 @@ export const websocketMessageDecoder = z.object({
 });
 
 export const websocketMessageConfigDecoder = z.object({
-    debugMode: z.boolean(),
+  debugMode: z.boolean(),
 });
 
 export type RunConfig = z.infer<typeof websocketMessageConfigDecoder>;

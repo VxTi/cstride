@@ -49,7 +49,12 @@ export default function ActionButtons() {
 
   const toggleDebugMode = () => {
     setDebugMode(prev => {
-      if (ws) sendMessage(ws, WsMessageType.UPDATE_CONFIG, JSON.stringify({ debugMode: !prev }));
+      if (ws)
+        sendMessage(
+          ws,
+          WsMessageType.UPDATE_CONFIG,
+          JSON.stringify({ debugMode: !prev })
+        );
       return !prev;
     });
   };
@@ -76,7 +81,13 @@ export default function ActionButtons() {
         </ActionButton>
         <ActionButton
           keybind="Ctrl+R"
-          tooltip={debugMode ? 'Run code' : 'Debug code'}
+          tooltip={
+            processActive
+              ? 'Stop process'
+              : debugMode
+                ? 'Run code'
+                : 'Debug code'
+          }
           onClick={runCode}
         >
           <Icon
@@ -164,10 +175,10 @@ function ActionButton({
   return (
     <div className="relative group" title={tooltip}>
       <div className="absolute top-0 right-0 -translate-y-full pointer-events-none">
-        <div className="bg-neutral-900 w-40 flex flex-wrap items-center wrap-break-word text-white rounded-xl border border-neutral-700 px-2.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="bg-neutral-900 max-w-46 w-max flex gap-2 items-center wrap-break-word text-white rounded-xl border border-neutral-700 px-2.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <span className="grow">{tooltip}</span>
           {keybind && (
-            <span className="mx-0.5 justify-end font-mono text-neutral-300 bg-neutral-800 rounded-lg px-1 py-0.5">
+            <span className="mx-0.5 justify-end font-mono text-neutral-300 bg-neutral-800 rounded-lg px-1">
               {formattedKeybind}
             </span>
           )}

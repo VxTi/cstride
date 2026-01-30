@@ -5,9 +5,9 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type z }                                                         from 'zod';
+import { type z } from 'zod';
 import {
-  RunConfig,
+  type RunConfig,
   sendMessage,
   websocketMessageConfigDecoder,
   websocketMessageDecoder,
@@ -68,17 +68,22 @@ wss.on('connection', (ws: WebSocket) => {
           sendMessage(ws, WsMessageType.PROCESS_TERMINATED);
           break;
         case WsMessageType.UPDATE_CONFIG:
-          const decoded = websocketMessageConfigDecoder.safeParse(JSON.parse(data.message));
+          const decoded = websocketMessageConfigDecoder.safeParse(
+            JSON.parse(data.message)
+          );
 
           if (!decoded.success) {
-            sendMessage(ws, WsMessageType.PROCESS_STDERR, 'Failed to parse config JSON: ' + decoded.error.message);
+            sendMessage(
+              ws,
+              WsMessageType.PROCESS_STDERR,
+              `Failed to parse config JSON: ${decoded.error.message}`
+            );
             break;
           }
 
           Object.assign(config, decoded.data);
 
           break;
-
       }
     } catch (e) {
       console.error('Failed to parse message', e);
