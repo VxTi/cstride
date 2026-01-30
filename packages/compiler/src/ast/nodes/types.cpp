@@ -277,7 +277,7 @@ std::optional<std::unique_ptr<IAstInternalFieldType>> stride::ast::parse_named_t
 
     const auto name = set.next().get_lexeme();
 
-    auto named_type = std::make_unique<AstNamedValueType>(
+    auto named_type = std::make_unique<AstStructType>(
         set.get_source(),
         reference_token.get_source_position(),
         scope,
@@ -380,7 +380,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
     }
 
-    if (const auto* custom = dynamic_cast<AstNamedValueType*>(type))
+    if (const auto* custom = dynamic_cast<AstStructType*>(type))
     {
         // If it's a pointer, we don't even need to look up the struct name
         // to return the LLVM type, because all pointers are the same.
@@ -415,8 +415,8 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::get_dominant_field_type(
 {
     auto* lhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(lhs);
     auto* rhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(rhs);
-    const auto* lhs_named = dynamic_cast<AstNamedValueType*>(lhs);
-    const auto* rhs_named = dynamic_cast<AstNamedValueType*>(rhs);
+    const auto* lhs_named = dynamic_cast<AstStructType*>(lhs);
+    const auto* rhs_named = dynamic_cast<AstStructType*>(rhs);
 
     // Error if one is named and the other is primitive
     if ((lhs_named && rhs_primitive) || (lhs_primitive && rhs_named))
@@ -545,7 +545,7 @@ size_t stride::ast::ast_type_to_internal_id(IAstInternalFieldType* type)
         return primitive_type_to_internal_id(primitive->type());
     }
 
-    if (const auto* named = dynamic_cast<const AstNamedValueType*>(type);
+    if (const auto* named = dynamic_cast<const AstStructType*>(type);
         named != nullptr)
     {
         return std::hash<std::string>{}(named->name());

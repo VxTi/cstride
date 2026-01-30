@@ -24,6 +24,15 @@ TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
     return std::move(TokenSet(this->_source, copied_tokens));
 }
 
+Token TokenSet::last() const
+{
+    if (this->size() == 0)
+    {
+        return END_OF_FILE;
+    }
+    return this->_tokens.back();
+}
+
 Token TokenSet::at(const size_t index) const
 {
     if (this->size() == 0 || this->remaining() == 0)

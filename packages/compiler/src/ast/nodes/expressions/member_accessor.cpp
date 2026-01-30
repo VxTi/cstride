@@ -72,18 +72,61 @@ llvm::Value* AstMemberAccessor::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    llvm::Value* current_ptr = this->get_base()->codegen(scope, module, context, builder);
-    if (!current_ptr)
+    // Special handling for Global Scope (no active block)
+    // We must evaluate to a constant (Constant Folding) as we cannot generate instructions.
+    // Note: This assumes the base identifier's codegen handles null blocks gracefully
+    // and returns the GlobalVariable* (pointer) rather than loading it.
+    if (!builder->GetInsertBlock())
+    {
+        llvm::Value* base_val = this->get_base()->codegen(scope, module, context, builder);
+
+        // We look for a GlobalVariable with an initializer
+        auto* global_var = llvm::dyn_cast_or_null<llvm::GlobalVariable>(base_val);
+        if (!global_var || !global_var->hasInitializer())
+        {
+            // If the base isn't a global with an initializer, we can't fold it.
+            return nullptr;
+        }
+
+        llvm::Constant* current_const = global_var->getInitializer();
+        std::unique_ptr<IAstInternalFieldType> current_ast_type = infer_expression_type(scope, this->get_base());
+        std::string current_struct_name = current_ast_type->get_internal_name();
+
+        for (const auto& accessor : this->get_members())
+        {
+            const auto struct_def = scope->get_struct_def(current_struct_name);
+            if (!struct_def) return nullptr;
+
+            const auto member_index = struct_def->get_member_index(accessor->get_name());
+            if (!member_index.has_value()) return nullptr;
+
+            // Extract the constant field value
+            current_const = current_const->getAggregateElement(member_index.value());
+            if (!current_const) return nullptr; // Index out of bounds or invalid aggregate
+
+            const IAstInternalFieldType* member_field_type = struct_def->get_field(accessor->get_name());
+            current_ast_type = member_field_type->clone();
+            current_struct_name = current_ast_type->get_internal_name();
+        }
+
+        return current_const;
+    }
+
+    // Standard Code Generation (Function Scope)
+    llvm::Value* current_val = this->get_base()->codegen(scope, module, context, builder);
+    if (!current_val)
     {
         return nullptr;
     }
 
-    // Determine the starting type name (e.g., the type of "struct_var")
-    // We use your type inference utilities to resolve the AST type of the base
     std::unique_ptr<IAstInternalFieldType> current_ast_type = infer_expression_type(scope, this->get_base());
     std::string current_struct_name = current_ast_type->get_internal_name();
 
-    for (const auto& accessor : this->get_member())
+    // With opaque pointers, we need to know if we are operating on an address (L-value)
+    // or a loaded struct value (R-value). Pointers allow GEP, values require ExtractValue.
+    bool s_is_pointer = current_val->getType()->isPointerTy();
+
+    for (const auto& accessor : this->get_members())
     {
         const auto struct_def = scope->get_struct_def(current_struct_name);
         if (!struct_def)
@@ -108,21 +151,30 @@ llvm::Value* AstMemberAccessor::codegen(
             );
         }
 
-        // Get the LLVM type for the current struct to generate the GEP
-        // We use the internal name which maps to LLVM struct name
-        llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(context, current_struct_name);
+        if (s_is_pointer)
+        {
+            // Get the LLVM type for the current struct to generate the GEP
+            llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(context, current_struct_name);
 
-        // Create the GEP (GetElementPtr) instruction
-        // This calculates the address of the member: &current_ptr->member
-        current_ptr = builder->CreateStructGEP(
-            struct_llvm_type,
-            current_ptr,
-            member_index.value(),
-            "ptr_" + accessor->get_name()
-        );
+            // Create the GEP (GetElementPtr) instruction: &current_ptr->member
+            current_val = builder->CreateStructGEP(
+                struct_llvm_type,
+                current_val,
+                member_index.value(),
+                "ptr_" + accessor->get_name()
+            );
+        }
+        else
+        {
+            // We have a direct value, extract the member: current_val.member
+            current_val = builder->CreateExtractValue(
+                current_val,
+                member_index.value(),
+                "val_" + accessor->get_name()
+            );
+        }
 
-        // E. Update type information for the next iteration
-        // The current pointer now points to the member's type
+        // Update loop state
         const IAstInternalFieldType* member_field_type = struct_def->get_field(accessor->get_name());
 
         if (!member_field_type)
@@ -139,22 +191,26 @@ llvm::Value* AstMemberAccessor::codegen(
         current_struct_name = current_ast_type->get_internal_name();
     }
 
-    // 3. Load the final value
-    // We must provide the specific LLVM type to Load because opaque pointers might be in use
-    llvm::Type* final_llvm_type = internal_type_to_llvm_type(current_ast_type.get(), module, context);
+    // if we were working with pointers, we need to load the final result
+    if (s_is_pointer)
+    {
+        llvm::Type* final_llvm_type = internal_type_to_llvm_type(current_ast_type.get(), module, context);
+        return builder->CreateLoad(
+            final_llvm_type,
+            current_val,
+            "val_member_access"
+        );
+    }
 
-    return builder->CreateLoad(
-        final_llvm_type,
-        current_ptr,
-        "val_member_access"
-    );
+    // If we were working with values (ExtractValue), we already have the result.
+    return current_val;
 }
 
 std::string AstMemberAccessor::to_string()
 {
     std::vector<std::string> member_names;
 
-    for (const auto& member : this->get_member())
+    for (const auto& member : this->get_members())
     {
         member_names.push_back(member->get_name());
     }
@@ -168,71 +224,8 @@ std::string AstMemberAccessor::to_string()
 
 void AstMemberAccessor::validate()
 {
-    // Currently, function return types don't exist yet,
-    // so we only support struct member access. Validation therefore
-    // includes checking whether the main member exists and whether it contains the
-    // target field.
-
-    // TODO: Update this once function return types are supported
-    // Also add support for base returning a struct
-    const auto base_iden = dynamic_cast<AstIdentifier*>(this->get_base());
-    if (!base_iden)
-    {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            "Member access base must be an identifier",
-            *this->get_source(),
-            this->get_source_position()
-        );
-    }
-
-    auto prev_struct_definition = this->get_registry()->get_struct_def(base_iden->get_name());
-
-    if (!prev_struct_definition)
-    {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            std::format("Struct '{}' in member accessor does not exist", base_iden->get_name()),
-            *this->get_source(),
-            this->get_source_position()
-        );
-    }
-
-    // We'll iterate over all middle accessors. If there's just a single accessor,
-    // it gets skipped here.
-    for (int i = 0; i < this->get_member().size() - 1; i++)
-    {
-        // Member is in between a chain (<...>.<sub1>.<sub2>.<...>),
-        const auto sub_iden = dynamic_cast<AstIdentifier*>(this->get_member()[i]);
-
-        if (!sub_iden)
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                "Member access submember must be an identifier",
-                *this->get_source(),
-                this->get_source_position()
-            );
-        }
-
-        // The type of the struct member is the name of the referring struct
-        const auto sub_iden_field_type = prev_struct_definition->get_field(sub_iden->get_name());
-        prev_struct_definition = this->get_registry()->get_struct_def(sub_iden_field_type->get_internal_name());
-
-        // If `prev_struct_definition` is `nullptr` here, we already know it's not a struct type,
-        // as it's not registered
-        if (!prev_struct_definition)
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format("Struct member '{}' accessor does not exist", base_iden->get_name()),
-                *this->get_source(),
-                this->get_source_position()
-            );
-        }
-    }
-
-    // The final member can be something other than a struct type, and we don't really care either.
+    // Since type inference also does validation, we don't really have to do anything else here
+    infer_member_accessor_type(this->get_registry(), this);
 }
 
 IAstNode* AstMemberAccessor::reduce()

@@ -216,7 +216,7 @@ namespace stride::ast
         AstIdentifier* get_base() const { return this->_base.get(); }
 
         [[nodiscard]]
-        std::vector<AstIdentifier*> get_member() const
+        std::vector<AstIdentifier*> get_members() const
         {
             // We don't wanna transfer ownership to anyone else...
             std::vector<AstIdentifier*> result;
@@ -224,6 +224,12 @@ namespace stride::ast
             std::ranges::transform(this->_members, std::back_inserter(result),
                                    [](const std::unique_ptr<AstIdentifier>& member) { return member.get(); });
             return result;
+        }
+
+        [[nodiscard]]
+        AstIdentifier* get_last_member() const
+        {
+            return this->_members.empty() ? nullptr : this->_members.back().get();
         }
 
         llvm::Value* codegen(
@@ -787,5 +793,10 @@ namespace stride::ast
     std::unique_ptr<IAstInternalFieldType> infer_struct_initializer_type(
         const std::shared_ptr<SymbolRegistry>& scope,
         const AstStructInitializer* initializer
+    );
+
+    std::unique_ptr<IAstInternalFieldType> infer_member_accessor_type(
+        const std::shared_ptr<SymbolRegistry>& scope,
+        const AstMemberAccessor* initializer
     );
 }

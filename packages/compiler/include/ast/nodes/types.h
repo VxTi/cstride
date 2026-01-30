@@ -176,13 +176,13 @@ namespace stride::ast
         }
     };
 
-    class AstNamedValueType
+    class AstStructType
         : public IAstInternalFieldType
     {
         std::string _name;
 
     public:
-        explicit AstNamedValueType(
+        explicit AstStructType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& scope,
@@ -201,7 +201,7 @@ namespace stride::ast
         [[nodiscard]]
         std::unique_ptr<IAstInternalFieldType> clone() const override
         {
-            return std::make_unique<AstNamedValueType>(*this);
+            return std::make_unique<AstStructType>(*this);
         }
 
         std::string get_internal_name() override { return this->_name; }
@@ -213,7 +213,7 @@ namespace stride::ast
 
         bool operator==(IAstInternalFieldType& other) override
         {
-            if (const auto* other_named = dynamic_cast<AstNamedValueType*>(&other))
+            if (const auto* other_named = dynamic_cast<AstStructType*>(&other))
             {
                 return this->_name == other_named->_name;
             }

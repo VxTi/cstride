@@ -125,7 +125,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
 void AstStructMember::validate()
 {
-    if (const auto non_primitive_type = dynamic_cast<AstNamedValueType*>(this->_type.get()))
+    if (const auto non_primitive_type = dynamic_cast<AstStructType*>(this->_type.get()))
     {
         // If it's not a primitive, it must be a struct, as we currently don't support other types.
         // TODO: Support enums
