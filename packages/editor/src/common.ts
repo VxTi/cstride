@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export enum WsMessageType {
+  UPDATE_CONFIG = 'update_config',
   EXECUTE_CODE = 'run',
   TERMINATE_PROCESS = 'terminate',
 
@@ -14,12 +15,18 @@ export const websocketMessageDecoder = z.object({
   message: z.string(),
 });
 
+export const websocketMessageConfigDecoder = z.object({
+    debugMode: z.boolean(),
+});
+
+export type RunConfig = z.infer<typeof websocketMessageConfigDecoder>;
+
 type WebSocketType = { send: (message: string) => void };
 
 export function sendMessage(
   ws: WebSocketType,
   type: WsMessageType,
   message: string = ''
-) {
+): void {
   ws.send(JSON.stringify({ type, message }));
 }
