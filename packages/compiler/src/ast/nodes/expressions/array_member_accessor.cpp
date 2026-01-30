@@ -1,3 +1,5 @@
+#include <llvm/IR/Module.h>
+
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
@@ -56,14 +58,13 @@ void AstArrayMemberAccessor::validate()
 llvm::Value* AstArrayMemberAccessor::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
     const auto array_iden_type = infer_expression_type(this->get_registry(), this->_array_identifier.get());
 
-    llvm::Value* base_ptr = this->_array_identifier->codegen(scope, module, context, builder);
-    llvm::Value* index_val = this->_index_accessor_expr->codegen(scope, module, context, builder);
+    llvm::Value* base_ptr = this->_array_identifier->codegen(scope, module, builder);
+    llvm::Value* index_val = this->_index_accessor_expr->codegen(scope, module, builder);
 
     // Element type, not the array type.
     // Assumes `array_iden_type` is something like "T[]" and has an element type you can extract.
@@ -78,12 +79,12 @@ llvm::Value* AstArrayMemberAccessor::codegen(
         );
     }
 
-    llvm::Type* elem_llvm_ty = internal_type_to_llvm_type(array_ty->get_element_type(), module, context);
+    llvm::Type* elem_llvm_ty = internal_type_to_llvm_type(array_ty->get_element_type(), module);
 
     // Treat base_ptr as elem*
     llvm::Value* typed_base_ptr = builder->CreateBitCast(
         base_ptr,
-        llvm::PointerType::getUnqual(context),
+        llvm::PointerType::getUnqual(module->getContext()),
         "array_base_cast"
     );
 

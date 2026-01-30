@@ -327,13 +327,12 @@ std::unique_ptr<IAstInternalFieldType> stride::ast::parse_type(
 
 llvm::Type* stride::ast::internal_type_to_llvm_type(
     IAstInternalFieldType* type,
-    llvm::Module* module,
-    llvm::LLVMContext& context
+    llvm::Module* module
 )
 {
     if (const auto* array = dynamic_cast<AstArrayType*>(type))
     {
-        llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module, context);
+        llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module);
 
         if (!element_type)
         {
@@ -354,29 +353,29 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         {
         case PrimitiveType::INT8:
         case PrimitiveType::UINT8:
-            return llvm::Type::getInt8Ty(context);
+            return llvm::Type::getInt8Ty(module->getContext());
         case PrimitiveType::INT16:
         case PrimitiveType::UINT16:
-            return llvm::Type::getInt16Ty(context);
+            return llvm::Type::getInt16Ty(module->getContext());
         case PrimitiveType::INT32:
         case PrimitiveType::UINT32:
-            return llvm::Type::getInt32Ty(context);
+            return llvm::Type::getInt32Ty(module->getContext());
         case PrimitiveType::INT64:
         case PrimitiveType::UINT64:
-            return llvm::Type::getInt64Ty(context);
+            return llvm::Type::getInt64Ty(module->getContext());
         case PrimitiveType::FLOAT32:
-            return llvm::Type::getFloatTy(context);
+            return llvm::Type::getFloatTy(module->getContext());
         case PrimitiveType::FLOAT64:
-            return llvm::Type::getDoubleTy(context);
+            return llvm::Type::getDoubleTy(module->getContext());
         case PrimitiveType::BOOL:
-            return llvm::Type::getInt1Ty(context);
+            return llvm::Type::getInt1Ty(module->getContext());
         case PrimitiveType::CHAR:
-            return llvm::Type::getInt8Ty(context);
+            return llvm::Type::getInt8Ty(module->getContext());
         case PrimitiveType::STRING:
-            return llvm::PointerType::get(context, 0);
+            return llvm::PointerType::get(module->getContext(), 0);
         case PrimitiveType::VOID:
         default:
-            return llvm::Type::getVoidTy(context);
+            return llvm::Type::getVoidTy(module->getContext());
         }
     }
 
@@ -387,10 +386,10 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         // However, usually you want to validate the type exists first.
         if (custom->is_pointer())
         {
-            return llvm::PointerType::get(context, 0); // Replaces PointerType::get(struct_type, 0)
+            return llvm::PointerType::get(module->getContext(), 0); // Replaces PointerType::get(struct_type, 0)
         }
 
-        llvm::StructType* struct_type = llvm::StructType::getTypeByName(context, custom->name());
+        llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), custom->name());
         if (!struct_type)
         {
             throw parsing_error(

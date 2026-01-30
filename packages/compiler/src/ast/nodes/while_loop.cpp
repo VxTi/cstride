@@ -1,4 +1,7 @@
 #include "ast/nodes/while_loop.h"
+
+#include <llvm/IR/Module.h>
+
 #include "ast/parser.h"
 #include "ast/nodes/blocks.h"
 
@@ -43,15 +46,17 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
     );
 }
 
-llvm::Value* AstWhileLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                                   llvm::LLVMContext& context,
-                                   llvm::IRBuilder<>* builder)
+llvm::Value* AstWhileLoop::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
 
-    llvm::BasicBlock* loop_cond_bb = llvm::BasicBlock::Create(context, "loop.cond", function);
-    llvm::BasicBlock* loop_body_bb = llvm::BasicBlock::Create(context, "loop.body", function);
-    llvm::BasicBlock* loop_end_bb = llvm::BasicBlock::Create(context, "loop.end", function);
+    llvm::BasicBlock* loop_cond_bb = llvm::BasicBlock::Create(module->getContext(), "loop.cond", function);
+    llvm::BasicBlock* loop_body_bb = llvm::BasicBlock::Create(module->getContext(), "loop.body", function);
+    llvm::BasicBlock* loop_end_bb = llvm::BasicBlock::Create(module->getContext(), "loop.end", function);
 
     builder->CreateBr(loop_cond_bb);
     builder->SetInsertPoint(loop_cond_bb);
@@ -59,7 +64,7 @@ llvm::Value* AstWhileLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Value* condValue = nullptr;
     if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->get_condition()->codegen(scope, module, context, builder);
+        condValue = this->get_condition()->codegen(scope, module, builder);
 
         if (condValue == nullptr)
         {
@@ -74,7 +79,7 @@ llvm::Value* AstWhileLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope,
     else
     {
         // If no condition is provided, default to true (infinite loop)
-        condValue = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
+        condValue = llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 1));
     }
 
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
@@ -82,7 +87,7 @@ llvm::Value* AstWhileLoop::codegen(const std::shared_ptr<SymbolRegistry>& scope,
     builder->SetInsertPoint(loop_body_bb);
     if (this->body())
     {
-        this->body()->codegen(scope, module, context, builder);
+        this->body()->codegen(scope, module, builder);
     }
     builder->CreateBr(loop_cond_bb);
 

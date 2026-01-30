@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Module.h>
+
 #include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
@@ -51,11 +53,14 @@ std::string AstIntLiteral::to_string()
     return std::format("IntLiteral({})", value());
 }
 
-llvm::Value* AstIntLiteral::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                                    llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstIntLiteral::codegen(
+    const std::shared_ptr<SymbolRegistry>& scope,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
     return llvm::ConstantInt::get(
-        context,
+        module->getContext(),
         llvm::APInt(
             this->bit_count(),
             this->value(),

@@ -32,10 +32,10 @@ uint64_t impl_sys_time_ms()
        .count();
 }
 
-void stride::stl::llvm_insert_function_definitions(llvm::Module* module, llvm::LLVMContext& context)
+void stride::stl::llvm_insert_function_definitions(llvm::Module* module)
 {
     // Signature: uint64_t system_time_*()
-    auto* ret_ty = llvm::Type::getInt64Ty(context);
+    auto* ret_ty = llvm::Type::getInt64Ty(module->getContext());
     auto* fn_ty = llvm::FunctionType::get(ret_ty, /*isVarArg=*/false);
 
     // getOrInsertFunction ensures the Function exists in the module symbol table.
@@ -45,10 +45,10 @@ void stride::stl::llvm_insert_function_definitions(llvm::Module* module, llvm::L
     module->getOrInsertFunction("system_time_ms", fn_ty);
 
     // Signature: int printf(const char* format, ...)
-    auto* printf_ret_ty = llvm::Type::getInt32Ty(context);
+    auto* printf_ret_ty = llvm::Type::getInt32Ty(module->getContext());
     auto* printf_fn_ty = llvm::FunctionType::get(
         printf_ret_ty,
-        {llvm::PointerType::get(context, 0)},
+        {llvm::PointerType::get(module->getContext(), 0)},
         /*isVarArg=*/true
     );
     module->getOrInsertFunction("printf", printf_fn_ty);

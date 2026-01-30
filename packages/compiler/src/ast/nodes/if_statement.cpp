@@ -2,6 +2,8 @@
 
 #include "ast/nodes/if_statement.h"
 
+#include <llvm/IR/Module.h>
+
 #include "ast/flags.h"
 #include "ast/parser.h"
 
@@ -120,7 +122,7 @@ bool AstIfStatement::is_reducible()
 }
 
 llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-                                     llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+                                     llvm::IRBuilder<>* builder)
 {
     if (this->get_condition() == nullptr)
     {
@@ -143,7 +145,7 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     }
 
     // 1. Generate Condition
-    llvm::Value* cond_value = this->get_condition()->codegen(scope, module, context, builder);
+    llvm::Value* cond_value = this->get_condition()->codegen(scope, module, builder);
 
     if (cond_value == nullptr)
     {
@@ -157,19 +159,17 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
 
     llvm::Function* parent_function = builder->GetInsertBlock()->getParent();
 
-    // 2. Create Blocks
-    llvm::BasicBlock* then_body_bb = llvm::BasicBlock::Create(context, "then_body", parent_function);
-    llvm::BasicBlock* else_body_bb = this->get_else_body() != nullptr
-                                         ? llvm::BasicBlock::Create(context, "else_body", parent_function)
-                                         : nullptr;
-    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(context, "if_merge", parent_function);
+    llvm::BasicBlock* then_body_bb = llvm::BasicBlock::Create(module->getContext(), "then_body", parent_function);
+    llvm::BasicBlock* else_body_bb =
+        this->get_else_body() != nullptr
+            ? llvm::BasicBlock::Create(module->getContext(), "else_body", parent_function)
+            : nullptr;
+    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(module->getContext(), "if_merge", parent_function);
 
-    // 3. Create Conditional Branch
     builder->CreateCondBr(cond_value, then_body_bb, else_body_bb != nullptr ? else_body_bb : merge_bb);
-
-    // 4. Generate 'Then' Block
     builder->SetInsertPoint(then_body_bb);
-    this->get_body()->codegen(scope, module, context, builder);
+
+    this->get_body()->codegen(scope, module, builder);
 
     // Only create a branch to the merge block if the current block
     // does not already have a terminator (like a 'ret' or 'break').
@@ -177,11 +177,11 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
     {
         builder->CreateBr(merge_bb);
     }
-    // 5. Generate 'Else' Block
+
     if (else_body_bb != nullptr)
     {
         builder->SetInsertPoint(else_body_bb);
-        this->get_else_body()->codegen(scope, module, context, builder);
+        this->get_else_body()->codegen(scope, module, builder);
 
         // Same check for the else block
         if (builder->GetInsertBlock()->getTerminator() == nullptr)
@@ -190,12 +190,7 @@ llvm::Value* AstIfStatement::codegen(const std::shared_ptr<SymbolRegistry>& scop
         }
     }
 
-    // 6. Continue merging
     builder->SetInsertPoint(merge_bb);
-
-    // Optional: If both paths return early, merge_bb might have no predecessors.
-    // If you care about clean IR immediately, you might check if merge_bb has uses,
-    // but LLVM optimization passes (DCE) will usually clean up unreachable blocks for you.
 
     return nullptr;
 }

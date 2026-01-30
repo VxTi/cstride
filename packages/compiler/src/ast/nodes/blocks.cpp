@@ -20,7 +20,7 @@ void AstBlock::resolve_forward_references(const std::shared_ptr<SymbolRegistry>&
     }
 }
 
-llvm::Value* AstBlock::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* builder)
+llvm::Value* AstBlock::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::IRBuilder<>* builder)
 {
     llvm::Value* last_value = nullptr;
 
@@ -38,7 +38,7 @@ llvm::Value* AstBlock::codegen(const std::shared_ptr<SymbolRegistry>& scope, llv
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(this->get_registry(), module, context, builder);
+            last_value = synthesisable->codegen(this->get_registry(), module, builder);
         }
     }
 

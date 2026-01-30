@@ -91,7 +91,6 @@ std::string AstFunctionCall::format_function_name() const
 llvm::Value* AstFunctionCall::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
@@ -142,7 +141,7 @@ llvm::Value* AstFunctionCall::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
         {
-            auto arg_val = synthesisable->codegen(scope, module, context, builder);
+            auto arg_val = synthesisable->codegen(scope, module, builder);
 
             if (!arg_val)
             {

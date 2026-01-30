@@ -203,16 +203,15 @@ std::string AstStruct::to_string()
 llvm::Value* AstStruct::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
     // Retrieve or Create the named struct type (Opaque)
     // We check if it already exists to support forward declarations or multi-pass compilation.
-    llvm::StructType* struct_type = llvm::StructType::getTypeByName(context, this->get_name());
+    llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), this->get_name());
     if (!struct_type)
     {
-        struct_type = llvm::StructType::create(context, this->get_name());
+        struct_type = llvm::StructType::create(module->getContext(), this->get_name());
     }
 
     // If the body is already defined, we stop here to avoid re-definition errors.
@@ -230,7 +229,7 @@ llvm::Value* AstStruct::codegen(
         // We look up the original struct and copy its layout.
         // TODO: Mangle ref name
         std::string ref_name = this->get_reference_type()->get_internal_name();
-        const llvm::StructType* ref_struct = llvm::StructType::getTypeByName(context, ref_name);
+        const llvm::StructType* ref_struct = llvm::StructType::getTypeByName(module->getContext(), ref_name);
 
         if (!ref_struct)
         {
@@ -260,7 +259,7 @@ llvm::Value* AstStruct::codegen(
         // Case: struct Name { members... }
         for (const auto& member : this->get_members())
         {
-            llvm::Type* llvm_type = internal_type_to_llvm_type(&member->get_type(), module, context);
+            llvm::Type* llvm_type = internal_type_to_llvm_type(&member->get_type(), module);
 
             if (!llvm_type)
             {

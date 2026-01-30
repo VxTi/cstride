@@ -307,8 +307,7 @@ namespace stride::ast
 
     llvm::Type* internal_type_to_llvm_type(
         IAstInternalFieldType* type,
-        llvm::Module* module,
-        llvm::LLVMContext& context
+        llvm::Module* module
     );
 
     std::unique_ptr<IAstInternalFieldType> get_dominant_field_type(

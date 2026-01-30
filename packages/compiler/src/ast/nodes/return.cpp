@@ -47,7 +47,6 @@ std::string AstReturn::to_string()
 llvm::Value* AstReturn::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
@@ -55,7 +54,7 @@ llvm::Value* AstReturn::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->value()))
         {
-            llvm::Value* val = synthesisable->codegen(scope, module, context, builder);
+            llvm::Value* val = synthesisable->codegen(scope, module, builder);
 
             if (!val) return nullptr;
 

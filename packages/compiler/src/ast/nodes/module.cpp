@@ -45,7 +45,6 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
 llvm::Value* AstModule::codegen(
     const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 )
 {
@@ -55,7 +54,7 @@ llvm::Value* AstModule::codegen(
     }
 
     return this->_body->codegen(
-        scope, module, context, builder
+        scope, module, builder
     );
 }
 

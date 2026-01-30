@@ -13,5 +13,5 @@ namespace stride::stl
 
     void predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& global_scope);
 
-    void llvm_insert_function_definitions(llvm::Module* module, llvm::LLVMContext& context);
+    void llvm_insert_function_definitions(llvm::Module* module);
 }

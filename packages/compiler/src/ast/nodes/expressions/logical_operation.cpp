@@ -1,5 +1,6 @@
 #include <format>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
 
 #include "ast/nodes/expression.h"
 
@@ -28,10 +29,11 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
     }
 }
 
-llvm::Value* AstLogicalOp::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module, llvm::LLVMContext& context, llvm::IRBuilder<>* irbuilder)
+llvm::Value* AstLogicalOp::codegen(const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+                                   llvm::IRBuilder<>* irbuilder)
 {
     // Implementation following short-circuiting logic
-    llvm::Value* lhValue = this->get_left().codegen(scope, module, context, irbuilder);
+    llvm::Value* lhValue = this->get_left().codegen(scope, module, irbuilder);
 
     if (!lhValue) return nullptr;
 
@@ -65,8 +67,8 @@ llvm::Value* AstLogicalOp::codegen(const std::shared_ptr<SymbolRegistry>& scope,
     llvm::Function* function = irbuilder->GetInsertBlock()->getParent();
 
     llvm::BasicBlock* start_bb = irbuilder->GetInsertBlock();
-    llvm::BasicBlock* eval_right_bb = llvm::BasicBlock::Create(context, "eval_right", function);
-    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(context, "merge");
+    llvm::BasicBlock* eval_right_bb = llvm::BasicBlock::Create(module->getContext(), "eval_right", function);
+    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(module->getContext(), "merge");
 
     switch (this->get_op_type())
     {
@@ -83,7 +85,7 @@ llvm::Value* AstLogicalOp::codegen(const std::shared_ptr<SymbolRegistry>& scope,
 
     // Emit Right block
     irbuilder->SetInsertPoint(eval_right_bb);
-    llvm::Value* r = this->get_right().codegen(scope, module, context, irbuilder);
+    llvm::Value* r = this->get_right().codegen(scope, module, irbuilder);
     if (!r) return nullptr;
 
     r = to_bool(r);
@@ -95,19 +97,19 @@ llvm::Value* AstLogicalOp::codegen(const std::shared_ptr<SymbolRegistry>& scope,
     // Emit Merge block
     function->insert(function->end(), merge_bb);
     irbuilder->SetInsertPoint(merge_bb);
-    llvm::PHINode* phi = irbuilder->CreatePHI(llvm::Type::getInt1Ty(context), 2, "logical_result");
+    llvm::PHINode* phi = irbuilder->CreatePHI(llvm::Type::getInt1Ty(module->getContext()), 2, "logical_result");
 
     if (this->get_op_type() == LogicalOpType::AND)
     {
         // Came from start_bb (L was false) -> result false
-        phi->addIncoming(llvm::ConstantInt::getFalse(context), start_bb);
+        phi->addIncoming(llvm::ConstantInt::getFalse(module->getContext()), start_bb);
         // Came from eval_right_bb (L was true, so result is R)
         phi->addIncoming(r, eval_right_bb);
     }
     else
     {
         // Came from start_bb (L was true) -> result true
-        phi->addIncoming(llvm::ConstantInt::getTrue(context), start_bb);
+        phi->addIncoming(llvm::ConstantInt::getTrue(module->getContext()), start_bb);
         // Came from eval_right_bb (L was false, so result is R)
         phi->addIncoming(r, eval_right_bb);
     }

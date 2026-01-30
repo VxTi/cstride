@@ -87,7 +87,7 @@ IAstNode* AstVariableReassignment::reduce()
 
 llvm::Value* AstVariableReassignment::codegen(
     const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
-    llvm::LLVMContext& context, llvm::IRBuilder<>* builder
+    llvm::IRBuilder<>* builder
 )
 {
     // 1. Locate the variable (AllocaInst or GlobalVariable)
@@ -110,7 +110,7 @@ llvm::Value* AstVariableReassignment::codegen(
     if (!synthesisable) return nullptr;
 
     // 2. Generate the RHS value
-    llvm::Value* rhsValue = synthesisable->codegen(scope, module, context, builder);
+    llvm::Value* rhsValue = synthesisable->codegen(scope, module, builder);
 
     // Placeholder logic for type checking
     // You mentioned you'll manage the types, but we need this check to branch instructions
