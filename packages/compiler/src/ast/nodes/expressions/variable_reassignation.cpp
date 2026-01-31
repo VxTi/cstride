@@ -2,7 +2,6 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
-#include "ast/flags.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 
@@ -113,8 +112,8 @@ llvm::Value* AstVariableReassignment::codegen(
     llvm::Value* rhsValue = synthesisable->codegen(registry, module, builder);
 
     // Check if we're assigning to an optional type
-    const auto identifier_def = registry->field_lookup(this->get_variable_name());
-    if (identifier_def && identifier_def->get_type()->is_optional())
+    if (const auto identifier_def = registry->field_lookup(this->get_variable_name());
+        identifier_def && identifier_def->get_type()->is_optional())
     {
         llvm::Value* has_value = nullptr;
         llvm::Value* value = nullptr;
@@ -130,8 +129,12 @@ llvm::Value* AstVariableReassignment::codegen(
             has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1);
             value = rhsValue;
 
-            llvm::Type* expected_val_type = struct_type->getStructElementType(1);
-            if (value->getType() != expected_val_type && value->getType()->isIntegerTy() && expected_val_type->isIntegerTy()) {
+            if (llvm::Type* expected_val_type = struct_type->getStructElementType(1);
+                value->getType() != expected_val_type &&
+                value->getType()->isIntegerTy() &&
+                expected_val_type->isIntegerTy()
+            )
+            {
                 value = builder->CreateIntCast(value, expected_val_type, true);
             }
         }
@@ -141,7 +144,8 @@ llvm::Value* AstVariableReassignment::codegen(
         builder->CreateStore(has_value, has_value_ptr);
 
         // Store value
-        if (!llvm::isa<llvm::ConstantPointerNull>(rhsValue)) {
+        if (!llvm::isa<llvm::ConstantPointerNull>(rhsValue))
+        {
             llvm::Value* value_ptr = builder->CreateStructGEP(struct_type, variable, 1);
             builder->CreateStore(value, value_ptr);
         }
@@ -287,7 +291,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     const auto reference_token = set.peek_next();
 
     std::string reassignment_iden_name = reference_token.get_lexeme();
-    auto reassign_internal_variable_name = registry->field_lookup(reassignment_iden_name);
+    const auto reassign_internal_variable_name = registry->field_lookup(reassignment_iden_name);
 
     if (!reassign_internal_variable_name)
     {

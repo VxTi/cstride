@@ -262,7 +262,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(
 
 /// TODO: Implement
 std::string stride::ast::parse_property_accessor_statement(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    [[maybe_unused]] const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {

@@ -131,7 +131,7 @@ namespace stride::ast
         BOOLEAN_LITERAL,      // true, false
     };
 
-    static bool is_literal(TokenType type)
+    static bool is_literal(const TokenType type)
     {
         switch (type)
         {

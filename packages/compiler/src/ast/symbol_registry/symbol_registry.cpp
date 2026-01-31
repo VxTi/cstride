@@ -125,8 +125,8 @@ const IdentifiableSymbolDef* SymbolRegistry::get_symbol_def(const std::string& s
 
 const SymbolFnDefinition* SymbolRegistry::get_function_def(const std::string& function_name) const
 {
-    const auto& global_scope = this->traverse_to_root();
-    for (const auto& symbol_def : global_scope._symbols)
+    for (const auto& global_scope = this->traverse_to_root();
+         const auto& symbol_def : global_scope._symbols)
     {
         if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol_def.get()))
         {
@@ -146,14 +146,16 @@ static size_t levenshtein_distance(const std::string& a, const std::string& b)
     std::vector<size_t> prev(len_b + 1), curr(len_b + 1);
 
     for (size_t j = 0; j <= len_b; ++j)
+    {
         prev[j] = j;
+    }
 
     for (size_t i = 1; i <= len_a; ++i)
     {
         curr[0] = i;
         for (size_t j = 1; j <= len_b; ++j)
         {
-            size_t cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
+            const size_t cost = (a[i - 1] == b[j - 1]) ? 0 : 1;
             curr[j] = std::min({prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost});
         }
         std::swap(prev, curr);
@@ -186,12 +188,13 @@ ISymbolDef* SymbolRegistry::fuzzy_find(const std::string& symbol_name) const
             else
                 continue;
 
-            size_t dist = levenshtein_distance(symbol_name, candidate_name);
+            const size_t dist = levenshtein_distance(symbol_name, candidate_name);
 
             // Calculate absolute length difference
-            size_t len_diff = (symbol_name.size() > candidate_name.size())
-                                  ? symbol_name.size() - candidate_name.size()
-                                  : candidate_name.size() - symbol_name.size();
+            const size_t len_diff =
+                symbol_name.size() > candidate_name.size()
+                    ? symbol_name.size() - candidate_name.size()
+                    : candidate_name.size() - symbol_name.size();
 
             // Heuristic: If the edit distance is EXACTLY the length difference,
             // it implies one string is a substring of the other (no internal typos).
@@ -200,10 +203,8 @@ ISymbolDef* SymbolRegistry::fuzzy_find(const std::string& symbol_name) const
 
             // If it is a substring, we treat the distance as 0 (or very low)
             // to ensure it passes the threshold.
-            const size_t effective_dist = is_substring ? 0 : dist;
-
-            // Update Best Match
-            if (effective_dist < best_distance)
+            if (const size_t effective_dist = is_substring ? 0 : dist;
+                effective_dist < best_distance)
             {
                 best_distance = effective_dist;
                 best_len_diff = len_diff;

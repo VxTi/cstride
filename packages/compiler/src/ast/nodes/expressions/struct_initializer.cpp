@@ -143,9 +143,8 @@ void AstStructInitializer::validate()
     size_t index = 0;
     for (const auto& member_name : this->_initializers | std::views::keys)
     {
-        const auto [field_name, field_type] = fields[index];
-
-        if (member_name != field_name)
+        if (const auto [field_name, field_type] = fields[index];
+            member_name != field_name)
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
