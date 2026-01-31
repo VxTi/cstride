@@ -17,8 +17,8 @@ namespace stride::ast
     {
         std::shared_ptr<SourceFile> _source;
 
-        size_t _cursor;
-        size_t _size;
+        int64_t _cursor;
+        int64_t _size;
 
         std::vector<Token> _tokens;
 
@@ -32,16 +32,16 @@ namespace stride::ast
             _tokens(std::move(tokens)) {}
 
         [[nodiscard]]
-        TokenSet create_subset(size_t offset, size_t length) const;
+        TokenSet create_subset(int64_t offset, int64_t length) const;
 
         [[nodiscard]]
         Token last() const;
 
         [[nodiscard]]
-        Token at(size_t index) const;
+        Token at(int64_t index) const;
 
         [[nodiscard]]
-        Token peek(long offset) const;
+        Token peek(int64_t offset) const;
 
         [[nodiscard]]
         Token peek_next() const;
@@ -53,9 +53,9 @@ namespace stride::ast
         bool peek_next_eq(TokenType type) const;
 
         [[nodiscard]]
-        bool peek_eq(TokenType type, long offset) const;
+        bool peek_eq(TokenType type, int64_t offset) const;
 
-        void skip(size_t amount);
+        void skip(int64_t amount);
 
         Token expect(TokenType type);
 
@@ -64,13 +64,13 @@ namespace stride::ast
         Token next();
 
         [[nodiscard]]
-        size_t size() const;
+        int64_t size() const;
 
         [[nodiscard]]
-        size_t position() const;
+        int64_t position() const;
 
         [[nodiscard]]
-        size_t remaining() const;
+        int64_t remaining() const;
 
         [[nodiscard]]
         bool has_next() const;
