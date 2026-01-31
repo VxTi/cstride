@@ -5,9 +5,9 @@
 
 using namespace stride::ast;
 
-std::string stride::ast::scope_type_to_str(const ScopeType& type)
+std::string stride::ast::scope_type_to_str(const ScopeType& scope_type)
 {
-    switch (type)
+    switch (scope_type)
     {
     case ScopeType::GLOBAL: return "global";
     case ScopeType::FUNCTION: return "function";

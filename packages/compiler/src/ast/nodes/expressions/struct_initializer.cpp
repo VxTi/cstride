@@ -97,7 +97,7 @@ StructSymbolDef* get_super_referencing_struct_def(
 {
     const auto definition = registry->get_struct_def(struct_name);
 
-    if (!definition) return nullptr;
+    if (!definition.has_value()) return nullptr;
 
     if (definition.value()->is_reference_struct())
     {

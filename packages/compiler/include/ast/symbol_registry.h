@@ -27,7 +27,7 @@ namespace stride::ast
         STRUCT_MEMBER
     };
 
-    std::string scope_type_to_str(const ScopeType& type);
+    std::string scope_type_to_str(const ScopeType& scope_type);
 
     class ISymbolDef
     {
@@ -102,7 +102,7 @@ namespace stride::ast
         [[nodiscard]]
         bool has_member(const std::string& member_name)
         {
-            return get_field_type(member_name) != nullptr;
+            return get_field_type(member_name).has_value();
         }
 
         [[nodiscard]]

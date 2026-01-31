@@ -30,7 +30,7 @@ std::optional<StructSymbolDef*> SymbolRegistry::get_struct_def(const std::string
         current = current->_parent_registry.get();
     }
 
-    return nullptr;
+    return std::nullopt;
 }
 
 std::optional<std::vector<std::pair<std::string, IAstType*>>> SymbolRegistry::get_struct_fields(
@@ -62,7 +62,8 @@ void SymbolRegistry::define_struct(
     std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
 ) const
 {
-    if (const auto existing_def = this->get_struct_def(struct_name); existing_def != nullptr)
+    if (const auto existing_def = this->get_struct_def(struct_name);
+        existing_def.has_value())
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
@@ -93,7 +94,8 @@ void SymbolRegistry::define_struct(
 
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
 
-    if (const auto existing_def = this->get_struct_def(struct_name); existing_def != nullptr)
+    if (const auto existing_def = this->get_struct_def(struct_name);
+        existing_def.has_value())
     {
         throw parsing_error(
             std::format("Struct '{}' is already defined in this registry", struct_name)
@@ -136,7 +138,7 @@ std::optional<IAstType*> StructSymbolDef::get_field_type(
     return std::nullopt;
 }
 
-// Note that if this struct is a reference struct, this will return nullptr
+// Note that if this struct is a reference struct, this will return nullopt
 std::optional<IAstType*> StructSymbolDef::get_field_type(const std::string& field_name)
 {
     for (const auto& [name, type] : this->_fields)
@@ -146,7 +148,7 @@ std::optional<IAstType*> StructSymbolDef::get_field_type(const std::string& fiel
             return type.get();
         }
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 bool StructSymbolDef::is_reference_struct() const
