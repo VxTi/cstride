@@ -37,9 +37,12 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
         set.throw_error("Expected expression after return keyword");
     }
 
+    const auto ref_pos = reference_token.get_source_position();
+    const auto expr_pos = value->get_source_position();
+
     return std::make_unique<AstReturn>(
         set.get_source(),
-        reference_token.get_source_position(),
+        SourcePosition(ref_pos.offset, expr_pos.offset + expr_pos.length - ref_pos.offset),
         registry,
         std::move(value)
     );
