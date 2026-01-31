@@ -32,6 +32,11 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
 
     auto value = parse_standalone_expression(registry, set);
 
+    if (!value)
+    {
+        set.throw_error("Expected expression after return keyword");
+    }
+
     return std::make_unique<AstReturn>(
         set.get_source(),
         reference_token.get_source_position(),
@@ -54,12 +59,12 @@ llvm::Value* AstReturn::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    if (!this->value())
+    if (!this->get_return_expr())
     {
         return builder->CreateRetVoid();
     }
 
-    llvm::Value* val = this->value()->codegen(registry, module, builder);
+    llvm::Value* val = this->get_return_expr()->codegen(registry, module, builder);
 
     if (!val) return nullptr;
 

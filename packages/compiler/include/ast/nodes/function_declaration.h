@@ -100,7 +100,7 @@ namespace stride::ast
         std::string get_internal_name() const { return this->_internal_name; }
 
         [[nodiscard]]
-        IAstNode* body() const { return this->_body.get(); }
+        AstBlock* body() const { return this->_body.get(); }
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstFunctionParameter>>& get_parameters() const
@@ -109,7 +109,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::shared_ptr<IAstType>& return_type() const { return this->_return_type; }
+        IAstType* get_return_type() const { return this->_return_type.get(); }
 
         [[nodiscard]]
         bool is_extern() const { return this->_flags & SRFLAG_FN_DEF_EXTERN; }

@@ -44,7 +44,7 @@ namespace stride::ast
         AstExpression* get_initializer() const { return _initializer.get(); }
 
         [[nodiscard]]
-        AstBlock* body() const { return _body.get(); }
+        AstBlock* get_body() const { return _body.get(); }
 
         [[nodiscard]]
         AstExpression* get_condition() const { return _condition.get(); }

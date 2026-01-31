@@ -127,9 +127,9 @@ llvm::Value* AstForLoop::codegen(
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
 
     builder->SetInsertPoint(loop_body_bb);
-    if (this->body())
+    if (this->get_body())
     {
-        this->body()->codegen(registry, module, builder);
+        this->get_body()->codegen(registry, module, builder);
     }
     builder->CreateBr(loop_incr_bb);
 
@@ -153,7 +153,7 @@ void AstForLoop::validate()
 
     if (this->_incrementor != nullptr) this->_incrementor->validate();
 
-    if (this->body() != nullptr) this->body()->validate();
+    if (this->get_body() != nullptr) this->get_body()->validate();
 }
 
 
@@ -164,6 +164,6 @@ std::string AstForLoop::to_string()
         get_initializer() ? get_initializer()->to_string() : "<empty>",
         get_condition() ? get_condition()->to_string() : "<empty>",
         get_incrementor() ? get_incrementor()->to_string() : "<empty>",
-        body() ? body()->to_string() : "<empty>"
+        get_body() ? get_body()->to_string() : "<empty>"
     );
 }

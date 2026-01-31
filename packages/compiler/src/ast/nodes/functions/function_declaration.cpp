@@ -11,9 +11,45 @@
 
 #include "ast/internal_names.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/for_loop.h"
+#include "ast/nodes/if_statement.h"
+#include "ast/nodes/return.h"
 
 
 using namespace stride::ast;
+
+std::vector<AstReturn*> collect_return_statements(
+    const AstBlock* body
+)
+{
+    std::vector<AstReturn*> return_statements;
+    for (const auto& child : body->children())
+    {
+        if (auto* return_stmt = dynamic_cast<AstReturn*>(child.get()))
+        {
+            return_statements.push_back(return_stmt);
+        }
+
+        if (const auto if_stmt = dynamic_cast<AstIfStatement*>(child.get()))
+        {
+            const auto aggregated = collect_return_statements(if_stmt->get_body());
+            return_statements.insert(return_statements.end(), aggregated.begin(), aggregated.end());
+        }
+
+        if (const auto for_loop = dynamic_cast<AstForLoop*>(child.get()))
+        {
+            const auto aggregated = collect_return_statements(for_loop->get_body());
+            return_statements.insert(return_statements.end(), aggregated.begin(), aggregated.end());
+        }
+
+        if (const auto block = dynamic_cast<AstBlock*>(child.get()))
+        {
+            const auto aggregated = collect_return_statements(block);
+            return_statements.insert(return_statements.end(), aggregated.begin(), aggregated.end());
+        }
+    }
+    return return_statements;
+}
 
 void AstFunctionDeclaration::validate()
 {
@@ -21,8 +57,44 @@ void AstFunctionDeclaration::validate()
     {
         this->body()->validate();
     }
-    // Check if there's a return node
-    //    bool should_have_return_node = this->return_type().get() != nullptr;
+
+    const auto return_statements = collect_return_statements(this->body());
+
+    if (return_statements.empty())
+    {
+        if (dynamic_cast<AstStructType*>(this->get_return_type()))
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format("Function '{}' returns a struct type, but no return statement is present.",
+                            this->get_name()),
+                *this->get_source(),
+                this->get_source_position()
+            );
+        }
+    }
+
+    for (const auto& return_stmt : return_statements)
+    {
+        const auto return_type = infer_expression_type(this->get_registry(), return_stmt->get_return_expr());
+
+        if (return_type.get() != this->get_return_type())
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Function '{}' returns a value of type '{}', but return statement returns a value of type '{}'.",
+                    this->get_name(), this->get_return_type()->to_string(), return_type->to_string()),
+                *this->get_source(),
+                return_stmt->get_source_position()
+            );
+        }
+    }
+
+    // We'll have to validate whether it:
+    // 1. Requires a return AST node - This can be the case when the return type is not a primitive, e.g., a struct
+    // 2. The return type doesn't match the function signature
+    // 3. All code paths return a value (if not void)
 }
 
 void AstFunctionDeclaration::resolve_forward_references(
@@ -34,7 +106,7 @@ void AstFunctionDeclaration::resolve_forward_references(
     const auto fn_name = this->get_internal_name();
 
     const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(module);
-    llvm::Type* return_type = internal_type_to_llvm_type(this->return_type().get(), module);
+    llvm::Type* return_type = internal_type_to_llvm_type(this->get_return_type(), module);
 
     if (!param_types || !return_type)
     {
@@ -296,6 +368,6 @@ std::string AstFunctionDeclaration::to_string()
         params,
         body_str,
         this->is_extern() ? " (extern)" : "",
-        this->return_type()->to_string()
+        this->get_return_type()->to_string()
     );
 }
