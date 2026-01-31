@@ -67,7 +67,7 @@ void SymbolRegistry::define_struct(
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Struct '{}' is already defined in this registry", struct_name),
+            std::format("Struct '{}' is already defined in this scope", struct_name),
             *fields.begin()->second->get_source(),
             fields.begin()->second->get_source_position()
         );
@@ -88,7 +88,7 @@ void SymbolRegistry::define_struct(
     if (this->_current_scope != ScopeType::GLOBAL && this->_current_scope != ScopeType::MODULE)
     {
         throw parsing_error(
-            "Reference structs can only be defined in the global or module registry"
+            "Reference structs can only be defined in the global or module scope"
         );
     }
 
@@ -98,7 +98,7 @@ void SymbolRegistry::define_struct(
         existing_def.has_value())
     {
         throw parsing_error(
-            std::format("Struct '{}' is already defined in this registry", struct_name)
+            std::format("Struct '{}' is already defined in this scope", struct_name)
         );
     }
 

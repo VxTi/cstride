@@ -39,7 +39,7 @@ void SymbolRegistry::define_field(
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Field '{}' is already defined in this registry", field_name),
+            std::format("Field '{}' is already defined in this scope", field_name),
             *type->get_source(),
             type->get_source_position()
         );
