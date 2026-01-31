@@ -58,7 +58,7 @@ void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& 
 {
     /// Printf definition
     global_scope->define_function(
-        "printf", {}, std::make_unique<ast::AstPrimitiveFieldType>(
+        "printf", {}, std::make_unique<ast::AstPrimitiveType>(
             nullptr,
             SourcePosition(0, 0),
             global_scope,
@@ -69,7 +69,7 @@ void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& 
     /// System time in nanoseconds definition
     global_scope->define_function(
         "system_time_ns", {},
-        std::make_unique<ast::AstPrimitiveFieldType>(
+        std::make_unique<ast::AstPrimitiveType>(
             nullptr,
             SourcePosition(0, 0),
             global_scope,
@@ -79,7 +79,7 @@ void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& 
 
     /// System time in microseconds definition
     global_scope->define_function(
-        "system_time_us", {}, std::make_unique<ast::AstPrimitiveFieldType>(
+        "system_time_us", {}, std::make_unique<ast::AstPrimitiveType>(
             nullptr,
             SourcePosition(0, 0),
             global_scope,
@@ -89,7 +89,7 @@ void stride::stl::predefine_symbols(const std::shared_ptr<ast::SymbolRegistry>& 
 
     /// System time in milliseconds definition
     global_scope->define_function(
-        "system_time_ms", {}, std::make_unique<ast::AstPrimitiveFieldType>(
+        "system_time_ms", {}, std::make_unique<ast::AstPrimitiveType>(
             nullptr,
             SourcePosition(0, 0),
             global_scope,

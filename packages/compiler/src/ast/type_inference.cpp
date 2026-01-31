@@ -13,7 +13,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
 {
     if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
     {
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             str->get_source(),
             str->get_source_position(),
             registry,
@@ -25,7 +25,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* fp_lit = dynamic_cast<AstFpLiteral*>(literal))
     {
         auto type = fp_lit->bit_count() > 32 ? PrimitiveType::FLOAT64 : PrimitiveType::FLOAT32;
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             fp_lit->get_source(),
             fp_lit->get_source_position(),
             registry,
@@ -40,7 +40,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
                         ? (int_lit->bit_count() > 32 ? PrimitiveType::INT64 : PrimitiveType::INT32)
                         : (int_lit->bit_count() > 32 ? PrimitiveType::UINT64 : PrimitiveType::UINT32);
 
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             int_lit->get_source(),
             int_lit->get_source_position(),
             registry,
@@ -52,7 +52,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
 
     if (const auto* char_lit = dynamic_cast<AstCharLiteral*>(literal))
     {
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             char_lit->get_source(),
             char_lit->get_source_position(),
             registry,
@@ -63,7 +63,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
 
     if (const auto* bool_lit = dynamic_cast<AstBooleanLiteral*>(literal))
     {
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             bool_lit->get_source(),
             bool_lit->get_source_position(),
             registry,
@@ -74,7 +74,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
 
     if (const auto* nil_lit = dynamic_cast<AstNilLiteral*>(literal))
     {
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             nil_lit->get_source(),
             nil_lit->get_source_position(),
             registry,
@@ -128,7 +128,7 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_arithmetic_op_type(
     auto lhs = infer_expression_type(registry, &operation->get_left());
     auto rhs = infer_expression_type(registry, &operation->get_right());
 
-    if (*lhs == *rhs)
+    if (lhs->equals(*rhs))
     {
         return std::move(lhs);
     }
@@ -156,9 +156,9 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
     if (const auto op_type = operation->get_op_type(); op_type == UnaryOpType::ADDRESS_OF)
     {
         const auto flags = type->get_flags() | SRFLAG_TYPE_PTR;
-        if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
+        if (const auto* prim = dynamic_cast<AstPrimitiveType*>(type.get()))
         {
-            return std::make_unique<AstPrimitiveFieldType>(
+            return std::make_unique<AstPrimitiveType>(
                 prim->get_source(),
                 prim->get_source_position(),
                 registry,
@@ -192,9 +192,9 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
 
         const auto flags = type->get_flags() & ~SRFLAG_TYPE_PTR;
 
-        if (const auto* prim = dynamic_cast<AstPrimitiveFieldType*>(type.get()))
+        if (const auto* prim = dynamic_cast<AstPrimitiveType*>(type.get()))
         {
-            return std::make_unique<AstPrimitiveFieldType>(
+            return std::make_unique<AstPrimitiveType>(
                 prim->get_source(),
                 prim->get_source_position(),
                 registry,
@@ -216,7 +216,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
     }
     else if (op_type == UnaryOpType::LOGICAL_NOT)
     {
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             operation->get_source(),
             operation->get_source_position(),
             registry,
@@ -237,7 +237,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(
     {
         // This is one of those cases where it's impossible to deduce the type
         // Therefore, we have an UNKNOWN type.
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             array->get_source(),
             array->get_source_position(),
             registry,
@@ -411,7 +411,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     if (dynamic_cast<AstLogicalOp*>(expr) || dynamic_cast<AstComparisonOp*>(expr))
     {
         // TODO: Do some validation on lhs and rhs; cannot compare strings with one another (yet)
-        return std::make_unique<AstPrimitiveFieldType>(
+        return std::make_unique<AstPrimitiveType>(
             expr->get_source(),
             expr->get_source_position(),
             registry,
@@ -433,7 +433,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
         // Both the expression type and the declared type are the same (e.g., let var: i32 = 10)
         // so we can just return the declared type.
-        if (*lhs_variable_type == *value)
+        if (lhs_variable_type->equals(*value))
         {
             return lhs_variable_type->clone();
         }

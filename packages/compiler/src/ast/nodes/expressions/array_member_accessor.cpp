@@ -34,7 +34,7 @@ void AstArrayMemberAccessor::validate()
 {
     const auto index_accessor_type = infer_expression_type(this->get_registry(), this->_index_accessor_expr.get());
 
-    if (const auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(index_accessor_type.get()))
+    if (const auto primitive_type = dynamic_cast<AstPrimitiveType*>(index_accessor_type.get()))
     {
         if (!primitive_type->is_integer_ty())
         {

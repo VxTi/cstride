@@ -57,7 +57,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
 
 
-
     std::string internal_name = variable_name;
     if (registry->get_current_scope_type() != ScopeType::GLOBAL)
     {
@@ -131,9 +130,9 @@ void AstVariableDeclaration::validate()
     const auto lhs_type = this->get_variable_type();
 
     if (const auto rhs_type = internal_expr_type.get();
-        *lhs_type != *rhs_type)
+        lhs_type->equals(*rhs_type))
     {
-        if (const auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(rhs_type);
+        if (const auto primitive_type = dynamic_cast<AstPrimitiveType*>(rhs_type);
             primitive_type != nullptr &&
             primitive_type->type() == PrimitiveType::NIL)
         {

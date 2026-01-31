@@ -76,17 +76,17 @@ void AstFunctionDeclaration::validate()
 
     for (const auto& return_stmt : return_statements)
     {
-        const auto return_type = infer_expression_type(this->get_registry(), return_stmt->get_return_expr());
-
-        if (return_type.get() != this->get_return_type())
+        if (const auto return_type = infer_expression_type(this->get_registry(), return_stmt->get_return_expr());
+            !return_type->equals(*this->get_return_type()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' returns a value of type '{}', but return statement returns a value of type '{}'.",
-                    this->get_name(), this->get_return_type()->to_string(), return_type->to_string()),
+                    this->get_name(), this->get_return_type()->to_string(), return_type->to_string()
+                ),
                 *this->get_source(),
-                return_stmt->get_source_position()
+                return_type->get_source_position()
             );
         }
     }

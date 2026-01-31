@@ -53,7 +53,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         registry,
         member_set.value()
     );
-    member_map.push_back({std::move(initial_member_iden), std::move(initial_member_expr)});
+    member_map.emplace_back(std::move(initial_member_iden), std::move(initial_member_expr));
 
     // Subsequent member parsing
     while (member_set->has_next())
@@ -67,7 +67,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
             registry,
             member_set.value()
         );
-        member_map.push_back({std::move(member_iden), std::move(member_expr)});
+        member_map.emplace_back(std::move(member_iden), std::move(member_expr));
     }
 
     // Optionally consume trailing comma
@@ -121,7 +121,7 @@ void AstStructInitializer::validate()
         );
     }
 
-    const auto fields =definition->get_fields();
+    const auto fields = definition->get_fields();
 
     // Quick check: Ensure the number of members matches (no type comparisons required)
     if (fields.size() != this->_initializers.size())
@@ -175,8 +175,8 @@ void AstStructInitializer::validate()
             );
         }
 
-        if (auto member_type = infer_expression_type(this->get_registry(), member_expr.get());
-            *member_type != *found_member.value())
+        if (const auto member_type = infer_expression_type(this->get_registry(), member_expr.get());
+            !member_type->equals(*found_member.value()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
