@@ -68,7 +68,6 @@ wss.on('connection', (ws: WebSocket) => {
           sendMessage(ws, WsMessageType.PROCESS_TERMINATED);
           break;
         case WsMessageType.GET_CONFIG:
-          console.log("Getting config")
           sendMessage(ws, WsMessageType.UPDATE_CONFIG, JSON.stringify(config));
           break;
         case WsMessageType.UPDATE_CONFIG:
@@ -90,8 +89,6 @@ wss.on('connection', (ws: WebSocket) => {
           break;
       }
     } catch (e) {
-      console.error('Failed to parse message', e, message);
-
       sendMessage(ws, WsMessageType.PROCESS_STDERR, 'Failed to parse JSON');
     }
   });
