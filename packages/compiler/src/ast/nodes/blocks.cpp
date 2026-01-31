@@ -35,10 +35,11 @@ llvm::Value* AstBlock::codegen(
     for (const auto& child : this->children())
     {
         // Don't generate unreachable code, unless it's a function declaration
-        // (which defines a new code block / function)
+        // (which defines a new code block / function) or a global variable declaration.
         if (auto* block = builder->GetInsertBlock(); block && block->getTerminator())
         {
-            if (dynamic_cast<AstFunctionDeclaration*>(child.get()) == nullptr)
+            if (dynamic_cast<AstFunctionDeclaration*>(child.get()) == nullptr &&
+                dynamic_cast<AstVariableDeclaration*>(child.get()) == nullptr)
             {
                 continue;
             }

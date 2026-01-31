@@ -139,7 +139,6 @@ llvm::Value* AstFunctionDeclaration::codegen(
         }
     }
 
-    // 5. Verification
     if (llvm::verifyFunction(*function, &llvm::errs()))
     {
         function->print(llvm::errs(), nullptr); // Print IR to console to see what's wrong

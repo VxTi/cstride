@@ -207,6 +207,8 @@ llvm::Value* AstVariableReassignment::codegen(
         }
     }
 
+    builder->CreateStore(finalValue, variable);
+
     return finalValue;
 }
 
