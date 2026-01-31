@@ -1,3 +1,5 @@
+#include <llvm/IR/Module.h>
+
 #include "ast/nodes/expression.h"
 
 using namespace stride::ast;
@@ -50,6 +52,49 @@ llvm::Value* AstComparisonOp::codegen(
     if (!left || !right)
     {
         return nullptr;
+    }
+
+    // Handle Optional vs Nil comparison
+    if (left->getType()->isStructTy() || right->getType()->isStructTy())
+    {
+        llvm::Value* structVal = nullptr;
+        bool isRightNil = false;
+
+        if (left->getType()->isStructTy() && llvm::isa<llvm::ConstantPointerNull>(right))
+        {
+            structVal = left;
+            isRightNil = true;
+        }
+        else if (right->getType()->isStructTy() && llvm::isa<llvm::ConstantPointerNull>(left))
+        {
+            structVal = right;
+            isRightNil = false; // Left is nil
+        }
+
+        if (structVal)
+        {
+            // Check if it looks like { i1, ... } - standard optional layout
+            if (structVal->getType()->getStructNumElements() >= 1 &&
+                structVal->getType()->getStructElementType(0)->isIntegerTy(1))
+            {
+                llvm::Value* has_value = builder->CreateExtractValue(structVal, {0}, "has_value");
+
+                if (this->_op_type == ComparisonOpType::NOT_EQUAL)
+                {
+                    // val != nil  -> has_value == 1
+                    return builder->CreateICmpEQ(
+                        has_value, llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1),
+                        "not_nil_check");
+                }
+                if (this->_op_type == ComparisonOpType::EQUAL)
+                {
+                    // val == nil -> has_value == 0
+                    return builder->CreateICmpEQ(
+                        has_value, llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 0),
+                        "is_nil_check");
+                }
+            }
+        }
     }
 
     // Cast operands if they are integers and have different bit widths

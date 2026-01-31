@@ -84,7 +84,7 @@ std::string stride::make_source_error(
 std::string stride::make_source_error(
     const ErrorType error_type,
     const std::string& error,
-    const std::vector<error_source_reference_t>& references
+    const std::vector<ErrorSourceReference>& references
 )
 {
     if (references.empty())

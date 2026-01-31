@@ -70,7 +70,7 @@ IAstNode* AstVariableReassignment::reduce()
 
         if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced); reduced_expr != nullptr)
         {
-            return new AstVariableReassignment(
+            return std::make_unique<AstVariableReassignment>(
                 this->get_source(),
                 this->get_source_position(),
                 this->get_registry(),
@@ -78,7 +78,7 @@ IAstNode* AstVariableReassignment::reduce()
                 this->get_internal_name(),
                 this->get_operator(),
                 std::unique_ptr<AstExpression>(reduced_expr)
-            );
+            ).release();
         }
     }
 
@@ -109,16 +109,51 @@ llvm::Value* AstVariableReassignment::codegen(
     auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_value());
     if (!synthesisable) return nullptr;
 
-    // 2. Generate the RHS value
+    // Generate the RHS value
     llvm::Value* rhsValue = synthesisable->codegen(registry, module, builder);
 
-    // Placeholder logic for type checking
-    // You mentioned you'll manage the types, but we need this check to branch instructions
+    // Check if we're assigning to an optional type
+    const auto identifier_def = registry->field_lookup(this->get_variable_name());
+    if (identifier_def && identifier_def->get_type()->is_optional())
+    {
+        llvm::Value* has_value = nullptr;
+        llvm::Value* value = nullptr;
+        llvm::Type* struct_type = internal_type_to_llvm_type(identifier_def->get_type(), module);
+
+        if (llvm::isa<llvm::ConstantPointerNull>(rhsValue))
+        {
+            has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 0);
+            value = llvm::UndefValue::get(struct_type->getStructElementType(1));
+        }
+        else
+        {
+            has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1);
+            value = rhsValue;
+
+            llvm::Type* expected_val_type = struct_type->getStructElementType(1);
+            if (value->getType() != expected_val_type && value->getType()->isIntegerTy() && expected_val_type->isIntegerTy()) {
+                value = builder->CreateIntCast(value, expected_val_type, true);
+            }
+        }
+
+        // Store has_value
+        llvm::Value* has_value_ptr = builder->CreateStructGEP(struct_type, variable, 0);
+        builder->CreateStore(has_value, has_value_ptr);
+
+        // Store value
+        if (!llvm::isa<llvm::ConstantPointerNull>(rhsValue)) {
+            llvm::Value* value_ptr = builder->CreateStructGEP(struct_type, variable, 1);
+            builder->CreateStore(value, value_ptr);
+        }
+
+        return variable;
+    }
+
     const bool is_float = rhsValue->getType()->isFloatingPointTy();
 
     llvm::Value* finalValue = rhsValue;
 
-    // 3. Handle Compound Assignments (+=, -=, etc.)
+    // Handle Compound Assignments (+=, -=, etc.)
     if (this->get_operator() != MutativeAssignmentType::ASSIGN)
     {
         // Load the current value using the RHS type (works for 32/64 bit specifically)
@@ -265,46 +300,14 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     // Instead of moving the cursor over in the set, we peek forward.
     // This way, if it appears we don't have a mutative operation,
     // the standalone expression parser can continue with another expression variant
-    // TODO: Unf*ck this, it's not compatible with struct member re-assignment.
-    //  Structs are also non-mutative by nature, so this would have to clone the existing struct
-    //  and re-assign the member in the clone before re-assigning the entire struct back.
-    int iterations = 0, offset = 1;
-    while (true)
-    {
-        if (set.peek_eq(TokenType::DOT, offset) && set.peek_eq(TokenType::IDENTIFIER, offset + 1))
-        {
-            offset += 2;
-            const auto accessor_token = set.peek(offset + 1);
-
-            const auto accessor_internal_name_def = registry->get_variable_def(accessor_token.get_lexeme());
-
-            if (!accessor_internal_name_def)
-            {
-                return std::nullopt;
-            }
-
-
-            const std::string accessor_internal_name = accessor_internal_name_def->get_internal_symbol_name();
-
-            reassignment_iden_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.get_lexeme();
-            reassign_internal_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_internal_name;
-        }
-        else break;
-
-        if (++iterations > SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION)
-        {
-            set.throw_error("Maximum identifier resolution exceeded in variable reassignment");
-        }
-    }
-
-    const auto mutative_token = set.peek(offset);
+    const auto mutative_token = set.peek(1);
 
     if (!is_variable_mutative_token(mutative_token.get_type()))
     {
         return std::nullopt;
     }
 
-    set.skip(offset);
+    set.skip(1);
 
     auto mutative_op = parse_mutative_assignment_type(set, mutative_token);
     set.next();

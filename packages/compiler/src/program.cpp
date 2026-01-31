@@ -210,6 +210,7 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     // Debugging : Uncomment when necessary
     if (options.debug_mode)
     {
+        print_ast_nodes();
         module->print(llvm::errs(), nullptr);
     }
 

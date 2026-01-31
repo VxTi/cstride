@@ -5,6 +5,7 @@
 #include <llvm/IR/Module.h>
 
 #include "ast/flags.h"
+#include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
 
@@ -112,12 +113,50 @@ llvm::Value* AstVariableDeclaration::codegen(
     // Store the initial value if it exists
     if (init_value != nullptr)
     {
-        if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
+        if (this->get_variable_type()->is_optional())
+        {
+            llvm::Value* has_value = nullptr;
+            llvm::Value* value = nullptr;
+
+            // Check if we're assigning nil
+            // We can check if the init_value is a null pointer (which nil returns)
+            if (llvm::isa<llvm::ConstantPointerNull>(init_value))
+            {
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 0);
+
+                // Get the value type from the struct (element 1)
+                llvm::Type* value_type = var_type->getStructElementType(1);
+                value = llvm::UndefValue::get(value_type);
+            }
+            else
+            {
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1);
+                value = init_value;
+
+                // If value type doesn't match, we might need casting (e.g. integer width)
+                llvm::Type* expected_val_type = var_type->getStructElementType(1);
+                if (value->getType() != expected_val_type && value->getType()->isIntegerTy() && expected_val_type->
+                    isIntegerTy())
+                {
+                    value = irBuilder->CreateIntCast(value, expected_val_type, true);
+                }
+            }
+
+            // Store 'has_value' flag
+            llvm::Value* has_value_ptr = irBuilder->CreateStructGEP(alloca->getAllocatedType(), alloca, 0);
+            irBuilder->CreateStore(has_value, has_value_ptr);
+
+            // Store value
+            llvm::Value* value_ptr = irBuilder->CreateStructGEP(alloca->getAllocatedType(), alloca, 1);
+            irBuilder->CreateStore(value, value_ptr);
+        }
+        else if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
         {
             init_value = irBuilder->CreateIntCast(init_value, var_type, true);
         }
 
-        irBuilder->CreateStore(init_value, alloca);
+        if (!this->get_variable_type()->is_optional())
+            irBuilder->CreateStore(init_value, alloca);
     }
 
     return alloca;
@@ -144,29 +183,57 @@ void AstVariableDeclaration::validate()
 
     if (*lhs_type != *rhs_type)
     {
+        if (const auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(rhs_type);
+            primitive_type != nullptr &&
+            primitive_type->type() == PrimitiveType::NIL)
+        {
+            if (lhs_type->get_flags() & SRFLAG_TYPE_OPTIONAL) return;
+
+            std::vector references = {
+                ErrorSourceReference(
+                    lhs_type->to_string(),
+                    *this->get_source(),
+                    this->get_source_position()
+                ),
+                ErrorSourceReference(
+                    rhs_type->to_string(),
+                    *this->get_source(),
+                    init_val->get_source_position()
+                )
+            };
+
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Cannot assign nil to variable of non-optional type '{}'",
+                    lhs_type->to_string()
+                ),
+                references
+            );
+        }
+
         const std::string lhs_type_str = lhs_type->to_string();
         const std::string rhs_type_str = rhs_type->to_string();
-        const std::string init_val_str = init_val->to_string();
 
         const std::vector references = {
-            error_source_reference_t{
-                .source          = *this->get_source(),
-                .source_position = this->get_source_position(),
-                .message         = lhs_type_str
-            },
-            error_source_reference_t{
-                .source          = *this->get_source(),
-                .source_position = init_val->get_source_position(),
-                .message         = rhs_type_str
-            }
+            ErrorSourceReference(
+                lhs_type_str,
+                *this->get_source(),
+                this->get_source_position()
+            ),
+            ErrorSourceReference(
+                rhs_type_str,
+                *this->get_source(),
+                init_val->get_source_position()
+            )
         };
 
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Type mismatch in variable declaration; expected type '{}', got '{}'",
-                lhs_type->to_string(),
-                rhs_type->to_string()
+                lhs_type_str,
+                rhs_type_str
             ),
             references
         );

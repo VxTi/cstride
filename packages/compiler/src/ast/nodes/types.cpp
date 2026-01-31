@@ -356,6 +356,18 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 )
 {
     const auto registry = type->get_registry();
+
+    if (type->is_optional())
+    {
+        auto inner = type->clone();
+        inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
+        llvm::Type* inner_type = internal_type_to_llvm_type(inner.get(), module);
+        return llvm::StructType::get(module->getContext(), {
+            llvm::Type::getInt1Ty(module->getContext()),
+            inner_type
+        });
+    }
+
     if (const auto* array = dynamic_cast<AstArrayType*>(type))
     {
         llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module);
@@ -520,16 +532,16 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     }
 
     const std::vector references = {
-        error_source_reference_t{
-            .source          = *rhs->get_source(),
-            .source_position = lhs->get_source_position(),
-            .message         = lhs->to_string()
-        },
-        error_source_reference_t{
-            .source          = *rhs->get_source(),
-            .source_position = rhs->get_source_position(),
-            .message         = rhs->get_internal_name()
-        }
+        ErrorSourceReference(
+            lhs->to_string(),
+            *rhs->get_source(),
+            lhs->get_source_position()
+        ),
+        ErrorSourceReference(
+            rhs->get_internal_name(),
+            *rhs->get_source(),
+            rhs->get_source_position()
+        )
     };
 
     throw parsing_error(
