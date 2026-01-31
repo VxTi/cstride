@@ -53,9 +53,7 @@ fn main(): void {
     let x: i32 = 10;
     let name: string = "Stride";
     
-    if (x > 5) {
-        return true;
+    for (mut i: i32 = 0; i < x; i++) {
+      printf("Welcome to %s", name);
     }
-    
-    return false;
 }`;

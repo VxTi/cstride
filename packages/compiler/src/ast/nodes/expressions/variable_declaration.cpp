@@ -484,7 +484,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     if (set.peek_next_eq(TokenType::EQUALS))
     {
         set.next();
-        value = parse_expression_extended(0, registry, set);
+        value = parse_inline_expression(registry, set);
     }
 
     std::string internal_name = variable_name;
