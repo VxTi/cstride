@@ -34,7 +34,7 @@ namespace stride::ast
 
 
         [[nodiscard]]
-        AstExpression* value() const { return _value.get(); }
+        AstExpression* get_return_expr() const { return _value.get(); }
     };
 
     bool is_return_statement(const TokenSet& tokens);
