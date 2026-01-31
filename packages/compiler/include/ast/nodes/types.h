@@ -163,7 +163,7 @@ namespace stride::ast
 
         std::string to_string() override
         {
-            return primitive_type_to_str(this->type(), this->get_flags());
+            return this->get_internal_name();
         }
 
         // For primitives, we can easily compare whether another is equal by comparing the `PrimitiveType` enumerable

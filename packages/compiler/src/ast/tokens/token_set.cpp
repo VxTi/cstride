@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
+TokenSet TokenSet::create_subset(const int64_t offset, const int64_t length) const
 {
     const auto start = offset;
 
@@ -16,9 +16,8 @@ TokenSet TokenSet::create_subset(const size_t offset, const size_t length) const
     }
 
     std::vector copied_tokens(
-        this->_tokens.begin() + static_cast<std::ptrdiff_t>(offset),
-        this->_tokens.begin() + static_cast<std::ptrdiff_t>(offset +
-            length)
+        this->_tokens.begin() + offset,
+        this->_tokens.begin() + offset + length
     );
 
     return std::move(TokenSet(this->_source, copied_tokens));
@@ -33,9 +32,9 @@ Token TokenSet::last() const
     return this->_tokens.back();
 }
 
-Token TokenSet::at(const size_t index) const
+Token TokenSet::at(const int64_t index) const
 {
-    if (this->size() == 0 || this->remaining() == 0)
+    if (this->size() == 0 || this->remaining() == 0 || index < 0)
     {
         return END_OF_FILE;
     }
@@ -48,7 +47,7 @@ Token TokenSet::at(const size_t index) const
     return this->_tokens[index];
 }
 
-Token TokenSet::peek(const long offset) const
+Token TokenSet::peek(const int64_t offset) const
 {
     return this->at(this->position() + offset);
 }
@@ -69,12 +68,12 @@ bool TokenSet::peek_next_eq(const TokenType type) const
     return this->peek_eq(type, 0);
 }
 
-bool TokenSet::peek_eq(const TokenType type, const long offset) const
+bool TokenSet::peek_eq(const TokenType type, const int64_t offset) const
 {
     return this->peek(offset).get_type() == type;
 }
 
-void TokenSet::skip(const size_t amount)
+void TokenSet::skip(const int64_t amount)
 {
     this->_cursor += amount;
 }
@@ -145,17 +144,17 @@ Token TokenSet::next()
     return this->_tokens[this->_cursor++];
 }
 
-size_t TokenSet::size() const
+int64_t TokenSet::size() const
 {
     return this->_size;
 }
 
-size_t TokenSet::position() const
+int64_t TokenSet::position() const
 {
     return this->_cursor;
 }
 
-size_t TokenSet::remaining() const
+int64_t TokenSet::remaining() const
 {
     return this->size() - this->position();
 }

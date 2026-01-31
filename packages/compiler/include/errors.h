@@ -15,7 +15,7 @@ namespace stride
         SEMANTIC_ERROR = 4
     };
 
-    typedef struct ErrorSourceReference
+    struct ErrorSourceReference
     {
         const SourceFile& source;
         const SourcePosition source_position;
@@ -26,8 +26,7 @@ namespace stride
             const SourceFile& source,
             const SourcePosition source_position
         ) : source(source), source_position(source_position), message(std::move(message)) {}
-    }
-    ErrorSourceReference;
+    };
 
     std::string error_type_to_string(ErrorType error_type);
 
