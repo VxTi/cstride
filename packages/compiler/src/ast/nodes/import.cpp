@@ -85,12 +85,12 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     TokenSet& set
 )
 {
-    if (registry->get_current_scope() != ScopeType::GLOBAL)
+    if (registry->get_current_scope_type() != ScopeType::GLOBAL)
     {
         set.throw_error(
             std::format(
                 "Import statements are only allowed in global registry, but was found in {} registry",
-                scope_type_to_str(registry->get_current_scope())
+                scope_type_to_str(registry->get_current_scope_type())
             )
         );
     }

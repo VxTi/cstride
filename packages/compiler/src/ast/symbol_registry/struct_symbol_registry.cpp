@@ -8,7 +8,7 @@ std::optional<StructSymbolDef*> SymbolRegistry::get_struct_def(const std::string
 
     while (current != nullptr)
     {
-        if (current->get_current_scope() != ScopeType::GLOBAL && current->get_current_scope() != ScopeType::MODULE)
+        if (current->get_current_scope_type() != ScopeType::GLOBAL && current->get_current_scope_type() != ScopeType::MODULE)
         {
             current = current->_parent_registry.get();
             continue;

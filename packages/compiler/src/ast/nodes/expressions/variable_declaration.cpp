@@ -227,7 +227,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     int flags = 0;
 
-    if (registry->get_current_scope() == ScopeType::GLOBAL)
+    if (registry->get_current_scope_type() == ScopeType::GLOBAL)
     {
         flags |= SRFLAG_TYPE_GLOBAL;
     }
@@ -260,7 +260,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
 
     std::string internal_name = variable_name;
-    if (registry->get_current_scope() != ScopeType::GLOBAL)
+    if (registry->get_current_scope_type() != ScopeType::GLOBAL)
     {
         static int var_decl_counter = 0;
         internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
