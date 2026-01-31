@@ -15,13 +15,19 @@ namespace stride
         SEMANTIC_ERROR = 4
     };
 
-    typedef struct
+    typedef struct ErrorSourceReference
     {
         const SourceFile& source;
         const SourcePosition source_position;
         std::string message;
+
+        ErrorSourceReference(
+            std::string message,
+            const SourceFile& source,
+            const SourcePosition source_position
+        ) : source(source), source_position(source_position), message(std::move(message)) {}
     }
-    error_source_reference_t;
+    ErrorSourceReference;
 
     std::string error_type_to_string(ErrorType error_type);
 
@@ -44,7 +50,7 @@ namespace stride
     std::string make_source_error(
         ErrorType error_type,
         const std::string& error,
-        const std::vector<error_source_reference_t>& references
+        const std::vector<ErrorSourceReference>& references
     );
 
     class parsing_error : public std::runtime_error
@@ -69,7 +75,7 @@ namespace stride
         explicit parsing_error(
             const ErrorType error_type,
             const std::string& error,
-            const std::vector<error_source_reference_t>& references
+            const std::vector<ErrorSourceReference>& references
         ) : parsing_error(make_source_error(error_type, error, references)) {}
 
         [[nodiscard]]

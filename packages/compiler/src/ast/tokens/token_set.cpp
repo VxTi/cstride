@@ -48,7 +48,7 @@ Token TokenSet::at(const size_t index) const
     return this->_tokens[index];
 }
 
-Token TokenSet::peek(const size_t offset) const
+Token TokenSet::peek(const long offset) const
 {
     return this->at(this->position() + offset);
 }
@@ -69,7 +69,7 @@ bool TokenSet::peek_next_eq(const TokenType type) const
     return this->peek_eq(type, 0);
 }
 
-bool TokenSet::peek_eq(const TokenType type, const size_t offset) const
+bool TokenSet::peek_eq(const TokenType type, const long offset) const
 {
     return this->peek(offset).get_type() == type;
 }
