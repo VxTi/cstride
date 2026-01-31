@@ -250,6 +250,11 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     );
     llvm::cantFail(jit->addIRModule(std::move(thread_safe_module)));
 
+    if (auto err = jit->initialize(jit->getMainJITDylib()))
+    {
+        llvm::logAllUnhandledErrors(std::move(err), llvm::errs(), "JIT initialization error: ");
+        return 1;
+    }
 
     const auto main_fn_executor = locate_main_fn(jit.get());
 
@@ -260,5 +265,12 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     fflush(stdout);
 
     auto main_fn = main_fn_executor->toPtr<int (*)()>();
-    return main_fn();
+    int result = main_fn();
+
+    if (auto err = jit->deinitialize(jit->getMainJITDylib()))
+    {
+        llvm::logAllUnhandledErrors(std::move(err), llvm::errs(), "JIT deinitialization error: ");
+    }
+
+    return result;
 }

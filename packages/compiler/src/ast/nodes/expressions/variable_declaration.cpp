@@ -9,6 +9,12 @@
 
 using namespace stride::ast;
 
+#define OPTIONAL_NO_VALUE (0)
+#define OPTIONAL_HAS_VALUE (1)
+
+#define OPTIONAL_HAS_VALUE_STRUCT_INDEX (0)
+#define OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX (1)
+
 /**
  * Checks whether the provided sequence conforms to
  * "let name: type = value",
@@ -29,61 +35,205 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
     );
 }
 
+// LLVM calls these functions at startup to initialize global variables
+// This way, we can assign function return values to variables
+void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, int priority)
+{
+    llvm::IRBuilder<> ib(module->getContext());
+
+    // The struct type: { i32, void ()*, i8* }
+    llvm::StructType* ctor_struct_type = llvm::StructType::get(
+        ib.getInt32Ty(),
+        init_func->getType(),
+        ib.getPtrTy()
+    );
+
+    // Create the initializer entry
+    llvm::Constant* entry = llvm::ConstantStruct::get(
+        ctor_struct_type, {
+            ib.getInt32(priority),
+            init_func,
+            llvm::ConstantPointerNull::get(ib.getPtrTy())
+        });
+
+    // Get existing ctors or create new ones
+    llvm::GlobalVariable* existing_ctors = module->getGlobalVariable("llvm.global_ctors");
+    std::vector<llvm::Constant*> ctor_list;
+
+    if (existing_ctors)
+    {
+        if (auto* initializer = llvm::dyn_cast<llvm::ConstantArray>(existing_ctors->getInitializer()))
+        {
+            for (unsigned i = 0; i < initializer->getNumOperands(); ++i)
+            {
+                ctor_list.push_back(initializer->getOperand(i));
+            }
+        }
+        existing_ctors->eraseFromParent();
+    }
+
+    ctor_list.push_back(entry);
+
+    // Create the new array
+    llvm::ArrayType* array_type = llvm::ArrayType::get(ctor_struct_type, ctor_list.size());
+    new llvm::GlobalVariable(
+        *module,
+        array_type,
+        /* isConstant = */ false,
+        llvm::GlobalValue::AppendingLinkage,
+        llvm::ConstantArray::get(array_type, ctor_list),
+        "llvm.global_ctors"
+    );
+}
+
+void AstVariableDeclaration::resolve_forward_references(
+    const std::shared_ptr<SymbolRegistry>& registry,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
+{
+    if (this->get_variable_type()->is_global())
+    {
+        llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
+        if (!var_type) return;
+
+        // Check if it already exists (should not happen, but for safety)
+        if (module->getNamedGlobal(this->get_internal_name())) return;
+
+        // Create the Global Variable with a default null initializer
+        llvm::Constant* default_init = llvm::Constant::getNullValue(var_type);
+
+        new llvm::GlobalVariable(
+            *module,
+            var_type,
+            !this->get_variable_type()->is_mutable(),
+            llvm::GlobalValue::ExternalLinkage,
+            default_init,
+            this->get_internal_name()
+        );
+    }
+}
+
 llvm::Value* AstVariableDeclaration::codegen(
     const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* irBuilder
 )
 {
+    // Get the LLVM type for the variable
+    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
+
+    llvm::GlobalVariable* global_var = nullptr;
+    if (this->get_variable_type()->is_global())
+    {
+        global_var = module->getNamedGlobal(this->get_internal_name());
+
+        if (!global_var)
+        {
+            // If it wasn't created in resolve_forward_references (e.g. if we are not using it)
+            // though it should have been.
+            llvm::Constant* default_init = llvm::Constant::getNullValue(var_type);
+
+            global_var = new llvm::GlobalVariable(
+                *module,
+                var_type,
+                false, // Set to false to allow initialization
+                llvm::GlobalValue::ExternalLinkage,
+                default_init,
+                this->get_internal_name()
+            );
+        }
+        else
+        {
+            // Ensure it's not constant so we can store to it in the constructor
+            global_var->setConstant(false);
+        }
+    }
+
+    if (!global_var) return nullptr; // Shouldn't happen, but just in case
+
     // Generate code for the initial value
     llvm::Value* init_value = nullptr;
     if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
         {
-            init_value = synthesisable->codegen(registry, module, irBuilder);
+            if (this->get_variable_type()->is_global())
+            {
+                // For global variables, we ONLY want to set an initializer if it's a true LLVM constant.
+                // We don't want to call codegen() here because it might generate instructions.
+                // Instead, we rely on the dynamic initialization below for non-constants.
+                // For now, let's just assume any non-literal is dynamic to be safe.
+                if (is_literal_ast_node(initial_value))
+                {
+                    init_value = synthesisable->codegen(this->get_registry(), module, irBuilder);
+                }
+            }
+            else
+            {
+                init_value = synthesisable->codegen(this->get_registry(), module, irBuilder);
+            }
         }
-    }
-
-    // Get the LLVM type for the variable
-    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
-
-    // If this is a pointer type, convert to a pointer
-    if (this->get_variable_type()->is_pointer())
-    {
-        var_type = llvm::PointerType::get(module->getContext(), 0);
     }
 
     if (this->get_variable_type()->is_global())
     {
-        // Create a global variable
-        llvm::Constant* initializer = nullptr;
-
-        if (init_value != nullptr)
+        // Handle Initialization
+        if (this->get_initial_value().get() != nullptr)
         {
-            if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
+            if (init_value != nullptr)
             {
-                initializer = constant;
+                if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
+                {
+                    // Optimization: If it's already a constant, just set it as the initializer
+                    global_var->setInitializer(constant);
+                }
             }
             else
             {
-                // Global variables require constant initializers
-                initializer = llvm::Constant::getNullValue(var_type);
+                // Dynamic Initialization ("Global Constructor" Pattern)
+                // Create a function: void __init_variable_name()
+                const std::string func_name = "__init_global_" + this->get_internal_name();
+                llvm::FunctionType* func_type = llvm::FunctionType::get(irBuilder->getVoidTy(), false);
+                llvm::Function* init_func = llvm::Function::Create(
+                    func_type, llvm::GlobalValue::InternalLinkage, func_name, module
+                );
+
+                // Set up the entry block for the constructor
+                llvm::BasicBlock* entry = llvm::BasicBlock::Create(module->getContext(), "entry", init_func);
+
+                // Create a temporary builder for the constructor to avoid state pollution
+                llvm::IRBuilder<> tempBuilder(module->getContext());
+                tempBuilder.SetInsertPoint(entry);
+
+                // Re-generate the initial value inside the constructor function
+                // Note: we MUST NOT call codegen on something that might have already been generated
+                // if it's not designed to be called multiple times.
+                // However, for global initialization, we need the value.
+                llvm::Value* dynamic_init_value = nullptr;
+                if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
+                {
+                    if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
+                    {
+                        // Use the temporary builder
+                        dynamic_init_value = synthesisable->codegen(this->get_registry(), module, &tempBuilder);
+                    }
+                }
+
+                if (dynamic_init_value)
+                {
+                    // Perform the store
+                    tempBuilder.CreateStore(dynamic_init_value, global_var);
+                }
+
+                tempBuilder.CreateRetVoid();
+
+                // Register this function in llvm.global_ctors
+                append_to_global_ctors(module, init_func, 65535);
             }
         }
-        else
-        {
-            initializer = llvm::Constant::getNullValue(var_type);
-        }
 
-        return new llvm::GlobalVariable(
-            *module,
-            var_type,
-            !this->get_variable_type()->is_mutable(), // isConstant
-            llvm::GlobalValue::ExternalLinkage,
-            initializer,
-            this->get_internal_name()
-        );
+        return global_var;
     }
 
     // Local variable - use AllocaInst
@@ -122,19 +272,19 @@ llvm::Value* AstVariableDeclaration::codegen(
             // We can check if the init_value is a null pointer (which nil returns)
             if (llvm::isa<llvm::ConstantPointerNull>(init_value))
             {
-                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 0);
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPTIONAL_NO_VALUE);
 
                 // Get the value type from the struct (element 1)
-                llvm::Type* value_type = var_type->getStructElementType(1);
+                llvm::Type* value_type = var_type->getStructElementType(OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX);
                 value = llvm::UndefValue::get(value_type);
             }
             else
             {
-                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1);
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPTIONAL_HAS_VALUE);
                 value = init_value;
 
                 // If value type doesn't match, we might need casting (e.g. integer width)
-                if (llvm::Type* expected_val_type = var_type->getStructElementType(1);
+                if (llvm::Type* expected_val_type = var_type->getStructElementType(OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX);
                     value->getType() != expected_val_type &&
                     value->getType()->isIntegerTy() &&
                     expected_val_type->isIntegerTy())
@@ -144,11 +294,19 @@ llvm::Value* AstVariableDeclaration::codegen(
             }
 
             // Store 'has_value' flag
-            llvm::Value* has_value_ptr = irBuilder->CreateStructGEP(alloca->getAllocatedType(), alloca, 0);
+            llvm::Value* has_value_ptr = irBuilder->CreateStructGEP(
+                alloca->getAllocatedType(),
+                alloca,
+                OPTIONAL_HAS_VALUE_STRUCT_INDEX
+            );
             irBuilder->CreateStore(has_value, has_value_ptr);
 
             // Store value
-            llvm::Value* value_ptr = irBuilder->CreateStructGEP(alloca->getAllocatedType(), alloca, 1);
+            llvm::Value* value_ptr = irBuilder->CreateStructGEP(
+                alloca->getAllocatedType(),
+                alloca,
+                OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX
+            );
             irBuilder->CreateStore(value, value_ptr);
         }
         else if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
@@ -157,7 +315,9 @@ llvm::Value* AstVariableDeclaration::codegen(
         }
 
         if (!this->get_variable_type()->is_optional())
+        {
             irBuilder->CreateStore(init_value, alloca);
+        }
     }
 
     return alloca;
@@ -180,9 +340,9 @@ void AstVariableDeclaration::validate()
         init_val
     );
     const auto lhs_type = this->get_variable_type();
-    const auto rhs_type = internal_expr_type.get();
 
-    if (*lhs_type != *rhs_type)
+    if (const auto rhs_type = internal_expr_type.get();
+        *lhs_type != *rhs_type)
     {
         if (const auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(rhs_type);
             primitive_type != nullptr &&
