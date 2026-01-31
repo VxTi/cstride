@@ -79,8 +79,8 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     // Literals (string and char literals before identifiers)
     TOKEN(TokenType::STRING_LITERAL, R"("([^"\\]|\\.)*")"),
     TOKEN(TokenType::CHAR_LITERAL, R"('([^'\\]|\\.)')"),
-    TOKEN(TokenType::IDENTIFIER, R"([$a-zA-Z_][$a-zA-Z0-9_]*)"),
     TOKEN(TokenType::BOOLEAN_LITERAL, R"(\b(true|false)\b)"),
+    TOKEN(TokenType::IDENTIFIER, R"([$a-zA-Z_][$a-zA-Z0-9_]*)"),
     TOKEN(TokenType::DOUBLE_LITERAL, R"(\d*\.\d+[dD])"),
     TOKEN(TokenType::FLOAT_LITERAL, R"(\d*\.\d+)"),
     TOKEN(TokenType::LONG_INTEGER_LITERAL, R"(\d+L)"),
