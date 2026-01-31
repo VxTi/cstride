@@ -44,7 +44,7 @@ size_t primitive_type_to_internal_id(const PrimitiveType type)
 
 size_t ast_type_to_internal_id(IAstType* type)
 {
-    if (const auto primitive = dynamic_cast<AstPrimitiveFieldType*>(type);
+    if (const auto primitive = dynamic_cast<AstPrimitiveType*>(type);
         primitive != nullptr)
     {
         return primitive_type_to_internal_id(primitive->type());

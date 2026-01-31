@@ -83,7 +83,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     {
     case TokenType::PRIMITIVE_INT8:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -95,7 +95,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_INT16:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -107,7 +107,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_INT32:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -119,7 +119,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_INT64:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -131,7 +131,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_UINT8:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -143,7 +143,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_UINT16:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -155,7 +155,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_UINT32:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -167,7 +167,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_UINT64:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -179,7 +179,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_FLOAT32:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -191,7 +191,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_FLOAT64:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -203,7 +203,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_BOOL:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -215,7 +215,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_CHAR:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -227,7 +227,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_STRING:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -239,7 +239,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     case TokenType::PRIMITIVE_VOID:
         {
-            result = std::make_unique<AstPrimitiveFieldType>(
+            result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
                 registry,
@@ -398,7 +398,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         return llvm::ArrayType::get(element_type, array->get_initial_length());
     }
 
-    if (const auto* primitive = dynamic_cast<AstPrimitiveFieldType*>(type))
+    if (const auto* primitive = dynamic_cast<AstPrimitiveType*>(type))
     {
         switch (primitive->type())
         {
@@ -477,8 +477,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     IAstType* rhs
 )
 {
-    const auto* lhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(lhs);
-    const auto* rhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(rhs);
+    const auto* lhs_primitive = dynamic_cast<AstPrimitiveType*>(lhs);
+    const auto* rhs_primitive = dynamic_cast<AstPrimitiveType*>(rhs);
     const auto* lhs_named = dynamic_cast<AstStructType*>(lhs);
     const auto* rhs_named = dynamic_cast<AstStructType*>(rhs);
 
@@ -530,7 +530,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         // and return the highest byte size
         if (rhs_primitive->bit_count() > lhs_primitive->bit_count())
         {
-            return std::make_unique<AstPrimitiveFieldType>(
+            return std::make_unique<AstPrimitiveType>(
                 lhs_primitive->get_source(),
                 lhs_primitive->get_source_position(),
                 registry,

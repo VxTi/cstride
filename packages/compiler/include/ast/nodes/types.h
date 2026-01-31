@@ -86,19 +86,17 @@ namespace stride::ast
         [[nodiscard]]
         virtual std::string get_internal_name() = 0;
 
-        virtual bool operator==(IAstType& other) = 0;
-
-        virtual bool operator!=(IAstType& other) = 0;
+        virtual bool equals(IAstType& other) = 0;
     };
 
-    class AstPrimitiveFieldType
+    class AstPrimitiveType
         : public IAstType
     {
         PrimitiveType _type;
         size_t _bit_count;
 
     public:
-        explicit AstPrimitiveFieldType(
+        explicit AstPrimitiveType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& registry,
@@ -110,7 +108,7 @@ namespace stride::ast
             _type(type),
             _bit_count(byte_size) {}
 
-        ~AstPrimitiveFieldType() override = default;
+        ~AstPrimitiveType() override = default;
 
         [[nodiscard]]
         PrimitiveType type() const { return this->_type; }
@@ -153,7 +151,7 @@ namespace stride::ast
         [[nodiscard]]
         std::unique_ptr<IAstType> clone() const override
         {
-            return std::make_unique<AstPrimitiveFieldType>(*this);
+            return std::make_unique<AstPrimitiveType>(*this);
         }
 
         std::string get_internal_name() override
@@ -166,21 +164,15 @@ namespace stride::ast
             return this->get_internal_name();
         }
 
-        // For primitives, we can easily compare whether another is equal by comparing the `PrimitiveType` enumerable
-        bool operator==(IAstType& other) override
+        bool equals(IAstType& other) override
         {
-            if (const auto* other_primitive = dynamic_cast<AstPrimitiveFieldType*>(&other))
+            if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
             {
                 return this->type() == other_primitive->type()
                     && this->bit_count() == other_primitive->bit_count()
                     && this->get_flags() == other_primitive->get_flags();
             }
             return false;
-        }
-
-        bool operator!=(IAstType& other) override
-        {
-            return !(*this == other);
         }
     };
 
@@ -219,7 +211,7 @@ namespace stride::ast
             return std::format("{}{}", this->name(), this->is_pointer() ? "*" : "");
         }
 
-        bool operator==(IAstType& other) override
+        bool equals(IAstType& other) override
         {
             if (const auto* other_named = dynamic_cast<AstStructType*>(&other))
             {
@@ -227,11 +219,6 @@ namespace stride::ast
                     && this->get_flags() == other_named->get_flags();
             }
             return false;
-        }
-
-        bool operator!=(IAstType& other) override
-        {
-            return !(*this == other);
         }
     };
 
@@ -295,19 +282,14 @@ namespace stride::ast
             return std::format("[{}]", this->_element_type->get_internal_name());
         }
 
-        bool operator==(IAstType& other) override
+        bool equals(IAstType& other) override
         {
             if (const auto* other_array = dynamic_cast<AstArrayType*>(&other))
             {
                 // Length here doesn't matter; merely the types should be the same.
-                return *this->_element_type == *other_array->_element_type;
+                return this->_element_type->equals(*other_array->_element_type);
             }
             return false;
-        }
-
-        bool operator!=(IAstType& other) override
-        {
-            return !(*this == other);
         }
     };
 
