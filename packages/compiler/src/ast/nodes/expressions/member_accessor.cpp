@@ -54,6 +54,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
     }
 
     const auto lhs_source_pos = lhs->get_source_position();
+
+    // TODO: Allow function calls to be the last element as well.
     const auto lhs_identifier = dynamic_cast<AstIdentifier*>(lhs.get());
     if (!lhs_identifier)
     {
@@ -65,9 +67,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
         );
     }
 
+    const auto last_source_pos = chained_accessors.back().get()->get_source_position();
+
     return std::make_unique<AstMemberAccessor>(
         set.get_source(),
-        lhs_source_pos,
+        SourcePosition(
+            lhs_source_pos.offset,
+            last_source_pos.offset + last_source_pos.length - lhs_source_pos.offset
+        ),
         registry,
         std::make_unique<AstIdentifier>(
             set.get_source(),
@@ -171,7 +178,8 @@ llvm::Value* AstMemberAccessor::codegen(
             {
                 throw parsing_error(
                     ErrorType::RUNTIME_ERROR,
-                    std::format("Unknown struct type '{}' during codegen", struct_def->get_reference_struct_name().value()),
+                    std::format("Unknown struct type '{}' during codegen",
+                                struct_def->get_reference_struct_name().value()),
                     *this->get_source(),
                     this->get_source_position()
                 );
