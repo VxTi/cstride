@@ -136,8 +136,9 @@ llvm::Value* AstFunctionCall::codegen(
     }
 
     std::vector<llvm::Value*> args_v;
-    for (const auto& arg : this->get_arguments())
+    for (size_t i = 0; i < this->get_arguments().size(); ++i)
     {
+        const auto& arg = this->get_arguments()[i];
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
         {
             auto arg_val = synthesisable->codegen(registry, module, builder);
@@ -146,6 +147,36 @@ llvm::Value* AstFunctionCall::codegen(
             {
                 return nullptr;
             }
+
+            // Unwrapping optional if passed to a non-optional parameter or variadic function
+            if (arg_val->getType()->isStructTy())
+            {
+                // Check if it's an optional { i1, T }
+                if (arg_val->getType()->getStructNumElements() == 2 &&
+                    arg_val->getType()->getStructElementType(0)->isIntegerTy(1))
+                {
+                    bool should_unwrap = false;
+                    if (i < callee->arg_size())
+                    {
+                        llvm::Type* param_type = callee->getFunctionType()->getParamType(i);
+                        if (!param_type->isStructTy())
+                        {
+                            should_unwrap = true;
+                        }
+                    }
+                    else if (callee->isVarArg())
+                    {
+                        // Variadic arguments - usually we want the unwrapped value
+                        should_unwrap = true;
+                    }
+
+                    if (should_unwrap)
+                    {
+                        arg_val = builder->CreateExtractValue(arg_val, {1}, "unwrap_optional");
+                    }
+                }
+            }
+
             args_v.push_back(arg_val);
         }
         else

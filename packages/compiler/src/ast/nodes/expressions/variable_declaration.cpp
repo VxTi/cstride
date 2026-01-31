@@ -5,15 +5,10 @@
 #include <llvm/IR/Module.h>
 
 #include "ast/flags.h"
+#include "ast/optionals.h"
 #include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
-
-#define OPTIONAL_NO_VALUE (0)
-#define OPTIONAL_HAS_VALUE (1)
-
-#define OPTIONAL_HAS_VALUE_STRUCT_INDEX (0)
-#define OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX (1)
 
 /**
  * Checks whether the provided sequence conforms to
