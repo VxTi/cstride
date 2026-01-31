@@ -182,7 +182,7 @@ namespace stride::ast
             : SymbolRegistry(nullptr, type) {}
 
         [[nodiscard]]
-        ScopeType get_current_scope() const { return this->_current_scope; }
+        ScopeType get_current_scope_type() const { return this->_current_scope; }
 
         [[nodiscard]]
         const FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
