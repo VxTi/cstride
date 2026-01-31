@@ -45,14 +45,23 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* char_lit = dynamic_cast<AstCharLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            char_lit->get_source(), char_lit->get_source_position(), registry, PrimitiveType::CHAR, char_lit->bit_count()
+            char_lit->get_source(), char_lit->get_source_position(), registry, PrimitiveType::CHAR,
+            char_lit->bit_count()
         );
     }
 
     if (const auto* bool_lit = dynamic_cast<AstBooleanLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            bool_lit->get_source(), bool_lit->get_source_position(), registry, PrimitiveType::BOOL, bool_lit->bit_count()
+            bool_lit->get_source(), bool_lit->get_source_position(), registry, PrimitiveType::BOOL,
+            bool_lit->bit_count()
+        );
+    }
+
+    if (const auto* nil_lit = dynamic_cast<AstNilLiteral*>(literal))
+    {
+        return std::make_unique<AstPrimitiveFieldType>(
+            nil_lit->get_source(), nil_lit->get_source_position(), registry, PrimitiveType::NIL, 8
         );
     }
 

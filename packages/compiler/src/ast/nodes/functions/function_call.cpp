@@ -74,6 +74,7 @@ std::string AstFunctionCall::format_suggestion(const ISymbolDef* suggestion)
 std::string AstFunctionCall::format_function_name() const
 {
     std::vector<std::string> arg_types;
+    arg_types.reserve(this->_arguments.size());
 
     for (const auto& arg : this->_arguments)
     {
