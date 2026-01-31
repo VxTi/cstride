@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast_node.h"
+#include "expression.h"
 #include "ast/symbol_registry.h"
 #include "ast/tokens/token_set.h"
 
@@ -10,14 +11,14 @@ namespace stride::ast
         public IAstNode,
         public ISynthesisable
     {
-        const std::unique_ptr<IAstNode> _value;
+        const std::unique_ptr<AstExpression> _value;
 
     public:
         explicit AstReturn(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& registry,
-            std::unique_ptr<IAstNode> value
+            std::unique_ptr<AstExpression> value
         )
             :
             IAstNode(source, source_position, registry),
@@ -33,7 +34,7 @@ namespace stride::ast
 
 
         [[nodiscard]]
-        IAstNode* value() const { return _value.get(); }
+        AstExpression* value() const { return _value.get(); }
     };
 
     bool is_return_statement(const TokenSet& tokens);

@@ -115,39 +115,47 @@ llvm::Value* AstVariableReassignment::codegen(
     if (const auto identifier_def = registry->field_lookup(this->get_variable_name());
         identifier_def && identifier_def->get_type()->is_optional())
     {
-        llvm::Value* has_value = nullptr;
-        llvm::Value* value = nullptr;
         llvm::Type* struct_type = internal_type_to_llvm_type(identifier_def->get_type(), module);
 
-        if (llvm::isa<llvm::ConstantPointerNull>(rhsValue))
+        if (rhsValue->getType() == struct_type)
         {
-            has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 0);
-            value = llvm::UndefValue::get(struct_type->getStructElementType(1));
+            builder->CreateStore(rhsValue, variable);
         }
         else
         {
-            has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1);
-            value = rhsValue;
+            llvm::Value* has_value = nullptr;
+            llvm::Value* value = nullptr;
 
-            if (llvm::Type* expected_val_type = struct_type->getStructElementType(1);
-                value->getType() != expected_val_type &&
-                value->getType()->isIntegerTy() &&
-                expected_val_type->isIntegerTy()
-            )
+            if (llvm::isa<llvm::ConstantPointerNull>(rhsValue))
             {
-                value = builder->CreateIntCast(value, expected_val_type, true);
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 0);
+                value = llvm::UndefValue::get(struct_type->getStructElementType(1));
             }
-        }
+            else
+            {
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1);
+                value = rhsValue;
 
-        // Store has_value
-        llvm::Value* has_value_ptr = builder->CreateStructGEP(struct_type, variable, 0);
-        builder->CreateStore(has_value, has_value_ptr);
+                if (llvm::Type* expected_val_type = struct_type->getStructElementType(1);
+                    value->getType() != expected_val_type &&
+                    value->getType()->isIntegerTy() &&
+                    expected_val_type->isIntegerTy()
+                )
+                {
+                    value = builder->CreateIntCast(value, expected_val_type, true);
+                }
+            }
 
-        // Store value
-        if (!llvm::isa<llvm::ConstantPointerNull>(rhsValue))
-        {
-            llvm::Value* value_ptr = builder->CreateStructGEP(struct_type, variable, 1);
-            builder->CreateStore(value, value_ptr);
+            // Store has_value
+            llvm::Value* has_value_ptr = builder->CreateStructGEP(struct_type, variable, 0);
+            builder->CreateStore(has_value, has_value_ptr);
+
+            // Store value
+            if (!llvm::isa<llvm::ConstantPointerNull>(rhsValue))
+            {
+                llvm::Value* value_ptr = builder->CreateStructGEP(struct_type, variable, 1);
+                builder->CreateStore(value, value_ptr);
+            }
         }
 
         return variable;

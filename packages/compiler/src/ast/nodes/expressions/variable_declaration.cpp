@@ -260,57 +260,63 @@ llvm::Value* AstVariableDeclaration::codegen(
     {
         if (this->get_variable_type()->is_optional())
         {
-            llvm::Value* has_value = nullptr;
-            llvm::Value* value = nullptr;
-
-            // Check if we're assigning nil
-            // We can check if the init_value is a null pointer (which nil returns)
-            if (llvm::isa<llvm::ConstantPointerNull>(init_value))
+            if (init_value->getType() == var_type)
             {
-                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPTIONAL_NO_VALUE);
-
-                // Get the value type from the struct (element 1)
-                llvm::Type* value_type = var_type->getStructElementType(OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX);
-                value = llvm::UndefValue::get(value_type);
+                irBuilder->CreateStore(init_value, alloca);
             }
             else
             {
-                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPTIONAL_HAS_VALUE);
-                value = init_value;
+                llvm::Value* has_value = nullptr;
+                llvm::Value* value = nullptr;
 
-                // If value type doesn't match, we might need casting (e.g. integer width)
-                if (llvm::Type* expected_val_type = var_type->getStructElementType(OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX);
-                    value->getType() != expected_val_type &&
-                    value->getType()->isIntegerTy() &&
-                    expected_val_type->isIntegerTy())
+                // Check if we're assigning nil
+                // We can check if the init_value is a null pointer (which nil returns)
+                if (llvm::isa<llvm::ConstantPointerNull>(init_value))
                 {
-                    value = irBuilder->CreateIntCast(value, expected_val_type, true);
+                    has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPTIONAL_NO_VALUE);
+
+                    // Get the value type from the struct (element 1)
+                    llvm::Type* value_type = var_type->getStructElementType(OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX);
+                    value = llvm::UndefValue::get(value_type);
                 }
+                else
+                {
+                    has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPTIONAL_HAS_VALUE);
+                    value = init_value;
+
+                    // If value type doesn't match, we might need casting (e.g. integer width)
+                    if (llvm::Type* expected_val_type = var_type->getStructElementType(OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX);
+                        value->getType() != expected_val_type &&
+                        value->getType()->isIntegerTy() &&
+                        expected_val_type->isIntegerTy())
+                    {
+                        value = irBuilder->CreateIntCast(value, expected_val_type, true);
+                    }
+                }
+
+                // Store 'has_value' flag
+                llvm::Value* has_value_ptr = irBuilder->CreateStructGEP(
+                    alloca->getAllocatedType(),
+                    alloca,
+                    OPTIONAL_HAS_VALUE_STRUCT_INDEX
+                );
+                irBuilder->CreateStore(has_value, has_value_ptr);
+
+                // Store value
+                llvm::Value* value_ptr = irBuilder->CreateStructGEP(
+                    alloca->getAllocatedType(),
+                    alloca,
+                    OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX
+                );
+                irBuilder->CreateStore(value, value_ptr);
             }
-
-            // Store 'has_value' flag
-            llvm::Value* has_value_ptr = irBuilder->CreateStructGEP(
-                alloca->getAllocatedType(),
-                alloca,
-                OPTIONAL_HAS_VALUE_STRUCT_INDEX
-            );
-            irBuilder->CreateStore(has_value, has_value_ptr);
-
-            // Store value
-            llvm::Value* value_ptr = irBuilder->CreateStructGEP(
-                alloca->getAllocatedType(),
-                alloca,
-                OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX
-            );
-            irBuilder->CreateStore(value, value_ptr);
         }
-        else if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
+        else
         {
-            init_value = irBuilder->CreateIntCast(init_value, var_type, true);
-        }
-
-        if (!this->get_variable_type()->is_optional())
-        {
+            if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
+            {
+                init_value = irBuilder->CreateIntCast(init_value, var_type, true);
+            }
             irBuilder->CreateStore(init_value, alloca);
         }
     }
