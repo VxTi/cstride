@@ -233,7 +233,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    [[maybe_unused]] const std::shared_ptr<SymbolRegistry>& registry,
     const AstMemberAccessor* expr
 )
 {

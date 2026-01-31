@@ -359,9 +359,10 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 
     if (type->is_optional())
     {
-        auto inner = type->clone();
-        inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
+        const auto inner = type->clone();
+        inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL); // Remove optional flag
         llvm::Type* inner_type = internal_type_to_llvm_type(inner.get(), module);
+
         return llvm::StructType::get(module->getContext(), {
             llvm::Type::getInt1Ty(module->getContext()),
             inner_type
@@ -464,8 +465,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     IAstType* rhs
 )
 {
-    auto* lhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(lhs);
-    auto* rhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(rhs);
+    const auto* lhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(lhs);
+    const auto* rhs_primitive = dynamic_cast<AstPrimitiveFieldType*>(rhs);
     const auto* lhs_named = dynamic_cast<AstStructType*>(lhs);
     const auto* rhs_named = dynamic_cast<AstStructType*>(rhs);
 

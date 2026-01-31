@@ -134,9 +134,10 @@ llvm::Value* AstVariableDeclaration::codegen(
                 value = init_value;
 
                 // If value type doesn't match, we might need casting (e.g. integer width)
-                llvm::Type* expected_val_type = var_type->getStructElementType(1);
-                if (value->getType() != expected_val_type && value->getType()->isIntegerTy() && expected_val_type->
-                    isIntegerTy())
+                if (llvm::Type* expected_val_type = var_type->getStructElementType(1);
+                    value->getType() != expected_val_type &&
+                    value->getType()->isIntegerTy() &&
+                    expected_val_type->isIntegerTy())
                 {
                     value = irBuilder->CreateIntCast(value, expected_val_type, true);
                 }
@@ -189,7 +190,7 @@ void AstVariableDeclaration::validate()
         {
             if (lhs_type->get_flags() & SRFLAG_TYPE_OPTIONAL) return;
 
-            std::vector references = {
+            const std::vector references = {
                 ErrorSourceReference(
                     lhs_type->to_string(),
                     *this->get_source(),

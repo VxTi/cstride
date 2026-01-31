@@ -105,14 +105,13 @@ void Program::validate_ast_nodes() const
     }
 }
 
-void Program::resolve_forward_references(llvm::Module* module,llvm::IRBuilder<>* builder) const
+void Program::resolve_forward_references(llvm::Module* module, llvm::IRBuilder<>* builder) const
 {
     this->_root_node->resolve_forward_references(this->get_global_scope(), module, builder);
 }
 
 void Program::generate_llvm_ir(
     llvm::Module* module,
-    llvm::LLVMContext& context,
     llvm::IRBuilder<>* builder
 ) const
 {
@@ -200,17 +199,19 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
 
     this->validate_ast_nodes();
     this->resolve_forward_references(module.get(), &builder);
-    this->generate_llvm_ir(module.get(), *context, &builder);
+    this->generate_llvm_ir(module.get(), &builder);
+
 
     if (llvm::verifyModule(*module, &llvm::errs()))
     {
         module->print(llvm::errs(), nullptr);
         throw std::runtime_error("LLVM IR verification failed");
     }
-    // Debugging : Uncomment when necessary
+
     if (options.debug_mode)
     {
         print_ast_nodes();
+        std::cout << "LLVM IR Pre-optimizations:" << std::endl;
         module->print(llvm::errs(), nullptr);
     }
 
@@ -237,11 +238,18 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
         llvm::OptimizationLevel::O3);
     module_pass_manager.run(*module, module_analysis_manager);
 
+    if (options.debug_mode)
+    {
+        std::cout << "LLVM IR after optimizations:" << std::endl;
+        module->print(llvm::errs(), nullptr);
+    }
+
     llvm::orc::ThreadSafeModule thread_safe_module(
         std::move(module),
         std::move(tsc)
     );
     llvm::cantFail(jit->addIRModule(std::move(thread_safe_module)));
+
 
     const auto main_fn_executor = locate_main_fn(jit.get());
 

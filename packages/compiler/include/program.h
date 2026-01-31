@@ -64,7 +64,6 @@ namespace stride
 
         void generate_llvm_ir(
             llvm::Module* module,
-            llvm::LLVMContext& context,
             llvm::IRBuilder<>* builder
         ) const;
     };
