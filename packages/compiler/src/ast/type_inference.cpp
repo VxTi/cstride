@@ -163,7 +163,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 prim->get_source_position(),
                 registry,
                 prim->type(),
-                prim->byte_size(),
+                prim->bit_count(),
                 flags
             );
         }
@@ -199,7 +199,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 prim->get_source_position(),
                 registry,
                 prim->type(),
-                prim->byte_size(),
+                prim->bit_count(),
                 flags
             );
         }

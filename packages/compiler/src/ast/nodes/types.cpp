@@ -4,6 +4,8 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
+
+#include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
 using namespace stride::ast;
@@ -45,6 +47,11 @@ std::string stride::ast::primitive_type_to_str(
     );
 }
 
+bool is_array_notation(const TokenSet& set)
+{
+    return set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1);
+}
+
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
     const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
@@ -81,7 +88,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::INT8,
-                1,
+                /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -93,7 +100,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::INT16,
-                2,
+                /* bit_count = */ 2 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -105,7 +112,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::INT32,
-                4,
+                /* bit_count = */ 4 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -117,7 +124,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::INT64,
-                8,
+                /* bit_count = */ 8 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -129,7 +136,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::UINT8,
-                1,
+                /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -141,7 +148,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::UINT16,
-                2,
+                /* bit_count = */ 2 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -153,7 +160,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::UINT32,
-                4,
+                /* bit_count = */ 4 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -165,7 +172,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::UINT64,
-                8,
+                /* bit_count = */ 8 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -177,7 +184,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::FLOAT32,
-                4,
+                /* bit_count = */ 4 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -189,7 +196,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::FLOAT64,
-                8,
+                /* bit_count = */ 8 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -201,7 +208,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::BOOL,
-                1,
+                /* bit_count = */ 1,
                 context_type_flags
             );
         }
@@ -213,7 +220,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::CHAR,
-                1,
+                /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -225,7 +232,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::STRING,
-                1,
+                /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -237,7 +244,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                 reference_token.get_source_position(),
                 registry,
                 PrimitiveType::VOID,
-                0,
+                /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
             );
         }
@@ -253,8 +260,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     const auto src_pos = result.value()->get_source_position();
 
 
-    // Array parsing
-    if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
+    if (is_array_notation(set))
     {
         set.skip(2);
 
@@ -365,9 +371,9 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         llvm::Type* inner_type = internal_type_to_llvm_type(inner.get(), module);
 
         return llvm::StructType::get(module->getContext(), {
-            llvm::Type::getInt1Ty(module->getContext()),
-            inner_type
-        });
+                                         llvm::Type::getInt1Ty(module->getContext()),
+                                         inner_type
+                                     });
     }
 
     if (type->is_pointer())
@@ -507,7 +513,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // E.g., dominant type (fp32, fp64) will yield fp64, (i32, i64) will yield i64
     if (are_both_sides_floats || are_both_sides_integers)
     {
-        return lhs_primitive->byte_size() >= rhs_primitive->byte_size()
+        return lhs_primitive->bit_count() >= rhs_primitive->bit_count()
                    ? lhs_primitive->clone()
                    : rhs_primitive->clone();
     }
@@ -522,14 +528,14 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     {
         // If the RHS has a higher byte size, we need to promote the RHS to a floating point type
         // and return the highest byte size
-        if (rhs_primitive->byte_size() > lhs_primitive->byte_size())
+        if (rhs_primitive->bit_count() > lhs_primitive->bit_count())
         {
             return std::make_unique<AstPrimitiveFieldType>(
                 lhs_primitive->get_source(),
                 lhs_primitive->get_source_position(),
                 registry,
                 PrimitiveType::FLOAT64,
-                rhs_primitive->byte_size(),
+                rhs_primitive->bit_count(),
                 rhs_primitive->get_flags()
             );
         }
