@@ -95,7 +95,7 @@ namespace stride::ast
         : public IAstType
     {
         PrimitiveType _type;
-        size_t _byte_size;
+        size_t _bit_count;
 
     public:
         explicit AstPrimitiveFieldType(
@@ -108,7 +108,7 @@ namespace stride::ast
         ) :
             IAstType(source, source_position, registry, flags),
             _type(type),
-            _byte_size(byte_size) {}
+            _bit_count(byte_size) {}
 
         ~AstPrimitiveFieldType() override = default;
 
@@ -148,7 +148,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        size_t byte_size() const { return this->_byte_size; }
+        size_t bit_count() const { return this->_bit_count; }
 
         [[nodiscard]]
         std::unique_ptr<IAstType> clone() const override
