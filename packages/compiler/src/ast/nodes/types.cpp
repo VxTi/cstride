@@ -263,7 +263,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     int context_type_flags
 )
 {
-    // Custom types are identifiers in type position.
+    // Custom types are identifiers in the type position.
     const auto reference_token = set.peek_next();
 
     if (set.peek_next_eq(TokenType::STAR))
@@ -286,8 +286,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         context_type_flags
     );
 
-    // If the next tokens are square brackets, it's an array type
-    // So we'll wrap the initial NamedValueType in the ArrayType.
+    // If the next tokens are square brackets, it's an array type.
+    // We'll wrap the initial NamedValueType in the ArrayType.
     if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
     {
         set.skip(2);
