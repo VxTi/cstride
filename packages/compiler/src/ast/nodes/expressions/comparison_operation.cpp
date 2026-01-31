@@ -58,17 +58,14 @@ llvm::Value* AstComparisonOp::codegen(
     if (left->getType()->isStructTy() || right->getType()->isStructTy())
     {
         llvm::Value* structVal = nullptr;
-        bool isRightNil = false;
 
         if (left->getType()->isStructTy() && llvm::isa<llvm::ConstantPointerNull>(right))
         {
             structVal = left;
-            isRightNil = true;
         }
         else if (right->getType()->isStructTy() && llvm::isa<llvm::ConstantPointerNull>(left))
         {
             structVal = right;
-            isRightNil = false; // Left is nil
         }
 
         if (structVal)
@@ -120,7 +117,7 @@ llvm::Value* AstComparisonOp::codegen(
             target_type = builder->getFloatTy();
         }
 
-        // 2. Cast Left
+        // Cast Left
         if (left->getType()->isIntegerTy())
         {
             left = builder->CreateSIToFP(left, target_type, "sitofp");
@@ -130,7 +127,7 @@ llvm::Value* AstComparisonOp::codegen(
             left = builder->CreateFPCast(left, target_type, "fpcast");
         }
 
-        // 3. Cast Right
+        // Cast Right
         if (right->getType()->isIntegerTy())
         {
             right = builder->CreateSIToFP(right, target_type, "sitofp");

@@ -278,7 +278,7 @@ llvm::Value* AstStruct::codegen(
         }
     }
 
-    // 3. Set the Body
+    // Set the Body
     // This finalizes the layout of the struct.
     // 'isPacked' is false by default unless you have specific packing rules.
     struct_type->setBody(member_types, /*isPacked=*/false);

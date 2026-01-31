@@ -100,8 +100,10 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
                 if (const int next_precedence = get_binary_operator_precedence(next_op.value());
                     precedence < next_precedence)
                 {
-                    if (auto rhs_opt = parse_arithmetic_binary_operation_optional(registry, set, std::move(rhs), precedence + 1); rhs_opt.
-                        has_value())
+                    auto rhs_opt = parse_arithmetic_binary_operation_optional(
+                        registry, set, std::move(rhs), precedence + 1
+                    );
+                    if (rhs_opt.has_value())
                     {
                         rhs = std::move(rhs_opt.value());
                     }
@@ -146,7 +148,7 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     // Determine if the result should be floating point
     const bool is_float = lhs->getType()->isFloatingPointTy() || rhs->getType()->isFloatingPointTy();
 
-    // 1. Handle Integer Promotion (Int <-> Int)
+    // Handle Integer Promotion (Int <-> Int)
     if (lhs->getType()->isIntegerTy() && rhs->getType()->isIntegerTy())
     {
         const auto l_width = lhs->getType()->getIntegerBitWidth();
@@ -160,7 +162,7 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
             rhs = builder->CreateIntCast(rhs, lhs->getType(), true, "binop_sext");
         }
     }
-    // 2. Handle Mixed Types (Int <-> Float) and Float Promotion
+    // Handle Mixed Types (Int <-> Float) and Float Promotion
     else if (is_float)
     {
         if (lhs->getType()->isIntegerTy())
@@ -217,80 +219,26 @@ bool AstBinaryArithmeticOp::is_reducible()
 
 // TODO: Implement literal reduction
 std::unique_ptr<IAstNode> reduce_literal_binary_op(
-    const AstBinaryArithmeticOp* self,
-    AstLiteral* left_lit,
-    AstLiteral* right_lit
+    [[maybe_unused]] const AstBinaryArithmeticOp* self,
+    [[maybe_unused]] AstLiteral* left_lit,
+    [[maybe_unused]] AstLiteral* right_lit
 )
 {
-    switch (self->get_op_type())
-    {
-    case BinaryOpType::ADD:
-        /*if (left_lit->type() == LiteralType::INTEGER && right_lit->type() == LiteralType::INTEGER)
-        {
-            return std::make_unique<AstLiteral>(LiteralType::INTEGER, left_lit->value() + right_lit->value());
-        }
-
-        if (left_lit->type() == LiteralType::FLOAT && right_lit->type() == LiteralType::FLOAT)
-        {
-            return std::make_unique<AstLiteral>(LiteralType::FLOAT, left_lit->value() + right_lit->value());
-        }*/
-        break;
-    case BinaryOpType::SUBTRACT:
-        break;
-    case BinaryOpType::MULTIPLY:
-        break;
-    case BinaryOpType::DIVIDE:
-        break;
-    default:
-        return nullptr;
-    }
-
     return nullptr;
 }
 
 // TODO: Implement literal reduction
 std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
-    AstBinaryArithmeticOp* self,
-    AstExpression* left_lit,
-    AstExpression* right_lit
+    [[maybe_unused]] AstBinaryArithmeticOp* self,
+    [[maybe_unused]] AstExpression* left_lit,
+    [[maybe_unused]] AstExpression* right_lit
 )
 {
-    /*if (const auto lhstd::shared_ptr_i = dynamic_cast<AstIntLiteral*>(left_lit);
-        lhstd::shared_ptr_i != nullptr
-    )
-    {
-        // For integers, we do allow addition of other numeric types, though
-        // this will change the resulting type. E.g., adding a float to an int
-        // will result in a float (32/64 bit)
-
-        auto lval = lval_ptr->value();
-
-        if (right_lit->type() == LiteralType::FLOAT) {}
-    }*/
-
     return std::nullopt;
 }
 
 // TODO: Implement
 IAstNode* AstBinaryArithmeticOp::reduce()
 {
-    /*if (!this->is_reducible()) return this;
-
-
-    if (const auto lhstd::shared_ptr_i = dynamic_cast<AstIntLiteral*>(this->left.get());
-        lhstd::shared_ptr_i != nullptr
-    )
-    {
-        // For integers, we do allow addition of other numeric types, though
-        // this will change the resulting type. E.g., adding a float to an int
-        // will result in a float (32/64 bit)
-
-        auto lval = lval_ptr->value();
-
-        if (right_lit->type() == LiteralType::FLOAT) {}
-    }
-
-    return std::nullopt;*/
-
     return this;
 }

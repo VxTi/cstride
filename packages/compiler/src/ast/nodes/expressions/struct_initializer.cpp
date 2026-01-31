@@ -204,7 +204,7 @@ llvm::Value* AstStructInitializer::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    // 1. Resolve member values
+    // Resolve member values
     std::vector<llvm::Constant*> constant_members;
     std::vector<llvm::Value*> dynamic_members;
     bool all_constants = true;

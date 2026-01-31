@@ -369,6 +369,11 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         });
     }
 
+    if (type->is_pointer())
+    {
+        return llvm::PointerType::get(module->getContext(), 0);
+    }
+
     if (const auto* array = dynamic_cast<AstArrayType*>(type))
     {
         llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module);
