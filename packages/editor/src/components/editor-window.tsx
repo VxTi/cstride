@@ -41,7 +41,7 @@ export default function EditorWindow() {
       options={{
         minimap: { enabled: false },
         fontSize: 14,
-        fontLigatures: true
+        fontLigatures: true,
       }}
     />
   );
