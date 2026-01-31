@@ -13,15 +13,11 @@ llvm::Value* AstIdentifier::codegen(
 {
     llvm::Value* val = nullptr;
 
-    std::string internal_name;
+    std::string internal_name = this->get_internal_name();
 
     if (const auto definition = registry->field_lookup(this->get_name()))
     {
         internal_name = definition->get_internal_symbol_name();
-    }
-    else
-    {
-        internal_name = this->get_internal_name();
     }
 
     if (const auto block = builder->GetInsertBlock())

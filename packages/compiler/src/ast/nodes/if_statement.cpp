@@ -147,7 +147,7 @@ llvm::Value* AstIfStatement::codegen(
         );
     }
 
-    // 1. Generate Condition
+    // Generate Condition
     llvm::Value* cond_value = this->get_condition()->codegen(registry, module, builder);
 
     if (cond_value == nullptr)

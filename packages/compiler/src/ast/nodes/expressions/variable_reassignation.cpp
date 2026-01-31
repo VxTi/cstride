@@ -89,7 +89,7 @@ llvm::Value* AstVariableReassignment::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    // 1. Locate the variable (AllocaInst or GlobalVariable)
+    // Locate the variable (AllocaInst or GlobalVariable)
     llvm::Value* variable = builder->GetInsertBlock()->getValueSymbolTable()->lookup(this->get_internal_name());
     if (!variable)
     {
@@ -207,8 +207,6 @@ llvm::Value* AstVariableReassignment::codegen(
         }
     }
 
-    // 4. Store the final result
-    builder->CreateStore(finalValue, variable);
     return finalValue;
 }
 
