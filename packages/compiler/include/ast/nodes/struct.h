@@ -16,11 +16,11 @@ namespace stride::ast
         AstStructMember(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             std::string name,
             std::unique_ptr<IAstType> type
         ) :
-            IAstNode(source, source_position, scope),
+            IAstNode(source, source_position, registry),
             _name(std::move(name)),
             _type(std::move(type)) {}
 
@@ -51,23 +51,23 @@ namespace stride::ast
         explicit AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             std::string name,
             std::unique_ptr<IAstType> reference
         )
             :
-            IAstNode(source, source_position, scope),
+            IAstNode(source, source_position, registry),
             _name(std::move(name)),
             _reference(std::move(reference)) {}
 
         explicit AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             std::string name,
             std::vector<std::unique_ptr<AstStructMember>> members
         ) :
-            IAstNode(source, source_position, scope),
+            IAstNode(source, source_position, registry),
             _name(std::move(name)),
             _members(std::move(members)),
             _reference(std::nullopt) {}
@@ -89,13 +89,13 @@ namespace stride::ast
         void validate() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
     };
 
-    std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& tokens);
+    std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& tokens);
 
     bool is_struct_declaration(const TokenSet& tokens);
 }

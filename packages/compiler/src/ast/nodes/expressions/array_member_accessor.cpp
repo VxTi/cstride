@@ -7,7 +7,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
     std::unique_ptr<AstIdentifier> array_identifier
 )
@@ -19,12 +19,12 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
         set.throw_error("Expected array index accessor after '['");
     }
 
-    auto index_expression = parse_standalone_expression(scope, expression_block.value());
+    auto index_expression = parse_standalone_expression(registry, expression_block.value());
 
     return std::make_unique<AstArrayMemberAccessor>(
         array_identifier->get_source(),
         array_identifier->get_source_position(),
-        scope,
+        registry,
         std::move(array_identifier),
         std::move(index_expression)
     );
@@ -56,15 +56,15 @@ void AstArrayMemberAccessor::validate()
 }
 
 llvm::Value* AstArrayMemberAccessor::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
     const auto array_iden_type = infer_expression_type(this->get_registry(), this->_array_identifier.get());
 
-    llvm::Value* base_ptr = this->_array_identifier->codegen(scope, module, builder);
-    llvm::Value* index_val = this->_index_accessor_expr->codegen(scope, module, builder);
+    llvm::Value* base_ptr = this->_array_identifier->codegen(registry, module, builder);
+    llvm::Value* index_val = this->_index_accessor_expr->codegen(registry, module, builder);
 
     // Element type, not the array type.
     // Assumes `array_iden_type` is something like "T[]" and has an element type you can extract.

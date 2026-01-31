@@ -9,7 +9,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
 {
     if (!set.peek_next_eq(TokenType::KEYWORD_ELSE))
     {
@@ -22,27 +22,27 @@ std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<SymbolRegist
     // have to parse_file the block separately
     if (set.peek_next_eq(TokenType::LBRACE))
     {
-        return parse_block(scope, set);
+        return parse_block(registry, set);
     }
 
     std::vector<std::unique_ptr<IAstNode>> nodes;
-    nodes.push_back(parse_next_statement(scope, set));
+    nodes.push_back(parse_next_statement(registry, set));
 
     // Otherwise, we can just parse_file it as a next statement.
     return std::make_unique<AstBlock>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         std::move(nodes)
     );
 }
 
-std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::shared_ptr<SymbolRegistry>& scope,
+std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::shared_ptr<SymbolRegistry>& registry,
                                                                 TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IF);
 
-    auto if_header_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::BLOCK);
+    auto if_header_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::BLOCK);
     auto if_header_body = collect_parenthesized_block(set);
 
     if (!if_header_body.has_value())
@@ -84,7 +84,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
         return std::make_unique<AstIfStatement>(
             set.get_source(),
             reference_token.get_source_position(),
-            scope,
+            registry,
             std::move(condition),
             std::move(if_body),
             std::move(else_statement)
@@ -94,12 +94,12 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
     // Now we're parsing an `if (...) { ... }` statement
     auto body = parse_block(if_header_scope, set);
 
-    auto else_statement = parse_else_optional(scope, set);
+    auto else_statement = parse_else_optional(registry, set);
 
     return std::make_unique<AstIfStatement>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         std::move(condition),
         std::move(body),
         std::move(else_statement)
@@ -122,7 +122,7 @@ bool AstIfStatement::is_reducible()
 }
 
 llvm::Value* AstIfStatement::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -148,7 +148,7 @@ llvm::Value* AstIfStatement::codegen(
     }
 
     // 1. Generate Condition
-    llvm::Value* cond_value = this->get_condition()->codegen(scope, module, builder);
+    llvm::Value* cond_value = this->get_condition()->codegen(registry, module, builder);
 
     if (cond_value == nullptr)
     {
@@ -172,7 +172,7 @@ llvm::Value* AstIfStatement::codegen(
     builder->CreateCondBr(cond_value, then_body_bb, else_body_bb != nullptr ? else_body_bb : merge_bb);
     builder->SetInsertPoint(then_body_bb);
 
-    this->get_body()->codegen(scope, module, builder);
+    this->get_body()->codegen(registry, module, builder);
 
     // Only create a branch to the merge block if the current block
     // does not already have a terminator (like a 'ret' or 'break').
@@ -184,7 +184,7 @@ llvm::Value* AstIfStatement::codegen(
     if (else_body_bb != nullptr)
     {
         builder->SetInsertPoint(else_body_bb);
-        this->get_else_body()->codegen(scope, module, builder);
+        this->get_else_body()->codegen(registry, module, builder);
 
         // Same check for the else block
         if (builder->GetInsertBlock()->getTerminator() == nullptr)

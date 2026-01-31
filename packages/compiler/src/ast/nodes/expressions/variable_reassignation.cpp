@@ -86,7 +86,7 @@ IAstNode* AstVariableReassignment::reduce()
 }
 
 llvm::Value* AstVariableReassignment::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope, llvm::Module* module,
+    const std::shared_ptr<SymbolRegistry>& registry, llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
@@ -110,7 +110,7 @@ llvm::Value* AstVariableReassignment::codegen(
     if (!synthesisable) return nullptr;
 
     // 2. Generate the RHS value
-    llvm::Value* rhsValue = synthesisable->codegen(scope, module, builder);
+    llvm::Value* rhsValue = synthesisable->codegen(registry, module, builder);
 
     // Placeholder logic for type checking
     // You mentioned you'll manage the types, but we need this check to branch instructions
@@ -241,7 +241,7 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
 }
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -252,7 +252,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     const auto reference_token = set.peek_next();
 
     std::string reassignment_iden_name = reference_token.get_lexeme();
-    auto reassign_internal_variable_name = scope->field_lookup(reassignment_iden_name);
+    auto reassign_internal_variable_name = registry->field_lookup(reassignment_iden_name);
 
     if (!reassign_internal_variable_name)
     {
@@ -276,7 +276,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
             offset += 2;
             const auto accessor_token = set.peek(offset + 1);
 
-            const auto accessor_internal_name_def = scope->get_variable_def(accessor_token.get_lexeme());
+            const auto accessor_internal_name_def = registry->get_variable_def(accessor_token.get_lexeme());
 
             if (!accessor_internal_name_def)
             {
@@ -309,12 +309,12 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     auto mutative_op = parse_mutative_assignment_type(set, mutative_token);
     set.next();
 
-    auto expression = parse_standalone_expression(scope, set);
+    auto expression = parse_standalone_expression(registry, set);
 
     return std::make_unique<AstVariableReassignment>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         reassignment_iden_name,
         reassign_internal_name,
         mutative_op,

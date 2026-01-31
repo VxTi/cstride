@@ -35,7 +35,7 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
 }
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
     int context_type_flags
 )
@@ -68,7 +68,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::INT8,
                 1,
                 context_type_flags
@@ -80,7 +80,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::INT16,
                 2,
                 context_type_flags
@@ -92,7 +92,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::INT32,
                 4,
                 context_type_flags
@@ -104,7 +104,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::INT64,
                 8,
                 context_type_flags
@@ -116,7 +116,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::UINT8,
                 1,
                 context_type_flags
@@ -128,7 +128,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::UINT16,
                 2,
                 context_type_flags
@@ -140,7 +140,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::UINT32,
                 4,
                 context_type_flags
@@ -152,7 +152,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::UINT64,
                 8,
                 context_type_flags
@@ -164,7 +164,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::FLOAT32,
                 4,
                 context_type_flags
@@ -176,7 +176,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::FLOAT64,
                 8,
                 context_type_flags
@@ -188,7 +188,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::BOOL,
                 1,
                 context_type_flags
@@ -200,7 +200,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::CHAR,
                 1,
                 context_type_flags
@@ -212,7 +212,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::STRING,
                 1,
                 context_type_flags
@@ -224,7 +224,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveFieldType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::VOID,
                 0,
                 context_type_flags
@@ -258,7 +258,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
 }
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
     int context_type_flags
 )
@@ -281,7 +281,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     auto named_type = std::make_unique<AstStructType>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         name,
         context_type_flags
     );
@@ -295,7 +295,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         return std::make_unique<AstArrayType>(
             set.get_source(),
             reference_token.get_source_position(),
-            scope,
+            registry,
             std::move(named_type),
             0
         );
@@ -305,19 +305,19 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
 }
 
 std::unique_ptr<IAstType> stride::ast::parse_type(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
     const std::string& error,
     const int context_flags
 )
 {
-    if (auto primitive = parse_primitive_type_optional(scope, set, context_flags);
+    if (auto primitive = parse_primitive_type_optional(registry, set, context_flags);
         primitive.has_value())
     {
         return std::move(primitive.value());
     }
 
-    if (auto named_type = parse_named_type_optional(scope, set, context_flags);
+    if (auto named_type = parse_named_type_optional(registry, set, context_flags);
         named_type.has_value())
     {
         return std::move(named_type.value());
@@ -331,7 +331,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     llvm::Module* module
 )
 {
-    const auto scope = type->get_registry();
+    const auto registry = type->get_registry();
     if (const auto* array = dynamic_cast<AstArrayType*>(type))
     {
         llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module);
@@ -392,14 +392,14 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
 
         std::string actual_name = custom->name();
-        auto struct_def_opt = scope->get_struct_def(actual_name);
+        auto struct_def_opt = registry->get_struct_def(actual_name);
         if (struct_def_opt.has_value())
         {
             auto struct_def = struct_def_opt.value();
             while (struct_def->is_reference_struct())
             {
                 actual_name = struct_def->get_reference_struct_name().value();
-                struct_def_opt = scope->get_struct_def(actual_name);
+                struct_def_opt = registry->get_struct_def(actual_name);
                 if (!struct_def_opt.has_value()) break;
                 struct_def = struct_def_opt.value();
             }
@@ -423,7 +423,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 }
 
 std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     IAstType* lhs,
     IAstType* rhs
 )
@@ -484,7 +484,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
             return std::make_unique<AstPrimitiveFieldType>(
                 lhs_primitive->get_source(),
                 lhs_primitive->get_source_position(),
-                scope,
+                registry,
                 PrimitiveType::FLOAT64,
                 rhs_primitive->byte_size(),
                 rhs_primitive->get_flags()

@@ -89,7 +89,7 @@ std::string AstFunctionCall::format_function_name() const
 }
 
 llvm::Value* AstFunctionCall::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -106,7 +106,7 @@ llvm::Value* AstFunctionCall::codegen(
 
     if (!callee)
     {
-        const auto suggested_alternative_symbol = scope->fuzzy_find(this->get_function_name());
+        const auto suggested_alternative_symbol = registry->fuzzy_find(this->get_function_name());
         const auto suggested_alternative =
             suggested_alternative_symbol
                 ? std::format("Did you mean '{}'?", this->format_suggestion(suggested_alternative_symbol))
@@ -114,7 +114,7 @@ llvm::Value* AstFunctionCall::codegen(
 
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
-            std::format("Function '{}' was not found in this scope", this->format_function_name()),
+            std::format("Function '{}' was not found in this registry", this->format_function_name()),
             *this->get_source(),
             this->get_source_position(),
             suggested_alternative
@@ -141,7 +141,7 @@ llvm::Value* AstFunctionCall::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
         {
-            auto arg_val = synthesisable->codegen(scope, module, builder);
+            auto arg_val = synthesisable->codegen(registry, module, builder);
 
             if (!arg_val)
             {
@@ -160,7 +160,7 @@ llvm::Value* AstFunctionCall::codegen(
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_function_call(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -176,11 +176,11 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     if (function_parameter_set.has_value())
     {
         auto subset = function_parameter_set.value();
-        auto initial_arg = parse_inline_expression(scope, subset);
+        auto initial_arg = parse_inline_expression(registry, subset);
 
         if (initial_arg)
         {
-            auto initial_type = infer_expression_type(scope, initial_arg.get());
+            auto initial_type = infer_expression_type(registry, initial_arg.get());
 
             parameter_types.push_back(initial_type.get());
             parameter_type_owners.push_back(std::move(initial_type));
@@ -191,7 +191,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
             {
                 const auto preceding = subset.expect(TokenType::COMMA, "Expected ',' between function arguments");
 
-                auto next_arg = parse_inline_expression(scope, subset);
+                auto next_arg = parse_inline_expression(registry, subset);
 
                 if (!next_arg)
                 {
@@ -210,7 +210,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                     );
                 }
 
-                auto next_type = infer_expression_type(scope, next_arg.get());
+                auto next_type = infer_expression_type(registry, next_arg.get());
                 parameter_types.push_back(next_type.get());
                 parameter_type_owners.push_back(std::move(next_type));
                 function_arg_nodes.push_back(std::move(next_arg));
@@ -226,7 +226,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     return std::make_unique<AstFunctionCall>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         candidate_function_name,
         internal_fn_name,
         std::move(function_arg_nodes)

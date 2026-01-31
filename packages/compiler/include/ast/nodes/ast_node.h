@@ -16,14 +16,14 @@ namespace stride::ast
         virtual ~ISynthesisable() = default;
 
         virtual llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) = 0;
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) {}
@@ -39,11 +39,11 @@ namespace stride::ast
         explicit IAstNode(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& scope
+            const std::shared_ptr<SymbolRegistry>& registry
         )
             : _source(source),
               _source_position(source_position),
-              _scope(scope) {}
+              _scope(registry) {}
 
         virtual ~IAstNode() = default;
 

@@ -14,18 +14,18 @@ using namespace stride::ast;
  * </code>
  */
 std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& tokens
 )
 {
     const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
     auto member_sym = member_name_tok.get_lexeme();
 
-    scope->define_symbol(member_sym, SymbolType::ENUM_MEMBER);
+    registry->define_symbol(member_sym, SymbolType::ENUM_MEMBER);
 
     tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
 
-    auto value = parse_literal_optional(scope, tokens);
+    auto value = parse_literal_optional(registry, tokens);
 
     if (!value.has_value())
     {
@@ -37,7 +37,7 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     return std::make_unique<AstEnumerableMember>(
         tokens.get_source(),
         member_name_tok.get_source_position(),
-        scope,
+        registry,
         std::move(member_sym),
         std::move(value.value())
     );
@@ -69,7 +69,7 @@ std::string AstEnumerable::to_string()
 
 
 std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -77,7 +77,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
     auto enumerable_name = enumerable_name_tok.get_lexeme();
 
-    scope->define_symbol(enumerable_name, SymbolType::ENUM);
+    registry->define_symbol(enumerable_name, SymbolType::ENUM);
 
     const auto opt_enum_body_subset = collect_block(set);
 
@@ -88,7 +88,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
 
     std::vector<std::unique_ptr<AstEnumerableMember>> members = {};
 
-    auto nested_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::BLOCK);
+    auto nested_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::BLOCK);
     auto enum_body_subset = opt_enum_body_subset.value();
 
     while (enum_body_subset.has_next())
@@ -99,7 +99,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     return std::make_unique<AstEnumerable>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         std::move(members),
         enumerable_name
     );

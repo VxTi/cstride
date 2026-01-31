@@ -23,7 +23,7 @@ bool stride::ast::is_member_accessor(AstExpression* lhs, const TokenSet& set)
 /// or
 /// struct_var.member.member2 ...
 std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
     const std::unique_ptr<AstExpression>& lhs
 )
@@ -46,7 +46,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             std::make_unique<AstIdentifier>(
                 set.get_source(),
                 accessor_iden_tok.get_source_position(),
-                scope,
+                registry,
                 accessor_iden_tok.get_lexeme(),
                 accessor_iden_tok.get_lexeme()
             )
@@ -67,11 +67,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 
     return std::make_unique<AstMemberAccessor>(
         set.get_source(),
-        SourcePosition(
-            lhs_source_pos.offset,
-            set.position() - lhs_source_pos.offset
-        ),
-        scope,
+        lhs_source_pos,
+        registry,
         std::make_unique<AstIdentifier>(
             set.get_source(),
             lhs_source_pos,
@@ -84,18 +81,18 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 }
 
 llvm::Value* AstMemberAccessor::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
-    // Special handling for Global Scope (no active block)
+    // Special handling for Global registry (no active block)
     // We must evaluate to a constant (Constant Folding) as we cannot generate instructions.
     // Note: This assumes the base identifier's codegen handles null blocks gracefully
     // and returns the GlobalVariable* (pointer) rather than loading it.
     if (!builder->GetInsertBlock())
     {
-        llvm::Value* base_val = this->get_base()->codegen(scope, module, builder);
+        llvm::Value* base_val = this->get_base()->codegen(registry, module, builder);
 
         // We look for a GlobalVariable with an initializer
         auto* global_var = llvm::dyn_cast_or_null<llvm::GlobalVariable>(base_val);
@@ -106,18 +103,18 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         llvm::Constant* current_const = global_var->getInitializer();
-        std::unique_ptr<IAstType> current_ast_type = infer_expression_type(scope, this->get_base());
+        std::unique_ptr<IAstType> current_ast_type = infer_expression_type(registry, this->get_base());
         std::string current_struct_name = current_ast_type->get_internal_name();
 
         for (const auto& accessor : this->get_members())
         {
-            auto struct_def_opt = scope->get_struct_def(current_struct_name);
+            auto struct_def_opt = registry->get_struct_def(current_struct_name);
             if (!struct_def_opt.has_value()) return nullptr;
 
             auto struct_def = struct_def_opt.value();
             while (struct_def->is_reference_struct())
             {
-                struct_def_opt = scope->get_struct_def(struct_def->get_reference_struct_name().value());
+                struct_def_opt = registry->get_struct_def(struct_def->get_reference_struct_name().value());
                 if (!struct_def_opt.has_value()) return nullptr;
                 struct_def = struct_def_opt.value();
             }
@@ -139,14 +136,14 @@ llvm::Value* AstMemberAccessor::codegen(
         return current_const;
     }
 
-    // Standard Code Generation (Function Scope)
-    llvm::Value* current_val = this->get_base()->codegen(scope, module, builder);
+    // Standard Code Generation (Function registry)
+    llvm::Value* current_val = this->get_base()->codegen(registry, module, builder);
     if (!current_val)
     {
         return nullptr;
     }
 
-    std::unique_ptr<IAstType> current_ast_type = infer_expression_type(scope, this->get_base());
+    std::unique_ptr<IAstType> current_ast_type = infer_expression_type(registry, this->get_base());
     std::string current_struct_name = current_ast_type->get_internal_name();
 
     // With opaque pointers, we need to know if we are operating on an address (L-value)
@@ -155,7 +152,7 @@ llvm::Value* AstMemberAccessor::codegen(
 
     for (const auto& accessor : this->get_members())
     {
-        auto struct_def_opt = scope->get_struct_def(current_struct_name);
+        auto struct_def_opt = registry->get_struct_def(current_struct_name);
         if (!struct_def_opt.has_value())
         {
             throw parsing_error(
@@ -169,7 +166,7 @@ llvm::Value* AstMemberAccessor::codegen(
         auto struct_def = struct_def_opt.value();
         while (struct_def->is_reference_struct())
         {
-            struct_def_opt = scope->get_struct_def(struct_def->get_reference_struct_name().value());
+            struct_def_opt = registry->get_struct_def(struct_def->get_reference_struct_name().value());
             if (!struct_def_opt.has_value())
             {
                 throw parsing_error(

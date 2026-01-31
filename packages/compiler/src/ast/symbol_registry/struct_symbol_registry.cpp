@@ -66,7 +66,7 @@ void SymbolRegistry::define_struct(
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Struct '{}' is already defined in this scope", struct_name),
+            std::format("Struct '{}' is already defined in this registry", struct_name),
             *fields.begin()->second->get_source(),
             fields.begin()->second->get_source_position()
         );
@@ -87,7 +87,7 @@ void SymbolRegistry::define_struct(
     if (this->_current_scope != ScopeType::GLOBAL && this->_current_scope != ScopeType::MODULE)
     {
         throw parsing_error(
-            "Reference structs can only be defined in the global or module scope"
+            "Reference structs can only be defined in the global or module registry"
         );
     }
 
@@ -96,7 +96,7 @@ void SymbolRegistry::define_struct(
     if (const auto existing_def = this->get_struct_def(struct_name); existing_def != nullptr)
     {
         throw parsing_error(
-            std::format("Struct '{}' is already defined in this scope", struct_name)
+            std::format("Struct '{}' is already defined in this registry", struct_name)
         );
     }
 
@@ -133,7 +133,7 @@ std::optional<IAstType*> StructSymbolDef::get_field_type(
             return type;
         }
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 // Note that if this struct is a reference struct, this will return nullptr

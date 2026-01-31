@@ -21,19 +21,19 @@ namespace stride::ast
         AstForLoop(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             std::unique_ptr<AstExpression> initiator,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstExpression> increment,
             std::unique_ptr<AstBlock> body
-        ) : IAstNode(source, source_position, scope),
+        ) : IAstNode(source, source_position, registry),
             _body(std::move(body)),
             _initializer(std::move(initiator)),
             _condition(std::move(condition)),
             _incrementor(std::move(increment)) {}
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -57,5 +57,5 @@ namespace stride::ast
 
     bool is_for_loop_statement(const TokenSet& set);
 
-    std::unique_ptr<AstForLoop> parse_for_loop_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstForLoop> parse_for_loop_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
 }

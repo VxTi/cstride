@@ -29,7 +29,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 }
 
 llvm::Value* AstVariableDeclaration::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* irBuilder
 )
@@ -40,7 +40,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
         {
-            init_value = synthesisable->codegen(scope, module, irBuilder);
+            init_value = synthesisable->codegen(registry, module, irBuilder);
         }
     }
 
@@ -215,7 +215,7 @@ IAstNode* AstVariableDeclaration::reduce()
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const int expression_type_flags,
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -227,7 +227,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     int flags = 0;
 
-    if (scope->get_current_scope() == ScopeType::GLOBAL)
+    if (registry->get_current_scope() == ScopeType::GLOBAL)
     {
         flags |= SRFLAG_TYPE_GLOBAL;
     }
@@ -248,7 +248,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
     const auto variable_name = variable_name_tok.get_lexeme();
     set.expect(TokenType::COLON);
-    auto variable_type = parse_type(scope, set, "Expected variable type after variable name", flags);
+    auto variable_type = parse_type(registry, set, "Expected variable type after variable name", flags);
 
 
     std::unique_ptr<AstExpression> value = nullptr;
@@ -256,17 +256,17 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     if (set.peek_next_eq(TokenType::EQUALS))
     {
         set.next();
-        value = parse_expression_extended(0, scope, set);
+        value = parse_expression_extended(0, registry, set);
     }
 
     std::string internal_name = variable_name;
-    if (scope->get_current_scope() != ScopeType::GLOBAL)
+    if (registry->get_current_scope() != ScopeType::GLOBAL)
     {
         static int var_decl_counter = 0;
         internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
     }
 
-    scope->define_field(
+    registry->define_field(
         variable_name,
         internal_name,
         variable_type->clone()
@@ -285,7 +285,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
             + variable_type->get_source_position().length
             - reference_token.get_source_position().offset
         ),
-        scope,
+        registry,
         variable_name,
         internal_name,
         std::move(variable_type),

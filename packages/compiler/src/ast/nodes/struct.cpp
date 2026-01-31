@@ -10,7 +10,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstStructMember> parse_struct_member(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -19,16 +19,16 @@ std::unique_ptr<AstStructMember> parse_struct_member(
 
     set.expect(TokenType::COLON);
 
-    auto struct_member_type = parse_type(scope, set, "Expected a struct member type");
+    auto struct_member_type = parse_type(registry, set, "Expected a struct member type");
     set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
 
     // TODO: Replace with struct-field-specific method
-    scope->define_field(struct_member_name, struct_member_name, struct_member_type->clone());
+    registry->define_field(struct_member_name, struct_member_name, struct_member_type->clone());
 
     return std::make_unique<AstStructMember>(
         set.get_source(),
         struct_member_name_tok.get_source_position(),
-        scope,
+        registry,
         struct_member_name,
         std::move(struct_member_type)
     );
@@ -40,13 +40,13 @@ bool stride::ast::is_struct_declaration(const TokenSet& tokens)
 }
 
 std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& tokens
 )
 {
-    if (scope->get_current_scope() != ScopeType::GLOBAL && scope->get_current_scope() != ScopeType::MODULE)
+    if (registry->get_current_scope() != ScopeType::GLOBAL && registry->get_current_scope() != ScopeType::MODULE)
     {
-        tokens.throw_error("Struct declarations are only allowed in global or module scope");
+        tokens.throw_error("Struct declarations are only allowed in global or module registry");
     }
 
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
@@ -60,11 +60,11 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     if (tokens.peek_next_eq(TokenType::EQUALS))
     {
         tokens.next();
-        auto reference_sym = parse_type(scope, tokens, "Expected reference struct type", SRFLAG_NONE);
+        auto reference_sym = parse_type(registry, tokens, "Expected reference struct type", SRFLAG_NONE);
         tokens.expect(TokenType::SEMICOLON);
 
         // We define it as a reference to `reference_sym`. Validation happens later
-        scope->define_struct(
+        registry->define_struct(
             struct_name,
             reference_sym->get_internal_name()
         );
@@ -72,7 +72,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         return std::make_unique<AstStruct>(
             tokens.get_source(),
             reference_token.get_source_position(),
-            scope,
+            registry,
             struct_name,
             std::move(reference_sym)
         );
@@ -91,7 +91,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
     if (struct_body_set.has_value())
     {
-        auto nested_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::BLOCK);
+        auto nested_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::BLOCK);
         while (struct_body_set.value().has_next())
         {
             auto member = parse_struct_member(nested_scope, struct_body_set.value());
@@ -107,7 +107,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         tokens.throw_error("Struct must have at least one member");
     }
 
-    scope->define_struct(
+    registry->define_struct(
         struct_name,
         std::move(fields)
     );
@@ -115,7 +115,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     return std::make_unique<AstStruct>(
         tokens.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         struct_name,
         std::move(members)
     );
@@ -199,7 +199,7 @@ std::string AstStruct::to_string()
 }
 
 llvm::Value* AstStruct::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

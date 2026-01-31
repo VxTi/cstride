@@ -6,7 +6,7 @@
 using namespace stride::ast;
 
 llvm::Value* AstIdentifier::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -15,7 +15,7 @@ llvm::Value* AstIdentifier::codegen(
 
     std::string internal_name;
 
-    if (const auto definition = scope->field_lookup(this->get_name()))
+    if (const auto definition = registry->field_lookup(this->get_name()))
     {
         internal_name = definition->get_internal_symbol_name();
     }
@@ -47,13 +47,13 @@ llvm::Value* AstIdentifier::codegen(
 
     if (const auto global = module->getNamedGlobal(internal_name))
     {
-        // Only generate a Load instruction if we are inside a BasicBlock (Function Scope).
+        // Only generate a Load instruction if we are inside a BasicBlock (Function registry).
         if (builder->GetInsertBlock())
         {
             return builder->CreateLoad(global->getValueType(), global, internal_name);
         }
 
-        // If we are in Global Scope (initializing a global variable), we cannot generate instructions.
+        // If we are in Global registry (initializing a global variable), we cannot generate instructions.
         // We return the GlobalVariable* itself. This allows parent nodes (like MemberAccessor)
         // to perform Constant Folding or ConstantExpr GEPs on the address.
         return global;
