@@ -171,7 +171,9 @@ namespace stride::ast
         {
             if (const auto* other_primitive = dynamic_cast<AstPrimitiveFieldType*>(&other))
             {
-                return this->type() == other_primitive->type();
+                return this->type() == other_primitive->type()
+                    && this->bit_count() == other_primitive->bit_count()
+                    && this->get_flags() == other_primitive->get_flags();
             }
             return false;
         }
@@ -221,7 +223,8 @@ namespace stride::ast
         {
             if (const auto* other_named = dynamic_cast<AstStructType*>(&other))
             {
-                return this->_name == other_named->_name;
+                return this->_name == other_named->_name
+                    && this->get_flags() == other_named->get_flags();
             }
             return false;
         }
@@ -325,19 +328,6 @@ namespace stride::ast
         IAstType* lhs,
         IAstType* rhs
     );
-
-    /**
-     * Resolves a unique identifier (UID) for the given internal type.
-     *
-     * This function generates a unique identifier for the provided IAstType object.
-     * The UID is determined based on the specific characteristics of the type,
-     * such as whether it is a primitive type, custom type, pointer, or reference.
-     *
-     * @param type A pointer to the AstType object for which the UID is to be resolved.
-     *             The AstType can represent either a primitive or a custom type.
-     * @return The unique identifier (UID) associated with the given internal type.
-     */
-    size_t ast_type_to_internal_id(IAstType* type);
 
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
         const std::shared_ptr<SymbolRegistry>& registry,

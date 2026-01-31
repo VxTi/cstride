@@ -3,6 +3,62 @@
 #include <ranges>
 #include <__ranges/views.h>
 
+using namespace stride::ast;
+
+size_t primitive_type_to_internal_id(const PrimitiveType type)
+{
+    switch (type)
+    {
+    case PrimitiveType::INT8:
+        return 0x01;
+    case PrimitiveType::INT16:
+        return 0x02;
+    case PrimitiveType::INT32:
+        return 0x03;
+    case PrimitiveType::INT64:
+        return 0x04;
+    case PrimitiveType::UINT8:
+        return 0x05;
+    case PrimitiveType::UINT16:
+        return 0x06;
+    case PrimitiveType::UINT32:
+        return 0x07;
+    case PrimitiveType::UINT64:
+        return 0x08;
+    case PrimitiveType::FLOAT32:
+        return 0x09;
+    case PrimitiveType::FLOAT64:
+        return 0x0A;
+    case PrimitiveType::BOOL:
+        return 0x0B;
+    case PrimitiveType::CHAR:
+        return 0x0C;
+    case PrimitiveType::STRING:
+        return 0x0D;
+    case PrimitiveType::VOID:
+        return 0x0E;
+    default:
+        return 0x00;
+    }
+}
+
+size_t ast_type_to_internal_id(IAstType* type)
+{
+    if (const auto primitive = dynamic_cast<AstPrimitiveFieldType*>(type);
+        primitive != nullptr)
+    {
+        return primitive_type_to_internal_id(primitive->type());
+    }
+
+    if (const auto* named = dynamic_cast<const AstStructType*>(type);
+        named != nullptr)
+    {
+        return std::hash<std::string>{}(named->name());
+    }
+
+    return 0x00;
+}
+
 std::string stride::ast::resolve_internal_function_name(
     const std::vector<IAstType*>& parameter_types,
     const std::string& function_name
@@ -10,20 +66,15 @@ std::string stride::ast::resolve_internal_function_name(
 {
     if (function_name == MAIN_FN_NAME) return function_name;
 
-    std::string finalized_name = function_name;
-
-    int type_hash = 0;
-    int parameter_offset = 0;
+    std::string params = "";
 
     // Not perfect, but semi unique
     for (const auto& type : parameter_types)
     {
-        type_hash |= static_cast<int>(ast_type_to_internal_id(type));
-        type_hash <<= parameter_offset;
-        parameter_offset += 2;
+        params += type->to_string();
     }
 
-    return std::format("{}${:06x}", finalized_name, type_hash);
+    return std::format("{}${:x}", function_name, std::hash<std::string>{}(params));
 }
 
 std::string stride::ast::resolve_internal_struct_name(
@@ -31,18 +82,13 @@ std::string stride::ast::resolve_internal_struct_name(
     const std::string& struct_name
 )
 {
-    std::string finalized_name = struct_name;
-
-    int type_hash = 0;
-    int parameter_offset = 0;
+    std::string fields = "";
 
     // Not perfect, but semi unique
     for (const auto& type : struct_members | std::views::values)
     {
-        type_hash |= static_cast<int>(ast_type_to_internal_id(type.get()));
-        type_hash <<= parameter_offset;
-        parameter_offset += 2;
+        fields += type->to_string();
     }
 
-    return std::format("{}${:06x}", finalized_name, type_hash);
+    return std::format("{}${:x}", struct_name, std::hash<std::string>{}(fields));
 }
