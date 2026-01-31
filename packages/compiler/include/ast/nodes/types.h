@@ -25,6 +25,9 @@ namespace stride::ast
         CHAR,
         STRING,
         VOID,
+        // If the resulting type is NIL, and the context allows for optional types,
+        // we can safely ignore the type comparison.
+        NIL,
         // Reserved type for empty arrays;
         // It's impossible to deduce the type from an empty array,
         // as it would otherwise be done by inferring the type of its members.
@@ -32,7 +35,7 @@ namespace stride::ast
         UNKNOWN
     };
 
-    std::string primitive_type_to_str(PrimitiveType type);
+    std::string primitive_type_to_str(PrimitiveType type, int flags = SRFLAG_NONE);
 
     class IAstType :
         public IAstNode
@@ -153,11 +156,14 @@ namespace stride::ast
             return std::make_unique<AstPrimitiveFieldType>(*this);
         }
 
-        std::string get_internal_name() override { return primitive_type_to_str(_type); }
+        std::string get_internal_name() override
+        {
+            return primitive_type_to_str(this->type(), this->get_flags());
+        }
 
         std::string to_string() override
         {
-            return std::format("{}{}", primitive_type_to_str(this->type()), this->is_pointer() ? "*" : "");
+            return primitive_type_to_str(this->type(), this->get_flags());
         }
 
         // For primitives, we can easily compare whether another is equal by comparing the `PrimitiveType` enumerable
@@ -243,9 +249,9 @@ namespace stride::ast
                 source,
                 source_position,
                 registry,
+                // Arrays are always ptrs
                 (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR
             ),
-            // Arrays are always ptrs
             _element_type(std::move(element_type)),
             _initial_length(initial_length) {}
 
@@ -265,6 +271,7 @@ namespace stride::ast
             );
         }
 
+        [[nodiscard]]
         IAstType* get_element_type() const { return this->_element_type.get(); }
 
         [[nodiscard]]
@@ -272,7 +279,11 @@ namespace stride::ast
 
         std::string to_string() override
         {
-            return std::format("Array[{}]", this->_element_type->to_string());
+            return std::format(
+                "Array[{}]{}",
+                this->_element_type->to_string(),
+                (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
+            );
         }
 
         [[nodiscard]]
@@ -296,7 +307,6 @@ namespace stride::ast
             return !(*this == other);
         }
     };
-
 
     std::unique_ptr<IAstType> parse_type(
         const std::shared_ptr<SymbolRegistry>& registry,

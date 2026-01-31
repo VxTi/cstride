@@ -8,7 +8,7 @@
 
 using namespace stride::ast;
 
-std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
+std::string primitive_type_to_str_internal(const PrimitiveType type)
 {
     switch (type)
     {
@@ -26,12 +26,23 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type)
     case PrimitiveType::CHAR: return "char";
     case PrimitiveType::STRING: return "string";
     case PrimitiveType::VOID: return "void";
+    case PrimitiveType::NIL: return "nil";
     case PrimitiveType::UNKNOWN:
-    default:
-        {
-            return "unknown";
-        }
+    default: return "unknown";
     }
+}
+
+std::string stride::ast::primitive_type_to_str(
+    const PrimitiveType type, const int flags
+)
+{
+    const auto base_str = primitive_type_to_str_internal(type);
+
+    return std::format("{}{}{}",
+                       (flags & SRFLAG_TYPE_PTR) != 0 ? "*" : "",
+                       base_str,
+                       (flags & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
+    );
 }
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
@@ -59,7 +70,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     const int offset = additional_flags ? 1 : 0;
     context_type_flags |= additional_flags;
 
-    std::optional<std::unique_ptr<AstPrimitiveFieldType>> result = std::nullopt;
+    std::optional<std::unique_ptr<IAstType>> result = std::nullopt;
 
     switch (set.peek(offset).get_type())
     {
@@ -235,24 +246,37 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         break;
     }
 
-    if (result.has_value())
+    if (!result.has_value()) return std::nullopt;
+
+    set.skip(offset + 1);
+
+    const auto src_pos = result.value()->get_source_position();
+
+
+    // Array parsing
+    if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
     {
-        set.skip(offset + 1);
+        set.skip(2);
 
-        // Array parsing
-        if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
-        {
-            set.skip(2);
-
-            return std::make_unique<AstArrayType>(
-                result.value()->get_source(),
-                result.value()->get_source_position(),
-                result.value()->get_registry(),
-                std::move(result.value()),
-                0
-            );
-        }
+        result = std::make_unique<AstArrayType>(
+            result.value()->get_source(),
+            SourcePosition(src_pos.offset, src_pos.length + 2),
+            result.value()->get_registry(),
+            std::move(result.value()),
+            0
+        );
     }
+
+    // If the preceding token is a question mark, the type is determined
+    // to be optional.
+    // An example of this would be `i32?` or `i32[]?`
+    if (set.peek_next_eq(TokenType::QUESTION))
+    {
+        set.skip(1);
+        context_type_flags |= SRFLAG_TYPE_OPTIONAL;
+    }
+
+    result.value()->set_flags(context_type_flags);
 
     return result;
 }

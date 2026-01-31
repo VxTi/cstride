@@ -15,7 +15,8 @@ namespace stride::ast
         INTEGER,
         FLOAT,
         BOOLEAN,
-        CHAR
+        CHAR,
+        NIL
     };
 
 #define BITS_PER_BYTE (8)
@@ -216,6 +217,32 @@ namespace stride::ast
                 registry,
                 LiteralType::CHAR,
                 value,
+                8
+            ) {}
+
+        std::string to_string() override;
+
+        llvm::Value* codegen(
+            const std::shared_ptr<SymbolRegistry>& registry,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) override;
+    };
+
+    class AstNilLiteral
+        : public AstLiteral
+    {
+    public:
+        AstNilLiteral(
+            const std::shared_ptr<SourceFile>& source,
+            const SourcePosition source_position,
+            const std::shared_ptr<SymbolRegistry>& registry
+        ) :
+            AstLiteral(
+                source,
+                source_position,
+                registry,
+                LiteralType::NIL,
                 8
             ) {}
 
