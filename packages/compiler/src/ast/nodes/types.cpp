@@ -360,7 +360,8 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     if (type->is_optional())
     {
         const auto inner = type->clone();
-        inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL); // Remove optional flag
+        // Remove the optional flag, so that it doesn't recursively enter this same scope
+        inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
         llvm::Type* inner_type = internal_type_to_llvm_type(inner.get(), module);
 
         return llvm::StructType::get(module->getContext(), {

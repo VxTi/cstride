@@ -14,7 +14,11 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            str->get_source(), str->get_source_position(), registry, PrimitiveType::STRING, 1
+            str->get_source(),
+            str->get_source_position(),
+            registry,
+            PrimitiveType::STRING,
+            1
         );
     }
 
@@ -22,7 +26,11 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     {
         auto type = fp_lit->bit_count() > 32 ? PrimitiveType::FLOAT64 : PrimitiveType::FLOAT32;
         return std::make_unique<AstPrimitiveFieldType>(
-            fp_lit->get_source(), fp_lit->get_source_position(), registry, type, fp_lit->bit_count() / BITS_PER_BYTE
+            fp_lit->get_source(),
+            fp_lit->get_source_position(),
+            registry,
+            type,
+            fp_lit->bit_count() / BITS_PER_BYTE
         );
     }
 
@@ -45,7 +53,10 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* char_lit = dynamic_cast<AstCharLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            char_lit->get_source(), char_lit->get_source_position(), registry, PrimitiveType::CHAR,
+            char_lit->get_source(),
+            char_lit->get_source_position(),
+            registry,
+            PrimitiveType::CHAR,
             char_lit->bit_count()
         );
     }
@@ -53,7 +64,10 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* bool_lit = dynamic_cast<AstBooleanLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            bool_lit->get_source(), bool_lit->get_source_position(), registry, PrimitiveType::BOOL,
+            bool_lit->get_source(),
+            bool_lit->get_source_position(),
+            registry,
+            PrimitiveType::BOOL,
             bool_lit->bit_count()
         );
     }
@@ -61,7 +75,11 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* nil_lit = dynamic_cast<AstNilLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveFieldType>(
-            nil_lit->get_source(), nil_lit->get_source_position(), registry, PrimitiveType::NIL, 8
+            nil_lit->get_source(),
+            nil_lit->get_source_position(),
+            registry,
+            PrimitiveType::NIL,
+            8
         );
     }
 
@@ -256,7 +274,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Variable '{}' not found in current registry", base_iden->get_name()
+                "Variable '{}' not found in current sc", base_iden->get_name()
             ),
             *expr->get_source(),
             expr->get_source_position()
@@ -371,7 +389,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         {
             throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
-                std::format("Variable '{}' was not found in this registry", identifier->get_name()),
+                std::format("Variable '{}' was not found in this scope", identifier->get_name()),
                 *identifier->get_source(),
                 identifier->get_source_position()
             );

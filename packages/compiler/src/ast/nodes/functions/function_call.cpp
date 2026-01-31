@@ -113,7 +113,7 @@ llvm::Value* AstFunctionCall::codegen(
 
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
-            std::format("Function '{}' was not found in this registry", this->format_function_name()),
+            std::format("Function '{}' was not found in this scope", this->format_function_name()),
             *this->get_source(),
             this->get_source_position(),
             suggested_alternative

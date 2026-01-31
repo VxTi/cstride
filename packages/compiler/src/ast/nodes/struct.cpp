@@ -46,7 +46,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 {
     if (registry->get_current_scope_type() != ScopeType::GLOBAL && registry->get_current_scope_type() != ScopeType::MODULE)
     {
-        tokens.throw_error("Struct declarations are only allowed in global or module registry");
+        tokens.throw_error("Struct declarations are only allowed in global or module scope");
     }
 
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
