@@ -77,23 +77,23 @@ llvm::Value* AstReturn::codegen(
             // Case 1: Function returns non-optional, but we have an optional -> Unwrap
             if (val->getType()->isStructTy() &&
                 !ret_type->isStructTy() &&
-                val->getType()->getStructNumElements() == OPTIONAL_ELEMENT_COUNT &&
-                val->getType()->getStructElementType(OPTIONAL_HAS_VALUE_STRUCT_INDEX)->isIntegerTy(1))
+                val->getType()->getStructNumElements() == OPT_ELEMENT_COUNT &&
+                val->getType()->getStructElementType(OPT_IDX_HAS_VALUE)->isIntegerTy(OPT_HAS_VALUE_BIT_COUNT))
             {
                 val = builder->CreateExtractValue(
                     val,
-                    {OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX},
+                    {OPT_IDX_ELEMENT_TYPE},
                     "unwrap_optional_ret"
                 );
             }
             // Case 2: Function returns optional, but we have a non-optional (or nil) -> Wrap
             else if (ret_type->isStructTy() &&
                 !val->getType()->isStructTy() &&
-                ret_type->getStructNumElements() == OPTIONAL_ELEMENT_COUNT &&
-                ret_type->getStructElementType(OPTIONAL_HAS_VALUE_STRUCT_INDEX)->isIntegerTy(1))
+                ret_type->getStructNumElements() == OPT_ELEMENT_COUNT &&
+                ret_type->getStructElementType(OPT_IDX_HAS_VALUE)->isIntegerTy(OPT_HAS_VALUE_BIT_COUNT))
             {
                 llvm::Type* inner_type = ret_type->getStructElementType(
-                    OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX
+                    OPT_IDX_ELEMENT_TYPE
                 );
 
                 if (llvm::isa<llvm::ConstantPointerNull>(val))
@@ -102,8 +102,8 @@ llvm::Value* AstReturn::codegen(
                     llvm::Value* ret_val = llvm::UndefValue::get(ret_type);
                     ret_val = builder->CreateInsertValue(
                         ret_val,
-                        builder->getInt1(OPTIONAL_NO_VALUE),
-                        {OPTIONAL_HAS_VALUE_STRUCT_INDEX}
+                        builder->getInt1(OPT_NO_VALUE),
+                        {OPT_IDX_HAS_VALUE}
                     );
                     val = ret_val;
                 }
@@ -121,13 +121,13 @@ llvm::Value* AstReturn::codegen(
                         llvm::Value* ret_val = llvm::UndefValue::get(ret_type);
                         ret_val = builder->CreateInsertValue(
                             ret_val,
-                            builder->getInt1(OPTIONAL_HAS_VALUE),
-                            {OPTIONAL_HAS_VALUE_STRUCT_INDEX}
+                            builder->getInt1(OPT_HAS_VALUE),
+                            {OPT_IDX_HAS_VALUE}
                         );
                         ret_val = builder->CreateInsertValue(
                             ret_val,
                             val,
-                            {OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX}
+                            {OPT_IDX_ELEMENT_TYPE}
                         );
                         val = ret_val;
                     }

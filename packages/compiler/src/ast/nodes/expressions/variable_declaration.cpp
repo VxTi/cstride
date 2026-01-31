@@ -10,6 +10,88 @@
 
 using namespace stride::ast;
 
+std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
+    const int expression_type_flags,
+    const std::shared_ptr<SymbolRegistry>& registry,
+    TokenSet& set
+)
+{
+    // Ensure we're allowed to parse standalone expressions
+    if ((expression_type_flags & SRFLAG_EXPR_TYPE_STANDALONE) == 0)
+    {
+        set.throw_error("Variable declarations are not allowed in this context");
+    }
+
+    int flags = 0;
+
+    if (registry->get_current_scope_type() == ScopeType::GLOBAL)
+    {
+        flags |= SRFLAG_TYPE_GLOBAL;
+    }
+
+    const auto reference_token = set.peek_next();
+
+    if (set.peek_next_eq(TokenType::KEYWORD_MUT))
+    {
+        flags |= SRFLAG_TYPE_MUTABLE;
+        set.next();
+    }
+    else
+    {
+        // Variables are const by default.
+        set.expect(TokenType::KEYWORD_LET);
+    }
+
+    const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
+    const auto& variable_name = variable_name_tok.get_lexeme();
+    set.expect(TokenType::COLON);
+    auto variable_type = parse_type(registry, set, "Expected variable type after variable name", flags);
+
+
+    std::unique_ptr<AstExpression> value = nullptr;
+
+    if (set.peek_next_eq(TokenType::EQUALS))
+    {
+        set.next();
+        value = parse_inline_expression(registry, set);
+    }
+
+
+
+    std::string internal_name = variable_name;
+    if (registry->get_current_scope_type() != ScopeType::GLOBAL)
+    {
+        static int var_decl_counter = 0;
+        internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
+    }
+
+    registry->define_field(
+        variable_name,
+        internal_name,
+        variable_type->clone()
+    );
+
+    if (set.peek_next_eq(TokenType::SEMICOLON))
+    {
+        set.next();
+    }
+
+    return std::make_unique<AstVariableDeclaration>(
+        set.get_source(),
+        SourcePosition(
+            reference_token.get_source_position().offset,
+            variable_type->get_source_position().offset
+            + variable_type->get_source_position().length
+            - reference_token.get_source_position().offset
+        ),
+        registry,
+        variable_name,
+        internal_name,
+        std::move(variable_type),
+        std::move(value)
+    );
+}
+
 /**
  * Checks whether the provided sequence conforms to
  * "let name: type = value",
@@ -28,6 +110,84 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
         set.peek_eq(TokenType::IDENTIFIER, offset + 1) &&
         set.peek_eq(TokenType::COLON, offset + 2)
     );
+}
+
+void AstVariableDeclaration::validate()
+{
+    AstExpression* init_val = this->get_initial_value().get();
+    if (!init_val)
+    {
+        // It's possible that there's no initializer value.
+        // No need to further validate then
+        return;
+    }
+
+    init_val->validate();
+
+    const std::unique_ptr<IAstType> internal_expr_type = infer_expression_type(
+        this->get_registry(),
+        init_val
+    );
+    const auto lhs_type = this->get_variable_type();
+
+    if (const auto rhs_type = internal_expr_type.get();
+        *lhs_type != *rhs_type)
+    {
+        if (const auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(rhs_type);
+            primitive_type != nullptr &&
+            primitive_type->type() == PrimitiveType::NIL)
+        {
+            if (lhs_type->get_flags() & SRFLAG_TYPE_OPTIONAL) return;
+
+            const std::vector references = {
+                ErrorSourceReference(
+                    lhs_type->to_string(),
+                    *this->get_source(),
+                    this->get_source_position()
+                ),
+                ErrorSourceReference(
+                    rhs_type->to_string(),
+                    *this->get_source(),
+                    init_val->get_source_position()
+                )
+            };
+
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Cannot assign nil to variable of non-optional type '{}'",
+                    lhs_type->to_string()
+                ),
+                references
+            );
+        }
+
+        const std::string lhs_type_str = lhs_type->to_string();
+        const std::string rhs_type_str = rhs_type->to_string();
+
+        const std::vector references = {
+            ErrorSourceReference(
+                lhs_type_str,
+                *this->get_source(),
+                this->get_source_position()
+            ),
+            ErrorSourceReference(
+                rhs_type_str,
+                *this->get_source(),
+                init_val->get_source_position()
+            )
+        };
+
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Type mismatch in variable declaration; expected type '{}', got '{}'",
+                lhs_type_str,
+                rhs_type_str
+            ),
+            references
+        );
+    }
 }
 
 // LLVM calls these functions at startup to initialize global variables
@@ -109,19 +269,65 @@ void AstVariableDeclaration::resolve_forward_references(
     }
 }
 
-llvm::Value* AstVariableDeclaration::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+void global_var_declaration_codegen(
+    const AstVariableDeclaration* self,
+    llvm::GlobalVariable* global_var,
     llvm::Module* module,
     llvm::IRBuilder<>* irBuilder
 )
 {
-    // Get the LLVM type for the variable
-    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
+    // Dynamic Initialization ("Global Constructor" Pattern)
+    // Create a function: void __init_variable_name()
+    const std::string func_name = "__init_global_" + self->get_internal_name();
+    llvm::FunctionType* func_type = llvm::FunctionType::get(irBuilder->getVoidTy(), false);
+    llvm::Function* init_func = llvm::Function::Create(
+        func_type, llvm::GlobalValue::InternalLinkage, func_name, module
+    );
 
-    llvm::GlobalVariable* global_var = nullptr;
-    if (this->get_variable_type()->is_global())
+    // Set up the entry block for the constructor
+    llvm::BasicBlock* entry = llvm::BasicBlock::Create(module->getContext(), "entry", init_func);
+
+    // Create a temporary builder for the constructor to avoid state pollution
+    llvm::IRBuilder<> tempBuilder(module->getContext());
+    tempBuilder.SetInsertPoint(entry);
+
+    // Re-generate the initial value inside the constructor function
+    // Note: we MUST NOT call codegen on something that might have already been generated
+    // if it's not designed to be called multiple times.
+    // However, for global initialization, we need the value.
+    llvm::Value* dynamic_init_value = nullptr;
+    if (const auto initial_value = self->get_initial_value().get(); initial_value != nullptr)
     {
-        global_var = module->getNamedGlobal(this->get_internal_name());
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
+        {
+            // Use the temporary builder
+            dynamic_init_value = synthesisable->codegen(self->get_registry(), module, &tempBuilder);
+        }
+    }
+
+    if (dynamic_init_value)
+    {
+        // Perform the store
+        tempBuilder.CreateStore(dynamic_init_value, global_var);
+    }
+
+    tempBuilder.CreateRetVoid();
+
+    // Register this function in llvm.global_ctors
+    append_to_global_ctors(module, init_func, 65535);
+}
+
+llvm::GlobalVariable* get_global_var_decl(
+    const AstVariableDeclaration* self,
+    llvm::Module* module,
+    llvm::Type* var_type
+)
+{
+    llvm::GlobalVariable* global_var = nullptr;
+
+    if (self->get_variable_type()->is_global())
+    {
+        global_var = module->getNamedGlobal(self->get_internal_name());
 
         if (!global_var)
         {
@@ -135,7 +341,7 @@ llvm::Value* AstVariableDeclaration::codegen(
                 false, // Set to false to allow initialization
                 llvm::GlobalValue::ExternalLinkage,
                 default_init,
-                this->get_internal_name()
+                self->get_internal_name()
             );
         }
         else
@@ -144,6 +350,19 @@ llvm::Value* AstVariableDeclaration::codegen(
             global_var->setConstant(false);
         }
     }
+    return global_var;
+}
+
+llvm::Value* AstVariableDeclaration::codegen(
+    const std::shared_ptr<SymbolRegistry>& registry,
+    llvm::Module* module,
+    llvm::IRBuilder<>* irBuilder
+)
+{
+    // Get the LLVM type for the variable
+    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
+
+    llvm::GlobalVariable* global_var = get_global_var_decl(this, module, var_type);
 
     if (this->get_variable_type()->is_global() && !global_var) return nullptr; // Shouldn't happen, but just in case
 
@@ -186,45 +405,7 @@ llvm::Value* AstVariableDeclaration::codegen(
             }
             else
             {
-                // Dynamic Initialization ("Global Constructor" Pattern)
-                // Create a function: void __init_variable_name()
-                const std::string func_name = "__init_global_" + this->get_internal_name();
-                llvm::FunctionType* func_type = llvm::FunctionType::get(irBuilder->getVoidTy(), false);
-                llvm::Function* init_func = llvm::Function::Create(
-                    func_type, llvm::GlobalValue::InternalLinkage, func_name, module
-                );
-
-                // Set up the entry block for the constructor
-                llvm::BasicBlock* entry = llvm::BasicBlock::Create(module->getContext(), "entry", init_func);
-
-                // Create a temporary builder for the constructor to avoid state pollution
-                llvm::IRBuilder<> tempBuilder(module->getContext());
-                tempBuilder.SetInsertPoint(entry);
-
-                // Re-generate the initial value inside the constructor function
-                // Note: we MUST NOT call codegen on something that might have already been generated
-                // if it's not designed to be called multiple times.
-                // However, for global initialization, we need the value.
-                llvm::Value* dynamic_init_value = nullptr;
-                if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
-                {
-                    if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
-                    {
-                        // Use the temporary builder
-                        dynamic_init_value = synthesisable->codegen(this->get_registry(), module, &tempBuilder);
-                    }
-                }
-
-                if (dynamic_init_value)
-                {
-                    // Perform the store
-                    tempBuilder.CreateStore(dynamic_init_value, global_var);
-                }
-
-                tempBuilder.CreateRetVoid();
-
-                // Register this function in llvm.global_ctors
-                append_to_global_ctors(module, init_func, 65535);
+                global_var_declaration_codegen(this, global_var, module, irBuilder);
             }
         }
 
@@ -255,151 +436,74 @@ llvm::Value* AstVariableDeclaration::codegen(
     // Restore the insert point
     irBuilder->restoreIP(save_point);
 
+    if (init_value == nullptr) return alloca;
+
     // Store the initial value if it exists
-    if (init_value != nullptr)
+    if (this->get_variable_type()->is_optional())
     {
-        if (this->get_variable_type()->is_optional())
+        // If the init value is the same as the inferred var type,
+        // we can just store it directly
+        if (init_value->getType() == var_type)
         {
-            if (init_value->getType() == var_type)
-            {
-                irBuilder->CreateStore(init_value, alloca);
-            }
-            else
-            {
-                llvm::Value* has_value = nullptr;
-                llvm::Value* value = nullptr;
-
-                // Check if we're assigning nil
-                // We can check if the init_value is a null pointer (which nil returns)
-                if (llvm::isa<llvm::ConstantPointerNull>(init_value))
-                {
-                    has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPTIONAL_NO_VALUE);
-
-                    // Get the value type from the struct (element 1)
-                    llvm::Type* value_type = var_type->getStructElementType(OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX);
-                    value = llvm::UndefValue::get(value_type);
-                }
-                else
-                {
-                    has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPTIONAL_HAS_VALUE);
-                    value = init_value;
-
-                    // If value type doesn't match, we might need casting (e.g. integer width)
-                    if (llvm::Type* expected_val_type = var_type->getStructElementType(OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX);
-                        value->getType() != expected_val_type &&
-                        value->getType()->isIntegerTy() &&
-                        expected_val_type->isIntegerTy())
-                    {
-                        value = irBuilder->CreateIntCast(value, expected_val_type, true);
-                    }
-                }
-
-                // Store 'has_value' flag
-                llvm::Value* has_value_ptr = irBuilder->CreateStructGEP(
-                    alloca->getAllocatedType(),
-                    alloca,
-                    OPTIONAL_HAS_VALUE_STRUCT_INDEX
-                );
-                irBuilder->CreateStore(has_value, has_value_ptr);
-
-                // Store value
-                llvm::Value* value_ptr = irBuilder->CreateStructGEP(
-                    alloca->getAllocatedType(),
-                    alloca,
-                    OPTIONAL_ELEMENT_TYPE_STRUCT_INDEX
-                );
-                irBuilder->CreateStore(value, value_ptr);
-            }
+            irBuilder->CreateStore(init_value, alloca);
         }
         else
         {
-            if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
+            llvm::Value* has_value = nullptr;
+            llvm::Value* value = nullptr;
+
+            // Check if we're assigning nil
+            // We can check if the init_value is a null pointer (which nil returns)
+            if (llvm::isa<llvm::ConstantPointerNull>(init_value))
             {
-                init_value = irBuilder->CreateIntCast(init_value, var_type, true);
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPT_NO_VALUE);
+
+                // Get the value type from the struct (element 1)
+                llvm::Type* value_type = var_type->getStructElementType(OPT_IDX_ELEMENT_TYPE);
+                value = llvm::UndefValue::get(value_type);
             }
-            irBuilder->CreateStore(init_value, alloca);
+            else
+            {
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPT_HAS_VALUE);
+                value = init_value;
+
+                // If value type doesn't match, we might need casting (e.g. integer width)
+                if (llvm::Type* expected_val_type = var_type->getStructElementType(OPT_IDX_ELEMENT_TYPE);
+                    value->getType() != expected_val_type &&
+                    value->getType()->isIntegerTy() &&
+                    expected_val_type->isIntegerTy())
+                {
+                    value = irBuilder->CreateIntCast(value, expected_val_type, true);
+                }
+            }
+
+            // Store 'has_value' flag
+            llvm::Value* has_value_ptr = irBuilder->CreateStructGEP(
+                alloca->getAllocatedType(),
+                alloca,
+                OPT_IDX_HAS_VALUE
+            );
+            irBuilder->CreateStore(has_value, has_value_ptr);
+
+            // Store value
+            llvm::Value* value_ptr = irBuilder->CreateStructGEP(
+                alloca->getAllocatedType(),
+                alloca,
+                OPT_IDX_ELEMENT_TYPE
+            );
+            irBuilder->CreateStore(value, value_ptr);
         }
+    }
+    else
+    {
+        if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
+        {
+            init_value = irBuilder->CreateIntCast(init_value, var_type, true);
+        }
+        irBuilder->CreateStore(init_value, alloca);
     }
 
     return alloca;
-}
-
-void AstVariableDeclaration::validate()
-{
-    AstExpression* init_val = this->get_initial_value().get();
-    if (!init_val)
-    {
-        // It's possible that there's no initializer value.
-        // No need to further validate then
-        return;
-    }
-
-    init_val->validate();
-
-    const std::unique_ptr<IAstType> internal_expr_type = infer_expression_type(
-        this->get_registry(),
-        init_val
-    );
-    const auto lhs_type = this->get_variable_type();
-
-    if (const auto rhs_type = internal_expr_type.get();
-        *lhs_type != *rhs_type)
-    {
-        if (const auto primitive_type = dynamic_cast<AstPrimitiveFieldType*>(rhs_type);
-            primitive_type != nullptr &&
-            primitive_type->type() == PrimitiveType::NIL)
-        {
-            if (lhs_type->get_flags() & SRFLAG_TYPE_OPTIONAL) return;
-
-            const std::vector references = {
-                ErrorSourceReference(
-                    lhs_type->to_string(),
-                    *this->get_source(),
-                    this->get_source_position()
-                ),
-                ErrorSourceReference(
-                    rhs_type->to_string(),
-                    *this->get_source(),
-                    init_val->get_source_position()
-                )
-            };
-
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Cannot assign nil to variable of non-optional type '{}'",
-                    lhs_type->to_string()
-                ),
-                references
-            );
-        }
-
-        const std::string lhs_type_str = lhs_type->to_string();
-        const std::string rhs_type_str = rhs_type->to_string();
-
-        const std::vector references = {
-            ErrorSourceReference(
-                lhs_type_str,
-                *this->get_source(),
-                this->get_source_position()
-            ),
-            ErrorSourceReference(
-                rhs_type_str,
-                *this->get_source(),
-                init_val->get_source_position()
-            )
-        };
-
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            std::format(
-                "Type mismatch in variable declaration; expected type '{}', got '{}'",
-                lhs_type_str,
-                rhs_type_str
-            ),
-            references
-        );
-    }
 }
 
 bool AstVariableDeclaration::is_reducible()
@@ -440,86 +544,6 @@ IAstNode* AstVariableDeclaration::reduce()
         }
     }
     return this;
-}
-
-std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
-    const int expression_type_flags,
-    const std::shared_ptr<SymbolRegistry>& registry,
-    TokenSet& set
-)
-{
-    // Ensure we're allowed to parse standalone expressions
-    if ((expression_type_flags & SRFLAG_EXPR_TYPE_STANDALONE) == 0)
-    {
-        set.throw_error("Variable declarations are not allowed in this context");
-    }
-
-    int flags = 0;
-
-    if (registry->get_current_scope_type() == ScopeType::GLOBAL)
-    {
-        flags |= SRFLAG_TYPE_GLOBAL;
-    }
-
-    const auto reference_token = set.peek_next();
-
-    if (set.peek_next_eq(TokenType::KEYWORD_MUT))
-    {
-        flags |= SRFLAG_TYPE_MUTABLE;
-        set.next();
-    }
-    else
-    {
-        // Variables are const by default.
-        set.expect(TokenType::KEYWORD_LET);
-    }
-
-    const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
-    const auto& variable_name = variable_name_tok.get_lexeme();
-    set.expect(TokenType::COLON);
-    auto variable_type = parse_type(registry, set, "Expected variable type after variable name", flags);
-
-
-    std::unique_ptr<AstExpression> value = nullptr;
-
-    if (set.peek_next_eq(TokenType::EQUALS))
-    {
-        set.next();
-        value = parse_inline_expression(registry, set);
-    }
-
-    std::string internal_name = variable_name;
-    if (registry->get_current_scope_type() != ScopeType::GLOBAL)
-    {
-        static int var_decl_counter = 0;
-        internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
-    }
-
-    registry->define_field(
-        variable_name,
-        internal_name,
-        variable_type->clone()
-    );
-
-    if (set.peek_next_eq(TokenType::SEMICOLON))
-    {
-        set.next();
-    }
-
-    return std::make_unique<AstVariableDeclaration>(
-        set.get_source(),
-        SourcePosition(
-            reference_token.get_source_position().offset,
-            variable_type->get_source_position().offset
-            + variable_type->get_source_position().length
-            - reference_token.get_source_position().offset
-        ),
-        registry,
-        variable_name,
-        internal_name,
-        std::move(variable_type),
-        std::move(value)
-    );
 }
 
 std::string AstVariableDeclaration::to_string()

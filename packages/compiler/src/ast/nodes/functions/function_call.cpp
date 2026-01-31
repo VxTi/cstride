@@ -255,6 +255,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
 
     return std::make_unique<AstFunctionCall>(
         set.get_source(),
+        // TODO: Fix this. This currently refers only to the first token, instead of the full call
         reference_token.get_source_position(),
         registry,
         candidate_function_name,
