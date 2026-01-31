@@ -47,7 +47,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     // Get the LLVM type for the variable
     llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
 
-    // If this is a pointer type, convert to pointer
+    // If this is a pointer type, convert to a pointer
     if (this->get_variable_type()->is_pointer())
     {
         var_type = llvm::PointerType::get(module->getContext(), 0);
@@ -180,7 +180,7 @@ bool AstVariableDeclaration::is_reducible()
         return false;
     }
     // Variables are reducible only if their initial value is reducible,
-    // In the future we can also check whether variables are ever refereced,
+    // In the future we can also check whether variables are ever referenced,
     // in which case we can optimize away the variable declaration.
     if (const auto value = dynamic_cast<IReducible*>(this->get_initial_value().get()))
     {
@@ -232,7 +232,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         flags |= SRFLAG_TYPE_GLOBAL;
     }
 
-    auto reference_token = set.peek_next();
+    const auto reference_token = set.peek_next();
 
     if (set.peek_next_eq(TokenType::KEYWORD_MUT))
     {
@@ -246,7 +246,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
 
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
-    const auto variable_name = variable_name_tok.get_lexeme();
+    const auto& variable_name = variable_name_tok.get_lexeme();
     set.expect(TokenType::COLON);
     auto variable_type = parse_type(registry, set, "Expected variable type after variable name", flags);
 

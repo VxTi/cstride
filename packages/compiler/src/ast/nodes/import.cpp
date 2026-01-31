@@ -2,6 +2,7 @@
 
 #include "ast/nodes/import.h"
 #include "errors.h"
+#include "formatting.h"
 
 using namespace stride::ast;
 
@@ -21,8 +22,9 @@ bool stride::ast::is_import_statement(const TokenSet& tokens)
  */
 std::string consume_import_module_base(TokenSet& tokens)
 {
-    const auto base = tokens.expect(TokenType::IDENTIFIER, "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'");
-    std::vector<std::string> parts = {base.get_lexeme()};
+    const auto base = tokens.expect(TokenType::IDENTIFIER,
+                                    "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'");
+    std::vector parts = {base.get_lexeme()};
 
     while (tokens.peek(0) == TokenType::DOUBLE_COLON && tokens.peek(1) == TokenType::IDENTIFIER)
     {
@@ -55,7 +57,7 @@ std::vector<std::string> consume_import_submodules(TokenSet& tokens)
     tokens.expect(TokenType::LBRACE, "Expected opening brace with modules after '::', e.g., {module1, module2, ...}");
     const auto first = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
 
-    std::vector<std::string> submodules = {first.get_lexeme()};
+    std::vector submodules = {first.get_lexeme()};
 
     while (tokens.peek(0) == TokenType::COMMA && tokens.peek(1) == TokenType::IDENTIFIER)
     {
@@ -94,7 +96,8 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
             )
         );
     }
-    const auto reference_token = set.expect(TokenType::KEYWORD_USE); // With the guard clause, this will always be the case.
+    const auto reference_token = set.expect(TokenType::KEYWORD_USE);
+    // With the guard clause, this will always be the case.
 
     const auto import_module = consume_import_module_base(set);
     const auto import_list = consume_import_submodules(set);
@@ -115,14 +118,12 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
 
 std::string AstImport::to_string()
 {
-    std::ostringstream deps_stream;
-    for (size_t i = 0; i < this->get_submodules().size(); ++i)
+    std::vector<std::string> modules;
+    modules.reserve(this->get_submodules().size());
+
+    for (const auto& module : this->get_submodules())
     {
-        deps_stream << this->get_submodules()[i];
-        if (i < this->get_submodules().size() - 1)
-        {
-            deps_stream << ", ";
-        }
+        modules.push_back(module);
     }
-    return std::format("Import [{}] {{ {} }}", this->get_module(), deps_stream.str());
+    return std::format("Import [{}] {{ {} }}", this->get_module(), join(modules, ", "));
 };

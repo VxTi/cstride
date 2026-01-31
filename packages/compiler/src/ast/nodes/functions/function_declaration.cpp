@@ -9,8 +9,8 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "ast/nodes/blocks.h"
 #include "ast/internal_names.h"
+#include "ast/nodes/blocks.h"
 
 
 using namespace stride::ast;
@@ -76,7 +76,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
     builder->SetInsertPoint(entry_bb);
 
     // We create a new builder for the prologue to ensure allocas are at the very top
-    llvm::IRBuilder<> prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
+    llvm::IRBuilder prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
 
     auto arg_it = function->arg_begin();
     for (const auto& param : this->get_parameters())
@@ -91,7 +91,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
             );
 
             // Store the initial argument value into the alloca
-            builder->CreateStore(&*arg_it, alloca);
+            builder->CreateStore(arg_it, alloca);
 
             ++arg_it;
         }
@@ -176,7 +176,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     // Here we expect to receive the function name
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected function name after 'fn'");
-    const auto fn_name = fn_name_tok.get_lexeme();
+    const auto& fn_name = fn_name_tok.get_lexeme();
 
     auto function_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::FUNCTION);
 
@@ -211,6 +211,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     auto return_type = parse_type(registry, tokens, "Expected return type in function header", SRFLAG_NONE);
 
     std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
+    parameter_types_cloned.reserve(parameters.size());
+
     for (const auto& param : parameters)
     {
         parameter_types_cloned.push_back(param->get_type()->clone());
@@ -224,6 +226,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     if ((function_flags & SRFLAG_FN_DEF_EXTERN) == 0)
     {
         std::vector<IAstType*> parameter_types;
+        parameter_types.reserve(parameters.size());
+
         for (const auto& param : parameters)
         {
             parameter_types.push_back(param->get_type());

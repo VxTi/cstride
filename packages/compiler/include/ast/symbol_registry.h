@@ -204,7 +204,7 @@ namespace stride::ast
 
         /// Will attempt to define the function in the global registry.
         void define_function(
-            std::string internal_function_name,
+            const std::string& internal_function_name,
             std::vector<std::unique_ptr<IAstType>> parameter_types,
             std::unique_ptr<IAstType> return_type
         ) const;
@@ -221,7 +221,7 @@ namespace stride::ast
 
         void define_field(
             std::string field_name,
-            std::string internal_name,
+            const std::string& internal_name,
             std::unique_ptr<IAstType> type
         );
 

@@ -1,4 +1,3 @@
-#include <complex>
 #include <format>
 #include <iostream>
 #include <sstream>
@@ -10,10 +9,9 @@
 #include <llvm/IR/Value.h>
 
 #include "formatting.h"
-#include "ast/flags.h"
+#include "ast/internal_names.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
-#include "../../../../include/ast/internal_names.h"
 
 using namespace stride::ast;
 
@@ -109,7 +107,7 @@ llvm::Value* AstFunctionCall::codegen(
         const auto suggested_alternative_symbol = registry->fuzzy_find(this->get_function_name());
         const auto suggested_alternative =
             suggested_alternative_symbol
-                ? std::format("Did you mean '{}'?", this->format_suggestion(suggested_alternative_symbol))
+                ? std::format("Did you mean '{}'?", format_suggestion(suggested_alternative_symbol))
                 : "";
 
         throw parsing_error(
@@ -165,7 +163,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
 )
 {
     const auto reference_token = set.next();
-    const auto candidate_function_name = reference_token.get_lexeme();
+    const auto& candidate_function_name = reference_token.get_lexeme();
     auto function_parameter_set = collect_parenthesized_block(set);
 
     std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};

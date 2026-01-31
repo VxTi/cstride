@@ -100,7 +100,7 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     }
 
     const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected a function parameter name");
-    const auto param_name = reference_token.get_lexeme();
+    const auto& param_name = reference_token.get_lexeme();
     set.expect(TokenType::COLON);
 
     std::unique_ptr<IAstType> fn_param_type = parse_type(

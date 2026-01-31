@@ -67,7 +67,7 @@ bool SymbolRegistry::is_symbol_type_defined_globally(
 }
 
 void SymbolRegistry::define_function(
-    std::string internal_function_name,
+    const std::string& internal_function_name,
     std::vector<std::unique_ptr<IAstType>> parameter_types,
     std::unique_ptr<IAstType> return_type
 ) const
@@ -77,7 +77,7 @@ void SymbolRegistry::define_function(
         std::make_unique<SymbolFnDefinition>(
             std::move(parameter_types),
             std::move(return_type),
-            std::move(internal_function_name)
+            internal_function_name
         )
     );
 }

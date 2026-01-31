@@ -15,7 +15,7 @@ std::unique_ptr<AstStructMember> parse_struct_member(
 )
 {
     const auto struct_member_name_tok = set.expect(TokenType::IDENTIFIER, "Expected struct member name");
-    const auto struct_member_name = struct_member_name_tok.get_lexeme();
+    const auto& struct_member_name = struct_member_name_tok.get_lexeme();
 
     set.expect(TokenType::COLON);
 
@@ -91,7 +91,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
     if (struct_body_set.has_value())
     {
-        auto nested_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::BLOCK);
+        const auto nested_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::BLOCK);
         while (struct_body_set.value().has_next())
         {
             auto member = parse_struct_member(nested_scope, struct_body_set.value());
