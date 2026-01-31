@@ -26,7 +26,7 @@ void AstFunctionDeclaration::validate()
 }
 
 void AstFunctionDeclaration::resolve_forward_references(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -56,7 +56,7 @@ void AstFunctionDeclaration::resolve_forward_references(
 }
 
 llvm::Value* AstFunctionDeclaration::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -104,7 +104,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body());
             synthesisable != nullptr)
         {
-            last_val = synthesisable->codegen(scope, module, builder);
+            last_val = synthesisable->codegen(registry, module, builder);
         }
     }
 
@@ -161,7 +161,7 @@ bool stride::ast::is_fn_declaration(const TokenSet& tokens)
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& tokens
 )
 {
@@ -178,7 +178,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected function name after 'fn'");
     const auto fn_name = fn_name_tok.get_lexeme();
 
-    auto function_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::FUNCTION);
+    auto function_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::FUNCTION);
 
     tokens.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -208,7 +208,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(scope, tokens, "Expected return type in function header", SRFLAG_NONE);
+    auto return_type = parse_type(registry, tokens, "Expected return type in function header", SRFLAG_NONE);
 
     std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
     for (const auto& param : parameters)
@@ -231,9 +231,9 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         internal_name = resolve_internal_function_name(parameter_types, fn_name);
     }
 
-    // Function will be defined in the parent scope (global, perhaps)
-    // its children will reside in the function scope. This is intentional
-    scope->define_function(fn_name, std::move(parameter_types_cloned), return_type->clone());
+    // Function will be defined in the parent registry (global, perhaps)
+    // its children will reside in the function registry. This is intentional
+    registry->define_function(fn_name, std::move(parameter_types_cloned), return_type->clone());
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -249,7 +249,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     return std::make_unique<AstFunctionDeclaration>(
         tokens.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         fn_name,
         internal_name,
         std::move(parameters),

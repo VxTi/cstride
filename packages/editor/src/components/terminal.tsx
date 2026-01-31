@@ -120,7 +120,7 @@ export default function TerminalWindow() {
               ? { opacity: 1, transform: 'scale(1)' }
               : { opacity: 0, transform: 'scale(0)' }
           }
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.25 }}
           className="origin-bottom-left"
         >
           <div
@@ -147,7 +147,7 @@ export default function TerminalWindow() {
             animate={{ opacity: 1, transform: 'scale(1)' }}
             exit={{ opacity: 0, transform: 'scale(1.1)' }}
             transition={{
-              duration: 0.1,
+              duration: 0.2,
             }}
             className="origin-bottom-left max-w-max"
           >

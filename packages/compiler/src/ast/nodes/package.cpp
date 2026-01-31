@@ -17,7 +17,7 @@ bool stride::ast::is_package_declaration(const TokenSet& set)
 }
 
 std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -35,7 +35,7 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
     return std::make_unique<AstPackage>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         package_name
     );
 }

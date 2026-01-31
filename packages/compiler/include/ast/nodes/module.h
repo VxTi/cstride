@@ -21,11 +21,11 @@ namespace stride::ast
         explicit AstModule(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             std::string name,
             std::unique_ptr<AstBlock> body
         )
-            : IAstNode(source, source_position, scope),
+            : IAstNode(source, source_position, registry),
               _name(std::move(name)),
               _body(std::move(body)) {}
 
@@ -33,13 +33,13 @@ namespace stride::ast
         const std::string& get_name() const { return _name; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         void resolve_forward_references(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;

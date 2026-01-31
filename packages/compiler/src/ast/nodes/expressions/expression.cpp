@@ -12,7 +12,7 @@
 using namespace stride::ast;
 
 llvm::Value* AstExpression::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder
 )
@@ -26,23 +26,23 @@ std::string AstExpression::to_string()
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
-    if (auto lit = parse_literal_optional(scope, set);
+    if (auto lit = parse_literal_optional(registry, set);
         lit.has_value())
     {
         return std::move(lit.value());
     }
 
-    if (auto unary = parse_binary_unary_op(scope, set);
+    if (auto unary = parse_binary_unary_op(registry, set);
         unary.has_value())
     {
         return std::move(unary.value());
     }
 
-    if (auto reassignment = parse_variable_reassignment(scope, set);
+    if (auto reassignment = parse_variable_reassignment(registry, set);
         reassignment.has_value())
     {
         return std::move(reassignment.value());
@@ -54,7 +54,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
     {
         set.next();
         // TODO: Potentially fix possibility of stack overflow if expression is too large
-        auto expr = parse_standalone_expression_part(scope, set);
+        auto expr = parse_standalone_expression_part(registry, set);
         set.expect(TokenType::RPAREN, "Expected ')' after expression");
         return expr;
     }
@@ -64,7 +64,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         /// Function invocations, e.g., `<identifier>(...)`
         if (set.peek(1).get_type() == TokenType::LPAREN)
         {
-            return parse_function_call(scope, set);
+            return parse_function_call(registry, set);
         }
 
         /// Regular identifier parsing; can be variable reference
@@ -72,7 +72,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         std::string identifier_name = reference_token.get_lexeme();
         std::string internal_name = identifier_name;
 
-        if (const auto variable_definition = scope->field_lookup(identifier_name);
+        if (const auto variable_definition = registry->field_lookup(identifier_name);
             variable_definition != nullptr)
         {
             internal_name = variable_definition->get_internal_symbol_name();
@@ -81,19 +81,19 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         auto identifier = std::make_unique<AstIdentifier>(
             set.get_source(),
             reference_token.get_source_position(),
-            scope,
+            registry,
             identifier_name,
             internal_name
         );
 
         if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
         {
-            return parse_array_member_accessor(scope, set, std::move(identifier));
+            return parse_array_member_accessor(registry, set, std::move(identifier));
         }
 
         if (is_member_accessor(identifier.get(), set))
         {
-            return parse_chained_member_access(scope, set, std::move(identifier));
+            return parse_chained_member_access(registry, set, std::move(identifier));
         }
 
         return std::move(identifier);
@@ -103,7 +103,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
 }
 
 std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs
 )
@@ -114,7 +114,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
     {
         set.next();
 
-        auto rhs = parse_standalone_expression_part(scope, set);
+        auto rhs = parse_standalone_expression_part(registry, set);
         if (!rhs)
         {
             return std::nullopt;
@@ -123,7 +123,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
         return std::make_unique<AstLogicalOp>(
             set.get_source(),
             reference_token.get_source_position(),
-            scope,
+            registry,
             std::move(lhs),
             logical_op.value(),
             std::move(rhs)
@@ -135,7 +135,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
 
 // Will yield `lhs` if no comparative operation is found
 std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_optional(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs
 )
@@ -146,7 +146,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
     {
         set.next();
 
-        auto rhs = parse_standalone_expression_part(scope, set);
+        auto rhs = parse_standalone_expression_part(registry, set);
         if (!rhs)
         {
             return std::nullopt;
@@ -155,7 +155,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
         return std::make_unique<AstComparisonOp>(
             set.get_source(),
             reference_token.get_source_position(),
-            scope,
+            registry,
             std::move(lhs),
             comparative_op.value(),
             std::move(rhs)
@@ -167,7 +167,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
 
 std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     const int expression_type_flags,
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -176,13 +176,13 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     // Will try to parse <name>::{ ... }
     if (is_struct_initializer(set))
     {
-        return parse_struct_initializer(scope, set);
+        return parse_struct_initializer(registry, set);
     }
 
     // Will try to parse [ ... ]
     if (is_array_initializer(set))
     {
-        return parse_array_initializer(scope, set);
+        return parse_array_initializer(registry, set);
     }
 
     // let <name>: <type> = <...>
@@ -190,12 +190,12 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     {
         return parse_variable_declaration(
             expression_type_flags,
-            scope,
+            registry,
             set
         );
     }
 
-    auto lhs = parse_standalone_expression_part(scope, set);
+    auto lhs = parse_standalone_expression_part(registry, set);
     if (!lhs)
     {
         set.throw_error("Unexpected token in expression");
@@ -206,7 +206,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     // If we have a result from arithmetic parsing, update lhs.
     // Note: parse_arithmetic_binary_operation_optional returns the lhs if no arithmetic op is found,
     // so it effectively passes through unless an error occurs (returns nullopt).
-    if (auto arithmetic_result = parse_arithmetic_binary_operation_optional(scope, set, std::move(lhs), 1);
+    if (auto arithmetic_result = parse_arithmetic_binary_operation_optional(registry, set, std::move(lhs), 1);
         arithmetic_result.has_value())
     {
         lhs = std::move(arithmetic_result.value());
@@ -218,14 +218,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
     }
 
     // These methods optionally wrap the existing expression in another expression, e.g., Expr<lhs> -> ComparativeExpr<Expr<lhs>, Expr<rhs>>
-    if (auto comparative_expr = parse_comparative_operation_optional(scope, set, std::move(lhs));
+    if (auto comparative_expr = parse_comparative_operation_optional(registry, set, std::move(lhs));
         comparative_expr.has_value())
     {
         return std::move(comparative_expr.value());
     }
 
     // Similar case here
-    if (auto logical_expr = parse_logical_operation_optional(scope, set, std::move(lhs)))
+    if (auto logical_expr = parse_logical_operation_optional(registry, set, std::move(lhs)))
     {
         return std::move(logical_expr.value());
     }
@@ -237,32 +237,32 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
  * General expression parsing. These can occur in global / function scopes
  */
 std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
     return parse_expression_extended(
         SRFLAG_EXPR_TYPE_STANDALONE,
-        scope,
+        registry,
         set
     );
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
     return parse_expression_extended(
         SRFLAG_EXPR_TYPE_INLINE,
-        scope,
+        registry,
         set
     );
 }
 
 /// TODO: Implement
 std::string stride::ast::parse_property_accessor_statement(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {

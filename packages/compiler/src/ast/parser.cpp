@@ -22,62 +22,62 @@ std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::
     return std::move(parse_sequential(program.get_global_scope(), tokens));
 }
 
-std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set)
+std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
 {
     if (is_package_declaration(set))
     {
-        return parse_package_declaration(scope, set);
+        return parse_package_declaration(registry, set);
     }
     if (is_module_statement(set))
     {
-        return parse_module_statement(scope, set);
+        return parse_module_statement(registry, set);
     }
 
     if (is_import_statement(set))
     {
-        return parse_import_statement(scope, set);
+        return parse_import_statement(registry, set);
     }
 
     if (is_fn_declaration(set))
     {
-        return parse_fn_declaration(scope, set);
+        return parse_fn_declaration(registry, set);
     }
 
     if (is_struct_declaration(set))
     {
-        return parse_struct_declaration(scope, set);
+        return parse_struct_declaration(registry, set);
     }
 
     if (is_enumerable_declaration(set))
     {
-        return parse_enumerable_declaration(scope, set);
+        return parse_enumerable_declaration(registry, set);
     }
 
     if (is_return_statement(set))
     {
-        return parse_return_statement(scope, set);
+        return parse_return_statement(registry, set);
     }
 
     if (is_for_loop_statement(set))
     {
-        return parse_for_loop_statement(scope, set);
+        return parse_for_loop_statement(registry, set);
     }
 
     if (is_while_loop_statement(set))
     {
-        return parse_while_loop_statement(scope, set);
+        return parse_while_loop_statement(registry, set);
     }
 
     if (is_if_statement(set))
     {
-        return parse_if_statement(scope, set);
+        return parse_if_statement(registry, set);
     }
 
-    return parse_standalone_expression(scope, set);
+    return parse_standalone_expression(registry, set);
 }
 
 std::unique_ptr<AstBlock> stride::ast::parse_sequential(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -87,7 +87,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
 
     while (set.has_next())
     {
-        if (auto result = parse_next_statement(scope, set))
+        if (auto result = parse_next_statement(registry, set))
         {
             nodes.push_back(std::move(result));
         }
@@ -96,7 +96,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
     return std::make_unique<AstBlock>(
         set.get_source(),
         initial_token.get_source_position(),
-        scope,
+        registry,
         std::move(nodes)
     );
 }

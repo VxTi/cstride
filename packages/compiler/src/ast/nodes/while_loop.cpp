@@ -20,7 +20,7 @@ void AstWhileLoop::validate()
 }
 
 std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -34,20 +34,20 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
 
     auto header_condition = header_condition_opt.value();
 
-    auto condition = parse_standalone_expression(scope, header_condition);
-    auto body = parse_block(scope, set);
+    auto condition = parse_standalone_expression(registry, header_condition);
+    auto body = parse_block(registry, set);
 
     return std::make_unique<AstWhileLoop>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         std::move(condition),
         std::move(body)
     );
 }
 
 llvm::Value* AstWhileLoop::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -64,7 +64,7 @@ llvm::Value* AstWhileLoop::codegen(
     llvm::Value* condValue = nullptr;
     if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->get_condition()->codegen(scope, module, builder);
+        condValue = this->get_condition()->codegen(registry, module, builder);
 
         if (condValue == nullptr)
         {
@@ -87,7 +87,7 @@ llvm::Value* AstWhileLoop::codegen(
     builder->SetInsertPoint(loop_body_bb);
     if (this->body())
     {
-        this->body()->codegen(scope, module, builder);
+        this->body()->codegen(registry, module, builder);
     }
     builder->CreateBr(loop_cond_bb);
 

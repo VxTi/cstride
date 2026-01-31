@@ -10,7 +10,7 @@ bool stride::ast::is_return_statement(const TokenSet& tokens)
     return tokens.peek_next_eq(TokenType::KEYWORD_RETURN);
 }
 
-std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared_ptr<SymbolRegistry>& scope,
+std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared_ptr<SymbolRegistry>& registry,
                                                                TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_RETURN);
@@ -21,17 +21,17 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(const std::shared
         return std::make_unique<AstReturn>(
             set.get_source(),
             reference_token.get_source_position(),
-            scope,
+            registry,
             nullptr
         );
     }
 
-    auto value = parse_standalone_expression(scope, set);
+    auto value = parse_standalone_expression(registry, set);
 
     return std::make_unique<AstReturn>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         std::move(value)
     );
 }
@@ -45,7 +45,7 @@ std::string AstReturn::to_string()
 }
 
 llvm::Value* AstReturn::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -54,7 +54,7 @@ llvm::Value* AstReturn::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->value()))
         {
-            llvm::Value* val = synthesisable->codegen(scope, module, builder);
+            llvm::Value* val = synthesisable->codegen(registry, module, builder);
 
             if (!val) return nullptr;
 

@@ -202,7 +202,7 @@ namespace stride::ast
         [[nodiscard]]
         const FieldSymbolDef* field_lookup(const std::string& name) const;
 
-        /// Will attempt to define the function in the global scope.
+        /// Will attempt to define the function in the global registry.
         void define_function(
             std::string internal_function_name,
             std::vector<std::unique_ptr<IAstType>> parameter_types,
@@ -230,15 +230,15 @@ namespace stride::ast
 
         void define_symbol(const std::string& symbol_name, SymbolType type);
 
-        /// Checks whether the provided variable name is defined in the current scope.
+        /// Checks whether the provided variable name is defined in the current registry.
         [[nodiscard]]
         bool is_field_defined_in_scope(const std::string& variable_name) const;
 
-        /// Checks whether the provided variable name is defined in the global scope.
+        /// Checks whether the provided variable name is defined in the global registry.
         [[nodiscard]]
         bool is_field_defined_globally(const std::string& field_name) const;
 
-        /// Checks whether the provided internal function name is defined in the global scope.
+        /// Checks whether the provided internal function name is defined in the global registry.
         /// Do note that the internal name is not the name that you would use in
         /// source code, but rather the mangled name used for code generation.
         [[nodiscard]]

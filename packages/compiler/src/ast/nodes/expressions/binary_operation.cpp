@@ -61,7 +61,7 @@ std::string AstBinaryArithmeticOp::to_string()
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
 std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_binary_operation_optional(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs,
     const int min_precedence
@@ -87,7 +87,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 
             // If we're unable to parse the next expression part, for whatever reason,
             // we'll return nullopt. This will indicate that the expression is incomplete or invalid.
-            auto rhs = parse_standalone_expression_part(scope, set);
+            auto rhs = parse_standalone_expression_part(registry, set);
             if (!rhs)
             {
                 return std::nullopt;
@@ -100,7 +100,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
                 if (const int next_precedence = get_binary_operator_precedence(next_op.value());
                     precedence < next_precedence)
                 {
-                    if (auto rhs_opt = parse_arithmetic_binary_operation_optional(scope, set, std::move(rhs), precedence + 1); rhs_opt.
+                    if (auto rhs_opt = parse_arithmetic_binary_operation_optional(registry, set, std::move(rhs), precedence + 1); rhs_opt.
                         has_value())
                     {
                         rhs = std::move(rhs_opt.value());
@@ -116,7 +116,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
             lhs = std::make_unique<AstBinaryArithmeticOp>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                scope,
+                registry,
                 std::move(lhs),
                 binary_op.value(),
                 std::move(rhs)
@@ -130,13 +130,13 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 }
 
 llvm::Value* AstBinaryArithmeticOp::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
-    llvm::Value* lhs = this->get_left().codegen(scope, module, builder);
-    llvm::Value* rhs = this->get_right().codegen(scope, module, builder);
+    llvm::Value* lhs = this->get_left().codegen(registry, module, builder);
+    llvm::Value* rhs = this->get_right().codegen(registry, module, builder);
 
     if (!lhs || !rhs)
     {

@@ -22,9 +22,9 @@ namespace stride::ast
         explicit AstImport(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             const Dependency& dependency
-        ) : IAstNode(source, source_position, scope),
+        ) : IAstNode(source, source_position, registry),
             _dependency(dependency) {}
 
         [[nodiscard]]
@@ -41,5 +41,5 @@ namespace stride::ast
 
     bool is_import_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstImport> parse_import_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstImport> parse_import_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
 }

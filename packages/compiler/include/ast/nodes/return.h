@@ -16,17 +16,17 @@ namespace stride::ast
         explicit AstReturn(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             std::unique_ptr<IAstNode> value
         )
             :
-            IAstNode(source, source_position, scope),
+            IAstNode(source, source_position, registry),
             _value(std::move(value)) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& scope,
+            const std::shared_ptr<SymbolRegistry>& registry,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -38,5 +38,5 @@ namespace stride::ast
 
     bool is_return_statement(const TokenSet& tokens);
 
-    std::unique_ptr<AstReturn> parse_return_statement(const std::shared_ptr<SymbolRegistry>& scope, TokenSet& set);
+    std::unique_ptr<AstReturn> parse_return_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
 }

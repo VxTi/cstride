@@ -19,7 +19,7 @@ bool stride::ast::is_module_statement(const TokenSet& tokens)
 }
 
 std::unique_ptr<AstModule> stride::ast::parse_module_statement(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
 {
@@ -30,20 +30,20 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
         "Expected module name after 'module' keyword"
     ).get_lexeme();
 
-    const auto module_scope = std::make_shared<SymbolRegistry>(scope, ScopeType::MODULE);
+    const auto module_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::MODULE);
     auto module_body = parse_block(module_scope, set);
 
     return std::make_unique<AstModule>(
         set.get_source(),
         reference_token.get_source_position(),
-        scope,
+        registry,
         module_name,
         std::move(module_body)
     );
 }
 
 llvm::Value* AstModule::codegen(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -54,12 +54,12 @@ llvm::Value* AstModule::codegen(
     }
 
     return this->_body->codegen(
-        scope, module, builder
+        registry, module, builder
     );
 }
 
 void AstModule::resolve_forward_references(
-    const std::shared_ptr<SymbolRegistry>& scope,
+    const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -69,5 +69,5 @@ void AstModule::resolve_forward_references(
         return;
     }
 
-    this->_body->resolve_forward_references(scope, module, builder);
+    this->_body->resolve_forward_references(registry, module, builder);
 }
