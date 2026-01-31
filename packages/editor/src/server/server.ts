@@ -88,7 +88,7 @@ wss.on('connection', (ws: WebSocket) => {
 
           break;
       }
-    } catch (e) {
+    } catch {
       sendMessage(ws, WsMessageType.PROCESS_STDERR, 'Failed to parse JSON');
     }
   });

@@ -1,5 +1,5 @@
 import { registerCompletionProvider } from './completions/completion-provider';
-import { registerHoverProvider }      from './hover-provider';
+import { registerHoverProvider } from './hover-provider';
 import { conf, language, strideLanguageId } from './language-config';
 
 export function registerLanguage(editor: typeof import('monaco-editor')) {
