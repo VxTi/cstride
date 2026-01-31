@@ -150,7 +150,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         }
     }
 
-    if (!global_var) return nullptr; // Shouldn't happen, but just in case
+    if (this->get_variable_type()->is_global() && !global_var) return nullptr; // Shouldn't happen, but just in case
 
     // Generate code for the initial value
     llvm::Value* init_value = nullptr;
