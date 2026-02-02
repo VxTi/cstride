@@ -85,9 +85,9 @@ llvm::Value* AstWhileLoop::codegen(
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
 
     builder->SetInsertPoint(loop_body_bb);
-    if (this->body())
+    if (this->get_body())
     {
-        this->body()->codegen(registry, module, builder);
+        this->get_body()->codegen(registry, module, builder);
     }
     builder->CreateBr(loop_cond_bb);
 
@@ -101,6 +101,6 @@ std::string AstWhileLoop::to_string()
     return std::format(
         "WhileLoop(cond: {}, body: {})",
         get_condition() ? get_condition()->to_string() : "<empty>",
-        body() ? body()->to_string() : "<empty>"
+        get_body() ? get_body()->to_string() : "<empty>"
     );
 }

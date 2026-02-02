@@ -47,7 +47,7 @@ size_t ast_type_to_internal_id(IAstType* type)
     if (const auto primitive = dynamic_cast<AstPrimitiveType*>(type);
         primitive != nullptr)
     {
-        return primitive_type_to_internal_id(primitive->type());
+        return primitive_type_to_internal_id(primitive->get_type());
     }
 
     if (const auto* named = dynamic_cast<const AstStructType*>(type);

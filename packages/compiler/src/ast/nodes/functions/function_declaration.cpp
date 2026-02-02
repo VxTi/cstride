@@ -22,6 +22,8 @@ std::vector<AstReturn*> collect_return_statements(
     const AstBlock* body
 )
 {
+    if (!body) return {};
+
     std::vector<AstReturn*> return_statements;
     for (const auto& child : body->children())
     {
@@ -30,21 +32,18 @@ std::vector<AstReturn*> collect_return_statements(
             return_statements.push_back(return_stmt);
         }
 
-        if (const auto if_stmt = dynamic_cast<AstIfStatement*>(child.get()))
+        // Recursively collect from child containers
+        if (const auto container_node = dynamic_cast<IAstContainer*>(child.get()))
         {
-            const auto aggregated = collect_return_statements(if_stmt->get_body());
+            const auto aggregated = collect_return_statements(container_node->get_body());
             return_statements.insert(return_statements.end(), aggregated.begin(), aggregated.end());
         }
 
-        if (const auto for_loop = dynamic_cast<AstForLoop*>(child.get()))
+        // Edge case: if statements hold the `else` block too, though this doesn't fall under the `IAstContainer` abstraction.
+        // The `get_body` part is added in the previous case, though we still need to add the else body
+        if (const auto if_statement = dynamic_cast<AstIfStatement*>(child.get()))
         {
-            const auto aggregated = collect_return_statements(for_loop->get_body());
-            return_statements.insert(return_statements.end(), aggregated.begin(), aggregated.end());
-        }
-
-        if (const auto block = dynamic_cast<AstBlock*>(child.get()))
-        {
-            const auto aggregated = collect_return_statements(block);
+            const auto aggregated = collect_return_statements(if_statement->get_else_body());
             return_statements.insert(return_statements.end(), aggregated.begin(), aggregated.end());
         }
     }
@@ -53,12 +52,32 @@ std::vector<AstReturn*> collect_return_statements(
 
 void AstFunctionDeclaration::validate()
 {
-    if (this->body() != nullptr)
+    if (this->get_body() != nullptr)
     {
-        this->body()->validate();
+        this->get_body()->validate();
     }
 
-    const auto return_statements = collect_return_statements(this->body());
+    const auto return_statements = collect_return_statements(this->get_body());
+
+    // For void types, we only disallow returning expressions, as this is redundant.
+    if (const auto void_ret = dynamic_cast<AstPrimitiveType*>(this->get_return_type());
+        void_ret != nullptr && void_ret->get_type() == PrimitiveType::VOID)
+    {
+        for (const auto& return_stmt : return_statements)
+        {
+            if (return_stmt->get_return_expr() != nullptr)
+            {
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
+                    std::format("Function '{}' has return get_type 'void' and cannot return a value.",
+                                this->get_name()),
+                    *this->get_source(),
+                    return_stmt->get_source_position()
+                );
+            }
+        }
+        return;
+    }
 
     if (return_statements.empty())
     {
@@ -66,12 +85,19 @@ void AstFunctionDeclaration::validate()
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Function '{}' returns a struct type, but no return statement is present.",
+                std::format("Function '{}' returns a struct get_type, but no return statement is present.",
                             this->get_name()),
                 *this->get_source(),
                 this->get_source_position()
             );
         }
+
+        throw parsing_error(
+            ErrorType::RUNTIME_ERROR,
+            std::format("Function '{}' is missing a return statement.", this->get_name()),
+            *this->get_source(),
+            this->get_source_position()
+        );
     }
 
     for (const auto& return_stmt : return_statements)
@@ -82,18 +108,23 @@ void AstFunctionDeclaration::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Function '{}' returns a value of type '{}', but return statement returns a value of type '{}'.",
+                    "Function '{}' expected a return get_type of '{}', but received '{}'.",
                     this->get_name(), this->get_return_type()->to_string(), return_type->to_string()
                 ),
-                *this->get_source(),
-                return_type->get_source_position()
+                {
+                    ErrorSourceReference(
+                        std::format("expected {}", this->get_return_type()->to_string()),
+                        *this->get_source(),
+                        return_stmt->get_return_expr()->get_source_position()
+                    )
+                }
             );
         }
     }
 
     // We'll have to validate whether it:
-    // 1. Requires a return AST node - This can be the case when the return type is not a primitive, e.g., a struct
-    // 2. The return type doesn't match the function signature
+    // 1. Requires a return AST node - This can be the case when the return get_type is not a primitive, e.g., a struct
+    // 2. The return get_type doesn't match the function signature
     // 3. All code paths return a value (if not void)
 }
 
@@ -171,9 +202,9 @@ llvm::Value* AstFunctionDeclaration::codegen(
 
     // Generate Body
     llvm::Value* last_val = nullptr;
-    if (this->body())
+    if (this->get_body())
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->body());
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_body());
             synthesisable != nullptr)
         {
             last_val = synthesisable->codegen(registry, module, builder);
@@ -181,7 +212,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
     }
 
     // Final Safety: Implicit Return
-    // If the body didn't explicitly return (no terminator found), add one.
+    // If the get_body didn't explicitly return (no terminator found), add one.
     if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();
         current_bb && !current_bb->getTerminator())
     {
@@ -278,8 +309,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
     tokens.expect(TokenType::COLON, "Expected a colon after function definition");
 
-    // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(registry, tokens, "Expected return type in function header", SRFLAG_NONE);
+    // Return get_type doesn't have the same flags as the function, hence NONE
+    auto return_type = parse_type(registry, tokens, "Expected return get_type in function header", SRFLAG_NONE);
 
     std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
     parameter_types_cloned.reserve(parameters.size());
@@ -359,7 +390,7 @@ std::string AstFunctionDeclaration::to_string()
         params += param->to_string();
     }
 
-    const auto body_str = this->body() == nullptr ? "<empty>" : this->body()->to_string();
+    const auto body_str = this->get_body() == nullptr ? "<empty>" : this->get_body()->to_string();
 
     return std::format(
         "FunctionDeclaration(name: {}(internal: {}), params: [{}], body: {}{} -> {})",

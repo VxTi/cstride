@@ -8,7 +8,8 @@ namespace stride::ast
     class AstIfStatement
         : public IAstNode,
           public ISynthesisable,
-          public IReducible
+          public IReducible,
+          public IAstContainer
     {
         std::unique_ptr<AstExpression> _condition;
         std::unique_ptr<AstBlock> _body;
@@ -32,7 +33,7 @@ namespace stride::ast
         AstExpression* get_condition() const { return this->_condition.get(); }
 
         [[nodiscard]]
-        AstBlock* get_body() const { return this->_body.get(); }
+        AstBlock* get_body() override { return this->_body.get(); }
 
         [[nodiscard]]
         AstBlock* get_else_body() const { return this->_else_body.get(); }

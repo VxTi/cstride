@@ -30,7 +30,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
             fp_lit->get_source_position(),
             registry,
             type,
-            fp_lit->bit_count() / BITS_PER_BYTE
+            fp_lit->bit_count()
         );
     }
 
@@ -45,7 +45,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
             int_lit->get_source_position(),
             registry,
             type,
-            int_lit->bit_count() / BITS_PER_BYTE,
+            int_lit->bit_count(),
             int_lit->get_flags()
         );
     }
@@ -85,7 +85,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
 
     throw parsing_error(
         ErrorType::TYPE_ERROR,
-        "Unable to resolve expression literal type",
+        "Unable to resolve expression literal get_type",
         *literal->get_source(),
         literal->get_source_position()
     );
@@ -112,7 +112,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     throw parsing_error(
         ErrorType::TYPE_ERROR,
         std::format(
-            "Unable to resolve function invocation return type for function '{}'",
+            "Unable to resolve function invocation return get_type for function '{}'",
             fn_call->get_function_name()
         ),
         *fn_call->get_source(),
@@ -162,7 +162,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 prim->get_source(),
                 prim->get_source_position(),
                 registry,
-                prim->type(),
+                prim->get_type(),
                 prim->bit_count(),
                 flags
             );
@@ -184,7 +184,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                "Cannot dereference non-pointer type",
+                "Cannot dereference non-pointer get_type",
                 *operation->get_source(),
                 operation->get_source_position()
             );
@@ -198,7 +198,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 prim->get_source(),
                 prim->get_source_position(),
                 registry,
-                prim->type(),
+                prim->get_type(),
                 prim->bit_count(),
                 flags
             );
@@ -235,8 +235,8 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(
 {
     if (array->get_elements().empty())
     {
-        // This is one of those cases where it's impossible to deduce the type
-        // Therefore, we have an UNKNOWN type.
+        // This is one of those cases where it's impossible to deduce the get_type
+        // Therefore, we have an UNKNOWN get_type.
         return std::make_unique<AstPrimitiveType>(
             array->get_source(),
             array->get_source_position(),
@@ -281,7 +281,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         );
     }
 
-    // Start with the type of the base identifier - This will be a struct type
+    // Start with the get_type of the base identifier - This will be a struct get_type
     auto current_type = variable_definition->get_type();
 
     // Iterate through all member segments (e.g., .b, .c)
@@ -295,7 +295,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Cannot access member of non-struct type '{}'",
+                    "Cannot access member of non-struct get_type '{}'",
                     current_type->get_internal_name()
                 ),
                 *expr->get_source(), expr->get_source_position()
@@ -338,7 +338,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Variable '{}' of type '{}' has no member named '{}'",
+                    "Variable '{}' of get_type '{}' has no member named '{}'",
                     base_iden->get_name(),
                     struct_def.value()->get_internal_symbol_name(),
                     segment_iden->get_name()
@@ -352,7 +352,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         current_type = field_type.value();
     }
 
-    // Return the final inferred type
+    // Return the final inferred get_type
     return std::unique_ptr(current_type->clone());
 }
 
@@ -431,8 +431,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         const auto lhs_variable_type = operation->get_variable_type();
         const auto value = infer_expression_type(registry, operation->get_initial_value().get());
 
-        // Both the expression type and the declared type are the same (e.g., let var: i32 = 10)
-        // so we can just return the declared type.
+        // Both the expression get_type and the declared get_type are the same (e.g., let var: i32 = 10)
+        // so we can just return the declared get_type.
         if (lhs_variable_type->equals(*value))
         {
             return lhs_variable_type->clone();
@@ -481,7 +481,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
-        "Unable to resolve expression type",
+        "Unable to resolve expression get_type",
         *expr->get_source(),
         expr->get_source_position()
     );

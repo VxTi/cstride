@@ -50,7 +50,8 @@ namespace stride::ast
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
     class AstFunctionDeclaration :
         public IAstNode,
-        public ISynthesisable
+        public ISynthesisable,
+        public IAstContainer
     {
         std::unique_ptr<AstBlock> _body;
         std::string _name;
@@ -100,7 +101,7 @@ namespace stride::ast
         std::string get_internal_name() const { return this->_internal_name; }
 
         [[nodiscard]]
-        AstBlock* body() const { return this->_body.get(); }
+        AstBlock* get_body() override { return this->_body.get(); }
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstFunctionParameter>>& get_parameters() const
