@@ -316,7 +316,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         context_type_flags
     );
 
-    // If the next tokens are square brackets, it's an array get_type.
+    // If the next tokens are square brackets, it's an array type.
     // We'll wrap the initial NamedValueType in the ArrayType.
     if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
     {
