@@ -383,8 +383,6 @@ llvm::Value* AstVariableDeclaration::codegen(
 
     const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(this, module, var_type);
 
-    if (!global_var.has_value()) return nullptr; // Shouldn't happen, but just in case
-
     // Generate code for the initial value
     llvm::Value* init_value = nullptr;
     if (const auto initial_value = this->get_initial_value().get();
@@ -410,30 +408,24 @@ llvm::Value* AstVariableDeclaration::codegen(
         }
     }
 
-    if (this->get_variable_type()->is_global())
+    if (global_var.has_value())
     {
-        // Handle Initialization
-        if (this->get_initial_value() != nullptr)
+        if (init_value != nullptr)
         {
-            if (init_value != nullptr)
+            if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
             {
-                if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
-                {
-                    // Optimization: If it's already a constant, just set it as the initializer
-                    global_var.value()->setInitializer(constant);
-                }
+                // Optimization: If it's already a constant, just set it as the initializer
+                global_var.value()->setInitializer(constant);
             }
-            else
-            {
-                global_var_declaration_codegen(this, global_var.value(), module, ir_builder);
-            }
+        }
+        else
+        {
+            global_var_declaration_codegen(this, global_var.value(), module, ir_builder);
         }
 
         return global_var.value();
     }
 
-    // Local variable - use AllocaInst
-    // Check if we have a valid insert block
     llvm::BasicBlock* current_block = ir_builder->GetInsertBlock();
     if (current_block == nullptr)
     {
