@@ -112,7 +112,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     throw parsing_error(
         ErrorType::TYPE_ERROR,
         std::format(
-            "Unable to resolve function invocation return get_type for function '{}'",
+            "Unable to resolve function invocation return type for function '{}'",
             fn_call->get_function_name()
         ),
         *fn_call->get_source(),
@@ -281,7 +281,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         );
     }
 
-    // Start with the get_type of the base identifier - This will be a struct get_type
+    // Start with the type of the base identifier - This will be a struct get_type
     auto current_type = variable_definition->get_type();
 
     // Iterate through all member segments (e.g., .b, .c)
@@ -295,7 +295,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Cannot access member of non-struct get_type '{}'",
+                    "Cannot access member of non-struct type '{}'",
                     current_type->get_internal_name()
                 ),
                 *expr->get_source(), expr->get_source_position()
@@ -338,7 +338,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Variable '{}' of get_type '{}' has no member named '{}'",
+                    "Variable '{}' of type '{}' has no member named '{}'",
                     base_iden->get_name(),
                     struct_def.value()->get_internal_symbol_name(),
                     segment_iden->get_name()
@@ -431,7 +431,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         const auto lhs_variable_type = operation->get_variable_type();
         const auto value = infer_expression_type(registry, operation->get_initial_value().get());
 
-        // Both the expression get_type and the declared get_type are the same (e.g., let var: i32 = 10)
+        // Both the expression type and the declared type are the same (e.g., let var: i32 = 10)
         // so we can just return the declared get_type.
         if (lhs_variable_type->equals(*value))
         {

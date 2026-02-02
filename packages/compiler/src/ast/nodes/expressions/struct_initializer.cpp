@@ -123,7 +123,7 @@ void AstStructInitializer::validate()
 
     const auto fields = definition->get_fields();
 
-    // Quick check: Ensure the number of members matches (no get_type comparisons required)
+    // Quick check: Ensure the number of members matches (no type comparisons required)
     if (fields.size() != this->_initializers.size())
     {
         throw parsing_error(
@@ -247,7 +247,7 @@ llvm::Value* AstStructInitializer::codegen(
     {
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
-            std::format("Struct get_type '{}' is undefined", this->_struct_name),
+            std::format("Struct type '{}' is undefined", this->_struct_name),
             *this->get_source(),
             this->get_source_position()
         );
@@ -257,7 +257,7 @@ llvm::Value* AstStructInitializer::codegen(
 
     // CASE A: Global Variable Initialization (Requires Constant)
     // If all members are constants, we can create a ConstantStruct.
-    // This resolves the "initializer get_type does not match" error for globals.
+    // This resolves the "initializer type does not match" error for globals.
     if (all_constants)
     {
         return llvm::ConstantStruct::get(struct_type, constant_members);

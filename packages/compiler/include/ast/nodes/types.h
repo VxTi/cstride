@@ -25,12 +25,12 @@ namespace stride::ast
         CHAR,
         STRING,
         VOID,
-        // If the resulting get_type is NIL, and the context allows for optional types,
-        // we can safely ignore the get_type comparison.
+        // If the resulting type is NIL, and the context allows for optional types,
+        // we can safely ignore the type comparison.
         NIL,
-        // Reserved get_type for empty arrays;
-        // It's impossible to deduce the get_type from an empty array,
-        // as it would otherwise be done by inferring the get_type of its members.
+        // Reserved type for empty arrays;
+        // It's impossible to deduce the type from an empty array,
+        // as it would otherwise be done by inferring the type of its members.
         // Therefore, we'll leave it as a special case.
         UNKNOWN
     };

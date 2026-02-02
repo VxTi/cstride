@@ -52,10 +52,14 @@ std::vector<AstReturn*> collect_return_statements(
 
 void AstFunctionDeclaration::validate()
 {
+    // Extern functions don't require return statements and have no body, so no validation needed.
+    if (this->is_extern()) return;
+
     if (this->get_body() != nullptr)
     {
         this->get_body()->validate();
     }
+
 
     const auto return_statements = collect_return_statements(this->get_body());
 
@@ -69,8 +73,10 @@ void AstFunctionDeclaration::validate()
             {
                 throw parsing_error(
                     ErrorType::TYPE_ERROR,
-                    std::format("Function '{}' has return get_type 'void' and cannot return a value.",
-                                this->get_name()),
+                    std::format(
+                        "Function '{}' has return type 'void' and cannot return a value.",
+                        this->get_name()
+                    ),
                     *this->get_source(),
                     return_stmt->get_source_position()
                 );
@@ -102,13 +108,13 @@ void AstFunctionDeclaration::validate()
 
     for (const auto& return_stmt : return_statements)
     {
-        if (const auto return_type = infer_expression_type(this->get_registry(), return_stmt->get_return_expr());
+        if (const auto return_type = infer_expression_type(return_stmt->get_registry(), return_stmt->get_return_expr());
             !return_type->equals(*this->get_return_type()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Function '{}' expected a return get_type of '{}', but received '{}'.",
+                    "Function '{}' expected a return type of '{}', but received '{}'.",
                     this->get_name(), this->get_return_type()->to_string(), return_type->to_string()
                 ),
                 {
@@ -123,8 +129,8 @@ void AstFunctionDeclaration::validate()
     }
 
     // We'll have to validate whether it:
-    // 1. Requires a return AST node - This can be the case when the return get_type is not a primitive, e.g., a struct
-    // 2. The return get_type doesn't match the function signature
+    // 1. Requires a return AST node - This can be the case when the return type is not a primitive, e.g., a struct
+    // 2. The return type doesn't match the function signature
     // 3. All code paths return a value (if not void)
 }
 
@@ -309,8 +315,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
     tokens.expect(TokenType::COLON, "Expected a colon after function definition");
 
-    // Return get_type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(registry, tokens, "Expected return get_type in function header", SRFLAG_NONE);
+    // Return type doesn't have the same flags as the function, hence NONE
+    auto return_type = parse_type(registry, tokens, "Expected return type in function header", SRFLAG_NONE);
 
     std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
     parameter_types_cloned.reserve(parameters.size());
