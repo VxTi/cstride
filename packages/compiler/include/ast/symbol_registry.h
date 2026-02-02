@@ -200,6 +200,9 @@ namespace stride::ast
         std::optional<std::vector<std::pair<std::string, IAstType*>>> get_struct_fields(const std::string& name) const;
 
         [[nodiscard]]
+        SymbolRegistry* get_parent_registry() const { return this->_parent_registry.get(); }
+
+        [[nodiscard]]
         const FieldSymbolDef* field_lookup(const std::string& name) const;
 
         /// Will attempt to define the function in the global registry.

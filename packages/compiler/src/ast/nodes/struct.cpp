@@ -44,7 +44,8 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     TokenSet& tokens
 )
 {
-    if (registry->get_current_scope_type() != ScopeType::GLOBAL && registry->get_current_scope_type() != ScopeType::MODULE)
+    if (registry->get_current_scope_type() != ScopeType::GLOBAL && registry->get_current_scope_type() !=
+        ScopeType::MODULE)
     {
         tokens.throw_error("Struct declarations are only allowed in global or module scope");
     }
@@ -83,7 +84,18 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     // Ensure we have at least one member in the struct body
     if (!struct_body_set.has_value() || !struct_body_set.value().has_next())
     {
-        tokens.throw_error("Expected struct body");
+        const auto ref_src_pos = reference_token.get_source_position();
+        const auto struct_name_pos = struct_name_tok.get_source_position();
+
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            "A struct must have at least 1 member",
+            *tokens.get_source(),
+            SourcePosition(
+                ref_src_pos.offset,
+                struct_name_pos.offset + struct_name_pos.length - ref_src_pos.offset
+            )
+        );
     }
 
     std::vector<std::unique_ptr<AstStructMember>> members = {};

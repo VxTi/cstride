@@ -35,6 +35,8 @@ namespace stride::ast
 
         [[nodiscard]]
         AstExpression* get_return_expr() const { return _value.get(); }
+
+        void validate() override;
     };
 
     bool is_return_statement(const TokenSet& tokens);
