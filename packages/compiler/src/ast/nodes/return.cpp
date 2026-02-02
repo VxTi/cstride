@@ -17,7 +17,13 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     TokenSet& set
 )
 {
-    const auto reference_token = set.expect(TokenType::KEYWORD_RETURN);
+    // We can just do a quick check here, as we don't know yet whether in what context it's used.
+    if (registry->get_current_scope_type() == ScopeType::GLOBAL ||
+        registry->get_current_scope_type() == ScopeType::MODULE)
+    {
+        set.throw_error("Return statements are not allowed outside of functions");
+    }
+    const auto reference_token = set.next();
 
     // If parsing a void return: `return`
     if (!set.has_next())
@@ -46,6 +52,26 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
         registry,
         std::move(value)
     );
+}
+
+
+void AstReturn::validate()
+{
+    auto registry = this->get_registry().get();
+
+    while (registry->get_current_scope_type() != ScopeType::FUNCTION && registry->get_parent_registry() != nullptr)
+    {
+        registry = registry->get_parent_registry();
+    }
+    if (registry->get_current_scope_type() != ScopeType::FUNCTION)
+    {
+        throw parsing_error(
+            ErrorType::SYNTAX_ERROR,
+            "Return statement cannot appear outside of functions",
+            *this->get_source(),
+            this->get_source_position()
+        );
+    }
 }
 
 std::string AstReturn::to_string()

@@ -60,7 +60,12 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
 
         if (if_body_expr == nullptr)
         {
-            set.throw_error("Expected condition after 'if' keyword");
+            throw parsing_error(
+                ErrorType::SYNTAX_ERROR,
+                "Expected condition after 'if' keyword",
+                *set.get_source(),
+                reference_token.get_source_position()
+            );
         }
 
         std::vector<std::unique_ptr<IAstNode>> nodes;
@@ -198,7 +203,17 @@ llvm::Value* AstIfStatement::codegen(
     return nullptr;
 }
 
-void AstIfStatement::validate() {}
+void AstIfStatement::validate()
+{
+    this->get_condition()->validate();
+
+    this->get_body()->validate();
+
+    if (this->get_else_body() != nullptr)
+    {
+        this->get_else_body()->validate();
+    }
+}
 
 std::string AstIfStatement::to_string()
 {

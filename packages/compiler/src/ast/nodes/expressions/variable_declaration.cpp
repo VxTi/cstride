@@ -55,6 +55,24 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         set.next();
         value = parse_inline_expression(registry, set);
     }
+    else
+    {
+        if (!variable_type->is_optional())
+        {
+            throw parsing_error(
+                ErrorType::SYNTAX_ERROR,
+                "Expected '=' after non-optional variable declaration",
+                *variable_type->get_source(),
+                variable_type->get_source_position()
+            );
+        }
+        // If no expression was provided (lacking '='), initialize with nil if the initial type is optional
+        value = std::make_unique<AstNilLiteral>(
+            set.get_source(),
+            SourcePosition(reference_token.get_source_position().offset, variable_type->get_source_position().offset),
+            registry
+        );
+    }
 
 
     std::string internal_name = variable_name;
@@ -191,7 +209,7 @@ void AstVariableDeclaration::validate()
 
 // LLVM calls these functions at startup to initialize global variables
 // This way, we can assign function return values to variables
-void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, int priority)
+void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, const int priority)
 {
     llvm::IRBuilder<> ib(module->getContext());
 
@@ -392,7 +410,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     if (this->get_variable_type()->is_global())
     {
         // Handle Initialization
-        if (this->get_initial_value().get() != nullptr)
+        if (this->get_initial_value() != nullptr)
         {
             if (init_value != nullptr)
             {
