@@ -52,6 +52,42 @@ bool is_array_notation(const TokenSet& set)
     return set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1);
 }
 
+std::unique_ptr<IAstType> parse_type_metadata(
+    std::unique_ptr<IAstType> type,
+    TokenSet& set,
+    int context_type_flags
+)
+{
+    const auto src_pos = set.peek_next().get_source_position();
+    const bool is_array = is_array_notation(set);
+
+    if (is_array) set.skip(2);
+
+    // If the preceding token is a question mark, the type is determined
+    // to be optional.
+    // An example of this would be `i32?` or `i32[]?`
+    if (set.peek_next_eq(TokenType::QUESTION))
+    {
+        set.skip(1);
+        context_type_flags |= SRFLAG_TYPE_OPTIONAL;
+    }
+
+    type->set_flags(type->get_flags() | context_type_flags);
+
+    if (is_array)
+    {
+        return std::make_unique<AstArrayType>(
+            type->get_source(),
+            stride::SourcePosition(src_pos.offset, src_pos.length + 2),
+            type->get_registry(),
+            std::move(type),
+            0
+        );
+    }
+
+    return std::move(type);
+}
+
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
     const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set,
@@ -62,20 +98,17 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     const bool is_ptr = set.peek_next_eq(TokenType::STAR);
     const bool is_reference = set.peek_next_eq(TokenType::AMPERSAND);
 
-    int additional_flags = 0;
-
     if (is_ptr)
     {
-        additional_flags |= SRFLAG_TYPE_PTR;
+        context_type_flags |= SRFLAG_TYPE_PTR;
     }
     else if (is_reference)
     {
-        additional_flags |= SRFLAG_TYPE_REFERENCE;
+        context_type_flags |= SRFLAG_TYPE_REFERENCE;
     }
 
     // If it has flags, we'll have to offset the next token peeking by one
-    const int offset = additional_flags ? 1 : 0;
-    context_type_flags |= additional_flags;
+    const int offset = is_ptr || is_reference ? 1 : 0;
 
     std::optional<std::unique_ptr<IAstType>> result = std::nullopt;
 
@@ -257,34 +290,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
 
     set.skip(offset + 1);
 
-    const auto src_pos = result.value()->get_source_position();
-
-
-    if (is_array_notation(set))
-    {
-        set.skip(2);
-
-        result = std::make_unique<AstArrayType>(
-            result.value()->get_source(),
-            SourcePosition(src_pos.offset, src_pos.length + 2),
-            result.value()->get_registry(),
-            std::move(result.value()),
-            0
-        );
-    }
-
-    // If the preceding token is a question mark, the type is determined
-    // to be optional.
-    // An example of this would be `i32?` or `i32[]?`
-    if (set.peek_next_eq(TokenType::QUESTION))
-    {
-        set.skip(1);
-        context_type_flags |= SRFLAG_TYPE_OPTIONAL;
-    }
-
-    result.value()->set_flags(context_type_flags);
-
-    return result;
+    return parse_type_metadata(std::move(result.value()), set, context_type_flags);
 }
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
@@ -316,22 +322,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         context_type_flags
     );
 
-    // If the next tokens are square brackets, it's an array type.
-    // We'll wrap the initial NamedValueType in the ArrayType.
-    if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
-    {
-        set.skip(2);
-
-        return std::make_unique<AstArrayType>(
-            set.get_source(),
-            reference_token.get_source_position(),
-            registry,
-            std::move(named_type),
-            0
-        );
-    }
-
-    return std::move(named_type);
+    return parse_type_metadata(std::move(named_type), set, context_type_flags);
 }
 
 std::unique_ptr<IAstType> stride::ast::parse_type(
@@ -441,10 +432,11 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
 
         std::string actual_name = custom->name();
-        auto struct_def_opt = registry->get_struct_def(actual_name);
-        if (struct_def_opt.has_value())
+        if (auto struct_def_opt = registry->get_struct_def(actual_name);
+            struct_def_opt.has_value())
         {
             auto struct_def = struct_def_opt.value();
+
             while (struct_def->is_reference_struct())
             {
                 actual_name = struct_def->get_reference_struct_name().value();
@@ -562,4 +554,39 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         "Cannot compute dominant type for incompatible primitive types",
         references
     );
+}
+
+bool AstStructType::equals(IAstType& other)
+{
+    if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
+    {
+        // The other type might be a primitive "NIL" type,
+        // then we consider the types equal if this is optional
+        return other_primitive->get_type() == PrimitiveType::NIL && this->is_optional();
+    }
+    if (auto* other_named = dynamic_cast<AstStructType*>(&other))
+    {
+        return this->get_internal_name() == other_named->get_internal_name();
+    }
+    return false;
+}
+
+bool AstPrimitiveType::equals(IAstType& other)
+{
+    if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
+    {
+        // If either types is optional, and the other is NIL, they're also "equal".
+        const auto is_one_optional =
+            (this->get_type() == PrimitiveType::NIL && other_primitive->is_optional())
+            || (other_primitive->get_type() == PrimitiveType::NIL && this->is_optional());
+
+        return this->get_type() == other_primitive->get_type() || is_one_optional;
+    }
+
+    if (const auto* struct_type = dynamic_cast<AstStructType*>(&other))
+    {
+        return this->get_type() == PrimitiveType::NIL && struct_type->is_optional();
+    }
+
+    return false;
 }

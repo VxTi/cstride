@@ -164,20 +164,7 @@ namespace stride::ast
             return this->get_internal_name();
         }
 
-        bool equals(IAstType& other) override
-        {
-            if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
-            {
-                const auto is_one_optional =
-                    (this->get_type() == PrimitiveType::NIL
-                        && (other_primitive->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0)
-                    || (other_primitive->get_type() == PrimitiveType::NIL
-                        && (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0);
-
-                return this->get_type() == other_primitive->get_type() || is_one_optional;
-            }
-            return false;
-        }
+        bool equals(IAstType& other) override;
     };
 
     class AstStructType
@@ -212,18 +199,14 @@ namespace stride::ast
 
         std::string to_string() override
         {
-            return std::format("{}{}", this->name(), this->is_pointer() ? "*" : "");
+            return std::format("{}{}{}",
+                               this->is_pointer() ? "*" : "",
+                               this->name(),
+                               this->is_optional() ? "?" : ""
+            );
         }
 
-        bool equals(IAstType& other) override
-        {
-            if (const auto* other_named = dynamic_cast<AstStructType*>(&other))
-            {
-                return this->_name == other_named->_name
-                    && this->get_flags() == other_named->get_flags();
-            }
-            return false;
-        }
+        bool equals(IAstType& other) override;
     };
 
     class AstArrayType

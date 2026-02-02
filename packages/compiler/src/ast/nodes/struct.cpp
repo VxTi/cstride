@@ -210,11 +210,7 @@ std::string AstStruct::to_string()
     return std::format("Struct({}) (\n  {}\n)", this->get_name(), imploded.str());
 }
 
-llvm::Value* AstStruct::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
-    llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+void AstStruct::resolve_forward_references(const std::shared_ptr<SymbolRegistry>& registry, llvm::Module* module, llvm::IRBuilder<>* builder)
 {
     // Retrieve or Create the named struct type (Opaque)
     // We check if it already exists to support forward declarations or multi-pass compilation.
@@ -227,7 +223,7 @@ llvm::Value* AstStruct::codegen(
     // If the body is already defined, we stop here to avoid re-definition errors.
     if (!struct_type->isOpaque())
     {
-        return nullptr;
+        return;
     }
 
     std::vector<llvm::Type*> member_types;
@@ -294,6 +290,15 @@ llvm::Value* AstStruct::codegen(
     // This finalizes the layout of the struct.
     // 'isPacked' is false by default unless you have specific packing rules.
     struct_type->setBody(member_types, /*isPacked=*/false);
+}
 
+llvm::Value* AstStruct::codegen(
+    const std::shared_ptr<SymbolRegistry>& registry,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
+{
+    // Struct registration is done in the `resolve_forward_references` pass
+    // so that one can reference structs before they're semantically defined.
     return nullptr;
 }
