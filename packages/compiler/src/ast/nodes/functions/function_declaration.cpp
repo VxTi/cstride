@@ -91,7 +91,7 @@ void AstFunctionDeclaration::validate()
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Function '{}' returns a struct get_type, but no return statement is present.",
+                std::format("Function '{}' returns a struct type, but no return statement is present.",
                             this->get_name()),
                 *this->get_source(),
                 this->get_source_position()

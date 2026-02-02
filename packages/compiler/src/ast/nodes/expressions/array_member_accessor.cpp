@@ -66,14 +66,14 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::Value* base_ptr = this->_array_identifier->codegen(registry, module, builder);
     llvm::Value* index_val = this->_index_accessor_expr->codegen(registry, module, builder);
 
-    // Element get_type, not the array get_type.
+    // Element type, not the array type.
     // Assumes `array_iden_type` is something like "T[]" and has an element type you can extract.
     const auto* array_ty = dynamic_cast<AstArrayType*>(array_iden_type.get());
     if (!array_ty)
     {
         throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
-                "Array member accessor used on non-array get_type",
+                "Array member accessor used on non-array type",
                 *this->get_source(),
                 this->get_source_position()
         );
