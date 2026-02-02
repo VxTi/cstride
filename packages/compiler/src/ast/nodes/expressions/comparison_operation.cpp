@@ -55,8 +55,8 @@ llvm::Value* AstComparisonOp::codegen(
         return nullptr;
     }
 
-    const auto lhs_optional_ty =  is_optional_wrapped_type(left->getType());
-    const auto rhs_optional_ty =  is_optional_wrapped_type(right->getType());
+    const auto lhs_optional_ty = is_optional_wrapped_type(left->getType());
+    const auto rhs_optional_ty = is_optional_wrapped_type(right->getType());
 
     if (lhs_optional_ty || rhs_optional_ty)
     {
@@ -188,4 +188,56 @@ llvm::Value* AstComparisonOp::codegen(
     default:
         return nullptr;
     }
+}
+
+void AstComparisonOp::validate()
+{
+    const auto lhs_type = infer_expression_type(this->get_registry(), this->get_left());
+    const auto rhs_type = infer_expression_type(this->get_registry(), this->get_right());
+
+    if (!lhs_type || !rhs_type)
+    {
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            "Unable to infer types for comparison operation",
+            *this->get_source(),
+            this->get_source_position()
+        );
+    }
+
+    const auto lhs_primitive = dynamic_cast<AstPrimitiveType*>(lhs_type.get());
+    const auto rhs_primitive = dynamic_cast<AstPrimitiveType*>(rhs_type.get());
+
+    // If LHS is NIL and RHS is valid, allow the comparison (nil checks)
+    if (lhs_primitive && rhs_primitive &&
+        lhs_primitive->get_type() == PrimitiveType::NIL &&
+        rhs_primitive->get_type() != PrimitiveType::NIL)
+        return;
+
+    // visa versa; LHS is primitive and RHS is nil
+    if (rhs_primitive && lhs_primitive &&
+        rhs_primitive->get_type() == PrimitiveType::NIL &&
+        lhs_primitive->get_type() != PrimitiveType::NIL)
+        return;
+
+    const auto lhs_struct = dynamic_cast<AstStructType*>(lhs_type.get());
+    const auto rhs_struct = dynamic_cast<AstStructType*>(rhs_type.get());
+
+    // LHS is optional struct and RHS is primitive and RHS is not nil
+    if (lhs_struct && rhs_primitive &&
+        lhs_struct->is_optional() &&
+        rhs_primitive->get_type() == PrimitiveType::NIL)
+        return;
+
+    if (lhs_primitive && rhs_struct &&
+        rhs_struct->is_optional() &&
+        lhs_primitive->get_type() == PrimitiveType::NIL)
+        return;
+
+    throw parsing_error(
+        ErrorType::SEMANTIC_ERROR,
+        "Comparison operation operands must be used on primitive or optional types",
+        *this->get_source(),
+        this->get_source_position()
+    );
 }

@@ -481,6 +481,8 @@ namespace stride::ast
         ) override;
 
         std::string to_string() override;
+
+        void validate() override;
     };
 
     class AstUnaryOp

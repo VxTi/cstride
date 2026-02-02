@@ -141,13 +141,12 @@ llvm::Value* AstFunctionCall::codegen(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
         {
-            auto arg_val = synthesisable->codegen(registry, module, builder);
+            const auto arg_val = synthesisable->codegen(registry, module, builder);
 
             if (!arg_val)
             {
                 return nullptr;
             }
-            arg_val = unwrap_optional_value(arg_val, builder);
 
             // Unwrapping optional if passed to a non-optional parameter or variadic function
             // if non-optional, this will just append `arg_val`.
