@@ -48,7 +48,7 @@ void SymbolRegistry::define_field(
     this->_symbols.push_back(
         std::make_unique<FieldSymbolDef>(
             std::move(field_name),
-            std::move(internal_name),
+            internal_name,
             std::move(type)
         )
     );

@@ -42,12 +42,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         return std::move(unary.value());
     }
 
-    if (auto reassignment = parse_variable_reassignment(registry, set);
-        reassignment.has_value())
-    {
-        return std::move(reassignment.value());
-    }
-
     // If the next token is a '(', we'll try to descend into it
     // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
     if (set.peek_next_eq(TokenType::LPAREN))
@@ -65,6 +59,12 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
         if (set.peek(1).get_type() == TokenType::LPAREN)
         {
             return parse_function_call(registry, set);
+        }
+
+        if (auto reassignment = parse_variable_reassignment(registry, set);
+            reassignment.has_value())
+        {
+            return std::move(reassignment.value());
         }
 
         /// Regular identifier parsing; can be variable reference
