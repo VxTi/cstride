@@ -352,7 +352,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         current_type = field_type.value();
     }
 
-    // Return the final inferred get_type
+    // Return the final inferred type
     return std::unique_ptr(current_type->clone());
 }
 
