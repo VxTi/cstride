@@ -108,6 +108,11 @@ void AstFunctionDeclaration::validate()
 
     for (const auto& return_stmt : return_statements)
     {
+        if (return_stmt->get_return_expr() == nullptr)
+        {
+            continue;
+        }
+
         if (const auto return_type = infer_expression_type(return_stmt->get_registry(), return_stmt->get_return_expr());
             !return_type->equals(*this->get_return_type()))
         {
