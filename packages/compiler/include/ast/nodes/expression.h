@@ -721,16 +721,16 @@ namespace stride::ast
     /// Returns the precedence value for a binary arithmetic operator
     int get_binary_operator_precedence(BinaryOpType type);
 
-    /// Converts a token type to its corresponding logical operator type
+    /// Converts a token get_type to its corresponding logical operator get_type
     std::optional<LogicalOpType> get_logical_op_type(TokenType type);
 
-    /// Converts a token type to its corresponding comparison operator type
+    /// Converts a token get_type to its corresponding comparison operator get_type
     std::optional<ComparisonOpType> get_comparative_op_type(TokenType type);
 
-    /// Converts a token type to its corresponding binary arithmetic operator type
+    /// Converts a token get_type to its corresponding binary arithmetic operator get_type
     std::optional<BinaryOpType> get_binary_op_type(TokenType type);
 
-    /// Converts a token type to its corresponding unary operator type
+    /// Converts a token get_type to its corresponding unary operator get_type
     std::optional<UnaryOpType> get_unary_op_type(TokenType type);
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *

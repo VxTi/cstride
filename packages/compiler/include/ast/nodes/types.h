@@ -25,12 +25,12 @@ namespace stride::ast
         CHAR,
         STRING,
         VOID,
-        // If the resulting type is NIL, and the context allows for optional types,
-        // we can safely ignore the type comparison.
+        // If the resulting get_type is NIL, and the context allows for optional types,
+        // we can safely ignore the get_type comparison.
         NIL,
-        // Reserved type for empty arrays;
-        // It's impossible to deduce the type from an empty array,
-        // as it would otherwise be done by inferring the type of its members.
+        // Reserved get_type for empty arrays;
+        // It's impossible to deduce the get_type from an empty array,
+        // as it would otherwise be done by inferring the get_type of its members.
         // Therefore, we'll leave it as a special case.
         UNKNOWN
     };
@@ -101,17 +101,17 @@ namespace stride::ast
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& registry,
             const PrimitiveType type,
-            const size_t byte_size,
+            const size_t bit_count,
             const int flags = SRFLAG_NONE
         ) :
             IAstType(source, source_position, registry, flags),
             _type(type),
-            _bit_count(byte_size) {}
+            _bit_count(bit_count) {}
 
         ~AstPrimitiveType() override = default;
 
         [[nodiscard]]
-        PrimitiveType type() const { return this->_type; }
+        PrimitiveType get_type() const { return this->_type; }
 
         [[nodiscard]]
         bool is_integer_ty() const
@@ -156,7 +156,7 @@ namespace stride::ast
 
         std::string get_internal_name() override
         {
-            return primitive_type_to_str(this->type(), this->get_flags());
+            return primitive_type_to_str(this->get_type(), this->get_flags());
         }
 
         std::string to_string() override
@@ -168,9 +168,13 @@ namespace stride::ast
         {
             if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
             {
-                return this->type() == other_primitive->type()
-                    && this->bit_count() == other_primitive->bit_count()
-                    && this->get_flags() == other_primitive->get_flags();
+                const auto is_one_optional =
+                    (this->get_type() == PrimitiveType::NIL
+                        && (other_primitive->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0)
+                    || (other_primitive->get_type() == PrimitiveType::NIL
+                        && (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0);
+
+                return this->get_type() == other_primitive->get_type() || is_one_optional;
             }
             return false;
         }

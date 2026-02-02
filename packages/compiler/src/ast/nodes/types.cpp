@@ -273,7 +273,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
         );
     }
 
-    // If the preceding token is a question mark, the type is determined
+    // If the preceding token is a question mark, the get_type is determined
     // to be optional.
     // An example of this would be `i32?` or `i32[]?`
     if (set.peek_next_eq(TokenType::QUESTION))
@@ -293,7 +293,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     int context_type_flags
 )
 {
-    // Custom types are identifiers in the type position.
+    // Custom types are identifiers in the get_type position.
     const auto reference_token = set.peek_next();
 
     if (set.peek_next_eq(TokenType::STAR))
@@ -316,7 +316,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         context_type_flags
     );
 
-    // If the next tokens are square brackets, it's an array type.
+    // If the next tokens are square brackets, it's an array get_type.
     // We'll wrap the initial NamedValueType in the ArrayType.
     if (set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1))
     {
@@ -389,7 +389,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         {
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
-                "Unable to resolve internal type for array element",
+                "Unable to resolve internal get_type for array element",
                 *array->get_source(),
                 array->get_source_position()
             );
@@ -400,7 +400,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 
     if (const auto* primitive = dynamic_cast<AstPrimitiveType*>(type))
     {
-        switch (primitive->type())
+        switch (primitive->get_type())
         {
         case PrimitiveType::INT8:
         case PrimitiveType::UINT8:
@@ -433,8 +433,8 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     if (const auto* custom = dynamic_cast<AstStructType*>(type))
     {
         // If it's a pointer, we don't even need to look up the struct name
-        // to return the LLVM type, because all pointers are the same.
-        // However, usually you want to validate the type exists first.
+        // to return the LLVM get_type, because all pointers are the same.
+        // However, usually you want to validate the get_type exists first.
         if (custom->is_pointer())
         {
             return llvm::PointerType::get(module->getContext(), 0); // Replaces PointerType::get(struct_type, 0)
@@ -459,7 +459,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         {
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
-                std::format("Custom type '{}' not found", custom->name()),
+                std::format("Custom get_type '{}' not found", custom->name()),
                 *custom->get_source(),
                 custom->get_source_position()
             );
@@ -487,7 +487,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
-            "Cannot mix primitive type with named type",
+            "Cannot mix primitive get_type with named get_type",
             *lhs->get_source(),
             lhs->get_source_position()
         );
@@ -498,7 +498,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
-            "Cannot compute dominant type for non-primitive types",
+            "Cannot compute dominant get_type for non-primitive types",
             *lhs->get_source(),
             lhs->get_source_position()
         );
@@ -510,7 +510,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // TODO: Handle unsigned / signed properly
 
     // If both sides are the same, we'll just return the one with the highest byte count
-    // E.g., dominant type (fp32, fp64) will yield fp64, (i32, i64) will yield i64
+    // E.g., dominant get_type (fp32, fp64) will yield fp64, (i32, i64) will yield i64
     if (are_both_sides_floats || are_both_sides_integers)
     {
         return lhs_primitive->bit_count() >= rhs_primitive->bit_count()
@@ -519,14 +519,14 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     }
 
     // If LHS is a float, but the RHS is not, we'll have to convert the resulting
-    // type into a float with the highest byte size
+    // get_type into a float with the highest byte size
     // The same holds true for visa vesa.
     if (
         (lhs_primitive->is_fp() && !rhs_primitive->is_fp()) ||
         (rhs_primitive->is_fp() && !lhs_primitive->is_fp())
     )
     {
-        // If the RHS has a higher byte size, we need to promote the RHS to a floating point type
+        // If the RHS has a higher byte size, we need to promote the RHS to a floating point get_type
         // and return the highest byte size
         if (rhs_primitive->bit_count() > lhs_primitive->bit_count())
         {
@@ -540,7 +540,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
             );
         }
 
-        // Otherwise, just return the LHS as the dominant type (float32 / float64)
+        // Otherwise, just return the LHS as the dominant get_type (float32 / float64)
         return lhs_primitive->clone();
     }
 
@@ -559,7 +559,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
     throw parsing_error(
         ErrorType::TYPE_ERROR,
-        "Cannot compute dominant type for incompatible primitive types",
+        "Cannot compute dominant get_type for incompatible primitive types",
         references
     );
 }

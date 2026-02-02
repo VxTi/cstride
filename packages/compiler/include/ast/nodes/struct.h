@@ -43,7 +43,7 @@ namespace stride::ast
         std::vector<std::unique_ptr<AstStructMember>> _members;
 
         // Whether this struct references another one
-        // This can be used for declaring a type with the data layout
+        // This can be used for declaring a get_type with the data layout
         // of another
         std::optional<std::unique_ptr<IAstType>> _reference;
 

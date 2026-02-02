@@ -40,7 +40,7 @@ void AstArrayMemberAccessor::validate()
         {
             throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
-                std::format("Array index accessor must be of type int, got '{}'", primitive_type->to_string()),
+                std::format("Array index accessor must be of get_type int, got '{}'", primitive_type->to_string()),
                 *this->get_source(),
                 this->get_source_position()
             );
@@ -49,7 +49,7 @@ void AstArrayMemberAccessor::validate()
 
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
-        "Array index accessor must be of type 'int', got '" + index_accessor_type->to_string() + "'",
+        "Array index accessor must be of get_type 'int', got '" + index_accessor_type->to_string() + "'",
         *this->get_source(),
         this->get_source_position()
     );
@@ -66,14 +66,14 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::Value* base_ptr = this->_array_identifier->codegen(registry, module, builder);
     llvm::Value* index_val = this->_index_accessor_expr->codegen(registry, module, builder);
 
-    // Element type, not the array type.
-    // Assumes `array_iden_type` is something like "T[]" and has an element type you can extract.
+    // Element get_type, not the array get_type.
+    // Assumes `array_iden_type` is something like "T[]" and has an element get_type you can extract.
     const auto* array_ty = dynamic_cast<AstArrayType*>(array_iden_type.get());
     if (!array_ty)
     {
         throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
-                "Array member accessor used on non-array type",
+                "Array member accessor used on non-array get_type",
                 *this->get_source(),
                 this->get_source_position()
         );

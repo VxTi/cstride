@@ -10,7 +10,8 @@ namespace stride::ast
 {
     class AstWhileLoop
         : public IAstNode,
-          public ISynthesisable
+          public ISynthesisable,
+          public IAstContainer
     {
         std::unique_ptr<AstBlock> _body;
         std::unique_ptr<AstExpression> _condition;
@@ -35,7 +36,7 @@ namespace stride::ast
         std::string to_string() override;
 
         [[nodiscard]]
-        AstBlock* body() const { return _body.get(); }
+        AstBlock* get_body() override { return _body.get(); }
 
         [[nodiscard]]
         AstExpression* get_condition() const { return _condition.get(); }

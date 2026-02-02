@@ -7,6 +7,8 @@
 
 namespace stride::ast
 {
+    class AstBlock;
+
     // If we include the header, it'll cause circular references, and it'll break everything.
     class SymbolRegistry;
 
@@ -79,5 +81,14 @@ namespace stride::ast
          * @return True if the node can be reduced, false otherwise.
          */
         virtual bool is_reducible() = 0;
+    };
+
+    class IAstContainer
+    {
+    public:
+        virtual ~IAstContainer() = default;
+
+        [[nodiscard]]
+        virtual AstBlock* get_body() = 0;
     };
 }
