@@ -389,10 +389,10 @@ namespace stride::ast
             _rsh(std::move(rsh)) {}
 
         [[nodiscard]]
-        AstExpression& get_left() const { return *this->_lsh; }
+        AstExpression* get_left() const { return this->_lsh.get(); }
 
         [[nodiscard]]
-        AstExpression& get_right() const { return *this->_rsh; }
+        AstExpression* get_right() const { return this->_rsh.get(); }
     };
 
     class AstBinaryArithmeticOp :

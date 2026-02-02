@@ -125,8 +125,8 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_arithmetic_op_type(
     const AstBinaryArithmeticOp* operation
 )
 {
-    auto lhs = infer_expression_type(registry, &operation->get_left());
-    auto rhs = infer_expression_type(registry, &operation->get_right());
+    auto lhs = infer_expression_type(registry, operation->get_left());
+    auto rhs = infer_expression_type(registry, operation->get_right());
 
     if (lhs->equals(*rhs))
     {
@@ -268,7 +268,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     }
 
     // Look up the base variable in the symbol table/registry
-    const auto variable_definition = expr->get_registry()->field_lookup(base_iden->get_internal_name());
+    const auto variable_definition = expr->get_registry()->field_lookup(base_iden->get_name());
     if (!variable_definition)
     {
         throw parsing_error(

@@ -37,7 +37,7 @@ std::string AstComparisonOp::to_string()
 {
     return std::format(
         "ComparisonOp({}, {}, {})",
-        this->get_left().to_string(), comparison_op_to_str(this->_op_type), this->get_right().to_string()
+        this->get_left()->to_string(), comparison_op_to_str(this->_op_type), this->get_right()->to_string()
     );
 }
 
@@ -47,29 +47,31 @@ llvm::Value* AstComparisonOp::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    llvm::Value* left = this->get_left().codegen(registry, module, builder);
-    llvm::Value* right = this->get_right().codegen(registry, module, builder);
+    llvm::Value* left = this->get_left()->codegen(registry, module, builder);
+    llvm::Value* right = this->get_right()->codegen(registry, module, builder);
 
     if (!left || !right)
     {
         return nullptr;
     }
 
-    // Handle Optional vs Nil comparison
-    if (left->getType()->isStructTy() || right->getType()->isStructTy())
+    const auto lhs_optional_ty =  is_optional_wrapped_type(left->getType());
+    const auto rhs_optional_ty =  is_optional_wrapped_type(right->getType());
+
+    if (lhs_optional_ty || rhs_optional_ty)
     {
         llvm::Value* struct_val = nullptr;
 
-        if (left->getType()->isStructTy() && llvm::isa<llvm::ConstantPointerNull>(right))
+        if (lhs_optional_ty && llvm::isa<llvm::ConstantPointerNull>(right))
         {
             struct_val = left;
         }
-        else if (right->getType()->isStructTy() && llvm::isa<llvm::ConstantPointerNull>(left))
+        else if (rhs_optional_ty && llvm::isa<llvm::ConstantPointerNull>(left))
         {
             struct_val = right;
         }
 
-        if (!struct_val || !is_optional_wrapped_type(struct_val->getType()))
+        if (!struct_val)
         {
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,

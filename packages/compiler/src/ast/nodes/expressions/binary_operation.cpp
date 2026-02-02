@@ -50,9 +50,9 @@ std::string AstBinaryArithmeticOp::to_string()
 {
     return std::format(
         "BinaryOp({}, {}, {})",
-        this->get_left().to_string(),
+        this->get_left()->to_string(),
         binary_op_to_str(this->get_op_type()),
-        this->get_right().to_string()
+        this->get_right()->to_string()
     );
 }
 
@@ -137,8 +137,8 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    llvm::Value* lhs = this->get_left().codegen(registry, module, builder);
-    llvm::Value* rhs = this->get_right().codegen(registry, module, builder);
+    llvm::Value* lhs = this->get_left()->codegen(registry, module, builder);
+    llvm::Value* rhs = this->get_right()->codegen(registry, module, builder);
 
     if (!lhs || !rhs)
     {
@@ -212,9 +212,9 @@ bool AstBinaryArithmeticOp::is_reducible()
 {
     // A binary operation is reducible if either of both sides is reducible
     // A literal doesn't extend `IReducible`, though is by nature "reducible" in followup steps.
-    return (is_literal_ast_node(&this->get_left()) && is_literal_ast_node(&this->get_right()))
-        || this->get_left().is_reducible()
-        || this->get_right().is_reducible();
+    return (is_literal_ast_node(this->get_left()) && is_literal_ast_node(this->get_right()))
+        || this->get_left()->is_reducible()
+        || this->get_right()->is_reducible();
 }
 
 // TODO: Implement literal reduction
