@@ -93,9 +93,16 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
+
+        void resolve_forward_references(
+            const std::shared_ptr<SymbolRegistry>& registry,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) override;
     };
 
-    std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& tokens);
+    std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<SymbolRegistry>& registry,
+                                                        TokenSet& tokens);
 
     bool is_struct_declaration(const TokenSet& tokens);
 }

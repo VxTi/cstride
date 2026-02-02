@@ -108,19 +108,21 @@ void AstFunctionDeclaration::validate()
 
     for (const auto& return_stmt : return_statements)
     {
-        if (return_stmt->get_return_expr() == nullptr)
+        const auto ret_expr = return_stmt->get_return_expr();
+
+        if (ret_expr == nullptr)
         {
             continue;
         }
 
-        if (const auto return_type = infer_expression_type(return_stmt->get_registry(), return_stmt->get_return_expr());
-            !return_type->equals(*this->get_return_type()))
+        if (const auto return_stmt_type = infer_expression_type(return_stmt->get_registry(), ret_expr);
+            !return_stmt_type->equals(*this->get_return_type()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' expected a return type of '{}', but received '{}'.",
-                    this->get_name(), this->get_return_type()->to_string(), return_type->to_string()
+                    this->get_name(), this->get_return_type()->to_string(), return_stmt_type->to_string()
                 ),
                 {
                     ErrorSourceReference(
