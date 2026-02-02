@@ -33,7 +33,7 @@ namespace stride::ast
      */
     llvm::Value* wrap_into_optional_value(
         llvm::Value* value,
-        const llvm::Module* module,
+        llvm::Type* optional_ty,
         llvm::IRBuilder<>* builder
     );
 

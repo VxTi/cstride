@@ -1,5 +1,6 @@
 #include <llvm/IR/Module.h>
 
+#include "ast/optionals.h"
 #include "ast/nodes/expression.h"
 
 using namespace stride::ast;
@@ -57,68 +58,83 @@ llvm::Value* AstComparisonOp::codegen(
     // Handle Optional vs Nil comparison
     if (left->getType()->isStructTy() || right->getType()->isStructTy())
     {
-        llvm::Value* structVal = nullptr;
+        llvm::Value* struct_val = nullptr;
 
         if (left->getType()->isStructTy() && llvm::isa<llvm::ConstantPointerNull>(right))
         {
-            structVal = left;
+            struct_val = left;
         }
         else if (right->getType()->isStructTy() && llvm::isa<llvm::ConstantPointerNull>(left))
         {
-            structVal = right;
+            struct_val = right;
         }
 
-        if (structVal)
+        if (!struct_val || !is_optional_wrapped_type(struct_val->getType()))
         {
-            // Check if it looks like { i1, ... } - standard optional layout
-            if (structVal->getType()->getStructNumElements() >= 1 &&
-                structVal->getType()->getStructElementType(0)->isIntegerTy(1))
-            {
-                llvm::Value* has_value = builder->CreateExtractValue(structVal, {0}, "has_value");
+            throw parsing_error(
+                ErrorType::RUNTIME_ERROR,
+                "Cannot compare a non-optional value with nil",
+                *this->get_source(),
+                this->get_source_position()
+            );
+        }
 
-                if (this->_op_type == ComparisonOpType::NOT_EQUAL)
-                {
-                    // val != nil  -> has_value == 1
-                    return builder->CreateICmpEQ(
-                        has_value, llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1),
-                        "not_nil_check");
-                }
-                if (this->_op_type == ComparisonOpType::EQUAL)
-                {
-                    // val == nil -> has_value == 0
-                    return builder->CreateICmpEQ(
-                        has_value, llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 0),
-                        "is_nil_check");
-                }
-            }
+        llvm::Value* has_value = builder->CreateExtractValue(struct_val, {OPT_IDX_HAS_VALUE}, "has_value");
+
+        if (this->get_op_type() == ComparisonOpType::NOT_EQUAL)
+        {
+            // val != nil  -> has_value == 1
+            return builder->CreateICmpEQ(
+                has_value,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt1Ty(module->getContext()),
+                    OPT_HAS_VALUE
+                ),
+                "not_nil_check"
+            );
+        }
+        if (this->get_op_type() == ComparisonOpType::EQUAL)
+        {
+            // val == nil -> has_value == 0
+            return builder->CreateICmpEQ(
+                has_value,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt1Ty(module->getContext()),
+                    OPT_NO_VALUE
+                ),
+                "is_nil_check"
+            );
         }
     }
 
-    // Cast operands if they are integers and have different bit widths
-    if (left->getType()->isIntegerTy() && right->getType()->isIntegerTy())
-    {
-        const auto left_width = left->getType()->getIntegerBitWidth();
+    const auto left_ty = left->getType();
+    const auto right_ty = right->getType();
 
-        if (const auto right_width = right->getType()->getIntegerBitWidth();
+    // Cast operands if they are integers and have different bit widths
+    if (left_ty->isIntegerTy() && right_ty->isIntegerTy())
+    {
+        const auto left_width = left_ty->getIntegerBitWidth();
+
+        if (const auto right_width = right_ty->getIntegerBitWidth();
             left_width < right_width)
         {
-            left = builder->CreateIntCast(left, right->getType(), true, "icmp_sext");
+            left = builder->CreateIntCast(left, right_ty, true, "icmp_sext");
         }
         else if (right_width < left_width)
         {
-            right = builder->CreateIntCast(right, left->getType(), true, "icmp_sext");
+            right = builder->CreateIntCast(right, left_ty, true, "icmp_sext");
         }
     }
     else
     {
         llvm::Type* target_type = builder->getDoubleTy();
-        if (left->getType()->isFloatTy() && right->getType()->isFloatTy())
+        if (left_ty->isFloatTy() && right_ty->isFloatTy())
         {
             target_type = builder->getFloatTy();
         }
 
         // Cast Left
-        if (left->getType()->isIntegerTy())
+        if (left_ty->isIntegerTy())
         {
             left = builder->CreateSIToFP(left, target_type, "sitofp");
         }
@@ -128,7 +144,7 @@ llvm::Value* AstComparisonOp::codegen(
         }
 
         // Cast Right
-        if (right->getType()->isIntegerTy())
+        if (right_ty->isIntegerTy())
         {
             right = builder->CreateSIToFP(right, target_type, "sitofp");
         }
@@ -139,9 +155,9 @@ llvm::Value* AstComparisonOp::codegen(
     }
 
     // Check if operands are floating point or integer
-    const bool is_float = left->getType()->isFloatingPointTy() || right->getType()->isFloatingPointTy();
+    const bool is_float = left_ty->isFloatingPointTy() || right_ty->isFloatingPointTy();
 
-    switch (this->_op_type)
+    switch (this->get_op_type())
     {
     case ComparisonOpType::EQUAL:
         return is_float

@@ -93,90 +93,47 @@ llvm::Value* AstReturn::codegen(
         return builder->CreateRetVoid();
     }
 
-    llvm::Value* expr_ret_val = this->get_return_expr()->codegen(registry, module, builder);
+    llvm::Value* expr_return_val = this->get_return_expr()->codegen(registry, module, builder);
 
-    if (!expr_ret_val) return nullptr;
+    if (!expr_return_val) return nullptr;
 
     llvm::BasicBlock* cur_bb = builder->GetInsertBlock();
 
-    if (!cur_bb) return nullptr;
+    if (!cur_bb)
+    {
+        throw parsing_error(
+            ErrorType::RUNTIME_ERROR,
+            "Cannot return from a function that has no basic block",
+            *this->get_source(),
+            this->get_source_position()
+        );
+    }
 
     // Implicitly unwrap optional if the return type is not optional
     // or wrap if the return type is optional.
     if (const llvm::Function* cur_func = cur_bb->getParent())
     {
-        if (llvm::Type* fn_return_type = cur_func->getReturnType();
-            expr_ret_val->getType() != fn_return_type)
+        // If the received return type doesn't match the function return type, we may need to
+        // wrap it into an optional container
+        if (llvm::Type* expected_return_ty = cur_func->getReturnType();
+            expr_return_val->getType() != expected_return_ty)
         {
-            // Case 1: Function returns non-optional, but we have an optional -> Unwrap
-            if (expr_ret_val->getType()->isStructTy() &&
-                !fn_return_type->isStructTy() &&
-                expr_ret_val->getType()->getStructNumElements() == OPT_ELEMENT_COUNT &&
-                expr_ret_val->getType()->getStructElementType(OPT_IDX_HAS_VALUE)->isIntegerTy(OPT_HAS_VALUE_BIT_COUNT))
+            const auto is_expr_optional = is_optional_wrapped_type(expr_return_val->getType());
+
+            // Function returns non-optional, but we have an optional -> Unwrap
+            if (const auto is_fn_return_optional = is_optional_wrapped_type(expected_return_ty);
+                is_expr_optional && !is_fn_return_optional)
             {
-                expr_ret_val = builder->CreateExtractValue(
-                    expr_ret_val,
-                    {OPT_IDX_ELEMENT_TYPE},
-                    "unwrap_optional_ret"
-                );
+                expr_return_val = unwrap_optional_value(expr_return_val, builder);
             }
-            // Case 2: Function returns optional, but we have a non-optional (or nil) -> Wrap
-            else if (fn_return_type->isStructTy() &&
-                !expr_ret_val->getType()->isStructTy() &&
-                fn_return_type->getStructNumElements() == OPT_ELEMENT_COUNT &&
-                fn_return_type->getStructElementType(OPT_IDX_HAS_VALUE)->isIntegerTy(OPT_HAS_VALUE_BIT_COUNT))
+            // Function returns optional, but we have a non-optional (or nil) -> Wrap
+            else if (!is_expr_optional && is_fn_return_optional)
             {
-                llvm::Type* optional_ty = fn_return_type->getStructElementType(
-                    OPT_IDX_ELEMENT_TYPE
-                );
-
-                if (llvm::isa<llvm::ConstantPointerNull>(expr_ret_val))
-                {
-                    // nil -> { i1 false, undef T }
-                    llvm::Value* ret_optional_val = llvm::UndefValue::get(fn_return_type);
-                    ret_optional_val = builder->CreateInsertValue(
-                        ret_optional_val,
-                        builder->getInt1(OPT_NO_VALUE),
-                        {OPT_IDX_HAS_VALUE}
-                    );
-                    expr_ret_val = ret_optional_val;
-                }
-                else
-                {
-                    // value -> { i1 true, value }
-                    if (expr_ret_val->getType()->isIntegerTy()
-                        && optional_ty->isIntegerTy()
-                        && expr_ret_val->getType() != optional_ty)
-                    {
-                        expr_ret_val = builder->CreateIntCast(expr_ret_val, optional_ty, true);
-                    }
-
-                    if (expr_ret_val->getType() == optional_ty)
-                    {
-                        llvm::Value* ret_val = llvm::UndefValue::get(fn_return_type);
-                        ret_val = builder->CreateInsertValue(
-                            ret_val,
-                            builder->getInt1(OPT_HAS_VALUE),
-                            {OPT_IDX_HAS_VALUE}
-                        );
-                        ret_val = builder->CreateInsertValue(
-                            ret_val,
-                            expr_ret_val,
-                            {OPT_IDX_ELEMENT_TYPE}
-                        );
-                        expr_ret_val = ret_val;
-                    }
-                }
-            }
-
-            // Final check after potential wrapping/unwrapping
-            if (expr_ret_val->getType() != fn_return_type && expr_ret_val->getType()->isIntegerTy() && fn_return_type->isIntegerTy())
-            {
-                expr_ret_val = builder->CreateIntCast(expr_ret_val, fn_return_type, true);
+                expr_return_val = wrap_into_optional_value(expr_return_val, expected_return_ty, builder);
             }
         }
     }
 
     // Create the return instruction
-    return builder->CreateRet(expr_ret_val);
+    return builder->CreateRet(expr_return_val);
 }

@@ -2,6 +2,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
+#include "ast/optionals.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 
@@ -85,10 +86,13 @@ IAstNode* AstVariableReassignment::reduce()
 }
 
 llvm::Value* AstVariableReassignment::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry, llvm::Module* module,
+    const std::shared_ptr<SymbolRegistry>& registry,
+    llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
+    auto& ctx = module->getContext();
+
     // Locate the variable (AllocaInst or GlobalVariable)
     llvm::Value* variable = builder->GetInsertBlock()->getValueSymbolTable()->lookup(this->get_internal_name());
     if (!variable)
@@ -109,106 +113,109 @@ llvm::Value* AstVariableReassignment::codegen(
     if (!synthesisable) return nullptr;
 
     // Generate the RHS value
-    llvm::Value* rhsValue = synthesisable->codegen(registry, module, builder);
+    llvm::Value* assign_val = synthesisable->codegen(registry, module, builder);
+
+    if (!assign_val) return nullptr;
+
+    const auto assign_ty = assign_val->getType();
 
     // Check if we're assigning to an optional type
-    if (const auto identifier_def = registry->field_lookup(this->get_variable_name());
-        identifier_def && identifier_def->get_type()->is_optional())
+    if (const auto variable_def = registry->field_lookup(this->get_variable_name());
+        variable_def && variable_def->get_type()->is_optional())
     {
-        llvm::Type* struct_type = internal_type_to_llvm_type(identifier_def->get_type(), module);
-
-        if (rhsValue->getType() == struct_type)
+        if (llvm::Type* optional_ty = internal_type_to_llvm_type(variable_def->get_type(), module);
+            assign_ty == optional_ty)
         {
-            builder->CreateStore(rhsValue, variable);
+            builder->CreateStore(assign_val, variable);
         }
         else
         {
             llvm::Value* has_value = nullptr;
             llvm::Value* value = nullptr;
 
-            if (llvm::isa<llvm::ConstantPointerNull>(rhsValue))
+            const auto value_ty = optional_ty->getStructElementType(OPT_IDX_ELEMENT_TYPE);
+
+            if (llvm::isa<llvm::ConstantPointerNull>(assign_val))
             {
-                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 0);
-                value = llvm::UndefValue::get(struct_type->getStructElementType(1));
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), OPT_NO_VALUE);
+                value = llvm::UndefValue::get(value_ty);
             }
             else
             {
-                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), 1);
-                value = rhsValue;
+                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), OPT_HAS_VALUE);
+                value = assign_val;
 
-                if (llvm::Type* expected_val_type = struct_type->getStructElementType(1);
-                    value->getType() != expected_val_type &&
+                if (value->getType() != value_ty &&
                     value->getType()->isIntegerTy() &&
-                    expected_val_type->isIntegerTy()
-                )
+                    value_ty->isIntegerTy())
                 {
-                    value = builder->CreateIntCast(value, expected_val_type, true);
+                    value = builder->CreateIntCast(value, value_ty, true);
                 }
             }
 
             // Store has_value
-            llvm::Value* has_value_ptr = builder->CreateStructGEP(struct_type, variable, 0);
+            llvm::Value* has_value_ptr = builder->CreateStructGEP(optional_ty, variable, OPT_IDX_HAS_VALUE);
             builder->CreateStore(has_value, has_value_ptr);
 
             // Store value
-            if (!llvm::isa<llvm::ConstantPointerNull>(rhsValue))
+            if (!llvm::isa<llvm::ConstantPointerNull>(assign_val))
             {
-                llvm::Value* value_ptr = builder->CreateStructGEP(struct_type, variable, 1);
+                llvm::Value* value_ptr = builder->CreateStructGEP(optional_ty, variable, OPT_IDX_ELEMENT_TYPE);
                 builder->CreateStore(value, value_ptr);
             }
         }
 
         return variable;
-    }
+    } // end optional type check
 
-    const bool is_float = rhsValue->getType()->isFloatingPointTy();
+    const bool is_float = assign_ty->isFloatingPointTy();
 
-    llvm::Value* finalValue = rhsValue;
+    llvm::Value* finalValue = assign_val;
 
     // Handle Compound Assignments (+=, -=, etc.)
     if (this->get_operator() != MutativeAssignmentType::ASSIGN)
     {
         // Load the current value using the RHS type (works for 32/64 bit specifically)
-        llvm::Value* currentValue = builder->CreateLoad(rhsValue->getType(), variable, "load_tmp");
+        llvm::Value* cur_val = builder->CreateLoad(assign_ty, variable, "load_tmp");
 
         switch (this->get_operator())
         {
         case MutativeAssignmentType::ADD:
             finalValue = is_float
-                             ? builder->CreateFAdd(currentValue, rhsValue, "fadd_tmp")
-                             : builder->CreateAdd(currentValue, rhsValue, "add_tmp");
+                             ? builder->CreateFAdd(cur_val, assign_val, "fadd_tmp")
+                             : builder->CreateAdd(cur_val, assign_val, "add_tmp");
             break;
         case MutativeAssignmentType::SUBTRACT:
             finalValue = is_float
-                             ? builder->CreateFSub(currentValue, rhsValue, "fsub_tmp")
-                             : builder->CreateSub(currentValue, rhsValue, "sub_tmp");
+                             ? builder->CreateFSub(cur_val, assign_val, "fsub_tmp")
+                             : builder->CreateSub(cur_val, assign_val, "sub_tmp");
             break;
         case MutativeAssignmentType::MULTIPLY:
             finalValue = is_float
-                             ? builder->CreateFMul(currentValue, rhsValue, "fmul_tmp")
-                             : builder->CreateMul(currentValue, rhsValue, "mul_tmp");
+                             ? builder->CreateFMul(cur_val, assign_val, "fmul_tmp")
+                             : builder->CreateMul(cur_val, assign_val, "mul_tmp");
             break;
         case MutativeAssignmentType::DIVIDE:
             finalValue = is_float
-                             ? builder->CreateFDiv(currentValue, rhsValue, "fdiv_tmp")
-                             : builder->CreateSDiv(currentValue, rhsValue, "div_tmp");
+                             ? builder->CreateFDiv(cur_val, assign_val, "fdiv_tmp")
+                             : builder->CreateSDiv(cur_val, assign_val, "div_tmp");
             break;
         case MutativeAssignmentType::MODULO:
             finalValue = is_float
-                             ? builder->CreateFRem(currentValue, rhsValue, "frem_tmp")
-                             : builder->CreateSRem(currentValue, rhsValue, "mod_tmp");
+                             ? builder->CreateFRem(cur_val, assign_val, "frem_tmp")
+                             : builder->CreateSRem(cur_val, assign_val, "mod_tmp");
             break;
 
         // Bitwise operations are generally not defined for floats in IR
         // and usually require a bitcast or are disallowed by the frontend.
         case MutativeAssignmentType::BITWISE_AND:
-            finalValue = builder->CreateAnd(currentValue, rhsValue, "and_tmp");
+            finalValue = builder->CreateAnd(cur_val, assign_val, "and_tmp");
             break;
         case MutativeAssignmentType::BITWISE_OR:
-            finalValue = builder->CreateOr(currentValue, rhsValue, "or_tmp");
+            finalValue = builder->CreateOr(cur_val, assign_val, "or_tmp");
             break;
         case MutativeAssignmentType::BITWISE_XOR:
-            finalValue = builder->CreateXor(currentValue, rhsValue, "xor_tmp");
+            finalValue = builder->CreateXor(cur_val, assign_val, "xor_tmp");
             break;
         default:
             break;
@@ -222,10 +229,11 @@ llvm::Value* AstVariableReassignment::codegen(
 
 std::string AstVariableReassignment::to_string()
 {
-    return std::format("VariableReassignment({}({}), {})",
-                       this->get_variable_name(),
-                       this->get_internal_name(),
-                       this->get_value()->to_string()
+    return std::format(
+        "VariableReassignment({}({}), {})",
+        this->get_variable_name(),
+        this->get_internal_name(),
+        this->get_value()->to_string()
     );
 }
 

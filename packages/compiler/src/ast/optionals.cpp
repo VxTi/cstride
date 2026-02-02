@@ -4,27 +4,6 @@
 
 using namespace stride::ast;
 
-static llvm::StructType* get_optional_struct_type(const llvm::Module* module)
-{
-    const auto internal_name = "stride.optional";
-
-    auto& ctx = module->getContext();
-    if (auto* existing_ty = llvm::StructType::getTypeByName(ctx, internal_name))
-    {
-        return llvm::cast<llvm::StructType>(existing_ty);
-    }
-
-    auto* opt_ty = llvm::StructType::create(ctx, internal_name);
-    opt_ty->setBody(
-        {
-            llvm::Type::getInt1Ty(ctx),    // has_value
-            llvm::PointerType::get(ctx, 0) // void *
-        },
-        /*isPacked = */ false
-    );
-    return opt_ty;
-}
-
 /// Checks whether the provided type conforms to the required data layout
 bool stride::ast::is_optional_wrapped_type(const llvm::Type* type)
 {
@@ -32,54 +11,79 @@ bool stride::ast::is_optional_wrapped_type(const llvm::Type* type)
     {
         if (struct_type->getNumElements() != OPT_ELEMENT_COUNT) return false;
 
-        const auto element_ty = struct_type->getElementType(OPT_IDX_HAS_VALUE);
-        const auto element_ptr_ty = struct_type->getElementType(OPT_IDX_ELEMENT_TYPE);
+        const auto has_value_ty = struct_type->getElementType(OPT_IDX_HAS_VALUE);
+        const auto element_ty = struct_type->getElementType(OPT_IDX_ELEMENT_TYPE); // Type "T"; can be ptr or primitive.
 
-        return element_ty != nullptr && element_ty->isIntegerTy(OPT_HAS_VALUE_BIT_COUNT)
-            && element_ptr_ty != nullptr && element_ptr_ty->isPointerTy();
+        return has_value_ty != nullptr
+            && element_ty != nullptr
+            && has_value_ty->isIntegerTy(OPT_HAS_VALUE_BIT_COUNT);
     }
     return false;
 }
 
 llvm::Value* stride::ast::wrap_into_optional_value(
     llvm::Value* value,
-    const llvm::Module* module,
+    llvm::Type* optional_ty,
     llvm::IRBuilder<>* builder
 )
 {
+    // If it's already wrapped, just return it.
     if (is_optional_wrapped_type(value->getType()))
     {
-        // value is already a wrapped type; no work to do here.
         return value;
     }
 
-    llvm::Type* optional_struct_ty = get_optional_struct_type(module);
+    // We must know what optional wrapper type we are building.
+    if (!optional_ty || !is_optional_wrapped_type(optional_ty))
+    {
+        return nullptr;
+    }
 
-    // If the value is `nullptr`, we can just simply return an empty
-    // value.
+    llvm::Type* inner_ty = llvm::cast<llvm::StructType>(optional_ty)->getElementType(OPT_IDX_ELEMENT_TYPE);
+
+    // nil -> { i1 false, undef inner }
     if (llvm::isa<llvm::ConstantPointerNull>(value))
     {
-        //  Returns [0, undef]
-        return builder->CreateInsertValue(
-            llvm::UndefValue::get(optional_struct_ty),
+        llvm::Value* wrapped = llvm::UndefValue::get(optional_ty);
+        wrapped = builder->CreateInsertValue(
+            wrapped,
             builder->getInt1(OPT_NO_VALUE),
             {OPT_IDX_HAS_VALUE}
         );
+        return wrapped;
     }
 
-    // Create value with layout [<has_value>(i1), <value>]
-    llvm::Value* optional_value_ty = llvm::UndefValue::get(optional_struct_ty);
-    optional_value_ty = builder->CreateInsertValue(
-        optional_value_ty,
+    // If needed, cast the value to the inner type.
+    if (value->getType() != inner_ty)
+    {
+        if (value->getType()->isIntegerTy() && inner_ty->isIntegerTy())
+        {
+            value = builder->CreateIntCast(value, inner_ty, /*isSigned*/ true);
+        }
+        else if (value->getType()->isPointerTy() && inner_ty->isPointerTy())
+        {
+            value = builder->CreatePointerCast(value, inner_ty);
+        }
+        else
+        {
+            // Not representable as the optional's inner type.
+            return nullptr;
+        }
+    }
+
+    // value -> { i1 true, value }
+    llvm::Value* wrapped = llvm::UndefValue::get(optional_ty);
+    wrapped = builder->CreateInsertValue(
+        wrapped,
         builder->getInt1(OPT_HAS_VALUE),
         {OPT_IDX_HAS_VALUE}
     );
-    optional_value_ty = builder->CreateInsertValue(
-        optional_value_ty,
+    wrapped = builder->CreateInsertValue(
+        wrapped,
         value,
         {OPT_IDX_ELEMENT_TYPE}
     );
-    return optional_value_ty; // Now contains the right data layout.
+    return wrapped;
 }
 
 /// Extracts the second element from the wrapped type
