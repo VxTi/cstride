@@ -22,7 +22,7 @@ llvm::Value* AstIdentifier::codegen(
 
     if (const auto block = builder->GetInsertBlock())
     {
-        if (const auto function = block->getParent())
+        if (const llvm::Function* function = block->getParent())
         {
             val = function->getValueSymbolTable()->lookup(internal_name);
         }
