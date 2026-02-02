@@ -45,7 +45,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
     const auto& variable_name = variable_name_tok.get_lexeme();
     set.expect(TokenType::COLON);
-    auto variable_type = parse_type(registry, set, "Expected variable get_type after variable name", flags);
+    auto variable_type = parse_type(registry, set, "Expected variable type after variable name", flags);
 
 
     std::unique_ptr<AstExpression> value = nullptr;
@@ -93,8 +93,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
 /**
  * Checks whether the provided sequence conforms to
- * "let name: get_type = value",
- * or "extern let name: get_type;"
+ * "let name: type = value",
+ * or "extern let name: type;"
  */
 bool stride::ast::is_variable_declaration(const TokenSet& set)
 {
@@ -130,7 +130,7 @@ void AstVariableDeclaration::validate()
     const auto lhs_type = this->get_variable_type();
 
     if (const auto rhs_type = internal_expr_type.get();
-        lhs_type->equals(*rhs_type))
+        !lhs_type->equals(*rhs_type))
     {
         if (const auto primitive_type = dynamic_cast<AstPrimitiveType*>(rhs_type);
             primitive_type != nullptr &&
@@ -154,7 +154,7 @@ void AstVariableDeclaration::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Cannot assign nil to variable of non-optional get_type '{}'",
+                    "Cannot assign nil to variable of non-optional type '{}'",
                     lhs_type->to_string()
                 ),
                 references
@@ -180,7 +180,7 @@ void AstVariableDeclaration::validate()
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Type mismatch in variable declaration; expected get_type '{}', got '{}'",
+                "Type mismatch in variable declaration; expected type '{}', got '{}'",
                 lhs_type_str,
                 rhs_type_str
             ),
@@ -358,7 +358,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     llvm::IRBuilder<>* irBuilder
 )
 {
-    // Get the LLVM get_type for the variable
+    // Get the LLVM type for the variable
     llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
 
     llvm::GlobalVariable* global_var = get_global_var_decl(this, module, var_type);
@@ -457,7 +457,7 @@ llvm::Value* AstVariableDeclaration::codegen(
             {
                 has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPT_NO_VALUE);
 
-                // Get the value get_type from the struct (element 1)
+                // Get the value type from the struct (element 1)
                 llvm::Type* value_type = var_type->getStructElementType(OPT_IDX_ELEMENT_TYPE);
                 value = llvm::UndefValue::get(value_type);
             }
@@ -466,7 +466,7 @@ llvm::Value* AstVariableDeclaration::codegen(
                 has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPT_HAS_VALUE);
                 value = init_value;
 
-                // If value get_type doesn't match, we might need casting (e.g. integer width)
+                // If value type doesn't match, we might need casting (e.g. integer width)
                 if (llvm::Type* expected_val_type = var_type->getStructElementType(OPT_IDX_ELEMENT_TYPE);
                     value->getType() != expected_val_type &&
                     value->getType()->isIntegerTy() &&

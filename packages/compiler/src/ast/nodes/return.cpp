@@ -75,8 +75,8 @@ llvm::Value* AstReturn::codegen(
 
     if (!cur_bb) return nullptr;
 
-    // Implicitly unwrap optional if the return get_type is not optional
-    // or wrap if the return get_type is optional.
+    // Implicitly unwrap optional if the return type is not optional
+    // or wrap if the return type is optional.
     if (const llvm::Function* cur_func = cur_bb->getParent())
     {
         if (llvm::Type* ret_type = cur_func->getReturnType();
