@@ -213,7 +213,7 @@ void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, con
 {
     llvm::IRBuilder<> ib(module->getContext());
 
-    // The struct get_type: { i32, void ()*, i8* }
+    // The struct type: { i32, void ()*, i8* }
     llvm::StructType* ctor_struct_type = llvm::StructType::get(
         ib.getInt32Ty(),
         init_func->getType(),
@@ -458,7 +458,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     // Store the initial value if it exists
     if (this->get_variable_type()->is_optional())
     {
-        // If the init value is the same as the inferred var get_type,
+        // If the init value is the same as the inferred var type,
         // we can just store it directly
         if (init_value->getType() == var_type)
         {

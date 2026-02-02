@@ -85,7 +85,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
 
     throw parsing_error(
         ErrorType::TYPE_ERROR,
-        "Unable to resolve expression literal get_type",
+        "Unable to resolve expression literal type",
         *literal->get_source(),
         literal->get_source_position()
     );
@@ -184,7 +184,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                "Cannot dereference non-pointer get_type",
+                "Cannot dereference non-pointer type",
                 *operation->get_source(),
                 operation->get_source_position()
             );
@@ -235,8 +235,8 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(
 {
     if (array->get_elements().empty())
     {
-        // This is one of those cases where it's impossible to deduce the get_type
-        // Therefore, we have an UNKNOWN get_type.
+        // This is one of those cases where it's impossible to deduce the type
+        // Therefore, we have an UNKNOWN type.
         return std::make_unique<AstPrimitiveType>(
             array->get_source(),
             array->get_source_position(),
@@ -281,7 +281,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         );
     }
 
-    // Start with the type of the base identifier - This will be a struct get_type
+    // Start with the type of the base identifier - This will be a struct type
     auto current_type = variable_definition->get_type();
 
     // Iterate through all member segments (e.g., .b, .c)
@@ -432,7 +432,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         const auto value = infer_expression_type(registry, operation->get_initial_value().get());
 
         // Both the expression type and the declared type are the same (e.g., let var: i32 = 10)
-        // so we can just return the declared get_type.
+        // so we can just return the declared type.
         if (lhs_variable_type->equals(*value))
         {
             return lhs_variable_type->clone();
@@ -481,7 +481,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
-        "Unable to resolve expression get_type",
+        "Unable to resolve expression type",
         *expr->get_source(),
         expr->get_source_position()
     );

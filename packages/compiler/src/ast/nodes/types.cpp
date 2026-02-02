@@ -433,7 +433,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     if (const auto* custom = dynamic_cast<AstStructType*>(type))
     {
         // If it's a pointer, we don't even need to look up the struct name
-        // to return the LLVM get_type, because all pointers are the same.
+        // to return the LLVM type, because all pointers are the same.
         // However, usually you want to validate the type exists first.
         if (custom->is_pointer())
         {
@@ -526,7 +526,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         (rhs_primitive->is_fp() && !lhs_primitive->is_fp())
     )
     {
-        // If the RHS has a higher byte size, we need to promote the RHS to a floating point get_type
+        // If the RHS has a higher byte size, we need to promote the RHS to a floating point type
         // and return the highest byte size
         if (rhs_primitive->bit_count() > lhs_primitive->bit_count())
         {

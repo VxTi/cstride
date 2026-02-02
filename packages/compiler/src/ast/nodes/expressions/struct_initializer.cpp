@@ -225,7 +225,7 @@ llvm::Value* AstStructInitializer::codegen(
         dynamic_members.push_back(val);
     }
 
-    // Retrieve the exist named struct get_type
+    // Retrieve the exist named struct type
     auto struct_def_opt = registry->get_struct_def(this->_struct_name);
     std::string actual_struct_name = this->_struct_name;
 
