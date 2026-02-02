@@ -66,10 +66,17 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
                 variable_type->get_source_position()
             );
         }
+
+        const auto ref_src_pos = reference_token.get_source_position();
+        const auto var_type_src_pos = variable_type->get_source_position();
+
         // If no expression was provided (lacking '='), initialize with nil if the initial type is optional
         value = std::make_unique<AstNilLiteral>(
             set.get_source(),
-            SourcePosition(reference_token.get_source_position().offset, variable_type->get_source_position().offset),
+            SourcePosition(
+                ref_src_pos.offset,
+                var_type_src_pos.offset + var_type_src_pos.length - ref_src_pos.offset
+            ),
             registry
         );
     }
