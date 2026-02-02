@@ -372,26 +372,26 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         return llvm::PointerType::get(module->getContext(), 0);
     }
 
-    if (const auto* array = dynamic_cast<AstArrayType*>(type))
+    if (const auto* ast_array_ty = dynamic_cast<AstArrayType*>(type))
     {
-        llvm::Type* element_type = internal_type_to_llvm_type(array->get_element_type(), module);
+        llvm::Type* element_type = internal_type_to_llvm_type(ast_array_ty->get_element_type(), module);
 
         if (!element_type)
         {
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
                 "Unable to resolve internal type for array element",
-                *array->get_source(),
-                array->get_source_position()
+                *ast_array_ty->get_source(),
+                ast_array_ty->get_source_position()
             );
         }
 
-        return llvm::ArrayType::get(element_type, array->get_initial_length());
+        return llvm::ArrayType::get(element_type, ast_array_ty->get_initial_length());
     }
 
-    if (const auto* primitive = dynamic_cast<AstPrimitiveType*>(type))
+    if (const auto* ast_primitive_ty = dynamic_cast<AstPrimitiveType*>(type))
     {
-        switch (primitive->get_type())
+        switch (ast_primitive_ty->get_type())
         {
         case PrimitiveType::INT8:
         case PrimitiveType::UINT8:
@@ -421,17 +421,18 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
     }
 
-    if (const auto* custom = dynamic_cast<AstStructType*>(type))
+    if (const auto* ast_struct_ty = dynamic_cast<AstStructType*>(type))
     {
         // If it's a pointer, we don't even need to look up the struct name
         // to return the LLVM type, because all pointers are the same.
         // However, usually you want to validate the type exists first.
-        if (custom->is_pointer())
+        if (ast_struct_ty->is_pointer())
         {
-            return llvm::PointerType::get(module->getContext(), 0); // Replaces PointerType::get(struct_type, 0)
+            return llvm::PointerType::get(module->getContext(), 0);
         }
 
-        std::string actual_name = custom->name();
+        // TODO: create utility for this
+        std::string actual_name = ast_struct_ty->name();
         if (auto struct_def_opt = registry->get_struct_def(actual_name);
             struct_def_opt.has_value())
         {
@@ -446,18 +447,18 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
             }
         }
 
-        llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), actual_name);
-        if (!struct_type)
+        llvm::StructType* struct_ty = llvm::StructType::getTypeByName(module->getContext(), actual_name);
+        if (!struct_ty)
         {
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
-                std::format("Struct type '{}' not found", custom->name()),
-                *custom->get_source(),
-                custom->get_source_position()
+                std::format("Struct type '{}' not found", ast_struct_ty->name()),
+                *ast_struct_ty->get_source(),
+                ast_struct_ty->get_source_position()
             );
         }
 
-        return struct_type;
+        return struct_ty;
     }
 
     return nullptr;

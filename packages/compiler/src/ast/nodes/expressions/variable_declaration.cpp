@@ -341,58 +341,54 @@ void global_var_declaration_codegen(
     append_to_global_ctors(module, init_func, 65535);
 }
 
-llvm::GlobalVariable* get_global_var_decl(
+std::optional<llvm::GlobalVariable*> get_global_var_decl(
     const AstVariableDeclaration* self,
     llvm::Module* module,
     llvm::Type* var_type
 )
 {
-    llvm::GlobalVariable* global_var = nullptr;
+    if (!self->get_variable_type()->is_global()) return std::nullopt;
 
-    if (self->get_variable_type()->is_global())
+    llvm::GlobalVariable* global_var = module->getNamedGlobal(self->get_internal_name());
+
+    if (!global_var)
     {
-        global_var = module->getNamedGlobal(self->get_internal_name());
+        // If it wasn't created in resolve_forward_references (e.g. if we are not using it)
+        // though it should have been.
+        llvm::Constant* default_init = llvm::Constant::getNullValue(var_type);
 
-        if (!global_var)
-        {
-            // If it wasn't created in resolve_forward_references (e.g. if we are not using it)
-            // though it should have been.
-            llvm::Constant* default_init = llvm::Constant::getNullValue(var_type);
-
-            global_var = new llvm::GlobalVariable(
-                *module,
-                var_type,
-                false, // Set to false to allow initialization
-                llvm::GlobalValue::ExternalLinkage,
-                default_init,
-                self->get_internal_name()
-            );
-        }
-        else
-        {
-            // Ensure it's not constant so we can store to it in the constructor
-            global_var->setConstant(false);
-        }
+        return new llvm::GlobalVariable(
+            *module,
+            var_type,
+            false, // Set to false to allow initialization
+            llvm::GlobalValue::ExternalLinkage,
+            default_init,
+            self->get_internal_name()
+        );
     }
+
+    // Ensure it's not constant so we can store to it in the constructor
+    global_var->setConstant(false);
     return global_var;
 }
 
 llvm::Value* AstVariableDeclaration::codegen(
     const std::shared_ptr<SymbolRegistry>& registry,
     llvm::Module* module,
-    llvm::IRBuilder<>* irBuilder
+    llvm::IRBuilder<>* ir_builder
 )
 {
     // Get the LLVM type for the variable
     llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
 
-    llvm::GlobalVariable* global_var = get_global_var_decl(this, module, var_type);
+    const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(this, module, var_type);
 
-    if (this->get_variable_type()->is_global() && !global_var) return nullptr; // Shouldn't happen, but just in case
+    if (!global_var.has_value()) return nullptr; // Shouldn't happen, but just in case
 
     // Generate code for the initial value
     llvm::Value* init_value = nullptr;
-    if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
+    if (const auto initial_value = this->get_initial_value().get();
+        initial_value != nullptr)
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
         {
@@ -404,12 +400,12 @@ llvm::Value* AstVariableDeclaration::codegen(
                 // For now, let's just assume any non-literal is dynamic to be safe.
                 if (is_literal_ast_node(initial_value))
                 {
-                    init_value = synthesisable->codegen(this->get_registry(), module, irBuilder);
+                    init_value = synthesisable->codegen(this->get_registry(), module, ir_builder);
                 }
             }
             else
             {
-                init_value = synthesisable->codegen(this->get_registry(), module, irBuilder);
+                init_value = synthesisable->codegen(this->get_registry(), module, ir_builder);
             }
         }
     }
@@ -424,21 +420,21 @@ llvm::Value* AstVariableDeclaration::codegen(
                 if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
                 {
                     // Optimization: If it's already a constant, just set it as the initializer
-                    global_var->setInitializer(constant);
+                    global_var.value()->setInitializer(constant);
                 }
             }
             else
             {
-                global_var_declaration_codegen(this, global_var, module, irBuilder);
+                global_var_declaration_codegen(this, global_var.value(), module, ir_builder);
             }
         }
 
-        return global_var;
+        return global_var.value();
     }
 
     // Local variable - use AllocaInst
     // Check if we have a valid insert block
-    llvm::BasicBlock* current_block = irBuilder->GetInsertBlock();
+    llvm::BasicBlock* current_block = ir_builder->GetInsertBlock();
     if (current_block == nullptr)
     {
         return nullptr;
@@ -451,14 +447,16 @@ llvm::Value* AstVariableDeclaration::codegen(
         return nullptr;
     }
 
-    llvm::BasicBlock& entry_block = current_function->getEntryBlock();
-    const llvm::IRBuilder<>::InsertPoint save_point = irBuilder->saveIP();
-    irBuilder->SetInsertPoint(&entry_block, entry_block.begin());
 
-    llvm::AllocaInst* alloca = irBuilder->CreateAlloca(var_type, nullptr, this->get_internal_name());
+    const llvm::IRBuilder<>::InsertPoint save_point = ir_builder->saveIP();
+
+    llvm::BasicBlock& entry_block = current_function->getEntryBlock();
+    ir_builder->SetInsertPoint(&entry_block, entry_block.begin());
+
+    llvm::AllocaInst* alloca = ir_builder->CreateAlloca(var_type, nullptr, this->get_internal_name());
 
     // Restore the insert point
-    irBuilder->restoreIP(save_point);
+    ir_builder->restoreIP(save_point);
 
     if (init_value == nullptr) return alloca;
 
@@ -469,7 +467,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         // we can just store it directly
         if (init_value->getType() == var_type)
         {
-            irBuilder->CreateStore(init_value, alloca);
+            ir_builder->CreateStore(init_value, alloca);
         }
         else
         {
@@ -482,7 +480,7 @@ llvm::Value* AstVariableDeclaration::codegen(
             {
                 has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPT_NO_VALUE);
 
-                // Get the value type from the struct (element 1)
+                // Get the value type from the struct
                 llvm::Type* value_type = var_type->getStructElementType(OPT_IDX_ELEMENT_TYPE);
                 value = llvm::UndefValue::get(value_type);
             }
@@ -497,34 +495,34 @@ llvm::Value* AstVariableDeclaration::codegen(
                     value->getType()->isIntegerTy() &&
                     expected_val_type->isIntegerTy())
                 {
-                    value = irBuilder->CreateIntCast(value, expected_val_type, true);
+                    value = ir_builder->CreateIntCast(value, expected_val_type, true);
                 }
             }
 
             // Store 'has_value' flag
-            llvm::Value* has_value_ptr = irBuilder->CreateStructGEP(
+            llvm::Value* has_value_ptr = ir_builder->CreateStructGEP(
                 alloca->getAllocatedType(),
                 alloca,
                 OPT_IDX_HAS_VALUE
             );
-            irBuilder->CreateStore(has_value, has_value_ptr);
+            ir_builder->CreateStore(has_value, has_value_ptr);
 
             // Store value
-            llvm::Value* value_ptr = irBuilder->CreateStructGEP(
+            llvm::Value* value_ptr = ir_builder->CreateStructGEP(
                 alloca->getAllocatedType(),
                 alloca,
                 OPT_IDX_ELEMENT_TYPE
             );
-            irBuilder->CreateStore(value, value_ptr);
+            ir_builder->CreateStore(value, value_ptr);
         }
     }
     else
     {
         if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
         {
-            init_value = irBuilder->CreateIntCast(init_value, var_type, true);
+            init_value = ir_builder->CreateIntCast(init_value, var_type, true);
         }
-        irBuilder->CreateStore(init_value, alloca);
+        ir_builder->CreateStore(init_value, alloca);
     }
 
     return alloca;
