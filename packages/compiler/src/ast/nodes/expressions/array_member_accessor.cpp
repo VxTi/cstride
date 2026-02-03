@@ -19,7 +19,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
         set.throw_error("Expected array index accessor after '['");
     }
 
-    auto index_expression = parse_standalone_expression(registry, expression_block.value());
+    auto index_expression = parse_inline_expression(registry, expression_block.value());
 
     return std::make_unique<AstArrayMemberAccessor>(
         array_identifier->get_source(),
