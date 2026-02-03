@@ -247,7 +247,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
         set
     );
 
-    // set.expect(TokenType::SEMICOLON, "Expected ';' after expression");
+    set.expect(TokenType::SEMICOLON, "Expected ';' after expression");
 
     return expr;
 }
