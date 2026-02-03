@@ -95,19 +95,12 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         variable_type->clone()
     );
 
-    if (set.peek_next_eq(TokenType::SEMICOLON))
-    {
-        set.next();
-    }
+    const auto ref_tok_pos = reference_token.get_source_position();
+    const auto var_type_pos = variable_type->get_source_position();
 
     return std::make_unique<AstVariableDeclaration>(
         set.get_source(),
-        SourcePosition(
-            reference_token.get_source_position().offset,
-            variable_type->get_source_position().offset
-            + variable_type->get_source_position().length
-            - reference_token.get_source_position().offset
-        ),
+        SourcePosition(ref_tok_pos.offset, var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset),
         registry,
         variable_name,
         internal_name,
@@ -271,26 +264,28 @@ void AstVariableDeclaration::resolve_forward_references(
     llvm::IRBuilder<>* builder
 )
 {
-    if (this->get_variable_type()->is_global())
+    if (!this->get_variable_type()->is_global())
     {
-        llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
-        if (!var_type) return;
-
-        // Check if it already exists (should not happen, but for safety)
-        if (module->getNamedGlobal(this->get_internal_name())) return;
-
-        // Create the Global Variable with a default null initializer
-        llvm::Constant* default_init = llvm::Constant::getNullValue(var_type);
-
-        new llvm::GlobalVariable(
-            *module,
-            var_type,
-            !this->get_variable_type()->is_mutable(),
-            llvm::GlobalValue::ExternalLinkage,
-            default_init,
-            this->get_internal_name()
-        );
+        return;
     }
+
+    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
+    if (!var_type) return;
+
+    // Check if it already exists (should not happen, but for safety)
+    if (module->getNamedGlobal(this->get_internal_name())) return;
+
+    // Create the Global Variable with a default null initializer
+    llvm::Constant* default_init = llvm::Constant::getNullValue(var_type);
+
+    new llvm::GlobalVariable(
+        *module,
+        var_type,
+        !this->get_variable_type()->is_mutable(),
+        llvm::GlobalValue::ExternalLinkage,
+        default_init,
+        this->get_internal_name()
+    );
 }
 
 void global_var_declaration_codegen(

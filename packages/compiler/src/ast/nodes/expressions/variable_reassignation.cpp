@@ -332,7 +332,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     auto mutative_op = parse_mutative_assignment_type(set, mutative_token);
     set.next();
 
-    auto expression = parse_standalone_expression(registry, set);
+    auto expression = parse_inline_expression(registry, set);
 
     return std::make_unique<AstVariableReassignment>(
         set.get_source(),

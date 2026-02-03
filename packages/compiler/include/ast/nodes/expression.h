@@ -645,7 +645,7 @@ namespace stride::ast
     );
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<AstExpression> parse_standalone_expression_part(
+    std::unique_ptr<AstExpression> parse_inline_expression_part(
         const std::shared_ptr<SymbolRegistry>& registry,
         TokenSet& set
     );

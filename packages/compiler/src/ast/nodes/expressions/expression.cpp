@@ -25,7 +25,7 @@ std::string AstExpression::to_string()
     return "AnonymousExpression";
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
+std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
     const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
 )
@@ -48,7 +48,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression_part(
     {
         set.next();
         // TODO: Potentially fix possibility of stack overflow if expression is too large
-        auto expr = parse_standalone_expression_part(registry, set);
+        auto expr = parse_inline_expression_part(registry, set);
         set.expect(TokenType::RPAREN, "Expected ')' after expression");
         return expr;
     }
@@ -114,7 +114,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
     {
         set.next();
 
-        auto rhs = parse_standalone_expression_part(registry, set);
+        auto rhs = parse_inline_expression_part(registry, set);
         if (!rhs)
         {
             return std::nullopt;
@@ -146,7 +146,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
     {
         set.next();
 
-        auto rhs = parse_standalone_expression_part(registry, set);
+        auto rhs = parse_inline_expression_part(registry, set);
         if (!rhs)
         {
             return std::nullopt;
@@ -195,7 +195,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
         );
     }
 
-    auto lhs = parse_standalone_expression_part(registry, set);
+    auto lhs = parse_inline_expression_part(registry, set);
     if (!lhs)
     {
         set.throw_error("Unexpected token in expression");
@@ -241,11 +241,15 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
     TokenSet& set
 )
 {
-    return parse_expression_extended(
+    auto expr = parse_expression_extended(
         SRFLAG_EXPR_TYPE_STANDALONE,
         registry,
         set
     );
+
+    // set.expect(TokenType::SEMICOLON, "Expected ';' after expression");
+
+    return expr;
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(

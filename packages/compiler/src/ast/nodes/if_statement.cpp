@@ -49,7 +49,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
     {
         set.throw_error("Expected condition block after 'if' keyword");
     }
-    auto condition = parse_standalone_expression(if_header_scope, if_header_body.value());
+    auto condition = parse_inline_expression(if_header_scope, if_header_body.value());
 
     // Thus far, we've collected `if (...)
 

@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "ast/casting.h"
 #include "ast/flags.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
@@ -11,7 +12,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     AstLiteral* literal
 )
 {
-    if (const auto* str = dynamic_cast<AstStringLiteral*>(literal))
+    if (const auto* str = cast_expr<AstStringLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
             str->get_source(),
@@ -22,7 +23,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
         );
     }
 
-    if (const auto* fp_lit = dynamic_cast<AstFpLiteral*>(literal))
+    if (const auto* fp_lit = cast_expr<AstFpLiteral*>(literal))
     {
         auto type = fp_lit->bit_count() > 32 ? PrimitiveType::FLOAT64 : PrimitiveType::FLOAT32;
         return std::make_unique<AstPrimitiveType>(
@@ -34,7 +35,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
         );
     }
 
-    if (const auto* int_lit = dynamic_cast<AstIntLiteral*>(literal))
+    if (const auto* int_lit = cast_expr<AstIntLiteral*>(literal))
     {
         auto type = int_lit->is_signed()
                         ? (int_lit->bit_count() > 32 ? PrimitiveType::INT64 : PrimitiveType::INT32)
@@ -50,7 +51,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
         );
     }
 
-    if (const auto* char_lit = dynamic_cast<AstCharLiteral*>(literal))
+    if (const auto* char_lit = cast_expr<AstCharLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
             char_lit->get_source(),
@@ -61,7 +62,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
         );
     }
 
-    if (const auto* bool_lit = dynamic_cast<AstBooleanLiteral*>(literal))
+    if (const auto* bool_lit = cast_expr<AstBooleanLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
             bool_lit->get_source(),
@@ -72,7 +73,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
         );
     }
 
-    if (const auto* nil_lit = dynamic_cast<AstNilLiteral*>(literal))
+    if (const auto* nil_lit = cast_expr<AstNilLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
             nil_lit->get_source(),
@@ -156,7 +157,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
     if (const auto op_type = operation->get_op_type(); op_type == UnaryOpType::ADDRESS_OF)
     {
         const auto flags = type->get_flags() | SRFLAG_TYPE_PTR;
-        if (const auto* prim = dynamic_cast<AstPrimitiveType*>(type.get()))
+        if (const auto* prim = cast_type<AstPrimitiveType*>(type.get()))
         {
             return std::make_unique<AstPrimitiveType>(
                 prim->get_source(),
@@ -167,7 +168,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 flags
             );
         }
-        if (const auto* named = dynamic_cast<AstStructType*>(type.get()))
+        if (const auto* named = cast_type<AstStructType*>(type.get()))
         {
             return std::make_unique<AstStructType>(
                 named->get_source(),
@@ -192,7 +193,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
 
         const auto flags = type->get_flags() & ~SRFLAG_TYPE_PTR;
 
-        if (const auto* prim = dynamic_cast<AstPrimitiveType*>(type.get()))
+        if (const auto* prim = cast_type<AstPrimitiveType*>(type.get()))
         {
             return std::make_unique<AstPrimitiveType>(
                 prim->get_source(),
@@ -203,7 +204,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 flags
             );
         }
-        if (const auto* named = dynamic_cast<AstStructType*>(type.get()))
+        if (const auto* named = cast_type<AstStructType*>(type.get()))
         {
             return std::make_unique<AstStructType>(
                 named->get_source(),
@@ -256,7 +257,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
 )
 {
     // Resolve the Base Identifier (e.g., 'a' in 'a.b.c')
-    const auto base_iden = dynamic_cast<AstIdentifier*>(expr->get_base());
+    const auto base_iden = cast_expr<AstIdentifier*>(expr->get_base());
     if (!base_iden)
     {
         throw parsing_error(
@@ -289,7 +290,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
          const auto member : members)
     {
         // Ensure the current 'node' we are looking inside is actually a struct
-        const auto struct_type = dynamic_cast<AstStructType*>(current_type);
+        const auto struct_type = cast_type<AstStructType*>(current_type);
         if (!struct_type)
         {
             throw parsing_error(
@@ -317,7 +318,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         }
 
         // Resolve the member identifier (e.g., 'b')
-        const auto segment_iden = dynamic_cast<AstIdentifier*>(member);
+        const auto segment_iden = cast_expr<AstIdentifier*>(member);
         if (!segment_iden)
         {
             throw parsing_error(
@@ -374,12 +375,12 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     AstExpression* expr
 )
 {
-    if (auto* literal = dynamic_cast<AstLiteral*>(expr))
+    if (auto* literal = cast_expr<AstLiteral*>(expr))
     {
         return infer_expression_literal_type(registry, literal);
     }
 
-    if (const auto* identifier = dynamic_cast<AstIdentifier*>(expr))
+    if (const auto* identifier = cast_expr<AstIdentifier*>(expr))
     {
         // TODO: Add generic support.
         // Right now we just do a lookup for `identifier`'s name, though we might want to extend
@@ -398,17 +399,17 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         return reference_variable->get_type()->clone();
     }
 
-    if (const auto* operation = dynamic_cast<AstBinaryArithmeticOp*>(expr))
+    if (const auto* operation = cast_expr<AstBinaryArithmeticOp*>(expr))
     {
         return infer_binary_arithmetic_op_type(registry, operation);
     }
 
-    if (const auto* operation = dynamic_cast<AstUnaryOp*>(expr))
+    if (const auto* operation = cast_expr<AstUnaryOp*>(expr))
     {
         return infer_unary_op_type(registry, operation);
     }
 
-    if (dynamic_cast<AstLogicalOp*>(expr) || dynamic_cast<AstComparisonOp*>(expr))
+    if (cast_expr<AstLogicalOp*>(expr) || cast_expr<AstComparisonOp*>(expr))
     {
         // TODO: Do some validation on lhs and rhs; cannot compare strings with one another (yet)
         return std::make_unique<AstPrimitiveType>(
@@ -421,12 +422,12 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         );
     }
 
-    if (const auto* operation = dynamic_cast<AstVariableReassignment*>(expr))
+    if (const auto* operation = cast_expr<AstVariableReassignment*>(expr))
     {
         return infer_expression_type(registry, operation->get_value());
     }
 
-    if (const auto* operation = dynamic_cast<AstVariableDeclaration*>(expr))
+    if (const auto* operation = cast_expr<AstVariableDeclaration*>(expr))
     {
         const auto lhs_variable_type = operation->get_variable_type();
         const auto value = infer_expression_type(registry, operation->get_initial_value().get());
@@ -441,12 +442,12 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         return get_dominant_field_type(registry, lhs_variable_type, value.get());
     }
 
-    if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(expr))
+    if (const auto* fn_call = cast_expr<AstFunctionCall*>(expr))
     {
         return infer_function_call_return_type(registry, fn_call);
     }
 
-    if (const auto* array_expr = dynamic_cast<AstArray*>(expr))
+    if (const auto* array_expr = cast_expr<AstArray*>(expr))
     {
         auto member_type = infer_array_member_type(registry, array_expr);
 
@@ -459,22 +460,22 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         );
     }
 
-    if (const auto* array_accessor = dynamic_cast<AstArrayMemberAccessor*>(expr))
+    if (const auto* array_accessor = cast_expr<AstArrayMemberAccessor*>(expr))
     {
         const auto array_type = infer_expression_type(registry, array_accessor->get_array_identifier());
 
-        if (const auto array = dynamic_cast<AstArrayType*>(array_type.get()); array != nullptr)
+        if (const auto array = cast_type<AstArrayType*>(array_type.get()); array != nullptr)
         {
             return array->get_element_type()->clone();
         }
     }
 
-    if (const auto* struct_init = dynamic_cast<AstStructInitializer*>(expr))
+    if (const auto* struct_init = cast_expr<AstStructInitializer*>(expr))
     {
         return infer_struct_initializer_type(registry, struct_init);
     }
 
-    if (const auto* member_accessor = dynamic_cast<AstMemberAccessor*>(expr))
+    if (const auto* member_accessor = cast_expr<AstMemberAccessor*>(expr))
     {
         return infer_member_accessor_type(registry, member_accessor);
     }

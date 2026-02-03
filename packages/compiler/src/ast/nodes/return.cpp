@@ -28,6 +28,7 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     // If parsing a void return: `return`
     if (!set.has_next())
     {
+        set.expect(TokenType::SEMICOLON, "Expected ';' after return statement");
         return std::make_unique<AstReturn>(
             set.get_source(),
             reference_token.get_source_position(),
@@ -36,12 +37,14 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
         );
     }
 
-    auto value = parse_standalone_expression(registry, set);
+    auto value = parse_inline_expression(registry, set);
 
     if (!value)
     {
         set.throw_error("Expected expression after return keyword");
     }
+
+    set.expect(TokenType::SEMICOLON, "Expected ';' after return statement");
 
     const auto ref_pos = reference_token.get_source_position();
     const auto expr_pos = value->get_source_position();

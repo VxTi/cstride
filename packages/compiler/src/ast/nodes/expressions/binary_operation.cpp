@@ -87,7 +87,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 
             // If we're unable to parse the next expression part, for whatever reason,
             // we'll return nullopt. This will indicate that the expression is incomplete or invalid.
-            auto rhs = parse_standalone_expression_part(registry, set);
+            auto rhs = parse_inline_expression_part(registry, set);
             if (!rhs)
             {
                 return std::nullopt;

@@ -1,5 +1,6 @@
 #include <llvm/IR/Module.h>
 
+#include "ast/casting.h"
 #include "ast/optionals.h"
 #include "ast/nodes/expression.h"
 
@@ -205,8 +206,12 @@ void AstComparisonOp::validate()
         );
     }
 
-    const auto lhs_primitive = dynamic_cast<AstPrimitiveType*>(lhs_type.get());
-    const auto rhs_primitive = dynamic_cast<AstPrimitiveType*>(rhs_type.get());
+    // Both sides are primitives
+    if (lhs_type->is_primitive() && rhs_type->is_primitive()) return;
+
+    const auto lhs_primitive = cast_type<AstPrimitiveType*>(lhs_type.get());
+    const auto rhs_primitive = cast_type<AstPrimitiveType*>(rhs_type.get());
+
 
     // If LHS is NIL and RHS is valid, allow the comparison (nil checks)
     if (lhs_primitive && rhs_primitive &&
@@ -220,8 +225,8 @@ void AstComparisonOp::validate()
         lhs_primitive->get_type() != PrimitiveType::NIL)
         return;
 
-    const auto lhs_struct = dynamic_cast<AstStructType*>(lhs_type.get());
-    const auto rhs_struct = dynamic_cast<AstStructType*>(rhs_type.get());
+    const auto lhs_struct = cast_type<AstStructType*>(lhs_type.get());
+    const auto rhs_struct = cast_type<AstStructType*>(rhs_type.get());
 
     // LHS is optional struct and RHS is primitive and RHS is not nil
     if (lhs_struct && rhs_primitive &&

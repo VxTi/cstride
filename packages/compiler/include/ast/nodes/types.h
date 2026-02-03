@@ -87,6 +87,9 @@ namespace stride::ast
         virtual std::string get_internal_name() = 0;
 
         virtual bool equals(IAstType& other) = 0;
+
+        [[nodiscard]]
+        virtual bool is_primitive() const = 0;
     };
 
     class AstPrimitiveType
@@ -165,6 +168,9 @@ namespace stride::ast
         }
 
         bool equals(IAstType& other) override;
+
+        [[nodiscard]]
+        bool is_primitive() const override { return true; }
     };
 
     class AstStructType
@@ -199,14 +205,18 @@ namespace stride::ast
 
         std::string to_string() override
         {
-            return std::format("{}{}{}",
-                               this->is_pointer() ? "*" : "",
-                               this->name(),
-                               this->is_optional() ? "?" : ""
+            return std::format(
+                "{}{}{}",
+                this->is_pointer() ? "*" : "",
+                this->name(),
+                this->is_optional() ? "?" : ""
             );
         }
 
         bool equals(IAstType& other) override;
+
+        [[nodiscard]]
+        bool is_primitive() const override { return false; }
     };
 
     class AstArrayType
@@ -269,15 +279,10 @@ namespace stride::ast
             return std::format("[{}]", this->_element_type->get_internal_name());
         }
 
-        bool equals(IAstType& other) override
-        {
-            if (const auto* other_array = dynamic_cast<AstArrayType*>(&other))
-            {
-                // Length here doesn't matter; merely the types should be the same.
-                return this->_element_type->equals(*other_array->_element_type);
-            }
-            return false;
-        }
+        bool equals(IAstType& other) override;
+
+        [[nodiscard]]
+        bool is_primitive() const override { return false; }
     };
 
     std::unique_ptr<IAstType> parse_type(

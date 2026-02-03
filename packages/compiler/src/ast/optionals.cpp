@@ -124,7 +124,7 @@ llvm::Value* stride::ast::wrap_optional_value_gep(
 
     if (!is_optional_wrapped_type(optional_ty) || is_optional_wrapped_type(value_ty))
     {
-        throw std::runtime_error("Invalid optional type");
+        return value;
     }
 
     llvm::AllocaInst* alloca = builder->CreateAlloca(optional_ty, nullptr, "optional_value_gep");
