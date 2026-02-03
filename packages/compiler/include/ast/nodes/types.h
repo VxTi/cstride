@@ -89,7 +89,7 @@ namespace stride::ast
         virtual bool equals(IAstType& other) = 0;
 
         [[nodiscard]]
-        virtual bool is_primitive() const = 0;
+        virtual bool is_primitive() const { return false; }
     };
 
     class AstPrimitiveType
@@ -214,9 +214,6 @@ namespace stride::ast
         }
 
         bool equals(IAstType& other) override;
-
-        [[nodiscard]]
-        bool is_primitive() const override { return false; }
     };
 
     class AstArrayType
@@ -280,9 +277,6 @@ namespace stride::ast
         }
 
         bool equals(IAstType& other) override;
-
-        [[nodiscard]]
-        bool is_primitive() const override { return false; }
     };
 
     std::unique_ptr<IAstType> parse_type(

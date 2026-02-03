@@ -52,6 +52,7 @@ namespace stride::ast
     );
 
     llvm::Value* wrap_optional_value_gep(
+        const std::string& name,
         llvm::Value* value,
         llvm::Type* optional_ty,
         const llvm::Module* module,
@@ -62,4 +63,6 @@ namespace stride::ast
      * Unwraps (extracts) an optional LLVM value, returning the inner value if present, or nullptr if not.
      */
     llvm::Value* unwrap_optional_value(llvm::Value* value, llvm::IRBuilder<>* builder);
+
+    llvm::Value* optionally_upcast_type(llvm::Value* value, llvm::Type* target_ty, llvm::IRBuilder<>* builder);
 }
