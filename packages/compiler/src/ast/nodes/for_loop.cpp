@@ -18,9 +18,8 @@ std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<Symbo
         return nullptr;
     }
 
-    // The initializer is allowed to have variable declarations,
-    // hence 'standalone'
-    return parse_standalone_expression(
+    return parse_variable_declaration(
+        SRFLAG_EXPR_TYPE_STANDALONE,
         registry,
         initiator.value()
     );
@@ -43,7 +42,7 @@ std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<Sym
 {
     if (!set.has_next()) return nullptr; // If there's no incrementor statement, we don't need to parse it.
 
-    return parse_standalone_expression(registry, set);
+    return parse_inline_expression(registry, set);
 }
 
 std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
