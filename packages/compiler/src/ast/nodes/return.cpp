@@ -129,7 +129,7 @@ llvm::Value* AstReturn::codegen(
             // Function returns optional, but we have a non-optional (or nil) -> Wrap
             else if (!is_expr_optional && is_fn_return_optional)
             {
-                expr_return_val = wrap_into_optional_value(expr_return_val, expected_return_ty, builder);
+                expr_return_val = wrap_optional_value(expr_return_val, expected_return_ty, builder);
             }
         }
     }

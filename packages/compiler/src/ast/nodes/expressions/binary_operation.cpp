@@ -179,9 +179,13 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
         {
             // Promote smaller float to larger float (e.g. float -> double)
             if (lhs->getType()->getPrimitiveSizeInBits() < rhs->getType()->getPrimitiveSizeInBits())
+            {
                 lhs = builder->CreateFPExt(lhs, rhs->getType(), "fpext");
+            }
             else
+            {
                 rhs = builder->CreateFPExt(rhs, lhs->getType(), "fpext");
+            }
         }
     }
 

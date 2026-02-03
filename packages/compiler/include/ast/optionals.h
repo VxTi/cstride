@@ -24,6 +24,20 @@ namespace stride::ast
 #define OPT_ELEMENT_COUNT (2)
 
     /**
+     * Extracts the "has_value" part from the provided value type and returns
+     * an optional containing the state. If the provided value doesn't conform to the
+     * optional data layout, then it will return nullopt.
+     */
+    std::optional<bool> extract_has_value_from_optional(llvm::Value* optional, llvm::IRBuilder<>* builder);
+
+    /**
+     * Will set the "has_value" part to the provided state in <code>optional</code>.
+     * If the provided value doesn't conform ot the optional data layout, then <code>optional</code>
+     * will be returned as-is.
+     */
+    llvm::Value* set_has_value_in_optional_gep(llvm::Value* optional, llvm::IRBuilder<>* builder, bool has_value);
+
+    /**
      * Checks if the provided LLVM type is an optional type.
      */
     bool is_optional_wrapped_type(const llvm::Type* type);
@@ -31,9 +45,16 @@ namespace stride::ast
     /**
      * Wraps an LLVM value into an optional LLVM value.
      */
-    llvm::Value* wrap_into_optional_value(
+    llvm::Value* wrap_optional_value(
         llvm::Value* value,
         llvm::Type* optional_ty,
+        llvm::IRBuilder<>* builder
+    );
+
+    llvm::Value* wrap_optional_value_gep(
+        llvm::Value* value,
+        llvm::Type* optional_ty,
+        const llvm::Module* module,
         llvm::IRBuilder<>* builder
     );
 

@@ -379,9 +379,9 @@ llvm::Value* AstVariableDeclaration::codegen(
 )
 {
     // Get the LLVM type for the variable
-    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
+    llvm::Type* variable_ty = internal_type_to_llvm_type(this->get_variable_type(), module);
 
-    const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(this, module, var_type);
+    const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(this, module, variable_ty);
 
     // Generate code for the initial value
     llvm::Value* init_value = nullptr;
@@ -414,7 +414,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         {
             if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
             {
-                // Optimization: If it's already a constant, just set it as the initializer
+                // If it's already a constant, just set it as the initializer
                 global_var.value()->setInitializer(constant);
             }
         }
@@ -426,98 +426,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         return global_var.value();
     }
 
-    llvm::BasicBlock* current_block = ir_builder->GetInsertBlock();
-    if (current_block == nullptr)
-    {
-        return nullptr;
-    }
-
-    // Find the entry block of the current function
-    llvm::Function* current_function = current_block->getParent();
-    if (current_function == nullptr)
-    {
-        return nullptr;
-    }
-
-
-    const llvm::IRBuilder<>::InsertPoint save_point = ir_builder->saveIP();
-
-    llvm::BasicBlock& entry_block = current_function->getEntryBlock();
-    ir_builder->SetInsertPoint(&entry_block, entry_block.begin());
-
-    llvm::AllocaInst* alloca = ir_builder->CreateAlloca(var_type, nullptr, this->get_internal_name());
-
-    // Restore the insert point
-    ir_builder->restoreIP(save_point);
-
-    if (init_value == nullptr) return alloca;
-
-    // Store the initial value if it exists
-    if (this->get_variable_type()->is_optional())
-    {
-        // If the init value is the same as the inferred var type,
-        // we can just store it directly
-        if (init_value->getType() == var_type)
-        {
-            ir_builder->CreateStore(init_value, alloca);
-        }
-        else
-        {
-            llvm::Value* has_value = nullptr;
-            llvm::Value* value = nullptr;
-
-            // Check if we're assigning nil
-            // We can check if the init_value is a null pointer (which nil returns)
-            if (llvm::isa<llvm::ConstantPointerNull>(init_value))
-            {
-                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPT_NO_VALUE);
-
-                // Get the value type from the struct
-                llvm::Type* value_type = var_type->getStructElementType(OPT_IDX_ELEMENT_TYPE);
-                value = llvm::UndefValue::get(value_type);
-            }
-            else
-            {
-                has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(module->getContext()), OPT_HAS_VALUE);
-                value = init_value;
-
-                // If value type doesn't match, we might need casting (e.g. integer width)
-                if (llvm::Type* expected_val_type = var_type->getStructElementType(OPT_IDX_ELEMENT_TYPE);
-                    value->getType() != expected_val_type &&
-                    value->getType()->isIntegerTy() &&
-                    expected_val_type->isIntegerTy())
-                {
-                    value = ir_builder->CreateIntCast(value, expected_val_type, true);
-                }
-            }
-
-            // Store 'has_value' flag
-            llvm::Value* has_value_ptr = ir_builder->CreateStructGEP(
-                alloca->getAllocatedType(),
-                alloca,
-                OPT_IDX_HAS_VALUE
-            );
-            ir_builder->CreateStore(has_value, has_value_ptr);
-
-            // Store value
-            llvm::Value* value_ptr = ir_builder->CreateStructGEP(
-                alloca->getAllocatedType(),
-                alloca,
-                OPT_IDX_ELEMENT_TYPE
-            );
-            ir_builder->CreateStore(value, value_ptr);
-        }
-    }
-    else
-    {
-        if (init_value->getType() != var_type && init_value->getType()->isIntegerTy() && var_type->isIntegerTy())
-        {
-            init_value = ir_builder->CreateIntCast(init_value, var_type, true);
-        }
-        ir_builder->CreateStore(init_value, alloca);
-    }
-
-    return alloca;
+    return wrap_optional_value_gep(init_value, variable_ty, module, ir_builder);
 }
 
 bool AstVariableDeclaration::is_reducible()
