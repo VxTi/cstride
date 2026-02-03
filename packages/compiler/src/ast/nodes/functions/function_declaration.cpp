@@ -126,7 +126,7 @@ void AstFunctionDeclaration::validate()
                 ),
                 {
                     ErrorSourceReference(
-                        std::format("expected {}", this->get_return_type()->to_string()),
+                        std::format("expected {}{}", this->get_return_type()->is_primitive() ? "" : "struct-type ", this->get_return_type()->to_string()),
                         *this->get_source(),
                         return_stmt->get_return_expr()->get_source_position()
                     )

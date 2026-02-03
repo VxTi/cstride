@@ -36,7 +36,7 @@ std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<Symbo
     }
 
     // This one doesn't allow variable declarations
-    return parse_standalone_expression(registry, condition.value());
+    return parse_inline_expression(registry, condition.value());
 }
 
 std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)

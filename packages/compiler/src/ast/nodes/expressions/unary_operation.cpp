@@ -229,8 +229,8 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         set.next(); // Consume operator
 
         // Recursive call to handle chained unaries like !!x or - -x etc.
-        // We call parse_standalone_expression_part, which will call parse_binary_unary_op again.
-        auto distinct_expr = parse_standalone_expression_part(registry, set);
+        // We call parse_inline_expression_part, which will call parse_binary_unary_op again.
+        auto distinct_expr = parse_inline_expression_part(registry, set);
         if (!distinct_expr)
         {
             set.throw_error("Expected expression after unary operator");
@@ -256,7 +256,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
     }
 
     // Check for Postfix Unary (only Identifier supported for provided context/examples)
-    // We can't easily hijack arbitrary expression parsing for postfix here without restructuring `parse_standalone_expression_part`.
+    // We can't easily hijack arbitrary expression parsing for postfix here without restructuring `parse_inline_expression_part`.
     // However, we can peek if we have Identifier -> PostfixOp
     if (set.peek_next_eq(TokenType::IDENTIFIER) && (
         // Check if the token AFTER identifier is ++ or --

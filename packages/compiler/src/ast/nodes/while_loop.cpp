@@ -34,7 +34,7 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
 
     auto header_condition = header_condition_opt.value();
 
-    auto condition = parse_standalone_expression(registry, header_condition);
+    auto condition = parse_inline_expression(registry, header_condition);
     auto body = parse_block(registry, set);
 
     return std::make_unique<AstWhileLoop>(

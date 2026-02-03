@@ -118,10 +118,7 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
-            std::format(
-                "Expected '{}', but reached end of block",
-                token_type_to_str(type)
-            ),
+            message,
             *this->get_source(),
             SourcePosition(last_token_pos.offset + last_token_pos.length - 1, 1)
         );

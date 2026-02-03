@@ -591,3 +591,13 @@ bool AstPrimitiveType::equals(IAstType& other)
 
     return false;
 }
+
+bool AstArrayType::equals(IAstType& other)
+{
+    if (const auto* other_array = dynamic_cast<AstArrayType*>(&other))
+    {
+        // Length here doesn't matter; merely the types should be the same.
+        return this->_element_type->equals(*other_array->_element_type);
+    }
+    return false;
+}
