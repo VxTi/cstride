@@ -24,7 +24,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
         auto subset = expression_block.value();
 
         /// Here we'll parse the subset of tokens (the actual array initializer)
-        if (auto first_initializer = parse_standalone_expression(registry, subset);
+        if (auto first_initializer = parse_inline_expression(registry, subset);
             first_initializer != nullptr)
         {
             elements.push_back(std::move(first_initializer));
@@ -33,7 +33,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
         while (subset.has_next())
         {
             subset.expect(TokenType::COMMA, "Expected ',' between array elements");
-            elements.push_back(parse_standalone_expression(registry, subset));
+            elements.push_back(parse_inline_expression(registry, subset));
         }
     }
 
