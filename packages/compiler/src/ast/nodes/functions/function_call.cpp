@@ -1,5 +1,4 @@
 #include <format>
-#include <iostream>
 #include <sstream>
 #include <vector>
 
@@ -137,30 +136,37 @@ llvm::Value* AstFunctionCall::codegen(
     }
 
     std::vector<llvm::Value*> args_v;
-    for (const auto& arg : this->get_arguments())
+    const auto& arguments = this->get_arguments();
+
+    for (size_t i = 0; i < arguments.size(); ++i)
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(arg.get()))
+        const auto arg_val = arguments[i]->codegen(registry, module, builder);
+
+        if (!arg_val)
         {
-            const auto arg_val = synthesisable->codegen(registry, module, builder);
+            return nullptr;
+        }
 
-            if (!arg_val)
+        llvm::Value* final_val = arg_val;
+
+        // Determine if we need to unwrap based on the target function signature
+        if (i < callee->arg_size())
+        {
+            // Check for strict type equality.
+            // If the argument is Optional<T> but the function expects T, we unwrap.
+            if (llvm::Type* expected_type = callee->getFunctionType()->getParamType(i);
+                arg_val->getType() != expected_type)
             {
-                return nullptr;
+                final_val = unwrap_optional_value(arg_val, builder);
             }
-
-            // Unwrapping optional if passed to a non-optional parameter or variadic function
-            // if non-optional, this will just append `arg_val`.
-            args_v.push_back(unwrap_optional_value(arg_val, builder));
         }
         else
         {
-            throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
-                "Cannot generate code for function argument",
-                *this->get_source(),
-                arg->get_source_position()
-            );
+            // For variadic arguments, we default to eager unwrapping
+            final_val = unwrap_optional_value(arg_val, builder);
         }
+
+        args_v.push_back(final_val);
     }
 
     return builder->CreateCall(callee, args_v, "calltmp");
