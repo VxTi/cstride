@@ -86,7 +86,7 @@ llvm::Value* stride::ast::wrap_optional_value(
     return wrapped;
 }
 
-llvm::Value* optionally_upcast_type(llvm::Value* value, llvm::Type* target_ty, llvm::IRBuilder<>* builder)
+llvm::Value* stride::ast::optionally_upcast_type(llvm::Value* value, llvm::Type* target_ty, llvm::IRBuilder<>* builder)
 {
     const auto value_ty = value->getType();
 
@@ -114,6 +114,7 @@ llvm::Value* optionally_upcast_type(llvm::Value* value, llvm::Type* target_ty, l
 }
 
 llvm::Value* stride::ast::wrap_optional_value_gep(
+    const std::string& name,
     llvm::Value* value,
     llvm::Type* optional_ty,
     const llvm::Module* module,
@@ -127,7 +128,7 @@ llvm::Value* stride::ast::wrap_optional_value_gep(
         return value;
     }
 
-    llvm::AllocaInst* alloca = builder->CreateAlloca(optional_ty, nullptr, "optional_value_gep");
+    llvm::AllocaInst* alloca = builder->CreateAlloca(optional_ty, nullptr, name);
 
     // If both types are the same, we can store directly.
     if (value_ty == optional_ty)

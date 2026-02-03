@@ -376,40 +376,30 @@ llvm::Value* AstVariableDeclaration::codegen(
     // Get the LLVM type for the variable
     llvm::Type* variable_ty = internal_type_to_llvm_type(this->get_variable_type(), module);
 
-    const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(this, module, variable_ty);
-
-    // Generate code for the initial value
-    llvm::Value* init_value = nullptr;
-    if (const auto initial_value = this->get_initial_value().get();
-        initial_value != nullptr)
+    // If we are generating a global, we might rely on constant initialization
+    // or dynamic initialization handled later.
+    if (const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(this, module, variable_ty);
+        global_var.has_value())
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
+        llvm::Value* init_value = nullptr;
+        // Generate init value code only if it's a literal/constant,
+        // otherwise dynamic init handles it (see global_var_declaration_codegen)
+        if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
         {
-            if (this->get_variable_type()->is_global())
+            if (is_literal_ast_node(initial_value) && dynamic_cast<ISynthesisable*>(initial_value))
             {
-                // For global variables, we ONLY want to set an initializer if it's a true LLVM constant.
-                // We don't want to call codegen() here because it might generate instructions.
-                // Instead, we rely on the dynamic initialization below for non-constants.
-                // For now, let's just assume any non-literal is dynamic to be safe.
-                if (is_literal_ast_node(initial_value))
-                {
-                    init_value = synthesisable->codegen(this->get_registry(), module, ir_builder);
-                }
-            }
-            else
-            {
-                init_value = synthesisable->codegen(this->get_registry(), module, ir_builder);
+                init_value = dynamic_cast<ISynthesisable*>(initial_value)->codegen(
+                    this->get_registry(),
+                    module,
+                    ir_builder
+                );
             }
         }
-    }
 
-    if (global_var.has_value())
-    {
         if (init_value != nullptr)
         {
             if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
             {
-                // If it's already a constant, just set it as the initializer
                 global_var.value()->setInitializer(constant);
             }
         }
@@ -417,11 +407,49 @@ llvm::Value* AstVariableDeclaration::codegen(
         {
             global_var_declaration_codegen(this, global_var.value(), module, ir_builder);
         }
-
         return global_var.value();
     }
 
-    return wrap_optional_value_gep(init_value, variable_ty, module, ir_builder);
+    // Create the Alloca in the Entry block to ensure it dominates all uses
+    // and name it so Identifier lookups can find it.
+    llvm::Function* function = ir_builder->GetInsertBlock()->getParent();
+    llvm::IRBuilder<> entry_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
+
+    llvm::AllocaInst* alloca = entry_builder.CreateAlloca(
+        variable_ty,
+        nullptr,
+        this->get_internal_name() // This registers it in the SymbolTable
+    );
+
+    // Generate code for the initial value at the current insertion point
+    llvm::Value* init_value = nullptr;
+    if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
+    {
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
+        {
+            init_value = synthesisable->codegen(this->get_registry(), module, ir_builder);
+        }
+    }
+
+    if (init_value)
+    {
+        llvm::Value* value_to_store = nullptr;
+
+        // Handle Optional Wrapping: Value T -> Optional<T>
+        if (is_optional_wrapped_type(variable_ty))
+        {
+            value_to_store = wrap_optional_value(init_value, variable_ty, ir_builder);
+        }
+        else
+        {
+            // Handle basic upcasts (e.g. i32 -> i64, etc)
+            value_to_store = optionally_upcast_type(init_value, variable_ty, ir_builder);
+        }
+
+        ir_builder->CreateStore(value_to_store, alloca);
+    }
+
+    return alloca;
 }
 
 bool AstVariableDeclaration::is_reducible()
@@ -433,33 +461,26 @@ bool AstVariableDeclaration::is_reducible()
     // Variables are reducible only if their initial value is reducible,
     // In the future we can also check whether variables are ever referenced,
     // in which case we can optimize away the variable declaration.
-    if (const auto value = dynamic_cast<IReducible*>(this->get_initial_value().get()))
-    {
-        return value->is_reducible();
-    }
 
-    return false;
+    return this->get_initial_value()->is_reducible();
 }
 
 IAstNode* AstVariableDeclaration::reduce()
 {
-    if (this->is_reducible())
-    {
-        const auto reduced_value = dynamic_cast<IReducible*>(this->get_initial_value().get())->reduce();
-        auto cloned_type = this->get_variable_type()->clone();
+    const auto reduced_value = dynamic_cast<IReducible*>(this->get_initial_value().get())->reduce();
+    auto cloned_type = this->get_variable_type()->clone();
 
-        if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced_value); reduced_expr != nullptr)
-        {
-            return std::make_unique<AstVariableDeclaration>(
-                this->get_source(),
-                this->get_source_position(),
-                this->get_registry(),
-                this->get_variable_name(),
-                this->get_internal_name(),
-                std::move(cloned_type),
-                std::unique_ptr<AstExpression>(reduced_expr)
-            ).release();
-        }
+    if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced_value); reduced_expr != nullptr)
+    {
+        return std::make_unique<AstVariableDeclaration>(
+            this->get_source(),
+            this->get_source_position(),
+            this->get_registry(),
+            this->get_variable_name(),
+            this->get_internal_name(),
+            std::move(cloned_type),
+            std::unique_ptr<AstExpression>(reduced_expr)
+        ).release();
     }
     return this;
 }
