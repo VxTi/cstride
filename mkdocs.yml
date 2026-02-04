@@ -24,16 +24,24 @@ theme:
     - navigation.expand
     - code.copy
 
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js
+  - js/stride.js
+
+extra_css:
+  - https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css
+
 markdown_extensions:
   - admonition
   - pymdownx.highlight:
       anchor_linenums: true
-      pygments_lang_class: true
-      user_lexers:
-        stride: stride_lexer.StrideLexer
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: stride
+          class: language-stride
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 nav:
   - Home: index.md

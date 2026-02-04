@@ -4,11 +4,11 @@ Stride is a statically typed language.
 
 ## Creating variables
 
-Variables are created using `let` for constants and `mut` for mutable variables. By default, variables are constant.
+Variables are created using `const` for constants and `let` for mutable variables.
 
 ```stride
 // Creating a mutable 32 bit int variable
-mut x: i32 = 10
+const x: i32 = 10
 
 // Creating a constant variable
 let y: f64 = 3.0D
