@@ -14,6 +14,7 @@ std::optional<BinaryOpType> stride::ast::get_binary_op_type(const TokenType type
     case TokenType::PLUS: return BinaryOpType::ADD;
     case TokenType::MINUS: return BinaryOpType::SUBTRACT;
     case TokenType::SLASH: return BinaryOpType::DIVIDE;
+    case TokenType::PERCENT: return BinaryOpType::MODULO;
     default: return std::nullopt;
     }
 }
@@ -25,6 +26,7 @@ int stride::ast::get_binary_operator_precedence(const BinaryOpType type)
     case BinaryOpType::POWER: return 3;
     case BinaryOpType::MULTIPLY:
     case BinaryOpType::DIVIDE:
+    case BinaryOpType::MODULO:
         return 2;
     case BinaryOpType::ADD:
     case BinaryOpType::SUBTRACT:
@@ -42,6 +44,7 @@ std::string binary_op_to_str(const BinaryOpType op)
     case BinaryOpType::SUBTRACT: return "-";
     case BinaryOpType::MULTIPLY: return "*";
     case BinaryOpType::DIVIDE: return "/";
+    case BinaryOpType::MODULO: return "%";
     default: return "";
     }
 }
@@ -87,11 +90,12 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 
             // If we're unable to parse the next expression part, for whatever reason,
             // we'll return nullopt. This will indicate that the expression is incomplete or invalid.
-            auto rhs = parse_inline_expression_part(context, set);
-            if (!rhs)
+            auto rhs_opt_val = parse_binary_unary_op(context, set);
+            if (!rhs_opt_val)
             {
                 return std::nullopt;
             }
+            auto rhs = std::move(rhs_opt_val.value());
 
             // If the followup token is also a binary expression,
             // we can try to parse it with higher precedence
@@ -207,6 +211,10 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
         return is_float
                    ? builder->CreateFDiv(lhs, rhs, "divtmp")
                    : builder->CreateSDiv(lhs, rhs, "divtmp");
+    case BinaryOpType::MODULO:
+        return is_float
+                   ? builder->CreateFRem(lhs, rhs, "modtmp")
+                   : builder->CreateSRem(lhs, rhs, "modtmp");
     default:
         return nullptr;
     }

@@ -229,8 +229,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         set.next(); // Consume operator
 
         // Recursive call to handle chained unaries like !!x or - -x etc.
-        // We call parse_inline_expression_part, which will call parse_binary_unary_op again.
-        auto distinct_expr = parse_inline_expression_part(context, set);
+        auto distinct_expr = parse_binary_unary_op(context, set);
         if (!distinct_expr)
         {
             set.throw_error("Expected expression after unary operator");
@@ -239,7 +238,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         // Validation for identifiers
         if (requires_identifier_operand(op_type.value()))
         {
-            if (!dynamic_cast<AstIdentifier*>(distinct_expr.get()))
+            if (!dynamic_cast<AstIdentifier*>(distinct_expr.value().get()))
             {
                 set.throw_error("Unary operator requires identifier operand");
             }
@@ -250,51 +249,43 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
             next.get_source_position(),
             context,
             op_type.value(),
-            std::move(distinct_expr),
+            std::move(distinct_expr.value()),
             false // Prefix
         );
     }
 
-    // Check for Postfix Unary (only Identifier supported for provided context/examples)
-    // We can't easily hijack arbitrary expression parsing for postfix here without restructuring `parse_inline_expression_part`.
-    // However, we can peek if we have Identifier -> PostfixOp
-    if (set.peek_next_eq(TokenType::IDENTIFIER) && (
-        // Check if the token AFTER identifier is ++ or --
-        set.peek(1).get_type() == TokenType::DOUBLE_PLUS || set.peek(1).get_type() == TokenType::DOUBLE_MINUS))
+    // Parse Atom (Primary Expression)
+    auto expr = parse_inline_expression_part(context, set);
+
+    // Postfix Parsing
+    while (set.peek_next_eq(TokenType::DOUBLE_PLUS) ||
+        set.peek_next_eq(TokenType::DOUBLE_MINUS))
     {
-        const auto iden_tok = set.next();
-        const auto iden_name = iden_tok.get_lexeme();
-
-        const auto operation_tok = set.next();
-
-        auto variable_def = context->lookup_variable(iden_name);
-        if (!variable_def)
-        {
-            return std::nullopt;
-        }
-        const auto internal_name = variable_def->get_internal_symbol_name();
-
-        UnaryOpType type = (operation_tok.get_type() == TokenType::DOUBLE_PLUS)
+        const auto op_tok = set.next();
+        UnaryOpType type = (op_tok.get_type() == TokenType::DOUBLE_PLUS)
                                ? UnaryOpType::INCREMENT
                                : UnaryOpType::DECREMENT;
 
-        return std::make_unique<AstUnaryOp>(
+        // Validation: Postfix requires identifier
+        // Note: We might want allow array access etc in future, but stick to ident for now
+        if (!dynamic_cast<AstIdentifier*>(expr.get()))
+        {
+            // For strict backward compatibility with original check, though not sure if strictly required
+            // Original: "only Identifier supported"
+            set.throw_error("Postfix operator requires identifier operand");
+        }
+
+        expr = std::make_unique<AstUnaryOp>(
             set.get_source(),
-            iden_tok.get_source_position(),
+            op_tok.get_source_position(),
             context,
             type,
-            std::make_unique<AstIdentifier>(
-                set.get_source(),
-                next.get_source_position(),
-                context,
-                iden_name,
-                internal_name
-            ),
+            std::move(expr),
             true // Postfix
         );
     }
 
-    return std::nullopt;
+    return std::move(expr);
 }
 
 bool AstUnaryOp::is_reducible()

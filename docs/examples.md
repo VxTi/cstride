@@ -37,6 +37,8 @@ fn main(): void {
 This example calculates an approximation of $e^x$ using a Taylor series. It demonstrates function definition, loops, variables, and calling external functions.
 
 ```stride
+extern fn powl($0: f64, $1: f64): f64;
+
 /**
  * In this example, we'll try to calculate an approximation of e^x using a taylor series.
  * This shows parts of the language;
@@ -45,41 +47,39 @@ This example calculates an approximation of $e^x$ using a Taylor series. It demo
  * - The significant speed : )
  */
 fn main(): void {
-    let pow: f64 = 3.5D
+    const pow: f64 = 3.5D;
     
-    let start: u64 = system_time_ns()
-    let approx: f64 = e_to_the_x(pow)
-    let end: u64 = system_time_ns()
+    const start: u64 = system_time_ns();
+    const approx: f64 = e_to_the_x(pow);
+    const end: u64 = system_time_ns();
     
-    let elapsed: u64 = end - start
+    const elapsed: u64 = end - start;
 
-    printf("Elapsed time: %llu ns; e^%.2f: %.15f\n", elapsed, pow, approx)
-
-    exit(0)
+    printf("Elapsed time: %llu ns; e^%.2f: %.15f\n", elapsed, pow, approx);
 }
 
 
 // Here we try to calculate e^x by using a taylor series
 // In this case, we get an accuracy of 7 digits with 20 iterations.
 fn e_to_the_x(x: f64): f64 {
-    mut approximation: f64 = 0.0D
-    let iterations: i32 = 20
+    let approximation: f64 = 0.0D;
+    const iterations: i32 = 20;
 
-    for (mut n: f64 = 0.0D; n < (iterations as f64); n++) {
-        approximation += powl(x, n) / factorial(n)
+    for (let n: f64 = 0.0D; n < iterations; n++) {
+        approximation += powl(x, n) / factorial(n);
     }
 
-    return approximation
+    return approximation;
 }
 
 // A basic recursive factorial function
 fn factorial(n: f64): f64 {
     if (n <= 1.0D) {
-        return 1.0D
+        return 1.0D;
     }
 
     // Recursive step: n * factorial of (n-1)
-    return n * factorial(n - 1.0D)
+    return n * factorial(n - 1.0D);
 }
 ```
 
@@ -108,36 +108,23 @@ Generating Fibonacci numbers using an iterative approach.
 
 ```stride
 fn main(): void {
-    print_fibonacci(10)
+    print_fibonacci(10);
 }
 
 fn print_fibonacci(n: i32): void {
-    mut a: i64 = 0L
-    mut b: i64 = 1L
+    let a = 0L;
+    let b = 1L;
     
-    printf("Fibonacci sequence up to %d iterations:\n", n)
-    
-    for (mut i: i32 = 0; i < n; i++) {
-        printf("%lld ", a)
-        let temp: i64 = a
-        a = b
-        b = temp + b
+    printf("Fibonacci sequence up to %d iterations:\n", n);
+
+    let i: i32 = 0;
+    for (; i < n; i++) {
+        printf("%lld ", a);
+        let temp: i64 = a;
+        a = b;
+        b = temp + b;
     }
-    printf("\n")
+    printf("\n");
 }
 ```
 
-## 6. String Manipulation
-Using strings and character processing.
-
-```stride
-fn main(): void {
-    const greeting: string = "Hello, "
-    const name: string = "Stride"
-    
-    printf("%s%s!\n", greeting, name)
-    
-    let length: i32 = strlen(name)
-    printf("The word '%s' has %d characters.\n", name, length)
-}
-```

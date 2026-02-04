@@ -36,12 +36,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         return std::move(lit.value());
     }
 
-    if (auto unary = parse_binary_unary_op(context, set);
-        unary.has_value())
-    {
-        return std::move(unary.value());
-    }
-
     // Will try to parse <name>::{ ... }
     if (is_struct_initializer(set))
     {
@@ -105,8 +99,9 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
     if (set.peek_next_eq(TokenType::LPAREN))
     {
         set.next();
-        // TODO: Potentially fix possibility of stack overflow if expression is too large
-        auto expr = parse_inline_expression_part(context, set);
+        // Fixed: Use parse_inline_expression (full expression parser) instead of
+        // parse_inline_expression_part to allow binary operations inside parentheses.
+        auto expr = parse_inline_expression(context, set);
         set.expect(TokenType::RPAREN, "Expected ')' after expression");
         return expr;
     }
@@ -114,6 +109,79 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
     set.throw_error("Invalid token found in expression");
 }
 
+/*
+ * Helper functions for tiered expression parsing to ensure correct precedence.
+ * Hierarchy: Logical > Comparison > Arithmetic > Unary > Atom
+ */
+
+std::unique_ptr<AstExpression> parse_arithmetic_tier(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set
+)
+{
+    // 1. Term (Unary / Primary)
+    auto lhs_opt = parse_binary_unary_op(context, set);
+    if (!lhs_opt)
+    {
+        set.throw_error("Expected expression");
+    }
+    auto lhs = std::move(lhs_opt.value());
+
+    // 2. Arithmetic Loop (handled by parse_arithmetic_binary_operation_optional)
+    if (auto arith = parse_arithmetic_binary_operation_optional(context, set, std::move(lhs), 1))
+    {
+        return std::move(arith.value());
+    }
+    return lhs;
+}
+
+std::unique_ptr<AstExpression> parse_comparison_tier(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set
+)
+{
+    auto lhs = parse_arithmetic_tier(context, set);
+
+    while (auto op = get_comparative_op_type(set.peek_next_type()))
+    {
+        const auto token = set.next();
+        auto rhs = parse_arithmetic_tier(context, set);
+        lhs = std::make_unique<AstComparisonOp>(
+            set.get_source(),
+            token.get_source_position(),
+            context,
+            std::move(lhs),
+            op.value(),
+            std::move(rhs)
+        );
+    }
+    return lhs;
+}
+
+std::unique_ptr<AstExpression> parse_logical_tier(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set
+)
+{
+    auto lhs = parse_comparison_tier(context, set);
+
+    while (auto op = get_logical_op_type(set.peek_next_type()))
+    {
+        const auto token = set.next();
+        auto rhs = parse_comparison_tier(context, set);
+        lhs = std::make_unique<AstLogicalOp>(
+            set.get_source(),
+            token.get_source_position(),
+            context,
+            std::move(lhs),
+            op.value(),
+            std::move(rhs)
+        );
+    }
+    return lhs;
+}
+
+// Kept for backward compatibility / external usage if any, but now updated to use correct tiers for RHS
 std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
@@ -126,11 +194,8 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
     {
         set.next();
 
-        auto rhs = parse_inline_expression_part(context, set);
-        if (!rhs)
-        {
-            return std::nullopt;
-        }
+        auto rhs = parse_comparison_tier(context, set);
+        // Note: calling parse_comparison_tier here is safer than parse_inline_expression_part
 
         return std::make_unique<AstLogicalOp>(
             set.get_source(),
@@ -145,7 +210,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
     return lhs;
 }
 
-// Will yield `lhs` if no comparative operation is found
+// Kept for backward compatibility / external usage if any
 std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
@@ -158,11 +223,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
     {
         set.next();
 
-        auto rhs = parse_inline_expression_part(context, set);
-        if (!rhs)
-        {
-            return std::nullopt;
-        }
+        auto rhs = parse_arithmetic_tier(context, set);
 
         return std::make_unique<AstComparisonOp>(
             set.get_source(),
@@ -187,43 +248,9 @@ std::unique_ptr<AstExpression> parse_expression_internal(
         set.throw_error("Unexpected end of input while parsing expression");
     }
 
-    auto lhs = parse_inline_expression_part(context, set);
-    if (!lhs)
-    {
-        set.throw_error("Unexpected token in expression");
-    }
-
-    // Attempt to parse arithmetic binary operations first
-
-    // If we have a result from arithmetic parsing, update lhs.
-    // Note: parse_arithmetic_binary_operation_optional returns the lhs if no arithmetic op is found,
-    // so it effectively passes through unless an error occurs (returns nullopt).
-    if (auto arithmetic_result = parse_arithmetic_binary_operation_optional(context, set, std::move(lhs), 1);
-        arithmetic_result.has_value())
-    {
-        lhs = std::move(arithmetic_result.value());
-    }
-    else
-    {
-        // This case handles errors during arithmetic parsing (e.g. valid LHS but invalid RHS)
-        set.throw_error("Invalid arithmetic expression");
-    }
-
-    // These methods optionally wrap the existing expression in another expression, e.g., Expr<lhs> -> ComparativeExpr<Expr<lhs>, Expr<rhs>>
-    if (auto comparative_expr = parse_comparative_operation_optional(context, set, std::move(lhs));
-        comparative_expr.has_value())
-    {
-        return std::move(comparative_expr.value());
-    }
-
-    // Similar case here
-    if (auto logical_expr = parse_logical_operation_optional(context, set, std::move(lhs)))
-    {
-        return std::move(logical_expr.value());
-    }
-
-    set.throw_error("Unexpected token in expression");
+    return parse_logical_tier(context, set);
 }
+
 
 /**
  * General expression parsing. These can occur in global / function scopes
