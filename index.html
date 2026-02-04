@@ -248,6 +248,25 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
@@ -401,10 +420,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#project-structure" class="md-nav__link">
+  <a href="#key-features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Project Structure
+        Key Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-taste-of-stride" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A Taste of Stride
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Status
       
     </span>
   </a>
@@ -452,6 +504,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -468,10 +547,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -489,8 +568,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -672,10 +751,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#project-structure" class="md-nav__link">
+  <a href="#key-features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Project Structure
+        Key Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-taste-of-stride" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A Taste of Stride
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Status
       
     </span>
   </a>
@@ -700,20 +812,37 @@
 
 
 <h1 id="stride-language">Stride Language</h1>
-<p>Stride is a statically typed, JIT-compiled language using the LLVM compiler toolchain.</p>
-<p>This project implements a compiler for the Stride programming language, along with a web-based code editor featuring syntax highlighting.</p>
-<p>Currently, it only supports primitive types, though support for structs, classes, and generics is planned.</p>
-<p>Structs are already partially implemented, though member access is not yet implemented.</p>
-<h2 id="project-structure">Project Structure</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cstride/
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>└── packages/
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    ├── compiler/
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    │   └── ... (compiler source files)
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    ├── standard-library/
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    │   └── ... (standard library files)
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    └── editor/
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        └── ... (web-based editor files)  
-</code></pre></div>
+<p>Stride is a statically typed, JIT-compiled language built on the LLVM compiler toolchain. It aims to combine the performance and control of low-level languages with the simplicity and safety of modern syntax.</p>
+<p>This project includes a complete compiler for the Stride language and a modern web-based code editor with syntax highlighting and an integrated terminal.</p>
+<h2 id="key-features">Key Features</h2>
+<ul>
+<li><strong>High Performance</strong>: Leverages LLVM for optimized machine code generation.</li>
+<li><strong>Static Typing</strong>: Catch errors early with a robust type system.</li>
+<li><strong>JIT Compilation</strong>: Execute code instantly without a separate compilation step.</li>
+<li><strong>Modern Syntax</strong>: Clean and expressive syntax inspired by C, Rust, and TypeScript.</li>
+<li><strong>Integrated Tooling</strong>: Comes with a dedicated local web editor for an immediate development experience.</li>
+</ul>
+<h2 id="quick-start">Quick Start</h2>
+<ol>
+<li><strong><a href="getting-started/">Getting Started</a></strong>: Learn how to install the compiler and set up the local editor.</li>
+<li><strong><a href="examples/">Examples</a></strong>: Explore various code samples, from "Hello World" to Taylor series approximations.</li>
+<li><strong><a href="reference/variables/">Language Reference</a></strong>: Dive deep into Stride's syntax, types, and features.</li>
+</ol>
+<h2 id="a-taste-of-stride">A Taste of Stride</h2>
+<pre class="language-stride"><code>fn main(): void {
+    let limit: i32 = 10
+    printf("Counting to %d:\n", limit)
+
+    for (mut i: i32 = 1; i &lt;= limit; i++) {
+        if (i % 2 == 0) {
+            printf("%d is even\n", i)
+        } else {
+            printf("%d is odd\n", i)
+        }
+    }
+}</code></pre>
+<h2 id="project-status">Project Status</h2>
+<p>Stride is currently in active development. Core language features like primitive types, functions, and control flow are stable. More advanced features like full struct support, imports, and a comprehensive standard library are currently being implemented.</p>
 
 
 

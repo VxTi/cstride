@@ -247,6 +247,25 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -394,6 +413,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -415,10 +461,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -436,8 +482,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -592,10 +638,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#type-aliasing-with-structs" class="md-nav__link">
+  <a href="#type-aliasing-and-nominal-typing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Type Aliasing with Structs
+        Type Aliasing and Nominal Typing
       
     </span>
   </a>
@@ -721,10 +767,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#type-aliasing-with-structs" class="md-nav__link">
+  <a href="#type-aliasing-and-nominal-typing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Type Aliasing with Structs
+        Type Aliasing and Nominal Typing
       
     </span>
   </a>
@@ -749,20 +795,47 @@
 
 
 <h1 id="structs">Structs</h1>
-<p>Structs are still in development, but they allow for grouping related data.</p>
+<p>Structs allow you to create custom data types by grouping related values together.</p>
+<div class="admonition warning">
+<p class="admonition-title">Work in Progress</p>
+<p>Structs are partially implemented. You can define and initialize them, but member access (e.g., <code>p.x</code>) is currently under development.</p>
+</div>
 <h2 id="definition">Definition</h2>
+<p>Structs are defined using the <code>struct</code> keyword followed by a name and a block of fields. Each field has a name and a type.</p>
 <pre class="language-stride"><code>struct Point {
     x: i32,
     y: i32,
+}
+
+struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
 }</code></pre>
 <h2 id="initialization">Initialization</h2>
-<pre class="language-stride"><code>const p = Point::{ x: 10, y: 20 }</code></pre>
-<h2 id="type-aliasing-with-structs">Type Aliasing with Structs</h2>
-<p>You can create structs that reference other structs. These function as separate types and will cause a type error if used inappropriately.</p>
+<p>You can initialize a struct using the <code>StructName::{ field: value, ... }</code> syntax.</p>
+<pre class="language-stride"><code>fn main(): void {
+    const p: Point = Point::{ x: 10, y: 20 }
+
+    const transparent_red: Color = Color::{ 
+        r: 255u8, 
+        g: 0u8, 
+        b: 0u8, 
+        a: 128u8 
+    }
+}</code></pre>
+<h2 id="type-aliasing-and-nominal-typing">Type Aliasing and Nominal Typing</h2>
+<p>Stride supports creating new types based on existing structs. These are <strong>nominal</strong> types, meaning even if they have the same structure, they are treated as distinct types by the compiler.</p>
 <pre class="language-stride"><code>struct Vector2d = Point
 
-const p2: Vector2d = Vector2d::{ x: 5, y: 15 } // This is valid
-const p3: Point = p2 // This is invalid</code></pre>
+fn main(): void {
+    const p1: Point = Point::{ x: 5, y: 10 }
+    const v1: Vector2d = Vector2d::{ x: 5, y: 10 }
+
+    // The following would result in a type error:
+    // const p2: Point = v1 
+}</code></pre>
 
 
 

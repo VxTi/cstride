@@ -248,6 +248,25 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
@@ -396,6 +415,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -412,10 +458,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -433,8 +479,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -602,21 +648,71 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#modules" class="md-nav__link">
+  <a href="#available-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Modules
+        Available Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input-output-stdio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input / Output (stdio)
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#using-the-standard-library" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#math-mathh" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using the Standard Library
+        Math (math.h)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#string-utilities-stringh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        String Utilities (string.h)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planned-module-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned Module System
       
     </span>
   </a>
@@ -685,21 +781,71 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#modules" class="md-nav__link">
+  <a href="#available-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Modules
+        Available Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input-output-stdio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input / Output (stdio)
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#using-the-standard-library" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#math-mathh" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using the Standard Library
+        Math (math.h)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#string-utilities-stringh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        String Utilities (string.h)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planned-module-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned Module System
       
     </span>
   </a>
@@ -724,17 +870,31 @@
 
 
 <h1 id="standard-library">Standard Library</h1>
-<p>Stride's standard library is located in <code>packages/standard-library/</code> and includes math, memory, and I/O modules.</p>
-<p>This is still in development.</p>
-<h2 id="modules">Modules</h2>
-<ul>
-<li><strong>Math</strong>: Basic mathematical functions.</li>
-<li><strong>Memory</strong>: Memory management utilities.</li>
-<li><strong>I/O</strong>: Input and output operations.</li>
-</ul>
-<h2 id="using-the-standard-library">Using the Standard Library</h2>
-<p>Imports are currently being implemented. The planned format is:</p>
-<pre class="language-stride"><code>import std::{ Math };</code></pre>
+<p>The Stride standard library provides essential functions and utilities for common tasks. While still in early development, it already includes key modules for I/O, math, and system operations.</p>
+<h2 id="available-functions">Available Functions</h2>
+<p>Many standard library functions are currently available through the C runtime. You can use them by declaring them with the <code>extern</code> keyword.</p>
+<h3 id="input-output-stdio">Input / Output (<code>stdio</code>)</h3>
+<pre class="language-stride"><code>extern fn printf(format: string, ...): i32;
+extern fn scanf(format: string, ...): i32;</code></pre>
+<h3 id="math-mathh">Math (<code>math.h</code>)</h3>
+<pre class="language-stride"><code>extern fn powl(x: f64, y: f64): f64;
+extern fn sqrt(x: f64): f64;
+extern fn floor(x: f64): f64;
+extern fn ceil(x: f64): f64;</code></pre>
+<h3 id="string-utilities-stringh">String Utilities (<code>string.h</code>)</h3>
+<pre class="language-stride"><code>extern fn strlen(s: string): i32;
+extern fn strcmp(s1: string, s2: string): i32;</code></pre>
+<h3 id="system-operations">System Operations</h3>
+<pre class="language-stride"><code>extern fn system_time_ns(): u64;
+extern fn exit(code: i32): void;</code></pre>
+<h2 id="planned-module-system">Planned Module System</h2>
+<p>A full module system is currently being implemented. In the future, you will be able to import standard library modules directly:</p>
+<pre class="language-stride"><code>import std::{ Math, IO };
+
+fn main(): void {
+    let x = Math::sqrt(16.0D);
+    IO::println("Square root is: " + (x as string));
+}</code></pre>
 
 
 

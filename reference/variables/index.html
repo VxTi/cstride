@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="../../getting-started/">
+        <link rel="prev" href="../../examples/">
       
       
         <link rel="next" href="../functions/">
@@ -247,6 +247,25 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -394,6 +413,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -415,10 +461,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -436,8 +482,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -514,13 +560,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#creating-variables" class="md-nav__link">
+  <a href="#variable-declaration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating variables
+        Variable Declaration
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Variable Declaration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -593,6 +656,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Operators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-casting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Casting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -749,13 +829,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#creating-variables" class="md-nav__link">
+  <a href="#variable-declaration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating variables
+        Variable Declaration
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Variable Declaration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -829,6 +926,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Operators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-casting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Casting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -850,13 +964,42 @@
 
 <h1 id="variables-and-types">Variables and Types</h1>
 <p>Stride is a statically typed language.</p>
-<h2 id="creating-variables">Creating variables</h2>
-<p>Variables are created using <code>const</code> for constants and <code>let</code> for mutable variables.</p>
-<pre class="language-stride"><code>// Creating a mutable 32 bit int variable
-const x: i32 = 10
+<h2 id="variable-declaration">Variable Declaration</h2>
+<p>Stride provides three keywords for variable declaration, each with different mutability rules:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Keyword</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>const</code></td>
+<td style="text-align: left;">Declares a constant (immutable) value.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>let</code></td>
+<td style="text-align: left;">Declares a mutable variable.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mut</code></td>
+<td style="text-align: left;">Equivalent to <code>let</code>, used for declaring mutable variables (often preferred in loop headers).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="examples">Examples</h3>
+<pre class="language-stride"><code>// Creating a constant variable
+const pi: f64 = 3.14159D
 
-// Creating a constant variable
-let y: f64 = 3.0D</code></pre>
+// Creating a mutable 32-bit integer variable
+let x: i32 = 10
+x = 20 // OK
+
+// Using mut in a loop
+for (mut i: i32 = 0; i &lt; 10; i++) {
+    printf("%d\n", i)
+}</code></pre>
 <h2 id="types">Types</h2>
 <h3 id="integer-types">Integer Types</h3>
 <p>Stride supports several integer types:
@@ -864,8 +1007,8 @@ let y: f64 = 3.0D</code></pre>
 - Unsigned: <code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code></p>
 <h3 id="integer-literals">Integer Literals</h3>
 <p>Stride supports various integer literal formats, including decimal and hexadecimal.
-For example, <code>0x12345</code> is a hexadecimal integer literal.
-64-bit integer literals can be suffixed with an 'L':
+For example, <code>0x12345</code> is a hexadecimal integer literal.</p>
+<p>64-bit integer literals can be suffixed with an 'L':
 <pre class="language-stride"><code>let large_int: i64 = 12345678901234567890L</code></pre></p>
 <h3 id="floating-point-types">Floating Point Types</h3>
 <ul>
@@ -879,7 +1022,7 @@ For example, <code>3.14F</code> is a single precision float, and <code>2.71828D<
 <li><code>bool</code>: Boolean type (<code>true</code>, <code>false</code>)</li>
 <li><code>char</code>: Character type</li>
 <li><code>string</code>: String type</li>
-<li><code>void</code>: Void type</li>
+<li><code>void</code>: Void type (used for functions that don't return a value)</li>
 </ul>
 <h2 id="operators">Operators</h2>
 <p>Stride uses traditional arithmetic and comparison operators.</p>
@@ -887,19 +1030,21 @@ For example, <code>3.14F</code> is a single precision float, and <code>2.71828D<
 let y: f64 = 3.0D
 
 // Arithmetic operators
-let sum: f64 = x + y
-let difference: f64 = x - y
-let product: f64 = x * y
-let quotient: f64 = x / y
-let remainder: f64 = x % y
+let sum: f64 = (x as f64) + y
+let difference: f64 = (x as f64) - y
+let product: f64 = (x as f64) * y
+let quotient: f64 = (x as f64) / y
+let remainder: i32 = x % 3
 
 // Comparison operators
-let is_equal: bool = x == y
-let is_not_equal: bool = x != y
-let is_less_than: bool = x &lt; y
-let is_greater_than: bool = x &gt; y
-let is_less_than_or_equal: bool = x &lt;= y
-let is_greater_than_or_equal: bool = x &gt;= y</code></pre>
+let is_equal: bool = (x as f64) == y
+let is_not_equal: bool = (x as f64) != y
+let is_less_than: bool = (x as f64) &lt; y
+let is_greater_than: bool = (x as f64) &gt; y</code></pre>
+<h3 id="type-casting">Type Casting</h3>
+<p>Stride requires explicit casting between different types using the <code>as</code> keyword.</p>
+<pre class="language-stride"><code>let integer: i32 = 10
+let floating: f64 = integer as f64</code></pre>
 
 
 

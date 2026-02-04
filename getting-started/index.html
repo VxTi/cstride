@@ -14,7 +14,7 @@
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../reference/variables/">
+        <link rel="next" href="../examples/">
       
       
         
@@ -239,6 +239,25 @@
     
   
   Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
 
       </a>
     </li>
@@ -491,13 +510,52 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-the-editor" class="md-nav__link">
+  <a href="#running-the-editor" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using the Editor
+        Running the Editor
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Running the Editor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites-for-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites for Editor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-setup-and-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Setup and Running
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -505,6 +563,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -531,10 +616,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -552,8 +637,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -796,13 +881,52 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-the-editor" class="md-nav__link">
+  <a href="#running-the-editor" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using the Editor
+        Running the Editor
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Running the Editor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites-for-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites for Editor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-setup-and-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Setup and Running
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -833,15 +957,11 @@
 </ol>
 <h3 id="installation">Installation</h3>
 <p>You can install these packages using the following commands:</p>
-<p>=== "macOS"</p>
-<div class="highlight"><pre><span></span><code>```shell
-brew install cmake node@24 llvm@21
-```
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># MacOS </span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>brew<span class="w"> </span>install<span class="w"> </span>cmake<span class="w"> </span>node@24<span class="w"> </span>llvm@21
 </code></pre></div>
-<p>=== "Ubuntu/Debian"</p>
-<div class="highlight"><pre><span></span><code>```shell
-sudo apt install cmake nodejs llvm-21
-```
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Ubuntu/Debian</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>cmake<span class="w"> </span>nodejs<span class="w"> </span>llvm-21
 </code></pre></div>
 <h2 id="installation_1">Installation</h2>
 <ol>
@@ -860,23 +980,49 @@ sudo apt install cmake nodejs llvm-21
 <p><em>Optionally</em>: Add the binary to your <code>$PATH</code>, if you wish to use it directly.</p>
 <h2 id="running-the-compiler">Running the Compiler</h2>
 <p>From the <code>packages/compiler</code> directory, you can either run it directly:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cstride<span class="w"> </span>-c<span class="w"> </span>&lt;file1&gt;<span class="w"> </span>&lt;file2&gt;<span class="w"> </span>...
-</code></pre></div>
-Replace <code>&lt;file&gt;</code> with your Stride source file.</p>
-<p><em>Note: This assumes you have the binary in your <code>$PATH</code>, or are in the build directory.</em></p>
-<p>For additional commands, run <code>cstride --help</code>.</p>
-<h2 id="using-the-editor">Using the Editor</h2>
-<p>The editor is a web-based IDE for Stride, built with Monaco Editor.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./cmake-build-debug/cstride<span class="w"> </span>&lt;file_path&gt;
+</code></pre></div></p>
+<p>Or if you added it to your PATH:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>cstride<span class="w"> </span>&lt;file_path&gt;
+</code></pre></div></p>
+<h2 id="running-the-editor">Running the Editor</h2>
+<p>The web-based editor provides a convenient way to write Stride code with syntax highlighting and integrated terminal.</p>
+<h3 id="prerequisites-for-editor">Prerequisites for Editor</h3>
+<ul>
+<li><code>node</code> (&gt;= 24.0)</li>
+<li><code>pnpm</code> (Performant Node Package Manager)</li>
+</ul>
+<h3 id="local-setup-and-running">Local Setup and Running</h3>
+<p>To run the editor locally on your machine:</p>
 <ol>
-<li>Navigate to the editor directory and install dependencies:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">cd</span><span class="w"> </span>packages/editor
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>npm<span class="w"> </span>install
-</code></pre></div></li>
-<li>Start the development server:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>npm<span class="w"> </span>start
-</code></pre></div></li>
-<li>Open the provided local URL in your browser (likely <code>http://localhost:3000/</code>).</li>
+<li>
+<p><strong>Navigate to the editor directory</strong>:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>packages/editor
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Install dependencies</strong>:
+   Using <code>pnpm</code> ensures fast and efficient dependency management.
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pnpm<span class="w"> </span>install
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Start the development server</strong>:
+   Launch the editor in development mode.
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pnpm<span class="w"> </span>start
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Access the Editor</strong>:
+   Once started, the editor will be available at <code>http://localhost:5173</code>. Open this URL in your web browser.</p>
+</li>
 </ol>
+<h3 id="features">Features</h3>
+<ul>
+<li><strong>Real-time Syntax Highlighting</strong>: Visualizes Stride code structure.</li>
+<li><strong>Integrated Terminal</strong>: Run your Stride programs directly within the editor environment.</li>
+<li><strong>Local Development</strong>: Test changes to the editor itself or use it as your primary development environment for Stride.</li>
+</ul>
 
 
 
