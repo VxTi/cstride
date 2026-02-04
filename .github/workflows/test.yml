@@ -21,7 +21,13 @@ jobs:
       - name: Install Base Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build ccache lsb-release wget software-properties-common gnupg
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            ccache \
+            libcurl4-openssl-dev \
+            googletest \
+            libgtest-dev
 
       - name: Install LLVM 21
         run: |
