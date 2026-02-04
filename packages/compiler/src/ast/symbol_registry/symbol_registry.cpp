@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include "errors.h"
+#include "ast/symbols.h"
 
 using namespace stride::ast;
 
@@ -67,23 +68,31 @@ bool SymbolRegistry::is_symbol_type_defined_globally(
 }
 
 void SymbolRegistry::define_function(
-    const std::string& internal_function_name,
+    const Symbol& symbol,
     std::vector<std::unique_ptr<IAstType>> parameter_types,
     std::unique_ptr<IAstType> return_type
 ) const
 {
     auto& global_scope = const_cast<SymbolRegistry&>(this->traverse_to_root());
+
+    if (this->is_function_defined_globally(symbol.internal_name))
+    {
+        throw std::runtime_error(
+            "Function already defined globally: " + symbol.name
+        );
+    }
+
     global_scope._symbols.push_back(
         std::make_unique<SymbolFnDefinition>(
             std::move(parameter_types),
             std::move(return_type),
-            internal_function_name
+            symbol
         )
     );
 }
 
 
-void SymbolRegistry::define_symbol(const std::string& symbol_name, const SymbolType type)
+void SymbolRegistry::define_symbol(const Symbol& symbol_name, const SymbolType type)
 {
     this->_symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
         type,
@@ -98,7 +107,7 @@ const FieldSymbolDef* SymbolRegistry::get_variable_def(const std::string& variab
         if (const auto* field_definition = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
         {
             if (field_definition->get_internal_symbol_name() == variable_name ||
-                field_definition->get_variable_name() == variable_name)
+                field_definition->get_symbol().name == variable_name)
             {
                 return field_definition;
             }

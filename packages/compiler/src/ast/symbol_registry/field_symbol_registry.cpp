@@ -29,17 +29,17 @@ bool SymbolRegistry::is_field_defined_globally(const std::string& field_name) co
 }
 
 
-void SymbolRegistry::define_field(
-    std::string field_name,
+void SymbolRegistry::define_variable(
+    std::string variable_name,
     const std::string& internal_name,
     std::unique_ptr<IAstType> type
 )
 {
-    if (is_field_defined_in_scope(field_name))
+    if (is_field_defined_globally(variable_name))
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Field '{}' is already defined in this scope", field_name),
+            std::format("Field '{}' is already defined in this scope", variable_name),
             *type->get_source(),
             type->get_source_position()
         );
@@ -47,15 +47,14 @@ void SymbolRegistry::define_field(
 
     this->_symbols.push_back(
         std::make_unique<FieldSymbolDef>(
-            std::move(field_name),
-            internal_name,
+            Symbol(variable_name, internal_name),
             std::move(type)
         )
     );
 }
 
 
-const FieldSymbolDef* SymbolRegistry::field_lookup(const std::string& name) const
+const FieldSymbolDef* SymbolRegistry::lookup_variable(const std::string& name) const
 {
     auto current = this;
     while (current != nullptr)

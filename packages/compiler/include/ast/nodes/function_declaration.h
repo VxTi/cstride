@@ -54,8 +54,7 @@ namespace stride::ast
         public IAstContainer
     {
         std::unique_ptr<AstBlock> _body;
-        std::string _name;
-        std::string _internal_name;
+        Symbol _symbol;
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
         std::shared_ptr<IAstType> _return_type;
         int _flags;
@@ -65,8 +64,7 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& registry,
-            std::string name,
-            std::string internal_name,
+            Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
@@ -74,8 +72,7 @@ namespace stride::ast
         ) :
             IAstNode(source, source_position, registry),
             _body(std::move(body)),
-            _name(std::move(name)),
-            _internal_name(std::move(internal_name)),
+            _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)),
             _flags(flags) {}
@@ -95,10 +92,10 @@ namespace stride::ast
         ) override;
 
         [[nodiscard]]
-        std::string get_name() const { return this->_name; }
+        std::string get_name() const { return this->_symbol.name; }
 
         [[nodiscard]]
-        std::string get_internal_name() const { return this->_internal_name; }
+        std::string get_internal_name() const { return this->_symbol.internal_name; }
 
         [[nodiscard]]
         AstBlock* get_body() override { return this->_body.get(); }

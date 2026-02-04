@@ -9,7 +9,7 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "ast/internal_names.h"
+#include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/if_statement.h"
@@ -334,7 +334,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
-    std::string internal_name = fn_name;
+    auto symbol_name = Symbol(fn_name, /* internal_name = */fn_name);
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
@@ -347,12 +347,12 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        internal_name = resolve_internal_function_name(parameter_types, fn_name);
+        symbol_name = resolve_internal_function_name(parameter_types, fn_name);
     }
 
     // Function will be defined in the parent registry (global, perhaps)
     // its children will reside in the function registry. This is intentional
-    registry->define_function(fn_name, std::move(parameter_types_cloned), return_type->clone());
+    registry->define_function(symbol_name, std::move(parameter_types_cloned), return_type->clone());
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -369,8 +369,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         tokens.get_source(),
         reference_token.get_source_position(),
         registry,
-        fn_name,
-        internal_name,
+        symbol_name,
         std::move(parameters),
         std::move(body),
         std::move(return_type),

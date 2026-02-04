@@ -89,7 +89,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
     }
 
-    registry->define_field(
+    registry->define_variable(
         variable_name,
         internal_name,
         variable_type->clone()

@@ -8,7 +8,7 @@
 #include <llvm/IR/Value.h>
 
 #include "formatting.h"
-#include "ast/internal_names.h"
+#include "ast/symbols.h"
 #include "ast/optionals.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
@@ -154,7 +154,7 @@ llvm::Value* AstFunctionCall::codegen(
         {
             // Check for strict type equality.
             // If the argument is Optional<T> but the function expects T, we unwrap.
-            if (llvm::Type* expected_type = callee->getFunctionType()->getParamType(i);
+            if (const llvm::Type* expected_type = callee->getFunctionType()->getParamType(i);
                 arg_val->getType() != expected_type)
             {
                 final_val = unwrap_optional_value(arg_val, builder);
@@ -193,6 +193,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
 
         if (initial_arg)
         {
+            // TODO: Evaluate this. One might not be able to infer expression types if they invoke functions that
+            //  haven't been declared yet, hence yielding in a
             auto initial_type = infer_expression_type(registry, initial_arg.get());
 
             parameter_types.push_back(initial_type.get());
@@ -231,7 +233,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         }
     }
 
-    std::string internal_fn_name = resolve_internal_function_name(
+    Symbol internal_fn_sym = resolve_internal_function_name(
         parameter_types,
         candidate_function_name
     );
@@ -241,8 +243,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         // TODO: Fix this. This currently refers only to the first token, instead of the full call
         reference_token.get_source_position(),
         registry,
-        candidate_function_name,
-        internal_fn_name,
+        internal_fn_sym,
         std::move(function_arg_nodes)
     );
 }

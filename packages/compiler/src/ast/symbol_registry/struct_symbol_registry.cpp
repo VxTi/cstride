@@ -8,7 +8,8 @@ std::optional<StructSymbolDef*> SymbolRegistry::get_struct_def(const std::string
 
     while (current != nullptr)
     {
-        if (current->get_current_scope_type() != ScopeType::GLOBAL && current->get_current_scope_type() != ScopeType::MODULE)
+        if (current->get_current_scope_type() != ScopeType::GLOBAL && current->get_current_scope_type() !=
+            ScopeType::MODULE)
         {
             current = current->_parent_registry.get();
             continue;
@@ -46,7 +47,7 @@ std::optional<std::vector<std::pair<std::string, IAstType*>>> SymbolRegistry::ge
 
     while (definition.value()->is_reference_struct())
     {
-        definition = get_struct_def(definition.value()->get_reference_struct_name().value());
+        definition = get_struct_def(definition.value()->get_reference_struct().value().name);
 
         if (!definition)
         {
@@ -58,7 +59,7 @@ std::optional<std::vector<std::pair<std::string, IAstType*>>> SymbolRegistry::ge
 }
 
 void SymbolRegistry::define_struct(
-    std::string struct_name,
+    const std::string& struct_name,
     std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
 ) const
 {
@@ -74,15 +75,17 @@ void SymbolRegistry::define_struct(
     }
 
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
-    root._symbols.push_back(std::make_unique<StructSymbolDef>(
-        std::move(struct_name),
-        std::move(fields)
-    ));
+    root._symbols.push_back(
+        std::make_unique<StructSymbolDef>(
+            Symbol(struct_name, struct_name),
+            std::move(fields)
+        )
+    );
 }
 
 void SymbolRegistry::define_struct(
-    const std::string& struct_name,
-    const std::string& reference_struct_name
+    const Symbol& struct_name,
+    const Symbol& reference_struct_name
 ) const
 {
     if (this->_current_scope != ScopeType::GLOBAL && this->_current_scope != ScopeType::MODULE)
@@ -94,11 +97,11 @@ void SymbolRegistry::define_struct(
 
     auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
 
-    if (const auto existing_def = this->get_struct_def(struct_name);
+    if (const auto existing_def = this->get_struct_def(struct_name.name);
         existing_def.has_value())
     {
         throw parsing_error(
-            std::format("Struct '{}' is already defined in this scope", struct_name)
+            std::format("Struct '{}' is already defined in this scope", struct_name.name)
         );
     }
 
@@ -153,7 +156,7 @@ std::optional<IAstType*> StructSymbolDef::get_field_type(const std::string& fiel
 
 bool StructSymbolDef::is_reference_struct() const
 {
-    return _reference_struct_name.has_value();
+    return this->_reference_struct_sym.has_value();
 }
 
 std::optional<int> StructSymbolDef::get_member_index(const std::string& member_name) const

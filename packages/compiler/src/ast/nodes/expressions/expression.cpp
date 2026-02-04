@@ -72,7 +72,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         std::string identifier_name = reference_token.get_lexeme();
         std::string internal_name = identifier_name;
 
-        if (const auto variable_definition = registry->field_lookup(identifier_name);
+        if (const auto variable_definition = registry->lookup_variable(identifier_name);
             variable_definition != nullptr)
         {
             internal_name = variable_definition->get_internal_symbol_name();

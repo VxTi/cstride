@@ -101,7 +101,8 @@ StructSymbolDef* get_super_referencing_struct_def(
 
     if (definition.value()->is_reference_struct())
     {
-        return get_super_referencing_struct_def(registry, definition.value()->get_reference_struct_name().value());
+        const auto ref_struct = definition.value()->get_reference_struct().value();
+        return get_super_referencing_struct_def(registry, ref_struct.name);
     }
 
     return definition.value();
@@ -234,7 +235,7 @@ llvm::Value* AstStructInitializer::codegen(
         auto struct_def = struct_def_opt.value();
         while (struct_def->is_reference_struct())
         {
-            actual_struct_name = struct_def->get_reference_struct_name().value();
+            actual_struct_name = struct_def->get_reference_struct().value().name;
             struct_def_opt = registry->get_struct_def(actual_struct_name);
             if (!struct_def_opt.has_value()) break;
             struct_def = struct_def_opt.value();

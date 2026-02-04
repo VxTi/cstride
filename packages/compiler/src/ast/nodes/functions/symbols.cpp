@@ -1,4 +1,4 @@
-#include "ast/internal_names.h"
+#include "ast/symbols.h"
 
 #include <ranges>
 #include <__ranges/views.h>
@@ -59,12 +59,15 @@ size_t ast_type_to_internal_id(IAstType* type)
     return 0x00;
 }
 
-std::string stride::ast::resolve_internal_function_name(
+Symbol stride::ast::resolve_internal_function_name(
     const std::vector<IAstType*>& parameter_types,
     const std::string& function_name
 )
 {
-    if (function_name == MAIN_FN_NAME) return function_name;
+    if (function_name == MAIN_FN_NAME)
+    {
+        return Symbol(function_name);
+    }
 
     std::string params = "";
 
@@ -74,21 +77,5 @@ std::string stride::ast::resolve_internal_function_name(
         params += type->to_string();
     }
 
-    return std::format("{}${:x}", function_name, std::hash<std::string>{}(params));
-}
-
-std::string stride::ast::resolve_internal_struct_name(
-    const std::vector<std::pair<std::string, std::unique_ptr<IAstType>>>& struct_members,
-    const std::string& struct_name
-)
-{
-    std::string fields = "";
-
-    // Not perfect, but semi unique
-    for (const auto& type : struct_members | std::views::values)
-    {
-        fields += type->to_string();
-    }
-
-    return std::format("{}${:x}", struct_name, std::hash<std::string>{}(fields));
+    return Symbol(function_name, std::format("{}${:x}", function_name, std::hash<std::string>{}(params)));
 }

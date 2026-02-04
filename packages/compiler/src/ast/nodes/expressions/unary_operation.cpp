@@ -267,7 +267,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
 
         const auto operation_tok = set.next();
 
-        auto variable_def = registry->field_lookup(iden_name);
+        auto variable_def = registry->lookup_variable(iden_name);
         if (!variable_def)
         {
             return std::nullopt;

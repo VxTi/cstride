@@ -107,7 +107,7 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
         registry, set, "Expected function parameter type", flags
     );
 
-    registry->define_field(param_name, reference_token.get_lexeme(), fn_param_type->clone());
+    registry->define_variable(param_name, reference_token.get_lexeme(), fn_param_type->clone());
 
     return std::make_unique<AstFunctionParameter>(
         set.get_source(),

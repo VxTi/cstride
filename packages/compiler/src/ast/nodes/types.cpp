@@ -10,6 +10,11 @@
 
 using namespace stride::ast;
 
+bool is_array_notation(const TokenSet& set)
+{
+    return set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1);
+}
+
 std::string primitive_type_to_str_internal(const PrimitiveType type)
 {
     switch (type)
@@ -40,16 +45,12 @@ std::string stride::ast::primitive_type_to_str(
 {
     const auto base_str = primitive_type_to_str_internal(type);
 
-    return std::format("{}{}{}",
-                       (flags & SRFLAG_TYPE_PTR) != 0 ? "*" : "",
-                       base_str,
-                       (flags & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
+    return std::format(
+        "{}{}{}",
+        (flags & SRFLAG_TYPE_PTR) != 0 ? "*" : "",
+        base_str,
+        (flags & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
     );
-}
-
-bool is_array_notation(const TokenSet& set)
-{
-    return set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1);
 }
 
 std::unique_ptr<IAstType> parse_type_metadata(
@@ -347,6 +348,33 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     set.throw_error(error);
 }
 
+std::string stride::ast::get_root_reference_struct_name(
+    const std::string& name,
+    const std::shared_ptr<SymbolRegistry>& registry
+)
+{
+    std::string actual_name = name;
+    if (auto struct_def_opt = registry->get_struct_def(actual_name);
+        struct_def_opt.has_value())
+    {
+        auto struct_def = struct_def_opt.value();
+
+        while (struct_def->is_reference_struct())
+        {
+            actual_name = struct_def->get_reference_struct().value().name;
+            struct_def_opt = registry->get_struct_def(actual_name);
+
+            if (!struct_def_opt.has_value())
+            {
+                break;
+            }
+
+            struct_def = struct_def_opt.value();
+        }
+    }
+    return actual_name;
+}
+
 llvm::Type* stride::ast::internal_type_to_llvm_type(
     IAstType* type,
     llvm::Module* module
@@ -354,6 +382,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 {
     const auto registry = type->get_registry();
 
+    // Wrapping T -> Optional<T>
     if (type->is_optional())
     {
         const auto inner = type->clone();
@@ -361,10 +390,11 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
         llvm::Type* inner_type = internal_type_to_llvm_type(inner.get(), module);
 
-        return llvm::StructType::get(module->getContext(), {
-                                         llvm::Type::getInt1Ty(module->getContext()),
-                                         inner_type
-                                     });
+        return llvm::StructType::get(
+            module->getContext(), {
+                llvm::Type::getInt1Ty(module->getContext()), // has_value
+                inner_type // value (T)
+            });
     }
 
     if (type->is_pointer())
@@ -431,21 +461,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
             return llvm::PointerType::get(module->getContext(), 0);
         }
 
-        // TODO: create utility for this
-        std::string actual_name = ast_struct_ty->name();
-        if (auto struct_def_opt = registry->get_struct_def(actual_name);
-            struct_def_opt.has_value())
-        {
-            auto struct_def = struct_def_opt.value();
-
-            while (struct_def->is_reference_struct())
-            {
-                actual_name = struct_def->get_reference_struct_name().value();
-                struct_def_opt = registry->get_struct_def(actual_name);
-                if (!struct_def_opt.has_value()) break;
-                struct_def = struct_def_opt.value();
-            }
-        }
+        const std::string actual_name = get_root_reference_struct_name(ast_struct_ty->name(), registry);
 
         llvm::StructType* struct_ty = llvm::StructType::getTypeByName(module->getContext(), actual_name);
         if (!struct_ty)

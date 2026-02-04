@@ -4,7 +4,7 @@
 
 #include <llvm/IR/Module.h>
 
-#include "ast/internal_names.h"
+#include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
@@ -23,7 +23,7 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
 
     // TODO: Replace with struct-field-specific method
-    registry->define_field(struct_member_name, struct_member_name, struct_member_type->clone());
+    registry->define_variable(struct_member_name, struct_member_name, struct_member_type->clone());
 
     return std::make_unique<AstStructMember>(
         set.get_source(),
@@ -66,8 +66,8 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
         // We define it as a reference to `reference_sym`. Validation happens later
         registry->define_struct(
-            struct_name,
-            reference_sym->get_internal_name()
+            Symbol(struct_name),
+            Symbol(reference_sym->get_internal_name())
         );
 
         return std::make_unique<AstStruct>(
@@ -210,7 +210,8 @@ std::string AstStruct::to_string()
     return std::format("Struct({}) (\n  {}\n)", this->get_name(), imploded.str());
 }
 
-void AstStruct::resolve_forward_references(const std::shared_ptr<SymbolRegistry>& registry, llvm::Module* module, llvm::IRBuilder<>* builder)
+void AstStruct::resolve_forward_references(const std::shared_ptr<SymbolRegistry>& registry, llvm::Module* module,
+                                           llvm::IRBuilder<>* builder)
 {
     // Retrieve or Create the named struct type (Opaque)
     // We check if it already exists to support forward declarations or multi-pass compilation.

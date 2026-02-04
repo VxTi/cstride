@@ -20,7 +20,7 @@ bool AstVariableReassignment::is_reducible()
 
 void AstVariableReassignment::validate()
 {
-    const auto identifier_def = this->get_registry()->field_lookup(this->get_variable_name());
+    const auto identifier_def = this->get_registry()->lookup_variable(this->get_variable_name());
     if (!identifier_def)
     {
         throw parsing_error(
@@ -120,7 +120,7 @@ llvm::Value* AstVariableReassignment::codegen(
     const auto assign_ty = assign_val->getType();
 
     // Check if we're assigning to an optional type
-    if (const auto variable_def = registry->field_lookup(this->get_variable_name());
+    if (const auto variable_def = registry->lookup_variable(this->get_variable_name());
         variable_def && variable_def->get_type()->is_optional())
     {
         if (llvm::Type* optional_ty = internal_type_to_llvm_type(variable_def->get_type(), module);
@@ -307,7 +307,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     const auto reference_token = set.peek_next();
 
     std::string reassignment_iden_name = reference_token.get_lexeme();
-    const auto reassign_internal_variable_name = registry->field_lookup(reassignment_iden_name);
+    const auto reassign_internal_variable_name = registry->lookup_variable(reassignment_iden_name);
 
     if (!reassign_internal_variable_name)
     {

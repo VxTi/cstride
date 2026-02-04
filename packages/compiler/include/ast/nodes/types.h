@@ -308,4 +308,9 @@ namespace stride::ast
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE
     );
+
+    std::string get_root_reference_struct_name(
+        const std::string& name,
+        const std::shared_ptr<SymbolRegistry>& registry
+    );
 }

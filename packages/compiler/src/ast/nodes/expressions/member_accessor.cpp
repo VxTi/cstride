@@ -121,7 +121,7 @@ llvm::Value* AstMemberAccessor::codegen(
             auto struct_def = struct_def_opt.value();
             while (struct_def->is_reference_struct())
             {
-                struct_def_opt = registry->get_struct_def(struct_def->get_reference_struct_name().value());
+                struct_def_opt = registry->get_struct_def(struct_def->get_reference_struct().value().name);
                 if (!struct_def_opt.has_value()) return nullptr;
                 struct_def = struct_def_opt.value();
             }
@@ -173,13 +173,13 @@ llvm::Value* AstMemberAccessor::codegen(
         auto struct_def = struct_def_opt.value();
         while (struct_def->is_reference_struct())
         {
-            struct_def_opt = registry->get_struct_def(struct_def->get_reference_struct_name().value());
+            struct_def_opt = registry->get_struct_def(struct_def->get_reference_struct().value().name);
             if (!struct_def_opt.has_value())
             {
                 throw parsing_error(
                     ErrorType::RUNTIME_ERROR,
                     std::format("Unknown struct type '{}' during codegen",
-                                struct_def->get_reference_struct_name().value()),
+                                struct_def->get_reference_struct().value().name),
                     *this->get_source(),
                     this->get_source_position()
                 );

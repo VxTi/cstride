@@ -250,40 +250,35 @@ namespace stride::ast
         public AstExpression
     {
         std::vector<std::unique_ptr<AstExpression>> _arguments;
-        const std::string _function_name;
-        const std::string _internal_name;
+        const Symbol _symbol;
 
     public:
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& registry,
-            std::string function_name,
-            std::string internal_name
+            Symbol function_call_sym
         ) : AstExpression(source, source_position, registry),
-            _function_name(std::move(function_name)),
-            _internal_name(std::move(internal_name)) {}
+            _symbol(std::move(function_call_sym)) {}
 
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& registry,
-            std::string function_name,
-            std::string internal_name,
+            Symbol function_call_sym,
             std::vector<std::unique_ptr<AstExpression>> arguments
         ) : AstExpression(source, source_position, registry),
             _arguments(std::move(arguments)),
-            _function_name(std::move(function_name)),
-            _internal_name(std::move(internal_name)) {}
+            _symbol(std::move(function_call_sym)) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstExpression>>& get_arguments() const { return this->_arguments; }
 
         [[nodiscard]]
-        const std::string& get_function_name() const { return this->_function_name; }
+        const std::string& get_function_name() const { return this->_symbol.name; }
 
         [[nodiscard]]
-        const std::string& get_internal_name() const { return this->_internal_name; }
+        const std::string& get_internal_name() const { return this->_symbol.internal_name; }
 
         std::string to_string() override;
 

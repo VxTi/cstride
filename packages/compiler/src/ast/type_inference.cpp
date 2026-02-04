@@ -269,7 +269,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     }
 
     // Look up the base variable in the symbol table/registry
-    const auto variable_definition = expr->get_registry()->field_lookup(base_iden->get_name());
+    const auto variable_definition = expr->get_registry()->lookup_variable(base_iden->get_name());
     if (!variable_definition)
     {
         throw parsing_error(
@@ -385,7 +385,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         // TODO: Add generic support.
         // Right now we just do a lookup for `identifier`'s name, though we might want to extend
         // the lookup for generics.
-        const auto reference_variable = registry->field_lookup(identifier->get_name());
+        const auto reference_variable = registry->lookup_variable(identifier->get_name());
         if (!reference_variable)
         {
             throw parsing_error(

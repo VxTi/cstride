@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "symbols.h"
 #include "ast/nodes/types.h"
 
 namespace stride::ast
@@ -31,16 +32,18 @@ namespace stride::ast
 
     class ISymbolDef
     {
-        std::string _internal_name;
+        Symbol _symbol;
 
     public:
-        explicit ISymbolDef(std::string symbol_name) :
-            _internal_name(std::move(symbol_name)) {}
+        explicit ISymbolDef(Symbol symbol) :
+            _symbol(std::move(symbol)) {}
 
         virtual ~ISymbolDef() = default;
 
         [[nodiscard]]
-        std::string get_internal_symbol_name() const { return this->_internal_name; }
+        std::string get_internal_symbol_name() const { return this->_symbol.internal_name; }
+
+        Symbol get_symbol() const { return this->_symbol; }
     };
 
     class IdentifiableSymbolDef
@@ -51,8 +54,8 @@ namespace stride::ast
     public:
         explicit IdentifiableSymbolDef(
             const SymbolType type,
-            const std::string& symbol_name
-        ) : ISymbolDef(symbol_name),
+            const Symbol& symbol
+        ) : ISymbolDef(symbol),
             _type(type) {}
 
         [[nodiscard]]
@@ -62,22 +65,22 @@ namespace stride::ast
     class StructSymbolDef
         : public ISymbolDef
     {
-        std::optional<std::string> _reference_struct_name;
+        std::optional<Symbol> _reference_struct_sym;
         std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> _fields;
 
     public:
         explicit StructSymbolDef(
-            std::string struct_name,
+            Symbol struct_symbol,
             std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields // We wish to preserve order.
-        ) : ISymbolDef(std::move(struct_name)),
+        ) : ISymbolDef(std::move(struct_symbol)),
             _fields(std::move(fields)) {}
 
         explicit StructSymbolDef(
-            const std::string& struct_name,
-            const std::string& reference_struct_name
+            const Symbol& struct_name,
+            const Symbol& reference_struct_name
         )
             : ISymbolDef(struct_name),
-              _reference_struct_name(reference_struct_name) {}
+              _reference_struct_sym(reference_struct_name) {}
 
         [[nodiscard]]
         std::vector<std::pair<std::string, IAstType*>> get_fields() const;
@@ -94,9 +97,9 @@ namespace stride::ast
         bool is_reference_struct() const;
 
         [[nodiscard]]
-        std::optional<std::string> get_reference_struct_name() const
+        std::optional<Symbol> get_reference_struct() const
         {
-            return this->_reference_struct_name;
+            return this->_reference_struct_sym;
         }
 
         [[nodiscard]]
@@ -114,22 +117,16 @@ namespace stride::ast
         : public ISymbolDef
     {
         std::unique_ptr<IAstType> _type;
-        std::string _variable_name;
 
     public:
         explicit FieldSymbolDef(
-            std::string field_name,
-            const std::string& internal_name,
+            const Symbol& symbol,
             std::unique_ptr<IAstType> type
-        ) : ISymbolDef(internal_name),
-            _type(std::move(type)),
-            _variable_name(std::move(field_name)) {}
+        ) : ISymbolDef(symbol),
+            _type(std::move(type)) {}
 
         [[nodiscard]]
         IAstType* get_type() const { return this->_type.get(); }
-
-        [[nodiscard]]
-        const std::string& get_variable_name() const { return this->_variable_name; }
     };
 
     class SymbolFnDefinition
@@ -142,9 +139,9 @@ namespace stride::ast
         explicit SymbolFnDefinition(
             std::vector<std::unique_ptr<IAstType>> parameter_types,
             std::unique_ptr<IAstType> return_type,
-            const std::string& internal_name
+            const Symbol& symbol
         ) :
-            ISymbolDef(internal_name),
+            ISymbolDef(symbol),
             _parameter_types(std::move(parameter_types)),
             _return_type(std::move(return_type)) {}
 
@@ -203,27 +200,27 @@ namespace stride::ast
         SymbolRegistry* get_parent_registry() const { return this->_parent_registry.get(); }
 
         [[nodiscard]]
-        const FieldSymbolDef* field_lookup(const std::string& name) const;
+        const FieldSymbolDef* lookup_variable(const std::string& name) const;
 
         /// Will attempt to define the function in the global registry.
         void define_function(
-            const std::string& internal_function_name,
+            const Symbol& symbol,
             std::vector<std::unique_ptr<IAstType>> parameter_types,
             std::unique_ptr<IAstType> return_type
         ) const;
 
         void define_struct(
-            std::string struct_name,
+            const std::string& struct_name,
             std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
         ) const;
 
         void define_struct(
-            const std::string& struct_name,
-            const std::string& reference_struct_name
+            const Symbol& struct_name,
+            const Symbol& reference_struct_name
         ) const;
 
-        void define_field(
-            std::string field_name,
+        void define_variable(
+            std::string variable_name,
             const std::string& internal_name,
             std::unique_ptr<IAstType> type
         );
@@ -231,7 +228,7 @@ namespace stride::ast
         [[nodiscard]]
         ISymbolDef* fuzzy_find(const std::string& symbol_name) const;
 
-        void define_symbol(const std::string& symbol_name, SymbolType type);
+        void define_symbol(const Symbol& symbol_name, SymbolType type);
 
         /// Checks whether the provided variable name is defined in the current registry.
         [[nodiscard]]
