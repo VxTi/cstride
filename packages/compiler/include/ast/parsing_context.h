@@ -197,6 +197,8 @@ namespace stride::ast
         [[nodiscard]]
         ScopeType get_current_scope_type() const { return this->_current_scope; }
 
+        bool is_global_scope() const { return this->_current_scope == ScopeType::GLOBAL; }
+
         [[nodiscard]]
         const FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
 

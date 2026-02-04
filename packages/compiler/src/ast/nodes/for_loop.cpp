@@ -4,7 +4,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
+std::unique_ptr<AstExpression> collect_initiator(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     auto initiator = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -14,13 +14,13 @@ std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<Parsi
     }
 
     return parse_variable_declaration(
-        SRFLAG_EXPR_TYPE_STANDALONE,
         context,
-        initiator.value()
+        initiator.value(),
+        VisibilityModifier::NONE
     );
 }
 
-std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
+std::unique_ptr<AstExpression> collect_condition(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     auto condition = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -33,7 +33,7 @@ std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<Parsi
     return parse_inline_expression(context, condition.value());
 }
 
-std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
+std::unique_ptr<AstExpression> collect_incrementor(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     if (!set.has_next()) return nullptr; // If there's no incrementor statement, we don't need to parse it.
 
@@ -59,10 +59,9 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
 
     // We can potentially parse a for (<identifier> .. <identifier> { ... }
 
-
-    auto initiator = try_collect_initiator(for_scope, header_body);
-    auto condition = try_collect_condition(for_scope, header_body);
-    auto increment = try_collect_incrementor(for_scope, header_body);
+    auto initiator = collect_initiator(for_scope, header_body);
+    auto condition = collect_condition(for_scope, header_body);
+    auto increment = collect_incrementor(for_scope, header_body);
 
     auto body = parse_block(for_scope, set);
 

@@ -2,6 +2,7 @@
 
 #include "ast_node.h"
 #include "types.h"
+#include "ast/modifiers.h"
 #include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
 
@@ -632,13 +633,6 @@ namespace stride::ast
         TokenSet& set
     );
 
-    /// Parses an expression with extended flags controlling variable declarations and assignments
-    std::unique_ptr<AstExpression> parse_expression_extended(
-        int expression_type_flags,
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
-
     /// Parses a single part of a standalone expression
     std::unique_ptr<AstExpression> parse_inline_expression_part(
         const std::shared_ptr<ParsingContext>& context,
@@ -647,9 +641,9 @@ namespace stride::ast
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
-        int expression_type_flags,
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
+        TokenSet& set,
+        VisibilityModifier modifier
     );
 
     /// Parses a function invocation into an AstFunctionCall expression node

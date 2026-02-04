@@ -27,7 +27,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
 {
     // Phase 1 - These sequences are simple to parse; they have no visibility modifiers, hence we can just
     // assume that their first keyword determines their body.
-    auto visibility_modifier = VisibilityModifier::PRIVATE;
+    auto visibility_modifier = VisibilityModifier::NONE;
     int offset = 0;
 
     switch (set.peek_next().get_type())
@@ -45,11 +45,11 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
 
         // Modifiers. These are used in the next phase of parsing.
     case TokenType::KEYWORD_PUBLIC:
-        visibility_modifier = VisibilityModifier::GLOBALLY_VISIBLE;
+        visibility_modifier = VisibilityModifier::GLOBAL;
         offset = 1;
         break;
     case TokenType::KEYWORD_PRIVATE:
-        visibility_modifier = VisibilityModifier::PRIVATE;
+        visibility_modifier = VisibilityModifier::NONE;
         offset = 1;
         break;
     default:
@@ -72,6 +72,9 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
         return parse_for_loop_statement(context, set, visibility_modifier);
     case TokenType::KEYWORD_WHILE:
         return parse_while_loop_statement(context, set, visibility_modifier);
+    case TokenType::KEYWORD_LET:
+    case TokenType::KEYWORD_CONST:
+        return parse_variable_declaration(context, set, visibility_modifier);
     default: break;
     }
 

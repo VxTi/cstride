@@ -5,26 +5,21 @@
 #include <llvm/IR/Module.h>
 
 #include "ast/flags.h"
+#include "ast/modifiers.h"
 #include "ast/optionals.h"
 #include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
-    const int expression_type_flags,
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
+    TokenSet& set,
+    VisibilityModifier modifier
 )
 {
-    // Ensure we're allowed to parse standalone expressions
-    if ((expression_type_flags & SRFLAG_EXPR_TYPE_STANDALONE) == 0)
-    {
-        set.throw_error("Variable declarations are not allowed in this context");
-    }
-
     int flags = 0;
 
-    if (context->get_current_scope_type() == ScopeType::GLOBAL)
+    if (context->is_global_scope())
     {
         flags |= SRFLAG_TYPE_GLOBAL;
     }
@@ -38,52 +33,68 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     }
     else
     {
-        // Variables are const by default.
         set.expect(TokenType::KEYWORD_CONST);
     }
 
-    const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
-    const auto& variable_name = variable_name_tok.get_lexeme();
-    set.expect(TokenType::COLON);
-    auto variable_type = parse_type(context, set, "Expected variable type after variable name", flags);
+    const auto& variable_name = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration").
+                                    get_lexeme();
 
-
+    std::unique_ptr<IAstType> variable_type = nullptr;
     std::unique_ptr<AstExpression> value = nullptr;
 
     if (set.peek_next_eq(TokenType::EQUALS))
     {
+        //
+        // Variables with automatic type inference.
+        //
+        // This case handles variables declared in the format:
+        // let k = 123;
+        // here, we try to infer the type based on the RHS of the expression.
+        // Note that leaving out the type requires you to initialize it.
         set.next();
         value = parse_inline_expression(context, set);
+        variable_type = infer_expression_type(context, value.get());
     }
     else
     {
-        if (!variable_type->is_optional())
+        // For variable declarations with type annotations, the initializer is optional.
+        set.expect(TokenType::COLON, "Expected ':' after variable name");
+        variable_type = parse_type(context, set, "Expected variable type after variable name", flags);
+        if (set.peek_next_eq(TokenType::EQUALS))
         {
-            throw parsing_error(
-                ErrorType::SYNTAX_ERROR,
-                "Expected '=' after non-optional variable declaration",
-                *variable_type->get_source(),
-                variable_type->get_source_position()
+            set.next();
+            value = parse_inline_expression(context, set);
+        } else
+        {
+            if (!variable_type->is_optional())
+            {
+                throw parsing_error(
+                    ErrorType::SYNTAX_ERROR,
+                    "Expected '=' after non-optional variable declaration",
+                    *variable_type->get_source(),
+                    variable_type->get_source_position()
+                );
+            }
+
+            // If no expression was provided (lacking '='), initialize with nil if the initial type is optional
+            const auto ref_src_pos = reference_token.get_source_position();
+            const auto var_type_src_pos = variable_type->get_source_position();
+            value = std::make_unique<AstNilLiteral>(
+                set.get_source(),
+                SourcePosition(
+                    ref_src_pos.offset,
+                    var_type_src_pos.offset + var_type_src_pos.length - ref_src_pos.offset
+                ),
+                context
             );
         }
-
-        const auto ref_src_pos = reference_token.get_source_position();
-        const auto var_type_src_pos = variable_type->get_source_position();
-
-        // If no expression was provided (lacking '='), initialize with nil if the initial type is optional
-        value = std::make_unique<AstNilLiteral>(
-            set.get_source(),
-            SourcePosition(
-                ref_src_pos.offset,
-                var_type_src_pos.offset + var_type_src_pos.length - ref_src_pos.offset
-            ),
-            context
-        );
     }
 
+    set.expect(TokenType::SEMICOLON, "Expected ';' at the end of variable declaration");
 
     std::string internal_name = variable_name;
-    if (context->get_current_scope_type() != ScopeType::GLOBAL)
+    /// Variables defined in non-global scope will be internalized as `<name>.<variable_index>`
+    if (!context->is_global_scope())
     {
         static int var_decl_counter = 0;
         internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
@@ -118,10 +129,6 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 {
     const int offset = set.peek_next_eq(TokenType::KEYWORD_EXTERN) ? 1 : 0; // Offset the initial token
 
-    // This assumes one of the following sequences is a "variable declaration":
-    // extern k:
-    // mut k:
-    // let k:
     return (
         (set.peek_eq(TokenType::KEYWORD_CONST, offset) || set.peek_eq(TokenType::KEYWORD_LET, offset)) &&
         set.peek_eq(TokenType::IDENTIFIER, offset + 1) &&

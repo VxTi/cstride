@@ -177,22 +177,14 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
     return lhs;
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
-    const int expression_type_flags,
+std::unique_ptr<AstExpression> parse_expression_internal(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
-    if (!set.has_next()) return nullptr;
-
-    // let <name>: <type> = <...>
-    if (is_variable_declaration(set))
+    if (!set.has_next())
     {
-        return parse_variable_declaration(
-            expression_type_flags,
-            context,
-            set
-        );
+        set.throw_error("Unexpected end of input while parsing expression");
     }
 
     auto lhs = parse_inline_expression_part(context, set);
@@ -241,8 +233,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
     TokenSet& set
 )
 {
-    auto expr = parse_expression_extended(
-        SRFLAG_EXPR_TYPE_STANDALONE,
+    auto expr = parse_expression_internal(
         context,
         set
     );
@@ -257,14 +248,12 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(
     TokenSet& set
 )
 {
-    return parse_expression_extended(
-        SRFLAG_EXPR_TYPE_INLINE,
+    return parse_expression_internal(
         context,
         set
     );
 }
 
-/// TODO: Implement
 std::string stride::ast::parse_property_accessor_statement(
     [[maybe_unused]] const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
