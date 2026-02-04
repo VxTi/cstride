@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "ast/identifiers.h"
 #include "ast/symbol_registry.h"
 #include "ast/nodes/ast_node.h"
@@ -23,9 +25,9 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<SymbolRegistry>& registry,
-            const Dependency& dependency
+            Dependency dependency
         ) : IAstNode(source, source_position, registry),
-            _dependency(dependency) {}
+            _dependency(std::move(dependency)) {}
 
         [[nodiscard]]
         const std::string& get_module() const { return this->_dependency.module_base; }

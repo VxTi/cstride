@@ -27,10 +27,10 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
 {
     // Phase 1 - These sequences are simple to parse; they have no visibility modifiers, hence we can just
     // assume that their first keyword determines their body.
-    const auto next_token_type = set.peek_next().get_type();
-    auto modifier = VisibilityModifier::PRIVATE;
+    auto visibility_modifier = VisibilityModifier::PRIVATE;
     int offset = 0;
-    switch (next_token_type)
+
+    switch (set.peek_next().get_type())
     {
     case TokenType::KEYWORD_IF:
         return parse_if_statement(registry, set);
@@ -45,32 +45,33 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
 
         // Modifiers. These are used in the next phase of parsing.
     case TokenType::KEYWORD_PUBLIC:
-        modifier = VisibilityModifier::PUBLIC;
+        visibility_modifier = VisibilityModifier::GLOBALLY_VISIBLE;
         offset = 1;
         break;
     case TokenType::KEYWORD_PRIVATE:
-        modifier = VisibilityModifier::PRIVATE;
+        visibility_modifier = VisibilityModifier::PRIVATE;
         offset = 1;
         break;
     default:
         break;
     }
 
-    // Phase 2 -
+    // Phase 2 - These sequences may have visibility modifiers, so we need to
+    // offset our peek accordingly.
     switch (set.peek(offset).get_type())
     {
     case TokenType::KEYWORD_ASYNC:
     case TokenType::KEYWORD_FN:
     case TokenType::KEYWORD_EXTERN:
-        return parse_fn_declaration(registry, set, modifier);
+        return parse_fn_declaration(registry, set, visibility_modifier);
     case TokenType::KEYWORD_STRUCT:
-        return parse_struct_declaration(registry, set, modifier);
+        return parse_struct_declaration(registry, set, visibility_modifier);
     case TokenType::KEYWORD_ENUM:
-        return parse_enumerable_declaration(registry, set, modifier);
+        return parse_enumerable_declaration(registry, set, visibility_modifier);
     case TokenType::KEYWORD_FOR:
-        return parse_for_loop_statement(registry, set, modifier);
+        return parse_for_loop_statement(registry, set, visibility_modifier);
     case TokenType::KEYWORD_WHILE:
-        return parse_while_loop_statement(registry, set, modifier);
+        return parse_while_loop_statement(registry, set, visibility_modifier);
     default: break;
     }
 

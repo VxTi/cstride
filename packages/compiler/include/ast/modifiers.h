@@ -4,6 +4,8 @@ namespace stride::ast
 {
     enum class VisibilityModifier
     {
-        PUBLIC, PRIVATE
+        GLOBALLY_VISIBLE,
+        MODULE_VISIBLE,
+        PRIVATE
     };
 }

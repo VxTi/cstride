@@ -190,6 +190,19 @@ let p2: Vector2d = Vector2d::{ x: 5, y: 15 } // This is valid
 let p3: Point = p2 // This is invalid,
 ```
 
+### Imports
+
+Imports are currently not supported, though they are resolved during compilation.
+
+The format for imports is as follows:
+```stride
+import <package>::{ Module1, Module2, ... };
+
+
+// Let's say we're trying to import math functions from the standard library.
+import std::{ Math };
+```
+
 ## Standard Library
 
 Stride's standard library is located in `packages/standard-library/` and includes math, memory, and I/O modules.
