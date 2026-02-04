@@ -3,6 +3,7 @@
 
 #include "ast_node.h"
 #include "types.h"
+#include "ast/modifiers.h"
 #include "ast/symbol_registry.h"
 
 namespace stride::ast
@@ -101,8 +102,9 @@ namespace stride::ast
         ) override;
     };
 
-    std::unique_ptr<AstStruct> parse_struct_declaration(const std::shared_ptr<SymbolRegistry>& registry,
-                                                        TokenSet& tokens);
-
-    bool is_struct_declaration(const TokenSet& tokens);
+    std::unique_ptr<AstStruct> parse_struct_declaration(
+        const std::shared_ptr<SymbolRegistry>& registry,
+        TokenSet& tokens,
+        VisibilityModifier modifier
+    );
 }

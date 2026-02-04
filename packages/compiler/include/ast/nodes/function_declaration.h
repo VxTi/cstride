@@ -4,6 +4,7 @@
 #include "ast_node.h"
 #include "blocks.h"
 #include "types.h"
+#include "ast/modifiers.h"
 #include "ast/symbol_registry.h"
 #include "ast/tokens/token_set.h"
 
@@ -126,11 +127,10 @@ namespace stride::ast
         std::optional<std::vector<llvm::Type*>> resolve_parameter_types(llvm::Module* module) const;
     };
 
-    bool is_fn_declaration(const TokenSet& tokens);
-
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
         const std::shared_ptr<SymbolRegistry>& registry,
-        TokenSet& tokens
+        TokenSet& tokens,
+        VisibilityModifier modifier
     );
 
     std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(

@@ -7,11 +7,6 @@
 
 using namespace stride::ast;
 
-bool stride::ast::is_return_statement(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_RETURN);
-}
-
 std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set
@@ -75,6 +70,8 @@ void AstReturn::validate()
             this->get_source_position()
         );
     }
+
+    if (this->get_return_expr()) this->get_return_expr()->validate();
 }
 
 std::string AstReturn::to_string()

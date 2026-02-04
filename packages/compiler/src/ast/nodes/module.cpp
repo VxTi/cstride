@@ -13,11 +13,6 @@ std::string AstModule::to_string()
     return std::format("Module ({})", this->get_name());
 }
 
-bool stride::ast::is_module_statement(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_MODULE);
-}
-
 std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     const std::shared_ptr<SymbolRegistry>& registry,
     TokenSet& set

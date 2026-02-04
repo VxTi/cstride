@@ -9,6 +9,7 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "ast/modifiers.h"
 #include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/for_loop.h"
@@ -264,20 +265,13 @@ llvm::Value* AstFunctionDeclaration::codegen(
     return function;
 }
 
-bool stride::ast::is_fn_declaration(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_FN)
-        || (tokens.peek_eq(TokenType::KEYWORD_EXTERN, 0)
-            && tokens.peek_eq(TokenType::KEYWORD_FN, 1));
-}
-
-
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const std::shared_ptr<SymbolRegistry>& registry,
-    TokenSet& tokens
+    TokenSet& tokens,
+    VisibilityModifier modifier
 )
 {
     int function_flags = 0;
@@ -285,6 +279,12 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     {
         tokens.next();
         function_flags |= SRFLAG_FN_DEF_EXTERN;
+    }
+
+    if (tokens.peek_next_eq(TokenType::KEYWORD_ASYNC))
+    {
+        tokens.next();
+        function_flags |= SRFLAG_FN_DEF_ASYNC;
     }
 
     auto reference_token = tokens.expect(TokenType::KEYWORD_FN); // fn

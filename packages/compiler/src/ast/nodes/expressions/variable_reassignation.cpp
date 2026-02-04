@@ -344,3 +344,9 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
         std::move(expression)
     );
 }
+
+bool stride::ast::is_variable_reassignment_statement(const TokenSet& set)
+{
+    return set.peek_next_eq(TokenType::IDENTIFIER)
+        && is_variable_mutative_token(set.peek(1).get_type());
+}

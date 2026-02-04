@@ -70,7 +70,8 @@ std::string AstEnumerable::to_string()
 
 std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     const std::shared_ptr<SymbolRegistry>& registry,
-    TokenSet& set
+    TokenSet& set,
+    VisibilityModifier modifier
 )
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_ENUM);
@@ -105,7 +106,3 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     );
 }
 
-bool stride::ast::is_enumerable_declaration(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_ENUM);
-}

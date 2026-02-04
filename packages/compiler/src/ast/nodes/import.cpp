@@ -6,11 +6,6 @@
 
 using namespace stride::ast;
 
-bool stride::ast::is_import_statement(const TokenSet& tokens)
-{
-    return tokens.peek_next().get_type() == TokenType::KEYWORD_USE;
-}
-
 /**
  * Will consume the import module parts from the token set.
  * This will convert the following example into the below given
@@ -96,7 +91,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
             )
         );
     }
-    const auto reference_token = set.expect(TokenType::KEYWORD_USE);
+    const auto reference_token = set.expect(TokenType::KEYWORD_IMPORT);
     // With the guard clause, this will always be the case.
 
     const auto import_module = consume_import_module_base(set);

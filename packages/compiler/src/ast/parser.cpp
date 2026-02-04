@@ -1,6 +1,7 @@
 #include "ast/parser.h"
 #include "files.h"
 #include "program.h"
+#include "ast/modifiers.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/if_statement.h"
 #include "ast/nodes/import.h"
@@ -24,53 +25,53 @@ std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::
 
 std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
 {
-    if (is_package_declaration(set))
+    // Phase 1 - These sequences are simple to parse; they have no visibility modifiers, hence we can just
+    // assume that their first keyword determines their body.
+    const auto next_token_type = set.peek_next().get_type();
+    auto modifier = VisibilityModifier::PRIVATE;
+    int offset = 0;
+    switch (next_token_type)
     {
-        return parse_package_declaration(registry, set);
-    }
-    if (is_module_statement(set))
-    {
-        return parse_module_statement(registry, set);
-    }
-
-    if (is_import_statement(set))
-    {
-        return parse_import_statement(registry, set);
-    }
-
-    if (is_fn_declaration(set))
-    {
-        return parse_fn_declaration(registry, set);
-    }
-
-    if (is_struct_declaration(set))
-    {
-        return parse_struct_declaration(registry, set);
-    }
-
-    if (is_enumerable_declaration(set))
-    {
-        return parse_enumerable_declaration(registry, set);
-    }
-
-    if (is_return_statement(set))
-    {
-        return parse_return_statement(registry, set);
-    }
-
-    if (is_for_loop_statement(set))
-    {
-        return parse_for_loop_statement(registry, set);
-    }
-
-    if (is_while_loop_statement(set))
-    {
-        return parse_while_loop_statement(registry, set);
-    }
-
-    if (is_if_statement(set))
-    {
+    case TokenType::KEYWORD_IF:
         return parse_if_statement(registry, set);
+    case TokenType::KEYWORD_RETURN:
+        return parse_return_statement(registry, set);
+    case TokenType::KEYWORD_MODULE:
+        return parse_module_statement(registry, set);
+    case TokenType::KEYWORD_PACKAGE:
+        return parse_package_declaration(registry, set);
+    case TokenType::KEYWORD_IMPORT:
+        return parse_import_statement(registry, set);
+
+        // Modifiers. These are used in the next phase of parsing.
+    case TokenType::KEYWORD_PUBLIC:
+        modifier = VisibilityModifier::PUBLIC;
+        offset = 1;
+        break;
+    case TokenType::KEYWORD_PRIVATE:
+        modifier = VisibilityModifier::PRIVATE;
+        offset = 1;
+        break;
+    default:
+        break;
+    }
+
+    // Phase 2 -
+    switch (set.peek(offset).get_type())
+    {
+    case TokenType::KEYWORD_ASYNC:
+    case TokenType::KEYWORD_FN:
+    case TokenType::KEYWORD_EXTERN:
+        return parse_fn_declaration(registry, set, modifier);
+    case TokenType::KEYWORD_STRUCT:
+        return parse_struct_declaration(registry, set, modifier);
+    case TokenType::KEYWORD_ENUM:
+        return parse_enumerable_declaration(registry, set, modifier);
+    case TokenType::KEYWORD_FOR:
+        return parse_for_loop_statement(registry, set, modifier);
+    case TokenType::KEYWORD_WHILE:
+        return parse_while_loop_statement(registry, set, modifier);
+    default: break;
     }
 
     return parse_standalone_expression(registry, set);

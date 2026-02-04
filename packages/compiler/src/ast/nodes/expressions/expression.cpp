@@ -42,15 +42,16 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         return std::move(unary.value());
     }
 
-    // If the next token is a '(', we'll try to descend into it
-    // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
-    if (set.peek_next_eq(TokenType::LPAREN))
+    // Will try to parse <name>::{ ... }
+    if (is_struct_initializer(set))
     {
-        set.next();
-        // TODO: Potentially fix possibility of stack overflow if expression is too large
-        auto expr = parse_inline_expression_part(registry, set);
-        set.expect(TokenType::RPAREN, "Expected ')' after expression");
-        return expr;
+        return parse_struct_initializer(registry, set);
+    }
+
+    // Will try to parse [ ... ]
+    if (is_array_initializer(set))
+    {
+        return parse_array_initializer(registry, set);
     }
 
     if (set.peek_next_eq(TokenType::IDENTIFIER))
@@ -97,6 +98,17 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         }
 
         return std::move(identifier);
+    }
+
+    // If the next token is a '(', we'll try to descend into it
+    // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
+    if (set.peek_next_eq(TokenType::LPAREN))
+    {
+        set.next();
+        // TODO: Potentially fix possibility of stack overflow if expression is too large
+        auto expr = parse_inline_expression_part(registry, set);
+        set.expect(TokenType::RPAREN, "Expected ')' after expression");
+        return expr;
     }
 
     set.throw_error("Invalid token found in expression");
@@ -172,18 +184,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_expression_extended(
 )
 {
     if (!set.has_next()) return nullptr;
-
-    // Will try to parse <name>::{ ... }
-    if (is_struct_initializer(set))
-    {
-        return parse_struct_initializer(registry, set);
-    }
-
-    // Will try to parse [ ... ]
-    if (is_array_initializer(set))
-    {
-        return parse_array_initializer(registry, set);
-    }
 
     // let <name>: <type> = <...>
     if (is_variable_declaration(set))
@@ -291,9 +291,4 @@ std::string stride::ast::parse_property_accessor_statement(
     }
 
     return identifier_name;
-}
-
-bool stride::ast::is_variable_reassignment_statement(const TokenSet& set)
-{
-    return set.peek_next_eq(TokenType::IDENTIFIER);
 }

@@ -2,6 +2,7 @@
 #include <utility>
 
 #include "ast_node.h"
+#include "ast/modifiers.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
@@ -67,8 +68,7 @@ namespace stride::ast
 
     std::unique_ptr<AstEnumerable> parse_enumerable_declaration(
         const std::shared_ptr<SymbolRegistry>& registry,
-        TokenSet& set
+        TokenSet& set,
+        VisibilityModifier modifier
     );
-
-    bool is_enumerable_declaration(const TokenSet& tokens);
 }

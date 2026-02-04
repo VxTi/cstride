@@ -4,11 +4,6 @@
 
 using namespace stride::ast;
 
-bool stride::ast::is_for_loop_statement(const TokenSet& set)
-{
-    return set.peek_next_eq(TokenType::KEYWORD_FOR);
-}
-
 std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
 {
     auto initiator = collect_until_token(set, TokenType::SEMICOLON);
@@ -47,7 +42,8 @@ std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<Sym
 
 std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     const std::shared_ptr<SymbolRegistry>& registry,
-    TokenSet& set
+    TokenSet& set,
+    VisibilityModifier modifier
 )
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_FOR);

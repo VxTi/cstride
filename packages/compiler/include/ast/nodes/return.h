@@ -39,7 +39,5 @@ namespace stride::ast
         void validate() override;
     };
 
-    bool is_return_statement(const TokenSet& tokens);
-
     std::unique_ptr<AstReturn> parse_return_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
 }

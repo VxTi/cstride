@@ -111,6 +111,7 @@ namespace stride::ast
         KEYWORD_STRUCT,   // struct
         KEYWORD_IMPORT,   // import
         KEYWORD_PUBLIC,   // public
+        KEYWORD_PRIVATE,  // private
         KEYWORD_MODULE,   // module
         KEYWORD_EXTERN,   // external
         KEYWORD_NIL,      // nil
@@ -248,6 +249,7 @@ namespace stride::ast
         case TokenType::KEYWORD_STRUCT: return "struct";
         case TokenType::KEYWORD_IMPORT: return "import";
         case TokenType::KEYWORD_PUBLIC: return "public";
+        case TokenType::KEYWORD_PRIVATE: return "private";
         case TokenType::KEYWORD_MODULE: return "module";
         case TokenType::KEYWORD_EXTERN: return "extern";
         case TokenType::KEYWORD_NIL: return "nil";
@@ -327,7 +329,7 @@ namespace stride::ast
         TokenType _type;
 
     public:
-        explicit  Token(
+        explicit Token(
             const TokenType type,
             SourcePosition position,
             std::string lexeme

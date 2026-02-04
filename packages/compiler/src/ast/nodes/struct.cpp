@@ -34,14 +34,10 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     );
 }
 
-bool stride::ast::is_struct_declaration(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_STRUCT);
-}
-
 std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     const std::shared_ptr<SymbolRegistry>& registry,
-    TokenSet& tokens
+    TokenSet& tokens,
+    VisibilityModifier modifier
 )
 {
     if (registry->get_current_scope_type() != ScopeType::GLOBAL && registry->get_current_scope_type() !=

@@ -39,7 +39,5 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    bool is_import_statement(const TokenSet& tokens);
-
     std::unique_ptr<AstImport> parse_import_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
 }

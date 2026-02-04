@@ -7,11 +7,6 @@
 
 using namespace stride::ast;
 
-bool stride::ast::is_while_loop_statement(const TokenSet& set)
-{
-    return set.peek_next_eq(TokenType::KEYWORD_WHILE);
-}
-
 void AstWhileLoop::validate()
 {
     if (this->_condition != nullptr) this->_condition->validate();
@@ -21,7 +16,8 @@ void AstWhileLoop::validate()
 
 std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
     const std::shared_ptr<SymbolRegistry>& registry,
-    TokenSet& set
+    TokenSet& set,
+    VisibilityModifier modifier
 )
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);

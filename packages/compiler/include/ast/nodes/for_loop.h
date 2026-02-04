@@ -3,6 +3,7 @@
 #include "ast_node.h"
 #include "blocks.h"
 #include "expression.h"
+#include "ast/modifiers.h"
 #include "ast/symbol_registry.h"
 #include "ast/tokens/token_set.h"
 
@@ -56,8 +57,9 @@ namespace stride::ast
         void validate() override;
     };
 
-    bool is_for_loop_statement(const TokenSet& set);
-
-    std::unique_ptr<AstForLoop>
-    parse_for_loop_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
+    std::unique_ptr<AstForLoop> parse_for_loop_statement(
+        const std::shared_ptr<SymbolRegistry>& registry,
+        TokenSet& set,
+        VisibilityModifier modifier
+    );
 }

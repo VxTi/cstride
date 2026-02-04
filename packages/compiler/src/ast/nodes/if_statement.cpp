@@ -111,11 +111,6 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
     );
 }
 
-bool stride::ast::is_if_statement(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_IF);
-}
-
 IAstNode* AstIfStatement::reduce()
 {
     return this;
