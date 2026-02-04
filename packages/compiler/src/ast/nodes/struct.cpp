@@ -4,13 +4,13 @@
 
 #include <llvm/IR/Module.h>
 
-#include "ast/internal_names.h"
+#include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
 
 std::unique_ptr<AstStructMember> parse_struct_member(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -19,32 +19,28 @@ std::unique_ptr<AstStructMember> parse_struct_member(
 
     set.expect(TokenType::COLON);
 
-    auto struct_member_type = parse_type(registry, set, "Expected a struct member type");
+    auto struct_member_type = parse_type(context, set, "Expected a struct member type");
     set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
 
     // TODO: Replace with struct-field-specific method
-    registry->define_field(struct_member_name, struct_member_name, struct_member_type->clone());
+    context->define_variable(struct_member_name, struct_member_name, struct_member_type->clone());
 
     return std::make_unique<AstStructMember>(
         set.get_source(),
         struct_member_name_tok.get_source_position(),
-        registry,
+        context,
         struct_member_name,
         std::move(struct_member_type)
     );
 }
 
-bool stride::ast::is_struct_declaration(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_STRUCT);
-}
-
 std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
-    const std::shared_ptr<SymbolRegistry>& registry,
-    TokenSet& tokens
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& tokens,
+    VisibilityModifier modifier
 )
 {
-    if (registry->get_current_scope_type() != ScopeType::GLOBAL && registry->get_current_scope_type() !=
+    if (context->get_current_scope_type() != ScopeType::GLOBAL && context->get_current_scope_type() !=
         ScopeType::MODULE)
     {
         tokens.throw_error("Struct declarations are only allowed in global or module scope");
@@ -61,19 +57,19 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     if (tokens.peek_next_eq(TokenType::EQUALS))
     {
         tokens.next();
-        auto reference_sym = parse_type(registry, tokens, "Expected reference struct type", SRFLAG_NONE);
+        auto reference_sym = parse_type(context, tokens, "Expected reference struct type", SRFLAG_NONE);
         tokens.expect(TokenType::SEMICOLON);
 
         // We define it as a reference to `reference_sym`. Validation happens later
-        registry->define_struct(
-            struct_name,
-            reference_sym->get_internal_name()
+        context->define_struct(
+            Symbol(struct_name),
+            Symbol(reference_sym->get_internal_name())
         );
 
         return std::make_unique<AstStruct>(
             tokens.get_source(),
             reference_token.get_source_position(),
-            registry,
+            context,
             struct_name,
             std::move(reference_sym)
         );
@@ -103,7 +99,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
     if (struct_body_set.has_value())
     {
-        const auto nested_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::BLOCK);
+        const auto nested_scope = std::make_shared<ParsingContext>(context, ScopeType::BLOCK);
         while (struct_body_set.value().has_next())
         {
             auto member = parse_struct_member(nested_scope, struct_body_set.value());
@@ -119,7 +115,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         tokens.throw_error("Struct must have at least one member");
     }
 
-    registry->define_struct(
+    context->define_struct(
         struct_name,
         std::move(fields)
     );
@@ -127,7 +123,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     return std::make_unique<AstStruct>(
         tokens.get_source(),
         reference_token.get_source_position(),
-        registry,
+        context,
         struct_name,
         std::move(members)
     );
@@ -210,7 +206,8 @@ std::string AstStruct::to_string()
     return std::format("Struct({}) (\n  {}\n)", this->get_name(), imploded.str());
 }
 
-void AstStruct::resolve_forward_references(const std::shared_ptr<SymbolRegistry>& registry, llvm::Module* module, llvm::IRBuilder<>* builder)
+void AstStruct::resolve_forward_references(const std::shared_ptr<ParsingContext>& context, llvm::Module* module,
+                                           llvm::IRBuilder<>* builder)
 {
     // Retrieve or Create the named struct type (Opaque)
     // We check if it already exists to support forward declarations or multi-pass compilation.
@@ -293,7 +290,7 @@ void AstStruct::resolve_forward_references(const std::shared_ptr<SymbolRegistry>
 }
 
 llvm::Value* AstStruct::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

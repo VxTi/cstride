@@ -26,10 +26,10 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
 
 
     // Keywords
+    TOKEN(TokenType::KEYWORD_CONST, R"(\bconst\b)"),
     TOKEN(TokenType::KEYWORD_LET, R"(\blet\b)"),
     TOKEN(TokenType::KEYWORD_USE, R"(\buse\b)"),
     TOKEN(TokenType::KEYWORD_PACKAGE, R"(\bpackage\b)"),
-    TOKEN(TokenType::KEYWORD_MUT, R"(\bmut\b)"),
     TOKEN(TokenType::KEYWORD_FN, R"(\bfn\b)"),
     TOKEN(TokenType::KEYWORD_IF, R"(\bif\b)"),
     TOKEN(TokenType::KEYWORD_ELSE, R"(\belse\b)"),
@@ -47,6 +47,7 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::KEYWORD_CLASS, R"(\bclass\b)"),
     TOKEN(TokenType::KEYWORD_THIS, R"(\bthis\b)"),
     TOKEN(TokenType::KEYWORD_PUBLIC, R"(\bpublic\b)"),
+    TOKEN(TokenType::KEYWORD_PRIVATE, R"(\bprivate\b)"),
     TOKEN(TokenType::KEYWORD_MODULE, R"(\bmodule\b)"),
     TOKEN(TokenType::KEYWORD_EXTERN, R"(\bextern\b)"),
     TOKEN(TokenType::KEYWORD_OVERRIDE, R"(\boverride\b)"),

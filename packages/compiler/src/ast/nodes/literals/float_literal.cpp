@@ -4,7 +4,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -17,7 +17,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
         return std::make_unique<AstFpLiteral>(
             set.get_source(),
             reference_token.get_source_position(),
-            registry,
+            context,
             std::stod(numeric),
             64
         );
@@ -28,7 +28,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
         return std::make_unique<AstFpLiteral>(
             set.get_source(),
             reference_token.get_source_position(),
-            registry,
+            context,
             std::stof(next.get_lexeme()),
             32
         );
@@ -42,7 +42,7 @@ std::string AstFpLiteral::to_string()
 }
 
 llvm::Value* AstFpLiteral::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

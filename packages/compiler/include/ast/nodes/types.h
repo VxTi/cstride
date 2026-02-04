@@ -46,10 +46,10 @@ namespace stride::ast
         IAstType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const int flags
         )
-            : IAstNode(source, source_position, registry),
+            : IAstNode(source, source_position, context),
               _flags(flags) {}
 
         ~IAstType() override = default;
@@ -102,12 +102,12 @@ namespace stride::ast
         explicit AstPrimitiveType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const PrimitiveType type,
             const size_t bit_count,
             const int flags = SRFLAG_NONE
         ) :
-            IAstType(source, source_position, registry, flags),
+            IAstType(source, source_position, context, flags),
             _type(type),
             _bit_count(bit_count) {}
 
@@ -182,11 +182,11 @@ namespace stride::ast
         explicit AstStructType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string name,
             const int flags = SRFLAG_NONE
         ) :
-            IAstType(source, source_position, registry, flags),
+            IAstType(source, source_position, context, flags),
             _name(std::move(name)) {}
 
         [[nodiscard]]
@@ -226,13 +226,13 @@ namespace stride::ast
         explicit AstArrayType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<IAstType> element_type,
             const size_t initial_length
         ) : IAstType(
                 source,
                 source_position,
-                registry,
+                context,
                 // Arrays are always ptrs
                 (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR
             ),
@@ -280,7 +280,7 @@ namespace stride::ast
     };
 
     std::unique_ptr<IAstType> parse_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const std::string& error,
         int context_flags = SRFLAG_NONE
@@ -292,20 +292,25 @@ namespace stride::ast
     );
 
     std::unique_ptr<IAstType> get_dominant_field_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         IAstType* lhs,
         IAstType* rhs
     );
 
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE
     );
 
     std::optional<std::unique_ptr<IAstType>> parse_named_type_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE
+    );
+
+    std::string get_root_reference_struct_name(
+        const std::string& name,
+        const std::shared_ptr<ParsingContext>& context
     );
 }

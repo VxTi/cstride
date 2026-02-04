@@ -60,8 +60,7 @@ export const conf: languages.LanguageConfiguration = {
 
 export const keywords = [
   'let',
-  'use',
-  'mut',
+  'const',
   'fn',
   'if',
   'else',

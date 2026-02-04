@@ -6,7 +6,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optional(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -18,7 +18,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optio
         return std::make_unique<AstCharLiteral>(
             set.get_source(),
             reference_token.get_source_position(),
-            registry,
+            context,
             value
         );
     }
@@ -31,7 +31,7 @@ std::string AstCharLiteral::to_string()
 }
 
 llvm::Value* AstCharLiteral::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

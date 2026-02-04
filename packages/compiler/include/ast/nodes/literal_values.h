@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "ast/symbol_registry.h"
+#include "ast/parsing_context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
@@ -41,11 +41,11 @@ namespace stride::ast
         AstLiteral(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
             const short bit_count
         )
-            : AstExpression(source, source_position, registry),
+            : AstExpression(source, source_position, context),
               _bit_count(bit_count),
               _type(type) {}
 
@@ -69,12 +69,12 @@ namespace stride::ast
         explicit AbstractAstLiteralBase(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
             T value,
             const short bit_count
         ) :
-            AstLiteral(source, source_position, registry, type, bit_count),
+            AstLiteral(source, source_position, context, type, bit_count),
             _value(std::move(value)) {}
 
         [[nodiscard]]
@@ -87,7 +87,7 @@ namespace stride::ast
         explicit AstStringLiteral(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string val
         ) :
             // Strings are only considered to be a single byte,
@@ -95,7 +95,7 @@ namespace stride::ast
             AbstractAstLiteralBase(
                 source,
                 source_position,
-                registry,
+                context,
                 LiteralType::STRING,
                 std::move(val),
                 1
@@ -106,7 +106,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -120,7 +120,7 @@ namespace stride::ast
         explicit AstIntLiteral(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const int64_t value,
             const short bit_count,
             const int flags = SRFLAG_TYPE_INT_SIGNED
@@ -128,7 +128,7 @@ namespace stride::ast
             AbstractAstLiteralBase(
                 source,
                 source_position,
-                registry,
+                context,
                 LiteralType::INTEGER,
                 value,
                 bit_count
@@ -144,7 +144,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -156,14 +156,14 @@ namespace stride::ast
         explicit AstFpLiteral(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const long double value,
             const short bit_count
         ) :
             AbstractAstLiteralBase(
                 source,
                 source_position,
-                registry,
+                context,
                 LiteralType::FLOAT,
                 value,
                 bit_count
@@ -172,7 +172,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -184,13 +184,13 @@ namespace stride::ast
         explicit AstBooleanLiteral(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const bool value
         ) :
             AbstractAstLiteralBase(
                 source,
                 source_position,
-                registry,
+                context,
                 LiteralType::BOOLEAN,
                 value,
                 1 /* Single bit only*/
@@ -198,7 +198,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<SymbolRegistry>& registry, llvm::Module* module,
+        llvm::Value* codegen(const std::shared_ptr<ParsingContext>& context, llvm::Module* module,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -208,13 +208,13 @@ namespace stride::ast
         explicit AstCharLiteral(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const char value
         ) :
             AbstractAstLiteralBase(
                 source,
                 source_position,
-                registry,
+                context,
                 LiteralType::CHAR,
                 value,
                 8
@@ -223,7 +223,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -236,12 +236,12 @@ namespace stride::ast
         AstNilLiteral(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry
+            const std::shared_ptr<ParsingContext>& context
         ) :
             AstLiteral(
                 source,
                 source_position,
-                registry,
+                context,
                 LiteralType::NIL,
                 8
             ) {}
@@ -249,39 +249,39 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
     };
 
     std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& tokens
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_float_literal_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_string_literal_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<AstLiteral>> parse_char_literal_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 

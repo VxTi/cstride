@@ -1,5 +1,5 @@
 #include "ast/nodes/types.h"
-#include "ast/symbol_registry.h"
+#include "ast/parsing_context.h"
 
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
@@ -9,6 +9,11 @@
 #include "ast/tokens/token_set.h"
 
 using namespace stride::ast;
+
+bool is_array_notation(const TokenSet& set)
+{
+    return set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1);
+}
 
 std::string primitive_type_to_str_internal(const PrimitiveType type)
 {
@@ -40,16 +45,12 @@ std::string stride::ast::primitive_type_to_str(
 {
     const auto base_str = primitive_type_to_str_internal(type);
 
-    return std::format("{}{}{}",
-                       (flags & SRFLAG_TYPE_PTR) != 0 ? "*" : "",
-                       base_str,
-                       (flags & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
+    return std::format(
+        "{}{}{}",
+        (flags & SRFLAG_TYPE_PTR) != 0 ? "*" : "",
+        base_str,
+        (flags & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
     );
-}
-
-bool is_array_notation(const TokenSet& set)
-{
-    return set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(TokenType::RSQUARE_BRACKET, 1);
 }
 
 std::unique_ptr<IAstType> parse_type_metadata(
@@ -89,7 +90,7 @@ std::unique_ptr<IAstType> parse_type_metadata(
 }
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     int context_type_flags
 )
@@ -119,7 +120,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::INT8,
                 /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
@@ -131,7 +132,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::INT16,
                 /* bit_count = */ 2 * BITS_PER_BYTE,
                 context_type_flags
@@ -143,7 +144,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::INT32,
                 /* bit_count = */ 4 * BITS_PER_BYTE,
                 context_type_flags
@@ -155,7 +156,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::INT64,
                 /* bit_count = */ 8 * BITS_PER_BYTE,
                 context_type_flags
@@ -167,7 +168,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::UINT8,
                 /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
@@ -179,7 +180,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::UINT16,
                 /* bit_count = */ 2 * BITS_PER_BYTE,
                 context_type_flags
@@ -191,7 +192,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::UINT32,
                 /* bit_count = */ 4 * BITS_PER_BYTE,
                 context_type_flags
@@ -203,7 +204,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::UINT64,
                 /* bit_count = */ 8 * BITS_PER_BYTE,
                 context_type_flags
@@ -215,7 +216,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::FLOAT32,
                 /* bit_count = */ 4 * BITS_PER_BYTE,
                 context_type_flags
@@ -227,7 +228,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::FLOAT64,
                 /* bit_count = */ 8 * BITS_PER_BYTE,
                 context_type_flags
@@ -239,7 +240,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::BOOL,
                 /* bit_count = */ 1,
                 context_type_flags
@@ -251,7 +252,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::CHAR,
                 /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
@@ -263,7 +264,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::STRING,
                 /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
@@ -275,7 +276,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             result = std::make_unique<AstPrimitiveType>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 PrimitiveType::VOID,
                 /* bit_count = */ 1 * BITS_PER_BYTE,
                 context_type_flags
@@ -294,7 +295,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
 }
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     int context_type_flags
 )
@@ -317,7 +318,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     auto named_type = std::make_unique<AstStructType>(
         set.get_source(),
         reference_token.get_source_position(),
-        registry,
+        context,
         name,
         context_type_flags
     );
@@ -326,19 +327,19 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
 }
 
 std::unique_ptr<IAstType> stride::ast::parse_type(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const std::string& error,
     const int context_flags
 )
 {
-    if (auto primitive = parse_primitive_type_optional(registry, set, context_flags);
+    if (auto primitive = parse_primitive_type_optional(context, set, context_flags);
         primitive.has_value())
     {
         return std::move(primitive.value());
     }
 
-    if (auto named_type = parse_named_type_optional(registry, set, context_flags);
+    if (auto named_type = parse_named_type_optional(context, set, context_flags);
         named_type.has_value())
     {
         return std::move(named_type.value());
@@ -347,13 +348,41 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     set.throw_error(error);
 }
 
+std::string stride::ast::get_root_reference_struct_name(
+    const std::string& name,
+    const std::shared_ptr<ParsingContext>& context
+)
+{
+    std::string actual_name = name;
+    if (auto struct_def_opt = context->get_struct_def(actual_name);
+        struct_def_opt.has_value())
+    {
+        auto struct_def = struct_def_opt.value();
+
+        while (struct_def->is_reference_struct())
+        {
+            actual_name = struct_def->get_reference_struct().value().name;
+            struct_def_opt = context->get_struct_def(actual_name);
+
+            if (!struct_def_opt.has_value())
+            {
+                break;
+            }
+
+            struct_def = struct_def_opt.value();
+        }
+    }
+    return actual_name;
+}
+
 llvm::Type* stride::ast::internal_type_to_llvm_type(
     IAstType* type,
     llvm::Module* module
 )
 {
-    const auto registry = type->get_registry();
+    const auto context = type->get_registry();
 
+    // Wrapping T -> Optional<T>
     if (type->is_optional())
     {
         const auto inner = type->clone();
@@ -361,10 +390,11 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
         llvm::Type* inner_type = internal_type_to_llvm_type(inner.get(), module);
 
-        return llvm::StructType::get(module->getContext(), {
-                                         llvm::Type::getInt1Ty(module->getContext()),
-                                         inner_type
-                                     });
+        return llvm::StructType::get(
+            module->getContext(), {
+                llvm::Type::getInt1Ty(module->getContext()), // has_value
+                inner_type // value (T)
+            });
     }
 
     if (type->is_pointer())
@@ -431,21 +461,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
             return llvm::PointerType::get(module->getContext(), 0);
         }
 
-        // TODO: create utility for this
-        std::string actual_name = ast_struct_ty->name();
-        if (auto struct_def_opt = registry->get_struct_def(actual_name);
-            struct_def_opt.has_value())
-        {
-            auto struct_def = struct_def_opt.value();
-
-            while (struct_def->is_reference_struct())
-            {
-                actual_name = struct_def->get_reference_struct_name().value();
-                struct_def_opt = registry->get_struct_def(actual_name);
-                if (!struct_def_opt.has_value()) break;
-                struct_def = struct_def_opt.value();
-            }
-        }
+        const std::string actual_name = get_root_reference_struct_name(ast_struct_ty->name(), context);
 
         llvm::StructType* struct_ty = llvm::StructType::getTypeByName(module->getContext(), actual_name);
         if (!struct_ty)
@@ -465,7 +481,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 }
 
 std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     IAstType* lhs,
     IAstType* rhs
 )
@@ -526,7 +542,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
             return std::make_unique<AstPrimitiveType>(
                 lhs_primitive->get_source(),
                 lhs_primitive->get_source_position(),
-                registry,
+                context,
                 PrimitiveType::FLOAT64,
                 rhs_primitive->bit_count(),
                 rhs_primitive->get_flags()

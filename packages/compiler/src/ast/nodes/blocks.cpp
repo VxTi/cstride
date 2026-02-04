@@ -10,7 +10,7 @@
 using namespace stride::ast;
 
 void AstBlock::resolve_forward_references(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -19,13 +19,13 @@ void AstBlock::resolve_forward_references(
     {
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            synthesisable->resolve_forward_references(registry, module, builder);
+            synthesisable->resolve_forward_references(context, module, builder);
         }
     }
 }
 
 llvm::Value* AstBlock::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -130,7 +130,7 @@ std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
     return collect_block_variant(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_block(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
+std::unique_ptr<AstBlock> stride::ast::parse_block(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 
@@ -139,5 +139,5 @@ std::unique_ptr<AstBlock> stride::ast::parse_block(const std::shared_ptr<SymbolR
         return nullptr;
     }
 
-    return parse_sequential(registry, collected_subset.value());
+    return parse_sequential(context, collected_subset.value());
 }

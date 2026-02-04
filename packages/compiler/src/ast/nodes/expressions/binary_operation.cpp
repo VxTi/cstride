@@ -61,7 +61,7 @@ std::string AstBinaryArithmeticOp::to_string()
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
 std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_binary_operation_optional(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs,
     const int min_precedence
@@ -87,7 +87,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 
             // If we're unable to parse the next expression part, for whatever reason,
             // we'll return nullopt. This will indicate that the expression is incomplete or invalid.
-            auto rhs = parse_inline_expression_part(registry, set);
+            auto rhs = parse_inline_expression_part(context, set);
             if (!rhs)
             {
                 return std::nullopt;
@@ -101,7 +101,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
                     precedence < next_precedence)
                 {
                     auto rhs_opt = parse_arithmetic_binary_operation_optional(
-                        registry, set, std::move(rhs), precedence + 1
+                        context, set, std::move(rhs), precedence + 1
                     );
                     if (rhs_opt.has_value())
                     {
@@ -118,7 +118,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
             lhs = std::make_unique<AstBinaryArithmeticOp>(
                 set.get_source(),
                 reference_token.get_source_position(),
-                registry,
+                context,
                 std::move(lhs),
                 binary_op.value(),
                 std::move(rhs)
@@ -132,13 +132,13 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 }
 
 llvm::Value* AstBinaryArithmeticOp::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
-    llvm::Value* lhs = this->get_left()->codegen(registry, module, builder);
-    llvm::Value* rhs = this->get_right()->codegen(registry, module, builder);
+    llvm::Value* lhs = this->get_left()->codegen(context, module, builder);
+    llvm::Value* rhs = this->get_right()->codegen(context, module, builder);
 
     if (!lhs || !rhs)
     {

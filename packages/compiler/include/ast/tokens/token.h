@@ -92,9 +92,9 @@ namespace stride::ast
         KEYWORD_AS,       // as
         KEYWORD_ASYNC,    // async
         KEYWORD_FN,       // fn
-        KEYWORD_LET,      // let
+        KEYWORD_CONST,    // const
         KEYWORD_CONTINUE, // continue
-        KEYWORD_MUT,      // mut
+        KEYWORD_LET,      // let
         KEYWORD_DO,       // do
         KEYWORD_WHILE,    // while
         KEYWORD_FOR,      // for
@@ -111,6 +111,7 @@ namespace stride::ast
         KEYWORD_STRUCT,   // struct
         KEYWORD_IMPORT,   // import
         KEYWORD_PUBLIC,   // public
+        KEYWORD_PRIVATE,  // private
         KEYWORD_MODULE,   // module
         KEYWORD_EXTERN,   // external
         KEYWORD_NIL,      // nil
@@ -229,9 +230,9 @@ namespace stride::ast
         case TokenType::KEYWORD_AS: return "as";
         case TokenType::KEYWORD_ASYNC: return "async";
         case TokenType::KEYWORD_FN: return "fn";
-        case TokenType::KEYWORD_LET: return "let";
+        case TokenType::KEYWORD_CONST: return "const";
         case TokenType::KEYWORD_CONTINUE: return "continue";
-        case TokenType::KEYWORD_MUT: return "mut";
+        case TokenType::KEYWORD_LET: return "let";
         case TokenType::KEYWORD_DO: return "do";
         case TokenType::KEYWORD_WHILE: return "while";
         case TokenType::KEYWORD_FOR: return "for";
@@ -248,6 +249,7 @@ namespace stride::ast
         case TokenType::KEYWORD_STRUCT: return "struct";
         case TokenType::KEYWORD_IMPORT: return "import";
         case TokenType::KEYWORD_PUBLIC: return "public";
+        case TokenType::KEYWORD_PRIVATE: return "private";
         case TokenType::KEYWORD_MODULE: return "module";
         case TokenType::KEYWORD_EXTERN: return "extern";
         case TokenType::KEYWORD_NIL: return "nil";
@@ -327,7 +329,7 @@ namespace stride::ast
         TokenType _type;
 
     public:
-        explicit  Token(
+        explicit Token(
             const TokenType type,
             SourcePosition position,
             std::string lexeme

@@ -43,13 +43,13 @@ std::string AstComparisonOp::to_string()
 }
 
 llvm::Value* AstComparisonOp::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
-    llvm::Value* left = this->get_left()->codegen(registry, module, builder);
-    llvm::Value* right = this->get_right()->codegen(registry, module, builder);
+    llvm::Value* left = this->get_left()->codegen(context, module, builder);
+    llvm::Value* right = this->get_right()->codegen(context, module, builder);
 
     if (!left || !right)
     {

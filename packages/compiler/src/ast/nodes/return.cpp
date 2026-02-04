@@ -7,19 +7,14 @@
 
 using namespace stride::ast;
 
-bool stride::ast::is_return_statement(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_RETURN);
-}
-
 std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
     // We can just do a quick check here, as we don't know yet whether in what context it's used.
-    if (registry->get_current_scope_type() == ScopeType::GLOBAL ||
-        registry->get_current_scope_type() == ScopeType::MODULE)
+    if (context->get_current_scope_type() == ScopeType::GLOBAL ||
+        context->get_current_scope_type() == ScopeType::MODULE)
     {
         set.throw_error("Return statements are not allowed outside of functions");
     }
@@ -32,12 +27,12 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
         return std::make_unique<AstReturn>(
             set.get_source(),
             reference_token.get_source_position(),
-            registry,
+            context,
             nullptr
         );
     }
 
-    auto value = parse_inline_expression(registry, set);
+    auto value = parse_inline_expression(context, set);
 
     if (!value)
     {
@@ -52,7 +47,7 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     return std::make_unique<AstReturn>(
         set.get_source(),
         SourcePosition(ref_pos.offset, expr_pos.offset + expr_pos.length - ref_pos.offset),
-        registry,
+        context,
         std::move(value)
     );
 }
@@ -60,13 +55,13 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
 
 void AstReturn::validate()
 {
-    auto registry = this->get_registry().get();
+    auto context = this->get_registry().get();
 
-    while (registry->get_current_scope_type() != ScopeType::FUNCTION && registry->get_parent_registry() != nullptr)
+    while (context->get_current_scope_type() != ScopeType::FUNCTION && context->get_parent_registry() != nullptr)
     {
-        registry = registry->get_parent_registry();
+        context = context->get_parent_registry();
     }
-    if (registry->get_current_scope_type() != ScopeType::FUNCTION)
+    if (context->get_current_scope_type() != ScopeType::FUNCTION)
     {
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
@@ -75,6 +70,8 @@ void AstReturn::validate()
             this->get_source_position()
         );
     }
+
+    if (this->get_return_expr()) this->get_return_expr()->validate();
 }
 
 std::string AstReturn::to_string()
@@ -86,7 +83,7 @@ std::string AstReturn::to_string()
 }
 
 llvm::Value* AstReturn::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -96,7 +93,7 @@ llvm::Value* AstReturn::codegen(
         return builder->CreateRetVoid();
     }
 
-    llvm::Value* expr_return_val = this->get_return_expr()->codegen(registry, module, builder);
+    llvm::Value* expr_return_val = this->get_return_expr()->codegen(context, module, builder);
 
     if (!expr_return_val) return nullptr;
 

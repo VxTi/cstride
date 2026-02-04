@@ -4,12 +4,12 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& tokens
 )
 {
     if (
-        auto str = parse_string_literal_optional(registry, tokens);
+        auto str = parse_string_literal_optional(context, tokens);
         str.has_value()
     )
     {
@@ -17,7 +17,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
     }
 
     if (
-        auto int_lit = parse_integer_literal_optional(registry, tokens);
+        auto int_lit = parse_integer_literal_optional(context, tokens);
         int_lit.has_value()
     )
     {
@@ -25,7 +25,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
     }
 
     if (
-        auto float_lit = parse_float_literal_optional(registry, tokens);
+        auto float_lit = parse_float_literal_optional(context, tokens);
         float_lit.has_value()
     )
     {
@@ -33,7 +33,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
     }
 
     if (
-        auto char_lit = parse_char_literal_optional(registry, tokens);
+        auto char_lit = parse_char_literal_optional(context, tokens);
         char_lit.has_value()
     )
     {
@@ -41,7 +41,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
     }
 
     if (
-        auto bool_lit = parse_boolean_literal_optional(registry, tokens);
+        auto bool_lit = parse_boolean_literal_optional(context, tokens);
         bool_lit.has_value()
     )
     {
@@ -54,7 +54,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
         return std::make_unique<AstNilLiteral>(
             tokens.get_source(),
             reference_token.get_source_position(),
-            registry
+            context
         );
     }
 

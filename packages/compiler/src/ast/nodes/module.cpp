@@ -13,13 +13,8 @@ std::string AstModule::to_string()
     return std::format("Module ({})", this->get_name());
 }
 
-bool stride::ast::is_module_statement(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_MODULE);
-}
-
 std::unique_ptr<AstModule> stride::ast::parse_module_statement(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -30,20 +25,20 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
         "Expected module name after 'module' keyword"
     ).get_lexeme();
 
-    const auto module_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::MODULE);
+    const auto module_scope = std::make_shared<ParsingContext>(context, ScopeType::MODULE);
     auto module_body = parse_block(module_scope, set);
 
     return std::make_unique<AstModule>(
         set.get_source(),
         reference_token.get_source_position(),
-        registry,
+        context,
         module_name,
         std::move(module_body)
     );
 }
 
 llvm::Value* AstModule::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -54,12 +49,12 @@ llvm::Value* AstModule::codegen(
     }
 
     return this->_body->codegen(
-        registry, module, builder
+        context, module, builder
     );
 }
 
 void AstModule::resolve_forward_references(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -69,5 +64,5 @@ void AstModule::resolve_forward_references(
         return;
     }
 
-    this->_body->resolve_forward_references(registry, module, builder);
+    this->_body->resolve_forward_references(context, module, builder);
 }

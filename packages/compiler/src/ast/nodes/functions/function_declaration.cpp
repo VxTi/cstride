@@ -9,7 +9,8 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "ast/internal_names.h"
+#include "ast/modifiers.h"
+#include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/if_statement.h"
@@ -142,7 +143,7 @@ void AstFunctionDeclaration::validate()
 }
 
 void AstFunctionDeclaration::resolve_forward_references(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -172,7 +173,7 @@ void AstFunctionDeclaration::resolve_forward_references(
 }
 
 llvm::Value* AstFunctionDeclaration::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -220,7 +221,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_body());
             synthesisable != nullptr)
         {
-            last_val = synthesisable->codegen(registry, module, builder);
+            last_val = synthesisable->codegen(context, module, builder);
         }
     }
 
@@ -264,20 +265,13 @@ llvm::Value* AstFunctionDeclaration::codegen(
     return function;
 }
 
-bool stride::ast::is_fn_declaration(const TokenSet& tokens)
-{
-    return tokens.peek_next_eq(TokenType::KEYWORD_FN)
-        || (tokens.peek_eq(TokenType::KEYWORD_EXTERN, 0)
-            && tokens.peek_eq(TokenType::KEYWORD_FN, 1));
-}
-
-
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
-    const std::shared_ptr<SymbolRegistry>& registry,
-    TokenSet& tokens
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& tokens,
+    VisibilityModifier modifier
 )
 {
     int function_flags = 0;
@@ -287,13 +281,19 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         function_flags |= SRFLAG_FN_DEF_EXTERN;
     }
 
+    if (tokens.peek_next_eq(TokenType::KEYWORD_ASYNC))
+    {
+        tokens.next();
+        function_flags |= SRFLAG_FN_DEF_ASYNC;
+    }
+
     auto reference_token = tokens.expect(TokenType::KEYWORD_FN); // fn
 
     // Here we expect to receive the function name
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected function name after 'fn'");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
-    auto function_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::FUNCTION);
+    auto function_scope = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
 
     tokens.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -323,7 +323,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     tokens.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(registry, tokens, "Expected return type in function header", SRFLAG_NONE);
+    auto return_type = parse_type(context, tokens, "Expected return type in function header", SRFLAG_NONE);
 
     std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
     parameter_types_cloned.reserve(parameters.size());
@@ -334,7 +334,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
-    std::string internal_name = fn_name;
+    auto symbol_name = Symbol(fn_name, /* internal_name = */fn_name);
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
@@ -347,12 +347,12 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        internal_name = resolve_internal_function_name(parameter_types, fn_name);
+        symbol_name = resolve_internal_function_name(parameter_types, fn_name);
     }
 
-    // Function will be defined in the parent registry (global, perhaps)
-    // its children will reside in the function registry. This is intentional
-    registry->define_function(fn_name, std::move(parameter_types_cloned), return_type->clone());
+    // Function will be defined in the parent context (global, perhaps)
+    // its children will reside in the function scope. This is intentional
+    context->define_function(symbol_name, std::move(parameter_types_cloned), return_type->clone());
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -368,9 +368,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     return std::make_unique<AstFunctionDeclaration>(
         tokens.get_source(),
         reference_token.get_source_position(),
-        registry,
-        fn_name,
-        internal_name,
+        context,
+        symbol_name,
         std::move(parameters),
         std::move(body),
         std::move(return_type),

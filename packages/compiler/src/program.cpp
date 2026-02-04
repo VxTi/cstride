@@ -1,7 +1,7 @@
 #include "program.h"
 
 #include <iostream>
-#include <ast/internal_names.h>
+#include <ast/symbols.h>
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
@@ -23,7 +23,7 @@ using namespace stride;
 
 void Program::parse_files(std::vector<std::string> files)
 {
-    this->_global_scope = std::make_shared<ast::SymbolRegistry>(ast::ScopeType::GLOBAL);
+    this->_global_scope = std::make_shared<ast::ParsingContext>();
     this->_files = std::move(files);
 
     stl::predefine_symbols(this->get_global_scope());
@@ -210,7 +210,6 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
 
     if (options.debug_mode)
     {
-        print_ast_nodes();
         std::cout << "LLVM IR Pre-optimizations:" << std::endl;
         module->print(llvm::errs(), nullptr);
     }
@@ -237,12 +236,6 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     llvm::ModulePassManager module_pass_manager = pass_builder.buildPerModuleDefaultPipeline(
         llvm::OptimizationLevel::O3);
     module_pass_manager.run(*module, module_analysis_manager);
-
-    if (options.debug_mode)
-    {
-        std::cout << "LLVM IR after optimizations:" << std::endl;
-        module->print(llvm::errs(), nullptr);
-    }
 
     llvm::orc::ThreadSafeModule thread_safe_module(
         std::move(module),

@@ -39,6 +39,7 @@ export default function EditorWindow() {
       onMount={onEditorMount}
       onChange={debounceSave}
       options={{
+        tabSize: 2,
         minimap: { enabled: false },
         fontSize: 14,
         fontLigatures: true,

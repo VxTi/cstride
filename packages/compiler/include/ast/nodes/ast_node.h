@@ -10,7 +10,7 @@ namespace stride::ast
     class AstBlock;
 
     // If we include the header, it'll cause circular references, and it'll break everything.
-    class SymbolRegistry;
+    class ParsingContext;
 
     class ISynthesisable
     {
@@ -18,14 +18,14 @@ namespace stride::ast
         virtual ~ISynthesisable() = default;
 
         virtual llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) = 0;
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) {}
@@ -35,17 +35,17 @@ namespace stride::ast
     {
         const std::shared_ptr<SourceFile> _source;
         const SourcePosition _source_position;
-        const std::shared_ptr<SymbolRegistry> _scope;
+        const std::shared_ptr<ParsingContext> _scope;
 
     public:
         explicit IAstNode(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry
+            const std::shared_ptr<ParsingContext>& context
         )
             : _source(source),
               _source_position(source_position),
-              _scope(registry) {}
+              _scope(context) {}
 
         virtual ~IAstNode() = default;
 
@@ -57,7 +57,7 @@ namespace stride::ast
         std::shared_ptr<SourceFile> get_source() const { return this->_source; }
 
         [[nodiscard]]
-        std::shared_ptr<SymbolRegistry> get_registry() const { return this->_scope; }
+        std::shared_ptr<ParsingContext> get_registry() const { return this->_scope; }
 
         [[nodiscard]]
         SourcePosition get_source_position() const { return this->_source_position; }

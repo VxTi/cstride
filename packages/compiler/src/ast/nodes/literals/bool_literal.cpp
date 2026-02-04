@@ -6,7 +6,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_optional(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -18,7 +18,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_op
         return std::make_unique<AstBooleanLiteral>(
             set.get_source(),
             reference_token.get_source_position(),
-            registry,
+            context,
             value
         );
     }
@@ -31,7 +31,7 @@ std::string AstBooleanLiteral::to_string()
 }
 
 llvm::Value* AstBooleanLiteral::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

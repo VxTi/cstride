@@ -77,7 +77,7 @@ void AstUnaryOp::validate()
 }
 
 llvm::Value* AstUnaryOp::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -182,7 +182,7 @@ llvm::Value* AstUnaryOp::codegen(
         return this->is_lsh() ? loaded_val : new_val;
     }
 
-    auto* val = get_operand().codegen(registry, module, builder);
+    auto* val = get_operand().codegen(context, module, builder);
 
     if (!val) return nullptr;
 
@@ -217,7 +217,7 @@ llvm::Value* AstUnaryOp::codegen(
 }
 
 std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -230,7 +230,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
 
         // Recursive call to handle chained unaries like !!x or - -x etc.
         // We call parse_inline_expression_part, which will call parse_binary_unary_op again.
-        auto distinct_expr = parse_inline_expression_part(registry, set);
+        auto distinct_expr = parse_inline_expression_part(context, set);
         if (!distinct_expr)
         {
             set.throw_error("Expected expression after unary operator");
@@ -248,7 +248,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         return std::make_unique<AstUnaryOp>(
             set.get_source(),
             next.get_source_position(),
-            registry,
+            context,
             op_type.value(),
             std::move(distinct_expr),
             false // Prefix
@@ -267,7 +267,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
 
         const auto operation_tok = set.next();
 
-        auto variable_def = registry->field_lookup(iden_name);
+        auto variable_def = context->lookup_variable(iden_name);
         if (!variable_def)
         {
             return std::nullopt;
@@ -281,12 +281,12 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         return std::make_unique<AstUnaryOp>(
             set.get_source(),
             iden_tok.get_source_position(),
-            registry,
+            context,
             type,
             std::make_unique<AstIdentifier>(
                 set.get_source(),
                 next.get_source_position(),
-                registry,
+                context,
                 iden_name,
                 internal_name
             ),

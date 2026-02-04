@@ -4,7 +4,8 @@
 #include "ast_node.h"
 #include "blocks.h"
 #include "types.h"
-#include "ast/symbol_registry.h"
+#include "ast/modifiers.h"
+#include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -25,10 +26,10 @@ namespace stride::ast
         explicit AstFunctionParameter(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string param_name,
             std::unique_ptr<IAstType> param_type
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _name(std::move(param_name)),
             _type(std::move(param_type)) {}
 
@@ -54,8 +55,7 @@ namespace stride::ast
         public IAstContainer
     {
         std::unique_ptr<AstBlock> _body;
-        std::string _name;
-        std::string _internal_name;
+        Symbol _symbol;
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
         std::shared_ptr<IAstType> _return_type;
         int _flags;
@@ -64,18 +64,16 @@ namespace stride::ast
         AstFunctionDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
-            std::string name,
-            std::string internal_name,
+            const std::shared_ptr<ParsingContext>& context,
+            Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) :
-            IAstNode(source, source_position, registry),
+            IAstNode(source, source_position, context),
             _body(std::move(body)),
-            _name(std::move(name)),
-            _internal_name(std::move(internal_name)),
+            _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)),
             _flags(flags) {}
@@ -83,22 +81,22 @@ namespace stride::ast
         std::string to_string() override;
 
         void resolve_forward_references(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         [[nodiscard]]
-        std::string get_name() const { return this->_name; }
+        std::string get_name() const { return this->_symbol.name; }
 
         [[nodiscard]]
-        std::string get_internal_name() const { return this->_internal_name; }
+        std::string get_internal_name() const { return this->_symbol.internal_name; }
 
         [[nodiscard]]
         AstBlock* get_body() override { return this->_body.get(); }
@@ -129,26 +127,25 @@ namespace stride::ast
         std::optional<std::vector<llvm::Type*>> resolve_parameter_types(llvm::Module* module) const;
     };
 
-    bool is_fn_declaration(const TokenSet& tokens);
-
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
-        const std::shared_ptr<SymbolRegistry>& registry,
-        TokenSet& tokens
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& tokens,
+        VisibilityModifier modifier
     );
 
     std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     void parse_subsequent_fn_params(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
     void parse_variadic_fn_param(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& tokens,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );

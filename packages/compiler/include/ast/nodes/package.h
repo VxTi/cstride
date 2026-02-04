@@ -13,9 +13,9 @@ namespace stride::ast
         explicit AstPackage(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string package_name
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _name(std::move(package_name)) {};
 
         [[nodiscard]]
@@ -29,7 +29,7 @@ namespace stride::ast
     bool is_package_declaration(const TokenSet& set);
 
     std::unique_ptr<AstPackage> parse_package_declaration(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 }
