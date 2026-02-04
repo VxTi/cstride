@@ -17,7 +17,7 @@ bool stride::ast::is_struct_initializer(const TokenSet& set)
 }
 
 std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initializer(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -27,13 +27,13 @@ std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initi
     );
     set.expect(TokenType::COLON, "Expected ':' after identifier in struct initializer");
 
-    auto member_expr = parse_inline_expression(registry, set);
+    auto member_expr = parse_inline_expression(context, set);
 
     return {member_iden.get_lexeme(), std::move(member_expr)};
 }
 
 std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -50,7 +50,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
 
     // Parse initial member
     auto [initial_member_iden, initial_member_expr] = parse_struct_member_initializer(
-        registry,
+        context,
         member_set.value()
     );
     member_map.emplace_back(std::move(initial_member_iden), std::move(initial_member_expr));
@@ -64,7 +64,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         if (!member_set->has_next()) break;
 
         auto [member_iden, member_expr] = parse_struct_member_initializer(
-            registry,
+            context,
             member_set.value()
         );
         member_map.emplace_back(std::move(member_iden), std::move(member_expr));
@@ -79,7 +79,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     return std::make_unique<AstStructInitializer>(
         set.get_source(),
         reference_token.get_source_position(),
-        registry,
+        context,
         reference_token.get_lexeme(),
         std::move(member_map)
     );
@@ -91,18 +91,18 @@ std::string AstStructInitializer::to_string()
 }
 
 StructSymbolDef* get_super_referencing_struct_def(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     const std::string& struct_name
 )
 {
-    const auto definition = registry->get_struct_def(struct_name);
+    const auto definition = context->get_struct_def(struct_name);
 
     if (!definition.has_value()) return nullptr;
 
     if (definition.value()->is_reference_struct())
     {
         const auto ref_struct = definition.value()->get_reference_struct().value();
-        return get_super_referencing_struct_def(registry, ref_struct.name);
+        return get_super_referencing_struct_def(context, ref_struct.name);
     }
 
     return definition.value();
@@ -200,7 +200,7 @@ void AstStructInitializer::validate()
 }
 
 llvm::Value* AstStructInitializer::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -212,7 +212,7 @@ llvm::Value* AstStructInitializer::codegen(
 
     for (const auto& expr : this->_initializers | std::views::values)
     {
-        llvm::Value* val = expr->codegen(registry, module, builder);
+        llvm::Value* val = expr->codegen(context, module, builder);
         if (!val) return nullptr;
 
         if (auto* c = llvm::dyn_cast<llvm::Constant>(val))
@@ -227,7 +227,7 @@ llvm::Value* AstStructInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    auto struct_def_opt = registry->get_struct_def(this->_struct_name);
+    auto struct_def_opt = context->get_struct_def(this->_struct_name);
     std::string actual_struct_name = this->_struct_name;
 
     if (struct_def_opt.has_value())
@@ -236,7 +236,7 @@ llvm::Value* AstStructInitializer::codegen(
         while (struct_def->is_reference_struct())
         {
             actual_struct_name = struct_def->get_reference_struct().value().name;
-            struct_def_opt = registry->get_struct_def(actual_struct_name);
+            struct_def_opt = context->get_struct_def(actual_struct_name);
             if (!struct_def_opt.has_value()) break;
             struct_def = struct_def_opt.value();
         }

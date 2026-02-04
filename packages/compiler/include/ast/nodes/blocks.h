@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
 
@@ -16,9 +16,9 @@ namespace stride::ast
         explicit AstBlock(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstNode>> children
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _children(std::move(children)) {};
 
         std::string to_string() override;
@@ -32,13 +32,13 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         void resolve_forward_references(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -57,7 +57,7 @@ namespace stride::ast
         ~AstBlock() override = default;
     };
 
-    std::unique_ptr<AstBlock> parse_block(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
+    std::unique_ptr<AstBlock> parse_block(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
 
     std::optional<TokenSet> collect_block(TokenSet& set);
 

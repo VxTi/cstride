@@ -43,6 +43,7 @@ namespace stride::ast
         [[nodiscard]]
         std::string get_internal_symbol_name() const { return this->_symbol.internal_name; }
 
+        [[nodiscard]]
         Symbol get_symbol() const { return this->_symbol; }
     };
 
@@ -161,22 +162,22 @@ namespace stride::ast
         ~SymbolFnDefinition() override = default;
     };
 
-    class SymbolRegistry
+    class ParsingContext
     {
         ScopeType _current_scope;
-        std::shared_ptr<SymbolRegistry> _parent_registry;
+        std::shared_ptr<ParsingContext> _parent_registry;
 
         std::vector<std::unique_ptr<ISymbolDef>> _symbols;
 
     public:
-        explicit SymbolRegistry(
-            std::shared_ptr<SymbolRegistry> parent,
+        explicit ParsingContext(
+            std::shared_ptr<ParsingContext> parent,
             const ScopeType type
         ) : _current_scope(type),
             _parent_registry(std::move(parent)) {}
 
-        explicit SymbolRegistry(const ScopeType type)
-            : SymbolRegistry(nullptr, type) {}
+        explicit ParsingContext(const ScopeType type)
+            : ParsingContext(nullptr, type) {}
 
         [[nodiscard]]
         ScopeType get_current_scope_type() const { return this->_current_scope; }
@@ -197,12 +198,12 @@ namespace stride::ast
         std::optional<std::vector<std::pair<std::string, IAstType*>>> get_struct_fields(const std::string& name) const;
 
         [[nodiscard]]
-        SymbolRegistry* get_parent_registry() const { return this->_parent_registry.get(); }
+        ParsingContext* get_parent_registry() const { return this->_parent_registry.get(); }
 
         [[nodiscard]]
         const FieldSymbolDef* lookup_variable(const std::string& name) const;
 
-        /// Will attempt to define the function in the global registry.
+        /// Will attempt to define the function in the global context.
         void define_function(
             const Symbol& symbol,
             std::vector<std::unique_ptr<IAstType>> parameter_types,
@@ -230,15 +231,15 @@ namespace stride::ast
 
         void define_symbol(const Symbol& symbol_name, SymbolType type);
 
-        /// Checks whether the provided variable name is defined in the current registry.
+        /// Checks whether the provided variable name is defined in the current context.
         [[nodiscard]]
         bool is_field_defined_in_scope(const std::string& variable_name) const;
 
-        /// Checks whether the provided variable name is defined in the global registry.
+        /// Checks whether the provided variable name is defined in the global context.
         [[nodiscard]]
         bool is_field_defined_globally(const std::string& field_name) const;
 
-        /// Checks whether the provided internal function name is defined in the global registry.
+        /// Checks whether the provided internal function name is defined in the global context.
         /// Do note that the internal name is not the name that you would use in
         /// source code, but rather the mangled name used for code generation.
         [[nodiscard]]
@@ -249,6 +250,6 @@ namespace stride::ast
 
     private:
         [[nodiscard]]
-        const SymbolRegistry& traverse_to_root() const;
+        const ParsingContext& traverse_to_root() const;
     };
 }

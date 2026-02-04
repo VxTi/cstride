@@ -1,8 +1,8 @@
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 
 using namespace stride::ast;
 
-std::optional<StructSymbolDef*> SymbolRegistry::get_struct_def(const std::string& name) const
+std::optional<StructSymbolDef*> ParsingContext::get_struct_def(const std::string& name) const
 {
     auto current = this;
 
@@ -34,7 +34,7 @@ std::optional<StructSymbolDef*> SymbolRegistry::get_struct_def(const std::string
     return std::nullopt;
 }
 
-std::optional<std::vector<std::pair<std::string, IAstType*>>> SymbolRegistry::get_struct_fields(
+std::optional<std::vector<std::pair<std::string, IAstType*>>> ParsingContext::get_struct_fields(
     const std::string& name
 ) const
 {
@@ -58,7 +58,7 @@ std::optional<std::vector<std::pair<std::string, IAstType*>>> SymbolRegistry::ge
     return definition.value()->get_fields();
 }
 
-void SymbolRegistry::define_struct(
+void ParsingContext::define_struct(
     const std::string& struct_name,
     std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
 ) const
@@ -74,7 +74,7 @@ void SymbolRegistry::define_struct(
         );
     }
 
-    auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
+    auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
     root._symbols.push_back(
         std::make_unique<StructSymbolDef>(
             Symbol(struct_name, struct_name),
@@ -83,7 +83,7 @@ void SymbolRegistry::define_struct(
     );
 }
 
-void SymbolRegistry::define_struct(
+void ParsingContext::define_struct(
     const Symbol& struct_name,
     const Symbol& reference_struct_name
 ) const
@@ -95,7 +95,7 @@ void SymbolRegistry::define_struct(
         );
     }
 
-    auto& root = const_cast<SymbolRegistry&>(this->traverse_to_root());
+    auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
 
     if (const auto existing_def = this->get_struct_def(struct_name.name);
         existing_def.has_value())

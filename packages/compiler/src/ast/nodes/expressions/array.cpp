@@ -13,7 +13,7 @@ std::string AstArray::to_string()
 }
 
 llvm::Value* AstArray::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -40,7 +40,7 @@ llvm::Value* AstArray::codegen(
 
     for (size_t i = 0; i < array_size; ++i)
     {
-        llvm::Value* v = this->get_elements()[i]->codegen(registry, module, builder);
+        llvm::Value* v = this->get_elements()[i]->codegen(context, module, builder);
         auto* c = llvm::dyn_cast<llvm::Constant>(v);
         if (!c)
         {
@@ -62,7 +62,7 @@ llvm::Value* AstArray::codegen(
     // Fallback: element-by-element stores into the aggregate
     for (size_t i = 0; i < array_size; ++i)
     {
-        llvm::Value* element_value = this->get_elements()[i]->codegen(registry, module, builder);
+        llvm::Value* element_value = this->get_elements()[i]->codegen(context, module, builder);
 
         llvm::Value* elementPtr = builder->CreateInBoundsGEP(
             llvm_array_type,

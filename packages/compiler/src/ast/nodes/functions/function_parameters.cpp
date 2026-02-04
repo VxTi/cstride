@@ -3,13 +3,13 @@
 using namespace stride::ast;
 
 void stride::ast::parse_variadic_fn_param(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& tokens,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
 {
     const auto reference_token = tokens.expect(TokenType::THREE_DOTS);
-    const auto param = parse_standalone_fn_param(registry, tokens);
+    const auto param = parse_standalone_fn_param(context, tokens);
 
     param->get_type()->set_flags(param->get_type()->get_flags() | SRFLAG_TYPE_VARIADIC);
 
@@ -24,7 +24,7 @@ void stride::ast::parse_variadic_fn_param(
 }
 
 void stride::ast::parse_subsequent_fn_params(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
@@ -46,7 +46,7 @@ void stride::ast::parse_subsequent_fn_params(
 
         if (next.get_type() == TokenType::THREE_DOTS)
         {
-            parse_variadic_fn_param(registry, set, parameters);
+            parse_variadic_fn_param(context, set, parameters);
             if (!set.peek_next_eq(TokenType::RPAREN))
             {
                 set.throw_error(
@@ -58,7 +58,7 @@ void stride::ast::parse_subsequent_fn_params(
             return;
         }
 
-        auto param = parse_standalone_fn_param(registry, set);
+        auto param = parse_standalone_fn_param(context, set);
 
         if (std::ranges::find_if(
             parameters, [&](const std::unique_ptr<AstFunctionParameter>& p)
@@ -87,7 +87,7 @@ std::string AstFunctionParameter::to_string()
 }
 
 std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -104,15 +104,15 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     set.expect(TokenType::COLON);
 
     std::unique_ptr<IAstType> fn_param_type = parse_type(
-        registry, set, "Expected function parameter type", flags
+        context, set, "Expected function parameter type", flags
     );
 
-    registry->define_variable(param_name, reference_token.get_lexeme(), fn_param_type->clone());
+    context->define_variable(param_name, reference_token.get_lexeme(), fn_param_type->clone());
 
     return std::make_unique<AstFunctionParameter>(
         set.get_source(),
         reference_token.get_source_position(),
-        registry,
+        context,
         reference_token.get_lexeme(),
         std::move(fn_param_type)
     );

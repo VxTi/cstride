@@ -1,6 +1,6 @@
 #pragma once
 #include <llvm/IR/Value.h>
-#include "symbol_registry.h"
+#include "context.h"
 
 /**
  * Optional type handling

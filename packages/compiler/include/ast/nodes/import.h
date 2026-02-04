@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "ast/identifiers.h"
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
 
@@ -24,9 +24,9 @@ namespace stride::ast
         explicit AstImport(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             Dependency dependency
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _dependency(std::move(dependency)) {}
 
         [[nodiscard]]
@@ -41,5 +41,5 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstImport> parse_import_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
+    std::unique_ptr<AstImport> parse_import_statement(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
 }

@@ -5,7 +5,7 @@
 #include "blocks.h"
 #include "types.h"
 #include "ast/modifiers.h"
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -26,10 +26,10 @@ namespace stride::ast
         explicit AstFunctionParameter(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string param_name,
             std::unique_ptr<IAstType> param_type
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _name(std::move(param_name)),
             _type(std::move(param_type)) {}
 
@@ -64,14 +64,14 @@ namespace stride::ast
         AstFunctionDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) :
-            IAstNode(source, source_position, registry),
+            IAstNode(source, source_position, context),
             _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
@@ -81,13 +81,13 @@ namespace stride::ast
         std::string to_string() override;
 
         void resolve_forward_references(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -128,24 +128,24 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& tokens,
         VisibilityModifier modifier
     );
 
     std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     void parse_subsequent_fn_params(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
     void parse_variadic_fn_param(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& tokens,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );

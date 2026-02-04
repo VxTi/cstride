@@ -1,4 +1,4 @@
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 
 #include <algorithm>
 #include "errors.h"
@@ -19,7 +19,7 @@ std::string stride::ast::scope_type_to_str(const ScopeType& scope_type)
     return "unknown";
 }
 
-const SymbolRegistry& SymbolRegistry::traverse_to_root() const
+const ParsingContext& ParsingContext::traverse_to_root() const
 {
     auto current = this;
     while (current->_parent_registry)
@@ -29,7 +29,7 @@ const SymbolRegistry& SymbolRegistry::traverse_to_root() const
     return *current;
 }
 
-bool SymbolRegistry::is_function_defined_globally(const std::string& internal_function_name) const
+bool ParsingContext::is_function_defined_globally(const std::string& internal_function_name) const
 {
     for (const auto& root = this->traverse_to_root();
          const auto& symbol : root._symbols)
@@ -46,7 +46,7 @@ bool SymbolRegistry::is_function_defined_globally(const std::string& internal_fu
     return false;
 }
 
-bool SymbolRegistry::is_symbol_type_defined_globally(
+bool ParsingContext::is_symbol_type_defined_globally(
     const std::string& symbol_name,
     const SymbolType& type
 ) const
@@ -67,13 +67,13 @@ bool SymbolRegistry::is_symbol_type_defined_globally(
     return false;
 }
 
-void SymbolRegistry::define_function(
+void ParsingContext::define_function(
     const Symbol& symbol,
     std::vector<std::unique_ptr<IAstType>> parameter_types,
     std::unique_ptr<IAstType> return_type
 ) const
 {
-    auto& global_scope = const_cast<SymbolRegistry&>(this->traverse_to_root());
+    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
 
     if (this->is_function_defined_globally(symbol.internal_name))
     {
@@ -92,7 +92,7 @@ void SymbolRegistry::define_function(
 }
 
 
-void SymbolRegistry::define_symbol(const Symbol& symbol_name, const SymbolType type)
+void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType type)
 {
     this->_symbols.push_back(std::make_unique<IdentifiableSymbolDef>(
         type,
@@ -100,7 +100,7 @@ void SymbolRegistry::define_symbol(const Symbol& symbol_name, const SymbolType t
     ));
 }
 
-const FieldSymbolDef* SymbolRegistry::get_variable_def(const std::string& variable_name) const
+const FieldSymbolDef* ParsingContext::get_variable_def(const std::string& variable_name) const
 {
     for (const auto& symbol_def : this->_symbols)
     {
@@ -116,7 +116,7 @@ const FieldSymbolDef* SymbolRegistry::get_variable_def(const std::string& variab
     return nullptr;
 }
 
-const IdentifiableSymbolDef* SymbolRegistry::get_symbol_def(const std::string& symbol_name) const
+const IdentifiableSymbolDef* ParsingContext::get_symbol_def(const std::string& symbol_name) const
 {
     for (const auto& symbol_def : this->_symbols)
     {
@@ -132,7 +132,7 @@ const IdentifiableSymbolDef* SymbolRegistry::get_symbol_def(const std::string& s
 }
 
 
-const SymbolFnDefinition* SymbolRegistry::get_function_def(const std::string& function_name) const
+const SymbolFnDefinition* ParsingContext::get_function_def(const std::string& function_name) const
 {
     for (const auto& global_scope = this->traverse_to_root();
          const auto& symbol_def : global_scope._symbols)
@@ -172,7 +172,7 @@ static size_t levenshtein_distance(const std::string& a, const std::string& b)
     return prev[len_b];
 }
 
-ISymbolDef* SymbolRegistry::fuzzy_find(const std::string& symbol_name) const
+ISymbolDef* ParsingContext::fuzzy_find(const std::string& symbol_name) const
 {
     ISymbolDef* best_match = nullptr;
     size_t best_distance = std::numeric_limits<size_t>::max();

@@ -4,7 +4,7 @@
 #include "blocks.h"
 #include "expression.h"
 #include "ast/modifiers.h"
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -21,15 +21,15 @@ namespace stride::ast
         AstWhileLoop(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> body
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _body(std::move(body)),
             _condition(std::move(condition)) {}
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -46,7 +46,7 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstWhileLoop> parse_while_loop_statement(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         VisibilityModifier modifier
     );

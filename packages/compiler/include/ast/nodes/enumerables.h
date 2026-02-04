@@ -19,9 +19,9 @@ namespace stride::ast
         explicit AstEnumerableMember(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string name, std::unique_ptr<AstLiteral> value
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _name(std::move(name)),
             _value(std::move(value)) {}
 
@@ -43,10 +43,10 @@ namespace stride::ast
         explicit AstEnumerable(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
             std::string name
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _members(std::move(members)), _name(std::move(name)) {}
 
         [[nodiscard]]
@@ -62,12 +62,12 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstEnumerableMember> parse_enumerable_member(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& tokens
     );
 
     std::unique_ptr<AstEnumerable> parse_enumerable_declaration(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         VisibilityModifier modifier
     );

@@ -10,7 +10,7 @@ bool stride::ast::is_array_initializer(const TokenSet& set)
 }
 
 std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -24,7 +24,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
         auto subset = expression_block.value();
 
         /// Here we'll parse the subset of tokens (the actual array initializer)
-        if (auto first_initializer = parse_inline_expression(registry, subset);
+        if (auto first_initializer = parse_inline_expression(context, subset);
             first_initializer != nullptr)
         {
             elements.push_back(std::move(first_initializer));
@@ -33,7 +33,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
         while (subset.has_next())
         {
             subset.expect(TokenType::COMMA, "Expected ',' between array elements");
-            elements.push_back(parse_inline_expression(registry, subset));
+            elements.push_back(parse_inline_expression(context, subset));
         }
     }
 
@@ -46,7 +46,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
             ref_src_pos.offset,
             last_token_pos.offset + last_token_pos.length - ref_src_pos.offset
         ),
-        registry,
+        context,
         std::move(elements)
     );
 }

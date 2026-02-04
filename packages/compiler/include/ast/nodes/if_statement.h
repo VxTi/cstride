@@ -19,11 +19,11 @@ namespace stride::ast
         explicit AstIfStatement(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<AstBlock> else_body
-        ) : IAstNode(source, source_position, registry),
+        ) : IAstNode(source, source_position, context),
             _condition(std::move(condition)),
             _body(std::move(body)),
             _else_body(std::move(else_body)) {}
@@ -47,7 +47,7 @@ namespace stride::ast
         void validate() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -55,5 +55,5 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstIfStatement> parse_if_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set);
+    std::unique_ptr<AstIfStatement> parse_if_statement(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
 }

@@ -2,7 +2,7 @@
 
 #include "ast_node.h"
 #include "types.h"
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
@@ -70,13 +70,13 @@ namespace stride::ast
         explicit AstExpression(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry
-        ) : IAstNode(source, source_position, registry) {}
+            const std::shared_ptr<ParsingContext>& context
+        ) : IAstNode(source, source_position, context) {}
 
         ~AstExpression() override = default;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -97,16 +97,16 @@ namespace stride::ast
         explicit AstArray(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<AstExpression>> elements
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _elements(std::move(elements)) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstExpression>>& get_elements() const { return this->_elements; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -126,10 +126,10 @@ namespace stride::ast
         explicit AstIdentifier(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::string internal_name
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _name(std::move(name)),
             _internal_name(std::move(internal_name)) {}
 
@@ -143,7 +143,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -164,10 +164,10 @@ namespace stride::ast
         explicit AstArrayMemberAccessor(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> array_identifier,
             std::unique_ptr<AstExpression> index
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _array_identifier(std::move(array_identifier)),
             _index_accessor_expr(std::move(index)) {}
 
@@ -178,7 +178,7 @@ namespace stride::ast
         const AstExpression* get_index() const { return this->_index_accessor_expr.get(); }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -204,10 +204,10 @@ namespace stride::ast
         explicit AstMemberAccessor(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> base,
             std::vector<std::unique_ptr<AstIdentifier>> members
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _base(std::move(base)),
             _members(std::move(members)) {}
 
@@ -232,7 +232,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -256,18 +256,18 @@ namespace stride::ast
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _symbol(std::move(function_call_sym)) {}
 
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym,
             std::vector<std::unique_ptr<AstExpression>> arguments
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _arguments(std::move(arguments)),
             _symbol(std::move(function_call_sym)) {}
 
@@ -283,7 +283,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -311,12 +311,12 @@ namespace stride::ast
         explicit AstVariableDeclaration(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string variable_name,
             std::string internal_name,
             std::unique_ptr<IAstType> variable_type,
             std::unique_ptr<AstExpression> initial_value
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
             _variable_type(std::move(variable_type)),
@@ -349,13 +349,13 @@ namespace stride::ast
         std::string to_string() override;
 
         void resolve_forward_references(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -376,10 +376,10 @@ namespace stride::ast
         explicit AbstractBinaryOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> lsh,
             std::unique_ptr<AstExpression> rsh
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
 
@@ -399,18 +399,18 @@ namespace stride::ast
         explicit AstBinaryArithmeticOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_position, registry, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, source_position, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
         BinaryOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -431,18 +431,18 @@ namespace stride::ast
         explicit AstLogicalOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_position, registry, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, source_position, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
         LogicalOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -459,18 +459,18 @@ namespace stride::ast
         explicit AstComparisonOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_position, registry, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, source_position, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
         ComparisonOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -491,11 +491,11 @@ namespace stride::ast
         explicit AstUnaryOp(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _op_type(op),
             _operand(std::move(operand)),
             _is_lsh(is_lsh) {}
@@ -510,7 +510,7 @@ namespace stride::ast
         AstExpression& get_operand() const { return *this->_operand; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -536,12 +536,12 @@ namespace stride::ast
         explicit AstVariableReassignment(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
             std::unique_ptr<AstExpression> value
-        ) : AstExpression(source, source_position, registry),
+        ) : AstExpression(source, source_position, context),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
             _value(std::move(value)),
@@ -560,7 +560,7 @@ namespace stride::ast
         MutativeAssignmentType get_operator() const { return this->_operator; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -584,11 +584,11 @@ namespace stride::ast
         explicit AstStructInitializer(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string struct_name,
             std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>> initializers
         ) :
-            AstExpression(source, source_position, registry),
+            AstExpression(source, source_position, context),
             _struct_name(std::move(struct_name)),
             _initializers(std::move(initializers)) {}
 
@@ -605,7 +605,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -623,50 +623,50 @@ namespace stride::ast
 
     /// Parses a complete standalone expression from tokens
     std::unique_ptr<AstExpression> parse_standalone_expression(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     std::unique_ptr<AstExpression> parse_inline_expression(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses an expression with extended flags controlling variable declarations and assignments
     std::unique_ptr<AstExpression> parse_expression_extended(
         int expression_type_flags,
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses a single part of a standalone expression
     std::unique_ptr<AstExpression> parse_inline_expression_part(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
         int expression_type_flags,
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses a function invocation into an AstFunctionCall expression node
     std::unique_ptr<AstExpression> parse_function_call(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses a binary arithmetic operation using precedence climbing
     std::optional<std::unique_ptr<AstExpression>> parse_arithmetic_binary_operation_optional(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<AstExpression> lhs,
         int min_precedence
@@ -674,38 +674,38 @@ namespace stride::ast
 
     /// This parses both function call chaining, and struct member access
     std::unique_ptr<AstExpression> parse_chained_member_access(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const std::unique_ptr<AstExpression>& lhs
     );
 
     /// Parses a property accessor statement, e.g., <identifier>.<accessor>
     std::string parse_property_accessor_statement(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses a unary operator expression
     std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses an array initializer expression, e.g., [1, 2, 3]
     std::unique_ptr<AstArray> parse_array_initializer(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
     /// Parses an array member accessor expression, e.g., <array_identifier>[<index_expression>]
     std::unique_ptr<AstExpression> parse_array_member_accessor(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<AstIdentifier> array_identifier
     );
 
     std::unique_ptr<AstStructInitializer> parse_struct_initializer(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
@@ -762,42 +762,42 @@ namespace stride::ast
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
     std::unique_ptr<IAstType> infer_expression_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         AstExpression* expr
     );
 
     std::unique_ptr<IAstType> infer_array_member_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         const AstArray* array
     );
 
     std::unique_ptr<IAstType> infer_unary_op_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         const AstUnaryOp* operation
     );
 
     std::unique_ptr<IAstType> infer_binary_arithmetic_op_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         const AstBinaryArithmeticOp* operation
     );
 
     std::unique_ptr<IAstType> infer_expression_literal_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         AstLiteral* literal
     );
 
     std::unique_ptr<IAstType> infer_function_call_return_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         const AstFunctionCall* fn_call
     );
 
     std::unique_ptr<IAstType> infer_struct_initializer_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         const AstStructInitializer* initializer
     );
 
     std::unique_ptr<IAstType> infer_member_accessor_type(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         const AstMemberAccessor* expr
     );
 }

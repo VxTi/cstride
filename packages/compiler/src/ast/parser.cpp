@@ -23,7 +23,7 @@ std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::
     return std::move(parse_sequential(program.get_global_scope(), tokens));
 }
 
-std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
+std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     // Phase 1 - These sequences are simple to parse; they have no visibility modifiers, hence we can just
     // assume that their first keyword determines their body.
@@ -33,15 +33,15 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
     switch (set.peek_next().get_type())
     {
     case TokenType::KEYWORD_IF:
-        return parse_if_statement(registry, set);
+        return parse_if_statement(context, set);
     case TokenType::KEYWORD_RETURN:
-        return parse_return_statement(registry, set);
+        return parse_return_statement(context, set);
     case TokenType::KEYWORD_MODULE:
-        return parse_module_statement(registry, set);
+        return parse_module_statement(context, set);
     case TokenType::KEYWORD_PACKAGE:
-        return parse_package_declaration(registry, set);
+        return parse_package_declaration(context, set);
     case TokenType::KEYWORD_IMPORT:
-        return parse_import_statement(registry, set);
+        return parse_import_statement(context, set);
 
         // Modifiers. These are used in the next phase of parsing.
     case TokenType::KEYWORD_PUBLIC:
@@ -63,23 +63,23 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
     case TokenType::KEYWORD_ASYNC:
     case TokenType::KEYWORD_FN:
     case TokenType::KEYWORD_EXTERN:
-        return parse_fn_declaration(registry, set, visibility_modifier);
+        return parse_fn_declaration(context, set, visibility_modifier);
     case TokenType::KEYWORD_STRUCT:
-        return parse_struct_declaration(registry, set, visibility_modifier);
+        return parse_struct_declaration(context, set, visibility_modifier);
     case TokenType::KEYWORD_ENUM:
-        return parse_enumerable_declaration(registry, set, visibility_modifier);
+        return parse_enumerable_declaration(context, set, visibility_modifier);
     case TokenType::KEYWORD_FOR:
-        return parse_for_loop_statement(registry, set, visibility_modifier);
+        return parse_for_loop_statement(context, set, visibility_modifier);
     case TokenType::KEYWORD_WHILE:
-        return parse_while_loop_statement(registry, set, visibility_modifier);
+        return parse_while_loop_statement(context, set, visibility_modifier);
     default: break;
     }
 
-    return parse_standalone_expression(registry, set);
+    return parse_standalone_expression(context, set);
 }
 
 std::unique_ptr<AstBlock> stride::ast::parse_sequential(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -89,7 +89,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
 
     while (set.has_next())
     {
-        if (auto result = parse_next_statement(registry, set))
+        if (auto result = parse_next_statement(context, set))
         {
             nodes.push_back(std::move(result));
         }
@@ -98,7 +98,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
     return std::make_unique<AstBlock>(
         set.get_source(),
         initial_token.get_source_position(),
-        registry,
+        context,
         std::move(nodes)
     );
 }

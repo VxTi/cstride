@@ -4,7 +4,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
+std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     auto initiator = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -15,12 +15,12 @@ std::unique_ptr<AstExpression> try_collect_initiator(const std::shared_ptr<Symbo
 
     return parse_variable_declaration(
         SRFLAG_EXPR_TYPE_STANDALONE,
-        registry,
+        context,
         initiator.value()
     );
 }
 
-std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
+std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     auto condition = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -30,18 +30,18 @@ std::unique_ptr<AstExpression> try_collect_condition(const std::shared_ptr<Symbo
     }
 
     // This one doesn't allow variable declarations
-    return parse_inline_expression(registry, condition.value());
+    return parse_inline_expression(context, condition.value());
 }
 
-std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<SymbolRegistry>& registry, TokenSet& set)
+std::unique_ptr<AstExpression> try_collect_incrementor(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     if (!set.has_next()) return nullptr; // If there's no incrementor statement, we don't need to parse it.
 
-    return parse_inline_expression(registry, set);
+    return parse_inline_expression(context, set);
 }
 
 std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     VisibilityModifier modifier
 )
@@ -55,7 +55,7 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     }
 
     auto header_body = header_body_opt.value();
-    const auto for_scope = std::make_shared<SymbolRegistry>(registry, ScopeType::BLOCK);
+    const auto for_scope = std::make_shared<ParsingContext>(context, ScopeType::BLOCK);
 
     // We can potentially parse a for (<identifier> .. <identifier> { ... }
 
@@ -78,7 +78,7 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
 }
 
 llvm::Value* AstForLoop::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -92,7 +92,7 @@ llvm::Value* AstForLoop::codegen(
 
     if (this->get_initializer())
     {
-        this->get_initializer()->codegen(registry, module, builder);
+        this->get_initializer()->codegen(context, module, builder);
     }
 
     builder->CreateBr(loop_cond_bb);
@@ -101,7 +101,7 @@ llvm::Value* AstForLoop::codegen(
     llvm::Value* condValue = nullptr;
     if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->get_condition()->codegen(registry, module, builder);
+        condValue = this->get_condition()->codegen(context, module, builder);
 
         if (condValue == nullptr)
         {
@@ -124,14 +124,14 @@ llvm::Value* AstForLoop::codegen(
     builder->SetInsertPoint(loop_body_bb);
     if (this->get_body())
     {
-        this->get_body()->codegen(registry, module, builder);
+        this->get_body()->codegen(context, module, builder);
     }
     builder->CreateBr(loop_incr_bb);
 
     builder->SetInsertPoint(loop_incr_bb);
     if (get_incrementor())
     {
-        this->get_incrementor()->codegen(registry, module, builder);
+        this->get_incrementor()->codegen(context, module, builder);
     }
     builder->CreateBr(loop_cond_bb);
 

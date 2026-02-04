@@ -88,7 +88,7 @@ std::string AstFunctionCall::format_function_name() const
 }
 
 llvm::Value* AstFunctionCall::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -105,7 +105,7 @@ llvm::Value* AstFunctionCall::codegen(
 
     if (!callee)
     {
-        const auto suggested_alternative_symbol = registry->fuzzy_find(this->get_function_name());
+        const auto suggested_alternative_symbol = context->fuzzy_find(this->get_function_name());
         const auto suggested_alternative =
             suggested_alternative_symbol
                 ? std::format("Did you mean '{}'?", format_suggestion(suggested_alternative_symbol))
@@ -140,7 +140,7 @@ llvm::Value* AstFunctionCall::codegen(
 
     for (size_t i = 0; i < arguments.size(); ++i)
     {
-        const auto arg_val = arguments[i]->codegen(registry, module, builder);
+        const auto arg_val = arguments[i]->codegen(context, module, builder);
 
         if (!arg_val)
         {
@@ -173,7 +173,7 @@ llvm::Value* AstFunctionCall::codegen(
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_function_call(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -189,13 +189,13 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     if (function_parameter_set.has_value())
     {
         auto subset = function_parameter_set.value();
-        auto initial_arg = parse_inline_expression(registry, subset);
+        auto initial_arg = parse_inline_expression(context, subset);
 
         if (initial_arg)
         {
             // TODO: Evaluate this. One might not be able to infer expression types if they invoke functions that
             //  haven't been declared yet, hence yielding in a
-            auto initial_type = infer_expression_type(registry, initial_arg.get());
+            auto initial_type = infer_expression_type(context, initial_arg.get());
 
             parameter_types.push_back(initial_type.get());
             parameter_type_owners.push_back(std::move(initial_type));
@@ -206,7 +206,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
             {
                 const auto preceding = subset.expect(TokenType::COMMA, "Expected ',' between function arguments");
 
-                auto next_arg = parse_inline_expression(registry, subset);
+                auto next_arg = parse_inline_expression(context, subset);
 
                 if (!next_arg)
                 {
@@ -225,7 +225,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                     );
                 }
 
-                auto next_type = infer_expression_type(registry, next_arg.get());
+                auto next_type = infer_expression_type(context, next_arg.get());
                 parameter_types.push_back(next_type.get());
                 parameter_type_owners.push_back(std::move(next_type));
                 function_arg_nodes.push_back(std::move(next_arg));
@@ -242,7 +242,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         set.get_source(),
         // TODO: Fix this. This currently refers only to the first token, instead of the full call
         reference_token.get_source_position(),
-        registry,
+        context,
         internal_fn_sym,
         std::move(function_arg_nodes)
     );

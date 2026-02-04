@@ -1,8 +1,8 @@
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 
 using namespace stride::ast;
 
-bool SymbolRegistry::is_field_defined_in_scope(const std::string& variable_name) const
+bool ParsingContext::is_field_defined_in_scope(const std::string& variable_name) const
 {
     return std::ranges::any_of(this->_symbols, [&](const auto& symbol_def)
     {
@@ -14,7 +14,7 @@ bool SymbolRegistry::is_field_defined_in_scope(const std::string& variable_name)
     });
 }
 
-bool SymbolRegistry::is_field_defined_globally(const std::string& field_name) const
+bool ParsingContext::is_field_defined_globally(const std::string& field_name) const
 {
     auto current = this;
     while (current != nullptr)
@@ -29,7 +29,7 @@ bool SymbolRegistry::is_field_defined_globally(const std::string& field_name) co
 }
 
 
-void SymbolRegistry::define_variable(
+void ParsingContext::define_variable(
     std::string variable_name,
     const std::string& internal_name,
     std::unique_ptr<IAstType> type
@@ -54,7 +54,7 @@ void SymbolRegistry::define_variable(
 }
 
 
-const FieldSymbolDef* SymbolRegistry::lookup_variable(const std::string& name) const
+const FieldSymbolDef* ParsingContext::lookup_variable(const std::string& name) const
 {
     auto current = this;
     while (current != nullptr)

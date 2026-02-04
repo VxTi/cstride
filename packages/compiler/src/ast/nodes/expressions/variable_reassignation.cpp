@@ -86,7 +86,7 @@ IAstNode* AstVariableReassignment::reduce()
 }
 
 llvm::Value* AstVariableReassignment::codegen(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -113,14 +113,14 @@ llvm::Value* AstVariableReassignment::codegen(
     if (!synthesisable) return nullptr;
 
     // Generate the RHS value
-    llvm::Value* assign_val = synthesisable->codegen(registry, module, builder);
+    llvm::Value* assign_val = synthesisable->codegen(context, module, builder);
 
     if (!assign_val) return nullptr;
 
     const auto assign_ty = assign_val->getType();
 
     // Check if we're assigning to an optional type
-    if (const auto variable_def = registry->lookup_variable(this->get_variable_name());
+    if (const auto variable_def = context->lookup_variable(this->get_variable_name());
         variable_def && variable_def->get_type()->is_optional())
     {
         if (llvm::Type* optional_ty = internal_type_to_llvm_type(variable_def->get_type(), module);
@@ -296,7 +296,7 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
 }
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -307,7 +307,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     const auto reference_token = set.peek_next();
 
     std::string reassignment_iden_name = reference_token.get_lexeme();
-    const auto reassign_internal_variable_name = registry->lookup_variable(reassignment_iden_name);
+    const auto reassign_internal_variable_name = context->lookup_variable(reassignment_iden_name);
 
     if (!reassign_internal_variable_name)
     {
@@ -332,12 +332,12 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     auto mutative_op = parse_mutative_assignment_type(set, mutative_token);
     set.next();
 
-    auto expression = parse_inline_expression(registry, set);
+    auto expression = parse_inline_expression(context, set);
 
     return std::make_unique<AstVariableReassignment>(
         set.get_source(),
         reference_token.get_source_position(),
-        registry,
+        context,
         reassignment_iden_name,
         reassign_internal_name,
         mutative_op,

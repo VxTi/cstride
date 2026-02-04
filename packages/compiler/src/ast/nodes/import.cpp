@@ -78,16 +78,16 @@ std::vector<std::string> consume_import_submodules(TokenSet& tokens)
  * Attempts to parse an import expression from the given TokenSet.
  */
 std::unique_ptr<AstImport> stride::ast::parse_import_statement(
-    const std::shared_ptr<SymbolRegistry>& registry,
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
-    if (registry->get_current_scope_type() != ScopeType::GLOBAL)
+    if (context->get_current_scope_type() != ScopeType::GLOBAL)
     {
         set.throw_error(
             std::format(
                 "Import statements are only allowed in global scope, but was found in {} scope",
-                scope_type_to_str(registry->get_current_scope_type())
+                scope_type_to_str(context->get_current_scope_type())
             )
         );
     }
@@ -106,7 +106,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     return std::make_unique<AstImport>(
         set.get_source(),
         reference_token.get_source_position(),
-        registry,
+        context,
         dependency
     );
 }

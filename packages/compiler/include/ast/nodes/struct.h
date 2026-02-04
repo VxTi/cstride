@@ -4,7 +4,7 @@
 #include "ast_node.h"
 #include "types.h"
 #include "ast/modifiers.h"
-#include "ast/symbol_registry.h"
+#include "ast/context.h"
 
 namespace stride::ast
 {
@@ -17,11 +17,11 @@ namespace stride::ast
         AstStructMember(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::unique_ptr<IAstType> type
         ) :
-            IAstNode(source, source_position, registry),
+            IAstNode(source, source_position, context),
             _name(std::move(name)),
             _type(std::move(type)) {}
 
@@ -52,23 +52,23 @@ namespace stride::ast
         explicit AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::unique_ptr<IAstType> reference
         )
             :
-            IAstNode(source, source_position, registry),
+            IAstNode(source, source_position, context),
             _name(std::move(name)),
             _reference(std::move(reference)) {}
 
         explicit AstStruct(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::vector<std::unique_ptr<AstStructMember>> members
         ) :
-            IAstNode(source, source_position, registry),
+            IAstNode(source, source_position, context),
             _name(std::move(name)),
             _members(std::move(members)),
             _reference(std::nullopt) {}
@@ -90,20 +90,20 @@ namespace stride::ast
         void validate() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         void resolve_forward_references(
-            const std::shared_ptr<SymbolRegistry>& registry,
+            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
     };
 
     std::unique_ptr<AstStruct> parse_struct_declaration(
-        const std::shared_ptr<SymbolRegistry>& registry,
+        const std::shared_ptr<ParsingContext>& context,
         TokenSet& tokens,
         VisibilityModifier modifier
     );
