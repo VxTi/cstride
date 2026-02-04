@@ -1,0 +1,46 @@
+site_name: Stride Language
+site_description: A statically typed, JIT-compiled language using LLVM.
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+      pygments_lang_class: true
+      user_lexers:
+        stride: stride_lexer.StrideLexer
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Language Reference:
+      - Variables & Types: reference/variables.md
+      - Functions: reference/functions.md
+      - Structs: reference/structs.md
+  - Standard Library: stdlib.md
+  - Contributing: contributing.md
