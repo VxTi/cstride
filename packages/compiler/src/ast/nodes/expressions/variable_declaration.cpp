@@ -67,6 +67,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         set.next();
         value = parse_inline_expression(context, set);
         variable_type = infer_expression_type(context, value.get());
+        variable_type->set_flags(flags);
     }
     else
     {

@@ -169,7 +169,8 @@ llvm::Value* AstFunctionCall::codegen(
         args_v.push_back(final_val);
     }
 
-    return builder->CreateCall(callee, args_v, "calltmp");
+    const auto instruction_name = callee->getReturnType()->isVoidTy() ? "" : "calltmp";
+    return builder->CreateCall(callee, args_v, instruction_name);
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_function_call(
