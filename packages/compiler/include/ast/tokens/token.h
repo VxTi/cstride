@@ -92,9 +92,9 @@ namespace stride::ast
         KEYWORD_AS,       // as
         KEYWORD_ASYNC,    // async
         KEYWORD_FN,       // fn
-        KEYWORD_LET,      // let
+        KEYWORD_CONST,    // const
         KEYWORD_CONTINUE, // continue
-        KEYWORD_MUT,      // mut
+        KEYWORD_LET,      // let
         KEYWORD_DO,       // do
         KEYWORD_WHILE,    // while
         KEYWORD_FOR,      // for
@@ -230,9 +230,9 @@ namespace stride::ast
         case TokenType::KEYWORD_AS: return "as";
         case TokenType::KEYWORD_ASYNC: return "async";
         case TokenType::KEYWORD_FN: return "fn";
-        case TokenType::KEYWORD_LET: return "let";
+        case TokenType::KEYWORD_CONST: return "const";
         case TokenType::KEYWORD_CONTINUE: return "continue";
-        case TokenType::KEYWORD_MUT: return "mut";
+        case TokenType::KEYWORD_LET: return "let";
         case TokenType::KEYWORD_DO: return "do";
         case TokenType::KEYWORD_WHILE: return "while";
         case TokenType::KEYWORD_FOR: return "for";

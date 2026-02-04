@@ -351,7 +351,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
 
     // Function will be defined in the parent context (global, perhaps)
-    // its children will reside in the function context. This is intentional
+    // its children will reside in the function scope. This is intentional
     context->define_function(symbol_name, std::move(parameter_types_cloned), return_type->clone());
 
     std::unique_ptr<AstBlock> body = nullptr;

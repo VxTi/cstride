@@ -31,7 +31,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 
     const auto reference_token = set.peek_next();
 
-    if (set.peek_next_eq(TokenType::KEYWORD_MUT))
+    if (set.peek_next_eq(TokenType::KEYWORD_LET))
     {
         flags |= SRFLAG_TYPE_MUTABLE;
         set.next();
@@ -39,7 +39,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     else
     {
         // Variables are const by default.
-        set.expect(TokenType::KEYWORD_LET);
+        set.expect(TokenType::KEYWORD_CONST);
     }
 
     const auto variable_name_tok = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration");
@@ -123,7 +123,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
     // mut k:
     // let k:
     return (
-        (set.peek_eq(TokenType::KEYWORD_LET, offset) || set.peek_eq(TokenType::KEYWORD_MUT, offset)) &&
+        (set.peek_eq(TokenType::KEYWORD_CONST, offset) || set.peek_eq(TokenType::KEYWORD_LET, offset)) &&
         set.peek_eq(TokenType::IDENTIFIER, offset + 1) &&
         set.peek_eq(TokenType::COLON, offset + 2)
     );

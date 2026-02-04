@@ -156,7 +156,7 @@ extern fn some_c_function(x: i32): i32;
 
 
 // You can invoke functions using the following syntax:
-let result: i32 = add(10, 5)
+const result: i32 = add(10, 5)
 ```
 
 ### Comments
@@ -179,15 +179,15 @@ struct Point {
     y: i32,
 }
 
-let p = Point::{ x: 10, y: 20 }
+const p = Point::{ x: 10, y: 20 }
 
 // You can also create structs that reference other structs.
 // These still function as separate types, and will cause a type error if they are used inappropriately.
 struct Vector2d = Point
 
-let p2: Vector2d = Vector2d::{ x: 5, y: 15 } // This is valid
+const p2: Vector2d = Vector2d::{ x: 5, y: 15 } // This is valid
 
-let p3: Point = p2 // This is invalid,
+const p3: Point = p2 // This is invalid,
 ```
 
 ### Imports

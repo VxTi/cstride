@@ -93,7 +93,7 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
 {
     int flags = 0;
 
-    if (set.peek_next_eq(TokenType::KEYWORD_MUT))
+    if (set.peek_next_eq(TokenType::KEYWORD_LET))
     {
         flags |= SRFLAG_FN_PARAM_DEF_MUTABLE;
         set.next();
