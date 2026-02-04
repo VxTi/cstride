@@ -26,6 +26,7 @@ cstride/
 1. CMake >= 3.1
 2. Node.js >= 24.0
 3. LLVM 21.1.8
+4. GoogleTest (automatically fetched via CMake)
 
 You can install these packages using the following commands:
 
@@ -48,11 +49,14 @@ sudo apt install cmake nodejs llvm-21 # Ubuntu/Debian
 ### Building the Compiler
 
 Run the following commands from the project root directory:
-   ```sh
-   cd packages/compiler;
-   cmake -S . -B cmake-build-debug &&
-   cmake --build cmake-build-debug --target cstride
-   ```
+
+```sh
+cd packages/compiler
+mkdir cmake-build-debug
+cd cmake-build-debug
+cmake ..
+make
+```
 
 *Optionally*: Add the binary to your `$PATH`, if you wish to use it directly.
 
@@ -68,6 +72,15 @@ Replace `<file>` with your Stride source file.
 
 For additional commands, run `cstride --help`.
 This CLI tool is also still in development.
+
+### Running Tests
+
+To run the compiler tests, run the following commands from `packages/compiler/cmake-build-debug`:
+
+```sh
+make cstride_tests
+./tests/cstride_tests
+```
 
 ### Using the Editor
 

@@ -5,22 +5,33 @@ set(CMAKE_CXX_STANDARD 23)
 
 find_package(LLVM CONFIG REQUIRED)
 
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.cc")
 file(GLOB_RECURSE HEADER_FILES "include/*.h" "include/*.hpp")
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+list(REMOVE_ITEM SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
-# Use target-specific commands
-target_include_directories(${PROJECT_NAME} PRIVATE
+add_library(cstride_lib STATIC ${SOURCE_FILES} ${HEADER_FILES})
+
+target_include_directories(cstride_lib PUBLIC
         "include"
         ${LLVM_INCLUDE_DIRS}
 )
 
-# Apply LLVM definitions (like -D__STDC_CONSTANT_MACROS) to the target
-target_compile_definitions(${PROJECT_NAME} PRIVATE ${LLVM_DEFINITIONS})
+target_compile_definitions(cstride_lib PUBLIC ${LLVM_DEFINITIONS})
 
-target_link_libraries(${PROJECT_NAME}
-        PRIVATE
+target_link_libraries(cstride_lib
+        PUBLIC
         LLVMOrcJIT
         LLVMExecutionEngine
         LLVMCore
@@ -35,3 +46,8 @@ target_link_libraries(${PROJECT_NAME}
         LLVMAArch64Utils
         LLVMAArch64AsmParser
 )
+
+add_executable(${PROJECT_NAME} src/main.cpp)
+target_link_libraries(${PROJECT_NAME} cstride_lib)
+
+add_subdirectory(tests)

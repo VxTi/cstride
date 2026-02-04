@@ -48,9 +48,10 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         set.expect(TokenType::KEYWORD_CONST);
     }
 
-    const auto& variable_name = set
-                               .expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration")
-                               .get_lexeme();
+    const auto& variable_name =
+        set
+       .expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration")
+       .get_lexeme();
 
     std::unique_ptr<IAstType> variable_type = nullptr;
     std::unique_ptr<AstExpression> value = nullptr;
