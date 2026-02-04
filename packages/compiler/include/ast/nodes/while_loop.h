@@ -4,7 +4,7 @@
 #include "blocks.h"
 #include "expression.h"
 #include "ast/modifiers.h"
-#include "ast/context.h"
+#include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast

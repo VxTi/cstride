@@ -1,5 +1,5 @@
 #include "ast/nodes/types.h"
-#include "ast/context.h"
+#include "ast/parsing_context.h"
 
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>

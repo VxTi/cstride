@@ -28,8 +28,6 @@ namespace stride::ast
         STRUCT_MEMBER
     };
 
-    std::string scope_type_to_str(const ScopeType& scope_type);
-
     class ISymbolDef
     {
         Symbol _symbol;
@@ -164,6 +162,11 @@ namespace stride::ast
 
     class ParsingContext
     {
+        /**
+         * Name of the context. This can be used for function name mangling,
+         * e.g., in the context of modules.
+         */
+        std::string _context_name;
         ScopeType _current_scope;
         std::shared_ptr<ParsingContext> _parent_registry;
 
@@ -171,13 +174,25 @@ namespace stride::ast
 
     public:
         explicit ParsingContext(
-            std::shared_ptr<ParsingContext> parent,
-            const ScopeType type
-        ) : _current_scope(type),
+            const std::string& context_name,
+            const ScopeType type,
+            std::shared_ptr<ParsingContext> parent
+        ) : _context_name(context_name),
+            _current_scope(type),
             _parent_registry(std::move(parent)) {}
 
-        explicit ParsingContext(const ScopeType type)
-            : ParsingContext(nullptr, type) {}
+        /// Non-specific scope context definitions, e.g., for/while-loop blocks
+        explicit ParsingContext(
+            std::shared_ptr<ParsingContext> parent,
+            const ScopeType type
+        ) : ParsingContext(parent->_context_name, type, std::move(parent)) // Context gets the same name as the parent
+        {}
+
+        /// Root node initialization
+        explicit ParsingContext()
+            : ParsingContext("", ScopeType::GLOBAL, nullptr) {}
+
+        ParsingContext& operator=(const ParsingContext&) = delete;
 
         [[nodiscard]]
         ScopeType get_current_scope_type() const { return this->_current_scope; }
@@ -245,11 +260,10 @@ namespace stride::ast
         [[nodiscard]]
         bool is_function_defined_globally(const std::string& internal_function_name) const;
 
-        [[nodiscard]]
-        bool is_symbol_type_defined_globally(const std::string& symbol_name, const SymbolType& type) const;
-
     private:
         [[nodiscard]]
         const ParsingContext& traverse_to_root() const;
     };
+
+    std::string scope_type_to_str(const ScopeType& scope_type);
 }

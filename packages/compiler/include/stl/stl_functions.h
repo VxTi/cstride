@@ -2,7 +2,7 @@
 
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 
-#include "ast/context.h"
+#include "ast/parsing_context.h"
 #include "ast/nodes/types.h"
 
 namespace stride::stl

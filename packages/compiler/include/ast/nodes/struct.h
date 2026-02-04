@@ -4,7 +4,7 @@
 #include "ast_node.h"
 #include "types.h"
 #include "ast/modifiers.h"
-#include "ast/context.h"
+#include "ast/parsing_context.h"
 
 namespace stride::ast
 {

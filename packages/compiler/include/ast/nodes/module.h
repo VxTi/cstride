@@ -3,7 +3,7 @@
 
 #include "ast_node.h"
 #include "blocks.h"
-#include "ast/context.h"
+#include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast

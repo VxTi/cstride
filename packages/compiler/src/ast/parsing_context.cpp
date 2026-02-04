@@ -1,4 +1,4 @@
-#include "ast/context.h"
+#include "ast/parsing_context.h"
 
 #include <algorithm>
 #include "errors.h"
@@ -31,8 +31,7 @@ const ParsingContext& ParsingContext::traverse_to_root() const
 
 bool ParsingContext::is_function_defined_globally(const std::string& internal_function_name) const
 {
-    for (const auto& root = this->traverse_to_root();
-         const auto& symbol : root._symbols)
+    return std::ranges::any_of(this->traverse_to_root()._symbols, [&](const auto& symbol)
     {
         if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol.get()))
         {
@@ -41,30 +40,8 @@ bool ParsingContext::is_function_defined_globally(const std::string& internal_fu
                 return true;
             }
         }
-    }
-
-    return false;
-}
-
-bool ParsingContext::is_symbol_type_defined_globally(
-    const std::string& symbol_name,
-    const SymbolType& type
-) const
-{
-    for (const auto& root = this->traverse_to_root();
-         const auto& symbol : root._symbols)
-    {
-        if (const auto* identifiable = dynamic_cast<const IdentifiableSymbolDef*>(symbol.get()))
-        {
-            if (identifiable->get_symbol_type() == type
-                && identifiable->get_internal_symbol_name() == symbol_name)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
+        return false;
+    });
 }
 
 void ParsingContext::define_function(
@@ -90,7 +67,6 @@ void ParsingContext::define_function(
         )
     );
 }
-
 
 void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType type)
 {
@@ -130,7 +106,6 @@ const IdentifiableSymbolDef* ParsingContext::get_symbol_def(const std::string& s
     }
     return nullptr;
 }
-
 
 const SymbolFnDefinition* ParsingContext::get_function_def(const std::string& function_name) const
 {
@@ -236,4 +211,238 @@ ISymbolDef* ParsingContext::fuzzy_find(const std::string& symbol_name) const
         return best_match;
 
     return nullptr;
+}
+
+bool ParsingContext::is_field_defined_in_scope(const std::string& variable_name) const
+{
+    return std::ranges::any_of(this->_symbols, [&](const auto& symbol_def)
+    {
+        if (const auto* var_def = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
+        {
+            return var_def->get_internal_symbol_name() == variable_name;
+        }
+        return false;
+    });
+}
+
+bool ParsingContext::is_field_defined_globally(const std::string& field_name) const
+{
+    auto current = this;
+    while (current != nullptr)
+    {
+        if (current->is_field_defined_in_scope(field_name))
+        {
+            return true;
+        }
+        current = current->_parent_registry.get();
+    }
+    return false;
+}
+
+void ParsingContext::define_variable(
+    std::string variable_name,
+    const std::string& internal_name,
+    std::unique_ptr<IAstType> type
+)
+{
+    if (is_field_defined_globally(variable_name))
+    {
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Field '{}' is already defined in this scope", variable_name),
+            *type->get_source(),
+            type->get_source_position()
+        );
+    }
+
+    this->_symbols.push_back(
+        std::make_unique<FieldSymbolDef>(
+            Symbol(variable_name, internal_name),
+            std::move(type)
+        )
+    );
+}
+
+const FieldSymbolDef* ParsingContext::lookup_variable(const std::string& name) const
+{
+    auto current = this;
+    while (current != nullptr)
+    {
+        if (const auto def = current->get_variable_def(name))
+        {
+            return def;
+        }
+        current = current->_parent_registry.get();
+    }
+    return nullptr;
+}
+
+
+std::optional<StructSymbolDef*> ParsingContext::get_struct_def(const std::string& name) const
+{
+    auto current = this;
+
+    while (current != nullptr)
+    {
+        if (current->get_current_scope_type() != ScopeType::GLOBAL && current->get_current_scope_type() !=
+            ScopeType::MODULE)
+        {
+            current = current->_parent_registry.get();
+            continue;
+        }
+
+        for (const auto& definition : current->_symbols)
+        {
+            if (auto* struct_def = dynamic_cast<StructSymbolDef*>(definition.get()))
+            {
+                // Here we don't check for the internal name, as we don't always know what the data
+                // layout is initially (which is used for resolving the actual internal name)
+                if (struct_def->get_internal_symbol_name() == name)
+                {
+                    return struct_def;
+                }
+            }
+        }
+
+        current = current->_parent_registry.get();
+    }
+
+    return std::nullopt;
+}
+
+std::optional<std::vector<std::pair<std::string, IAstType*>>> ParsingContext::get_struct_fields(
+    const std::string& name
+) const
+{
+    auto definition = get_struct_def(name);
+
+    if (!definition)
+    {
+        return std::nullopt;
+    }
+
+    while (definition.value()->is_reference_struct())
+    {
+        definition = get_struct_def(definition.value()->get_reference_struct().value().name);
+
+        if (!definition)
+        {
+            return std::nullopt;
+        }
+    }
+
+    return definition.value()->get_fields();
+}
+
+void ParsingContext::define_struct(
+    const std::string& struct_name,
+    std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
+) const
+{
+    if (const auto existing_def = this->get_struct_def(struct_name);
+        existing_def.has_value())
+    {
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Struct '{}' is already defined in this scope", struct_name),
+            *fields.begin()->second->get_source(),
+            fields.begin()->second->get_source_position()
+        );
+    }
+
+    auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
+    root._symbols.push_back(
+        std::make_unique<StructSymbolDef>(
+            Symbol(struct_name, struct_name),
+            std::move(fields)
+        )
+    );
+}
+
+void ParsingContext::define_struct(
+    const Symbol& struct_name,
+    const Symbol& reference_struct_name
+) const
+{
+    if (this->_current_scope != ScopeType::GLOBAL && this->_current_scope != ScopeType::MODULE)
+    {
+        throw parsing_error(
+            "Reference structs can only be defined in the global or module scope"
+        );
+    }
+
+    auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
+
+    if (const auto existing_def = this->get_struct_def(struct_name.name);
+        existing_def.has_value())
+    {
+        throw parsing_error(
+            std::format("Struct '{}' is already defined in this scope", struct_name.name)
+        );
+    }
+
+    root._symbols.push_back(
+        std::make_unique<StructSymbolDef>(
+            struct_name,
+            reference_struct_name
+        )
+    );
+}
+
+std::vector<std::pair<std::string, IAstType*>> StructSymbolDef::get_fields() const
+{
+    std::vector<std::pair<std::string, IAstType*>> copy{};
+    copy.reserve(this->_fields.size());
+
+    for (const auto& [name, type] : this->_fields)
+    {
+        copy.emplace_back(name, type.get());
+    }
+
+    return std::move(copy);
+}
+
+std::optional<IAstType*> StructSymbolDef::get_field_type(
+    const std::string& field_name,
+    const std::vector<std::pair<std::string, IAstType*>>& fields
+)
+{
+    for (const auto& [name, type] : fields)
+    {
+        if (name == field_name)
+        {
+            return type;
+        }
+    }
+    return std::nullopt;
+}
+
+// Note that if this struct is a reference struct, this will return nullopt
+std::optional<IAstType*> StructSymbolDef::get_field_type(const std::string& field_name)
+{
+    for (const auto& [name, type] : this->_fields)
+    {
+        if (name == field_name)
+        {
+            return type.get();
+        }
+    }
+    return std::nullopt;
+}
+
+bool StructSymbolDef::is_reference_struct() const
+{
+    return this->_reference_struct_sym.has_value();
+}
+
+std::optional<int> StructSymbolDef::get_member_index(const std::string& member_name) const
+{
+    for (size_t i = 0; i < this->_fields.size(); i++)
+    {
+        if (this->_fields[i].first == member_name)
+        {
+            return static_cast<int>(i);
+        }
+    }
+    return std::nullopt;
 }

@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "ast/identifiers.h"
-#include "ast/context.h"
+#include "ast/parsing_context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/tokens/token_set.h"
 
