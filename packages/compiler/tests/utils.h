@@ -13,9 +13,9 @@
 namespace stride::tests {
 
     inline std::unique_ptr<ast::AstBlock> parse_code(const std::string& code) {
-        auto source = std::make_shared<SourceFile>("test.sr", code);
+        const auto source = std::make_shared<SourceFile>("test.sr", code);
         auto tokens = ast::tokenizer::tokenize(source);
-        auto context = std::make_shared<ast::ParsingContext>();
+        const auto context = std::make_shared<ast::ParsingContext>();
 
         // Predefine symbols like i32, void, etc.
         stl::predefine_symbols(context);
@@ -25,7 +25,7 @@ namespace stride::tests {
 
     inline void assert_parses(const std::string& code) {
         EXPECT_NO_THROW({
-            auto block = parse_code(code);
+            const auto block = parse_code(code);
             EXPECT_NE(block, nullptr) << "Parsing returned null for code: " << code;
         });
     }

@@ -18,7 +18,7 @@ TEST(Variables, BasicDeclarations) {
 TEST(Variables, LoopsAndMut) {
     const std::string code = R"(
         fn main(): void {
-            // Using mut in a loop
+            // Using let in a loop
             for (let i: i32 = 0; i < 10; i++) {
                 printf("val");
             }

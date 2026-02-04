@@ -126,6 +126,8 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 
     if (this->peek_next().get_type() != type)
     {
+        const auto next = this->peek_next();
+        printf("Next token: %s", token_type_to_str(next.get_type()).c_str());
         this->throw_error(ErrorType::SYNTAX_ERROR, message);
     }
 

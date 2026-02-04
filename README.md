@@ -26,13 +26,13 @@ cstride/
 1. CMake >= 3.1
 2. Node.js >= 24.0
 3. LLVM 21.1.8
-4. GoogleTest (automatically fetched via CMake)
+4. GoogleTest
 
 You can install these packages using the following commands:
 
 ```shell
-brew install cmake node@24 llvm@21 # macOS using Homebrew
-sudo apt install cmake nodejs llvm-21 # Ubuntu/Debian
+brew install cmake node@24 llvm@21 googletest# macOS using Homebrew
+sudo apt install cmake nodejs llvm-21 googletest # Ubuntu/Debian
 ```
 
 ### Getting started

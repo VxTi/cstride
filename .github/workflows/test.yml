@@ -1,0 +1,43 @@
+name: Test Suite
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: packages/compiler
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build build-essential wget lsb-release software-properties-common gnupg
+
+      - name: Install LLVM
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 18 all
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_C_COMPILER=clang-18 \
+            -DCMAKE_CXX_COMPILER=clang++-18 \
+            -DCMAKE_PREFIX_PATH=/usr/lib/llvm-18
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run Tests
+        run: |
+          cd build
+          ctest --output-on-failure
