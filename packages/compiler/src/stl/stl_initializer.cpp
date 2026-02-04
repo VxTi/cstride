@@ -1,3 +1,5 @@
+#include <cstdarg>
+
 #include "stl/stl_functions.h"
 
 using namespace stride::stl;

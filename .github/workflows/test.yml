@@ -15,39 +15,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install LLVM
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: "21"
-          cached: true
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build ccache libgtest-dev
+
+          # Install LLVM 21 using the official script
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 21 all
 
       - name: Setup Ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ github.job }}-${{ runner.os }}-llvm-21
 
-      - name: Cache GoogleTest
-        id: cache-gtest
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/googletest
-          key: ${{ runner.os }}-googletest-1.15.2
-
-      - name: Install GoogleTest
-        if: steps.cache-gtest.outputs.cache-hit != 'true'
-        run: |
-          git clone --depth 1 --branch v1.15.2 https://github.com/google/googletest.git ${{ runner.temp }}/gtest-src
-          cmake -S ${{ runner.temp }}/gtest-src -B ${{ runner.temp }}/gtest-build -DCMAKE_INSTALL_PREFIX=${{ runner.temp }}/googletest -G Ninja
-          cmake --build ${{ runner.temp }}/gtest-build --target install
-
       - name: Configure CMake
         run: |
           cmake -S . -B build -G Ninja \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_COMPILER=clang-21 \
+            -DCMAKE_CXX_COMPILER=clang++-21 \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_PREFIX_PATH="${{ env.LLVM_PATH }};${{ runner.temp }}/googletest"
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build
