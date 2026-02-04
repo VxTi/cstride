@@ -646,6 +646,12 @@ namespace stride::ast
         VisibilityModifier modifier
     );
 
+    std::unique_ptr<AstVariableDeclaration> parse_variable_declaration_inline(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        VisibilityModifier modifier
+    );
+
     /// Parses a function invocation into an AstFunctionCall expression node
     std::unique_ptr<AstExpression> parse_function_call(
         const std::shared_ptr<ParsingContext>& context,

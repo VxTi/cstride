@@ -14,6 +14,18 @@ using namespace stride::ast;
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
+    const VisibilityModifier modifier
+)
+{
+    auto decl = parse_variable_declaration_inline(context, set, modifier);
+    set.expect(TokenType::SEMICOLON, "Expected ';' at the end of variable declaration");
+
+    return decl;
+}
+
+std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_inline(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set,
     VisibilityModifier modifier
 )
 {
@@ -36,8 +48,9 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         set.expect(TokenType::KEYWORD_CONST);
     }
 
-    const auto& variable_name = set.expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration").
-                                    get_lexeme();
+    const auto& variable_name = set
+                               .expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration")
+                               .get_lexeme();
 
     std::unique_ptr<IAstType> variable_type = nullptr;
     std::unique_ptr<AstExpression> value = nullptr;
@@ -64,7 +77,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
         {
             set.next();
             value = parse_inline_expression(context, set);
-        } else
+        }
+        else
         {
             if (!variable_type->is_optional())
             {
@@ -89,8 +103,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
             );
         }
     }
-
-    set.expect(TokenType::SEMICOLON, "Expected ';' at the end of variable declaration");
 
     std::string internal_name = variable_name;
     /// Variables defined in non-global scope will be internalized as `<name>.<variable_index>`

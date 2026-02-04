@@ -46,6 +46,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Examples: examples.md
   - Language Reference:
       - Variables & Types: reference/variables.md
       - Functions: reference/functions.md

@@ -13,7 +13,7 @@ std::unique_ptr<AstExpression> collect_initiator(const std::shared_ptr<ParsingCo
         return nullptr;
     }
 
-    return parse_variable_declaration(
+    return parse_variable_declaration_inline(
         context,
         initiator.value(),
         VisibilityModifier::NONE
