@@ -43,8 +43,8 @@ jobs:
       - name: Configure CMake
         run: |
           cmake -S . -B build -G Ninja \
-            -DCMAKE_C_COMPILER=${{ env.LLVM_PATH }}/bin/clang \
-            -DCMAKE_CXX_COMPILER=${{ env.LLVM_PATH }}/bin/clang++ \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_PREFIX_PATH="${{ env.LLVM_PATH }};${{ runner.temp }}/googletest"
