@@ -86,7 +86,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
             {
                 throw parsing_error(
                     ErrorType::SYNTAX_ERROR,
-                    "Expected '=' after non-optional variable declaration",
+                    "Expected '=' after type in variable declaration",
                     *variable_type->get_source(),
                     variable_type->get_source_position()
                 );
