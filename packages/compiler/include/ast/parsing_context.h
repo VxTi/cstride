@@ -174,10 +174,10 @@ namespace stride::ast
 
     public:
         explicit ParsingContext(
-            const std::string& context_name,
+            std::string context_name,
             const ScopeType type,
             std::shared_ptr<ParsingContext> parent
-        ) : _context_name(context_name),
+        ) : _context_name(std::move(context_name)),
             _current_scope(type),
             _parent_registry(std::move(parent)) {}
 
@@ -261,6 +261,9 @@ namespace stride::ast
         /// source code, but rather the mangled name used for code generation.
         [[nodiscard]]
         bool is_function_defined_globally(const std::string& internal_function_name) const;
+
+        [[nodiscard]]
+        std::string get_name() const { return this->_context_name; }
 
     private:
         [[nodiscard]]

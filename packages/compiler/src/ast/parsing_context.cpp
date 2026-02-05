@@ -257,7 +257,7 @@ void ParsingContext::define_variable(
 
     this->_symbols.push_back(
         std::make_unique<FieldSymbolDef>(
-            Symbol(variable_name, internal_name),
+            Symbol(this->get_name(), variable_name, internal_name),
             std::move(type)
         )
     );
@@ -353,7 +353,7 @@ void ParsingContext::define_struct(
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
     root._symbols.push_back(
         std::make_unique<StructSymbolDef>(
-            Symbol(struct_name, struct_name),
+            Symbol(this->get_name(), struct_name, /* internal_name = */ struct_name),
             std::move(fields)
         )
     );

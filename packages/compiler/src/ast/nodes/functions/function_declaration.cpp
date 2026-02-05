@@ -334,7 +334,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
-    auto symbol_name = Symbol(fn_name, /* internal_name = */fn_name);
+    auto symbol_name = Symbol(context->get_name(), fn_name, /* internal_name = */fn_name);
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.

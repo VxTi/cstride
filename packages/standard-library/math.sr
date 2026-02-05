@@ -4,32 +4,69 @@
  */
 package stl;
 
- module Math {
+extern fn cosl(x: f64): f64;
+extern fn cosf(x: f32): f32;
 
-    let M_PI: f64 = 3.14159265358979323846264338327950288D;
-    let M_E: f64 = 2.71828182845904523536028747135266250D;
+extern fn sinl(x: f64): f64;
+extern fn sinf(x: f32): f32;
 
-    extern fn cosl(x: f64): f64;
-    extern fn cosf(x: f32): f32;
+extern fn acosl(x: f64): f64;
+extern fn acosf(x: f32): f32;
 
-    extern fn sinl(x: f64): f64;
-    extern fn sinf(x: f32): f32;
+extern fn asinl(x: f64): f64;
+extern fn asinf(x: f32): f32;
 
-    extern fn acosl(x: f64): f64;
-    extern fn acosf(x: f32): f32;
+extern fn atanl(x: f64): f64;
+extern fn atanf(x: f32): f32;
 
-    extern fn asinl(x: f64): f64;
-    extern fn asinf(x: f32): f32;
+extern fn atan2l(y: f64, x: f64): f64;
+extern fn atan2f(y: f32, x: f32): f32;
 
-    extern fn atanl(x: f64): f64;
-    extern fn atanf(x: f32): f32;
+extern fn powl(x: f64, y: f64): f64;
+extern fn powf(x: f32, y: f32): f32;
 
-    extern fn atan2l(y: f64, x: f64): f64;
-    extern fn atan2f(y: f32, x: f32): f32;
+extern fn sqrtl(x: f64): f64;
+extern fn sqrtf(x: f32): f32;
+    
+module Math {
 
-    extern fn powl(x: f64, y: f64): f64;
-    extern fn powf(x: f32, y: f32): f32;
+    const M_PI: f64 = 3.14159265358979323846264338327950288D;
+    const M_E: f64 = 2.71828182845904523536028747135266250D;
 
-    extern fn sqrtl(x: f64): f64;
-    extern fn sqrtf(x: f32): f32;
+    fn cos(x: f64): f64 { return cosl(x); }
+
+    fn cos(x: f32): f32 { return cosf(x); }
+
+    fn sin(x: f64): f64 { return sinl(x); }
+
+    fn sin(x: f32): f32 { return sinf(x); }
+
+    fn acos(x: f64): f64 { return acosl(x); }
+    
+    fn acos(x: f32): f32 { return acosf(x); }
+    
+    fn asin(x: f64): f64 { return asinl(x); }
+
+    fn asin(x: f32): f32 { return asinf(x); }
+    
+    fn atan(x: f64): f64 { return atanl(x); }
+    
+    fn atan(x: f32): f32 { return atanf(x); }
+    
+    fn atan2(y: f64, x: f64): f64 { return atan2l(y, x); }
+    
+    fn atan2(y: f32, x: f32): f32 { return atan2f(y, x);
+    
+    fn pow(x: f64, y: f64): f64 { return powl(x, y);
+ 
+    fn pow(x: f32, y: f32): f32 { return powf(x, y);
+    
+    fn sqrt(x: f64): f64 { return sqrtl(x); }
+ 
+    fn sqrt(x: f32): f32 { return sqrtf(x); }
 }
+    
+    
+    
+    
+    

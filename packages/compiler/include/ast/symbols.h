@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
+#include <utility>
 
+#include "formatting.h"
 #include "nodes/types.h"
 
 namespace stride::ast
@@ -17,12 +19,16 @@ namespace stride::ast
         std::string internal_name;
 
         explicit Symbol(
+            std::string context_name,
             std::string name,
             std::string internal_name
-        ) : internal_name(std::move(internal_name)),
-            name(std::move(name)) {}
+        ) : name(std::move(name)),
+            internal_name(join({std::move(context_name), std::move(internal_name)}, "_")) {}
 
-        explicit Symbol(const std::string& name) : Symbol(name, name) {}
+        explicit Symbol(std::string context_name, const std::string& name) : Symbol(
+            std::move(context_name), name, name) {}
+
+        explicit Symbol(const std::string& name) : Symbol("", name) {}
 
         bool operator==(const Symbol& other) const
         {

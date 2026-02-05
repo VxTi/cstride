@@ -68,7 +68,7 @@ Symbol stride::ast::resolve_internal_function_name(
         return Symbol(function_name);
     }
 
-    std::string params = "";
+    std::string params;
 
     // Not perfect, but semi unique
     for (const auto& type : parameter_types)
