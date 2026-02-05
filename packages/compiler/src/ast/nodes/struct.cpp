@@ -23,7 +23,12 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
 
     // TODO: Replace with struct-field-specific method
-    context->define_variable(struct_member_name, struct_member_name, struct_member_type->clone());
+    context->define_variable(
+        "", // No context name to prevent incorrect prefixing
+        struct_member_name,
+        struct_member_name,
+        struct_member_type->clone()
+    );
 
     return std::make_unique<AstStructMember>(
         set.get_source(),

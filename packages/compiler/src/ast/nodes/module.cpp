@@ -1,6 +1,5 @@
 #include "ast/nodes/module.h"
 
-#include "ast/identifiers.h"
 #include "ast/parser.h"
 #include "ast/nodes/blocks.h"
 

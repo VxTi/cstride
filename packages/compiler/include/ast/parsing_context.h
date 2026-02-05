@@ -197,7 +197,12 @@ namespace stride::ast
         [[nodiscard]]
         ScopeType get_current_scope_type() const { return this->_current_scope; }
 
-        bool is_global_scope() const { return this->_current_scope == ScopeType::GLOBAL; }
+        [[nodiscard]]
+        bool is_global_scope() const
+        {
+            // We deem module scope as global as well
+            return this->_current_scope == ScopeType::GLOBAL || this->_current_scope == ScopeType::MODULE;
+        }
 
         [[nodiscard]]
         const FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
@@ -238,6 +243,7 @@ namespace stride::ast
         ) const;
 
         void define_variable(
+            const std::string &context_name,
             std::string variable_name,
             const std::string& internal_name,
             std::unique_ptr<IAstType> type

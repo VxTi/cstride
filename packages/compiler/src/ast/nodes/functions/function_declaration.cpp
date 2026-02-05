@@ -347,7 +347,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        symbol_name = resolve_internal_function_name(parameter_types, fn_name);
+        symbol_name = resolve_internal_function_name(context, parameter_types, fn_name);
     }
 
     // Function will be defined in the parent context (global, perhaps)

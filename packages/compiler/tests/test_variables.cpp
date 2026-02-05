@@ -47,7 +47,7 @@ TEST(Variables, IntegerLiterals) {
     const std::string code = R"(
         fn main(): void {
             let hex_val: i32 = 0x12345;
-            let large_int: i64 = 12345678901234567890L;
+            let large_int: i64 = 9223372036854775807L;
         }
     )";
     assert_parses(code);

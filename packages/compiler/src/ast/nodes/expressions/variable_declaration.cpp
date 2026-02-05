@@ -115,6 +115,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
     }
 
     context->define_variable(
+        context->get_name(),
         variable_name,
         internal_name,
         variable_type->clone()
