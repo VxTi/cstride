@@ -62,10 +62,6 @@ std::unique_ptr<IAstType> parse_type_metadata(
     const auto src_pos = set.peek_next().get_source_position();
     int offset = 0;
 
-    // TODO: This currently only parses single dimensional arrays
-    // We wish to support multi-dimensional arrays as well, like `i32[][][][]`
-
-    // Will yield ArrayType(ArrayType(ArrayType(base_type)))
     while (is_array_notation(set))
     {
         offset += 2;

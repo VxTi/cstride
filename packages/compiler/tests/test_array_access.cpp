@@ -4,7 +4,7 @@ using namespace stride::tests;
 
 TEST(Array, SimpleIntDefinition)
 {
-    assert_parses(R"(
+    assert_compiles(R"(
       fn main(): void {
         const arr: i32[] = [ 123 ];
       }
@@ -13,7 +13,7 @@ TEST(Array, SimpleIntDefinition)
 
 TEST(Array, SimpleFloatDefinition)
 {
-    assert_parses(R"(
+    assert_compiles(R"(
       fn main(): void {
         const arr: f64[] = [ 1.0D ];
       }
@@ -22,7 +22,7 @@ TEST(Array, SimpleFloatDefinition)
 
 TEST(Array, OptionalDefinition)
 {
-    assert_parses(R"(
+    assert_compiles(R"(
       fn main(): void {
         const arr: f64[]?;
       }
@@ -31,7 +31,7 @@ TEST(Array, OptionalDefinition)
 
 TEST(Array, MultiDimensionalDefinition)
 {
-    assert_parses(R"(
+    assert_compiles(R"(
       fn main(): void {
         const arr: i32[][] = [
           [123], [456]
