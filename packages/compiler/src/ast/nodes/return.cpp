@@ -3,7 +3,6 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include "ast/optionals.h"
-#include "ast/nodes/expression.h"
 
 using namespace stride::ast;
 
@@ -20,27 +19,28 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     }
     const auto reference_token = set.next();
 
-    // If parsing a void return: `return`
-    if (!set.has_next())
+    if (set.peek_next_eq(TokenType::SEMICOLON))
     {
-        set.expect(TokenType::SEMICOLON, "Expected ';' after return statement");
+        set.next();
+
+        const auto ref_pos = reference_token.get_source_position();
+        const auto expr_pos = SourcePosition(ref_pos.offset, ref_pos.length);
+
         return std::make_unique<AstReturn>(
             set.get_source(),
-            reference_token.get_source_position(),
+            SourcePosition(ref_pos.offset, expr_pos.offset + expr_pos.length - ref_pos.offset),
             context,
             nullptr
         );
     }
 
     auto value = parse_inline_expression(context, set);
-
     if (!value)
     {
         set.throw_error("Expected expression after return keyword");
     }
 
     set.expect(TokenType::SEMICOLON, "Expected ';' after return statement");
-
     const auto ref_pos = reference_token.get_source_position();
     const auto expr_pos = value->get_source_position();
 

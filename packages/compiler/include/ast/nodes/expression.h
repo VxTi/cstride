@@ -167,10 +167,10 @@ namespace stride::ast
             const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> array_identifier,
-            std::unique_ptr<AstExpression> index
+            std::unique_ptr<AstExpression> index_expr
         ) : AstExpression(source, source_position, context),
             _array_identifier(std::move(array_identifier)),
-            _index_accessor_expr(std::move(index)) {}
+            _index_accessor_expr(std::move(index_expr)) {}
 
         [[nodiscard]]
         AstIdentifier* get_array_identifier() const { return this->_array_identifier.get(); }

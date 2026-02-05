@@ -1,5 +1,7 @@
 #include <llvm/IR/Module.h>
 
+#include "ast/nodes/types.h"
+#include "ast/optionals.h"
 #include "ast/nodes/expression.h"
 
 using namespace stride::ast;
@@ -20,7 +22,30 @@ llvm::Value* AstArray::codegen(
 {
     const auto resolved_type = infer_expression_type(this->get_registry(), this);
 
-    llvm::Type* llvm_array_type = internal_type_to_llvm_type(resolved_type.get(), module);
+    llvm::ArrayType* concrete_array_type = nullptr;
+
+    if (const auto* array_type = dynamic_cast<AstArrayType*>(resolved_type.get()))
+    {
+        llvm::Type* element_llvm_type = internal_type_to_llvm_type(
+            array_type->get_element_type(),
+            module
+        );
+        concrete_array_type = llvm::ArrayType::get(element_llvm_type, this->get_elements().size());
+    }
+    else
+    {
+        // Fallback: If we can't determine the type from the AST, try to verify
+        // if the resolved LLVM type is already an array type.
+        if (llvm::Type* possible_type = internal_type_to_llvm_type(resolved_type.get(), module);
+            llvm::isa<llvm::ArrayType>(possible_type))
+        {
+            concrete_array_type = llvm::cast<llvm::ArrayType>(possible_type);
+        }
+        else
+        {
+            throw std::runtime_error("Codegen failed: Array literal must have a valid array type.");
+        }
+    }
 
     const size_t array_size = this->get_elements().size();
 
@@ -31,7 +56,7 @@ llvm::Value* AstArray::codegen(
         return llvm::ConstantPointerNull::get(array_ptr_type);
     }
 
-    llvm::Value* array_alloca = builder->CreateAlloca(llvm_array_type);
+    llvm::Value* array_alloca = builder->CreateAlloca(concrete_array_type);
 
     // Try to build a constant aggregate initializer
     bool all_const_initializers = true;
@@ -54,7 +79,10 @@ llvm::Value* AstArray::codegen(
     // all in a single [N x T] operation
     if (all_const_initializers)
     {
-        llvm::Constant* init = llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(llvm_array_type), const_elements);
+        llvm::Constant* init = llvm::ConstantArray::get(
+            concrete_array_type,
+            const_elements
+        );
         builder->CreateStore(init, array_alloca);
         return array_alloca;
     }
@@ -65,7 +93,7 @@ llvm::Value* AstArray::codegen(
         llvm::Value* element_value = this->get_elements()[i]->codegen(context, module, builder);
 
         llvm::Value* elementPtr = builder->CreateInBoundsGEP(
-            llvm_array_type,
+            concrete_array_type,
             array_alloca,
             {
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(module->getContext()), 0),

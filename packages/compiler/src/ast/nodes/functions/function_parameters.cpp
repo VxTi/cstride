@@ -107,7 +107,8 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
         context, set, "Expected function parameter type", flags
     );
 
-    context->define_variable(param_name, reference_token.get_lexeme(), fn_param_type->clone());
+    // Define it without a context name to properly resolve it
+    context->define_variable("", param_name, reference_token.get_lexeme(), fn_param_type->clone());
 
     return std::make_unique<AstFunctionParameter>(
         set.get_source(),

@@ -82,11 +82,11 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::CHAR_LITERAL, R"('([^'\\]|\\.)')"),
     TOKEN(TokenType::BOOLEAN_LITERAL, R"(\b(true|false)\b)"),
     TOKEN(TokenType::IDENTIFIER, R"([$a-zA-Z_][$a-zA-Z0-9_]*)"),
+    TOKEN(TokenType::HEX_LITERAL, R"(\b0x[0-9a-fA-F]+\b)"),
     TOKEN(TokenType::DOUBLE_LITERAL, R"(\d*\.\d+[dD])"),
     TOKEN(TokenType::FLOAT_LITERAL, R"(\d*\.\d+)"),
     TOKEN(TokenType::LONG_INTEGER_LITERAL, R"(\d+L)"),
     TOKEN(TokenType::INTEGER_LITERAL, R"(\d+)"),
-    TOKEN(TokenType::HEX_LITERAL, R"(\b0x[0-9a-fA-F]+\b)"),
 
     // Multi-character operators (must come before single-char operators)
     TOKEN(TokenType::DOUBLE_STAR_EQUALS, R"(\*\*=)"),

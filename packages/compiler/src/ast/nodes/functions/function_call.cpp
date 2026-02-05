@@ -63,7 +63,7 @@ std::string AstFunctionCall::format_suggestion(const ISymbolDef* suggestion)
 
         return std::format(
             "{}({})",
-            fn_call->get_internal_symbol_name(),
+            fn_call->get_symbol().name,
             join(arg_types, ", ")
         );
     }
@@ -178,8 +178,19 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     TokenSet& set
 )
 {
-    const auto reference_token = set.next();
-    const auto& candidate_function_name = reference_token.get_lexeme();
+    const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected function or module name in function call");
+
+    std::vector function_name_parts = {reference_token.get_lexeme()};
+
+    // Ensures module names are properly mangled
+    while (set.peek_next_eq(TokenType::DOUBLE_COLON))
+    {
+        set.next();
+        const auto sub_segment = set.expect(TokenType::IDENTIFIER, "Expected identifier after '::' in function call");
+
+        function_name_parts.emplace_back(sub_segment.get_lexeme());
+    }
+
     auto function_parameter_set = collect_parenthesized_block(set);
 
     std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
@@ -235,8 +246,9 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     }
 
     Symbol internal_fn_sym = resolve_internal_function_name(
+        context,
         parameter_types,
-        candidate_function_name
+        function_name_parts
     );
 
     return std::make_unique<AstFunctionCall>(

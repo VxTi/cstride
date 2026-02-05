@@ -21,13 +21,23 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
 
     auto index_expression = parse_inline_expression(context, expression_block.value());
 
-    return std::make_unique<AstArrayMemberAccessor>(
+    auto base_expr = std::make_unique<AstArrayMemberAccessor>(
         array_identifier->get_source(),
         array_identifier->get_source_position(),
         context,
         std::move(array_identifier),
         std::move(index_expression)
     );
+
+    /*if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
+    {
+        set.next();
+        set.expect(TokenType::RSQUARE_BRACKET);
+        base_expr = parse_array_member_accessor(context, set, std::move(base_expr));
+    }
+    */
+
+    return std::move(base_expr);
 }
 
 void AstArrayMemberAccessor::validate()

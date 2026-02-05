@@ -1,7 +1,8 @@
 #include "ast/symbols.h"
 
 #include <ranges>
-#include <__ranges/views.h>
+
+#include "ast/parsing_context.h"
 
 using namespace stride::ast;
 
@@ -60,6 +61,7 @@ size_t ast_type_to_internal_id(IAstType* type)
 }
 
 Symbol stride::ast::resolve_internal_function_name(
+    const std::shared_ptr<ParsingContext>& context,
     const std::vector<IAstType*>& parameter_types,
     const std::string& function_name
 )
@@ -69,7 +71,7 @@ Symbol stride::ast::resolve_internal_function_name(
         return Symbol(function_name);
     }
 
-    std::string params = "";
+    std::string params;
 
     // Not perfect, but semi unique
     for (const auto& type : parameter_types)
@@ -77,5 +79,27 @@ Symbol stride::ast::resolve_internal_function_name(
         params += type->to_string();
     }
 
-    return Symbol(function_name, std::format("{}${:x}", function_name, std::hash<std::string>{}(params)));
+    return Symbol(context->get_name(), function_name,
+                  std::format("{}${:x}", function_name, std::hash<std::string>{}(params)));
+}
+
+Symbol stride::ast::resolve_internal_function_name(
+    const std::shared_ptr<ParsingContext>& context,
+    const std::vector<IAstType*>& parameter_types,
+    const std::vector<std::string>& function_name_segments
+)
+{
+    // For functions declared in modules, this will transform the segments like so:
+    // Math::sin -> Math__sin
+    const auto combined = join(function_name_segments, DELIMITER);
+
+    // Will resolve the previous internalized name w
+    return resolve_internal_function_name(context, parameter_types, combined);
+}
+
+Symbol stride::ast::resolve_internal_import_base_name(
+    const std::vector<std::string>& segments
+)
+{
+    return Symbol(join(segments, DELIMITER));
 }

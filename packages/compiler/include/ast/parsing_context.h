@@ -174,10 +174,10 @@ namespace stride::ast
 
     public:
         explicit ParsingContext(
-            const std::string& context_name,
+            std::string context_name,
             const ScopeType type,
             std::shared_ptr<ParsingContext> parent
-        ) : _context_name(context_name),
+        ) : _context_name(std::move(context_name)),
             _current_scope(type),
             _parent_registry(std::move(parent)) {}
 
@@ -197,7 +197,12 @@ namespace stride::ast
         [[nodiscard]]
         ScopeType get_current_scope_type() const { return this->_current_scope; }
 
-        bool is_global_scope() const { return this->_current_scope == ScopeType::GLOBAL; }
+        [[nodiscard]]
+        bool is_global_scope() const
+        {
+            // We deem module scope as global as well
+            return this->_current_scope == ScopeType::GLOBAL || this->_current_scope == ScopeType::MODULE;
+        }
 
         [[nodiscard]]
         const FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
@@ -238,6 +243,7 @@ namespace stride::ast
         ) const;
 
         void define_variable(
+            const std::string &context_name,
             std::string variable_name,
             const std::string& internal_name,
             std::unique_ptr<IAstType> type
@@ -261,6 +267,9 @@ namespace stride::ast
         /// source code, but rather the mangled name used for code generation.
         [[nodiscard]]
         bool is_function_defined_globally(const std::string& internal_function_name) const;
+
+        [[nodiscard]]
+        std::string get_name() const { return this->_context_name; }
 
     private:
         [[nodiscard]]

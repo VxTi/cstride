@@ -15,7 +15,7 @@ using namespace stride::ast;
  * </code>
  * Here, <code>sys::io</code> will be converted into the symbol <code>sys__io</code>
  */
-std::string consume_import_module_base(TokenSet& tokens)
+Symbol consume_import_module_base(TokenSet& tokens)
 {
     const auto base = tokens.expect(TokenType::IDENTIFIER,
                                     "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'");
@@ -29,15 +29,7 @@ std::string consume_import_module_base(TokenSet& tokens)
         parts.push_back(part.get_lexeme());
     }
 
-    std::ostringstream imploded;
-
-    imploded << parts[0];
-    for (size_t i = 1; i < parts.size(); ++i)
-    {
-        imploded << SEGMENT_DELIMITER << parts[i];
-    }
-
-    return imploded.str();
+    return resolve_internal_import_base_name(parts);
 }
 
 /**
@@ -46,20 +38,20 @@ std::string consume_import_module_base(TokenSet& tokens)
  * This function expects a double colon (::) followed by one or more identifiers.
  * It parses the identifiers and returns them as a vector of Symbol objects.
  */
-std::vector<std::string> consume_import_submodules(TokenSet& tokens)
+std::vector<Symbol> consume_import_submodules(TokenSet& tokens)
 {
     tokens.expect(TokenType::DOUBLE_COLON, "Expected a '::' before import submodule list");
     tokens.expect(TokenType::LBRACE, "Expected opening brace with modules after '::', e.g., {module1, module2, ...}");
     const auto first = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
 
-    std::vector submodules = {first.get_lexeme()};
+    std::vector<Symbol> submodules = {Symbol(first.get_lexeme())};
 
     while (tokens.peek(0) == TokenType::COMMA && tokens.peek(1) == TokenType::IDENTIFIER)
     {
         tokens.expect(TokenType::COMMA, "Expected comma between module names in import list");
         const auto submodule_iden = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
 
-        submodules.push_back(submodule_iden.get_lexeme());
+        submodules.emplace_back(submodule_iden.get_lexeme());
     }
 
     tokens.expect(TokenType::RBRACE, "Expected closing brace after import list");
@@ -118,7 +110,7 @@ std::string AstImport::to_string()
 
     for (const auto& module : this->get_submodules())
     {
-        modules.push_back(module);
+        modules.push_back(module.name);
     }
-    return std::format("Import [{}] {{ {} }}", this->get_module(), join(modules, ", "));
+    return std::format("Import [{}] {{ {} }}", this->get_module().name, join(modules, ", "));
 };

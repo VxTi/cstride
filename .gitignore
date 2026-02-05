@@ -1,6 +1,7 @@
 build
 workspace.xml
-cmake-build-debug
+/cmake-build-debug/
+.cache
 CMakeFiles/
 CMakeCache.txt
 editor/.c-cache

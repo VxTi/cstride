@@ -229,27 +229,6 @@ bool AstBinaryArithmeticOp::is_reducible()
         || this->get_right()->is_reducible();
 }
 
-// TODO: Implement literal reduction
-std::unique_ptr<IAstNode> reduce_literal_binary_op(
-    [[maybe_unused]] const AstBinaryArithmeticOp* self,
-    [[maybe_unused]] AstLiteral* left_lit,
-    [[maybe_unused]] AstLiteral* right_lit
-)
-{
-    return nullptr;
-}
-
-// TODO: Implement literal reduction
-std::optional<std::unique_ptr<IAstNode>> try_reduce_additive_op(
-    [[maybe_unused]] AstBinaryArithmeticOp* self,
-    [[maybe_unused]] AstExpression* left_lit,
-    [[maybe_unused]] AstExpression* right_lit
-)
-{
-    return std::nullopt;
-}
-
-// TODO: Implement
 IAstNode* AstBinaryArithmeticOp::reduce()
 {
     return this;

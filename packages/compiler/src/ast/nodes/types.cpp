@@ -54,15 +54,26 @@ std::string stride::ast::primitive_type_to_str(
 }
 
 std::unique_ptr<IAstType> parse_type_metadata(
-    std::unique_ptr<IAstType> type,
+    std::unique_ptr<IAstType> base_type,
     TokenSet& set,
     int context_type_flags
 )
 {
     const auto src_pos = set.peek_next().get_source_position();
-    const bool is_array = is_array_notation(set);
+    int offset = 0;
 
-    if (is_array) set.skip(2);
+    while (is_array_notation(set))
+    {
+        offset += 2;
+        set.skip(2);
+        base_type = std::make_unique<AstArrayType>(
+            base_type->get_source(),
+            stride::SourcePosition(src_pos.offset, src_pos.length + offset),
+            base_type->get_registry(),
+            std::move(base_type),
+            0
+        );
+    }
 
     // If the preceding token is a question mark, the type is determined
     // to be optional.
@@ -73,20 +84,9 @@ std::unique_ptr<IAstType> parse_type_metadata(
         context_type_flags |= SRFLAG_TYPE_OPTIONAL;
     }
 
-    type->set_flags(type->get_flags() | context_type_flags);
+    base_type->set_flags(base_type->get_flags() | context_type_flags);
 
-    if (is_array)
-    {
-        return std::make_unique<AstArrayType>(
-            type->get_source(),
-            stride::SourcePosition(src_pos.offset, src_pos.length + 2),
-            type->get_registry(),
-            std::move(type),
-            0
-        );
-    }
-
-    return std::move(type);
+    return std::move(base_type);
 }
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(

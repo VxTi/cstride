@@ -197,7 +197,6 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     stl::llvm_jit_define_functions(jit.get());
     stl::llvm_insert_function_definitions(module.get());
 
-    // print_ast_nodes();
     this->validate_ast_nodes();
     this->resolve_forward_references(module.get(), &builder);
     this->generate_llvm_ir(module.get(), &builder);

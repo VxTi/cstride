@@ -109,11 +109,8 @@ llvm::Value* AstVariableReassignment::codegen(
         throw std::runtime_error(std::format("Variable '{}' not found", this->get_variable_name()));
     }
 
-    auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_value());
-    if (!synthesisable) return nullptr;
-
     // Generate the RHS value
-    llvm::Value* assign_val = synthesisable->codegen(context, module, builder);
+    llvm::Value* assign_val = this->get_value()->codegen(context, module, builder);
 
     if (!assign_val) return nullptr;
 

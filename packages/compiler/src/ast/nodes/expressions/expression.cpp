@@ -50,8 +50,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
 
     if (set.peek_next_eq(TokenType::IDENTIFIER))
     {
-        /// Function invocations, e.g., `<identifier>(...)`
-        if (set.peek(1).get_type() == TokenType::LPAREN)
+        /// Function invocations, e.g., `<identifier>(...)`, or `<module>::<identifier>`
+        if (set.peek(1).get_type() == TokenType::LPAREN || set.peek(1).get_type() == TokenType::DOUBLE_COLON)
         {
             return parse_function_call(context, set);
         }

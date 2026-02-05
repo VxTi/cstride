@@ -1,6 +1,5 @@
 #include "ast/nodes/module.h"
 
-#include "ast/identifiers.h"
 #include "ast/parser.h"
 #include "ast/nodes/blocks.h"
 
@@ -20,12 +19,12 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_MODULE);
 
-    const auto module_name = set.expect(
+    auto module_name = set.expect(
         TokenType::IDENTIFIER,
         "Expected module name after 'module' keyword"
     ).get_lexeme();
 
-    const auto module_scope = std::make_shared<ParsingContext>(context, ScopeType::MODULE);
+    const auto module_scope = std::make_shared<ParsingContext>(module_name, ScopeType::MODULE, context);
     auto module_body = parse_block(module_scope, set);
 
     return std::make_unique<AstModule>(

@@ -240,12 +240,13 @@ bool ParsingContext::is_field_defined_globally(const std::string& field_name) co
 }
 
 void ParsingContext::define_variable(
+    const std::string& context_name,
     std::string variable_name,
     const std::string& internal_name,
     std::unique_ptr<IAstType> type
 )
 {
-    if (is_field_defined_globally(variable_name))
+    if (is_field_defined_in_scope(variable_name))
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
@@ -257,7 +258,7 @@ void ParsingContext::define_variable(
 
     this->_symbols.push_back(
         std::make_unique<FieldSymbolDef>(
-            Symbol(variable_name, internal_name),
+            Symbol(context_name, variable_name, internal_name),
             std::move(type)
         )
     );
@@ -353,7 +354,7 @@ void ParsingContext::define_struct(
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
     root._symbols.push_back(
         std::make_unique<StructSymbolDef>(
-            Symbol(struct_name, struct_name),
+            Symbol(this->get_name(), struct_name, /* internal_name = */ struct_name),
             std::move(fields)
         )
     );
