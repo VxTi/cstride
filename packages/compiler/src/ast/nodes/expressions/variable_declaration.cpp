@@ -339,11 +339,7 @@ void global_var_declaration_codegen(
     llvm::Value* dynamic_init_value = nullptr;
     if (const auto initial_value = self->get_initial_value().get(); initial_value != nullptr)
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
-        {
-            // Use the temporary builder
-            dynamic_init_value = synthesisable->codegen(self->get_registry(), module, &tempBuilder);
-        }
+        dynamic_init_value = initial_value->codegen(self->get_registry(), module, &tempBuilder);
     }
 
     if (dynamic_init_value)
@@ -406,16 +402,10 @@ llvm::Value* AstVariableDeclaration::codegen(
         llvm::Value* init_value = nullptr;
         // Generate init value code only if it's a literal/constant,
         // otherwise dynamic init handles it (see global_var_declaration_codegen)
-        if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
+        if (const auto initial_value = this->get_initial_value().get();
+            initial_value != nullptr && is_literal_ast_node(initial_value))
         {
-            if (is_literal_ast_node(initial_value) && dynamic_cast<ISynthesisable*>(initial_value))
-            {
-                init_value = dynamic_cast<ISynthesisable*>(initial_value)->codegen(
-                    this->get_registry(),
-                    module,
-                    ir_builder
-                );
-            }
+            init_value = initial_value->codegen(this->get_registry(), module, ir_builder);
         }
 
         if (init_value != nullptr)
@@ -447,10 +437,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     llvm::Value* init_value = nullptr;
     if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
-        {
-            init_value = synthesisable->codegen(this->get_registry(), module, ir_builder);
-        }
+        init_value = initial_value->codegen(this->get_registry(), module, ir_builder);
     }
 
     if (init_value)

@@ -60,6 +60,9 @@ std::unique_ptr<IAstType> parse_type_metadata(
 )
 {
     const auto src_pos = set.peek_next().get_source_position();
+
+    // TODO: This currently only parses single dimensional arrays
+    // We wish to support multi-dimensional arrays as well, like `i32[][][][]`
     const bool is_array = is_array_notation(set);
 
     if (is_array) set.skip(2);
