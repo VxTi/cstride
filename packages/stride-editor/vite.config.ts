@@ -1,12 +1,13 @@
+import { spawn }        from 'child_process';
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import tailwindcss from '@tailwindcss/vite';
+import react            from "@vitejs/plugin-react";
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [react()],
+  plugins: [react(), tailwindcss(), startServerPlugin()],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
@@ -30,3 +31,35 @@ export default defineConfig(async () => ({
     },
   },
 }));
+
+
+const startServerPlugin = () => {
+  return {
+    name: 'start-server',
+    configureServer(_server) {
+      console.log('Starting compilation server...');
+      const child = spawn('npx', ['tsx', 'src/server/server.ts'], {
+        stdio: 'inherit',
+        shell: true,
+      });
+
+      child.on('error', err => {
+        console.error('Failed to start compilation server:', err);
+      });
+
+      process.on('SIGINT', () => {
+        child.kill();
+        process.exit();
+      });
+
+      process.on('SIGTERM', () => {
+        child.kill();
+        process.exit();
+      });
+
+      process.on('exit', () => {
+        child.kill();
+      });
+    },
+  };
+};
