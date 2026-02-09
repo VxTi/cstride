@@ -6,7 +6,7 @@ import com.stride.intellij.psi.StrideTypes;
 import com.intellij.psi.TokenType;
 
 %%
-
+%state BLOCK_COMMENT
 %class StrideLexer
 %implements FlexLexer
 %unicode
@@ -23,10 +23,20 @@ NUMBER_LITERAL=[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)?[fFdDLuU]*|0x[0-9a-fA-F]+
 STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
 
 %%
+<BLOCK_COMMENT> {
+  "*/"               { yybegin(YYINITIAL); return StrideTypes.COMMENT; }
+  [^*]+              { } // Eat anything that isn't an asterisk
+  "*"                { } // Eat asterisks that aren't followed by /
+  <<EOF>>            { yybegin(YYINITIAL); return StrideTypes.COMMENT; }
+}
+
 <YYINITIAL> {
   {WHITE_SPACE}      { return TokenType.WHITE_SPACE; }
   {COMMENT}          { return StrideTypes.COMMENT; }
 
+   "/**"              { yybegin(BLOCK_COMMENT); }
+
+  "module"           { return StrideTypes.MODULE; }
   "fn"               { return StrideTypes.FN; }
   "struct"           { return StrideTypes.STRUCT; }
   "const"            { return StrideTypes.CONST; }

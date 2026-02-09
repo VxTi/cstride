@@ -1,0 +1,1 @@
+ packages/intellij-plugin/gradlew -p packages/intellij-plugin generateStrideParser generateStrideLexer assemble

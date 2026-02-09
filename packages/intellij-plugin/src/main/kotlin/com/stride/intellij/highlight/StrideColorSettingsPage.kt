@@ -15,7 +15,7 @@ class StrideColorSettingsPage : ColorSettingsPage {
 
     override fun getDisplayName(): String = "Stride"
 
-    override fun getIcon(): Icon? = StrideIcons.FILE
+    override fun getIcon(): Icon = StrideIcons.FILE
 
     override fun getHighlighter(): SyntaxHighlighter = StrideSyntaxHighlighter()
 
