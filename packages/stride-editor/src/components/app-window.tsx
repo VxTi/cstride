@@ -8,16 +8,21 @@ function AppWindow() {
   const { terminalState } = useCodeContext();
 
   return (
-    <div className="w-screen h-screen flex flex-col m-0 p-0 bg-[#121418]">
-      <div
-        className={twMerge(
-          'flex-1 relative',
-          terminalState.resizing ? 'pointer-events-none' : 'pointer-events-auto'
-        )}
-      >
-        <EditorWindow />
+    <div className="w-screen h-screen flex m-0 p-0 bg-[#121418]">
+      {/*<Sidebar />*/}
+      <div className="flex flex-col grow">
+        <div
+          className={twMerge(
+            'flex-1 relative',
+            terminalState.resizing
+              ? 'pointer-events-none'
+              : 'pointer-events-auto'
+          )}
+        >
+          <EditorWindow />
+        </div>
+        <TerminalWindow />
       </div>
-      <TerminalWindow />
     </div>
   );
 }

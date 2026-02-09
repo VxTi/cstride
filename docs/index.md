@@ -25,7 +25,7 @@ fn main(): void {
     let limit: i32 = 10
     printf("Counting to %d:\n", limit)
     
-    for (mut i: i32 = 1; i <= limit; i++) {
+    for (let i: i32 = 1; i <= limit; i++) {
         if (i % 2 == 0) {
             printf("%d is even\n", i)
         } else {

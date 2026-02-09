@@ -126,7 +126,7 @@ export default function TerminalWindow() {
           <div
             style={{ height: `${height}px` }}
             className={twMerge(
-              'bg-[#121418] flex flex-col rounded-t-3xl mx-1 border border-neutral-700',
+              'bg-[#121418] flex flex-col mx-1 border-t border-neutral-700',
               resizing && 'border-t-blue-500'
             )}
           >
@@ -173,8 +173,8 @@ function TerminalResizeBar({
   onMouseDown,
 }: Pick<ComponentProps<'div'>, 'onMouseDown'>) {
   return (
-    <div onMouseDown={onMouseDown} className="h-2 cursor-ns-resize z-10">
-      <div className="h-1  transition-colors duration-200" />
+    <div onMouseDown={onMouseDown} className="h-4 z-10 group cursor-ns-resize!">
+      <div className="h-px  transition-colors duration-200 group-hover:bg-blue-400/50" />
     </div>
   );
 }

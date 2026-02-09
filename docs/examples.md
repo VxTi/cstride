@@ -18,7 +18,7 @@ A classic programming challenge that demonstrates loops and conditional logic.
 fn main(): void {
     let limit: i32 = 20
     
-    for (mut i: i32 = 1; i <= limit; i++) {
+    for (let i: i32 = 1; i <= limit; i++) {
         if (i % 3 == 0 && i % 5 == 0) {
             printf("FizzBuzz\n")
         } else if (i % 3 == 0) {

@@ -3,7 +3,6 @@ import { type Terminal } from '@xterm/xterm';
 import { type editor } from 'monaco-editor';
 import React, {
   createContext,
-  type MutableRefObject,
   type RefObject,
   useContext,
   useEffect,
@@ -21,14 +20,14 @@ import { registerLanguage } from '../lib/stride-language/stride-language';
 interface TerminalState {
   visible: boolean;
   resizing: boolean;
-  ref: RefObject<HTMLDivElement>;
+  ref: RefObject<HTMLDivElement | null>;
 }
 
 interface CodeExecutionContextType {
   monaco: typeof import('monaco-editor') | null;
-  editorRef: RefObject<editor.IStandaloneCodeEditor>;
+  editorRef: RefObject<editor.IStandaloneCodeEditor | null>;
   ws: WebSocket | null;
-  xtermRef: MutableRefObject<Terminal | null>;
+  xtermRef: RefObject<Terminal | null>;
 
   terminalState: TerminalState;
   setTerminalState: React.Dispatch<React.SetStateAction<TerminalState>>;
@@ -68,7 +67,7 @@ export function CodeContextProvider({
   const xtermRef = useRef<Terminal | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
 
-  const terminalRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<HTMLDivElement | null>(null);
   const [terminalState, setTerminalState] = useState<TerminalState>({
     visible: true,
     resizing: false,
