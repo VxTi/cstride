@@ -60,7 +60,7 @@ const strideGrammar: Grammar = {
 export default defineConfig({
   title: "Stride Language",
   description: "A statically typed, JIT-compiled language using LLVM.",
-  base: '/cstride/',
+  base: '/',
   outDir: './.vitepress/dist',
   markdown: {
     languages: [strideGrammar]
