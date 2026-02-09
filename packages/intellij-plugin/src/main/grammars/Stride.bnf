@@ -154,8 +154,8 @@ MultiplicativeExpression ::= UnaryExpression (MultiplicativeOp UnaryExpression)*
 UnaryExpression ::= (LhsUnaryOp UnaryExpression) | IncrDecrExpression
 
 IncrDecrExpression ::= (IncrDecrOp AccessExpression)
-                    | (AccessExpression IncrDecrOp)
-                    | (PrimaryExpression (CallSuffix | MemberAccessor | MemberIndexing)*)
+                    | (PrimaryExpression (CallSuffix | MemberAccessor | MemberIndexing)* [IncrDecrOp])
+
 
 AccessExpression ::= IDENTIFIER (MemberAccessor | MemberIndexing)*
 
