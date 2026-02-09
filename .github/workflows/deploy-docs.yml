@@ -1,9 +1,6 @@
 name: Deploy Docs
 on:
   push:
-    branches:
-      - main
-      - gh-pages
 permissions:
   contents: write
 jobs:
