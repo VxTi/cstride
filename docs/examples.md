@@ -18,7 +18,7 @@ A classic programming challenge that demonstrates loops and conditional logic.
 fn main(): void {
     let limit: i32 = 20
     
-    for (mut i: i32 = 1; i <= limit; i++) {
+    for (let i: i32 = 1; i <= limit; i++) {
         if (i % 3 == 0 && i % 5 == 0) {
             printf("FizzBuzz\n")
         } else if (i % 3 == 0) {
@@ -37,7 +37,9 @@ fn main(): void {
 This example calculates an approximation of $e^x$ using a Taylor series. It demonstrates function definition, loops, variables, and calling external functions.
 
 ```stride
-extern fn powl($0: f64, $1: f64): f64;
+extern fn powl(base: f64, exp: f64): f64;
+extern fn system_time_ns(): u64;
+extern fn printf(format: string, ...): i32;
 
 /**
  * In this example, we'll try to calculate an approximation of e^x using a taylor series.
@@ -47,39 +49,39 @@ extern fn powl($0: f64, $1: f64): f64;
  * - The significant speed : )
  */
 fn main(): void {
-    const pow: f64 = 3.5D;
+    const pow: f64 = 3.5D
     
-    const start: u64 = system_time_ns();
-    const approx: f64 = e_to_the_x(pow);
-    const end: u64 = system_time_ns();
+    const start: u64 = system_time_ns()
+    const approx: f64 = e_to_the_x(pow)
+    const end: u64 = system_time_ns()
     
-    const elapsed: u64 = end - start;
+    const elapsed: u64 = end - start
 
-    printf("Elapsed time: %llu ns; e^%.2f: %.15f\n", elapsed, pow, approx);
+    printf("Elapsed time: %llu ns; e^%.2f: %.15f\n", elapsed, pow, approx)
 }
 
 
 // Here we try to calculate e^x by using a taylor series
 // In this case, we get an accuracy of 7 digits with 20 iterations.
 fn e_to_the_x(x: f64): f64 {
-    let approximation: f64 = 0.0D;
-    const iterations: i32 = 20;
+    let approximation: f64 = 0.0D
+    const iterations: i32 = 20
 
     for (let n: f64 = 0.0D; n < iterations; n++) {
-        approximation += powl(x, n) / factorial(n);
+        approximation += powl(x, n) / factorial(n)
     }
 
-    return approximation;
+    return approximation
 }
 
 // A basic recursive factorial function
 fn factorial(n: f64): f64 {
     if (n <= 1.0D) {
-        return 1.0D;
+        return 1.0D
     }
 
     // Recursive step: n * factorial of (n-1)
-    return n * factorial(n - 1.0D);
+    return n * factorial(n - 1.0D)
 }
 ```
 
@@ -107,24 +109,26 @@ fn factorial(n: i64): i64 {
 Generating Fibonacci numbers using an iterative approach.
 
 ```stride
+extern fn printf(format: string, ...): i32;
+
 fn main(): void {
-    print_fibonacci(10);
+    print_fibonacci(10)
 }
 
 fn print_fibonacci(n: i32): void {
-    let a = 0L;
-    let b = 1L;
+    let a = 0L
+    let b = 1L
     
-    printf("Fibonacci sequence up to %d iterations:\n", n);
+    printf("Fibonacci sequence up to %d iterations:\n", n)
 
-    let i: i32 = 0;
+    let i: i32 = 0
     for (; i < n; i++) {
-        printf("%lld ", a);
-        let temp: i64 = a;
-        a = b;
-        b = temp + b;
+        printf("%lld ", a)
+        let temp: i64 = a
+        a = b
+        b = temp + b
     }
-    printf("\n");
+    printf("\n")
 }
 ```
 

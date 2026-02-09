@@ -4,6 +4,7 @@
 
 #include <llvm/IR/Module.h>
 
+#include "ast/casting.h"
 #include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 
@@ -23,7 +24,12 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
 
     // TODO: Replace with struct-field-specific method
-    context->define_variable(struct_member_name, struct_member_name, struct_member_type->clone());
+    context->define_variable(
+        "", // No context name to prevent incorrect prefixing
+        struct_member_name,
+        struct_member_name,
+        struct_member_type->clone()
+    );
 
     return std::make_unique<AstStructMember>(
         set.get_source(),
@@ -131,12 +137,12 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
 void AstStructMember::validate()
 {
-    if (const auto non_primitive_type = dynamic_cast<AstStructType*>(this->_type.get()))
+    if (const auto struct_type = cast_type<AstStructType*>(this->_type.get()))
     {
         // If it's not a primitive, it must be a struct, as we currently don't support other types.
         // TODO: Support enums
 
-        if (const auto member = this->get_registry()->get_struct_def(non_primitive_type->get_internal_name());
+        if (const auto member = this->get_registry()->get_struct_def(struct_type->get_internal_name());
             !member.has_value())
         {
             throw parsing_error(

@@ -4,13 +4,12 @@ Stride is a statically typed language.
 
 ## Variable Declaration
 
-Stride provides three keywords for variable declaration, each with different mutability rules:
+Stride provides keywords for variable declaration with different mutability rules:
 
 | Keyword | Description |
 | :--- | :--- |
 | `const` | Declares a constant (immutable) value. |
 | `let` | Declares a mutable variable. |
-| `mut` | Equivalent to `let`, used for declaring mutable variables (often preferred in loop headers). |
 
 ### Examples
 
@@ -22,8 +21,8 @@ const pi: f64 = 3.14159D
 let x: i32 = 10
 x = 20 // OK
 
-// Using mut in a loop
-for (mut i: i32 = 0; i < 10; i++) {
+// Mutable variables in a loop
+for (let i: i32 = 0; i < 10; i++) {
     printf("%d\n", i)
 }
 ```

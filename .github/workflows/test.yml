@@ -1,0 +1,67 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-24.04 # Using the latest LTS for better compatibility
+
+    defaults:
+      run:
+        working-directory: packages/compiler
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Base Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            ccache \
+            libcurl4-openssl-dev \
+            googletest \
+            libgtest-dev
+
+      - name: Install LLVM 21
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          # 'all' can be overkill; we usually just need the compiler and tools
+          sudo ./llvm.sh 21
+          sudo apt-get install -y clang-21 lldb-21 lld-21 llvm-21-dev
+          
+          # Verification
+          clang++-21 --version
+
+      - name: Setup Ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ runner.os }}-llvm-21
+          # Ensure ccache is used for clang-21
+          append-timestamp: true
+
+      - name: Configure CMake
+        run: |
+          # Use -DCMAKE_CXX_STANDARD=23 to ensure the compiler enforces C++23
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_C_COMPILER=clang-21 \
+            -DCMAKE_CXX_COMPILER=clang++-21 \
+            -DCMAKE_CXX_STANDARD=23 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run Tests
+        run: |
+          cd build
+          ctest --output-on-failure

@@ -17,21 +17,27 @@ cstride/
     │   └── ... (compiler source files)
     ├── standard-library/
     │   └── ... (standard library files)
-    └── editor/
-        └── ... (web-based editorfiles)  
+    └── stride-editor/
+        └── ... (web-based editor files)  
 ```
 
 ### Prerequisites
 
 1. CMake >= 3.1
-2. Node.js >= 24.0
-3. LLVM 21.1.8
+2. Node.js >= 20.0 (LTS)
+3. LLVM (tested with 17, 18)
+4. GoogleTest
 
 You can install these packages using the following commands:
 
+**macOS (using Homebrew):**
 ```shell
-brew install cmake node@24 llvm@21 # macOS using Homebrew
-sudo apt install cmake nodejs llvm-21 # Ubuntu/Debian
+brew install cmake node@22 llvm@21 googletest
+```
+
+**Ubuntu/Debian:**
+```shell
+sudo apt install cmake nodejs llvm-21 googletest
 ```
 
 ### Getting started
@@ -48,11 +54,14 @@ sudo apt install cmake nodejs llvm-21 # Ubuntu/Debian
 ### Building the Compiler
 
 Run the following commands from the project root directory:
-   ```sh
-   cd packages/compiler;
-   cmake -S . -B cmake-build-debug &&
-   cmake --build cmake-build-debug --target cstride
-   ```
+
+```sh
+cd packages/compiler
+mkdir cmake-build-debug
+cd cmake-build-debug
+cmake ..
+make
+```
 
 *Optionally*: Add the binary to your `$PATH`, if you wish to use it directly.
 
@@ -69,6 +78,15 @@ Replace `<file>` with your Stride source file.
 For additional commands, run `cstride --help`.
 This CLI tool is also still in development.
 
+### Running Tests
+
+To run the compiler tests, run the following commands from `packages/compiler/cmake-build-debug`:
+
+```sh
+make cstride_tests
+./tests/cstride_tests
+```
+
 ### Using the Editor
 
 <img width="678" height="641" alt="Screenshot 2026-01-29 at 17 21 54" src="https://github.com/user-attachments/assets/ade3bee2-4bcb-44d9-8c61-04d5cbc99ff1" />
@@ -77,7 +95,7 @@ The editor is a web-based IDE for Stride, built with Monaco Editor.
 
 1. Navigate to the editor directory and install dependencies:
    ```sh
-   cd packages/editor;
+   cd packages/stride-editor
    npm install
    ```
 2. Start the development server:
@@ -95,10 +113,10 @@ The editor is a web-based IDE for Stride, built with Monaco Editor.
 
 ```stride
 // Creating a mutable 32 bit int variable
-mut x: i32 = 10
+let x: i32 = 10
 
-// Creating a constant variable - by default, variables are constant
-let y: f64 = 3.0D
+// Creating a constant variable
+const y: f64 = 3.0D
 
 // There are a few different kinds of integer literals, like so:
 let hex: i32 = 0x12345
@@ -157,6 +175,15 @@ extern fn some_c_function(x: i32): i32;
 
 // You can invoke functions using the following syntax:
 const result: i32 = add(10, 5)
+```
+
+### Local Documentation Preview
+
+You can preview the documentation locally using MkDocs:
+
+```sh
+pip install mkdocs-material
+mkdocs serve
 ```
 
 ### Comments

@@ -1,22 +1,31 @@
-# Stride Language
+---
+layout: home
 
-Stride is a statically typed, JIT-compiled language built on the LLVM compiler toolchain. It aims to combine the performance and control of low-level languages with the simplicity and safety of modern syntax.
+hero:
+  name: Stride Language
+  text: Stride is a statically typed, JIT-compiled language built on the LLVM compiler toolchain.
+  tagline: Combine the performance and control of low-level languages with the simplicity and safety of modern syntax.
+  actions:
+    - theme: brand
+      text: Getting Started
+      link: /getting-started
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/vxti/cstride
 
-This project includes a complete compiler for the Stride language and a modern web-based code editor with syntax highlighting and an integrated terminal.
+features:
+  - title: High Performance
+    details: Leverages LLVM for optimized machine code generation.
+  - title: Static Typing
+    details: Catch errors early with a robust type system.
+  - title: JIT Compilation
+    details: Execute code instantly without a separate compilation step.
+---
 
 ## Key Features
 
-- **High Performance**: Leverages LLVM for optimized machine code generation.
-- **Static Typing**: Catch errors early with a robust type system.
-- **JIT Compilation**: Execute code instantly without a separate compilation step.
 - **Modern Syntax**: Clean and expressive syntax inspired by C, Rust, and TypeScript.
 - **Integrated Tooling**: Comes with a dedicated local web editor for an immediate development experience.
-
-## Quick Start
-
-1.  **[Getting Started](getting-started.md)**: Learn how to install the compiler and set up the local editor.
-2.  **[Examples](examples.md)**: Explore various code samples, from "Hello World" to Taylor series approximations.
-3.  **[Language Reference](reference/variables.md)**: Dive deep into Stride's syntax, types, and features.
 
 ## A Taste of Stride
 
@@ -25,7 +34,7 @@ fn main(): void {
     let limit: i32 = 10
     printf("Counting to %d:\n", limit)
     
-    for (mut i: i32 = 1; i <= limit; i++) {
+    for (let i: i32 = 1; i <= limit; i++) {
         if (i % 2 == 0) {
             printf("%d is even\n", i)
         } else {

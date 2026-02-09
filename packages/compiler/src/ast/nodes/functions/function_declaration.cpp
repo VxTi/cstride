@@ -9,6 +9,7 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "ast/casting.h"
 #include "ast/modifiers.h"
 #include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
@@ -65,7 +66,7 @@ void AstFunctionDeclaration::validate()
     const auto return_statements = collect_return_statements(this->get_body());
 
     // For void types, we only disallow returning expressions, as this is redundant.
-    if (const auto void_ret = dynamic_cast<AstPrimitiveType*>(this->get_return_type());
+    if (const auto void_ret = cast_type<AstPrimitiveType*>(this->get_return_type());
         void_ret != nullptr && void_ret->get_type() == PrimitiveType::VOID)
     {
         for (const auto& return_stmt : return_statements)
@@ -88,12 +89,13 @@ void AstFunctionDeclaration::validate()
 
     if (return_statements.empty())
     {
-        if (dynamic_cast<AstStructType*>(this->get_return_type()))
+        if (cast_type<AstStructType*>(this->get_return_type()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Function '{}' returns a struct type, but no return statement is present.",
-                            this->get_name()),
+                std::format(
+                    "Function '{}' returns a struct type, but no return statement is present.",
+                    this->get_name()),
                 *this->get_source(),
                 this->get_source_position()
             );
@@ -127,7 +129,10 @@ void AstFunctionDeclaration::validate()
                 ),
                 {
                     ErrorSourceReference(
-                        std::format("expected {}{}", this->get_return_type()->is_primitive() ? "" : "struct-type ", this->get_return_type()->to_string()),
+                        std::format(
+                            "expected {}{}", this->get_return_type()->is_primitive() ? "" : "struct-type ",
+                            this->get_return_type()->to_string()
+                        ),
                         *this->get_source(),
                         return_stmt->get_return_expr()->get_source_position()
                     )
@@ -218,11 +223,7 @@ llvm::Value* AstFunctionDeclaration::codegen(
     llvm::Value* last_val = nullptr;
     if (this->get_body())
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(this->get_body());
-            synthesisable != nullptr)
-        {
-            last_val = synthesisable->codegen(context, module, builder);
-        }
+        last_val = this->get_body()->codegen(context, module, builder);
     }
 
     // Final Safety: Implicit Return
@@ -334,7 +335,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
     // Internal name contains all parameter types, so that there can be function overloads with
     // different parameter types
-    auto symbol_name = Symbol(fn_name, /* internal_name = */fn_name);
+    auto symbol_name = Symbol(context->get_name(), fn_name, /* internal_name = */fn_name);
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
@@ -347,7 +348,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        symbol_name = resolve_internal_function_name(parameter_types, fn_name);
+        symbol_name = resolve_internal_function_name(context, parameter_types, fn_name);
     }
 
     // Function will be defined in the parent context (global, perhaps)

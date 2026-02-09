@@ -65,14 +65,65 @@ void AstUnaryOp::validate()
         );
     }
 
-    if (!operand_type->is_mutable())
+    const auto op = this->get_op_type();
+
+    if (op == UnaryOpType::INCREMENT || op == UnaryOpType::DECREMENT)
     {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            "Cannot modify immutable value",
-            *this->get_source(),
-            this->get_source_position()
-        );
+        if (!operand_type->is_mutable())
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                "Cannot modify immutable value",
+                *this->get_source(),
+                this->get_source_position()
+            );
+        }
+    }
+
+    if (operand_type->is_primitive())
+    {
+        const auto* prim = dynamic_cast<AstPrimitiveType*>(operand_type.get());
+        const bool is_int = prim->is_integer_ty();
+        const bool is_fp = prim->is_fp();
+
+        switch (op)
+        {
+        case UnaryOpType::NEGATE:
+            if (!is_int && !is_fp)
+            {
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
+                    "Invalid type for negation",
+                    *this->get_source(),
+                    this->get_source_position()
+                );
+            }
+            break;
+        case UnaryOpType::COMPLEMENT:
+            if (!is_int)
+            {
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
+                    "Invalid type for bitwise complement",
+                    *this->get_source(),
+                    this->get_source_position()
+                );
+            }
+            break;
+        case UnaryOpType::INCREMENT:
+        case UnaryOpType::DECREMENT:
+            if (!is_int && !is_fp)
+            {
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
+                    "Invalid type for increment/decrement",
+                    *this->get_source(),
+                    this->get_source_position()
+                );
+            }
+            break;
+        default: break;
+        }
     }
 }
 
@@ -191,16 +242,29 @@ llvm::Value* AstUnaryOp::codegen(
     case UnaryOpType::LOGICAL_NOT:
         {
             // !x equivalent to (x == 0)
-            auto* cmp = builder->CreateICmpEQ(
+            if (val->getType()->isFloatingPointTy())
+            {
+                return builder->CreateFCmpOEQ(
+                    val,
+                    llvm::ConstantFP::get(val->getType(), 0.0),
+                    "lognotcmp"
+                );
+            }
+
+            return builder->CreateICmpEQ(
                 val,
                 llvm::ConstantInt::get(val->getType(), 0),
                 "lognotcmp"
             );
-
-            return builder->CreateZExt(cmp, val->getType(), "lognot");
         }
     case UnaryOpType::NEGATE:
-        return builder->CreateNeg(val, "neg");
+        {
+            if (val->getType()->isFloatingPointTy())
+            {
+                return builder->CreateFNeg(val, "neg");
+            }
+            return builder->CreateNeg(val, "neg");
+        }
     case UnaryOpType::COMPLEMENT:
         return builder->CreateNot(val, "not");
     case UnaryOpType::DEREFERENCE:
