@@ -34,7 +34,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   {WHITE_SPACE}      { return TokenType.WHITE_SPACE; }
   {COMMENT}          { return StrideTypes.COMMENT; }
 
-   "/**"              { yybegin(BLOCK_COMMENT); }
+   "/*"              { yybegin(BLOCK_COMMENT); }
 
   "module"           { return StrideTypes.MODULE; }
   "fn"               { return StrideTypes.FN; }

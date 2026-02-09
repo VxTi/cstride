@@ -81,90 +81,104 @@
   ]
 }
 
-strideFile ::= item*
+StrideFile ::= StandaloneItem*
 
-private item ::= (function_declaration | module_statement | struct_definition | variable_declaration | external_declaration | SEMICOLON)
+private StandaloneItem ::= (
+    FunctionDeclaration
+    | ModuleStatement
+    | StructDefinition
+    | VariableDeclaration
+    | ExternFunctionDeclaration
+    | SEMICOLON
+)
 
 // --- Declarations ---
-external_declaration ::= EXTERN function_declaration_header SEMICOLON
-function_declaration ::= function_declaration_header block
-private function_declaration_header ::= FN IDENTIFIER LPAREN [parameter_list] RPAREN COLON type
-parameter_list ::= parameter (COMMA parameter)* [COMMA]
-parameter ::= IDENTIFIER COLON type
+ExternFunctionDeclaration ::= EXTERN FunctionDeclarationHeader SEMICOLON
+FunctionDeclaration ::= FunctionDeclarationHeader BlockStatement
+private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterList] RPAREN COLON Type
+FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)* [COMMA]
+FunctionParameter ::= IDENTIFIER COLON Type
 
-struct_definition ::= STRUCT IDENTIFIER (struct_body | struct_alias)
-private struct_body ::= LBRACE [struct_fields] RBRACE
-private struct_alias ::= EQ type SEMICOLON
-struct_fields ::= struct_field (COMMA struct_field)* [COMMA]
-struct_field ::= IDENTIFIER COLON type
+StructDefinition ::= STRUCT IDENTIFIER (StructDefinitionBody | StructDefinitionAlias)
+private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
+private StructDefinitionAlias ::= EQ Type SEMICOLON
+StructDefinitionFields ::= StructField (COMMA StructField)* [COMMA]
+StructField ::= IDENTIFIER COLON Type
 
-variable_declaration ::= (CONST | LET) IDENTIFIER COLON type EQ expression SEMICOLON
-type ::= (primitive_type | user_type)
-primitive_type ::= VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING
-user_type ::= IDENTIFIER
+VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression SEMICOLON
+
+// --- Types ---
+Type ::= (PrimitiveType | UserType)
+// <module>::<type> or <type>
+PrimitiveType ::= [(IDENTIFIER COLON_COLON)*] VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING
+UserType ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
 
 // --- Statements ---
-block ::= LBRACE statement* RBRACE
+BlockStatement ::= LBRACE Statement* RBRACE
 
-statement ::= variable_declaration
-            | assignment_statement
-            | return_statement
-            | for_statement
-            | while_statement
-            | if_statement
-            | expression_statement
-            | block
+Statement ::= VariableDeclaration
+            | AssignmentStatement
+            | ReturnStatement
+            | ForLoopStatement
+            | WhileLoopStatement
+            | IfStatement
+            | ExpressionStatement
+            | BlockStatement
             | SEMICOLON
 
-assignment_statement ::= IDENTIFIER EQ expression SEMICOLON
-return_statement ::= RETURN [expression] SEMICOLON
+AssignmentStatement ::= IDENTIFIER EQ Expression SEMICOLON
+ReturnStatement ::= RETURN [Expression] SEMICOLON
 
-for_statement ::= FOR LPAREN [for_init] [expression] SEMICOLON [expression] RPAREN block
-private for_init ::= variable_declaration | assignment_statement | expression_statement
+ForLoopStatement ::= FOR LPAREN [ForInitializerPart] [Expression] SEMICOLON [Expression] RPAREN BlockStatement
+private ForInitializerPart ::= VariableDeclaration | AssignmentStatement | ExpressionStatement
 
-while_statement ::= WHILE LPAREN expression RPAREN block
-module_statement ::= MODULE IDENTIFIER LBRACE item* RBRACE
-if_statement ::= IF LPAREN expression RPAREN block [ELSE (if_statement | block)]
+WhileLoopStatement ::= WHILE LPAREN Expression RPAREN BlockStatement
+ModuleStatement ::= MODULE IDENTIFIER LBRACE StandaloneItem* RBRACE
+IfStatement ::= IF LPAREN Expression RPAREN BlockStatement [ELSE (IfStatement | BlockStatement)]
 
-expression_statement ::= expression SEMICOLON
+ExpressionStatement ::= Expression SEMICOLON
 
 // --- Expressions (Precedence) ---
-expression ::= cast_expression
+Expression ::= CastExpression
 
-cast_expression ::= logical_expression (AS type)*
+CastExpression ::= LogicalExpression (AS Type)*
 
-logical_expression ::= comparison_expression (logical_op comparison_expression)*
-private logical_op ::= '&&' | '||'
+LogicalExpression ::= ComparisonExpression (LogicalOp ComparisonExpression)*
 
-comparison_expression ::= additive_expression (comparison_op additive_expression)*
-private comparison_op ::= EQ_EQ | EXCL_EQ | LT | GT | LT_EQ | GT_EQ
+ComparisonExpression ::= AdditiveExpression (ComparisonOp AdditiveExpression)*
 
-additive_expression ::= multiplicative_expression (additive_op multiplicative_expression)*
-private additive_op ::= PLUS | MINUS
+AdditiveExpression ::= MultiplicativeExpression (AdditiveOp MultiplicativeExpression)*
 
-multiplicative_expression ::= unary_expression (multiplicative_op unary_expression)*
-private multiplicative_op ::= MUL | DIV | MOD
+MultiplicativeExpression ::= UnaryExpression (MultiplicativeOp UnaryExpression)*
 
-// Unary (Prefix)
-unary_expression ::= (PLUS_PLUS | MINUS_MINUS | PLUS | MINUS | EXCL) unary_expression
-                   | postfix_expression
+UnaryExpression ::= (LhsUnaryOp UnaryExpression) | IncrDecrExpression
 
-// Postfix (Slightly modified to include index_suffix)
-postfix_expression ::= primary_expression (postfix_op | call_suffix | member_suffix | index_suffix)*
-private postfix_op ::= PLUS_PLUS | MINUS_MINUS
-private call_suffix ::= LPAREN [argument_list] RPAREN
-private member_suffix ::= DOT IDENTIFIER
-private index_suffix ::= LBRACKET expression RBRACKET
+IncrDecrExpression ::= (IncrDecrOp AccessExpression)
+                    | (AccessExpression IncrDecrOp)
+                    | (PrimaryExpression (CallSuffix | MemberAccessor | MemberIndexing)*)
 
-primary_expression ::= literal_expression
-                     | struct_initialization
-                     | parenthesized_expression
+AccessExpression ::= IDENTIFIER (MemberAccessor | MemberIndexing)*
+
+private CallSuffix ::= LPAREN [ArgumentList] RPAREN
+private MemberAccessor ::= DOT IDENTIFIER
+private MemberIndexing ::= LBRACKET Expression RBRACKET
+
+PrimaryExpression ::= LiteralExpression
+                     | StructInitialization
+                     | ParenthesizedExpression
                      | IDENTIFIER
 
-literal_expression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL
-struct_initialization ::= IDENTIFIER COLON_COLON LBRACE [struct_init_fields] RBRACE
-struct_init_fields ::= struct_init_field (COMMA struct_init_field)* [COMMA]
-struct_init_field ::= IDENTIFIER COLON expression
-argument_list ::= expression (COMMA expression)*
-parenthesized_expression ::= LPAREN expression RPAREN
+LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL
+StructInitialization ::= IDENTIFIER COLON_COLON LBRACE [StructInitFields] RBRACE
+StructInitFields ::= StructInitField (COMMA StructInitField)* [COMMA]
+StructInitField ::= IDENTIFIER COLON Expression
+ArgumentList ::= Expression (COMMA Expression)*
+ParenthesizedExpression ::= LPAREN Expression RPAREN
+
 private BOOLEAN_LITERAL ::= 'true' | 'false'
+private LogicalOp ::= '&&' | '||'
+private ComparisonOp ::= EQ_EQ | EXCL_EQ | LT | GT | LT_EQ | GT_EQ
+private AdditiveOp ::= PLUS | MINUS
+private MultiplicativeOp ::= MUL | DIV | MOD
+private LhsUnaryOp ::= PLUS | MINUS | EXCL
+private IncrDecrOp ::= PLUS_PLUS | MINUS_MINUS
