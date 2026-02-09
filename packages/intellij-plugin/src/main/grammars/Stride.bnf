@@ -1,0 +1,178 @@
+{
+  parserClass="com.stride.intellij.parser.StrideParser"
+
+  extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+  psiClassPrefix="Stride"
+  psiImplClassSuffix="Impl"
+  psiPackage="com.stride.intellij.psi"
+  psiImplPackage="com.stride.intellij.psi.impl"
+
+  elementTypeHolderClass="com.stride.intellij.psi.StrideTypes"
+  elementTypeClass="com.stride.intellij.psi.StrideElementType"
+  tokenTypeClass="com.stride.intellij.psi.StrideTokenType"
+
+  tokens=[
+    FN='fn'
+    STRUCT='struct'
+    CONST='const'
+    LET='let'
+    EXTERN='extern'
+    AS='as'
+    RETURN='return'
+    FOR='for'
+    WHILE='while'
+    IF='if'
+    ELSE='else'
+    VOID='void'
+    I8='i8'
+    I16='i16'
+    I32='i32'
+    I64='i64'
+    U8='u8'
+    U16='u16'
+    U32='u32'
+    U64='u64'
+    F32='f32'
+    F64='f64'
+    BOOL='bool'
+    CHAR='char'
+    STRING='string'
+
+    SEMICOLON=';'
+    COLON=':'
+    COMMA=','
+    DOT='.'
+    EQ='='
+    PLUS='+'
+    MINUS='-'
+    MUL='*'
+    DIV='/'
+    MOD='%'
+    EXCL='!'
+    LT='<'
+    GT='>'
+    LBRACE='{'
+    RBRACE='}'
+    LPAREN='('
+    RPAREN=')'
+    COLON_COLON='::'
+    EQ_EQ='=='
+    EXCL_EQ='!='
+    LT_EQ='<='
+    GT_EQ='>='
+
+    COMMENT='regexp://.*'
+    BOOLEAN_LITERAL='regexp:true|false'
+    NUMBER_LITERAL='regexp:\d+(\.\d*)?([eE][+-]?\d+)?[fFdDLuU]*|0x[0-9a-fA-F]+'
+    STRING_LITERAL="regexp:\"([^\\\"\r\n]|\\[^\r\n])*\""
+    IDENTIFIER='regexp:[a-zA-Z_][a-zA-Z0-9_]*'
+
+    OPERATOR='regexp:&&|\|\|'
+  ]
+}
+
+strideFile ::= item*
+
+private item ::= (function_declaration | struct_definition | variable_declaration | external_declaration | SEMICOLON)
+
+external_declaration ::= EXTERN function_declaration_header SEMICOLON
+
+function_declaration ::= function_declaration_header block
+
+private function_declaration_header ::= FN IDENTIFIER LPAREN [parameter_list] RPAREN COLON type
+
+parameter_list ::= parameter (COMMA parameter)* [COMMA]
+
+parameter ::= IDENTIFIER COLON type
+
+struct_definition ::= STRUCT IDENTIFIER (struct_body | struct_alias)
+
+private struct_body ::= LBRACE [struct_fields] RBRACE
+
+private struct_alias ::= EQ type SEMICOLON
+
+struct_fields ::= struct_field (COMMA struct_field)* [COMMA]
+
+struct_field ::= IDENTIFIER COLON type
+
+variable_declaration ::= (CONST | LET) IDENTIFIER COLON type EQ expression SEMICOLON
+
+type ::= (primitive_type | user_type)
+
+primitive_type ::= VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING
+
+user_type ::= IDENTIFIER
+
+block ::= LBRACE statement* RBRACE
+
+statement ::= variable_declaration
+            | assignment_statement
+            | return_statement
+            | for_statement
+            | while_statement
+            | if_statement
+            | expression_statement
+            | block
+            | SEMICOLON
+
+assignment_statement ::= IDENTIFIER EQ expression SEMICOLON
+
+return_statement ::= RETURN [expression] SEMICOLON
+
+for_statement ::= FOR LPAREN [variable_declaration | assignment_statement] [expression] SEMICOLON [expression] RPAREN block
+
+while_statement ::= WHILE LPAREN expression RPAREN block
+
+if_statement ::= IF LPAREN expression RPAREN block [ELSE (if_statement | block)]
+
+expression_statement ::= expression SEMICOLON
+
+expression ::= cast_expression
+
+cast_expression ::= logical_expression (AS type)*
+
+logical_expression ::= comparison_expression (logical_op comparison_expression)*
+
+private logical_op ::= '&&' | '||' // Not explicitly in lexer but likely needed
+
+comparison_expression ::= additive_expression (comparison_op additive_expression)*
+
+private comparison_op ::= EQ_EQ | EXCL_EQ | LT | GT | LT_EQ | GT_EQ
+
+additive_expression ::= multiplicative_expression (additive_op multiplicative_expression)*
+
+private additive_op ::= PLUS | MINUS
+
+multiplicative_expression ::= unary_expression (multiplicative_op unary_expression)*
+
+private multiplicative_op ::= MUL | DIV | MOD
+
+unary_expression ::= [unary_op] primary_expression
+
+private unary_op ::= MINUS | EXCL
+
+primary_expression ::= literal_expression
+                     | struct_initialization
+                     | function_call
+                     | member_access
+                     | parenthesized_expression
+                     | IDENTIFIER
+
+literal_expression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL
+
+struct_initialization ::= IDENTIFIER COLON_COLON LBRACE [struct_init_fields] RBRACE
+
+struct_init_fields ::= struct_init_field (COMMA struct_init_field)* [COMMA]
+
+struct_init_field ::= IDENTIFIER COLON expression
+
+function_call ::= IDENTIFIER LPAREN [argument_list] RPAREN
+
+argument_list ::= expression (COMMA expression)*
+
+member_access ::= primary_expression DOT IDENTIFIER
+
+parenthesized_expression ::= LPAREN expression RPAREN
+
+private BOOLEAN_LITERAL ::= 'true' | 'false'

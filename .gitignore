@@ -12,8 +12,12 @@ editor/.c-cache
 *.out
 *.log
 dist
+.gradle
 
 cache
+caches
+gradle/wrapper
+packages/intellij-plugin/src/main/gen
 packages/stride-editor/src-tauri/target
 packages/stride-editor/src-tauri/gen/schemas
 

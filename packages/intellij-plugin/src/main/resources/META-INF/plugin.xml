@@ -1,0 +1,23 @@
+<idea-plugin>
+    <id>com.stride.intellij</id>
+    <name>Stride</name>
+    <vendor>Stride</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="Stride File"
+                  implementationClass="com.stride.intellij.StrideFileType"
+                  fieldName="INSTANCE"
+                  language="Stride"
+                  extensions="sr;stride"/>
+
+        <lang.syntaxHighlighterFactory language="Stride"
+                                        implementationClass="com.stride.intellij.highlight.StrideSyntaxHighlighterFactory"/>
+
+        <lang.parserDefinition language="Stride"
+                                implementationClass="com.stride.intellij.StrideParserDefinition"/>
+
+        <colorSettingsPage implementationClass="com.stride.intellij.highlight.StrideColorSettingsPage"/>
+    </extensions>
+</idea-plugin>
