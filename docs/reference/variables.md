@@ -6,10 +6,10 @@ Stride is a statically typed language.
 
 Stride provides keywords for variable declaration with different mutability rules:
 
-| Keyword | Description |
-| :--- | :--- |
+| Keyword | Description                            |
+|---------|----------------------------------------|
 | `const` | Declares a constant (immutable) value. |
-| `let` | Declares a mutable variable. |
+| `let`   | Declares a mutable variable.           |
 
 ### Examples
 
