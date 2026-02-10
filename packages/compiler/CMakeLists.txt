@@ -1,13 +1,11 @@
-cmake_minimum_required(VERSION 4.1.2) # Higher version recommended for FetchContent
-cmake_policy(SET CMP0135 NEW) # Silences the warning and sets modern behavior
+cmake_minimum_required(VERSION 4.1.2)
+cmake_policy(SET CMP0135 NEW)
 project(cstride)
 
 set(CMAKE_CXX_STANDARD 23)
 
-# --- 1. Dependencies ---
+# --- Dependencies ---
 find_package(LLVM 21.1.8 REQUIRED CONFIG)
-find_package(FLEX REQUIRED)
-find_package(BISON REQUIRED)
 
 # GoogleTest setup
 include(FetchContent)
@@ -19,17 +17,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# --- 2. Flex & Bison Generation ---
-# Define paths for generated files as requested by the issue
-set(BISON_OUTPUT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/src/Stride.tab.cpp")
-set(BISON_OUTPUT_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/Stride.tab.h")
-set(FLEX_OUTPUT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/src/Stride.lex.cpp")
-
-BISON_TARGET(StrideParser grammar/Stride.y ${BISON_OUTPUT_CPP} DEFINES_FILE ${BISON_OUTPUT_HEADER})
-FLEX_TARGET(StrideLexer grammar/Stride.l ${FLEX_OUTPUT_CPP})
-ADD_FLEX_BISON_DEPENDENCY(StrideLexer StrideParser)
-
-# --- 3. Library Setup ---
+# --- Library Setup ---
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.cc")
 file(GLOB_RECURSE HEADER_FILES "include/*.h" "include/*.hpp")
 list(REMOVE_ITEM SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
@@ -37,11 +25,9 @@ list(REMOVE_ITEM SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 add_library(cstride_lib STATIC
         ${SOURCE_FILES}
         ${HEADER_FILES}
-        ${BISON_StrideParser_OUTPUTS}
-        ${FLEX_StrideLexer_OUTPUTS}
 )
 
-# --- 4. Include Management ---
+# --- Include Management ---
 # Automatically find all header directories within _deps
 file(GLOB_RECURSE DEPS_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/_deps/*")
 foreach(_dir ${DEPS_INCLUDE_DIRS})
@@ -52,11 +38,11 @@ endforeach()
 
 target_include_directories(cstride_lib PUBLIC
         "include"
-        ${CMAKE_CURRENT_BINARY_DIR} # Critical for finding generated parser.hpp
+        ${CMAKE_CURRENT_BINARY_DIR}
         ${LLVM_INCLUDE_DIRS}
 )
 
-# --- 5. Linking & Definitions ---
+# --- Linking & Definitions ---
 target_compile_definitions(cstride_lib PUBLIC ${LLVM_DEFINITIONS})
 
 target_link_libraries(cstride_lib
@@ -67,7 +53,7 @@ target_link_libraries(cstride_lib
         LLVMAArch64Utils LLVMAArch64AsmParser
 )
 
-# --- 6. Executables & Testing ---
+# --- Executables & Testing ---
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE cstride_lib)
 
