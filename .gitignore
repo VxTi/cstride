@@ -1,7 +1,7 @@
 node_modules
 build
 workspace.xml
-/cmake-build-debug/
+cmake-build-debug
 .cache
 CMakeFiles/
 CMakeCache.txt
@@ -20,6 +20,11 @@ gradle/wrapper
 packages/intellij-plugin/src/main/gen
 packages/stride-editor/src-tauri/target
 packages/stride-editor/src-tauri/gen/schemas
+
+# Ignore auto generated files
+Stride.lex.cpp
+Stride.tab.cpp
+Stride.tab.h
 
 .DS_Store
 Makefile
