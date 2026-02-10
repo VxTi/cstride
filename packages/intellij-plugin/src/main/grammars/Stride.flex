@@ -70,6 +70,13 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   ","                { return StrideTypes.COMMA; }
   "."                { return StrideTypes.DOT; }
   "="                { return StrideTypes.EQ; }
+  "++"               { return StrideTypes.PLUS_PLUS; }
+  "--"               { return StrideTypes.MINUS_MINUS; }
+  "+="               { return StrideTypes.PLUS_EQ; }
+  "-="               { return StrideTypes.MINUS_EQ; }
+   "*="              { return StrideTypes.MUL_EQ; }
+  "/="               { return StrideTypes.DIV_EQ; }
+  "%="               { return StrideTypes.MOD_EQ; }
   "+"                { return StrideTypes.PLUS; }
   "-"                { return StrideTypes.MINUS; }
   "*"                { return StrideTypes.MUL; }

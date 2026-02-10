@@ -48,6 +48,11 @@
     EQ='='
     PLUS_PLUS='++'
     MINUS_MINUS='--'
+    PLUS_EQ='+='
+    MINUS_EQ='-='
+    MUL_EQ='*='
+    DIV_EQ='/='
+    MOD_EQ='%='
     PLUS='+'
     MINUS='-'
     MUL='*'
@@ -126,7 +131,8 @@ Statement ::= VariableDeclaration
             | BlockStatement
             | SEMICOLON
 
-AssignmentStatement ::= IDENTIFIER EQ Expression SEMICOLON
+InlineAssignment ::= IDENTIFIER (EQ | PLUS_EQ | MINUS_EQ | MUL_EQ | DIV_EQ) Expression
+AssignmentStatement ::= InlineAssignment SEMICOLON
 ReturnStatement ::= RETURN [Expression] SEMICOLON
 
 ForLoopStatement ::= FOR LPAREN [ForInitializerPart] [Expression] SEMICOLON [Expression] RPAREN BlockStatement
@@ -138,7 +144,7 @@ IfStatement ::= IF LPAREN Expression RPAREN BlockStatement [ELSE (IfStatement | 
 
 ExpressionStatement ::= Expression SEMICOLON
 
-// --- Expressions (Precedence) ---
+// --- Expressions (Precedence, lowest to highest) ---
 Expression ::= CastExpression
 
 CastExpression ::= LogicalExpression (AS Type)*
@@ -151,13 +157,16 @@ AdditiveExpression ::= MultiplicativeExpression (AdditiveOp MultiplicativeExpres
 
 MultiplicativeExpression ::= UnaryExpression (MultiplicativeOp UnaryExpression)*
 
-UnaryExpression ::= (LhsUnaryOp UnaryExpression) | IncrDecrExpression
+UnaryExpression ::= LhsUnaryOp UnaryExpression
+                  | IncrDecrOp UnaryExpression
+                  | PostfixExpression
 
-IncrDecrExpression ::= (IncrDecrOp AccessExpression)
-                    | (PrimaryExpression (CallSuffix | MemberAccessor | MemberIndexing)* [IncrDecrOp])
+PostfixExpression ::= PrimaryExpression PostfixSuffix*
 
-
-AccessExpression ::= IDENTIFIER (MemberAccessor | MemberIndexing)*
+private PostfixSuffix ::= CallSuffix
+                         | MemberAccessor
+                         | MemberIndexing
+                         | IncrDecrOp
 
 private CallSuffix ::= LPAREN [ArgumentList] RPAREN
 private MemberAccessor ::= DOT IDENTIFIER
