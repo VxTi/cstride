@@ -92,7 +92,7 @@ private StandaloneItem ::= (
     FunctionDeclaration
     | ModuleStatement
     | StructDefinition
-    | VariableDeclaration
+    | VariableDeclarationStatement
     | ExternFunctionDeclaration
     | SEMICOLON
 )
@@ -110,7 +110,10 @@ private StructDefinitionAlias ::= EQ Type SEMICOLON
 StructDefinitionFields ::= StructField (COMMA StructField)* [COMMA]
 StructField ::= IDENTIFIER COLON Type
 
-VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression SEMICOLON
+VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
+VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
+
+VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
 Type ::= (PrimitiveType | UserType)
@@ -121,7 +124,7 @@ UserType ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
 // --- Statements ---
 BlockStatement ::= LBRACE Statement* RBRACE
 
-Statement ::= VariableDeclaration
+Statement ::= VariableDeclarationStatement
             | AssignmentStatement
             | ReturnStatement
             | ForLoopStatement
@@ -135,8 +138,8 @@ InlineAssignment ::= IDENTIFIER (EQ | PLUS_EQ | MINUS_EQ | MUL_EQ | DIV_EQ) Expr
 AssignmentStatement ::= InlineAssignment SEMICOLON
 ReturnStatement ::= RETURN [Expression] SEMICOLON
 
-ForLoopStatement ::= FOR LPAREN [ForInitializerPart] [Expression] SEMICOLON [Expression] RPAREN BlockStatement
-private ForInitializerPart ::= VariableDeclaration | AssignmentStatement | ExpressionStatement
+ForLoopStatement ::= FOR LPAREN [ForInitializerPart] SEMICOLON [Expression] SEMICOLON [Expression] RPAREN BlockStatement
+private ForInitializerPart ::= VariableDeclaration | InlineAssignment | Expression
 
 WhileLoopStatement ::= WHILE LPAREN Expression RPAREN BlockStatement
 ModuleStatement ::= MODULE IDENTIFIER LBRACE StandaloneItem* RBRACE
