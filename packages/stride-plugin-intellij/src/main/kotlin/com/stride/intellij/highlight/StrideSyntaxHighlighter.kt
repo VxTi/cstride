@@ -21,7 +21,9 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         val SEMICOLON = createTextAttributesKey("STRIDE_SEMICOLON", DefaultLanguageHighlighterColors.SEMICOLON)
         val COMMA = createTextAttributesKey("STRIDE_COMMA", DefaultLanguageHighlighterColors.COMMA)
         val DOT = createTextAttributesKey("STRIDE_DOT", DefaultLanguageHighlighterColors.DOT)
-        val TYPE = createTextAttributesKey("STRIDE_TYPE", DefaultLanguageHighlighterColors.METADATA)
+        val TYPE = createTextAttributesKey("STRIDE_TYPE", DefaultLanguageHighlighterColors.KEYWORD)
+        val FUNCTION_CALL = createTextAttributesKey("STRIDE_FUNCTION_CALL", DefaultLanguageHighlighterColors.FUNCTION_CALL)
+
 
         private val KEYWORD_KEYS = arrayOf(KEYWORD)
         private val NUMBER_KEYS = arrayOf(NUMBER)
@@ -44,8 +46,8 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.MODULE, StrideTypes.PACKAGE, StrideTypes.PUB,
             StrideTypes.FN, StrideTypes.STRUCT, StrideTypes.CONST,
             StrideTypes.LET, StrideTypes.EXTERN, StrideTypes.AS,
-            StrideTypes.RETURN, StrideTypes.FOR, StrideTypes.WHILE, StrideTypes.IF,
-            StrideTypes.ELSE -> KEYWORD_KEYS
+            StrideTypes.RETURN, StrideTypes.FOR, StrideTypes.WHILE,
+            StrideTypes.IF, StrideTypes.ELSE -> KEYWORD_KEYS
 
             StrideTypes.VOID, StrideTypes.I8, StrideTypes.I16,
             StrideTypes.I32, StrideTypes.I64, StrideTypes.U8,
@@ -57,10 +59,11 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.STRING_LITERAL -> STRING_KEYS
             StrideTypes.BOOLEAN_LITERAL -> KEYWORD_KEYS
             StrideTypes.COMMENT -> COMMENT_KEYS
-            StrideTypes.EQ, StrideTypes.PLUS, StrideTypes.MINUS, StrideTypes.AMPERSAND, StrideTypes.ASTERISK,
-            StrideTypes.DIV, StrideTypes.MOD, StrideTypes.EXCL, StrideTypes.LT,
-            StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ, StrideTypes.LT_EQ,
-            StrideTypes.GT_EQ, StrideTypes.OPERATOR -> OPERATOR_KEYS
+            StrideTypes.EQ, StrideTypes.PLUS, StrideTypes.MINUS,
+            StrideTypes.AMPERSAND, StrideTypes.ASTERISK, StrideTypes.DIV,
+            StrideTypes.MOD, StrideTypes.EXCL, StrideTypes.LT,
+            StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ,
+            StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR -> OPERATOR_KEYS
             StrideTypes.LPAREN, StrideTypes.RPAREN -> PARENTHESES_KEYS
             StrideTypes.LBRACE, StrideTypes.RBRACE -> BRACES_KEYS
             StrideTypes.SEMICOLON -> SEMICOLON_KEYS

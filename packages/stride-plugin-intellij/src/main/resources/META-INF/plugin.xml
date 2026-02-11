@@ -19,5 +19,9 @@
                                 implementationClass="com.stride.intellij.StrideParserDefinition"/>
 
         <colorSettingsPage implementationClass="com.stride.intellij.highlight.StrideColorSettingsPage"/>
+
+        <annotator language="Stride" implementationClass="com.stride.intellij.annotator.StrideAnnotator"/>
+
+        <enterHandlerDelegate implementation="com.stride.intellij.editor.StrideEnterHandlerDelegate"/>
     </extensions>
 </idea-plugin>

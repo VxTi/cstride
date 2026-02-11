@@ -108,17 +108,16 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         }
     }
 
-    static int var_decl_counter = 0;
-    Symbol symbol = resolve_internal_iden_seq_name(
-        context, {
-            std::format("{}.{}", variable_name, var_decl_counter++)
-        }
-    );
-    /// Variables defined in non-global scope will be internalized as `<name>.<variable_index>`
-    if (context->is_global_scope())
-    {
-        symbol = Symbol(variable_name);
-    }
+    static int var_unique_counter = 0;
+    Symbol symbol =
+        context->is_global_scope()
+            ? Symbol(variable_name)
+            /// Variables defined in non-global scope will be internalized as `<name>.<variable_index>`
+            : resolve_internal_iden_seq_name(
+                context, {
+                    std::format("{}.{}", variable_name, var_unique_counter++)
+                }
+            );
 
     // We don't provide a context name here, as the variable name is already mangled by
     // "resolve_internal_iden_seq_name". We do it there since

@@ -20,25 +20,27 @@ class StrideColorSettingsPage : ColorSettingsPage {
     override fun getHighlighter(): SyntaxHighlighter = StrideSyntaxHighlighter()
 
     override fun getDemoText(): String = """
-        // Stride example
-        extern fn print(msg: string): void;
+            // Stride example
+            extern fn <func>print</func>(msg: string): void;
 
-        struct Point {
-            x: f32,
-            y: f32
-        }
-
-        fn main(): i32 {
-            const p: Point = Point:: { x: 1.0, y: 2.0 };
-            let msg: string = "Hello, Stride!";
-            if (p.x > 0.0 && true) {
-                print(msg);
+            struct Point {
+                x: f32,
+                y: f32
             }
-            return 0;
-        }
-    """.trimIndent()
 
-    override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? = null
+            fn <func>main</func>(): i32 {
+                const p: Point = Point::{ x: 1.0, y: 2.0 };
+                let msg: string = "Hello, Stride!";
+                if (p.x > 0.0 && true) {
+                    <func>print</func>(msg);
+                }
+                return 0;
+            }
+        """.trimIndent()
+
+    override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? = mapOf(
+            "func" to StrideSyntaxHighlighter.FUNCTION_CALL
+        )
 
     companion object {
         private val DESCRIPTORS = arrayOf(
@@ -52,7 +54,9 @@ class StrideColorSettingsPage : ColorSettingsPage {
             AttributesDescriptor("Semicolon", StrideSyntaxHighlighter.SEMICOLON),
             AttributesDescriptor("Comma", StrideSyntaxHighlighter.COMMA),
             AttributesDescriptor("Dot", StrideSyntaxHighlighter.DOT),
-            AttributesDescriptor("Type", StrideSyntaxHighlighter.TYPE)
+            AttributesDescriptor("Type", StrideSyntaxHighlighter.TYPE),
+            AttributesDescriptor("Function call", StrideSyntaxHighlighter.FUNCTION_CALL)
+
         )
     }
 }
