@@ -36,6 +36,8 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
 
    "/*"              { yybegin(BLOCK_COMMENT); }
 
+  "pub"             { return StrideTypes.PUB; }
+  "package"          { return StrideTypes.PACKAGE; }
   "module"           { return StrideTypes.MODULE; }
   "fn"               { return StrideTypes.FN; }
   "struct"           { return StrideTypes.STRUCT; }

@@ -11,6 +11,8 @@
 
 using namespace stride::ast;
 
+/*----------------------------------- PARSING AND VALIDATION ------------------------------------*/
+
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
@@ -106,18 +108,24 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         }
     }
 
-    std::string internal_name = variable_name;
+    static int var_decl_counter = 0;
+    Symbol symbol = resolve_internal_iden_seq_name(
+        context, {
+            std::format("{}.{}", variable_name, var_decl_counter++)
+        }
+    );
     /// Variables defined in non-global scope will be internalized as `<name>.<variable_index>`
-    if (!context->is_global_scope())
+    if (context->is_global_scope())
     {
-        static int var_decl_counter = 0;
-        internal_name = std::format("{}.{}", variable_name, var_decl_counter++);
+        symbol = Symbol(variable_name);
     }
 
+    // We don't provide a context name here, as the variable name is already mangled by
+    // "resolve_internal_iden_seq_name". We do it there since
     context->define_variable(
-        context->get_name(),
+        "",
         variable_name,
-        internal_name,
+        symbol.internal_name,
         variable_type->clone()
     );
 
@@ -128,8 +136,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         set.get_source(),
         SourcePosition(ref_tok_pos.offset, var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset),
         context,
-        variable_name,
-        internal_name,
+        symbol,
         std::move(variable_type),
         std::move(value)
     );
@@ -228,6 +235,8 @@ void AstVariableDeclaration::validate()
         );
     }
 }
+
+/* ---------------------------------------- LLVM IR GENERATION -------------------------------------------*/
 
 // LLVM calls these functions at startup to initialize global variables
 // This way, we can assign function return values to variables
@@ -485,8 +494,7 @@ IAstNode* AstVariableDeclaration::reduce()
             this->get_source(),
             this->get_source_position(),
             this->get_registry(),
-            this->get_variable_name(),
-            this->get_internal_name(),
+            this->get_symbol(),
             std::move(cloned_type),
             std::unique_ptr<AstExpression>(reduced_expr)
         ).release();

@@ -15,7 +15,10 @@ using namespace stride::ast;
  * </code>
  * Here, <code>sys::io</code> will be converted into the symbol <code>sys__io</code>
  */
-Symbol consume_import_module_base(TokenSet& tokens)
+Symbol consume_import_module_base(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& tokens
+    )
 {
     const auto base = tokens.expect(TokenType::IDENTIFIER,
                                     "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'");
@@ -29,7 +32,7 @@ Symbol consume_import_module_base(TokenSet& tokens)
         parts.push_back(part.get_lexeme());
     }
 
-    return resolve_internal_import_base_name(parts);
+    return resolve_internal_iden_seq_name(context, parts);
 }
 
 /**
@@ -86,7 +89,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     const auto reference_token = set.expect(TokenType::KEYWORD_IMPORT);
     // With the guard clause, this will always be the case.
 
-    const auto import_module = consume_import_module_base(set);
+    const auto import_module = consume_import_module_base(context, set);
     const auto import_list = consume_import_submodules(set);
 
     const Dependency dependency = {

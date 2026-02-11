@@ -26,8 +26,8 @@ namespace stride::ast
         ) : name(std::move(name)),
             internal_name(context_name.empty() ? internal_name : context_name + DELIMITER + internal_name) {}
 
-        explicit Symbol(std::string context_name, const std::string& name) : Symbol(
-            std::move(context_name), name, name) {}
+        explicit Symbol(const std::string& context_name, const std::string& name)
+            : Symbol(context_name, name, name) {}
 
         explicit Symbol(const std::string& name) : Symbol("", name) {}
 
@@ -54,7 +54,8 @@ namespace stride::ast
         const std::vector<std::string>& function_name_segments
     );
 
-    Symbol resolve_internal_import_base_name(
+    Symbol resolve_internal_iden_seq_name(
+        const std::shared_ptr<ParsingContext>& context,
         const std::vector<std::string>& segments
     );
 }

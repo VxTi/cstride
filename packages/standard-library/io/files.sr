@@ -1,27 +1,40 @@
-mod stl::io::files;
+package stl::io;
 
-extern fn fopen(filename: string, mode: string): ptr;
-extern fn fclose(file: ptr): i32;
-extern fn fread(ptr: ptr, size: usize, count: usize, stream: ptr): usize;
-extern fn fwrite(ptr: ptr, size: usize, count: usize, stream: ptr): usize;
-extern fn exit(status: i32): void;
+module Files {
 
-fn file_open(filename: string, mode: string): ptr {
-    return fopen(filename, mode);
-}
+    pub struct File {
 
-fn file_close(file: ptr): i32 {
-    return fclose(file);
-}
+    }
 
-fn file_read(ptr: ptr, size: usize, count: usize, stream: ptr): usize {
-    return fread(ptr, size, count, stream);
-}
+    pub extern fn test(): i32 {}
 
-fn file_write(ptr: ptr, size: usize, count: usize, stream: ptr): usize {
-    return fwrite(ptr, size, count, stream);
-}
+    extern fn fopen(filename: string, mode: string): ptr;
 
-fn program_exit(status: i32): void {
-    exit(status);
+    extern fn fclose(file: ptr): i32;
+
+    extern fn fread(ptr: ptr, size: usize, count: usize, stream: ptr): usize;
+
+    extern fn fwrite(ptr: ptr, size: usize, count: usize, stream: ptr): usize;
+
+    extern fn exit(status: i32): void;
+
+    fn open_file(filename: string, mode: string): ptr {
+        return fopen(filename, mode);
+    }
+
+    fn close_file(file: ptr): i32 {
+        return fclose(file);
+    }
+
+    fn file_read(ptr: ptr, size: usize, count: usize, stream: ptr): usize {
+        return fread(ptr, size, count, stream);
+    }
+
+    fn file_write(ptr: ptr, size: usize, count: usize, stream: ptr): usize {
+        return fwrite(ptr, size, count, stream);
+    }
+
+    fn program_exit(status: i32): void {
+        exit(status);
+    }
 }

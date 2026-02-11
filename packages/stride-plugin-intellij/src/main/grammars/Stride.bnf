@@ -24,6 +24,9 @@
     FOR='for'
     WHILE='while'
     MODULE='module'
+    PACKAGE='package'
+    PUB='pub'
+    ASYNC='async'
     IF='if'
     ELSE='else'
     VOID='void'
@@ -87,7 +90,7 @@
   ]
 }
 
-StrideFile ::= StandaloneItem*
+StrideFile ::= [PackageStatement] StandaloneItem*
 
 private StandaloneItem ::= (
     FunctionDeclaration
@@ -99,13 +102,13 @@ private StandaloneItem ::= (
 )
 
 // --- Declarations ---
-ExternFunctionDeclaration ::= EXTERN FunctionDeclarationHeader SEMICOLON
-FunctionDeclaration ::= FunctionDeclarationHeader BlockStatement
+ExternFunctionDeclaration ::= [AccessModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
+FunctionDeclaration ::= [AccessModifier] [ASYNC] FunctionDeclarationHeader BlockStatement
 private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterList] RPAREN COLON Type
 FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)* [COMMA]
 FunctionParameter ::= IDENTIFIER COLON Type
 
-StructDefinition ::= STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
+StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 private StructDefinitionAlias ::= EQ Type SEMICOLON
 StructDefinitionFields ::= StructField (COMMA StructField)* [COMMA]
@@ -123,7 +126,7 @@ VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInfer
 Type ::= [(ASTERISK | AMPERSAND)*] (PrimitiveType | UserType)
 // <module>::<type> or <type>
 PrimitiveType ::= [(IDENTIFIER COLON_COLON)*] VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING
-UserType ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
+UserType ::= ScopedIdentifier
 
 // --- Statements ---
 BlockStatement ::= LBRACE Statement* RBRACE
@@ -145,8 +148,9 @@ ReturnStatement ::= RETURN [Expression] SEMICOLON
 ForLoopStatement ::= FOR LPAREN [ForInitializerPart] SEMICOLON [Expression] SEMICOLON [Expression] RPAREN BlockStatement
 private ForInitializerPart ::= VariableDeclaration | InlineAssignment | Expression
 
+PackageStatement ::= PACKAGE ScopedIdentifier SEMICOLON
 WhileLoopStatement ::= WHILE LPAREN Expression RPAREN BlockStatement
-ModuleStatement ::= MODULE IDENTIFIER LBRACE StandaloneItem* RBRACE
+ModuleStatement ::= MODULE ScopedIdentifier LBRACE StandaloneItem* RBRACE
 IfStatement ::= IF LPAREN Expression RPAREN BlockStatement [ELSE (IfStatement | BlockStatement)]
 
 ExpressionStatement ::= Expression SEMICOLON
@@ -182,14 +186,18 @@ private MemberIndexing ::= LBRACKET Expression RBRACKET
 PrimaryExpression ::= LiteralExpression
                      | StructInitialization
                      | ParenthesizedExpression
-                     | IDENTIFIER
+                     | ScopedIdentifier
 
 LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL
-StructInitialization ::= IDENTIFIER COLON_COLON LBRACE [StructInitFields] RBRACE
+StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] RBRACE
 StructInitFields ::= StructInitField (COMMA StructInitField)* [COMMA]
-StructInitField ::= IDENTIFIER COLON Expression
+StructInitField ::= ScopedIdentifier COLON Expression
 ArgumentList ::= Expression (COMMA Expression)*
 ParenthesizedExpression ::= LPAREN Expression RPAREN
+
+ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
+
+AccessModifier ::= PUB
 
 private BOOLEAN_LITERAL ::= 'true' | 'false'
 private LogicalOp ::= '&&' | '||'

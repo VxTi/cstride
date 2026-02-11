@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "ast_node.h"
 #include "types.h"
 #include "ast/modifiers.h"
@@ -303,8 +305,7 @@ namespace stride::ast
     class AstVariableDeclaration :
         public AstExpression
     {
-        const std::string _variable_name;
-        const std::string _internal_name;
+        const Symbol _symbol;
         const std::unique_ptr<IAstType> _variable_type;
         const std::unique_ptr<AstExpression> _initial_value;
 
@@ -313,26 +314,30 @@ namespace stride::ast
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
-            std::string variable_name,
-            std::string internal_name,
+            Symbol symbol,
             std::unique_ptr<IAstType> variable_type,
             std::unique_ptr<AstExpression> initial_value
         ) : AstExpression(source, source_position, context),
-            _variable_name(std::move(variable_name)),
-            _internal_name(std::move(internal_name)),
+        _symbol(std::move(symbol)),
             _variable_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)) {}
 
         [[nodiscard]]
         const std::string& get_variable_name() const
         {
-            return this->_variable_name;
+            return this->_symbol.name;
+        }
+
+        [[nodiscard]]
+        Symbol get_symbol() const
+        {
+            return this->_symbol;
         }
 
         [[nodiscard]]
         const std::string& get_internal_name() const
         {
-            return this->_internal_name.empty() ? this->_variable_name : this->_internal_name;
+            return this->_symbol.internal_name;
         }
 
         [[nodiscard]]

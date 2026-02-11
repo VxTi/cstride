@@ -22,9 +22,24 @@ llvm::Value* AstIdentifier::codegen(
 
     if (const auto block = builder->GetInsertBlock())
     {
-        if (const llvm::Function* function = block->getParent())
+        if (llvm::Function* function = block->getParent())
         {
             val = function->getValueSymbolTable()->lookup(internal_name);
+
+            if (!val)
+            {
+                val = module->getNamedGlobal(internal_name);
+            }
+
+            if (!val)
+            {
+                throw parsing_error(
+                    ErrorType::RUNTIME_ERROR,
+                    std::format("Identifier '{}' not found in this scope", this->get_name()),
+                    *this->get_source(),
+                    this->get_source_position()
+                );
+            }
         }
     }
 

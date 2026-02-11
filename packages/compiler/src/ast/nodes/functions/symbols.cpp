@@ -97,9 +97,10 @@ Symbol stride::ast::resolve_internal_function_name(
     return resolve_internal_function_name(context, parameter_types, combined);
 }
 
-Symbol stride::ast::resolve_internal_import_base_name(
+Symbol stride::ast::resolve_internal_iden_seq_name(
+    const std::shared_ptr<ParsingContext>& context,
     const std::vector<std::string>& segments
 )
 {
-    return Symbol(join(segments, DELIMITER));
+    return Symbol(context->get_name(), join(segments, DELIMITER));
 }
