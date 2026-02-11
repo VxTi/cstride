@@ -50,12 +50,13 @@
     MINUS_MINUS='--'
     PLUS_EQ='+='
     MINUS_EQ='-='
-    MUL_EQ='*='
-    DIV_EQ='/='
+    ASTERISK_EQ='*='
+    SLASH_EQ='/='
     MOD_EQ='%='
     PLUS='+'
     MINUS='-'
-    MUL='*'
+    ASTERISK='*'
+    AMPERSAND='&'
     DIV='/'
     MOD='%'
     EXCL='!'
@@ -80,7 +81,7 @@
     NUMBER_LITERAL='regexp:\d+(\.\d*)?([eE][+-]?\d+)?[fFdDLuU]*|0x[0-9a-fA-F]+'
     STRING_LITERAL="regexp:\"([^\\\"\r\n]|\\[^\r\n])*\""
 
-    IDENTIFIER='regexp:[a-zA-Z_][a-zA-Z_0-9]*'
+    IDENTIFIER='regexp:[a-zA-Z_$][a-zA-Z_0-9\$]*'
 
     OPERATOR='regexp:&&|\|\|'
   ]
@@ -104,11 +105,14 @@ private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterLis
 FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)* [COMMA]
 FunctionParameter ::= IDENTIFIER COLON Type
 
-StructDefinition ::= STRUCT IDENTIFIER (StructDefinitionBody | StructDefinitionAlias)
+StructDefinition ::= STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 private StructDefinitionAlias ::= EQ Type SEMICOLON
 StructDefinitionFields ::= StructField (COMMA StructField)* [COMMA]
 StructField ::= IDENTIFIER COLON Type
+
+GenericParameterList ::= LT GenericParameter (COMMA GenericParameter)* GT
+GenericParameter ::= IDENTIFIER
 
 VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
 VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
@@ -116,7 +120,7 @@ VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
 VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
-Type ::= (PrimitiveType | UserType)
+Type ::= [(ASTERISK | AMPERSAND)*] (PrimitiveType | UserType)
 // <module>::<type> or <type>
 PrimitiveType ::= [(IDENTIFIER COLON_COLON)*] VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING
 UserType ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
@@ -134,7 +138,7 @@ Statement ::= VariableDeclarationStatement
             | BlockStatement
             | SEMICOLON
 
-InlineAssignment ::= IDENTIFIER (EQ | PLUS_EQ | MINUS_EQ | MUL_EQ | DIV_EQ) Expression
+InlineAssignment ::= IDENTIFIER (EQ | PLUS_EQ | MINUS_EQ | ASTERISK_EQ | SLASH_EQ) Expression
 AssignmentStatement ::= InlineAssignment SEMICOLON
 ReturnStatement ::= RETURN [Expression] SEMICOLON
 
@@ -156,9 +160,9 @@ LogicalExpression ::= ComparisonExpression (LogicalOp ComparisonExpression)*
 
 ComparisonExpression ::= AdditiveExpression (ComparisonOp AdditiveExpression)*
 
-AdditiveExpression ::= MultiplicativeExpression (AdditiveOp MultiplicativeExpression)*
+AdditiveExpression ::= ASTERISKtiplicativeExpression (AdditiveOp ASTERISKtiplicativeExpression)*
 
-MultiplicativeExpression ::= UnaryExpression (MultiplicativeOp UnaryExpression)*
+ASTERISKtiplicativeExpression ::= UnaryExpression (ASTERISKtiplicativeOp UnaryExpression)*
 
 UnaryExpression ::= LhsUnaryOp UnaryExpression
                   | IncrDecrOp UnaryExpression
@@ -191,6 +195,6 @@ private BOOLEAN_LITERAL ::= 'true' | 'false'
 private LogicalOp ::= '&&' | '||'
 private ComparisonOp ::= EQ_EQ | EXCL_EQ | LT | GT | LT_EQ | GT_EQ
 private AdditiveOp ::= PLUS | MINUS
-private MultiplicativeOp ::= MUL | DIV | MOD
+private ASTERISKtiplicativeOp ::= ASTERISK | DIV | MOD
 private LhsUnaryOp ::= PLUS | MINUS | EXCL
 private IncrDecrOp ::= PLUS_PLUS | MINUS_MINUS

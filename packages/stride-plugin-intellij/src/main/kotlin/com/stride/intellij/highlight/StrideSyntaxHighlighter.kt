@@ -57,7 +57,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.STRING_LITERAL -> STRING_KEYS
             StrideTypes.BOOLEAN_LITERAL -> KEYWORD_KEYS
             StrideTypes.COMMENT -> COMMENT_KEYS
-            StrideTypes.EQ, StrideTypes.PLUS, StrideTypes.MINUS, StrideTypes.MUL,
+            StrideTypes.EQ, StrideTypes.PLUS, StrideTypes.MINUS, StrideTypes.AMPERSAND, StrideTypes.ASTERISK,
             StrideTypes.DIV, StrideTypes.MOD, StrideTypes.EXCL, StrideTypes.LT,
             StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ, StrideTypes.LT_EQ,
             StrideTypes.GT_EQ, StrideTypes.OPERATOR -> OPERATOR_KEYS

@@ -17,9 +17,7 @@ dist
 cache
 caches
 gradle/wrapper
-packages/intellij-plugin/src/main/gen
-packages/stride-editor/src-tauri/target
-packages/stride-editor/src-tauri/gen/schemas
+packages/stride-plugin-intellij/src/main/gen
 
 # Ignore auto generated files
 Stride.lex.cpp

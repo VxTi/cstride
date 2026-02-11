@@ -74,12 +74,13 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "--"               { return StrideTypes.MINUS_MINUS; }
   "+="               { return StrideTypes.PLUS_EQ; }
   "-="               { return StrideTypes.MINUS_EQ; }
-   "*="              { return StrideTypes.MUL_EQ; }
-  "/="               { return StrideTypes.DIV_EQ; }
+  "*="               { return StrideTypes.ASTERISK_EQ; }
+  "/="               { return StrideTypes.SLASH_EQ; }
   "%="               { return StrideTypes.MOD_EQ; }
   "+"                { return StrideTypes.PLUS; }
   "-"                { return StrideTypes.MINUS; }
-  "*"                { return StrideTypes.MUL; }
+  "*"                { return StrideTypes.ASTERISK; }
+  "&"                { return StrideTypes.AMPERSAND; }
   "/"                { return StrideTypes.DIV; }
   "%"                { return StrideTypes.MOD; }
   "!"                { return StrideTypes.EXCL; }

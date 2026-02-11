@@ -1,1 +1,1 @@
-rootProject.name = "stride-plugin-"
+rootProject.name = "stride-plugin-intellij"
