@@ -76,13 +76,17 @@ void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType t
     ));
 }
 
-const FieldSymbolDef* ParsingContext::get_variable_def(const std::string& variable_name) const
+const FieldSymbolDef* ParsingContext::get_variable_def(
+    const std::string& variable_name,
+    const bool use_raw_name
+) const
 {
     for (const auto& symbol_def : this->_symbols)
     {
         if (const auto* field_definition = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
         {
-            if (field_definition->get_internal_symbol_name() == variable_name)
+            if (field_definition->get_internal_symbol_name() == variable_name
+                || (use_raw_name && field_definition->get_symbol().name == variable_name))
             {
                 return field_definition;
             }
@@ -269,7 +273,7 @@ void ParsingContext::define_variable(
 {
     if (this->is_global_scope())
     {
-        this->define_variable_globally(std::move(variable_sym),  std::move(type));
+        this->define_variable_globally(std::move(variable_sym), std::move(type));
         return;
     }
     if (is_field_defined_in_scope(variable_sym.internal_name))
@@ -292,12 +296,15 @@ void ParsingContext::define_variable(
     );
 }
 
-const FieldSymbolDef* ParsingContext::lookup_variable(const std::string& name) const
+const FieldSymbolDef* ParsingContext::lookup_variable(
+    const std::string& name,
+    const bool use_raw_name
+) const
 {
     auto current = this;
     while (current != nullptr)
     {
-        if (const auto def = current->get_variable_def(name))
+        if (const auto def = current->get_variable_def(name, use_raw_name))
         {
             return def;
         }

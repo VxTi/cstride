@@ -4,7 +4,6 @@
 
 #include "ast/optionals.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
 
@@ -20,7 +19,7 @@ bool AstVariableReassignment::is_reducible()
 
 void AstVariableReassignment::validate()
 {
-    const auto identifier_def = this->get_context()->lookup_variable(this->get_variable_name());
+    const auto identifier_def = this->get_context()->lookup_variable(this->get_variable_name(), true);
     if (!identifier_def)
     {
         throw parsing_error(
@@ -294,44 +293,36 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
     const std::shared_ptr<ParsingContext>& context,
-    const std::string &nested_name,
+    const std::string &variable_name,
     TokenSet& set
 )
 {
     // Can be either a singular field, e.g., a regular variable,
     // or member access, e.g., <member>.<field>
-    if (!is_variable_mutative_token(set.peek(1).get_type()))
+    const auto reference_token = set.peek_next();
+    if (!is_variable_mutative_token(reference_token.get_type()))
     {
         return std::nullopt;
     }
 
-    const auto reference_token = set.peek_next();
+    auto mutative_op = parse_mutative_assignment_type(set, reference_token);
+    set.next();
 
-    std::string reassignment_iden_name = nested_name;
-    const auto reassign_internal_variable_name = context->lookup_variable(reassignment_iden_name);
+    std::string reassignment_iden_name = variable_name;
+    const auto reassign_internal_variable_name = context->lookup_variable(reassignment_iden_name, true);
 
     if (!reassign_internal_variable_name)
     {
-        return std::nullopt;
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Unable to reassign variable '{}', variable not found", reassignment_iden_name),
+            *set.get_source(),
+            reference_token.get_source_position()
+        );
     }
 
 
     std::string reassign_internal_name = reassign_internal_variable_name->get_internal_symbol_name();
-
-    // Instead of moving the cursor over in the set, we peek forward.
-    // This way, if it appears we don't have a mutative operation,
-    // the standalone expression parser can continue with another expression variant
-    const auto mutative_token = set.peek(1);
-
-    if (!is_variable_mutative_token(mutative_token.get_type()))
-    {
-        return std::nullopt;
-    }
-
-    set.skip(1);
-
-    auto mutative_op = parse_mutative_assignment_type(set, mutative_token);
-    set.next();
 
     auto expression = parse_inline_expression(context, set);
 

@@ -660,7 +660,7 @@ namespace stride::ast
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
         const std::shared_ptr<ParsingContext>& context,
-        const std::string& nested_name,
+        const std::string& variable_name,
         TokenSet& set
     );
 

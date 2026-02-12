@@ -15,7 +15,7 @@ llvm::Value* AstIdentifier::codegen(
 
     std::string internal_name = this->get_internal_name();
 
-    if (const auto definition = context->lookup_variable(this->get_name()))
+    if (const auto definition = context->lookup_variable(this->get_name(), true))
     {
         internal_name = definition->get_internal_symbol_name();
     }

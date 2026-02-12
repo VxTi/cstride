@@ -205,7 +205,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const FieldSymbolDef* get_variable_def(const std::string& variable_name) const;
+        const FieldSymbolDef* get_variable_def(const std::string& variable_name, bool use_raw_name = false) const;
 
         [[nodiscard]]
         const SymbolFnDefinition* get_function_def(const std::string& function_name) const;
@@ -223,7 +223,10 @@ namespace stride::ast
         ParsingContext* get_parent_registry() const { return this->_parent_registry.get(); }
 
         [[nodiscard]]
-        const FieldSymbolDef* lookup_variable(const std::string& name) const;
+        const FieldSymbolDef* lookup_variable(
+            const std::string& name,
+            bool use_raw_name = false
+        ) const;
 
         /// Will attempt to define the function in the global context.
         void define_function(

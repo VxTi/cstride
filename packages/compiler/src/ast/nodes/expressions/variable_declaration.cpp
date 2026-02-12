@@ -114,18 +114,18 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
                                                 var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset);
 
     static int var_unique_counter = 0;
-    const auto interim_var_name =
+    const auto internal_name =
         context->is_global_scope()
             ? variable_name
             : std::format("{}.{}", variable_name, var_unique_counter++);
-    Symbol symbol = resolve_internal_name(
-        context->get_name(),
+
+    auto symbol = Symbol(
         symbol_position,
-        {interim_var_name}
+        context->get_name(),
+        variable_name,
+        internal_name
     );
 
-    // We don't provide a context name here, as the variable name is already mangled by
-    // "resolve_internal_name".
     context->define_variable(
         symbol,
         variable_type->clone()

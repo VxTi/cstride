@@ -385,12 +385,12 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         // TODO: Add generic support.
         // Right now we just do a lookup for `identifier`'s name, though we might want to extend
         // the lookup for generics.
-        const auto reference_variable = context->lookup_variable(identifier->get_name());
+        const auto reference_variable = context->lookup_variable(identifier->get_name(), true);
         if (!reference_variable)
         {
             throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
-                std::format("Variable '{}' was not found in this scope", identifier->get_name()),
+                std::format("Unable to infer expression type for variable '{}': variable not found", identifier->get_name()),
                 *identifier->get_source(),
                 identifier->get_source_position()
             );

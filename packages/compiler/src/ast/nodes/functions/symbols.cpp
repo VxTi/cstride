@@ -100,13 +100,13 @@ Symbol stride::ast::resolve_internal_function_name(
 Symbol stride::ast::resolve_internal_name(
     const std::string& context_name,
     const SourcePosition position,
-    const std::vector<std::string>& segments
+    const SymbolNameSegments& segments
 )
 {
     return Symbol(position, context_name, resolve_internal_name(segments));
 }
 
-std::string stride::ast::resolve_internal_name(const std::vector<std::string>& segments)
+std::string stride::ast::resolve_internal_name(const SymbolNameSegments& segments)
 {
     return join(segments, DELIMITER);
 }
