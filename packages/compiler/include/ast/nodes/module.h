@@ -32,6 +32,9 @@ namespace stride::ast
         [[nodiscard]]
         const std::string& get_name() const { return _name; }
 
+        [[nodiscard]]
+        AstBlock* get_body() const { return this->_body.get(); }
+
         llvm::Value* codegen(
             const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,

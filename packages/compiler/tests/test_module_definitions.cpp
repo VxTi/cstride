@@ -54,3 +54,14 @@ TEST(Modules, ModuleAccess)
         }
     )");
 }
+
+TEST(Modules, ModuleWithSeveralSameSymbols)
+{
+    assert_compiles(R"(
+        module Foo {
+            const field = "foo";
+        }
+
+        const field = "bar";
+    )");
+}
