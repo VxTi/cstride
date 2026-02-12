@@ -249,7 +249,7 @@ namespace stride::ast
             return std::make_unique<AstArrayType>(
                 this->get_source(),
                 this->get_source_position(),
-                this->get_registry(),
+                this->get_context(),
                 std::move(element_clone),
                 this->_initial_length
             );

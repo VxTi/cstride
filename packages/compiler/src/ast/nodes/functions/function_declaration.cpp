@@ -118,7 +118,7 @@ void AstFunctionDeclaration::validate()
             continue;
         }
 
-        if (const auto return_stmt_type = infer_expression_type(return_stmt->get_registry(), ret_expr);
+        if (const auto return_stmt_type = infer_expression_type(return_stmt->get_context(), ret_expr);
             !return_stmt_type->equals(*this->get_return_type()))
         {
             throw parsing_error(
@@ -333,9 +333,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     {
         parameter_types_cloned.push_back(param->get_type()->clone());
     }
-    // Internal name contains all parameter types, so that there can be function overloads with
-    // different parameter types
-    auto symbol_name = Symbol(context->get_name(), fn_name, /* internal_name = */fn_name);
+    const auto position = reference_token.get_source_position();
+    auto symbol_name = Symbol(position, context->get_name(), fn_name);
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
@@ -348,7 +347,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        symbol_name = resolve_internal_function_name(context, parameter_types, fn_name);
+        symbol_name = resolve_internal_function_name(context, position, {fn_name}, parameter_types);
     }
 
     // Function will be defined in the parent context (global, perhaps)
@@ -368,7 +367,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     return std::make_unique<AstFunctionDeclaration>(
         tokens.get_source(),
-        reference_token.get_source_position(),
         context,
         symbol_name,
         std::move(parameters),

@@ -108,32 +108,31 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         }
     }
 
+    const auto ref_tok_pos = reference_token.get_source_position();
+    const auto var_type_pos = variable_type->get_source_position();
+    const auto symbol_position = SourcePosition(ref_tok_pos.offset,
+                                                var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset);
+
     static int var_unique_counter = 0;
-    Symbol symbol =
+    const auto interim_var_name =
         context->is_global_scope()
-            ? Symbol(variable_name)
-            /// Variables defined in non-global scope will be internalized as `<name>.<variable_index>`
-            : resolve_internal_iden_seq_name(
-                context, {
-                    std::format("{}.{}", variable_name, var_unique_counter++)
-                }
-            );
+            ? variable_name
+            : std::format("{}.{}", variable_name, var_unique_counter++);
+    Symbol symbol = resolve_internal_name(
+        context->get_name(),
+        symbol_position,
+        {interim_var_name}
+    );
 
     // We don't provide a context name here, as the variable name is already mangled by
-    // "resolve_internal_iden_seq_name". We do it there since
+    // "resolve_internal_name".
     context->define_variable(
-        "",
-        variable_name,
-        symbol.internal_name,
+        symbol,
         variable_type->clone()
     );
 
-    const auto ref_tok_pos = reference_token.get_source_position();
-    const auto var_type_pos = variable_type->get_source_position();
-
     return std::make_unique<AstVariableDeclaration>(
         set.get_source(),
-        SourcePosition(ref_tok_pos.offset, var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset),
         context,
         symbol,
         std::move(variable_type),
@@ -170,7 +169,7 @@ void AstVariableDeclaration::validate()
     init_val->validate();
 
     const std::unique_ptr<IAstType> internal_expr_type = infer_expression_type(
-        this->get_registry(),
+        this->get_context(),
         init_val
     );
     const auto lhs_type = this->get_variable_type();
@@ -347,7 +346,7 @@ void global_var_declaration_codegen(
     llvm::Value* dynamic_init_value = nullptr;
     if (const auto initial_value = self->get_initial_value().get(); initial_value != nullptr)
     {
-        dynamic_init_value = initial_value->codegen(self->get_registry(), module, &tempBuilder);
+        dynamic_init_value = initial_value->codegen(self->get_context(), module, &tempBuilder);
     }
 
     if (dynamic_init_value)
@@ -413,7 +412,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         if (const auto initial_value = this->get_initial_value().get();
             initial_value != nullptr && is_literal_ast_node(initial_value))
         {
-            init_value = initial_value->codegen(this->get_registry(), module, ir_builder);
+            init_value = initial_value->codegen(this->get_context(), module, ir_builder);
         }
 
         if (init_value != nullptr)
@@ -445,7 +444,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     llvm::Value* init_value = nullptr;
     if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
     {
-        init_value = initial_value->codegen(this->get_registry(), module, ir_builder);
+        init_value = initial_value->codegen(this->get_context(), module, ir_builder);
     }
 
     if (init_value)
@@ -491,8 +490,7 @@ IAstNode* AstVariableDeclaration::reduce()
     {
         return std::make_unique<AstVariableDeclaration>(
             this->get_source(),
-            this->get_source_position(),
-            this->get_registry(),
+            this->get_context(),
             this->get_symbol(),
             std::move(cloned_type),
             std::unique_ptr<AstExpression>(reduced_expr)

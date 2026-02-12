@@ -269,7 +269,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     }
 
     // Look up the base variable in the symbol table/context
-    const auto variable_definition = expr->get_registry()->lookup_variable(base_iden->get_name());
+    const auto variable_definition = expr->get_context()->lookup_variable(base_iden->get_name());
     if (!variable_definition)
     {
         throw parsing_error(
@@ -304,8 +304,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         }
 
         // Root fields, for if the struct is a reference
-        auto struct_def = expr->get_registry()->get_struct_def(struct_type->get_internal_name());
-        const auto root_ref_struct_fields = expr->get_registry()->get_struct_fields(struct_type->get_internal_name());
+        auto struct_def = expr->get_context()->get_struct_def(struct_type->get_internal_name());
+        const auto root_ref_struct_fields = expr->get_context()->get_struct_fields(struct_type->get_internal_name());
 
         if (!struct_def.has_value() || !root_ref_struct_fields.has_value())
         {
@@ -329,7 +329,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             );
         }
 
-        const auto field_type = StructSymbolDef::get_field_type(
+        const auto field_type = StructSymbolDef::get_struct_member_field_type(
             segment_iden->get_name(),
             root_ref_struct_fields.value()
         );

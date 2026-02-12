@@ -85,9 +85,9 @@ namespace stride::ast
         std::vector<std::pair<std::string, IAstType*>> get_fields() const;
 
         [[nodiscard]]
-        std::optional<IAstType*> get_field_type(const std::string& field_name);
+        std::optional<IAstType*> get_struct_member_field_type(const std::string& field_name);
 
-        static std::optional<IAstType*> get_field_type(
+        static std::optional<IAstType*> get_struct_member_field_type(
             const std::string& field_name,
             const std::vector<std::pair<std::string, IAstType*>>& fields
         );
@@ -104,11 +104,11 @@ namespace stride::ast
         [[nodiscard]]
         bool has_member(const std::string& member_name)
         {
-            return get_field_type(member_name).has_value();
+            return get_struct_member_field_type(member_name).has_value();
         }
 
         [[nodiscard]]
-        std::optional<int> get_member_index(const std::string& member_name) const;
+        std::optional<int> get_struct_field_member_index(const std::string& member_name) const;
     };
 
     /// Can be either a variable or a field in a struct/class
@@ -233,7 +233,7 @@ namespace stride::ast
         ) const;
 
         void define_struct(
-            const std::string& struct_name,
+            const Symbol& struct_symbol,
             std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
         ) const;
 
@@ -243,11 +243,14 @@ namespace stride::ast
         ) const;
 
         void define_variable(
-            const std::string &context_name,
-            std::string variable_name,
-            const std::string& internal_name,
+            Symbol variable_sym,
             std::unique_ptr<IAstType> type
-        );
+        ) const;
+
+        void define_variable_globally(
+            Symbol variable_symbol,
+            std::unique_ptr<IAstType> type
+        ) const;
 
         [[nodiscard]]
         ISymbolDef* fuzzy_find(const std::string& symbol_name) const;

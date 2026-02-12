@@ -1,13 +1,6 @@
 package stl::io;
 
 module Files {
-
-    pub struct File {
-
-    }
-
-    pub extern fn test(): i32 {}
-
     extern fn fopen(filename: string, mode: string): ptr;
 
     extern fn fclose(file: ptr): i32;

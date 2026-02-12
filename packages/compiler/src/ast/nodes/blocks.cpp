@@ -47,7 +47,7 @@ llvm::Value* AstBlock::codegen(
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(this->get_registry(), module, builder);
+            last_value = synthesisable->codegen(this->get_context(), module, builder);
         }
     }
 

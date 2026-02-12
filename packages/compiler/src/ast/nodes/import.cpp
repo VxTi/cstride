@@ -18,21 +18,25 @@ using namespace stride::ast;
 Symbol consume_import_module_base(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& tokens
-    )
+)
 {
-    const auto base = tokens.expect(TokenType::IDENTIFIER,
-                                    "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'");
+    const auto base = tokens.expect(
+        TokenType::IDENTIFIER,
+        "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'"
+    );
     std::vector parts = {base.get_lexeme()};
 
-    while (tokens.peek(0) == TokenType::DOUBLE_COLON && tokens.peek(1) == TokenType::IDENTIFIER)
+    while (tokens.peek(0) == TokenType::DOUBLE_COLON)
     {
         tokens.next();
-        const auto part = tokens.next();
+        const auto part = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import statement");
 
         parts.push_back(part.get_lexeme());
     }
 
-    return resolve_internal_iden_seq_name(context, parts);
+    // TODO: Fix source position. This is currently only the base, which means the rest of the statement
+    //  won't be used in error message logging.
+    return resolve_internal_name(context->get_name(), base.get_source_position(), parts);
 }
 
 /**
@@ -47,14 +51,14 @@ std::vector<Symbol> consume_import_submodules(TokenSet& tokens)
     tokens.expect(TokenType::LBRACE, "Expected opening brace with modules after '::', e.g., {module1, module2, ...}");
     const auto first = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
 
-    std::vector<Symbol> submodules = {Symbol(first.get_lexeme())};
+    std::vector<Symbol> submodules = {Symbol(first.get_source_position(), first.get_lexeme())};
 
     while (tokens.peek(0) == TokenType::COMMA && tokens.peek(1) == TokenType::IDENTIFIER)
     {
         tokens.expect(TokenType::COMMA, "Expected comma between module names in import list");
         const auto submodule_iden = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
 
-        submodules.emplace_back(submodule_iden.get_lexeme());
+        submodules.emplace_back(submodule_iden.get_source_position(), submodule_iden.get_lexeme());
     }
 
     tokens.expect(TokenType::RBRACE, "Expected closing brace after import list");

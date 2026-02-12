@@ -63,7 +63,6 @@ namespace stride::ast
     public:
         AstFunctionDeclaration(
             const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
@@ -71,7 +70,7 @@ namespace stride::ast
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) :
-            IAstNode(source, source_position, context),
+            IAstNode(source, symbol.symbol_position, context),
             _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),

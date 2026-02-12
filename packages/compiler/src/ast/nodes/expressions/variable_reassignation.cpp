@@ -20,7 +20,7 @@ bool AstVariableReassignment::is_reducible()
 
 void AstVariableReassignment::validate()
 {
-    const auto identifier_def = this->get_registry()->lookup_variable(this->get_variable_name());
+    const auto identifier_def = this->get_context()->lookup_variable(this->get_variable_name());
     if (!identifier_def)
     {
         throw parsing_error(
@@ -43,7 +43,7 @@ void AstVariableReassignment::validate()
         );
     }
 
-    const auto expression_type = infer_expression_type(this->get_registry(), this->get_value());
+    const auto expression_type = infer_expression_type(this->get_context(), this->get_value());
 
     /*if (identifier_def->get_type() != expression_type.get())
     {
@@ -73,7 +73,7 @@ IAstNode* AstVariableReassignment::reduce()
             return std::make_unique<AstVariableReassignment>(
                 this->get_source(),
                 this->get_source_position(),
-                this->get_registry(),
+                this->get_context(),
                 this->get_variable_name(),
                 this->get_internal_name(),
                 this->get_operator(),
@@ -294,16 +294,20 @@ MutativeAssignmentType parse_mutative_assignment_type(const TokenSet& set, const
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
     const std::shared_ptr<ParsingContext>& context,
+    const std::string &nested_name,
     TokenSet& set
 )
 {
     // Can be either a singular field, e.g., a regular variable,
     // or member access, e.g., <member>.<field>
-    if (!is_variable_reassignment_statement(set)) return std::nullopt;
+    if (!is_variable_mutative_token(set.peek(1).get_type()))
+    {
+        return std::nullopt;
+    }
 
     const auto reference_token = set.peek_next();
 
-    std::string reassignment_iden_name = reference_token.get_lexeme();
+    std::string reassignment_iden_name = nested_name;
     const auto reassign_internal_variable_name = context->lookup_variable(reassignment_iden_name);
 
     if (!reassign_internal_variable_name)
@@ -340,10 +344,4 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
         mutative_op,
         std::move(expression)
     );
-}
-
-bool stride::ast::is_variable_reassignment_statement(const TokenSet& set)
-{
-    return set.peek_next_eq(TokenType::IDENTIFIER)
-        && is_variable_mutative_token(set.peek(1).get_type());
 }

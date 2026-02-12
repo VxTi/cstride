@@ -42,7 +42,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
 
 void AstArrayMemberAccessor::validate()
 {
-    const auto index_accessor_type = infer_expression_type(this->get_registry(), this->_index_accessor_expr.get());
+    const auto index_accessor_type = infer_expression_type(this->get_context(), this->_index_accessor_expr.get());
 
     if (const auto primitive_type = dynamic_cast<AstPrimitiveType*>(index_accessor_type.get()))
     {
@@ -71,7 +71,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    const auto array_iden_type = infer_expression_type(this->get_registry(), this->_array_identifier.get());
+    const auto array_iden_type = infer_expression_type(this->get_context(), this->_array_identifier.get());
 
     llvm::Value* base_ptr = this->_array_identifier->codegen(context, module, builder);
     llvm::Value* index_val = this->_index_accessor_expr->codegen(context, module, builder);

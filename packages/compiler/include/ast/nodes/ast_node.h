@@ -57,7 +57,7 @@ namespace stride::ast
         std::shared_ptr<SourceFile> get_source() const { return this->_source; }
 
         [[nodiscard]]
-        std::shared_ptr<ParsingContext> get_registry() const { return this->_scope; }
+        std::shared_ptr<ParsingContext> get_context() const { return this->_scope; }
 
         [[nodiscard]]
         SourcePosition get_source_position() const { return this->_source_position; }

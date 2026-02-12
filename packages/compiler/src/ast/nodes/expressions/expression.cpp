@@ -50,36 +50,29 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
 
     if (set.peek_next_eq(TokenType::IDENTIFIER))
     {
-        /// Function invocations, e.g., `<identifier>(...)`, or `<module>::<identifier>`
-        if (set.peek(1).get_type() == TokenType::LPAREN || set.peek(1).get_type() == TokenType::DOUBLE_COLON)
-        {
-            return parse_function_call(context, set);
-        }
+        /// Regular identifier parsing; can be variable reference
+        const auto reference_token = set.peek_next();
+        // Mangled name including module, e.g., `Math__PI`
+        const SymbolNameSegments name_segments = parse_segmented_identifier(set);
+        const auto internal_name = resolve_internal_name(name_segments);
 
-        if (auto reassignment = parse_variable_reassignment(context, set);
+        auto identifier = std::make_unique<AstIdentifier>(
+            set.get_source(),
+            context,
+            Symbol(reference_token.get_source_position(), internal_name)
+        );
+
+        if (auto reassignment = parse_variable_reassignment(context, internal_name, set);
             reassignment.has_value())
         {
             return std::move(reassignment.value());
         }
 
-        /// Regular identifier parsing; can be variable reference
-        const auto reference_token = set.next();
-        std::string identifier_name = reference_token.get_lexeme();
-        std::string internal_name = identifier_name;
-
-        if (const auto variable_definition = context->lookup_variable(identifier_name);
-            variable_definition != nullptr)
+        /// Function invocations, e.g., `<identifier>(...)`, or `<module>::<identifier>`
+        if (set.peek_next_eq(TokenType::LPAREN))
         {
-            internal_name = variable_definition->get_internal_symbol_name();
+            return parse_function_call(context, name_segments, set);
         }
-
-        auto identifier = std::make_unique<AstIdentifier>(
-            set.get_source(),
-            reference_token.get_source_position(),
-            context,
-            identifier_name,
-            internal_name
-        );
 
         if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
         {
@@ -307,4 +300,20 @@ std::string stride::ast::parse_property_accessor_statement(
     }
 
     return identifier_name;
+}
+
+SymbolNameSegments stride::ast::parse_segmented_identifier(TokenSet& set)
+{
+    std::vector<std::string> segments = {};
+
+    segments.push_back(set.expect(TokenType::IDENTIFIER).get_lexeme());
+
+    while (set.peek_next_eq(TokenType::DOUBLE_COLON))
+    {
+        set.next();
+        const auto subseq_iden = set.expect(TokenType::IDENTIFIER, "Expected identifier in module accessor");
+        segments.push_back(subseq_iden.get_lexeme());
+    }
+
+    return segments;
 }

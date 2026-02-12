@@ -17,7 +17,7 @@ void stride::ast::parse_variadic_fn_param(
     parameters.push_back(std::make_unique<AstFunctionParameter>(
         param->get_source(),
         param->get_source_position(),
-        param->get_registry(),
+        param->get_context(),
         param->get_name(),
         param->get_type()->clone()
     ));
@@ -107,8 +107,13 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
         context, set, "Expected function parameter type", flags
     );
 
+    const auto fn_param_symbol = Symbol(
+        reference_token.get_source_position(),
+        reference_token.get_lexeme()
+    );
+
     // Define it without a context name to properly resolve it
-    context->define_variable("", param_name, reference_token.get_lexeme(), fn_param_type->clone());
+    context->define_variable(fn_param_symbol, fn_param_type->clone());
 
     return std::make_unique<AstFunctionParameter>(
         set.get_source(),

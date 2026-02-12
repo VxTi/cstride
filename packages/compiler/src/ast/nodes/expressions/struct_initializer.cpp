@@ -110,7 +110,7 @@ StructSymbolDef* get_super_referencing_struct_def(
 
 void AstStructInitializer::validate()
 {
-    const auto definition = get_super_referencing_struct_def(this->get_registry(), this->_struct_name);
+    const auto definition = get_super_referencing_struct_def(this->get_context(), this->_struct_name);
     // Check whether the struct we're trying to assign actually exists
     if (definition == nullptr)
     {
@@ -164,7 +164,7 @@ void AstStructInitializer::validate()
     }
     for (const auto& [member_name, member_expr] : this->_initializers)
     {
-        const auto found_member = definition->get_field_type(member_name);
+        const auto found_member = definition->get_struct_member_field_type(member_name);
 
         if (!found_member.has_value())
         {
@@ -176,7 +176,7 @@ void AstStructInitializer::validate()
             );
         }
 
-        if (const auto member_type = infer_expression_type(this->get_registry(), member_expr.get());
+        if (const auto member_type = infer_expression_type(this->get_context(), member_expr.get());
             !member_type->equals(*found_member.value()))
         {
             throw parsing_error(

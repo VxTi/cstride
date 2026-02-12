@@ -20,7 +20,7 @@ llvm::Value* AstArray::codegen(
     llvm::IRBuilder<>* builder
 )
 {
-    const auto resolved_type = infer_expression_type(this->get_registry(), this);
+    const auto resolved_type = infer_expression_type(this->get_context(), this);
 
     llvm::ArrayType* concrete_array_type = nullptr;
 

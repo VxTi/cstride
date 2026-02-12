@@ -22,7 +22,7 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     auto member_sym = member_name_tok.get_lexeme();
 
     context->define_symbol(
-        Symbol(context->get_name(), member_sym, /* internal_name = */member_sym),
+        Symbol(member_name_tok.get_source_position(), context->get_name(), member_sym, /* internal_name = */member_sym),
         SymbolType::ENUM_MEMBER
     );
 
@@ -81,7 +81,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
     auto enumerable_name = enumerable_name_tok.get_lexeme();
 
-    context->define_symbol(Symbol(context->get_name(), enumerable_name), SymbolType::ENUM);
+    context->define_symbol(Symbol(reference_token.get_source_position(), context->get_name(), enumerable_name), SymbolType::ENUM);
 
     const auto opt_enum_body_subset = collect_block(set);
 

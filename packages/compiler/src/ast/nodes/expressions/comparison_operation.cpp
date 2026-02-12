@@ -193,8 +193,8 @@ llvm::Value* AstComparisonOp::codegen(
 
 void AstComparisonOp::validate()
 {
-    const auto lhs_type = infer_expression_type(this->get_registry(), this->get_left());
-    const auto rhs_type = infer_expression_type(this->get_registry(), this->get_right());
+    const auto lhs_type = infer_expression_type(this->get_context(), this->get_left());
+    const auto rhs_type = infer_expression_type(this->get_context(), this->get_right());
 
     if (!lhs_type || !rhs_type)
     {

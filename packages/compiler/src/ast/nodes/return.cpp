@@ -55,7 +55,7 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
 
 void AstReturn::validate()
 {
-    auto context = this->get_registry().get();
+    auto context = this->get_context().get();
 
     while (context->get_current_scope_type() != ScopeType::FUNCTION && context->get_parent_registry() != nullptr)
     {

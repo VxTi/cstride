@@ -21,21 +21,26 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     set.expect(TokenType::COLON);
 
     auto struct_member_type = parse_type(context, set, "Expected a struct member type");
-    set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
+    const auto last_token = set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
+
+    const auto position = stride::SourcePosition(
+        struct_member_name_tok.get_source_position().offset,
+        last_token.get_source_position().offset
+        + last_token.get_source_position().length
+        - struct_member_name_tok.get_source_position().offset
+    );
+    auto struct_member_symbol = Symbol(position, struct_member_name);
 
     // TODO: Replace with struct-field-specific method
     context->define_variable(
-        "", // No context name to prevent incorrect prefixing
-        struct_member_name,
-        struct_member_name,
+        struct_member_symbol,
         struct_member_type->clone()
     );
 
     return std::make_unique<AstStructMember>(
         set.get_source(),
-        struct_member_name_tok.get_source_position(),
         context,
-        struct_member_name,
+        struct_member_symbol,
         std::move(struct_member_type)
     );
 }
@@ -60,6 +65,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     // This will parse a definition like:
     //
     // struct Foo = Bar;
+    /// -- returns --
     if (tokens.peek_next_eq(TokenType::EQUALS))
     {
         tokens.next();
@@ -68,8 +74,10 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
         // We define it as a reference to `reference_sym`. Validation happens later
         context->define_struct(
-            Symbol(struct_name),
-            Symbol(reference_sym->get_internal_name())
+            /* Base struct sym */
+            Symbol(struct_name_tok.get_source_position(), struct_name),
+            /* Reference struct sym */
+            Symbol(reference_sym->get_source_position(), reference_sym->get_internal_name())
         );
 
         return std::make_unique<AstStruct>(
@@ -122,7 +130,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     }
 
     context->define_struct(
-        struct_name,
+        Symbol(struct_name_tok.get_source_position(), struct_name),
         std::move(fields)
     );
 
@@ -142,7 +150,7 @@ void AstStructMember::validate()
         // If it's not a primitive, it must be a struct, as we currently don't support other types.
         // TODO: Support enums
 
-        if (const auto member = this->get_registry()->get_struct_def(struct_type->get_internal_name());
+        if (const auto member = this->get_context()->get_struct_def(struct_type->get_internal_name());
             !member.has_value())
         {
             throw parsing_error(
@@ -161,7 +169,7 @@ void AstStruct::validate()
     if (this->is_reference_type())
     {
         // Check whether we can find the other field
-        if (const auto reference = this->get_registry()->get_struct_def(this->get_reference_type()->get_internal_name())
+        if (const auto reference = this->get_context()->get_struct_def(this->get_reference_type()->get_internal_name())
             ;
             reference == nullptr)
         {

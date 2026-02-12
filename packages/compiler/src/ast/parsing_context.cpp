@@ -82,8 +82,7 @@ const FieldSymbolDef* ParsingContext::get_variable_def(const std::string& variab
     {
         if (const auto* field_definition = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
         {
-            if (field_definition->get_internal_symbol_name() == variable_name ||
-                field_definition->get_symbol().name == variable_name)
+            if (field_definition->get_internal_symbol_name() == variable_name)
             {
                 return field_definition;
             }
@@ -239,26 +238,55 @@ bool ParsingContext::is_field_defined_globally(const std::string& field_name) co
     return false;
 }
 
-void ParsingContext::define_variable(
-    const std::string& context_name,
-    std::string variable_name,
-    const std::string& internal_name,
+void ParsingContext::define_variable_globally(
+    Symbol variable_symbol,
     std::unique_ptr<IAstType> type
-)
+) const
 {
-    if (is_field_defined_in_scope(variable_name))
+    if (is_field_defined_globally(variable_symbol.internal_name))
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Field '{}' is already defined in this scope", variable_name),
+            std::format("Field '{}' is already defined in global scope", variable_symbol.name),
             *type->get_source(),
             type->get_source_position()
         );
     }
 
-    this->_symbols.push_back(
+    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
+    global_scope._symbols.push_back(
         std::make_unique<FieldSymbolDef>(
-            Symbol(context_name, variable_name, internal_name),
+            std::move(variable_symbol),
+            std::move(type)
+        )
+    );
+}
+
+void ParsingContext::define_variable(
+    Symbol variable_sym,
+    std::unique_ptr<IAstType> type
+) const
+{
+    if (this->is_global_scope())
+    {
+        this->define_variable_globally(std::move(variable_sym),  std::move(type));
+        return;
+    }
+    if (is_field_defined_in_scope(variable_sym.internal_name))
+    {
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Field '{}' is already defined in this scope", variable_sym.name),
+            *type->get_source(),
+            type->get_source_position()
+        );
+    }
+
+    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
+
+    global_scope._symbols.push_back(
+        std::make_unique<FieldSymbolDef>(
+            std::move(variable_sym),
             std::move(type)
         )
     );
@@ -277,7 +305,6 @@ const FieldSymbolDef* ParsingContext::lookup_variable(const std::string& name) c
     }
     return nullptr;
 }
-
 
 std::optional<StructSymbolDef*> ParsingContext::get_struct_def(const std::string& name) const
 {
@@ -336,16 +363,16 @@ std::optional<std::vector<std::pair<std::string, IAstType*>>> ParsingContext::ge
 }
 
 void ParsingContext::define_struct(
-    const std::string& struct_name,
+    const Symbol& struct_symbol,
     std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields
 ) const
 {
-    if (const auto existing_def = this->get_struct_def(struct_name);
+    if (const auto existing_def = this->get_struct_def(struct_symbol.internal_name);
         existing_def.has_value())
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Struct '{}' is already defined in this scope", struct_name),
+            std::format("Struct '{}' is already defined in this scope", struct_symbol.name),
             *fields.begin()->second->get_source(),
             fields.begin()->second->get_source_position()
         );
@@ -354,7 +381,7 @@ void ParsingContext::define_struct(
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
     root._symbols.push_back(
         std::make_unique<StructSymbolDef>(
-            Symbol(this->get_name(), struct_name, /* internal_name = */ struct_name),
+            std::move(struct_symbol),
             std::move(fields)
         )
     );
@@ -403,7 +430,7 @@ std::vector<std::pair<std::string, IAstType*>> StructSymbolDef::get_fields() con
     return std::move(copy);
 }
 
-std::optional<IAstType*> StructSymbolDef::get_field_type(
+std::optional<IAstType*> StructSymbolDef::get_struct_member_field_type(
     const std::string& field_name,
     const std::vector<std::pair<std::string, IAstType*>>& fields
 )
@@ -419,7 +446,7 @@ std::optional<IAstType*> StructSymbolDef::get_field_type(
 }
 
 // Note that if this struct is a reference struct, this will return nullopt
-std::optional<IAstType*> StructSymbolDef::get_field_type(const std::string& field_name)
+std::optional<IAstType*> StructSymbolDef::get_struct_member_field_type(const std::string& field_name)
 {
     for (const auto& [name, type] : this->_fields)
     {
@@ -436,7 +463,7 @@ bool StructSymbolDef::is_reference_struct() const
     return this->_reference_struct_sym.has_value();
 }
 
-std::optional<int> StructSymbolDef::get_member_index(const std::string& member_name) const
+std::optional<int> StructSymbolDef::get_struct_field_member_index(const std::string& member_name) const
 {
     for (size_t i = 0; i < this->_fields.size(); i++)
     {

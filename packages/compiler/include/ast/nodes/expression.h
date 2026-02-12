@@ -122,27 +122,23 @@ namespace stride::ast
     class AstIdentifier
         : public AstExpression
     {
-        const std::string _name;
-        std::string _internal_name;
+        Symbol _symbol;
 
     public:
         explicit AstIdentifier(
             const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
-            std::string name,
-            std::string internal_name
-        ) : AstExpression(source, source_position, context),
-            _name(std::move(name)),
-            _internal_name(std::move(internal_name)) {}
+            Symbol symbol
+        ) : AstExpression(source, symbol.symbol_position, context),
+            _symbol(std::move(symbol)) {}
 
         [[nodiscard]]
-        const std::string& get_name() const { return this->_name; }
+        const std::string& get_name() const { return this->_symbol.name; }
 
         [[nodiscard]]
         const std::string& get_internal_name() const
         {
-            return this->_internal_name.empty() ? this->_name : this->_internal_name;
+            return this->_symbol.internal_name;
         }
 
         llvm::Value* codegen(
@@ -258,19 +254,17 @@ namespace stride::ast
     public:
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, function_call_sym.symbol_position, context),
             _symbol(std::move(function_call_sym)) {}
 
         explicit AstFunctionCall(
             const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym,
             std::vector<std::unique_ptr<AstExpression>> arguments
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, function_call_sym.symbol_position, context),
             _arguments(std::move(arguments)),
             _symbol(std::move(function_call_sym)) {}
 
@@ -312,13 +306,12 @@ namespace stride::ast
     public:
         explicit AstVariableDeclaration(
             const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::unique_ptr<IAstType> variable_type,
             std::unique_ptr<AstExpression> initial_value
-        ) : AstExpression(source, source_position, context),
-        _symbol(std::move(symbol)),
+        ) : AstExpression(source, symbol.symbol_position, context),
+            _symbol(std::move(symbol)),
             _variable_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)) {}
 
@@ -660,12 +653,14 @@ namespace stride::ast
     /// Parses a function invocation into an AstFunctionCall expression node
     std::unique_ptr<AstExpression> parse_function_call(
         const std::shared_ptr<ParsingContext>& context,
+        const SymbolNameSegments& function_name_segments,
         TokenSet& set
     );
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
         const std::shared_ptr<ParsingContext>& context,
+        const std::string& nested_name,
         TokenSet& set
     );
 
@@ -714,6 +709,8 @@ namespace stride::ast
         TokenSet& set
     );
 
+    SymbolNameSegments parse_segmented_identifier(TokenSet& set);
+
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
      #                                                           #
      *                    GETTER FUNCTIONS                       *
@@ -740,10 +737,6 @@ namespace stride::ast
      *                    DEDUCTION FUNCTIONS                    *
      #                                                           #
      * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
-
-    /// Whether the next sequence of tokens is a variable/function access by property reference
-    /// e.g., <identifier>.<accessor>
-    bool is_variable_reassignment_statement(const TokenSet& set);
 
     /// Checks if the token set represents a variable declaration
     bool is_variable_declaration(const TokenSet& set);

@@ -42,13 +42,13 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             "Expected identifier after '.' in member access"
         );
 
+        auto symbol = Symbol(accessor_iden_tok.get_source_position(), accessor_iden_tok.get_lexeme());
+
         chained_accessors.push_back(
             std::make_unique<AstIdentifier>(
                 set.get_source(),
-                accessor_iden_tok.get_source_position(),
                 context,
-                accessor_iden_tok.get_lexeme(),
-                accessor_iden_tok.get_lexeme()
+                symbol
             )
         );
     }
@@ -76,13 +76,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             last_source_pos.offset + last_source_pos.length - lhs_source_pos.offset
         ),
         context,
-        std::make_unique<AstIdentifier>(
-            set.get_source(),
-            lhs_source_pos,
-            lhs_identifier->get_registry(),
-            lhs_identifier->get_name(),
-            lhs_identifier->get_internal_name()
-        ),
+        std::unique_ptr<AstIdentifier>(lhs_identifier),
         std::move(chained_accessors)
     );
 }
@@ -126,14 +120,14 @@ llvm::Value* AstMemberAccessor::codegen(
                 struct_def = struct_def_opt.value();
             }
 
-            const auto member_index = struct_def->get_member_index(accessor->get_name());
+            const auto member_index = struct_def->get_struct_field_member_index(accessor->get_name());
             if (!member_index.has_value()) return nullptr;
 
             // Extract the constant field value
             current_const = current_const->getAggregateElement(member_index.value());
             if (!current_const) return nullptr; // Index out of bounds or invalid aggregate
 
-            auto member_field_type = struct_def->get_field_type(accessor->get_name());
+            auto member_field_type = struct_def->get_struct_member_field_type(accessor->get_name());
             if (!member_field_type.has_value()) return nullptr;
 
             current_ast_type = member_field_type.value()->clone();
@@ -187,7 +181,7 @@ llvm::Value* AstMemberAccessor::codegen(
             struct_def = struct_def_opt.value();
         }
 
-        const auto member_index = struct_def->get_member_index(accessor->get_name());
+        const auto member_index = struct_def->get_struct_field_member_index(accessor->get_name());
 
         if (!member_index.has_value())
         {
@@ -224,7 +218,7 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         // Update loop state
-        auto member_field_type = struct_def->get_field_type(accessor->get_name());
+        auto member_field_type = struct_def->get_struct_member_field_type(accessor->get_name());
         if (!member_field_type.has_value()) return nullptr;
 
         current_ast_type = member_field_type.value()->clone();
@@ -265,7 +259,7 @@ std::string AstMemberAccessor::to_string()
 void AstMemberAccessor::validate()
 {
     // Since type inference also does validation, we don't really have to do anything else here
-    infer_member_accessor_type(this->get_registry(), this);
+    infer_member_accessor_type(this->get_context(), this);
 }
 
 IAstNode* AstMemberAccessor::reduce()

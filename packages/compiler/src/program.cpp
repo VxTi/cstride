@@ -210,6 +210,7 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
 
     if (options.debug_mode)
     {
+        print_ast_nodes();
         std::cout << "LLVM IR Pre-optimizations:" << std::endl;
         module->print(llvm::errs(), nullptr);
     }

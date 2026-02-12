@@ -69,7 +69,7 @@ std::unique_ptr<IAstType> parse_type_metadata(
         base_type = std::make_unique<AstArrayType>(
             base_type->get_source(),
             stride::SourcePosition(src_pos.offset, src_pos.length + offset),
-            base_type->get_registry(),
+            base_type->get_context(),
             std::move(base_type),
             0
         );
@@ -380,7 +380,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
     llvm::Module* module
 )
 {
-    const auto context = type->get_registry();
+    const auto context = type->get_context();
 
     // Wrapping T -> Optional<T>
     if (type->is_optional())

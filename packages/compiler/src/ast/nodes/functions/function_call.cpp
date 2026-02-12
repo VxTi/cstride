@@ -78,7 +78,7 @@ std::string AstFunctionCall::format_function_name() const
 
     for (const auto& arg : this->_arguments)
     {
-        const auto type = infer_expression_type(this->get_registry(), arg.get());
+        const auto type = infer_expression_type(this->get_context(), arg.get());
 
         arg_types.push_back(type->get_internal_name());
     }
@@ -175,22 +175,11 @@ llvm::Value* AstFunctionCall::codegen(
 
 std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     const std::shared_ptr<ParsingContext>& context,
+    const SymbolNameSegments& function_name_segments,
     TokenSet& set
 )
 {
-    const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected function or module name in function call");
-
-    std::vector function_name_parts = {reference_token.get_lexeme()};
-
-    // Ensures module names are properly mangled
-    while (set.peek_next_eq(TokenType::DOUBLE_COLON))
-    {
-        set.next();
-        const auto sub_segment = set.expect(TokenType::IDENTIFIER, "Expected identifier after '::' in function call");
-
-        function_name_parts.emplace_back(sub_segment.get_lexeme());
-    }
-
+    const auto reference_token = set.peek(-1);
     auto function_parameter_set = collect_parenthesized_block(set);
 
     std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
@@ -245,16 +234,24 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         }
     }
 
+    auto position = SourcePosition(
+        reference_token.get_source_position().offset,
+        parameter_types.empty()
+            ? reference_token.get_source_position().length
+            : parameter_types.back()->get_source_position().offset
+            + parameter_types.back()->get_source_position().length
+            - reference_token.get_source_position().offset
+    );
+
     Symbol internal_fn_sym = resolve_internal_function_name(
         context,
-        parameter_types,
-        function_name_parts
+        position,
+        function_name_segments,
+        parameter_types
     );
 
     return std::make_unique<AstFunctionCall>(
         set.get_source(),
-        // TODO: Fix this. This currently refers only to the first token, instead of the full call
-        reference_token.get_source_position(),
         context,
         internal_fn_sym,
         std::move(function_arg_nodes)

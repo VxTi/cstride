@@ -10,25 +10,24 @@ namespace stride::ast
 {
     class AstStructMember : public IAstNode
     {
-        std::string _name;
+        Symbol _struct_member_symbol;
         std::unique_ptr<IAstType> _type;
 
     public:
         AstStructMember(
             const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
-            std::string name,
+            Symbol struct_member_symbol,
             std::unique_ptr<IAstType> type
         ) :
-            IAstNode(source, source_position, context),
-            _name(std::move(name)),
+            IAstNode(source, struct_member_symbol.symbol_position, context),
+            _struct_member_symbol(std::move(struct_member_symbol)),
             _type(std::move(type)) {}
 
         std::string to_string() override;
 
         [[nodiscard]]
-        std::string get_name() const { return this->_name; }
+        std::string get_name() const { return this->_struct_member_symbol.name; }
 
         [[nodiscard]]
         IAstType& get_type() const { return *this->_type; }
