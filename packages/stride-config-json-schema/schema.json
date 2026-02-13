@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "name": {
+      "default": "project",
+      "type": "string",
+      "description": "The name of the generated binary / application"
+    },
+    "main": {
+      "default": "main.sr",
+      "type": "string",
+      "description": "Path to the main file of the program"
+    },
+    "buildPath": {
+      "default": "build",
+      "type": "string",
+      "description": "Path to the build directory"
+    },
+    "dependencies": {
+      "default": [],
+      "description": "List of dependencies required by the program",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/dependency"
+      }
+    },
+    "target": {
+      "type": "string",
+      "description": "Target machine to compile the binary for"
+    },
+    "mode": {
+      "default": "jit",
+      "type": "string",
+      "enum": [
+        "jit",
+        "compile"
+      ],
+      "description": "Determines which mode to use when compiling the binary"
+    }
+  },
+  "required": [
+    "name",
+    "main",
+    "buildPath",
+    "dependencies",
+    "mode"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "dependency": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the dependency"
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the dependency"
+        },
+        "path": {
+          "type": "string",
+          "description": "The path of the dependency. If absent, the compiler will look in the 'dependencies' directory."
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false,
+      "id": "dependency"
+    }
+  }
+}

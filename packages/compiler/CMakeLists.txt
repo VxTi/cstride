@@ -9,15 +9,22 @@ find_package(LLVM 21.1.8 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-# GoogleTest setup
+message(STATUS "Retrieving GoogleTest and simdjson dependencies...")
 include(FetchContent)
 FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/refs/heads/main.zip
 )
+FetchContent_Declare(
+        simdjson
+        GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+        GIT_TAG v4.2.4
+)
+
 # Forcing GTest to use the same runtime as our project
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+FetchContent_MakeAvailable(simdjson)
 
 # --- Library Setup ---
 file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.cc")
@@ -65,6 +72,7 @@ llvm_map_components_to_libnames(LLVM_LIBS
 target_link_libraries(cstride_lib
         PUBLIC
         ${LLVM_LIBS}
+        simdjson
 )
 
 # --- Executables & Testing ---

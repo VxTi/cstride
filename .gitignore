@@ -18,6 +18,7 @@ cache
 caches
 gradle/wrapper
 packages/stride-plugin-intellij/src/main/gen
+packages/stride-plugin-intellij/.intellijPlatform
 
 # Ignore auto generated files
 Stride.lex.cpp
