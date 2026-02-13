@@ -20,6 +20,7 @@ WHITE_SPACE=[\ \n\r\t\f]
 COMMENT="//"[^\r\n]*
 IDENTIFIER=[a-zA-Z_][a-zA-Z0-9_]*
 NUMBER_LITERAL=[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)?[fFdDLuU]*|0x[0-9a-fA-F]+
+CHAR_LITERAL='([^\\'\r\n]|\\[^\r\n])'
 STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
 
 %%
@@ -102,6 +103,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
 
   {NUMBER_LITERAL}   { return StrideTypes.NUMBER_LITERAL; }
   {STRING_LITERAL}   { return StrideTypes.STRING_LITERAL; }
+  {CHAR_LITERAL}     { return StrideTypes.CHAR_LITERAL; }
   {IDENTIFIER}       { return StrideTypes.IDENTIFIER; }
 
 }

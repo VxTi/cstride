@@ -56,7 +56,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.CHAR, StrideTypes.STRING -> TYPE_KEYS
 
             StrideTypes.NUMBER_LITERAL -> NUMBER_KEYS
-            StrideTypes.STRING_LITERAL -> STRING_KEYS
+            StrideTypes.STRING_LITERAL, StrideTypes.CHAR_LITERAL -> STRING_KEYS
             StrideTypes.BOOLEAN_LITERAL -> KEYWORD_KEYS
             StrideTypes.COMMENT -> COMMENT_KEYS
             StrideTypes.EQ, StrideTypes.PLUS, StrideTypes.MINUS,

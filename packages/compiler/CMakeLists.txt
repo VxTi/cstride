@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 23)
 
 # --- Dependencies ---
 find_package(LLVM 21.1.8 REQUIRED CONFIG)
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 # GoogleTest setup
 include(FetchContent)
@@ -47,21 +49,22 @@ target_compile_definitions(cstride_lib PUBLIC ${LLVM_DEFINITIONS})
 
 # Determine architecture to link correct LLVM backend libraries for native target support
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
-    set(ARCH_DEPENDENT_LIBS
-            LLVMAArch64CodeGen LLVMAArch64Desc LLVMAArch64Info
-            LLVMAArch64Utils LLVMAArch64AsmParser)
+    set(LLVM_NATIVE_ARCH AArch64)
 else()
-    set(ARCH_DEPENDENT_LIBS
-            LLVMX86CodeGen LLVMX86Desc LLVMX86Info
-            LLVMX86Utils LLVMX86AsmParser LLVMX86AsmPrinter)
+    set(LLVM_NATIVE_ARCH X86)
 endif()
+
+llvm_map_components_to_libnames(LLVM_LIBS
+        orcjit executionengine core support
+        target targetparser runtimedyld irreader
+        asmprinter
+        ${LLVM_NATIVE_ARCH}CodeGen ${LLVM_NATIVE_ARCH}Desc
+        ${LLVM_NATIVE_ARCH}Info ${LLVM_NATIVE_ARCH}AsmParser
+)
 
 target_link_libraries(cstride_lib
         PUBLIC
-        LLVMOrcJIT LLVMExecutionEngine LLVMCore LLVMSupport
-        LLVMTarget LLVMTargetParser LLVMRuntimeDyld LLVMIRReader
-        LLVMAsmPrinter
-        ${ARCH_DEPENDENT_LIBS}
+        ${LLVM_LIBS}
 )
 
 # --- Executables & Testing ---
