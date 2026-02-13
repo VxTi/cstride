@@ -51,11 +51,11 @@ namespace stride::tests {
         block->codegen(context, &module, &builder);
     }
 
+
     inline void assert_throws(const std::string& code)
     {
         EXPECT_ANY_THROW({
-            const auto block = parse_code(code);
-            EXPECT_NE(block, nullptr) << "Parsing returned null for code: " << code;
+            assert_compiles(code);
         });
     }
 

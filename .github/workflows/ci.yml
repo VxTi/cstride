@@ -1,4 +1,4 @@
-name: Test Suite
+name: CI
 
 on:
   push:
@@ -7,14 +7,12 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: Build and Test
-    runs-on: ubuntu-24.04 # Using the latest LTS for better compatibility
-
+  compiler-test:
+    name: Compiler Tests
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: packages/compiler
-
     steps:
       - uses: actions/checkout@v4
 
@@ -33,23 +31,18 @@ jobs:
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          # 'all' can be overkill; we usually just need the compiler and tools
           sudo ./llvm.sh 21
           sudo apt-get install -y clang-21 lldb-21 lld-21 llvm-21-dev
-          
-          # Verification
           clang++-21 --version
 
       - name: Setup Ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ github.job }}-${{ runner.os }}-llvm-21
-          # Ensure ccache is used for clang-21
           append-timestamp: true
 
       - name: Configure CMake
         run: |
-          # Use -DCMAKE_CXX_STANDARD=23 to ensure the compiler enforces C++23
           cmake -S . -B build -G Ninja \
             -DCMAKE_C_COMPILER=clang-21 \
             -DCMAKE_CXX_COMPILER=clang++-21 \
@@ -65,3 +58,46 @@ jobs:
         run: |
           cd build
           ctest --output-on-failure
+
+  intellij-plugin-test:
+    name: IntelliJ Plugin Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+          cache: 'gradle'
+
+      - name: Make gradlew executable
+        run: chmod +x packages/stride-plugin-intellij/gradlew
+
+      - name: Run Tests
+        working-directory: packages/stride-plugin-intellij
+        run: ./gradlew test
+
+  editor-lint:
+    name: Editor Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        working-directory: packages/editor
+        run: pnpm install
+
+      - name: Lint
+        working-directory: packages/editor
+        run: pnpm run lint
+

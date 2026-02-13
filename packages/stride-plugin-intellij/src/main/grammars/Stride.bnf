@@ -111,7 +111,7 @@ FunctionParameter ::= IDENTIFIER COLON Type
 StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 private StructDefinitionAlias ::= EQ Type SEMICOLON
-StructDefinitionFields ::= StructField (COMMA StructField)* [COMMA]
+StructDefinitionFields ::= StructField (SEMICOLON StructField)* [SEMICOLON]
 StructField ::= IDENTIFIER COLON Type
 
 GenericParameterList ::= LT GenericParameter (COMMA GenericParameter)* GT

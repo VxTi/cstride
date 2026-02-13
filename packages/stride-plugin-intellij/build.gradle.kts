@@ -1,4 +1,5 @@
 import org.jetbrains.grammarkit.tasks.*
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java")
@@ -28,7 +29,9 @@ dependencies {
         instrumentationTools()
         pluginVerifier()
         zipSigner()
+        testFramework(TestFrameworkType.Platform)
     }
+    testImplementation("junit:junit:4.13.2")
 }
 
 // Configure Gradle IntelliJ Platform Plugin

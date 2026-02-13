@@ -23,5 +23,7 @@
         <annotator language="Stride" implementationClass="com.stride.intellij.annotator.StrideAnnotator"/>
 
         <enterHandlerDelegate implementation="com.stride.intellij.editor.StrideEnterHandlerDelegate"/>
+
+        <lang.formatter language="Stride" implementationClass="com.stride.intellij.StrideFormattingModelBuilder"/>
     </extensions>
 </idea-plugin>

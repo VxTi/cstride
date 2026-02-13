@@ -70,16 +70,31 @@ TEST(Structs, Aliasing) {
         struct Vector2d = Point;
 
         fn main(): void {
-            // Usage of alias
-            // Assuming alias can be initialized same way or it's just type equality
-            // The docs say: "nominal types... treated as distinct types"
-            // So Vector2d::{...} should work if it behaves like a struct name
-            // Or maybe Point::{...} assigned to Vector2d?
-            // "distinct types" implies assignment might fail without cast,
-            // but initialization syntax for Vector2d might exist.
-
-            // Checking if parser accepts alias declaration:
+            const p: Point = Point::{ x: 10, y: 20 };
+            const v: Vector2d = Vector2d::{ x: 10, y: 20 };
         }
     )";
     assert_parses(code);
+}
+
+TEST(Struct, AliasTypeMismatch)
+{
+    const std::string code = R"(
+        struct First { member: i32; }
+
+        struct Second = First;
+
+        fn main(): void {
+            const s: Second = First::{ member: 123 };
+        }
+    )";
+
+    try {
+        assert_compiles(code);
+        FAIL() << "Expected type mismatch error";
+    } catch (const std::exception& e) {
+        const std::string output = e.what();
+        EXPECT_TRUE(output.find("expected type 'Second', got 'First'") != std::string::npos)
+            << "Actual error message: " << output;
+    }
 }
