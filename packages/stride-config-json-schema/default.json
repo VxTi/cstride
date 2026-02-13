@@ -1,0 +1,7 @@
+{
+  "name": "project",
+  "main": "main.sr",
+  "buildPath": "build",
+  "dependencies": [],
+  "mode": "jit"
+}

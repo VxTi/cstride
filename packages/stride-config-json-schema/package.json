@@ -1,0 +1,14 @@
+{
+	"name": "config-json-schema",
+	"version": "1.0.0",
+	"description": "",
+	"license": "ISC",
+	"author": "",
+	"type": "module",
+	"main": "index.js",
+	"scripts": {},
+	"dependencies": {
+		"@biomejs/biome": "^2.3.14",
+		"zod": "^4.3.6"
+	}
+}
