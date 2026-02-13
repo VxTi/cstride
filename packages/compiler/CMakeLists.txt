@@ -45,12 +45,23 @@ target_include_directories(cstride_lib PUBLIC
 # --- Linking & Definitions ---
 target_compile_definitions(cstride_lib PUBLIC ${LLVM_DEFINITIONS})
 
+# Determine architecture to link correct LLVM backend libraries for native target support
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+    set(ARCH_DEPENDENT_LIBS
+            LLVMAArch64CodeGen LLVMAArch64Desc LLVMAArch64Info
+            LLVMAArch64Utils LLVMAArch64AsmParser)
+else()
+    set(ARCH_DEPENDENT_LIBS
+            LLVMX86CodeGen LLVMX86Desc LLVMX86Info
+            LLVMX86Utils LLVMX86AsmParser LLVMX86AsmPrinter)
+endif()
+
 target_link_libraries(cstride_lib
         PUBLIC
         LLVMOrcJIT LLVMExecutionEngine LLVMCore LLVMSupport
         LLVMTarget LLVMTargetParser LLVMRuntimeDyld LLVMIRReader
-        LLVMAArch64CodeGen LLVMAArch64Desc LLVMAArch64Info
-        LLVMAArch64Utils LLVMAArch64AsmParser
+        LLVMAsmPrinter
+        ${ARCH_DEPENDENT_LIBS}
 )
 
 # --- Executables & Testing ---

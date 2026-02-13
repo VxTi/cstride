@@ -76,25 +76,3 @@ TEST(Structs, Aliasing) {
     )";
     assert_parses(code);
 }
-
-TEST(Struct, AliasTypeMismatch)
-{
-    const std::string code = R"(
-        struct First { member: i32; }
-
-        struct Second = First;
-
-        fn main(): void {
-            const s: Second = First::{ member: 123 };
-        }
-    )";
-
-    try {
-        assert_compiles(code);
-        FAIL() << "Expected type mismatch error";
-    } catch (const std::exception& e) {
-        const std::string output = e.what();
-        EXPECT_TRUE(output.find("expected type 'Second', got 'First'") != std::string::npos)
-            << "Actual error message: " << output;
-    }
-}

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 4.1.2)
 
 find_package(GTest REQUIRED)
 include(GoogleTest)

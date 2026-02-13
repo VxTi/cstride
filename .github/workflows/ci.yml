@@ -53,7 +53,8 @@ jobs:
             -DCMAKE_CXX_STANDARD=23 \
             -DCMAKE_CXX_STANDARD_REQUIRED=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DLLVM_DIR=/usr/lib/llvm-21/lib/cmake/llvm
 
       - name: Build
         run: cmake --build build --parallel $(nproc)
@@ -82,3 +83,29 @@ jobs:
       - name: Run Tests
         working-directory: packages/stride-plugin-intellij
         run: ./gradlew test
+
+  editor-lint:
+    name: Editor Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        working-directory: packages/editor
+        run: pnpm install
+
+      - name: Lint
+        working-directory: packages/editor
+        run: pnpm run lint
+
+      - name: Build
+        working-directory: packages/editor
+        run: pnpm run build
