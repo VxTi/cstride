@@ -16,6 +16,10 @@ const dependencySchema = z
 				"The path of the dependency. If absent, the compiler will look in the 'dependencies' directory.",
 			)
 			.optional(),
+		dependencies: z
+			.array(z.lazy(() => dependencySchema))
+			.optional()
+			.describe("List of dependencies required by the dependency"),
 	})
 	.describe("Represents a dependency required by the program");
 
@@ -26,6 +30,10 @@ const schema = z.object({
 		.string()
 		.describe("The name of the generated binary / application")
 		.default("project"),
+	version: z
+		.string()
+		.describe("The version of the generated binary / application")
+		.default("0.0.1"),
 	main: z
 		.string()
 		.describe("Path to the main file of the program")
