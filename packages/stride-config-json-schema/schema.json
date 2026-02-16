@@ -7,6 +7,11 @@
       "type": "string",
       "description": "The name of the generated binary / application"
     },
+    "version": {
+      "default": "0.0.1",
+      "type": "string",
+      "description": "The version of the generated binary / application"
+    },
     "main": {
       "default": "main.sr",
       "type": "string",
@@ -41,6 +46,7 @@
   },
   "required": [
     "name",
+    "version",
     "main",
     "buildPath",
     "dependencies",
@@ -62,6 +68,17 @@
         "path": {
           "type": "string",
           "description": "The path of the dependency. If absent, the compiler will look in the 'dependencies' directory."
+        },
+        "dependencies": {
+          "description": "List of dependencies required by the dependency",
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/dependency"
+              }
+            ]
+          }
         }
       },
       "required": [
