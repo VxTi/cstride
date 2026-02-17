@@ -9,6 +9,7 @@
 #include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
 std::unique_ptr<AstStructMember> parse_struct_member(
     const std::shared_ptr<ParsingContext>& context,
@@ -145,7 +146,7 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
 void AstStructMember::validate()
 {
-    if (const auto struct_type = cast_type<AstStructType*>(this->_type.get()))
+    if (const auto struct_type = cast_type<AstNamedType*>(this->_type.get()))
     {
         // If it's not a primitive, it must be a struct, as we currently don't support other types.
         // TODO: Support enums

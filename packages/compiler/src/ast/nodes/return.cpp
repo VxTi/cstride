@@ -5,6 +5,7 @@
 #include "ast/optionals.h"
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
 std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     const std::shared_ptr<ParsingContext>& context,

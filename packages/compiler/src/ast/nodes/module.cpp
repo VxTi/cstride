@@ -4,6 +4,7 @@
 #include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
 // TODO: Ensure symbols are prefixed with module for proper lookup
 

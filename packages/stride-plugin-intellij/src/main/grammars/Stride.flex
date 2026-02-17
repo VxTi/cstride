@@ -81,6 +81,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "/="               { return StrideTypes.SLASH_EQ; }
   "%="               { return StrideTypes.MOD_EQ; }
   "+"                { return StrideTypes.PLUS; }
+  "->"               { return StrideTypes.ARROW; }
   "-"                { return StrideTypes.MINUS; }
   "*"                { return StrideTypes.ASTERISK; }
   "&"                { return StrideTypes.AMPERSAND; }

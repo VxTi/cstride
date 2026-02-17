@@ -293,15 +293,17 @@ namespace stride::ast
         [[nodiscard]]
         std::string format_function_name() const;
 
-        static std::string format_suggestion(const ISymbolDef* suggestion);
+        static std::string format_suggestion(const definition::IDefinition* suggestion);
     };
 
     class AstVariableDeclaration :
         public AstExpression
     {
-        const Symbol _symbol;
         const std::unique_ptr<IAstType> _variable_type;
         const std::unique_ptr<AstExpression> _initial_value;
+        const VisibilityModifier _visibility;
+
+        const Symbol _symbol;
 
     public:
         explicit AstVariableDeclaration(
@@ -309,16 +311,24 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::unique_ptr<IAstType> variable_type,
-            std::unique_ptr<AstExpression> initial_value
+            std::unique_ptr<AstExpression> initial_value,
+            VisibilityModifier visibility
         ) : AstExpression(source, symbol.symbol_position, context),
-            _symbol(std::move(symbol)),
             _variable_type(std::move(variable_type)),
-            _initial_value(std::move(initial_value)) {}
+            _initial_value(std::move(initial_value)),
+            _visibility(visibility),
+            _symbol(std::move(symbol)) {}
 
         [[nodiscard]]
         const std::string& get_variable_name() const
         {
             return this->_symbol.name;
+        }
+
+        [[nodiscard]]
+        const VisibilityModifier& get_visibility() const
+        {
+            return this->_visibility;
         }
 
         [[nodiscard]]
@@ -359,9 +369,15 @@ namespace stride::ast
             llvm::IRBuilder<>* builder
         ) override;
 
-        bool is_reducible() override;
+        bool is_reducible() override
+        {
+            return false; /* TODO: Implement*/
+        }
 
-        IAstNode* reduce() override;
+        IAstNode* reduce() override
+        {
+            return this; /* TODO: Implement*/
+        }
 
         void validate() override;
     };

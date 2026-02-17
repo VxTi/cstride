@@ -52,7 +52,7 @@ size_t ast_type_to_internal_id(IAstType* type)
         return primitive_type_to_internal_id(primitive->get_type());
     }
 
-    if (const auto* named = dynamic_cast<const AstStructType*>(type);
+    if (const auto* named = dynamic_cast<const AstNamedType*>(type);
         named != nullptr)
     {
         return std::hash<std::string>{}(named->name());

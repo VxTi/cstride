@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <optional>
+#include <__ranges/join_view.h>
 
 #include "ast_node.h"
+#include "formatting.h"
 #include "ast/flags.h"
 #include "ast/tokens/token_set.h"
 
@@ -173,13 +175,13 @@ namespace stride::ast
         bool is_primitive() const override { return true; }
     };
 
-    class AstStructType
+    class AstNamedType
         : public IAstType
     {
         std::string _name;
 
     public:
-        explicit AstStructType(
+        explicit AstNamedType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
@@ -198,7 +200,7 @@ namespace stride::ast
         [[nodiscard]]
         std::unique_ptr<IAstType> clone() const override
         {
-            return std::make_unique<AstStructType>(*this);
+            return std::make_unique<AstNamedType>(*this);
         }
 
         std::string get_internal_name() override { return this->_name; }
@@ -277,6 +279,74 @@ namespace stride::ast
         }
 
         bool equals(IAstType& other) override;
+    };
+
+    class AstFunctionType
+        : public IAstType
+    {
+        std::vector<std::unique_ptr<IAstType>> _parameters;
+        std::unique_ptr<IAstType> _return_type;
+
+    public:
+        AstFunctionType(
+            const std::shared_ptr<SourceFile>& source,
+            const SourcePosition source_position,
+            const std::shared_ptr<ParsingContext>& context,
+            std::vector<std::unique_ptr<IAstType>> parameters,
+            std::unique_ptr<IAstType> return_type
+        ) : IAstType(source, source_position, context, SRFLAG_TYPE_PTR),
+            _parameters(std::move(parameters)),
+            _return_type(std::move(return_type)) {}
+
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<IAstType>>& get_parameters() const { return _parameters; }
+
+        [[nodiscard]]
+        const std::unique_ptr<IAstType>& get_return_type() const { return _return_type; }
+
+        std::unique_ptr<IAstType> clone() const override
+        {
+            std::vector<std::unique_ptr<IAstType>> parameters_clone = {};
+            for (const auto& p : this->_parameters)
+            {
+                parameters_clone.push_back(p->clone());
+            }
+
+            return std::make_unique<AstFunctionType>(
+                this->get_source(),
+                this->get_source_position(),
+                this->get_context(),
+                std::move(parameters_clone),
+                this->_return_type->clone()
+            );
+        }
+
+        std::string to_string() override
+        {
+            std::vector<std::string> param_strings;
+            for (const auto& p : this->_parameters)
+                param_strings.push_back(p->to_string());
+            return std::format(
+                "Function({}) -> {}",
+                join(param_strings, ", "),
+                this->_return_type->to_string()
+            );
+        }
+
+        bool equals(IAstType& other) override
+        {
+            if (const auto* other_func = dynamic_cast<AstFunctionType*>(&other))
+            {
+                return this->_parameters == other_func->_parameters &&
+                    this->_return_type->equals(*other_func->_return_type);
+            }
+            return false;
+        }
+
+        std::string get_internal_name() override
+        {
+            return "Function";
+        }
     };
 
     std::unique_ptr<IAstType> parse_type(

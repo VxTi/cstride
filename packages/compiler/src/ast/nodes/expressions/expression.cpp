@@ -7,6 +7,7 @@
 
 #include "ast/flags.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
@@ -48,6 +49,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         return parse_array_initializer(context, set);
     }
 
+    // Could either be a function call, or object access
     if (set.peek_next_eq(TokenType::IDENTIFIER))
     {
         /// Regular identifier parsing; can be variable reference
@@ -91,6 +93,11 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
     // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
     if (set.peek_next_eq(TokenType::LPAREN))
     {
+        if (set.peek_eq(TokenType::IDENTIFIER, 1) && set.peek_eq(TokenType::COLON, 2))
+        {
+            return parse_lambda_fn_expression(context, set);
+        }
+
         set.next();
         // Fixed: Use parse_inline_expression (full expression parser) instead of
         // parse_inline_expression_part to allow binary operations inside parentheses.

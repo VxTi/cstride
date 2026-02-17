@@ -51,6 +51,7 @@
     EQ='='
     PLUS_PLUS='++'
     MINUS_MINUS='--'
+    ARROW='->'
     PLUS_EQ='+='
     MINUS_EQ='-='
     ASTERISK_EQ='*='
@@ -108,6 +109,7 @@ private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterLis
 FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)* [COMMA]
 FunctionParameter ::= IDENTIFIER COLON Type
 
+
 StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 private StructDefinitionAlias ::= EQ Type SEMICOLON
@@ -164,9 +166,9 @@ LogicalExpression ::= ComparisonExpression (LogicalOp ComparisonExpression)*
 
 ComparisonExpression ::= AdditiveExpression (ComparisonOp AdditiveExpression)*
 
-AdditiveExpression ::= ASTERISKtiplicativeExpression (AdditiveOp ASTERISKtiplicativeExpression)*
+AdditiveExpression ::= MultiplicativeExpression (AdditiveOp MultiplicativeExpression)*
 
-ASTERISKtiplicativeExpression ::= UnaryExpression (ASTERISKtiplicativeOp UnaryExpression)*
+MultiplicativeExpression ::= UnaryExpression (MultiplicativeOp UnaryExpression)*
 
 UnaryExpression ::= LhsUnaryOp UnaryExpression
                   | IncrDecrOp UnaryExpression
@@ -193,7 +195,9 @@ StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] 
 StructInitFields ::= StructInitField (COMMA StructInitField)* [COMMA]
 StructInitField ::= ScopedIdentifier COLON Expression
 ArgumentList ::= Expression (COMMA Expression)*
-ParenthesizedExpression ::= LPAREN Expression RPAREN
+ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
+
+LambdaExpression ::= LPAREN FunctionParameter* RPAREN ARROW BlockStatement
 
 ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
 
@@ -203,6 +207,6 @@ private BOOLEAN_LITERAL ::= 'true' | 'false'
 private LogicalOp ::= '&&' | '||'
 private ComparisonOp ::= EQ_EQ | EXCL_EQ | LT | GT | LT_EQ | GT_EQ
 private AdditiveOp ::= PLUS | MINUS
-private ASTERISKtiplicativeOp ::= ASTERISK | DIV | MOD
+private MultiplicativeOp ::= ASTERISK | DIV | MOD
 private LhsUnaryOp ::= PLUS | MINUS | EXCL
 private IncrDecrOp ::= PLUS_PLUS | MINUS_MINUS
