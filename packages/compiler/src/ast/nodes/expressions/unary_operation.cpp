@@ -148,7 +148,12 @@ llvm::Value* AstUnaryOp::codegen(
             );
         }
 
-        const auto internal_name = identifier->get_internal_name();
+         auto internal_name = identifier->get_internal_name();
+
+        if (const auto definition = context->lookup_variable(identifier->get_name(), true))
+        {
+            internal_name = definition->get_internal_symbol_name();
+        }
 
         llvm::Value* var_addr = nullptr;
         if (const auto block = builder->GetInsertBlock())
