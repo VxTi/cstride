@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <optional>
-#include <__ranges/join_view.h>
 
 #include "ast_node.h"
 #include "formatting.h"
