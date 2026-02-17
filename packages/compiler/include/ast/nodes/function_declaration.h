@@ -3,6 +3,7 @@
 
 #include "ast_node.h"
 #include "blocks.h"
+#include "expression.h"
 #include "types.h"
 #include "ast/modifiers.h"
 #include "ast/parsing_context.h"
@@ -50,8 +51,7 @@ namespace stride::ast
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
     class AstFunctionDeclaration :
-        public IAstNode,
-        public ISynthesisable,
+        public AstExpression,
         public IAstContainer
     {
         std::unique_ptr<AstBlock> _body;
@@ -70,7 +70,7 @@ namespace stride::ast
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) :
-            IAstNode(source, symbol.symbol_position, context),
+            AstExpression(source, symbol.symbol_position, context),
             _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
@@ -118,6 +118,9 @@ namespace stride::ast
         [[nodiscard]]
         bool is_mutable() const { return this->_flags & SRFLAG_FN_DEF_MUTABLE; }
 
+        [[nodiscard]]
+        bool is_anonymous() const { return this->_flags & SRFLAG_FN_DEF_ANONYMOUS;}
+
         void validate() override;
 
         ~AstFunctionDeclaration() override = default;
@@ -125,6 +128,11 @@ namespace stride::ast
     private:
         std::optional<std::vector<llvm::Type*>> resolve_parameter_types(llvm::Module* module) const;
     };
+
+    std::unique_ptr<AstFunctionDeclaration> parse_lambda_fn_expression(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set
+    );
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
         const std::shared_ptr<ParsingContext>& context,
@@ -148,4 +156,6 @@ namespace stride::ast
         TokenSet& tokens,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
+
+    bool is_lambda_expression(const TokenSet& set);
 }

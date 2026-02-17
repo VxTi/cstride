@@ -315,7 +315,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
 
     const auto name = set.next().get_lexeme();
 
-    auto named_type = std::make_unique<AstStructType>(
+    auto named_type = std::make_unique<AstNamedType>(
         set.get_source(),
         reference_token.get_source_position(),
         context,
@@ -451,7 +451,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
     }
 
-    if (const auto* ast_struct_ty = dynamic_cast<AstStructType*>(type))
+    if (const auto* ast_struct_ty = dynamic_cast<AstNamedType*>(type))
     {
         // If it's a pointer, we don't even need to look up the struct name
         // to return the LLVM type, because all pointers are the same.
@@ -488,8 +488,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 {
     const auto* lhs_primitive = dynamic_cast<AstPrimitiveType*>(lhs);
     const auto* rhs_primitive = dynamic_cast<AstPrimitiveType*>(rhs);
-    const auto* lhs_named = dynamic_cast<AstStructType*>(lhs);
-    const auto* rhs_named = dynamic_cast<AstStructType*>(rhs);
+    const auto* lhs_named = dynamic_cast<AstNamedType*>(lhs);
+    const auto* rhs_named = dynamic_cast<AstNamedType*>(rhs);
 
     // Error if one is named and the other is primitive
     if ((lhs_named && rhs_primitive) || (lhs_primitive && rhs_named))
@@ -573,7 +573,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     );
 }
 
-bool AstStructType::equals(IAstType& other)
+bool AstNamedType::equals(IAstType& other)
 {
     if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
     {
@@ -581,7 +581,7 @@ bool AstStructType::equals(IAstType& other)
         // then we consider the types equal if this is optional
         return other_primitive->get_type() == PrimitiveType::NIL && this->is_optional();
     }
-    if (auto* other_named = dynamic_cast<AstStructType*>(&other))
+    if (auto* other_named = dynamic_cast<AstNamedType*>(&other))
     {
         return this->get_internal_name() == other_named->get_internal_name();
     }
@@ -600,7 +600,7 @@ bool AstPrimitiveType::equals(IAstType& other)
         return this->get_type() == other_primitive->get_type() || is_one_optional;
     }
 
-    if (const auto* struct_type = dynamic_cast<AstStructType*>(&other))
+    if (const auto* struct_type = dynamic_cast<AstNamedType*>(&other))
     {
         return this->get_type() == PrimitiveType::NIL && struct_type->is_optional();
     }

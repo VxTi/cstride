@@ -19,6 +19,7 @@
 
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
 std::vector<AstReturn*> collect_return_statements(
     const AstBlock* body
@@ -89,7 +90,7 @@ void AstFunctionDeclaration::validate()
 
     if (return_statements.empty())
     {
-        if (cast_type<AstStructType*>(this->get_return_type()))
+        if (cast_type<AstNamedType*>(this->get_return_type()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,

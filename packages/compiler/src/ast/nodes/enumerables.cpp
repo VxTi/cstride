@@ -6,6 +6,7 @@
 #include "ast/nodes/blocks.h"
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
 /**
  * Parses member entries with the following sequence:
@@ -81,7 +82,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
     auto enumerable_name = enumerable_name_tok.get_lexeme();
 
-    context->define_symbol(Symbol(reference_token.get_source_position(), context->get_name(), enumerable_name), SymbolType::ENUM);
+    context->define_symbol(Symbol(reference_token.get_source_position(), context->get_name(), enumerable_name), definition::SymbolType::ENUM);
 
     const auto opt_enum_body_subset = collect_block(set);
 

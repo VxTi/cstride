@@ -2,10 +2,12 @@
 
 #include "ast/casting.h"
 #include "ast/flags.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
 std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     const std::shared_ptr<ParsingContext>& context,
@@ -168,9 +170,9 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 flags
             );
         }
-        if (const auto* named = cast_type<AstStructType*>(type.get()))
+        if (const auto* named = cast_type<AstNamedType*>(type.get()))
         {
-            return std::make_unique<AstStructType>(
+            return std::make_unique<AstNamedType>(
                 named->get_source(),
                 named->get_source_position(),
                 context,
@@ -204,9 +206,9 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 flags
             );
         }
-        if (const auto* named = cast_type<AstStructType*>(type.get()))
+        if (const auto* named = cast_type<AstNamedType*>(type.get()))
         {
-            return std::make_unique<AstStructType>(
+            return std::make_unique<AstNamedType>(
                 named->get_source(),
                 named->get_source_position(),
                 context,
@@ -290,7 +292,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
          const auto member : members)
     {
         // Ensure the current 'node' we are looking inside is actually a struct
-        const auto struct_type = cast_type<AstStructType*>(current_type);
+        const auto struct_type = cast_type<AstNamedType*>(current_type);
         if (!struct_type)
         {
             throw parsing_error(
@@ -329,7 +331,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             );
         }
 
-        const auto field_type = StructSymbolDef::get_struct_member_field_type(
+        const auto field_type = StructDef::get_struct_member_field_type(
             segment_iden->get_name(),
             root_ref_struct_fields.value()
         );
@@ -362,7 +364,7 @@ std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
     const AstStructInitializer* initializer
 )
 {
-    return std::make_unique<AstStructType>(
+    return std::make_unique<AstNamedType>(
         initializer->get_source(),
         initializer->get_source_position(),
         context,
@@ -390,7 +392,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         {
             throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
-                std::format("Unable to infer expression type for variable '{}': variable not found", identifier->get_name()),
+                std::format("Unable to infer expression type for variable '{}': variable not found",
+                            identifier->get_name()),
                 *identifier->get_source(),
                 identifier->get_source_position()
             );
@@ -478,6 +481,24 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     if (const auto* member_accessor = cast_expr<AstMemberAccessor*>(expr))
     {
         return infer_member_accessor_type(context, member_accessor);
+    }
+
+    if (const auto* function_definition = dynamic_cast<AstFunctionDeclaration*>(expr))
+    {
+        std::vector<std::unique_ptr<IAstType>> param_types;
+
+        for (const auto& param : function_definition->get_parameters())
+        {
+            param_types.emplace_back(param->get_type()->clone());
+        }
+
+        return std::make_unique<AstFunctionType>(
+            function_definition->get_source(),
+            function_definition->get_source_position(),
+            context,
+            std::move(param_types),
+            function_definition->get_return_type()->clone()
+        );
     }
 
     throw parsing_error(

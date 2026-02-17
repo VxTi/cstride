@@ -3,6 +3,7 @@
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
 std::unique_ptr<AstExpression> collect_initiator(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {

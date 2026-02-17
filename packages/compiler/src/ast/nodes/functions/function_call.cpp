@@ -14,7 +14,7 @@
 #include "ast/nodes/expression.h"
 
 using namespace stride::ast;
-
+using namespace stride::ast::definition;
 
 bool AstFunctionCall::is_reducible()
 {
@@ -47,9 +47,9 @@ std::string AstFunctionCall::to_string()
     );
 }
 
-std::string AstFunctionCall::format_suggestion(const ISymbolDef* suggestion)
+std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
 {
-    if (const auto fn_call = dynamic_cast<const SymbolFnDefinition*>(suggestion))
+    if (const auto fn_call = dynamic_cast<const CallableDef*>(suggestion))
     {
         // We'll format the arguments
         std::vector<std::string> arg_types;

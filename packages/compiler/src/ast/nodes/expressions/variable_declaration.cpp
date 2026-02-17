@@ -136,7 +136,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         context,
         symbol,
         std::move(variable_type),
-        std::move(value)
+        std::move(value),
+        modifier
     );
 }
 
@@ -466,37 +467,6 @@ llvm::Value* AstVariableDeclaration::codegen(
     }
 
     return alloca;
-}
-
-bool AstVariableDeclaration::is_reducible()
-{
-    if (this->get_initial_value() == nullptr)
-    {
-        return false;
-    }
-    // Variables are reducible only if their initial value is reducible,
-    // In the future we can also check whether variables are ever referenced,
-    // in which case we can optimize away the variable declaration.
-
-    return this->get_initial_value()->is_reducible();
-}
-
-IAstNode* AstVariableDeclaration::reduce()
-{
-    const auto reduced_value = dynamic_cast<IReducible*>(this->get_initial_value().get())->reduce();
-    auto cloned_type = this->get_variable_type()->clone();
-
-    if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced_value); reduced_expr != nullptr)
-    {
-        return std::make_unique<AstVariableDeclaration>(
-            this->get_source(),
-            this->get_context(),
-            this->get_symbol(),
-            std::move(cloned_type),
-            std::unique_ptr<AstExpression>(reduced_expr)
-        ).release();
-    }
-    return this;
 }
 
 std::string AstVariableDeclaration::to_string()

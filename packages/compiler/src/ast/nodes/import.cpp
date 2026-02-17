@@ -81,7 +81,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     TokenSet& set
 )
 {
-    if (context->get_current_scope_type() != ScopeType::GLOBAL)
+    if (context->get_current_scope_type() != definition::ScopeType::GLOBAL)
     {
         set.throw_error(
             std::format(

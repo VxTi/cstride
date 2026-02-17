@@ -63,7 +63,8 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.AMPERSAND, StrideTypes.ASTERISK, StrideTypes.DIV,
             StrideTypes.MOD, StrideTypes.EXCL, StrideTypes.LT,
             StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ,
-            StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR -> OPERATOR_KEYS
+            StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR,
+            StrideTypes.ARROW -> OPERATOR_KEYS
             StrideTypes.LPAREN, StrideTypes.RPAREN -> PARENTHESES_KEYS
             StrideTypes.LBRACE, StrideTypes.RBRACE -> BRACES_KEYS
             StrideTypes.SEMICOLON -> SEMICOLON_KEYS

@@ -5,6 +5,7 @@
 #include "ast/symbols.h"
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
 std::string stride::ast::scope_type_to_str(const ScopeType& scope_type)
 {
@@ -33,7 +34,7 @@ bool ParsingContext::is_function_defined_globally(const std::string& internal_fu
 {
     return std::ranges::any_of(this->traverse_to_root()._symbols, [&](const auto& symbol)
     {
-        if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol.get()))
+        if (const auto* fn_def = dynamic_cast<const CallableDef*>(symbol.get()))
         {
             if (fn_def->get_internal_symbol_name() == internal_function_name)
             {
@@ -60,7 +61,7 @@ void ParsingContext::define_function(
     }
 
     global_scope._symbols.push_back(
-        std::make_unique<SymbolFnDefinition>(
+        std::make_unique<CallableDef>(
             std::move(parameter_types),
             std::move(return_type),
             symbol
@@ -76,14 +77,14 @@ void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType t
     ));
 }
 
-const FieldSymbolDef* ParsingContext::get_variable_def(
+const FieldDef* ParsingContext::get_variable_def(
     const std::string& variable_name,
     const bool use_raw_name
 ) const
 {
     for (const auto& symbol_def : this->_symbols)
     {
-        if (const auto* field_definition = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
+        if (const auto* field_definition = dynamic_cast<const FieldDef*>(symbol_def.get()))
         {
             if (field_definition->get_internal_symbol_name() == variable_name
                 || (use_raw_name && field_definition->get_symbol().name == variable_name))
@@ -110,12 +111,12 @@ const IdentifiableSymbolDef* ParsingContext::get_symbol_def(const std::string& s
     return nullptr;
 }
 
-const SymbolFnDefinition* ParsingContext::get_function_def(const std::string& function_name) const
+const CallableDef* ParsingContext::get_function_def(const std::string& function_name) const
 {
     for (const auto& global_scope = this->traverse_to_root();
          const auto& symbol_def : global_scope._symbols)
     {
-        if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol_def.get()))
+        if (const auto* fn_def = dynamic_cast<const CallableDef*>(symbol_def.get()))
         {
             if (fn_def->get_internal_symbol_name() == function_name)
             {
@@ -150,9 +151,9 @@ static size_t levenshtein_distance(const std::string& a, const std::string& b)
     return prev[len_b];
 }
 
-ISymbolDef* ParsingContext::fuzzy_find(const std::string& symbol_name) const
+IDefinition* ParsingContext::fuzzy_find(const std::string& symbol_name) const
 {
-    ISymbolDef* best_match = nullptr;
+    IDefinition* best_match = nullptr;
     size_t best_distance = std::numeric_limits<size_t>::max();
 
     // We track the best length difference to break ties between multiple substring matches.
@@ -166,12 +167,10 @@ ISymbolDef* ParsingContext::fuzzy_find(const std::string& symbol_name) const
         {
             std::string candidate_name;
             // (Your casting logic remains the same)
-            if (const auto* field_def = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
+            if (const auto* field_def = dynamic_cast<const FieldDef*>(symbol_def.get()))
                 candidate_name = field_def->get_internal_symbol_name();
-            else if (const auto* fn_def = dynamic_cast<const SymbolFnDefinition*>(symbol_def.get()))
+            else if (const auto* fn_def = dynamic_cast<const CallableDef*>(symbol_def.get()))
                 candidate_name = fn_def->get_internal_symbol_name();
-            else if (const auto* id_def = dynamic_cast<const IdentifiableSymbolDef*>(symbol_def.get()))
-                candidate_name = id_def->get_internal_symbol_name();
             else
                 continue;
 
@@ -220,7 +219,7 @@ bool ParsingContext::is_field_defined_in_scope(const std::string& variable_name)
 {
     return std::ranges::any_of(this->_symbols, [&](const auto& symbol_def)
     {
-        if (const auto* var_def = dynamic_cast<const FieldSymbolDef*>(symbol_def.get()))
+        if (const auto* var_def = dynamic_cast<const FieldDef*>(symbol_def.get()))
         {
             return var_def->get_internal_symbol_name() == variable_name;
         }
@@ -259,7 +258,7 @@ void ParsingContext::define_variable_globally(
 
     auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
     global_scope._symbols.push_back(
-        std::make_unique<FieldSymbolDef>(
+        std::make_unique<FieldDef>(
             std::move(variable_symbol),
             std::move(type)
         )
@@ -289,14 +288,14 @@ void ParsingContext::define_variable(
     auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
 
     global_scope._symbols.push_back(
-        std::make_unique<FieldSymbolDef>(
+        std::make_unique<FieldDef>(
             std::move(variable_sym),
             std::move(type)
         )
     );
 }
 
-const FieldSymbolDef* ParsingContext::lookup_variable(
+const FieldDef* ParsingContext::lookup_variable(
     const std::string& name,
     const bool use_raw_name
 ) const
@@ -313,7 +312,7 @@ const FieldSymbolDef* ParsingContext::lookup_variable(
     return nullptr;
 }
 
-std::optional<StructSymbolDef*> ParsingContext::get_struct_def(const std::string& name) const
+std::optional<StructDef*> ParsingContext::get_struct_def(const std::string& name) const
 {
     auto current = this;
 
@@ -328,7 +327,7 @@ std::optional<StructSymbolDef*> ParsingContext::get_struct_def(const std::string
 
         for (const auto& definition : current->_symbols)
         {
-            if (auto* struct_def = dynamic_cast<StructSymbolDef*>(definition.get()))
+            if (auto* struct_def = dynamic_cast<StructDef*>(definition.get()))
             {
                 // Here we don't check for the internal name, as we don't always know what the data
                 // layout is initially (which is used for resolving the actual internal name)
@@ -387,7 +386,7 @@ void ParsingContext::define_struct(
 
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
     root._symbols.push_back(
-        std::make_unique<StructSymbolDef>(
+        std::make_unique<StructDef>(
             std::move(struct_symbol),
             std::move(fields)
         )
@@ -417,14 +416,14 @@ void ParsingContext::define_struct(
     }
 
     root._symbols.push_back(
-        std::make_unique<StructSymbolDef>(
+        std::make_unique<StructDef>(
             struct_name,
             reference_struct_name
         )
     );
 }
 
-std::vector<std::pair<std::string, IAstType*>> StructSymbolDef::get_fields() const
+std::vector<std::pair<std::string, IAstType*>> StructDef::get_fields() const
 {
     std::vector<std::pair<std::string, IAstType*>> copy{};
     copy.reserve(this->_fields.size());
@@ -437,7 +436,7 @@ std::vector<std::pair<std::string, IAstType*>> StructSymbolDef::get_fields() con
     return std::move(copy);
 }
 
-std::optional<IAstType*> StructSymbolDef::get_struct_member_field_type(
+std::optional<IAstType*> StructDef::get_struct_member_field_type(
     const std::string& field_name,
     const std::vector<std::pair<std::string, IAstType*>>& fields
 )
@@ -453,7 +452,7 @@ std::optional<IAstType*> StructSymbolDef::get_struct_member_field_type(
 }
 
 // Note that if this struct is a reference struct, this will return nullopt
-std::optional<IAstType*> StructSymbolDef::get_struct_member_field_type(const std::string& field_name)
+std::optional<IAstType*> StructDef::get_struct_member_field_type(const std::string& field_name)
 {
     for (const auto& [name, type] : this->_fields)
     {
@@ -465,12 +464,12 @@ std::optional<IAstType*> StructSymbolDef::get_struct_member_field_type(const std
     return std::nullopt;
 }
 
-bool StructSymbolDef::is_reference_struct() const
+bool StructDef::is_reference_struct() const
 {
     return this->_reference_struct_sym.has_value();
 }
 
-std::optional<int> StructSymbolDef::get_struct_field_member_index(const std::string& member_name) const
+std::optional<int> StructDef::get_struct_field_member_index(const std::string& member_name) const
 {
     for (size_t i = 0; i < this->_fields.size(); i++)
     {

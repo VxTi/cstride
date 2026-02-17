@@ -90,7 +90,7 @@ std::string AstStructInitializer::to_string()
     return std::format("StructInit{{...}}");
 }
 
-StructSymbolDef* get_super_referencing_struct_def(
+definition::StructDef* get_super_referencing_struct_def(
     const std::shared_ptr<ParsingContext>& context,
     const std::string& struct_name
 )
