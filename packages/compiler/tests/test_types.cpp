@@ -75,11 +75,53 @@ TEST(Types, StructReferenceTypeMismatch)
     )", "Type mismatch in variable declaration; expected type 'Point', got 'Vec'");
 }
 
+TEST(Types, StructMemberOrderMismatch)
+{
+    assert_throws_message(R"(
+        struct Point {
+            x: i32;
+            y: i32;
+        }
+
+        const a: Point = Point::{ y: 1, x: 1 };
+    )", "Struct member order mismatch at index 0: expected 'x', got 'y'");
+}
+
+TEST(Types, StructMemberUnknownField)
+{
+    assert_throws_message(R"(
+        struct Point {
+            x: i32;
+            y: i32;
+        }
+
+        const a: Point = Point::{ x: 1, unknown: 123 };
+    )", "Struct 'Point' has no member named 'unknown'");
+}
+
 TEST(Types, ArrayTypeMismatch)
 {
     assert_throws_message(R"(
         let a: i32[] = [1L, 2L, 3L];
     )", "Type mismatch in variable declaration; expected type 'Array<i32>', got 'Array<i64>'");
+}
+
+TEST(Types, FunctionCallTypeMismatch)
+{
+    assert_compiles(R"(
+        fn add(x: i32, y: i32): i32 {
+            return x + y;
+        }
+
+        const result: i32 = add(1, 2);
+    )");
+    assert_throws_message(R"(
+        fn add(x: i32, y: i32): i32 {
+            return x + y;
+        }
+
+        const result: i32 = add(1L, 2L);
+    )", "Unable to resolve return type for function 'add'");
 }
 
 /*

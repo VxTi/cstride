@@ -140,7 +140,43 @@ void AstStructInitializer::validate()
         );
     }
 
-    // Second quick check: Order validation - This is required to ensure consistent data layout.
+    for (const auto& [field_name, initializer_expr] : this->_initializers)
+    {
+        const auto found_member = definition->get_struct_member_field_type(field_name);
+
+        if (!found_member.has_value())
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format("Struct '{}' has no member named '{}'", this->_struct_name, field_name),
+                *this->get_source(),
+                this->get_source_position()
+            );
+        }
+
+        if (const auto member_type = infer_expression_type(this->get_context(), initializer_expr.get());
+            !member_type->equals(*found_member.value()))
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got '{}'",
+                    field_name,
+                    this->_struct_name,
+                    found_member.value()->to_string(),
+                    member_type->to_string()
+                ),
+                *this->get_source(),
+                initializer_expr->get_source_position()
+            );
+        }
+
+        // Further validate child nodes. It's possible that we have nested struct definitions,
+        // which also have to conform to their types.
+        initializer_expr->validate();
+    }
+
+    // Second quick check: Order validation - This is required to ensure a consistent data layout.
     size_t index = 0;
     for (const auto& member_name : this->_initializers | std::views::keys)
     {
@@ -161,41 +197,6 @@ void AstStructInitializer::validate()
         }
 
         index++;
-    }
-    for (const auto& [member_name, member_expr] : this->_initializers)
-    {
-        const auto found_member = definition->get_struct_member_field_type(member_name);
-
-        if (!found_member.has_value())
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format("Struct '{}' has no member named '{}'", this->_struct_name, member_name),
-                *this->get_source(),
-                this->get_source_position()
-            );
-        }
-
-        if (const auto member_type = infer_expression_type(this->get_context(), member_expr.get());
-            !member_type->equals(*found_member.value()))
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got '{}'",
-                    member_name,
-                    this->_struct_name,
-                    found_member.value()->to_string(),
-                    member_type->to_string()
-                ),
-                *this->get_source(),
-                member_expr->get_source_position()
-            );
-        }
-
-        // Further validate child nodes. It's possible that we have nested struct definitions,
-        // which also have to conform to their types.
-        member_expr->validate();
     }
 }
 

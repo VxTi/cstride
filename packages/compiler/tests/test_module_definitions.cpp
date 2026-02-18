@@ -20,10 +20,13 @@ TEST(Modules, MultipleModules)
 TEST(Modules, ModuleWithFunction)
 {
     assert_compiles(R"(
-        module Foo { fn foo(): void {} }
-        module Bar { fn foo(): void {} }
+        module Foo {
+            fn foo(): void {}
+        }
+        module Bar {
+            fn foo(): void {}
+        }
 
-        fn main(): void {}
     )");
 }
 
