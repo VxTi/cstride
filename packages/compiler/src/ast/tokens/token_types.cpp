@@ -85,7 +85,7 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::HEX_LITERAL, R"(\b0x[0-9a-fA-F]+\b)"),
     TOKEN(TokenType::DOUBLE_LITERAL, R"(\d*\.\d+[dD])"),
     TOKEN(TokenType::FLOAT_LITERAL, R"(\d*\.\d+)"),
-    TOKEN(TokenType::LONG_INTEGER_LITERAL, R"(\d+L)"),
+    TOKEN(TokenType::LONG_INTEGER_LITERAL, R"(\d+[lL])"),
     TOKEN(TokenType::INTEGER_LITERAL, R"(\d+)"),
 
     // Multi-character operators (must come before single-char operators)

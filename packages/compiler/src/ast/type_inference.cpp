@@ -483,7 +483,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         return infer_member_accessor_type(context, member_accessor);
     }
 
-    if (const auto* function_definition = dynamic_cast<AstFunctionDeclaration*>(expr))
+    if (const auto* function_definition = cast_expr<AstLambdaFunctionExpression*>(expr))
     {
         std::vector<std::unique_ptr<IAstType>> param_types;
 
@@ -493,8 +493,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         }
 
         return std::make_unique<AstFunctionType>(
-            function_definition->get_source(),
-            function_definition->get_source_position(),
+            static_cast<const AstExpression*>(function_definition)->get_source(),
+            static_cast<const AstExpression*>(function_definition)->get_source_position(),
             context,
             std::move(param_types),
             function_definition->get_return_type()->clone()
