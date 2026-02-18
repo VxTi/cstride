@@ -37,7 +37,7 @@ namespace stride::ast
         std::string to_string() override;
 
         [[nodiscard]]
-        std::string get_name() const { return this->_name; }
+        const std::string& get_name() const { return this->_name; }
 
         [[nodiscard]]
         IAstType* get_type() const { return this->_type.get(); }
@@ -50,9 +50,10 @@ namespace stride::ast
      *                Function declaration definitions             *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-    class AstFunctionDeclaration :
-        public AstExpression,
-        public IAstContainer
+    class IAstCallable
+        : public virtual ISynthesisable,
+          public virtual IAstContainer,
+          public virtual IAstNode
     {
         std::unique_ptr<AstBlock> _body;
         Symbol _symbol;
@@ -61,41 +62,24 @@ namespace stride::ast
         int _flags;
 
     public:
-        AstFunctionDeclaration(
-            const std::shared_ptr<SourceFile>& source,
-            const std::shared_ptr<ParsingContext>& context,
+        explicit IAstCallable(
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
             const int flags
-        ) :
-            AstExpression(source, symbol.symbol_position, context),
-            _body(std::move(body)),
+        ) : _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)),
             _flags(flags) {}
 
-        std::string to_string() override;
-
-        void resolve_forward_references(
-            const std::shared_ptr<ParsingContext>& context,
-            llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) override;
-
-        llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
-            llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) override;
 
         [[nodiscard]]
-        std::string get_name() const { return this->_symbol.name; }
+        const std::string& get_name() const { return this->_symbol.name; }
 
         [[nodiscard]]
-        std::string get_internal_name() const { return this->_symbol.internal_name; }
+        const std::string& get_internal_name() const { return this->_symbol.internal_name; }
 
         [[nodiscard]]
         AstBlock* get_body() override { return this->_body.get(); }
@@ -118,21 +102,78 @@ namespace stride::ast
         [[nodiscard]]
         bool is_mutable() const { return this->_flags & SRFLAG_FN_DEF_MUTABLE; }
 
-        [[nodiscard]]
-        bool is_anonymous() const { return this->_flags & SRFLAG_FN_DEF_ANONYMOUS;}
+        llvm::Value* codegen(
+            const std::shared_ptr<ParsingContext>& context,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         void validate() override;
+    };
+
+    class AstFunctionDeclaration :
+        public IAstCallable
+    {
+    public:
+        explicit AstFunctionDeclaration(
+            const std::shared_ptr<SourceFile>& source,
+            const std::shared_ptr<ParsingContext>& context,
+            Symbol symbol,
+            std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
+            std::unique_ptr<AstBlock> body,
+            std::shared_ptr<IAstType> return_type,
+            const int flags
+        ) : IAstNode(source, symbol.symbol_position, context),
+            IAstCallable(
+                std::move(symbol),
+                std::move(parameters),
+                std::move(body),
+                std::move(return_type),
+                flags
+            ) {}
+
+        std::string to_string() override;
 
         ~AstFunctionDeclaration() override = default;
+
+        void resolve_forward_references(
+            const std::shared_ptr<ParsingContext>& context,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) override;
 
     private:
         std::optional<std::vector<llvm::Type*>> resolve_parameter_types(llvm::Module* module) const;
     };
 
-    std::unique_ptr<AstFunctionDeclaration> parse_lambda_fn_expression(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
+    class AstLambdaFunctionExpression
+        :
+        public IAstCallable,
+        public AstExpression
+    {
+    public:
+        explicit AstLambdaFunctionExpression(
+            const std::shared_ptr<SourceFile>& source,
+            const std::shared_ptr<ParsingContext>& context,
+            Symbol symbol,
+            std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
+            std::unique_ptr<AstBlock> body,
+            std::shared_ptr<IAstType> return_type,
+            const int flags
+        ) : IAstNode(source, symbol.symbol_position, context),
+            IAstCallable(
+                std::move(symbol),
+                std::move(parameters),
+                std::move(body),
+                std::move(return_type),
+                flags
+            ),
+            AstExpression(source, symbol.symbol_position, context) {}
+
+        std::string to_string() override;
+
+        ~AstLambdaFunctionExpression() override = default;
+    };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
         const std::shared_ptr<ParsingContext>& context,
@@ -156,6 +197,4 @@ namespace stride::ast
         TokenSet& tokens,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
-
-    bool is_lambda_expression(const TokenSet& set);
 }

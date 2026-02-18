@@ -11,6 +11,7 @@
 namespace stride::ast
 {
     class AstLiteral;
+    class AstFunctionParameter;
 
     enum class BinaryOpType
     {
@@ -727,6 +728,11 @@ namespace stride::ast
 
     SymbolNameSegments parse_segmented_identifier(TokenSet& set);
 
+    std::unique_ptr<AstExpression> parse_lambda_fn_expression(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set
+    );
+
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
      #                                                           #
      *                    GETTER FUNCTIONS                       *
@@ -767,6 +773,8 @@ namespace stride::ast
     /// Checks whether the subsequent tokens might be member accessors
     /// e.g., <identifier>.<accessor>
     bool is_member_accessor(AstExpression* lhs, const TokenSet& set);
+
+    bool is_lambda_fn_expression(const TokenSet& set);
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
      #                                                           #

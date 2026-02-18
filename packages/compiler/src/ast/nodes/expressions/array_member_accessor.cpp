@@ -59,7 +59,7 @@ void AstArrayMemberAccessor::validate()
 
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
-        "Array index accessor must be of type 'int', got '" + index_accessor_type->to_string() + "'",
+        std::format("Array index accessor must be of type int, got '{}'", index_accessor_type->to_string()),
         *this->get_source(),
         this->get_source_position()
     );

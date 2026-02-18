@@ -7,7 +7,13 @@
 using namespace stride::ast;
 
 
-void AstArray::validate() {}
+void AstArray::validate()
+{
+    for (const auto& element : this->get_elements())
+    {
+        element->validate();
+    }
+}
 
 std::string AstArray::to_string()
 {

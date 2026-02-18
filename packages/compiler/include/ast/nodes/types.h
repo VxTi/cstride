@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <llvm/IR/InlineAsm.h>
 
 #include "ast_node.h"
 #include "formatting.h"
@@ -265,7 +266,7 @@ namespace stride::ast
         std::string to_string() override
         {
             return std::format(
-                "Array[{}]{}",
+                "Array<{}{}>",
                 this->_element_type->to_string(),
                 (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
             );
@@ -303,6 +304,7 @@ namespace stride::ast
         [[nodiscard]]
         const std::unique_ptr<IAstType>& get_return_type() const { return _return_type; }
 
+        [[nodiscard]]
         std::unique_ptr<IAstType> clone() const override
         {
             std::vector<std::unique_ptr<IAstType>> parameters_clone = {};
@@ -336,8 +338,18 @@ namespace stride::ast
         {
             if (const auto* other_func = dynamic_cast<AstFunctionType*>(&other))
             {
-                return this->_parameters == other_func->_parameters &&
-                    this->_return_type->equals(*other_func->_return_type);
+                if (!other_func->get_return_type()->equals(*this->get_return_type())) return false;
+
+                if (this->_parameters.size() != other_func->_parameters.size()) return false;
+
+                for (size_t i = 0; i < this->_parameters.size(); i++)
+                {
+                    if (!this->_parameters[i]->equals(*other_func->_parameters[i]))
+                    {
+                        return false;
+                    }
+                }
+                return true;
             }
             return false;
         }

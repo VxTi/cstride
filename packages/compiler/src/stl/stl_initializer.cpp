@@ -56,7 +56,7 @@ void stride::stl::llvm_insert_function_definitions(llvm::Module* module)
     module->getOrInsertFunction("printf", printf_fn_ty);
 }
 
-void stride::stl::predefine_symbols(const std::shared_ptr<ast::ParsingContext>& global_scope)
+void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::ParsingContext>& global_scope)
 {
     const auto placeholder_position = SourcePosition(0, 0);
     /// Printf definition

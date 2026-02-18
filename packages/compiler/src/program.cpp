@@ -26,7 +26,7 @@ void Program::parse_files(std::vector<std::string> files)
     this->_global_scope = std::make_shared<ast::ParsingContext>();
     this->_files = std::move(files);
 
-    stl::predefine_symbols(this->get_global_scope());
+    stl::predefine_internal_functions(this->get_global_scope());
 
     std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
 
