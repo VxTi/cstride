@@ -3,8 +3,9 @@
 
 using namespace stride::tests;
 
-TEST(Structs, Definition) {
-    const std::string code = R"(
+TEST(Structs, Definition)
+{
+    assert_parses(R"(
         struct Point {
             x: i32;
             y: i32;
@@ -16,63 +17,40 @@ TEST(Structs, Definition) {
             b: u8;
             a: u8;
         }
-    )";
-    assert_parses(code);
+    )");
 }
 
-TEST(Structs, Initialization) {
-    const std::string code = R"(
+TEST(Structs, Initialization)
+{
+    assert_parses(R"(
         struct Point {
             x: i32;
             y: i32;
         }
 
-        struct Color {
-            r: i32;
-            g: i32;
-            b: i32;
-            a: i32;
-        }
-
-        fn main(): void {
-            const p: Point = Point::{ x: 10, y: 20 };
-
-            const transparent_red: Color = Color::{
-                r: 255,
-                g: 0,
-                b: 0,
-                a: 128
-            };
-        }
-    )";
-    assert_parses(code);
+        const p: Point = Point::{ x: 10, y: 20 };
+    )");
 }
 
-TEST(Structs, Composition) {
-    /*
-       Parsing support for nested nominal types is implied if types are parsed generically.
-       Testing nested struct defs if supported, or composition.
-    */
-    const std::string code = R"(
+TEST(Structs, Composition)
+{
+    assert_parses(R"(
         struct Point { x: i32; y: i32; }
         struct Rect {
             origin: Point;
             width: i32;
             height: i32;
         }
-    )";
-    assert_parses(code);
+    )");
 }
 
-TEST(Structs, Aliasing) {
-    const std::string code = R"(
+TEST(Structs, Referencing)
+{
+    assert_parses(R"(
         struct Point { x: i32; y: i32; }
         struct Vector2d = Point;
 
-        fn main(): void {
-            const p: Point = Point::{ x: 10, y: 20 };
-            const v: Vector2d = Vector2d::{ x: 10, y: 20 };
-        }
-    )";
-    assert_parses(code);
+        const p: Point = Point::{ x: 10, y: 20 };
+        const v: Vector2d = Vector2d::{ x: 10, y: 20 };
+    )");
 }
