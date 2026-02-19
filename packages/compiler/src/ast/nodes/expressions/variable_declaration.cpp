@@ -360,6 +360,11 @@ void global_var_declaration_codegen(
         dynamic_init_value = initial_value->codegen(self->get_context(), module, &tempBuilder);
     }
 
+    // IAstCallable::codegen (e.g. a lambda) redirects the builder's insert point into its
+    // own function body. Restore it to the init function's entry block before emitting the
+    // store and return so they land in the right function.
+    tempBuilder.SetInsertPoint(entry);
+
     if (dynamic_init_value)
     {
         // Perform the store

@@ -117,6 +117,10 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     {
         if (const auto field_fn_like_def = dynamic_cast<FieldDef*>(definition))
         {
+            if (const auto field_fn_type = cast_type<AstFunctionType*>(field_fn_like_def->get_type()))
+            {
+                return field_fn_type->get_return_type()->clone();
+            }
             return field_fn_like_def->get_type()->clone();
         }
     }
