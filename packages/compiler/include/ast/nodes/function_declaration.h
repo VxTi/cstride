@@ -51,9 +51,8 @@ namespace stride::ast
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
     class IAstCallable
-        : public virtual ISynthesisable,
-          public virtual IAstContainer,
-          public virtual IAstNode
+        : public IAstContainer,
+          public AstExpression
     {
         std::unique_ptr<AstBlock> _body;
         Symbol _symbol;
@@ -63,12 +62,16 @@ namespace stride::ast
 
     public:
         explicit IAstCallable(
+            const std::shared_ptr<SourceFile>& source,
+            const SourcePosition source_position,
+            const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
             const int flags
-        ) : _body(std::move(body)),
+        ) : AstExpression(source, source_position, context),
+            _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)),
@@ -102,6 +105,9 @@ namespace stride::ast
         [[nodiscard]]
         bool is_mutable() const { return this->_flags & SRFLAG_FN_DEF_MUTABLE; }
 
+        [[nodiscard]]
+        bool is_anonymous() const { return this->_flags & SRFLAG_FN_DEF_ANONYMOUS; }
+
         llvm::Value* codegen(
             const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
@@ -123,14 +129,16 @@ namespace stride::ast
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
             const int flags
-        ) : IAstNode(source, symbol.symbol_position, context),
-            IAstCallable(
-                std::move(symbol),
-                std::move(parameters),
-                std::move(body),
-                std::move(return_type),
-                flags
-            ) {}
+        ) : IAstCallable(
+            source,
+            symbol.symbol_position,
+            context,
+            std::move(symbol),
+            std::move(parameters),
+            std::move(body),
+            std::move(return_type),
+            flags
+        ) {}
 
         std::string to_string() override;
 
@@ -148,8 +156,7 @@ namespace stride::ast
 
     class AstLambdaFunctionExpression
         :
-        public IAstCallable,
-        public AstExpression
+        public IAstCallable
     {
     public:
         explicit AstLambdaFunctionExpression(
@@ -160,15 +167,14 @@ namespace stride::ast
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
             const int flags
-        ) : IAstNode(source, symbol.symbol_position, context),
-            IAstCallable(
-                std::move(symbol),
-                std::move(parameters),
-                std::move(body),
-                std::move(return_type),
-                flags
-            ),
-            AstExpression(source, symbol.symbol_position, context) {}
+        ) : IAstCallable(
+            source, symbol.symbol_position, context,
+            std::move(symbol),
+            std::move(parameters),
+            std::move(body),
+            std::move(return_type),
+            flags
+        ) {}
 
         std::string to_string() override;
 

@@ -21,6 +21,8 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
+#define ANONYMOUS_FN_PREFIX "#__anonymous_"
+
 std::vector<AstReturn*> collect_return_statements(
     const AstBlock* body
 )
@@ -104,7 +106,8 @@ void IAstCallable::validate()
 
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
-            std::format("Function '{}' is missing a return statement.", this->get_name()),
+            std::format("Function '{}' is missing a return statement.",
+                        this->is_anonymous() ? "<anonymous function>" : this->get_name()),
             *this->get_source(),
             this->get_source_position()
         );
@@ -351,9 +354,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         symbol_name = resolve_internal_function_name(context, position, {fn_name}, parameter_types);
     }
 
-    // Function will be defined in the parent context (global, perhaps)
-    // its children will reside in the function scope. This is intentional
-
     context->define_function(
         symbol_name,
         std::make_unique<AstFunctionType>(
@@ -412,7 +412,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
 
     // Parses expressions like:
     // (<param1>: <type1>, ...): <ret_type> -> {}
-
     if (auto header_definition = collect_parenthesized_block(set);
         header_definition.has_value())
     {
@@ -425,7 +424,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     }
 
     set.expect(TokenType::COLON, "Expected ':' after lambda function header definition");
-    auto ret_type = parse_type(context, set, "Expected type after anonymous function header definition");
+    auto return_type = parse_type(context, set, "Expected type after anonymous function header definition");
     const auto lambda_arrow = set.expect(TokenType::DASH_RARROW, "Expected '->' after lambda parameters");
 
     auto body_context = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
@@ -439,7 +438,24 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
             reference_token.get_source_position().offset,
             lambda_arrow.get_source_position().offset - reference_token.get_source_position().offset
         ),
-        "__anonymous_" + std::to_string(anonymous_lambda_id++)
+        ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++)
+    );
+
+    std::vector<std::unique_ptr<IAstType>> cloned_params;
+    cloned_params.reserve(parameters.size());
+    for (auto& param : parameters)
+    {
+        cloned_params.push_back(param->get_type()->clone());
+    }
+    context->define_function(
+        symbol_name,
+        std::make_unique<AstFunctionType>(
+            set.get_source(),
+            symbol_name.symbol_position,
+            context,
+            std::move(cloned_params),
+            return_type->clone()
+        )
     );
 
     return std::make_unique<AstLambdaFunctionExpression>(
@@ -448,8 +464,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
         symbol_name,
         std::move(parameters),
         std::move(lambda_body),
-        std::move(ret_type),
-        SRFLAG_NONE
+        std::move(return_type),
+        SRFLAG_FN_DEF_ANONYMOUS
     );
 }
 
