@@ -194,11 +194,14 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     module->setTargetTriple(triple);
 
     llvm::IRBuilder<> builder(*context);
-    stl::llvm_jit_define_functions(jit.get());
-    stl::llvm_insert_function_definitions(module.get());
 
-    this->validate_ast_nodes();
+    // Predefine internal functions (printf, system time, ...)
+    stride::stl::llvm_jit_define_functions(jit.get());
+    stride::stl::llvm_insert_function_definitions(module.get());
+
     this->resolve_forward_references(module.get(), &builder);
+    this->validate_ast_nodes();
+
     this->generate_llvm_ir(module.get(), &builder);
 
 
