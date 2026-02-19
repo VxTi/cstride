@@ -33,6 +33,24 @@ llvm::Value* AstIdentifier::codegen(
 
             if (!val)
             {
+                // Check if the identifier refers to a function defined in the module
+                if (auto* fn = module->getFunction(internal_name))
+                {
+                    return fn;
+                }
+
+                // The internal_name above is resolved from lookup_variable, which only covers
+                // variables. For functions, the internal name is mangled, so we need to look
+                // up the function definition from the context by its raw name to get the
+                // mangled internal name, then look it up in the module.
+                if (const auto fn_def = context->lookup_symbol(this->get_name()))
+                {
+                    if (auto* fn = module->getFunction(fn_def->get_internal_symbol_name()))
+                    {
+                        return fn;
+                    }
+                }
+
                 throw parsing_error(
                     ErrorType::RUNTIME_ERROR,
                     std::format("Identifier '{}' not found in this scope", this->get_name()),

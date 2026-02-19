@@ -160,6 +160,7 @@ llvm::Value* IAstCallable::codegen(
     llvm::Function* function = module->getFunction(this->get_internal_name());
     if (!function)
     {
+        module->print(llvm::errs(), nullptr);
         throw std::runtime_error("Function symbol missing: " + this->get_internal_name());
     }
 
