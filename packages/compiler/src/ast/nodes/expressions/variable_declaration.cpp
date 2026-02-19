@@ -7,6 +7,7 @@
 #include "ast/flags.h"
 #include "ast/modifiers.h"
 #include "ast/optionals.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
@@ -294,6 +295,15 @@ void AstVariableDeclaration::resolve_forward_references(
     llvm::IRBuilder<>* builder
 )
 {
+    // If the initial value is itself synthesisable (e.g. a lambda), pre-declare it too.
+    if (const auto initial_value = this->get_initial_value().get())
+    {
+        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
+        {
+            synthesisable->resolve_forward_references(context, module, builder);
+        }
+    }
+
     if (!this->get_variable_type()->is_global())
     {
         return;

@@ -115,6 +115,9 @@ namespace stride::ast
         ) override;
 
         void validate() override;
+
+        void resolve_forward_references(const std::shared_ptr<ParsingContext>& context, llvm::Module* module,
+                                        llvm::IRBuilder<>* builder) override;
     };
 
     class AstFunctionDeclaration :
@@ -143,12 +146,6 @@ namespace stride::ast
         std::string to_string() override;
 
         ~AstFunctionDeclaration() override = default;
-
-        void resolve_forward_references(
-            const std::shared_ptr<ParsingContext>& context,
-            llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) override;
 
     private:
         std::optional<std::vector<llvm::Type*>> resolve_parameter_types(llvm::Module* module) const;

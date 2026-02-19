@@ -241,36 +241,6 @@ llvm::Value* IAstCallable::codegen(
     return function;
 }
 
-void AstFunctionDeclaration::resolve_forward_references(
-    const std::shared_ptr<ParsingContext>& context,
-    llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
-{
-    const auto fn_name = this->get_internal_name();
-
-    const std::optional<std::vector<llvm::Type*>> param_types = resolve_parameter_types(module);
-    llvm::Type* return_type = internal_type_to_llvm_type(this->get_return_type(), module);
-
-    if (!param_types || !return_type)
-    {
-        throw std::runtime_error("Failed to resolve types for " + fn_name);
-    }
-
-    llvm::FunctionType* function_type = llvm::FunctionType::get(
-        return_type,
-        param_types.value(),
-        this->is_variadic()
-    );
-
-    llvm::Function::Create(
-        function_type,
-        llvm::Function::ExternalLinkage,
-        fn_name,
-        module
-    );
-}
-
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
@@ -503,4 +473,42 @@ std::string AstFunctionDeclaration::to_string()
 std::string AstLambdaFunctionExpression::to_string()
 {
     return "LambdaFunction";
+}
+
+void IAstCallable::resolve_forward_references(
+    const std::shared_ptr<ParsingContext>& context,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
+{
+    const auto& fn_name = this->get_internal_name();
+
+    // Avoid re-registering if already declared (e.g. called multiple times)
+    if (module->getFunction(fn_name)) return;
+
+    std::vector<llvm::Type*> param_types;
+    for (const auto& param : this->get_parameters())
+    {
+        llvm::Type* llvm_type = internal_type_to_llvm_type(param->get_type(), module);
+        if (!llvm_type)
+        {
+            throw std::runtime_error("Failed to resolve parameter type for lambda: " + fn_name);
+        }
+        param_types.push_back(llvm_type);
+    }
+
+    llvm::Type* return_type = internal_type_to_llvm_type(this->get_return_type(), module);
+    if (!return_type)
+    {
+        throw std::runtime_error("Failed to resolve return type for lambda: " + fn_name);
+    }
+
+    llvm::FunctionType* function_type = llvm::FunctionType::get(return_type, param_types, false);
+
+    llvm::Function::Create(
+        function_type,
+        llvm::Function::ExternalLinkage,
+        fn_name,
+        module
+    );
 }
