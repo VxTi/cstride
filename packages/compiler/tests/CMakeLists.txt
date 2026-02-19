@@ -18,4 +18,6 @@ target_include_directories(cstride_tests PRIVATE
     ../include
     ${LLVM_INCLUDE_DIRS}
 )
+target_compile_options(cstride_tests PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+target_link_options(cstride_tests PRIVATE -fsanitize=address)
 gtest_discover_tests(cstride_tests)
