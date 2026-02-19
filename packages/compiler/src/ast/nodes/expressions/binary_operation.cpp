@@ -70,7 +70,8 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
     const int min_precedence
 )
 {
-    while (true)
+    int recursion_depth = 0;
+    while (set.has_next())
     {
         const auto reference_token = set.peek_next();
         // First, we'll check if the next token is a binary operator
@@ -132,7 +133,13 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
         {
             return lhs;
         }
+
+        if (++recursion_depth > MAX_RECURSION_DEPTH)
+        {
+            set.throw_error("Maximum recursion depth exceeded when parsing binary arithmetic expression");
+        }
     }
+    return lhs;
 }
 
 llvm::Value* AstBinaryArithmeticOp::codegen(

@@ -266,7 +266,7 @@ namespace stride::ast
         std::string to_string() override
         {
             return std::format(
-                "Array<{}{}>",
+                "({}{})[]",
                 this->_element_type->to_string(),
                 (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
             );
@@ -293,8 +293,9 @@ namespace stride::ast
             const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstType>> parameters,
-            std::unique_ptr<IAstType> return_type
-        ) : IAstType(source, source_position, context, SRFLAG_TYPE_PTR),
+            std::unique_ptr<IAstType> return_type,
+            const int flags = SRFLAG_NONE
+        ) : IAstType(source, source_position, context, flags | SRFLAG_TYPE_PTR),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)) {}
 
@@ -327,8 +328,9 @@ namespace stride::ast
             std::vector<std::string> param_strings;
             for (const auto& p : this->_parameters)
                 param_strings.push_back(p->to_string());
+
             return std::format(
-                "Function({}) -> {}",
+                "({}) -> {}",
                 join(param_strings, ", "),
                 this->_return_type->to_string()
             );
@@ -364,7 +366,7 @@ namespace stride::ast
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const std::string& error,
-        int context_flags = SRFLAG_NONE
+        int type_flags = SRFLAG_NONE
     );
 
     llvm::Type* internal_type_to_llvm_type(
@@ -388,6 +390,12 @@ namespace stride::ast
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         int context_type_flags = SRFLAG_NONE
+    );
+
+    std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        int context_type_flags
     );
 
     std::string get_root_reference_struct_name(

@@ -7,9 +7,10 @@
 
 namespace stride::ast
 {
-    class AstBlock;
 
-    // If we include the header, it'll cause circular references, and it'll break everything.
+#define MAX_RECURSION_DEPTH 100
+
+    class AstBlock;
     class ParsingContext;
 
     class ISynthesisable

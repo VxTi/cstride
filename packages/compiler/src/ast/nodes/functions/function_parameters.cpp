@@ -29,6 +29,7 @@ void stride::ast::parse_subsequent_fn_params(
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
 {
+    int recursion_depth = 0;
     while (set.peek_next_eq(TokenType::COMMA))
     {
         set.next(); // Skip comma
@@ -76,6 +77,11 @@ void stride::ast::parse_subsequent_fn_params(
         }
 
         parameters.push_back(std::move(param));
+
+        if (recursion_depth++ > MAX_RECURSION_DEPTH)
+        {
+            set.throw_error("Maximum recursion depth exceeded when parsing function parameters");
+        }
     }
 }
 

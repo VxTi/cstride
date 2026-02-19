@@ -233,6 +233,8 @@ namespace stride::ast
             bool use_raw_name = false
         ) const;
 
+        const definition::IDefinition* lookup_symbol(const std::string& symbol_name) const;
+
         /// Will attempt to define the function in the global context.
         void define_function(
             Symbol symbol,

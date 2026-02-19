@@ -295,6 +295,25 @@ void ParsingContext::define_variable(
     );
 }
 
+const IDefinition* ParsingContext::lookup_symbol(
+    const std::string& symbol_name
+) const
+{
+    auto current = this;
+    while (current != nullptr)
+    {
+        for (const auto& definition : current->_symbols)
+        {
+            if (definition->get_symbol().name == symbol_name)
+            {
+                return definition.get();
+            }
+        }
+        current = current->_parent_registry.get();
+    }
+    return nullptr;
+}
+
 const FieldDef* ParsingContext::lookup_variable(
     const std::string& name,
     const bool use_raw_name

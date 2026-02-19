@@ -124,6 +124,18 @@ TEST(Types, FunctionCallTypeMismatch)
     )", "Unable to resolve return type for function 'add'");
 }
 
+TEST(Types, FunctionTypeMismatch)
+{
+    assert_throws_message(R"(
+        const k: ((i32, i32) -> i32)[] = [(x: i32, y: i32): i32 -> { return 1; }];
+    )", "Type mismatch in variable declaration; expected type '((i32, i32) -> i32)[]', got '((i32) -> i32)[]'");
+
+    assert_throws_message(R"(
+        fn test(p: i32): i32 { return 0; }
+        let a: (i32,i32) -> i32 = test;
+    )", "test 123");
+}
+
 /*
 TEST(ArrayType, PartialTypeMismatch)
 {
