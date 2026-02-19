@@ -48,7 +48,7 @@ namespace stride::ast
         };
 
         class IdentifiableSymbolDef
-        : public IDefinition
+            : public IDefinition
         {
             SymbolType _type;
 
@@ -118,7 +118,7 @@ namespace stride::ast
         {
             std::unique_ptr<IAstType> _type;
 
-        /// Can be either a variable or a field in a struct/class
+            /// Can be either a variable or a field in a struct/class
         public:
             explicit FieldDef(
                 const Symbol& symbol,
@@ -235,7 +235,7 @@ namespace stride::ast
 
         /// Will attempt to define the function in the global context.
         void define_function(
-            const Symbol& symbol,
+            Symbol symbol,
             std::vector<std::unique_ptr<IAstType>> parameter_types,
             std::unique_ptr<IAstType> return_type
         ) const;

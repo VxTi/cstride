@@ -46,7 +46,7 @@ bool ParsingContext::is_function_defined_globally(const std::string& internal_fu
 }
 
 void ParsingContext::define_function(
-    const Symbol& symbol,
+    Symbol symbol,
     std::vector<std::unique_ptr<IAstType>> parameter_types,
     std::unique_ptr<IAstType> return_type
 ) const
@@ -56,7 +56,7 @@ void ParsingContext::define_function(
     if (this->is_function_defined_globally(symbol.internal_name))
     {
         throw std::runtime_error(
-            "Function already defined globally: " + symbol.name
+            std::format("Function '{}' already defined globally", symbol.name)
         );
     }
 
