@@ -133,31 +133,21 @@ namespace stride::ast
         class CallableDef
             : public IDefinition
         {
-            std::vector<std::unique_ptr<IAstType>> _parameter_types;
-            std::unique_ptr<IAstType> _return_type;
+            std::unique_ptr<AstFunctionType> _function_type;
 
         public:
             explicit CallableDef(
-                std::vector<std::unique_ptr<IAstType>> parameter_types,
-                std::unique_ptr<IAstType> return_type,
+                std::unique_ptr<AstFunctionType> function_type,
                 const Symbol& symbol
             ) :
                 IDefinition(symbol),
-                _parameter_types(std::move(parameter_types)),
-                _return_type(std::move(return_type)) {}
+                _function_type(std::move(function_type)) {}
 
             [[nodiscard]]
-            std::vector<IAstType*> get_parameter_types() const
+            AstFunctionType* get_type() const
             {
-                std::vector<IAstType*> out;
-                out.reserve(this->_parameter_types.size());
-                for (const auto& p : this->_parameter_types)
-                    out.push_back(p.get());
-                return out;
+                return this->_function_type.get();
             }
-
-            [[nodiscard]]
-            IAstType* get_return_type() const { return this->_return_type.get(); }
 
             ~CallableDef() override = default;
         };
@@ -233,13 +223,12 @@ namespace stride::ast
             bool use_raw_name = false
         ) const;
 
-        const definition::IDefinition* lookup_symbol(const std::string& symbol_name) const;
+        definition::IDefinition* lookup_symbol(const std::string& symbol_name) const;
 
         /// Will attempt to define the function in the global context.
         void define_function(
-            Symbol symbol,
-            std::vector<std::unique_ptr<IAstType>> parameter_types,
-            std::unique_ptr<IAstType> return_type
+            Symbol function_name,
+            std::unique_ptr<AstFunctionType> function_type
         ) const;
 
         void define_struct(

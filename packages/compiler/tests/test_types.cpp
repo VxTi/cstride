@@ -103,7 +103,7 @@ TEST(Types, ArrayTypeMismatch)
 {
     assert_throws_message(R"(
         let a: i32[] = [1L, 2L, 3L];
-    )", "Type mismatch in variable declaration; expected type 'Array<i32>', got 'Array<i64>'");
+    )", "Type mismatch in variable declaration; expected type 'i32[]', got 'i64[]'");
 }
 
 TEST(Types, FunctionCallTypeMismatch)
@@ -132,8 +132,15 @@ TEST(Types, FunctionTypeMismatch)
 
     assert_throws_message(R"(
         fn test(p: i32): i32 { return 0; }
-        let a: (i32,i32) -> i32 = test;
-    )", "test 123");
+
+        let a: (i32, i32) -> i32 = test;
+    )", "Type mismatch in variable declaration; expected type '(i32, i32) -> i32', got '(i32) -> i32'");
+
+    assert_compiles(R"(
+        fn test(p: i32): i32 { return 0; }
+
+        const a: (i32) -> i32 = test;
+    )");
 }
 
 /*

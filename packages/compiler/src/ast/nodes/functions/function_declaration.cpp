@@ -272,48 +272,48 @@ void AstFunctionDeclaration::resolve_forward_references(
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& tokens,
+    TokenSet& set,
     [[maybe_unused]] VisibilityModifier modifier
 )
 {
     int function_flags = 0;
-    if (tokens.peek_next_eq(TokenType::KEYWORD_EXTERN))
+    if (set.peek_next_eq(TokenType::KEYWORD_EXTERN))
     {
-        tokens.next();
+        set.next();
         function_flags |= SRFLAG_FN_DEF_EXTERN;
     }
 
-    if (tokens.peek_next_eq(TokenType::KEYWORD_ASYNC))
+    if (set.peek_next_eq(TokenType::KEYWORD_ASYNC))
     {
-        tokens.next();
+        set.next();
         function_flags |= SRFLAG_FN_DEF_ASYNC;
     }
 
-    auto reference_token = tokens.expect(TokenType::KEYWORD_FN);
+    auto reference_token = set.expect(TokenType::KEYWORD_FN);
 
     // Here we expect to receive the function name
-    const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected function name after 'fn'");
+    const auto fn_name_tok = set.expect(TokenType::IDENTIFIER, "Expected function name after 'fn'");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
     auto function_scope = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
 
-    tokens.expect(TokenType::LPAREN, "Expected '(' after function name");
+    set.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
     // If we don't receive a ')', the function has parameters, so we'll
     // have to parse it a little differenly
-    if (!tokens.peek_next_eq(TokenType::RPAREN))
+    if (!set.peek_next_eq(TokenType::RPAREN))
     {
-        if (tokens.peek_next_eq(TokenType::THREE_DOTS))
+        if (set.peek_next_eq(TokenType::THREE_DOTS))
         {
-            parse_variadic_fn_param(function_scope, tokens, parameters);
+            parse_variadic_fn_param(function_scope, set, parameters);
         }
         else
         {
-            parameters.push_back(parse_standalone_fn_param(function_scope, tokens));
+            parameters.push_back(parse_standalone_fn_param(function_scope, set));
         }
 
-        parse_subsequent_fn_params(function_scope, tokens, parameters);
+        parse_subsequent_fn_params(function_scope, set, parameters);
     }
 
     if (!parameters.empty() && parameters.back()->get_type()->is_variadic())
@@ -321,11 +321,11 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         function_flags |= SRFLAG_FN_DEF_VARIADIC;
     }
 
-    tokens.expect(TokenType::RPAREN, "Expected ')' after function parameters");
-    tokens.expect(TokenType::COLON, "Expected a colon after function definition");
+    set.expect(TokenType::RPAREN, "Expected ')' after function parameters");
+    set.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(context, tokens, "Expected return type in function header", SRFLAG_NONE);
+    auto return_type = parse_type(context, set, "Expected return type in function header", SRFLAG_NONE);
 
     std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
     parameter_types_cloned.reserve(parameters.size());
@@ -353,21 +353,31 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     // Function will be defined in the parent context (global, perhaps)
     // its children will reside in the function scope. This is intentional
-    context->define_function(symbol_name, std::move(parameter_types_cloned), return_type->clone());
+
+    context->define_function(
+        symbol_name,
+        std::make_unique<AstFunctionType>(
+            set.get_source(),
+            symbol_name.symbol_position,
+            context,
+            std::move(parameter_types_cloned),
+            return_type->clone()
+        )
+    );
 
     std::unique_ptr<AstBlock> body = nullptr;
 
     if (function_flags & SRFLAG_FN_DEF_EXTERN)
     {
-        tokens.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
+        set.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
     }
     else
     {
-        body = parse_block(function_scope, tokens);
+        body = parse_block(function_scope, set);
     }
 
     return std::make_unique<AstFunctionDeclaration>(
-        tokens.get_source(),
+        set.get_source(),
         context,
         symbol_name,
         std::move(parameters),

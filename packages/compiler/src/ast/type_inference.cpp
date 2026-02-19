@@ -102,14 +102,14 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     if (const auto fn_def = context->get_function_def(fn_call->get_internal_name());
         fn_def != nullptr)
     {
-        return fn_def->get_return_type()->clone();
+        return fn_def->get_type()->get_return_type()->clone();
     }
 
     // It could be an extern function, in which case the function name is just as-is
     if (const auto fn_def = context->get_function_def(fn_call->get_function_name());
         fn_def != nullptr)
     {
-        return fn_def->get_return_type()->clone();
+        return fn_def->get_type()->get_return_type()->clone();
     }
 
     throw parsing_error(
@@ -387,19 +387,47 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         // TODO: Add generic support.
         // Right now we just do a lookup for `identifier`'s name, though we might want to extend
         // the lookup for generics.
-        const auto reference_variable = context->lookup_variable(identifier->get_name(), true);
-        if (!reference_variable)
+        const auto reference_sym = context->lookup_symbol(identifier->get_name());
+        if (!reference_sym)
         {
             throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
-                std::format("Unable to infer expression type for variable '{}': variable not found",
+                std::format("Unable to infer expression type for '{}': variable or function not found",
                             identifier->get_name()),
                 *identifier->get_source(),
                 identifier->get_source_position()
             );
         }
 
-        return reference_variable->get_type()->clone();
+        if (const auto callable = dynamic_cast<CallableDef*>(reference_sym))
+        {
+            std::vector<std::unique_ptr<IAstType>> param_types;
+            for (const auto& param : callable->get_type()->get_parameter_types())
+            {
+                param_types.push_back(param->clone());
+            }
+
+            return std::make_unique<AstFunctionType>(
+                identifier->get_source(),
+                identifier->get_source_position(),
+                context,
+                std::move(param_types),
+                callable->get_type()->get_return_type()->clone()
+            );
+        }
+
+        if (const auto field = dynamic_cast<FieldDef*>(reference_sym))
+        {
+            return field->get_type()->clone();
+        }
+
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Unable to infer expression type for variable '{}': variable is not a field or function",
+                        identifier->get_name()),
+            *identifier->get_source(),
+            identifier->get_source_position()
+        );
     }
 
     if (const auto* operation = cast_expr<AstBinaryArithmeticOp*>(expr))

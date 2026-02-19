@@ -177,7 +177,7 @@ namespace stride::ast
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& tokens,
+        TokenSet& set,
         VisibilityModifier modifier
     );
 

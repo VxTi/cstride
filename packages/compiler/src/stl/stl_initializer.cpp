@@ -56,49 +56,80 @@ void stride::stl::llvm_insert_function_definitions(llvm::Module* module)
     module->getOrInsertFunction("printf", printf_fn_ty);
 }
 
-void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::ParsingContext>& global_scope)
+void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::ParsingContext>& context)
 {
     const auto placeholder_position = SourcePosition(0, 0);
     /// Printf definition
-    global_scope->define_function(
-        ast::Symbol(placeholder_position, "printf"), {}, std::make_unique<ast::AstPrimitiveType>(
+    context->define_function(
+        ast::Symbol(placeholder_position, "printf"),
+        std::make_unique<ast::AstFunctionType>(
             nullptr,
             placeholder_position,
-            global_scope,
-            ast::PrimitiveType::INT32,
-            32
-        ));
+            context,
+            std::vector<std::unique_ptr<ast::IAstType>>{},
+            std::make_unique<ast::AstPrimitiveType>(
+                nullptr,
+                placeholder_position,
+                context,
+                ast::PrimitiveType::INT32,
+                32
+            )
+        )
+    );
 
     /// System time in nanoseconds definition
-    global_scope->define_function(
-        ast::Symbol(placeholder_position, "system_time_ns"), {},
-        std::make_unique<ast::AstPrimitiveType>(
+    context->define_function(
+        ast::Symbol(placeholder_position, "system_time_ns"),
+        std::make_unique<ast::AstFunctionType>(
             nullptr,
             placeholder_position,
-            global_scope,
-            ast::PrimitiveType::UINT64,
-            64
-        ));
+            context,
+            std::vector<std::unique_ptr<ast::IAstType>>{},
+            std::make_unique<ast::AstPrimitiveType>(
+                nullptr,
+                placeholder_position,
+                context,
+                ast::PrimitiveType::UINT64,
+                64
+            )
+        )
+    );
 
     /// System time in microseconds definition
-    global_scope->define_function(
-        ast::Symbol(placeholder_position, "system_time_us"), {}, std::make_unique<ast::AstPrimitiveType>(
+    context->define_function(
+        ast::Symbol(placeholder_position, "system_time_us"),
+        std::make_unique<ast::AstFunctionType>(
             nullptr,
             placeholder_position,
-            global_scope,
-            ast::PrimitiveType::UINT64,
-            64
-        ));
+            context,
+            std::vector<std::unique_ptr<ast::IAstType>>{},
+            std::make_unique<ast::AstPrimitiveType>(
+                nullptr,
+                placeholder_position,
+                context,
+                ast::PrimitiveType::UINT64,
+                64
+            )
+        )
+    );
 
     /// System time in milliseconds definition
-    global_scope->define_function(
-        ast::Symbol(placeholder_position, "system_time_ms"), {}, std::make_unique<ast::AstPrimitiveType>(
+    context->define_function(
+        ast::Symbol(placeholder_position, "system_time_ms"),
+        std::make_unique<ast::AstFunctionType>(
             nullptr,
             placeholder_position,
-            global_scope,
-            ast::PrimitiveType::UINT64,
-            64
-        ));
+            context,
+            std::vector<std::unique_ptr<ast::IAstType>>{},
+            std::make_unique<ast::AstPrimitiveType>(
+                nullptr,
+                placeholder_position,
+                context,
+                ast::PrimitiveType::UINT64,
+                64
+            )
+        )
+    );
 }
 
 void stride::stl::llvm_jit_define_functions(llvm::orc::LLJIT* jit)

@@ -394,13 +394,13 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
         }
     }
 
-    set.expect(TokenType::RPAREN, "Expected ')' after function parameters");
+    set.expect(TokenType::RPAREN, "Expected ')' after function type notation");
     set.expect(TokenType::DASH_RARROW, "Expected '->' between function parameters and return type");
     auto return_type = parse_type(context, set, "Expected return type", context_type_flags);
 
     if (is_expecting_closing_paren)
     {
-        set.expect(TokenType::RPAREN, "Expected secondary ')' after function parameters");
+        set.expect(TokenType::RPAREN, "Expected secondary ')' after function type notation");
     }
 
 

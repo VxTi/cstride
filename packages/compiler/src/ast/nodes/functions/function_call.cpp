@@ -54,7 +54,7 @@ std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
         // We'll format the arguments
         std::vector<std::string> arg_types;
 
-        for (const auto& arg : fn_call->get_parameter_types())
+        for (const auto& arg : fn_call->get_type()->get_parameter_types())
         {
             arg_types.push_back(arg->get_internal_name());
         }
