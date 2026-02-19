@@ -6,6 +6,7 @@
 
 #include "ast_node.h"
 #include "formatting.h"
+#include "ast/casting.h"
 #include "ast/flags.h"
 #include "ast/tokens/token_set.h"
 
@@ -218,69 +219,6 @@ namespace stride::ast
         bool equals(IAstType& other) override;
     };
 
-    class AstArrayType
-        : public IAstType
-    {
-        std::unique_ptr<IAstType> _element_type;
-        size_t _initial_length;
-
-    public:
-        explicit AstArrayType(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
-            const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<IAstType> element_type,
-            const size_t initial_length
-        ) : IAstType(
-                source,
-                source_position,
-                context,
-                // Arrays are always ptrs
-                (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR
-            ),
-            _element_type(std::move(element_type)),
-            _initial_length(initial_length) {}
-
-        [[nodiscard]]
-        std::unique_ptr<IAstType> clone() const override
-        {
-            auto element_clone = this->_element_type
-                                     ? this->_element_type->clone()
-                                     : nullptr;
-
-            return std::make_unique<AstArrayType>(
-                this->get_source(),
-                this->get_source_position(),
-                this->get_context(),
-                std::move(element_clone),
-                this->_initial_length
-            );
-        }
-
-        [[nodiscard]]
-        IAstType* get_element_type() const { return this->_element_type.get(); }
-
-        [[nodiscard]]
-        size_t get_initial_length() const { return this->_initial_length; }
-
-        std::string to_string() override
-        {
-            return std::format(
-                "({}{})[]",
-                this->_element_type->to_string(),
-                (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
-            );
-        }
-
-        [[nodiscard]]
-        std::string get_internal_name() override
-        {
-            return std::format("[{}]", this->_element_type->get_internal_name());
-        }
-
-        bool equals(IAstType& other) override;
-    };
-
     class AstFunctionType
         : public IAstType
     {
@@ -288,7 +226,7 @@ namespace stride::ast
         std::unique_ptr<IAstType> _return_type;
 
     public:
-        AstFunctionType(
+        explicit AstFunctionType(
             const std::shared_ptr<SourceFile>& source,
             const SourcePosition source_position,
             const std::shared_ptr<ParsingContext>& context,
@@ -300,7 +238,7 @@ namespace stride::ast
             _return_type(std::move(return_type)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstType>>& get_parameters() const { return _parameters; }
+        const std::vector<std::unique_ptr<IAstType>>& get_parameter_types() const { return _parameters; }
 
         [[nodiscard]]
         const std::unique_ptr<IAstType>& get_return_type() const { return _return_type; }
@@ -360,6 +298,77 @@ namespace stride::ast
         {
             return "Function";
         }
+    };
+
+    class AstArrayType
+        : public IAstType
+    {
+        std::unique_ptr<IAstType> _element_type;
+        size_t _initial_length;
+
+    public:
+        explicit AstArrayType(
+            const std::shared_ptr<SourceFile>& source,
+            const SourcePosition source_position,
+            const std::shared_ptr<ParsingContext>& context,
+            std::unique_ptr<IAstType> element_type,
+            const size_t initial_length
+        ) : IAstType(
+                source,
+                source_position,
+                context,
+                // Arrays are always ptrs
+                (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR
+            ),
+            _element_type(std::move(element_type)),
+            _initial_length(initial_length) {}
+
+        [[nodiscard]]
+        std::unique_ptr<IAstType> clone() const override
+        {
+            auto element_clone = this->_element_type
+                                     ? this->_element_type->clone()
+                                     : nullptr;
+
+            return std::make_unique<AstArrayType>(
+                this->get_source(),
+                this->get_source_position(),
+                this->get_context(),
+                std::move(element_clone),
+                this->_initial_length
+            );
+        }
+
+        [[nodiscard]]
+        IAstType* get_element_type() const { return this->_element_type.get(); }
+
+        [[nodiscard]]
+        size_t get_initial_length() const { return this->_initial_length; }
+
+        std::string to_string() override
+        {
+            if (cast_type<AstFunctionType*>(this->get_element_type()))
+            {
+                return std::format(
+                    "({}{})[]",
+                    this->_element_type->to_string(),
+                    (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
+                );
+            }
+            return std::format(
+                "{}{}[]",
+                this->_element_type->to_string(),
+                (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
+            );
+        }
+
+        [[nodiscard]]
+        std::string get_internal_name() override
+        {
+            return std::format("[{}]", this->_element_type->get_internal_name());
+        }
+
+        bool equals(IAstType& other) override;
     };
 
     std::unique_ptr<IAstType> parse_type(

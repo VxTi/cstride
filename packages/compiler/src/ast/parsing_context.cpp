@@ -46,25 +46,23 @@ bool ParsingContext::is_function_defined_globally(const std::string& internal_fu
 }
 
 void ParsingContext::define_function(
-    Symbol symbol,
-    std::vector<std::unique_ptr<IAstType>> parameter_types,
-    std::unique_ptr<IAstType> return_type
+    Symbol function_name,
+    std::unique_ptr<AstFunctionType> function_type
 ) const
 {
     auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
 
-    if (this->is_function_defined_globally(symbol.internal_name))
+    if (this->is_function_defined_globally(function_name.internal_name))
     {
         throw std::runtime_error(
-            std::format("Function '{}' already defined globally", symbol.name)
+            std::format("Function '{}' already defined globally", function_name.name)
         );
     }
 
     global_scope._symbols.push_back(
         std::make_unique<CallableDef>(
-            std::move(parameter_types),
-            std::move(return_type),
-            symbol
+            std::move(function_type),
+            function_name
         )
     );
 }
@@ -295,7 +293,7 @@ void ParsingContext::define_variable(
     );
 }
 
-const IDefinition* ParsingContext::lookup_symbol(
+IDefinition* ParsingContext::lookup_symbol(
     const std::string& symbol_name
 ) const
 {

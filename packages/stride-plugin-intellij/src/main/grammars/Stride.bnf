@@ -109,7 +109,6 @@ private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterLis
 FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)* [COMMA]
 FunctionParameter ::= IDENTIFIER COLON Type
 
-
 StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 private StructDefinitionAlias ::= EQ Type SEMICOLON
@@ -125,10 +124,12 @@ VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
 VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
-Type ::= [(ASTERISK | AMPERSAND)*] (PrimitiveType | UserType)
+Type ::= [(ASTERISK | AMPERSAND)*] (PrimitiveType | UserType | FunctionType)
 // <module>::<type> or <type>
 PrimitiveType ::= [(IDENTIFIER COLON_COLON)*] VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING
 UserType ::= ScopedIdentifier
+FunctionType ::= BasicFunctionType | (LPAREN BasicFunctionType RPAREN (LBRACKET RBRACKET)*)
+BasicFunctionType ::= LPAREN Type* RPAREN ARROW Type
 
 // --- Statements ---
 BlockStatement ::= LBRACE Statement* RBRACE
@@ -197,8 +198,10 @@ StructInitField ::= ScopedIdentifier COLON Expression
 ArgumentList ::= Expression (COMMA Expression)*
 ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
 
-LambdaExpression ::= LPAREN FunctionParameter* RPAREN ARROW BlockStatement
+// (p: i32) -> i32 { ... }
+LambdaExpression ::= LPAREN FunctionParameter* RPAREN COLON Type ARROW BlockStatement
 
+// some::field
 ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
 
 AccessModifier ::= PUB
