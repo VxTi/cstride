@@ -6,12 +6,14 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
+#include <llvm/IR/ValueSymbolTable.h>
 
 #include "formatting.h"
-#include "ast/symbols.h"
 #include "ast/optionals.h"
+#include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
+#include "ast/nodes/types.h"
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -101,6 +103,72 @@ llvm::Value* AstFunctionCall::codegen(
         // It's possible that the function is internally registered with its normal name
         // This always happens for extern functions.
         callee = module->getFunction(this->get_function_name());
+    }
+
+    // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
+    if (!callee)
+    {
+        if (const auto* var_def = context->lookup_variable(this->get_function_name(), true))
+        {
+            if (const auto* fn_type = dynamic_cast<AstFunctionType*>(var_def->get_type()))
+            {
+                // Reconstruct the concrete llvm::FunctionType from the AST type
+                std::vector<llvm::Type*> param_types;
+                for (const auto& param : fn_type->get_parameter_types())
+                {
+                    param_types.push_back(internal_type_to_llvm_type(param.get(), module));
+                }
+                llvm::Type* ret_type = internal_type_to_llvm_type(fn_type->get_return_type().get(), module);
+                llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(ret_type, param_types, false);
+
+                // Load the function pointer from the variable
+                const auto fn_ptr = var_def->get_internal_symbol_name();
+                llvm::Value* fn_ptr_val = nullptr;
+
+                if (const auto block = builder->GetInsertBlock())
+                {
+                    fn_ptr_val = block->getParent()->getValueSymbolTable()->lookup(fn_ptr);
+                    if (fn_ptr_val)
+                    {
+                        if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(fn_ptr_val))
+                        {
+                            fn_ptr_val = builder->CreateLoad(alloca->getAllocatedType(), alloca, fn_ptr);
+                        }
+                    }
+                }
+
+                if (!fn_ptr_val)
+                {
+                    fn_ptr_val = module->getNamedGlobal(fn_ptr);
+                    if (fn_ptr_val)
+                    {
+                        auto* global = llvm::cast<llvm::GlobalVariable>(fn_ptr_val);
+                        fn_ptr_val = builder->CreateLoad(global->getValueType(), global, fn_ptr);
+                    }
+                }
+
+                if (fn_ptr_val)
+                {
+                    // Generate arguments
+                    std::vector<llvm::Value*> args_v;
+                    const auto& arguments = this->get_arguments();
+                    for (size_t i = 0; i < arguments.size(); ++i)
+                    {
+                        auto* arg_val = arguments[i]->codegen(context, module, builder);
+                        if (!arg_val) return nullptr;
+
+                        if (i < param_types.size() && arg_val->getType() != param_types[i])
+                        {
+                            arg_val = unwrap_optional_value(arg_val, builder);
+                        }
+                        args_v.push_back(arg_val);
+                    }
+
+                    const auto instruction_name = ret_type->isVoidTy() ? "" : "indcalltmp";
+                    return builder->CreateCall(llvm_fn_type, fn_ptr_val, args_v, instruction_name);
+                }
+            }
+        }
     }
 
     if (!callee)
