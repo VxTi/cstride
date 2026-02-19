@@ -50,7 +50,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         set.expect(TokenType::KEYWORD_CONST);
     }
 
-    const auto& variable_name =
+    const std::string variable_name =
         set
        .expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration")
        .get_lexeme();
