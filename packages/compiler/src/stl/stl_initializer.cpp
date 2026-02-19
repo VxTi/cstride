@@ -60,13 +60,22 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
 {
     const auto placeholder_position = SourcePosition(0, 0);
     /// Printf definition
+    std::vector<std::unique_ptr<ast::IAstType>> printf_params = {};
+    printf_params.push_back(std::make_unique<ast::AstPrimitiveType>(
+        nullptr,
+        placeholder_position,
+        context,
+        ast::PrimitiveType::INT32,
+        32,
+        SRFLAG_TYPE_PTR
+    ));
     context->define_function(
         ast::Symbol(placeholder_position, "printf"),
         std::make_unique<ast::AstFunctionType>(
             nullptr,
             placeholder_position,
             context,
-            std::vector<std::unique_ptr<ast::IAstType>>{},
+            std::move(printf_params),
             std::make_unique<ast::AstPrimitiveType>(
                 nullptr,
                 placeholder_position,

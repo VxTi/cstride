@@ -124,12 +124,15 @@ VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
 VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
-Type ::= [(ASTERISK | AMPERSAND)*] (PrimitiveType | UserType | FunctionType)
+Type ::= (PrimitiveType | UserType | FunctionType)
 // <module>::<type> or <type>
-PrimitiveType ::= [(IDENTIFIER COLON_COLON)*] VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING
-UserType ::= ScopedIdentifier
-FunctionType ::= BasicFunctionType | (LPAREN BasicFunctionType RPAREN (LBRACKET RBRACKET)*)
-BasicFunctionType ::= LPAREN Type* RPAREN ARROW Type
+PrimitiveType ::= (VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING) ArrayNotion
+UserType ::= ScopedIdentifier [GenericTypeArguments] ArrayNotion*
+GenericTypeArguments ::= LT Type (COMMA Type)* GT
+FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN ArrayNotion*)
+SingularFunctionType ::= LPAREN [Type (COMMA Type)*] RPAREN ARROW Type
+
+ArrayNotion ::= LBRACKET RBRACKET;
 
 // --- Statements ---
 BlockStatement ::= LBRACE Statement* RBRACE

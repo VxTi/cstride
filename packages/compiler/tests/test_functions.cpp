@@ -3,6 +3,19 @@
 
 using namespace stride::tests;
 
+TEST(Functions, Lambda) {
+    const std::string code = R"(
+        const lambda: (i32) -> i32 = (x: i32): i32 -> {
+            return x + 1;
+        };
+
+        fn main(): void {
+            const result: i32 = lambda(10);
+        }
+    )";
+    assert_compiles(code);
+}
+
 TEST(Functions, DeclarationAndInvocation) {
     const std::string code = R"(
         fn add(a: i32, b: i32): i32 {
