@@ -82,7 +82,7 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
 
     /// System time in microseconds definition
     global_scope->define_function(
-        ast::Symbol(placeholder_position,"system_time_us"), {}, std::make_unique<ast::AstPrimitiveType>(
+        ast::Symbol(placeholder_position, "system_time_us"), {}, std::make_unique<ast::AstPrimitiveType>(
             nullptr,
             placeholder_position,
             global_scope,

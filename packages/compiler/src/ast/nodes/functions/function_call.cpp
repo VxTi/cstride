@@ -195,7 +195,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         if (initial_arg)
         {
             // TODO: Evaluate this. One might not be able to infer expression types if they invoke functions that
-            //  haven't been declared yet, hence yielding in a
+            //  haven't been declared yet, hence throwing an error
             auto initial_type = infer_expression_type(context, initial_arg.get());
 
             parameter_types.push_back(initial_type.get());
