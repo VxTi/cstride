@@ -277,7 +277,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Variable '{}' not found in current sc", base_iden->get_name()
+                "Variable '{}' not found in current scope", base_iden->get_name()
             ),
             *expr->get_source(),
             expr->get_source_position()

@@ -7,8 +7,6 @@
 
 #define SR_PROPERTY_ACCESSOR_SEPARATOR ("@")
 
-#define SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION (100)
-
 #define SRFLAG_NONE                (0x0)
 #define SRFLAG_TYPE_PTR            (0x1)
 #define SRFLAG_TYPE_REFERENCE      (0x2)

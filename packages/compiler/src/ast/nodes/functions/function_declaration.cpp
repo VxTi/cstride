@@ -273,7 +273,7 @@ void AstFunctionDeclaration::resolve_forward_references(
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& tokens,
-    VisibilityModifier modifier
+    [[maybe_unused]] VisibilityModifier modifier
 )
 {
     int function_flags = 0;
@@ -289,7 +289,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         function_flags |= SRFLAG_FN_DEF_ASYNC;
     }
 
-    auto reference_token = tokens.expect(TokenType::KEYWORD_FN); // fn
+    auto reference_token = tokens.expect(TokenType::KEYWORD_FN);
 
     // Here we expect to receive the function name
     const auto fn_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected function name after 'fn'");
@@ -414,10 +414,13 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
         parse_subsequent_fn_params(context, set, parameters);
     }
 
+    set.expect(TokenType::COLON, "Expected ':' after lambda function header definition");
     auto ret_type = parse_type(context, set, "Expected type after anonymous function header definition");
     const auto lambda_arrow = set.expect(TokenType::DASH_RARROW, "Expected '->' after lambda parameters");
 
-    auto lambda_body = parse_block(context, set);
+    auto body_context = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
+
+    auto lambda_body = parse_block(body_context, set);
 
     static int anonymous_lambda_id = 0;
 

@@ -643,6 +643,7 @@ namespace stride::ast
         TokenSet& set
     );
 
+    /// Parses an expression that appears inline, e.g., within a statement or as a sub-expression
     std::unique_ptr<AstExpression> parse_inline_expression(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
@@ -661,6 +662,7 @@ namespace stride::ast
         VisibilityModifier modifier
     );
 
+    /// Parses a variable declaration that appears inline within a larger expression context
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration_inline(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
@@ -696,12 +698,6 @@ namespace stride::ast
         const std::unique_ptr<AstExpression>& lhs
     );
 
-    /// Parses a property accessor statement, e.g., <identifier>.<accessor>
-    std::string parse_property_accessor_statement(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
-
     /// Parses a unary operator expression
     std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(
         const std::shared_ptr<ParsingContext>& context,
@@ -721,13 +717,16 @@ namespace stride::ast
         std::unique_ptr<AstIdentifier> array_identifier
     );
 
+    /// Parses a struct initializer expression into an AstStructInitializer node
     std::unique_ptr<AstStructInitializer> parse_struct_initializer(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 
+    /// Parses a dot-separated identifier into its individual name segments, e.g., `foo::bar::baz`
     SymbolNameSegments parse_segmented_identifier(TokenSet& set);
 
+    /// Parses a lambda function literal into an expression node
     std::unique_ptr<AstExpression> parse_lambda_fn_expression(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
@@ -774,6 +773,7 @@ namespace stride::ast
     /// e.g., <identifier>.<accessor>
     bool is_member_accessor(AstExpression* lhs, const TokenSet& set);
 
+    /// Checks if the token set represents a lambda function expression
     bool is_lambda_fn_expression(const TokenSet& set);
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
@@ -788,36 +788,43 @@ namespace stride::ast
         AstExpression* expr
     );
 
+    /// Infers the element type of an array expression
     std::unique_ptr<IAstType> infer_array_member_type(
         const std::shared_ptr<ParsingContext>& context,
         const AstArray* array
     );
 
+    /// Infers the result type of a unary operation
     std::unique_ptr<IAstType> infer_unary_op_type(
         const std::shared_ptr<ParsingContext>& context,
         const AstUnaryOp* operation
     );
 
+    /// Infers the result type of a binary arithmetic operation
     std::unique_ptr<IAstType> infer_binary_arithmetic_op_type(
         const std::shared_ptr<ParsingContext>& context,
         const AstBinaryArithmeticOp* operation
     );
 
+    /// Infers the type of a literal expression
     std::unique_ptr<IAstType> infer_expression_literal_type(
         const std::shared_ptr<ParsingContext>& context,
         AstLiteral* literal
     );
 
+    /// Infers the return type of a function call expression
     std::unique_ptr<IAstType> infer_function_call_return_type(
         const std::shared_ptr<ParsingContext>& context,
         const AstFunctionCall* fn_call
     );
 
+    /// Infers the type produced by a struct initializer expression
     std::unique_ptr<IAstType> infer_struct_initializer_type(
         const std::shared_ptr<ParsingContext>& context,
         const AstStructInitializer* initializer
     );
 
+    /// Infers the type of the field accessed via a member accessor expression
     std::unique_ptr<IAstType> infer_member_accessor_type(
         const std::shared_ptr<ParsingContext>& context,
         const AstMemberAccessor* expr

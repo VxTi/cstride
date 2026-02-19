@@ -330,22 +330,90 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const std::string& error,
-    const int context_flags
+    const int type_flags
 )
 {
-    if (auto primitive = parse_primitive_type_optional(context, set, context_flags);
+    if (auto primitive = parse_primitive_type_optional(context, set, type_flags);
         primitive.has_value())
     {
         return std::move(primitive.value());
     }
 
-    if (auto named_type = parse_named_type_optional(context, set, context_flags);
+    if (auto named_type = parse_named_type_optional(context, set, type_flags);
         named_type.has_value())
     {
         return std::move(named_type.value());
     }
 
+    if (auto function_type = parse_function_type_optional(context, set, type_flags);
+        function_type.has_value())
+    {
+        return std::move(function_type.value());
+    }
+
     set.throw_error(error);
+}
+
+std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_optional(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set,
+    int context_type_flags
+)
+{
+    // Must start with '('
+    if (!set.peek_next_eq(TokenType::LPAREN)) return std::nullopt;
+
+    // This tries to parse `(<type>, <type>, ...) -> <return_type>`
+    // With no parameters: `() -> <return_type>`
+    // Arrays: ((<type>, ...) -> <return_type>)[]
+
+    const auto reference_token = set.next();
+    std::vector<std::unique_ptr<IAstType>> parameters;
+    bool is_expecting_closing_paren = false;
+
+    // If the previous paren is followed by another one,
+    // then we might expect an array of functions
+    // e.g., `((i32, i32) -> i32)[]
+    if (set.peek_next_eq(TokenType::LPAREN))
+    {
+        set.next();
+        is_expecting_closing_paren = true;
+    }
+
+    int recursion_depth = 0;
+
+    while (set.has_next() && !set.peek_next_eq(TokenType::RPAREN))
+    {
+        parameters.push_back(parse_type(context, set, "Expected parameter type", context_type_flags));
+        if (set.peek_next_eq(TokenType::RPAREN)) break;
+        set.expect(TokenType::COMMA, "Expected ',' between function type parameters");
+
+        if (recursion_depth++ > MAX_RECURSION_DEPTH)
+        {
+            set.throw_error("Maximum recursion depth exceeded when parsing function type");
+        }
+    }
+
+    set.expect(TokenType::RPAREN, "Expected ')' after function parameters");
+    set.expect(TokenType::DASH_RARROW, "Expected '->' between function parameters and return type");
+    auto return_type = parse_type(context, set, "Expected return type", context_type_flags);
+
+    if (is_expecting_closing_paren)
+    {
+        set.expect(TokenType::RPAREN, "Expected secondary ')' after function parameters");
+    }
+
+
+    auto fn_type = std::make_unique<AstFunctionType>(
+        set.get_source(),
+        reference_token.get_source_position(),
+        context,
+        std::move(parameters),
+        std::move(return_type),
+        context_type_flags
+    );
+
+    return parse_type_metadata(std::move(fn_type), set, context_type_flags);
 }
 
 std::string stride::ast::get_root_reference_struct_name(
@@ -393,7 +461,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         return llvm::StructType::get(
             module->getContext(), {
                 llvm::Type::getInt1Ty(module->getContext()), // has_value
-                inner_type // value (T)
+                inner_type                                   // value (T)
             });
     }
 

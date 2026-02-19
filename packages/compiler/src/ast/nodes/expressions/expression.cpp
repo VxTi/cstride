@@ -281,34 +281,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(
     );
 }
 
-std::string stride::ast::parse_property_accessor_statement(
-    [[maybe_unused]] const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
-{
-    const auto reference_token = set.expect(TokenType::IDENTIFIER);
-    auto identifier_name = reference_token.get_lexeme();
-
-    int iterations = 0;
-    while (true)
-    {
-        if (set.peek_next_eq(TokenType::DOT) && set.peek_eq(TokenType::IDENTIFIER, 1))
-        {
-            set.next();
-            const auto accessor_token = set.expect(TokenType::IDENTIFIER);
-            identifier_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.get_lexeme();
-        }
-        else break;
-
-        if (++iterations > SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION)
-        {
-            set.throw_error("Maximum identifier resolution exceeded");
-        }
-    }
-
-    return identifier_name;
-}
-
 SymbolNameSegments stride::ast::parse_segmented_identifier(TokenSet& set)
 {
     std::vector<std::string> segments = {};
