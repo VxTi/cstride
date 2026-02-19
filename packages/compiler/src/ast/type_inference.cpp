@@ -112,6 +112,15 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
         return fn_def->get_type()->get_return_type()->clone();
     }
 
+    // It might also be a field that's assigned a function
+    if (const auto definition = context->lookup_symbol(fn_call->get_function_name()))
+    {
+        if (const auto field_fn_like_def = dynamic_cast<FieldDef*>(definition))
+        {
+            return field_fn_like_def->get_type()->clone();
+        }
+    }
+
     throw parsing_error(
         ErrorType::TYPE_ERROR,
         std::format(
