@@ -54,12 +54,10 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                     std::string raw_val = src.substr(string_start, length);
                     std::string val = escape_string(raw_val);
 
-                    tokens.push_back(
-                        Token(
-                            TokenType::STRING_LITERAL,
-                            SourceLocation(source_file, string_start - 1, length + 2),
-                            val
-                        )
+                    tokens.emplace_back(
+                        TokenType::STRING_LITERAL,
+                        SourceLocation(source_file, string_start - 1, length + 2),
+                        val
                     );
 
                     is_string = false;

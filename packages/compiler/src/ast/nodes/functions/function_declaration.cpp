@@ -57,7 +57,7 @@ std::vector<AstReturn*> collect_return_statements(
 
 void IAstCallable::validate()
 {
-    // Extern functions don't require return statements and have no body, so no validation needed.
+    // Extern functions don't require return statements and have no function body, so no validation needed.
     if (this->is_extern()) return;
 
     if (this->get_body() != nullptr)
@@ -131,7 +131,12 @@ void IAstCallable::validate()
                 {
                     ErrorSourceReference(
                         std::format(
-                            "expected {}{}", this->get_return_type()->is_primitive() ? "" : "struct-type ",
+                            "expected {}{}",
+                            this->get_return_type()->is_primitive()
+                                ? ""
+                                : this->get_return_type()->is_function()
+                                ? "function-type "
+                                : "struct-type ",
                             this->get_return_type()->to_string()
                         ),
                         *this->get_source(),
@@ -272,7 +277,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
     // If we don't receive a ')', the function has parameters, so we'll
-    // have to parse it a little differenly
+    // have to parse it a little differently
     if (!set.peek_next_eq(TokenType::RPAREN))
     {
         if (set.peek_next_eq(TokenType::THREE_DOTS))
@@ -441,34 +446,6 @@ bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
         && set.peek_eq(TokenType::COLON, 2);
 }
 
-std::string AstFunctionDeclaration::to_string()
-{
-    std::string params;
-    for (const auto& param : this->get_parameters())
-    {
-        if (!params.empty())
-            params += ", ";
-        params += param->to_string();
-    }
-
-    const auto body_str = this->get_body() == nullptr ? "<empty>" : this->get_body()->to_string();
-
-    return std::format(
-        "FunctionDeclaration(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
-        this->get_name(),
-        this->get_internal_name(),
-        params,
-        body_str,
-        this->is_extern() ? " (extern)" : "",
-        this->get_return_type()->to_string()
-    );
-}
-
-std::string AstLambdaFunctionExpression::to_string()
-{
-    return "LambdaFunction";
-}
-
 void IAstCallable::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
@@ -505,4 +482,32 @@ void IAstCallable::resolve_forward_references(
         fn_name,
         module
     );
+}
+
+std::string AstFunctionDeclaration::to_string()
+{
+    std::string params;
+    for (const auto& param : this->get_parameters())
+    {
+        if (!params.empty())
+            params += ", ";
+        params += param->to_string();
+    }
+
+    const auto body_str = this->get_body() == nullptr ? "<empty>" : this->get_body()->to_string();
+
+    return std::format(
+        "FunctionDeclaration(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
+        this->get_name(),
+        this->get_internal_name(),
+        params,
+        body_str,
+        this->is_extern() ? " (extern)" : "",
+        this->get_return_type()->to_string()
+    );
+}
+
+std::string AstLambdaFunctionExpression::to_string()
+{
+    return "LambdaFunction";
 }
