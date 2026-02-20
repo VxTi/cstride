@@ -78,6 +78,9 @@ namespace stride::ast
         bool is_variadic() const { return this->_flags & SRFLAG_TYPE_VARIADIC; }
 
         [[nodiscard]]
+        bool is_function() const { return this->_flags & SRFLAG_TYPE_FUNCTION; }
+
+        [[nodiscard]]
         int get_flags() const { return this->_flags; }
 
         void set_flags(const int flags)
@@ -229,7 +232,7 @@ namespace stride::ast
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
             const int flags = SRFLAG_NONE
-        ) : IAstType(source, context, flags | SRFLAG_TYPE_PTR),
+        ) : IAstType(source, context, flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)) {}
 

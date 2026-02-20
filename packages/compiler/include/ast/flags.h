@@ -17,6 +17,7 @@
 #define SRFLAG_TYPE_EXTERN         (0x40)
 #define SRFLAG_TYPE_VARIADIC       (0x80)
 #define SRFLAG_TYPE_INT_SIGNED     (0x100)
+#define SRFLAG_TYPE_FUNCTION       (0x200)
 
 #define SRFLAG_FN_VARIADIC      (0x1)
 #define SRFLAG_FN_DEF_EXTERN    (0x2)
