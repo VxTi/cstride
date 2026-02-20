@@ -30,16 +30,16 @@
     IF='if'
     ELSE='else'
     VOID='void'
-    int8='int8'
-    int16='int16'
-    int32='int32'
-    int64='int64'
-    U8='u8'
-    U16='u16'
-    U32='u32'
-    U64='u64'
-    float32='float32'
-    float64='float64'
+    INT8='int8'
+    INT16='int16'
+    INT32='int32'
+    INT64='int64'
+    UINT8='u8'
+    UINT16='u16'
+    UINT32='u32'
+    UINT64='u64'
+    FLOAT32='float32'
+    FLOAT64='float64'
     BOOL='bool'
     CHAR='char'
     STRING='string'
@@ -70,8 +70,8 @@
     RBRACE='}'
     LPAREN='('
     RPAREN=')'
-    LBRACKET='['
-    RBRACKET=']'
+    LSQUARE_BRACKET='['
+    RSQUARE_BRACKET=']'
     COLON_COLON='::'
     EQ_EQ='=='
     EXCL_EQ='!='
@@ -126,13 +126,13 @@ VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInfer
 // --- Types ---
 Type ::= (PrimitiveType | UserType | FunctionType)
 // <module>::<type> or <type>
-PrimitiveType ::= (VOID | int8 | int16 | int32 | int64 | U8 | U16 | U32 | U64 | float32 | float64 | BOOL | CHAR | STRING) ArrayNotion
-UserType ::= ScopedIdentifier [GenericTypeArguments] ArrayNotion*
+PrimitiveType ::= (VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING) [ArrayNotion*]
+UserType ::= ScopedIdentifier [GenericTypeArguments] [ArrayNotion*]
 GenericTypeArguments ::= LT Type (COMMA Type)* GT
-FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN ArrayNotion*)
+FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN [ArrayNotion*])
 SingularFunctionType ::= LPAREN [Type (COMMA Type)*] RPAREN ARROW Type
 
-ArrayNotion ::= LBRACKET RBRACKET;
+ArrayNotion ::= LSQUARE_BRACKET RSQUARE_BRACKET;
 
 // --- Statements ---
 BlockStatement ::= LBRACE Statement* RBRACE
@@ -187,7 +187,7 @@ private PostfixSuffix ::= CallSuffix
 
 private CallSuffix ::= LPAREN [ArgumentList] RPAREN
 private MemberAccessor ::= DOT IDENTIFIER
-private MemberIndexing ::= LBRACKET Expression RBRACKET
+private MemberIndexing ::= LSQUARE_BRACKET Expression RSQUARE_BRACKET
 
 PrimaryExpression ::= LiteralExpression
                      | StructInitialization

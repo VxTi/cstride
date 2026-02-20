@@ -519,7 +519,8 @@ void IAstCallable::resolve_forward_references(
         param_types,
         false);
 
-    llvm::Function::Create(function_type,
+    llvm::Function::Create(
+        function_type,
                            llvm::Function::ExternalLinkage,
                            fn_name,
                            module);

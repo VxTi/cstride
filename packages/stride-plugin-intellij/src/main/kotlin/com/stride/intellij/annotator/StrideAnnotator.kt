@@ -59,7 +59,7 @@ class StrideAnnotator : Annotator {
                     // After call, the result is likely not a function reference we can highlight simply
                     callTarget = null
                 }
-            } else if (type == StrideTypes.LBRACKET) {
+            } else if (type == StrideTypes.LSQUARE_BRACKET) {
                 // Indexing, resets target
                 callTarget = null
             }

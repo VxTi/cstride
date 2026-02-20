@@ -268,13 +268,13 @@ namespace stride::ast
         case TokenType::THREE_DOTS:
             return "...";
         case TokenType::PRIMITIVE_UINT8:
-            return "u8";
+            return "uint8";
         case TokenType::PRIMITIVE_UINT16:
-            return "u16";
+            return "uint16";
         case TokenType::PRIMITIVE_UINT32:
-            return "u32";
+            return "uint32";
         case TokenType::PRIMITIVE_UINT64:
-            return "u64";
+            return "uint64";
         case TokenType::PRIMITIVE_INT8:
             return "int8";
         case TokenType::PRIMITIVE_INT16:
