@@ -1,6 +1,6 @@
-#include <cstdarg>
-
 #include "stl/stl_functions.h"
+
+#include <cstdarg>
 
 using namespace stride::stl;
 
@@ -50,24 +50,25 @@ void stride::stl::llvm_insert_function_definitions(llvm::Module* module)
     auto* printf_ret_ty = llvm::Type::getInt32Ty(module->getContext());
     auto* printf_fn_ty = llvm::FunctionType::get(
         printf_ret_ty,
-        {llvm::PointerType::get(module->getContext(), 0)},
-        /*isVarArg=*/true
-    );
+        { llvm::PointerType::get(module->getContext(), 0) },
+        /*isVarArg=*/
+        true);
     module->getOrInsertFunction("printf", printf_fn_ty);
 }
 
-void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::ParsingContext>& context)
+void stride::stl::predefine_internal_functions(
+    const std::shared_ptr<ast::ParsingContext>& context)
 {
     const auto placeholder_position = SourceLocation(nullptr, 0, 0);
     /// Printf definition
     std::vector<std::unique_ptr<ast::IAstType>> printf_params = {};
-    printf_params.push_back(std::make_unique<ast::AstPrimitiveType>(
-        placeholder_position,
-        context,
-        ast::PrimitiveType::INT32,
-        32,
-        SRFLAG_TYPE_PTR
-    ));
+    printf_params.push_back(
+        std::make_unique<ast::AstPrimitiveType>(
+            placeholder_position,
+            context,
+            ast::PrimitiveType::INT32,
+            32,
+            SRFLAG_TYPE_PTR));
     context->define_function(
         ast::Symbol(placeholder_position, "printf"),
         std::make_unique<ast::AstFunctionType>(
@@ -78,10 +79,7 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
                 placeholder_position,
                 context,
                 ast::PrimitiveType::INT32,
-                32
-            )
-        )
-    );
+                32)));
 
     /// System time in nanoseconds definition
     context->define_function(
@@ -94,10 +92,7 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
                 placeholder_position,
                 context,
                 ast::PrimitiveType::UINT64,
-                64
-            )
-        )
-    );
+                64)));
 
     /// System time in microseconds definition
     context->define_function(
@@ -110,10 +105,7 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
                 placeholder_position,
                 context,
                 ast::PrimitiveType::UINT64,
-                64
-            )
-        )
-    );
+                64)));
 
     /// System time in milliseconds definition
     context->define_function(
@@ -126,40 +118,23 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
                 placeholder_position,
                 context,
                 ast::PrimitiveType::UINT64,
-                64
-            )
-        )
-    );
+                64)));
 }
 
 void stride::stl::llvm_jit_define_functions(llvm::orc::LLJIT* jit)
 {
     llvm::cantFail(jit->getMainJITDylib().define(
-        llvm::orc::absoluteSymbols({
-            {
-                jit->mangleAndIntern("system_time_ns"),
-                {
-                    llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_ns), llvm::JITSymbolFlags::Exported
-                }
-            },
-            {
-                jit->mangleAndIntern("system_time_us"),
-                {
-                    llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_us), llvm::JITSymbolFlags::Exported
-                }
-            },
-            {
-                jit->mangleAndIntern("system_time_ms"),
-                {
-                    llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_ms), llvm::JITSymbolFlags::Exported
-                }
-            },
-            {
-                jit->mangleAndIntern("printf"),
-                {
-                    llvm::orc::ExecutorAddr::fromPtr(impl_printf), llvm::JITSymbolFlags::Exported
-                }
-            }
-        })
-    ));
+        llvm::orc::absoluteSymbols(
+            { { jit->mangleAndIntern("system_time_ns"),
+                { llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_ns),
+                  llvm::JITSymbolFlags::Exported } },
+              { jit->mangleAndIntern("system_time_us"),
+                { llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_us),
+                  llvm::JITSymbolFlags::Exported } },
+              { jit->mangleAndIntern("system_time_ms"),
+                { llvm::orc::ExecutorAddr::fromPtr(impl_sys_time_ms),
+                  llvm::JITSymbolFlags::Exported } },
+              { jit->mangleAndIntern("printf"),
+                { llvm::orc::ExecutorAddr::fromPtr(impl_printf),
+                  llvm::JITSymbolFlags::Exported } } })));
 }

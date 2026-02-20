@@ -49,10 +49,10 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.RETURN, StrideTypes.FOR, StrideTypes.WHILE,
             StrideTypes.IF, StrideTypes.ELSE -> KEYWORD_KEYS
 
-            StrideTypes.VOID, StrideTypes.I8, StrideTypes.I16,
-            StrideTypes.I32, StrideTypes.I64, StrideTypes.U8,
+            StrideTypes.VOID, StrideTypes.int8, StrideTypes.int16,
+            StrideTypes.int32, StrideTypes.int64, StrideTypes.U8,
             StrideTypes.U16, StrideTypes.U32, StrideTypes.U64,
-            StrideTypes.F32, StrideTypes.F64, StrideTypes.BOOL,
+            StrideTypes.float32, StrideTypes.float64, StrideTypes.BOOL,
             StrideTypes.CHAR, StrideTypes.STRING -> TYPE_KEYS
 
             StrideTypes.NUMBER_LITERAL -> NUMBER_KEYS

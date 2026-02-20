@@ -1,4 +1,5 @@
 #include "project/config.h"
+
 #include <simdjson.h>
 
 
@@ -16,7 +17,8 @@ namespace stride::project
             return std::nullopt;
         }
 
-        std::optional<Dependency> parse_dependency(simdjson::simdjson_result<simdjson::ondemand::value> dep_val)
+        std::optional<Dependency> parse_dependency(
+            simdjson::simdjson_result<simdjson::ondemand::value> dep_val)
         {
             Dependency dep;
 
@@ -30,14 +32,15 @@ namespace stride::project
 
             return dep;
         }
-    }
+    } // namespace
 
     std::optional<Config> read_config(const std::string& path)
     {
         simdjson::ondemand::parser parser;
 
         simdjson::padded_string json;
-        if (const auto load_error = simdjson::padded_string::load(path).get(json))
+        if (const auto load_error = simdjson::padded_string::load(path).
+            get(json))
         {
             std::cerr << "Failed to load config file: " << load_error << "\n";
             return std::nullopt;
@@ -101,4 +104,4 @@ namespace stride::project
 
         return config;
     }
-}
+} // namespace stride::project

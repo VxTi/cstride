@@ -1,5 +1,6 @@
-#include <gtest/gtest.h>
 #include "utils.h"
+
+#include <gtest/gtest.h>
 
 using namespace stride::tests;
 
@@ -7,8 +8,8 @@ TEST(Structs, Definition)
 {
     assert_parses(R"(
         struct Point {
-            x: i32;
-            y: i32;
+            x: int32;
+            y: int32;
         }
 
         struct Color {
@@ -24,8 +25,8 @@ TEST(Structs, Initialization)
 {
     assert_parses(R"(
         struct Point {
-            x: i32;
-            y: i32;
+            x: int32;
+            y: int32;
         }
 
         const p: Point = Point::{ x: 10, y: 20 };
@@ -35,11 +36,11 @@ TEST(Structs, Initialization)
 TEST(Structs, Composition)
 {
     assert_parses(R"(
-        struct Point { x: i32; y: i32; }
+        struct Point { x: int32; y: int32; }
         struct Rect {
             origin: Point;
-            width: i32;
-            height: i32;
+            width: int32;
+            height: int32;
         }
     )");
 }
@@ -47,7 +48,7 @@ TEST(Structs, Composition)
 TEST(Structs, Referencing)
 {
     assert_parses(R"(
-        struct Point { x: i32; y: i32; }
+        struct Point { x: int32; y: int32; }
         struct Vector2d = Point;
 
         const p: Point = Point::{ x: 10, y: 20 };

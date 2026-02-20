@@ -8,7 +8,7 @@ A function declaration consists of the `fn` keyword, followed by the function na
 
 ```stride
 // Function declaration
-fn add(a: i32, b: i32): i32 {
+fn add(a: int32, b: int32): int32 {
     return a + b
 }
 
@@ -19,7 +19,7 @@ fn greet(name: string): void {
 
 fn main(): void {
     // Invoking functions
-    const result: i32 = add(10, 5)
+    const result: int32 = add(10, 5)
     printf("10 + 5 = %d\n", result)
     
     greet("Stride")
@@ -50,11 +50,11 @@ You can also declare externally linked functions (e.g., from C libraries) using 
 
 ```stride
 // Declare printf from the C standard library
-extern fn printf(format: string, ...): i32;
+extern fn printf(format: string, ...): int32;
 
 // Declare other external functions
 extern fn system_time_ns(): u64;
-extern fn exit(code: i32): void;
+extern fn exit(code: int32): void;
 
 fn main(): void {
     printf("System time: %llu ns\n", system_time_ns())

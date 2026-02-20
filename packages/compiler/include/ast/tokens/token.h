@@ -1,8 +1,9 @@
 #pragma once
 
+#include "files.h"
+
 #include <regex>
 #include <utility>
-#include "files.h"
 
 #define TOKEN(type, pattern) { TokenDefinition(type, std::regex(pattern)) }
 
@@ -156,117 +157,228 @@ namespace stride::ast
     {
         switch (type)
         {
-        case TokenType::COMMENT: return "Comment";
-        case TokenType::COMMENT_MULTILINE: return "Comment Multiline";
-        case TokenType::END_OF_FILE: return "End of File";
-        case TokenType::LPAREN: return "(";
-        case TokenType::RPAREN: return ")";
-        case TokenType::LBRACE: return "{";
-        case TokenType::RBRACE: return "}";
-        case TokenType::LSQUARE_BRACKET: return "[";
-        case TokenType::RSQUARE_BRACKET: return "]";
-        case TokenType::COMMA: return ",";
-        case TokenType::LARROW_DASH: return "<-";
-        case TokenType::DASH_RARROW: return "->";
-        case TokenType::RARROW: return ">";
-        case TokenType::LARROW: return "<";
-        case TokenType::EQUALS: return "=";
-        case TokenType::DOUBLE_EQUALS: return "==";
-        case TokenType::NOT_EQUALS: return "!=";
-        case TokenType::LEQUALS: return "<=";
-        case TokenType::GEQUALS: return ">=";
-        case TokenType::PLUS: return "+";
-        case TokenType::MINUS: return "-";
-        case TokenType::STAR: return "*";
-        case TokenType::SLASH: return "/";
-        case TokenType::PERCENT: return "%";
-        case TokenType::AMPERSAND: return "&";
-        case TokenType::PIPE: return "|";
-        case TokenType::CARET: return "^";
-        case TokenType::TILDE: return "~";
-        case TokenType::BANG: return "!";
-        case TokenType::QUESTION: return "?";
-        case TokenType::TILDE_EQUALS: return "~=";
-        case TokenType::STAR_EQUALS: return "*=";
-        case TokenType::SLASH_EQUALS: return "/=";
-        case TokenType::PERCENT_EQUALS: return "%=";
-        case TokenType::PLUS_EQUALS: return "+=";
-        case TokenType::MINUS_EQUALS: return "-=";
-        case TokenType::AMPERSAND_EQUALS: return "&=";
-        case TokenType::PIPE_EQUALS: return "|=";
-        case TokenType::CARET_EQUALS: return "^=";
-        case TokenType::BANG_EQUALS: return "!=";
-        case TokenType::DOUBLE_LARROW: return "<<";
-        case TokenType::DOUBLE_RARROW: return ">>";
-        case TokenType::DOUBLE_LARROW_EQUALS: return "<<=";
-        case TokenType::DOUBLE_RARROW_EQUALS: return ">>=";
-        case TokenType::DOUBLE_STAR_EQUALS: return "**=";
-        case TokenType::DOUBLE_PIPE: return "||";
-        case TokenType::DOUBLE_AMPERSAND: return "&&";
-        case TokenType::DOUBLE_PLUS: return "++";
-        case TokenType::DOUBLE_MINUS: return "--";
-        case TokenType::DOUBLE_STAR: return "**";
-        case TokenType::DOUBLE_COLON: return "::";
-        case TokenType::SEMICOLON: return ";";
-        case TokenType::COLON: return ":";
-        case TokenType::DOT: return ".";
-        case TokenType::THREE_DOTS: return "...";
-        case TokenType::PRIMITIVE_UINT8: return "u8";
-        case TokenType::PRIMITIVE_UINT16: return "u16";
-        case TokenType::PRIMITIVE_UINT32: return "u32";
-        case TokenType::PRIMITIVE_UINT64: return "u64";
-        case TokenType::PRIMITIVE_INT8: return "i8";
-        case TokenType::PRIMITIVE_INT16: return "i16";
-        case TokenType::PRIMITIVE_INT32: return "i32";
-        case TokenType::PRIMITIVE_INT64: return "i64";
-        case TokenType::PRIMITIVE_FLOAT32: return "f32";
-        case TokenType::PRIMITIVE_FLOAT64: return "f64";
-        case TokenType::PRIMITIVE_BOOL: return "bool";
-        case TokenType::PRIMITIVE_STRING: return "str";
-        case TokenType::PRIMITIVE_CHAR: return "char";
-        case TokenType::PRIMITIVE_VOID: return "void";
-        case TokenType::PRIMITIVE_AUTO: return "auto";
-        case TokenType::KEYWORD_USE: return "use";
-        case TokenType::KEYWORD_AS: return "as";
-        case TokenType::KEYWORD_ASYNC: return "async";
-        case TokenType::KEYWORD_FN: return "fn";
-        case TokenType::KEYWORD_CONST: return "const";
-        case TokenType::KEYWORD_CONTINUE: return "continue";
-        case TokenType::KEYWORD_LET: return "let";
-        case TokenType::KEYWORD_DO: return "do";
-        case TokenType::KEYWORD_WHILE: return "while";
-        case TokenType::KEYWORD_FOR: return "for";
-        case TokenType::KEYWORD_SWITCH: return "switch";
-        case TokenType::KEYWORD_TRY: return "try";
-        case TokenType::KEYWORD_CATCH: return "catch";
-        case TokenType::KEYWORD_THROW: return "throw";
-        case TokenType::KEYWORD_NEW: return "new";
-        case TokenType::KEYWORD_RETURN: return "return";
-        case TokenType::KEYWORD_IF: return "if";
-        case TokenType::KEYWORD_ELSE: return "else";
-        case TokenType::KEYWORD_CLASS: return "class";
-        case TokenType::KEYWORD_THIS: return "this";
-        case TokenType::KEYWORD_STRUCT: return "struct";
-        case TokenType::KEYWORD_IMPORT: return "import";
-        case TokenType::KEYWORD_PUBLIC: return "public";
-        case TokenType::KEYWORD_PRIVATE: return "private";
-        case TokenType::KEYWORD_MODULE: return "module";
-        case TokenType::KEYWORD_EXTERN: return "extern";
-        case TokenType::KEYWORD_NIL: return "nil";
-        case TokenType::KEYWORD_OVERRIDE: return "override";
-        case TokenType::KEYWORD_ENUM: return "enum";
-        case TokenType::KEYWORD_CASE: return "case";
-        case TokenType::KEYWORD_DEFAULT: return "default";
-        case TokenType::KEYWORD_BREAK: return "break";
-        case TokenType::IDENTIFIER: return "identifier";
-        case TokenType::STRING_LITERAL: return "String Literal";
-        case TokenType::CHAR_LITERAL: return "Char Literal";
-        case TokenType::INTEGER_LITERAL: return "Integer";
-        case TokenType::HEX_LITERAL: return "Hexadecimal";
-        case TokenType::FLOAT_LITERAL: return "f32";
-        case TokenType::DOUBLE_LITERAL: return "f64";
-        case TokenType::BOOLEAN_LITERAL: return "Bool";
-        default: return "Unknown";
+        case TokenType::COMMENT:
+            return "Comment";
+        case TokenType::COMMENT_MULTILINE:
+            return "Comment Multiline";
+        case TokenType::END_OF_FILE:
+            return "End of File";
+        case TokenType::LPAREN:
+            return "(";
+        case TokenType::RPAREN:
+            return ")";
+        case TokenType::LBRACE:
+            return "{";
+        case TokenType::RBRACE:
+            return "}";
+        case TokenType::LSQUARE_BRACKET:
+            return "[";
+        case TokenType::RSQUARE_BRACKET:
+            return "]";
+        case TokenType::COMMA:
+            return ",";
+        case TokenType::LARROW_DASH:
+            return "<-";
+        case TokenType::DASH_RARROW:
+            return "->";
+        case TokenType::RARROW:
+            return ">";
+        case TokenType::LARROW:
+            return "<";
+        case TokenType::EQUALS:
+            return "=";
+        case TokenType::DOUBLE_EQUALS:
+            return "==";
+        case TokenType::NOT_EQUALS:
+            return "!=";
+        case TokenType::LEQUALS:
+            return "<=";
+        case TokenType::GEQUALS:
+            return ">=";
+        case TokenType::PLUS:
+            return "+";
+        case TokenType::MINUS:
+            return "-";
+        case TokenType::STAR:
+            return "*";
+        case TokenType::SLASH:
+            return "/";
+        case TokenType::PERCENT:
+            return "%";
+        case TokenType::AMPERSAND:
+            return "&";
+        case TokenType::PIPE:
+            return "|";
+        case TokenType::CARET:
+            return "^";
+        case TokenType::TILDE:
+            return "~";
+        case TokenType::BANG:
+            return "!";
+        case TokenType::QUESTION:
+            return "?";
+        case TokenType::TILDE_EQUALS:
+            return "~=";
+        case TokenType::STAR_EQUALS:
+            return "*=";
+        case TokenType::SLASH_EQUALS:
+            return "/=";
+        case TokenType::PERCENT_EQUALS:
+            return "%=";
+        case TokenType::PLUS_EQUALS:
+            return "+=";
+        case TokenType::MINUS_EQUALS:
+            return "-=";
+        case TokenType::AMPERSAND_EQUALS:
+            return "&=";
+        case TokenType::PIPE_EQUALS:
+            return "|=";
+        case TokenType::CARET_EQUALS:
+            return "^=";
+        case TokenType::BANG_EQUALS:
+            return "!=";
+        case TokenType::DOUBLE_LARROW:
+            return "<<";
+        case TokenType::DOUBLE_RARROW:
+            return ">>";
+        case TokenType::DOUBLE_LARROW_EQUALS:
+            return "<<=";
+        case TokenType::DOUBLE_RARROW_EQUALS:
+            return ">>=";
+        case TokenType::DOUBLE_STAR_EQUALS:
+            return "**=";
+        case TokenType::DOUBLE_PIPE:
+            return "||";
+        case TokenType::DOUBLE_AMPERSAND:
+            return "&&";
+        case TokenType::DOUBLE_PLUS:
+            return "++";
+        case TokenType::DOUBLE_MINUS:
+            return "--";
+        case TokenType::DOUBLE_STAR:
+            return "**";
+        case TokenType::DOUBLE_COLON:
+            return "::";
+        case TokenType::SEMICOLON:
+            return ";";
+        case TokenType::COLON:
+            return ":";
+        case TokenType::DOT:
+            return ".";
+        case TokenType::THREE_DOTS:
+            return "...";
+        case TokenType::PRIMITIVE_UINT8:
+            return "u8";
+        case TokenType::PRIMITIVE_UINT16:
+            return "u16";
+        case TokenType::PRIMITIVE_UINT32:
+            return "u32";
+        case TokenType::PRIMITIVE_UINT64:
+            return "u64";
+        case TokenType::PRIMITIVE_INT8:
+            return "int8";
+        case TokenType::PRIMITIVE_INT16:
+            return "int16";
+        case TokenType::PRIMITIVE_INT32:
+            return "int32";
+        case TokenType::PRIMITIVE_INT64:
+            return "int64";
+        case TokenType::PRIMITIVE_FLOAT32:
+            return "float32";
+        case TokenType::PRIMITIVE_FLOAT64:
+            return "float64";
+        case TokenType::PRIMITIVE_BOOL:
+            return "bool";
+        case TokenType::PRIMITIVE_STRING:
+            return "str";
+        case TokenType::PRIMITIVE_CHAR:
+            return "char";
+        case TokenType::PRIMITIVE_VOID:
+            return "void";
+        case TokenType::PRIMITIVE_AUTO:
+            return "auto";
+        case TokenType::KEYWORD_USE:
+            return "use";
+        case TokenType::KEYWORD_AS:
+            return "as";
+        case TokenType::KEYWORD_ASYNC:
+            return "async";
+        case TokenType::KEYWORD_FN:
+            return "fn";
+        case TokenType::KEYWORD_CONST:
+            return "const";
+        case TokenType::KEYWORD_CONTINUE:
+            return "continue";
+        case TokenType::KEYWORD_LET:
+            return "let";
+        case TokenType::KEYWORD_DO:
+            return "do";
+        case TokenType::KEYWORD_WHILE:
+            return "while";
+        case TokenType::KEYWORD_FOR:
+            return "for";
+        case TokenType::KEYWORD_SWITCH:
+            return "switch";
+        case TokenType::KEYWORD_TRY:
+            return "try";
+        case TokenType::KEYWORD_CATCH:
+            return "catch";
+        case TokenType::KEYWORD_THROW:
+            return "throw";
+        case TokenType::KEYWORD_NEW:
+            return "new";
+        case TokenType::KEYWORD_RETURN:
+            return "return";
+        case TokenType::KEYWORD_IF:
+            return "if";
+        case TokenType::KEYWORD_ELSE:
+            return "else";
+        case TokenType::KEYWORD_CLASS:
+            return "class";
+        case TokenType::KEYWORD_THIS:
+            return "this";
+        case TokenType::KEYWORD_STRUCT:
+            return "struct";
+        case TokenType::KEYWORD_IMPORT:
+            return "import";
+        case TokenType::KEYWORD_PUBLIC:
+            return "public";
+        case TokenType::KEYWORD_PRIVATE:
+            return "private";
+        case TokenType::KEYWORD_MODULE:
+            return "module";
+        case TokenType::KEYWORD_EXTERN:
+            return "extern";
+        case TokenType::KEYWORD_NIL:
+            return "nil";
+        case TokenType::KEYWORD_OVERRIDE:
+            return "override";
+        case TokenType::KEYWORD_ENUM:
+            return "enum";
+        case TokenType::KEYWORD_CASE:
+            return "case";
+        case TokenType::KEYWORD_DEFAULT:
+            return "default";
+        case TokenType::KEYWORD_BREAK:
+            return "break";
+        case TokenType::IDENTIFIER:
+            return "identifier";
+        case TokenType::STRING_LITERAL:
+            return "String Literal";
+        case TokenType::CHAR_LITERAL:
+            return "Char Literal";
+        case TokenType::INTEGER_LITERAL:
+            return "Integer";
+        case TokenType::HEX_LITERAL:
+            return "Hexadecimal";
+        case TokenType::FLOAT_LITERAL:
+            return "float32";
+        case TokenType::DOUBLE_LITERAL:
+            return "float64";
+        case TokenType::BOOLEAN_LITERAL:
+            return "Bool";
+        default:
+            return "Unknown";
         }
     }
 
@@ -306,17 +418,16 @@ namespace stride::ast
 
         ~TokenDefinition() = default;
 
-        TokenDefinition(
-            const TokenType type,
-            std::regex pattern
-        ) : pattern(std::move(pattern)), type(type) {}
+        TokenDefinition(const TokenType type, std::regex pattern) :
+            pattern(std::move(pattern)),
+            type(type) {}
 
-        bool operator ==(const TokenType& other) const
+        bool operator==(const TokenType& other) const
         {
             return type == other;
         }
 
-        bool operator ==(const TokenDefinition& other) const
+        bool operator==(const TokenDefinition& other) const
         {
             return type == other.type;
         }
@@ -329,26 +440,34 @@ namespace stride::ast
         TokenType _type;
 
     public:
-        explicit Token(
-            const TokenType type,
-            SourceLocation position,
-            std::string lexeme
-        ) : _position(std::move(position)),
+        explicit Token(const TokenType type,
+                       SourceLocation position,
+                       std::string lexeme) :
+            _position(std::move(position)),
             _lexeme(std::move(lexeme)),
             _type(type) {}
 
         ~Token() = default;
 
         [[nodiscard]]
-        const TokenType& get_type() const { return _type; }
+        const TokenType& get_type() const
+        {
+            return _type;
+        }
 
         [[nodiscard]]
-        const std::string& get_lexeme() const { return _lexeme; }
+        const std::string& get_lexeme() const
+        {
+            return _lexeme;
+        }
 
         [[nodiscard]]
-        const SourceLocation& get_source_position() const { return _position; }
+        const SourceLocation& get_source_position() const
+        {
+            return _position;
+        }
 
-        bool operator ==(const TokenType& other) const
+        bool operator==(const TokenType& other) const
         {
             return _type == other;
         }
@@ -356,5 +475,8 @@ namespace stride::ast
 
     extern std::vector<TokenDefinition> tokenTypes;
 
-    static auto END_OF_FILE = Token(TokenType::END_OF_FILE, {nullptr, static_cast<size_t>(-1), 0}, "\0");
-}
+    static auto END_OF_FILE =
+        Token(TokenType::END_OF_FILE,
+              { nullptr, static_cast<size_t>(-1), 0 },
+              "\0");
+} // namespace stride::ast

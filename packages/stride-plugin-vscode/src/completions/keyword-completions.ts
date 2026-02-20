@@ -1,5 +1,5 @@
 import { editor, languages, type Position } from 'monaco-editor';
-import { keywords } from '../language-config';
+import { keywords }                         from '../language-config';
 import ITextModel = editor.ITextModel;
 
 export function provideKeywordCompletions(

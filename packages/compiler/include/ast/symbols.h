@@ -1,8 +1,8 @@
 #pragma once
+#include "nodes/types.h"
+
 #include <string>
 #include <utility>
-
-#include "nodes/types.h"
 
 namespace stride::ast
 {
@@ -24,18 +24,23 @@ namespace stride::ast
             const SourceLocation& position,
             const std::string& context_name,
             std::string name,
-            const std::string& internal_name
-        ) : name(std::move(name)),
-            internal_name(context_name.empty() ? internal_name : context_name + DELIMITER + internal_name),
+            const std::string& internal_name) :
+            name(std::move(name)),
+            internal_name(
+                context_name.empty()
+                ? internal_name
+                : context_name + DELIMITER + internal_name),
             symbol_position(position) {}
 
         explicit Symbol(
             const SourceLocation& position,
-            const std::string& context_name, const std::string& name)
-            : Symbol(position, context_name, name, name) {}
+            const std::string& context_name,
+            const std::string& name) :
+            Symbol(position, context_name, name, name) {}
 
-        explicit Symbol(const SourceLocation& position, const std::string& name)
-            : Symbol(position, "", name) {}
+        explicit Symbol(const SourceLocation& position,
+                        const std::string& name) :
+            Symbol(position, "", name) {}
 
         bool operator==(const Symbol& other) const
         {
@@ -49,14 +54,12 @@ namespace stride::ast
         const std::shared_ptr<ParsingContext>& context,
         const SourceLocation& position,
         const SymbolNameSegments& function_name_segments,
-        const std::vector<IAstType*>& parameter_types
-    );
+        const std::vector<IAstType*>& parameter_types);
 
     Symbol resolve_internal_name(
         const std::string& context_name,
         const SourceLocation& position,
-        const SymbolNameSegments& segments
-    );
+        const SymbolNameSegments& segments);
 
     std::string resolve_internal_name(const SymbolNameSegments& segments);
-}
+} // namespace stride::ast

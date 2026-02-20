@@ -10,9 +10,9 @@ namespace stride
         std::string path;
         std::string source;
 
-        SourceFile(std::string path, std::string source)
-            : path(std::move(path)),
-              source(std::move(source)) {}
+        SourceFile(std::string path, std::string source) :
+            path(std::move(path)),
+            source(std::move(source)) {}
     };
 
     struct SourceLocation
@@ -25,13 +25,15 @@ namespace stride
         SourceLocation(
             const std::shared_ptr<SourceFile>& source,
             const size_t offset,
-            const size_t length
-        ) : offset(offset),
+            const size_t length) :
+            offset(offset),
             length(length),
             source(source) {}
 
-        SourceLocation operator=(const SourceLocation& other) {
-            if (this != &other) {
+        SourceLocation operator=(const SourceLocation& other)
+        {
+            if (this != &other)
+            {
                 offset = other.offset;
                 length = other.length;
             }
@@ -40,4 +42,4 @@ namespace stride
     };
 
     std::shared_ptr<SourceFile> read_file(const std::string& path);
-}
+} // namespace stride

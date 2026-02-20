@@ -1,10 +1,10 @@
 #pragma once
-#include <utility>
-
-#include "ast_node.h"
 #include "ast/modifiers.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
+#include "ast_node.h"
+
+#include <utility>
 
 namespace stride::ast
 {
@@ -17,18 +17,25 @@ namespace stride::ast
 
     public:
         explicit AstEnumerableMember(
-            const SourceLocation &source,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::string name, std::unique_ptr<AstLiteral> value
-        ) : IAstNode(source, context),
+            std::string name,
+            std::unique_ptr<AstLiteral> value) :
+            IAstNode(source, context),
             _name(std::move(name)),
             _value(std::move(value)) {}
 
         [[nodiscard]]
-        const std::string& get_name() const { return this->_name; }
+        const std::string& get_name() const
+        {
+            return this->_name;
+        }
 
         [[nodiscard]]
-        AstLiteral& value() const { return *this->_value; }
+        AstLiteral& value() const
+        {
+            return *this->_value;
+        }
 
         std::string to_string() override;
     };
@@ -40,33 +47,36 @@ namespace stride::ast
 
     public:
         explicit AstEnumerable(
-            const SourceLocation &source,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
-            std::string name
-        ) : IAstNode(source, context),
-            _members(std::move(members)), _name(std::move(name)) {}
+            std::string name) :
+            IAstNode(source, context),
+            _members(std::move(members)),
+            _name(std::move(name)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<AstEnumerableMember>>& get_members() const
+        const std::vector<std::unique_ptr<AstEnumerableMember>>&
+        get_members() const
         {
             return this->_members;
         }
 
         [[nodiscard]]
-        const std::string& get_name() const { return this->_name; }
+        const std::string& get_name() const
+        {
+            return this->_name;
+        }
 
         std::string to_string() override;
     };
 
     std::unique_ptr<AstEnumerableMember> parse_enumerable_member(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& tokens
-    );
+        TokenSet& tokens);
 
     std::unique_ptr<AstEnumerable> parse_enumerable_declaration(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        VisibilityModifier modifier
-    );
-}
+        VisibilityModifier modifier);
+} // namespace stride::ast

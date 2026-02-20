@@ -1,65 +1,64 @@
-#include <sstream>
-
 #include "ast/nodes/struct.h"
 
-#include <llvm/IR/Module.h>
-
 #include "ast/casting.h"
-#include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
+#include "ast/symbols.h"
+
+#include <llvm/IR/Module.h>
+#include <sstream>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
 std::unique_ptr<AstStructMember> parse_struct_member(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+    TokenSet& set)
 {
-    const auto struct_member_name_tok = set.expect(TokenType::IDENTIFIER, "Expected struct member name");
+    const auto struct_member_name_tok =
+        set.expect(TokenType::IDENTIFIER, "Expected struct member name");
     const auto& struct_member_name = struct_member_name_tok.get_lexeme();
 
     set.expect(TokenType::COLON);
 
-    auto struct_member_type = parse_type(context, set, "Expected a struct member type");
-    const auto last_token = set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
+    auto struct_member_type = parse_type(context,
+                                         set,
+                                         "Expected a struct member type");
+    const auto last_token =
+        set.expect(TokenType::SEMICOLON,
+                   "Expected ';' after struct member declaration");
 
     const auto position = stride::SourceLocation(
         set.get_source(),
         struct_member_name_tok.get_source_position().offset,
-        last_token.get_source_position().offset
-        + last_token.get_source_position().length
-        - struct_member_name_tok.get_source_position().offset
-    );
+        last_token.get_source_position().offset + last_token.
+                                                  get_source_position().length -
+        struct_member_name_tok.get_source_position().offset);
     auto struct_member_symbol = Symbol(position, struct_member_name);
 
     // TODO: Replace with struct-field-specific method
-    context->define_variable(
-        struct_member_symbol,
-        struct_member_type->clone()
-    );
+    context->define_variable(struct_member_symbol, struct_member_type->clone());
 
     return std::make_unique<AstStructMember>(
         context,
         struct_member_symbol,
-        std::move(struct_member_type)
-    );
+        std::move(struct_member_type));
 }
 
 std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& tokens,
-    VisibilityModifier modifier
-)
+    VisibilityModifier modifier)
 {
-    if (context->get_current_scope_type() != ScopeType::GLOBAL && context->get_current_scope_type() !=
-        ScopeType::MODULE)
+    if (context->get_current_scope_type() != ScopeType::GLOBAL &&
+        context->get_current_scope_type() != ScopeType::MODULE)
     {
-        tokens.throw_error("Struct declarations are only allowed in global or module scope");
+        tokens.throw_error(
+            "Struct declarations are only allowed in global or module scope");
     }
 
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
-    const auto struct_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");
+    const auto struct_name_tok = tokens.expect(TokenType::IDENTIFIER,
+                                               "Expected struct name");
     const auto& struct_name = struct_name_tok.get_lexeme();
 
     // Might be a reference to another type
@@ -70,7 +69,11 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     if (tokens.peek_next_eq(TokenType::EQUALS))
     {
         tokens.next();
-        auto reference_sym = parse_type(context, tokens, "Expected reference struct type", SRFLAG_NONE);
+        auto reference_sym =
+            parse_type(context,
+                       tokens,
+                       "Expected reference struct type",
+                       SRFLAG_NONE);
         tokens.expect(TokenType::SEMICOLON);
 
         // We define it as a reference to `reference_sym`. Validation happens later
@@ -78,15 +81,14 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
             /* Base struct sym */
             Symbol(struct_name_tok.get_source_position(), struct_name),
             /* Reference struct sym */
-            Symbol(reference_sym->get_source_position(), reference_sym->get_internal_name())
-        );
+            Symbol(reference_sym->get_source_position(),
+                   reference_sym->get_internal_name()));
 
         return std::make_unique<AstStruct>(
             reference_token.get_source_position(),
             context,
             struct_name,
-            std::move(reference_sym)
-        );
+            std::move(reference_sym));
     }
 
     auto struct_body_set = collect_block(tokens);
@@ -103,9 +105,8 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
             SourceLocation(
                 tokens.get_source(),
                 ref_src_pos.offset,
-                struct_name_pos.offset + struct_name_pos.length - ref_src_pos.offset
-            )
-        );
+                struct_name_pos.offset + struct_name_pos.length - ref_src_pos.
+                offset));
     }
 
     std::vector<std::unique_ptr<AstStructMember>> members = {};
@@ -113,10 +114,13 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
     if (struct_body_set.has_value())
     {
-        const auto nested_scope = std::make_shared<ParsingContext>(context, ScopeType::BLOCK);
+        const auto nested_scope = std::make_shared<ParsingContext>(
+            context,
+            ScopeType::BLOCK);
         while (struct_body_set.value().has_next())
         {
-            auto member = parse_struct_member(nested_scope, struct_body_set.value());
+            auto member = parse_struct_member(nested_scope,
+                                              struct_body_set.value());
 
             fields.emplace_back(member->get_name(), member->get_type().clone());
             members.push_back(std::move(member));
@@ -131,15 +135,13 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
 
     context->define_struct(
         Symbol(struct_name_tok.get_source_position(), struct_name),
-        std::move(fields)
-    );
+        std::move(fields));
 
     return std::make_unique<AstStruct>(
         reference_token.get_source_position(),
         context,
         struct_name,
-        std::move(members)
-    );
+        std::move(members));
 }
 
 void AstStructMember::validate()
@@ -149,14 +151,16 @@ void AstStructMember::validate()
         // If it's not a primitive, it must be a struct, as we currently don't support other types.
         // TODO: Support enums
 
-        if (const auto member = this->get_context()->get_struct_def(struct_type->get_internal_name());
+        if (const auto member =
+                this->get_context()->get_struct_def(
+                    struct_type->get_internal_name());
             !member.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Undefined struct type for member '{}'", this->get_name()),
-                this->get_source_position()
-            );
+                std::format("Undefined struct type for member '{}'",
+                            this->get_name()),
+                this->get_source_position());
         }
     }
 }
@@ -167,19 +171,18 @@ void AstStruct::validate()
     if (this->is_reference_type())
     {
         // Check whether we can find the other field
-        if (const auto reference = this->get_context()->get_struct_def(this->get_reference_type()->get_internal_name())
-            ;
+        if (const auto reference = this->get_context()->get_struct_def(
+                this->get_reference_type()->get_internal_name());
             reference == nullptr)
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Unable to determine type of struct '{}': referenced struct type '{}' is undefined",
+                    "Unable to determine type of struct '{}': referenced struct type '{}' is "
+                    "undefined",
                     this->get_name(),
-                    this->_reference.value()->get_internal_name()
-                ),
-                this->_reference.value()->get_source_position()
-            );
+                    this->_reference.value()->get_internal_name()),
+                this->_reference.value()->get_source_position());
         }
         return;
     }
@@ -193,14 +196,19 @@ void AstStruct::validate()
 
 std::string AstStructMember::to_string()
 {
-    return std::format("{}: {}", this->get_name(), this->get_type().to_string());
+    return std::format("{}: {}",
+                       this->get_name(),
+                       this->get_type().to_string());
 }
 
 std::string AstStruct::to_string()
 {
     if (this->is_reference_type())
     {
-        return std::format("Struct({}) (reference to {})", this->get_name(), this->get_reference_type()->to_string());
+        return std::format(
+            "Struct({}) (reference to {})",
+            this->get_name(),
+            this->get_reference_type()->to_string());
     }
     if (this->get_members().empty())
     {
@@ -214,18 +222,24 @@ std::string AstStruct::to_string()
     {
         imploded << "\n  " << this->get_members()[i]->to_string();
     }
-    return std::format("Struct({}) (\n  {}\n)", this->get_name(), imploded.str());
+    return std::format("Struct({}) (\n  {}\n)",
+                       this->get_name(),
+                       imploded.str());
 }
 
-void AstStruct::resolve_forward_references(const ParsingContext* context, llvm::Module* module,
-                                           llvm::IRBuilder<>* builder)
+void AstStruct::resolve_forward_references(
+    const ParsingContext* context,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder)
 {
     // Retrieve or Create the named struct type (Opaque)
     // We check if it already exists to support forward declarations or multi-pass compilation.
-    llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), this->get_name());
+    llvm::StructType* struct_type =
+        llvm::StructType::getTypeByName(module->getContext(), this->get_name());
     if (!struct_type)
     {
-        struct_type = llvm::StructType::create(module->getContext(), this->get_name());
+        struct_type = llvm::StructType::create(module->getContext(),
+                                               this->get_name());
     }
 
     // If the body is already defined, we stop here to avoid re-definition errors.
@@ -243,15 +257,17 @@ void AstStruct::resolve_forward_references(const ParsingContext* context, llvm::
         // We look up the original struct and copy its layout.
         // TODO: Mangle ref name
         std::string ref_name = this->get_reference_type()->get_internal_name();
-        const llvm::StructType* ref_struct = llvm::StructType::getTypeByName(module->getContext(), ref_name);
+        const llvm::StructType* ref_struct =
+            llvm::StructType::getTypeByName(module->getContext(), ref_name);
 
         if (!ref_struct)
         {
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
-                std::format("Referenced struct type '{}' not found during codegen", ref_name),
-                this->get_source_position()
-            );
+                std::format(
+                    "Referenced struct type '{}' not found during codegen",
+                    ref_name),
+                this->get_source_position());
         }
 
         // If the referenced struct is still opaque/incomplete, we cannot alias it yet.
@@ -259,9 +275,9 @@ void AstStruct::resolve_forward_references(const ParsingContext* context, llvm::
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Referenced struct type '{}' is not fully defined", ref_name),
-                this->get_source_position()
-            );
+                std::format("Referenced struct type '{}' is not fully defined",
+                            ref_name),
+                this->get_source_position());
         }
 
         member_types = ref_struct->elements();
@@ -271,7 +287,9 @@ void AstStruct::resolve_forward_references(const ParsingContext* context, llvm::
         // Case: struct Name { members... }
         for (const auto& member : this->get_members())
         {
-            llvm::Type* llvm_type = internal_type_to_llvm_type(&member->get_type(), module);
+            llvm::Type* llvm_type = internal_type_to_llvm_type(
+                &member->get_type(),
+                module);
 
             if (!llvm_type)
             {
@@ -281,10 +299,9 @@ void AstStruct::resolve_forward_references(const ParsingContext* context, llvm::
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Unknown internal type '{}' for struct member '{}'",
-                        member->get_type().get_internal_name(), member->get_name()
-                    ),
-                    member->get_source_position()
-                );
+                        member->get_type().get_internal_name(),
+                        member->get_name()),
+                    member->get_source_position());
             }
 
             member_types.push_back(llvm_type);
@@ -300,8 +317,7 @@ void AstStruct::resolve_forward_references(const ParsingContext* context, llvm::
 llvm::Value* AstStruct::codegen(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+    llvm::IRBuilder<>* builder)
 {
     // Struct registration is done in the `resolve_forward_references` pass
     // so that one can reference structs before they're semantically defined.

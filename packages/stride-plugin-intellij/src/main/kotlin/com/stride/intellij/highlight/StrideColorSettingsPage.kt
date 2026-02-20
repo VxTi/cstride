@@ -24,11 +24,11 @@ class StrideColorSettingsPage : ColorSettingsPage {
             extern fn <func>print</func>(msg: string): void;
 
             struct Point {
-                x: f32,
-                y: f32
+                x: float32,
+                y: float32
             }
 
-            fn <func>main</func>(): i32 {
+            fn <func>main</func>(): int32 {
                 const p: Point = Point::{ x: 1.0, y: 2.0 };
                 let msg: string = "Hello, Stride!";
                 if (p.x > 0.0 && true) {

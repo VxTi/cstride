@@ -1,24 +1,26 @@
 #pragma once
-#include "ast_node.h"
 #include "ast/tokens/token_set.h"
+#include "ast_node.h"
 
 namespace stride::ast
 {
-    class AstPackage
-        : public IAstNode
+    class AstPackage : public IAstNode
     {
         std::string _name;
 
     public:
         explicit AstPackage(
-            const SourceLocation &source,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::string package_name
-        ) : IAstNode(source, context),
+            std::string package_name) :
+            IAstNode(source, context),
             _name(std::move(package_name)) {};
 
         [[nodiscard]]
-        const std::string& get_name() const { return this->_name; }
+        const std::string& get_name() const
+        {
+            return this->_name;
+        }
 
         void validate() override;
 
@@ -29,6 +31,5 @@ namespace stride::ast
 
     std::unique_ptr<AstPackage> parse_package_declaration(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
-}
+        TokenSet& set);
+} // namespace stride::ast

@@ -47,16 +47,17 @@ namespace stride::project
         std::vector<Dependency> dependencies;
         /**
          * The target platform for the project.
-         * This can be used to determine which libraries to link against, which compiler flags to use, etc.
-         * Will default to the current platform
+         * This can be used to determine which libraries to link against, which compiler flags to
+         * use, etc. Will default to the current platform
          */
         std::string target;
 
         /**
-         * The mode of the compiler. This can be either <code>COMPILE_NATIVE</code> or <code>COMPILE_JIT</code>.
+         * The mode of the compiler. This can be either <code>COMPILE_NATIVE</code> or
+         * <code>COMPILE_JIT</code>.
          */
         Mode mode;
     };
 
     std::optional<Config> read_config(const std::string& path);
-}
+} // namespace stride::project

@@ -5,7 +5,6 @@ import prettierPlugin from 'eslint-plugin-prettier';
 import unusedImports from 'eslint-plugin-unused-imports';
 import prettierConfig from './prettier.config';
 import importPlugin from 'eslint-plugin-import';
-import reactHooksPlugin from 'eslint-plugin-react-hooks';
 
 export default defineConfig([
   // TypeScript recommendations
@@ -28,8 +27,6 @@ export default defineConfig([
       'unused-imports': unusedImports,
       prettier: prettierPlugin,
       import: importPlugin,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      'react-hooks': reactHooksPlugin as any,
     },
     rules: {
       'prettier/prettier': ['error', prettierConfig],

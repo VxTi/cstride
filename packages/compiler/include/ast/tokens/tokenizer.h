@@ -13,4 +13,4 @@ namespace stride::ast::tokenizer
     TokenSet tokenize(const std::shared_ptr<SourceFile>& source_file);
 
     std::string escape_string(const std::string& raw_string);
-}
+} // namespace stride::ast::tokenizer

@@ -11,8 +11,8 @@ Structs are defined using the `struct` keyword followed by a name and a block of
 
 ```stride
 struct Point {
-    x: i32,
-    y: i32,
+    x: int32,
+    y: int32,
 }
 
 struct Color {

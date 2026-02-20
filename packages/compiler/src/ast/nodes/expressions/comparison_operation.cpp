@@ -1,22 +1,30 @@
-#include <llvm/IR/Module.h>
-
 #include "ast/casting.h"
-#include "ast/optionals.h"
 #include "ast/nodes/expression.h"
+#include "ast/optionals.h"
+
+#include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 
-std::optional<ComparisonOpType> stride::ast::get_comparative_op_type(const TokenType type)
+std::optional<ComparisonOpType> stride::ast::get_comparative_op_type(
+    const TokenType type)
 {
     switch (type)
     {
-    case TokenType::DOUBLE_EQUALS: return ComparisonOpType::EQUAL;
-    case TokenType::BANG_EQUALS: return ComparisonOpType::NOT_EQUAL;
-    case TokenType::LARROW: return ComparisonOpType::LESS_THAN;
-    case TokenType::LEQUALS: return ComparisonOpType::LESS_THAN_OR_EQUAL;
-    case TokenType::RARROW: return ComparisonOpType::GREATER_THAN;
-    case TokenType::GEQUALS: return ComparisonOpType::GREATER_THAN_OR_EQUAL;
-    default: return std::nullopt;
+    case TokenType::DOUBLE_EQUALS:
+        return ComparisonOpType::EQUAL;
+    case TokenType::BANG_EQUALS:
+        return ComparisonOpType::NOT_EQUAL;
+    case TokenType::LARROW:
+        return ComparisonOpType::LESS_THAN;
+    case TokenType::LEQUALS:
+        return ComparisonOpType::LESS_THAN_OR_EQUAL;
+    case TokenType::RARROW:
+        return ComparisonOpType::GREATER_THAN;
+    case TokenType::GEQUALS:
+        return ComparisonOpType::GREATER_THAN_OR_EQUAL;
+    default:
+        return std::nullopt;
     }
 }
 
@@ -24,13 +32,20 @@ std::string comparison_op_to_str(const ComparisonOpType op)
 {
     switch (op)
     {
-    case ComparisonOpType::EQUAL: return "==";
-    case ComparisonOpType::NOT_EQUAL: return "!=";
-    case ComparisonOpType::LESS_THAN: return "<";
-    case ComparisonOpType::LESS_THAN_OR_EQUAL: return "<=";
-    case ComparisonOpType::GREATER_THAN: return ">";
-    case ComparisonOpType::GREATER_THAN_OR_EQUAL: return ">=";
-    default: return "";
+    case ComparisonOpType::EQUAL:
+        return "==";
+    case ComparisonOpType::NOT_EQUAL:
+        return "!=";
+    case ComparisonOpType::LESS_THAN:
+        return "<";
+    case ComparisonOpType::LESS_THAN_OR_EQUAL:
+        return "<=";
+    case ComparisonOpType::GREATER_THAN:
+        return ">";
+    case ComparisonOpType::GREATER_THAN_OR_EQUAL:
+        return ">=";
+    default:
+        return "";
     }
 }
 
@@ -38,15 +53,15 @@ std::string AstComparisonOp::to_string()
 {
     return std::format(
         "ComparisonOp({}, {}, {})",
-        this->get_left()->to_string(), comparison_op_to_str(this->_op_type), this->get_right()->to_string()
-    );
+        this->get_left()->to_string(),
+        comparison_op_to_str(this->_op_type),
+        this->get_right()->to_string());
 }
 
 llvm::Value* AstComparisonOp::codegen(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+    llvm::IRBuilder<>* builder)
 {
     llvm::Value* left = this->get_left()->codegen(context, module, builder);
     llvm::Value* right = this->get_right()->codegen(context, module, builder);
@@ -81,7 +96,11 @@ llvm::Value* AstComparisonOp::codegen(
             );
         }
 
-        llvm::Value* has_value = builder->CreateExtractValue(struct_val, {OPT_IDX_HAS_VALUE}, "has_value");
+        llvm::Value* has_value = builder->CreateExtractValue(
+            struct_val,
+            { OPT_IDX_HAS_VALUE },
+            "has_value"
+        );
 
         if (this->get_op_type() == ComparisonOpType::NOT_EQUAL)
         {
@@ -90,8 +109,7 @@ llvm::Value* AstComparisonOp::codegen(
                 has_value,
                 llvm::ConstantInt::get(
                     llvm::Type::getInt1Ty(module->getContext()),
-                    OPT_HAS_VALUE
-                ),
+                    OPT_HAS_VALUE),
                 "not_nil_check"
             );
         }
@@ -102,8 +120,7 @@ llvm::Value* AstComparisonOp::codegen(
                 has_value,
                 llvm::ConstantInt::get(
                     llvm::Type::getInt1Ty(module->getContext()),
-                    OPT_NO_VALUE
-                ),
+                    OPT_NO_VALUE),
                 "is_nil_check"
             );
         }
@@ -157,34 +174,36 @@ llvm::Value* AstComparisonOp::codegen(
     }
 
     // Check if operands are floating point or integer
-    const bool is_float = left_ty->isFloatingPointTy() || right_ty->isFloatingPointTy();
+    const bool is_float =
+        left_ty->isFloatingPointTy() ||
+        right_ty->isFloatingPointTy();
 
     switch (this->get_op_type())
     {
     case ComparisonOpType::EQUAL:
         return is_float
-                   ? builder->CreateFCmpOEQ(left, right, "eqtmp")
-                   : builder->CreateICmpEQ(left, right, "eqtmp");
+            ? builder->CreateFCmpOEQ(left, right, "eqtmp")
+            : builder->CreateICmpEQ(left, right, "eqtmp");
     case ComparisonOpType::NOT_EQUAL:
         return is_float
-                   ? builder->CreateFCmpONE(left, right, "netmp")
-                   : builder->CreateICmpNE(left, right, "netmp");
+            ? builder->CreateFCmpONE(left, right, "netmp")
+            : builder->CreateICmpNE(left, right, "netmp");
     case ComparisonOpType::LESS_THAN:
         return is_float
-                   ? builder->CreateFCmpOLT(left, right, "lttmp")
-                   : builder->CreateICmpSLT(left, right, "lttmp");
+            ? builder->CreateFCmpOLT(left, right, "lttmp")
+            : builder->CreateICmpSLT(left, right, "lttmp");
     case ComparisonOpType::LESS_THAN_OR_EQUAL:
         return is_float
-                   ? builder->CreateFCmpOLE(left, right, "letmp")
-                   : builder->CreateICmpSLE(left, right, "letmp");
+            ? builder->CreateFCmpOLE(left, right, "letmp")
+            : builder->CreateICmpSLE(left, right, "letmp");
     case ComparisonOpType::GREATER_THAN:
         return is_float
-                   ? builder->CreateFCmpOGT(left, right, "gttmp")
-                   : builder->CreateICmpSGT(left, right, "gttmp");
+            ? builder->CreateFCmpOGT(left, right, "gttmp")
+            : builder->CreateICmpSGT(left, right, "gttmp");
     case ComparisonOpType::GREATER_THAN_OR_EQUAL:
         return is_float
-                   ? builder->CreateFCmpOGE(left, right, "getmp")
-                   : builder->CreateICmpSGE(left, right, "getmp");
+            ? builder->CreateFCmpOGE(left, right, "getmp")
+            : builder->CreateICmpSGE(left, right, "getmp");
     default:
         return nullptr;
     }
@@ -205,35 +224,34 @@ void AstComparisonOp::validate()
     }
 
     // Both sides are primitives
-    if (lhs_type->is_primitive() && rhs_type->is_primitive()) return;
+    if (lhs_type->is_primitive() && rhs_type->is_primitive())
+        return;
 
     const auto lhs_primitive = cast_type<AstPrimitiveType*>(lhs_type.get());
     const auto rhs_primitive = cast_type<AstPrimitiveType*>(rhs_type.get());
 
 
     // If LHS is NIL and RHS is valid, allow the comparison (nil checks)
-    if (lhs_primitive && rhs_primitive &&
-        lhs_primitive->get_type() == PrimitiveType::NIL &&
-        rhs_primitive->get_type() != PrimitiveType::NIL)
+    if (lhs_primitive && rhs_primitive
+        && lhs_primitive->get_type() == PrimitiveType::NIL
+        && rhs_primitive->get_type() != PrimitiveType::NIL)
         return;
 
     // visa versa; LHS is primitive and RHS is nil
-    if (rhs_primitive && lhs_primitive &&
-        rhs_primitive->get_type() == PrimitiveType::NIL &&
-        lhs_primitive->get_type() != PrimitiveType::NIL)
+    if (rhs_primitive && lhs_primitive
+        && rhs_primitive->get_type() == PrimitiveType::NIL
+        && lhs_primitive->get_type() != PrimitiveType::NIL)
         return;
 
     const auto lhs_struct = cast_type<AstNamedType*>(lhs_type.get());
     const auto rhs_struct = cast_type<AstNamedType*>(rhs_type.get());
 
     // LHS is optional struct and RHS is primitive and RHS is not nil
-    if (lhs_struct && rhs_primitive &&
-        lhs_struct->is_optional() &&
+    if (lhs_struct && rhs_primitive && lhs_struct->is_optional() &&
         rhs_primitive->get_type() == PrimitiveType::NIL)
         return;
 
-    if (lhs_primitive && rhs_struct &&
-        rhs_struct->is_optional() &&
+    if (lhs_primitive && rhs_struct && rhs_struct->is_optional() &&
         lhs_primitive->get_type() == PrimitiveType::NIL)
         return;
 

@@ -1,24 +1,27 @@
-#include <gtest/gtest.h>
 #include "utils.h"
+
+#include <gtest/gtest.h>
 
 using namespace stride::tests;
 
-TEST(Functions, Lambda) {
+TEST(Functions, Lambda)
+{
     const std::string code = R"(
-        const lambda: (i32) -> i32 = (x: i32): i32 -> {
+        const lambda: (int32) -> int32 = (x: int32): int32 -> {
             return x + 1;
         };
 
         fn main(): void {
-            const result: i32 = lambda(10);
+            const result: int32 = lambda(10);
         }
     )";
     assert_compiles(code);
 }
 
-TEST(Functions, DeclarationAndInvocation) {
+TEST(Functions, DeclarationAndInvocation)
+{
     const std::string code = R"(
-        fn add(a: i32, b: i32): i32 {
+        fn add(a: int32, b: int32): int32 {
             return a + b;
         }
 
@@ -27,7 +30,7 @@ TEST(Functions, DeclarationAndInvocation) {
         }
 
         fn main(): void {
-            const result: i32 = add(10, 5);
+            const result: int32 = add(10, 5);
             printf("Stride");
             greet("Stride");
         }
@@ -35,17 +38,19 @@ TEST(Functions, DeclarationAndInvocation) {
     assert_parses(code);
 }
 
-TEST(Functions, Parameters) {
+TEST(Functions, Parameters)
+{
     // Test potentially many parameters
     const std::string code = R"(
-        fn many_params(a: i32, b: i32, c: i32, d: i32, e: i32): i32 {
+        fn many_params(a: int32, b: int32, c: int32, d: int32, e: int32): int32 {
             return a + b + c + d + e;
         }
     )";
     assert_parses(code);
 }
 
-TEST(Functions, ReturnVoidExplicit) {
+TEST(Functions, ReturnVoidExplicit)
+{
     const std::string code = R"(
         fn do_nothing(): void {
             return;
@@ -54,7 +59,8 @@ TEST(Functions, ReturnVoidExplicit) {
     assert_parses(code);
 }
 
-TEST(Functions, ReturnVoidImplicit) {
+TEST(Functions, ReturnVoidImplicit)
+{
     const std::string code = R"(
         fn do_nothing_implicitly(): void {
             // No return statement
@@ -63,7 +69,8 @@ TEST(Functions, ReturnVoidImplicit) {
     assert_parses(code);
 }
 
-TEST(Functions, ExternalFunctions) {
+TEST(Functions, ExternalFunctions)
+{
     const std::string code = R"(
         extern fn malloc(size: u64): u64;
         extern fn free(ptr: u64): void;

@@ -1,5 +1,13 @@
 #include "ast/nodes/function_declaration.h"
 
+#include "ast/casting.h"
+#include "ast/modifiers.h"
+#include "ast/nodes/blocks.h"
+#include "ast/nodes/for_loop.h"
+#include "ast/nodes/if_statement.h"
+#include "ast/nodes/return.h"
+#include "ast/symbols.h"
+
 #include <iostream>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
@@ -9,25 +17,18 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "ast/casting.h"
-#include "ast/modifiers.h"
-#include "ast/symbols.h"
-#include "ast/nodes/blocks.h"
-#include "ast/nodes/for_loop.h"
-#include "ast/nodes/if_statement.h"
-#include "ast/nodes/return.h"
-
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
 #define ANONYMOUS_FN_PREFIX "#__anonymous_"
 
-std::vector<AstReturn*> collect_return_statements(
-    const AstBlock* body
-)
+std::vector<AstReturn*> collect_return_statements(const AstBlock* body)
 {
-    if (!body) return {};
+    if (!body)
+    {
+        return {};
+    }
 
     std::vector<AstReturn*> return_statements;
     for (const auto& child : body->children())
@@ -38,18 +39,27 @@ std::vector<AstReturn*> collect_return_statements(
         }
 
         // Recursively collect from child containers
-        if (const auto container_node = dynamic_cast<IAstContainer*>(child.get()))
+        if (const auto container_node = dynamic_cast<IAstContainer*>(child.
+            get()))
         {
-            const auto aggregated = collect_return_statements(container_node->get_body());
-            return_statements.insert(return_statements.end(), aggregated.begin(), aggregated.end());
+            const auto aggregated = collect_return_statements(
+                container_node->get_body());
+            return_statements.insert(return_statements.end(),
+                                     aggregated.begin(),
+                                     aggregated.end());
         }
 
-        // Edge case: if statements hold the `else` block too, though this doesn't fall under the `IAstContainer` abstraction.
-        // The `get_body` part is added in the previous case, though we still need to add the else body
-        if (const auto if_statement = dynamic_cast<AstIfStatement*>(child.get()))
+        // Edge case: if statements hold the `else` block too, though this doesn't fall under the
+        // `IAstContainer` abstraction. The `get_body` part is added in the previous case, though we
+        // still need to add the else body
+        if (const auto if_statement = dynamic_cast<AstIfStatement*>(child.
+            get()))
         {
-            const auto aggregated = collect_return_statements(if_statement->get_else_body());
-            return_statements.insert(return_statements.end(), aggregated.begin(), aggregated.end());
+            const auto aggregated = collect_return_statements(
+                if_statement->get_else_body());
+            return_statements.insert(return_statements.end(),
+                                     aggregated.begin(),
+                                     aggregated.end());
         }
     }
     return return_statements;
@@ -57,8 +67,12 @@ std::vector<AstReturn*> collect_return_statements(
 
 void IAstCallable::validate()
 {
-    // Extern functions don't require return statements and have no function body, so no validation needed.
-    if (this->is_extern()) return;
+    // Extern functions don't require return statements and have no function body, so no validation
+    // needed.
+    if (this->is_extern())
+    {
+        return;
+    }
 
     if (this->get_body() != nullptr)
     {
@@ -69,7 +83,8 @@ void IAstCallable::validate()
     const auto return_statements = collect_return_statements(this->get_body());
 
     // For void types, we only disallow returning expressions, as this is redundant.
-    if (const auto void_ret = cast_type<AstPrimitiveType*>(this->get_return_type());
+    if (const auto void_ret = cast_type<AstPrimitiveType*>(
+            this->get_return_type());
         void_ret != nullptr && void_ret->get_type() == PrimitiveType::VOID)
     {
         for (const auto& return_stmt : return_statements)
@@ -80,10 +95,8 @@ void IAstCallable::validate()
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Function '{}' has return type 'void' and cannot return a value.",
-                        this->get_name()
-                    ),
-                    return_stmt->get_source_position()
-                );
+                        this->get_name()),
+                    return_stmt->get_source_position());
             }
         }
         return;
@@ -98,16 +111,17 @@ void IAstCallable::validate()
                 std::format(
                     "Function '{}' returns a struct type, but no return statement is present.",
                     this->get_name()),
-                this->get_source_position()
-            );
+                this->get_source_position());
         }
 
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
-            std::format("Function '{}' is missing a return statement.",
-                        this->is_anonymous() ? "<anonymous function>" : this->get_name()),
-            this->get_source_position()
-        );
+            std::format(
+                "Function '{}' is missing a return statement.",
+                this->is_anonymous()
+                ? "<anonymous function>"
+                : this->get_name()),
+            this->get_source_position());
     }
 
     for (const auto& return_stmt : return_statements)
@@ -119,36 +133,34 @@ void IAstCallable::validate()
             continue;
         }
 
-        if (const auto return_stmt_type = infer_expression_type(return_stmt->get_context(), ret_expr);
+        if (const auto return_stmt_type =
+                infer_expression_type(return_stmt->get_context(), ret_expr);
             !return_stmt_type->equals(*this->get_return_type()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' expected a return type of '{}', but received '{}'.",
-                    this->get_name(), this->get_return_type()->to_string(), return_stmt_type->to_string()
-                ),
-                {
-                    ErrorSourceReference(
-                        std::format(
-                            "expected {}{}",
-                            this->get_return_type()->is_primitive()
-                                ? ""
-                                : this->get_return_type()->is_function()
-                                ? "function-type "
-                                : "struct-type ",
-                            this->get_return_type()->to_string()
-                        ),
-                        *this->get_source(),
-                        return_stmt->get_return_expr()->get_source_position()
-                    )
-                }
-            );
+                    this->get_name(),
+                    this->get_return_type()->to_string(),
+                    return_stmt_type->to_string()),
+                { ErrorSourceReference(
+                    std::format(
+                        "expected {}{}",
+                        this->get_return_type()->is_primitive()
+                        ? ""
+                        : this->get_return_type()->is_function()
+                        ? "function-type "
+                        : "struct-type ",
+                        this->get_return_type()->to_string()),
+                    *this->get_source(),
+                    return_stmt->get_return_expr()->get_source_position()) });
         }
     }
 
     // We'll have to validate whether it:
-    // 1. Requires a return AST node - This can be the case when the return type is not a primitive, e.g., a struct
+    // 1. Requires a return AST node - This can be the case when the return type is not a primitive,
+    // e.g., a struct
     // 2. The return type doesn't match the function signature
     // 3. All code paths return a value (if not void)
 }
@@ -156,14 +168,14 @@ void IAstCallable::validate()
 llvm::Value* IAstCallable::codegen(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+    llvm::IRBuilder<>* builder)
 {
     llvm::Function* function = module->getFunction(this->get_internal_name());
     if (!function)
     {
         module->print(llvm::errs(), nullptr);
-        throw std::runtime_error("Function symbol missing: " + this->get_internal_name());
+        throw std::runtime_error(
+            "Function symbol missing: " + this->get_internal_name());
     }
 
     if (this->is_extern())
@@ -171,11 +183,15 @@ llvm::Value* IAstCallable::codegen(
         return function;
     }
 
-    llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(module->getContext(), "entry", function);
+    llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(
+        module->getContext(),
+        "entry",
+        function);
     builder->SetInsertPoint(entry_bb);
 
     // We create a new builder for the prologue to ensure allocas are at the very top
-    llvm::IRBuilder prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
+    llvm::IRBuilder prologue_builder(&function->getEntryBlock(),
+                                     function->getEntryBlock().begin());
 
     auto arg_it = function->arg_begin();
     for (const auto& param : this->get_parameters())
@@ -185,9 +201,10 @@ llvm::Value* IAstCallable::codegen(
             arg_it->setName(param->get_name() + ".arg");
 
             // Create memory slot on the stack for the parameter
-            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
-                arg_it->getType(), nullptr, param->get_name()
-            );
+            llvm::AllocaInst* alloca =
+                prologue_builder.CreateAlloca(arg_it->getType(),
+                                              nullptr,
+                                              param->get_name());
 
             // Store the initial argument value into the alloca
             builder->CreateStore(arg_it, alloca);
@@ -208,7 +225,8 @@ llvm::Value* IAstCallable::codegen(
     if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();
         current_bb && !current_bb->getTerminator())
     {
-        if (llvm::Type* ret_type = function->getReturnType(); ret_type->isVoidTy())
+        if (llvm::Type* ret_type = function->getReturnType(); ret_type->
+            isVoidTy())
         {
             builder->CreateRetVoid();
         }
@@ -229,15 +247,18 @@ llvm::Value* IAstCallable::codegen(
             }
             else
             {
-                throw std::runtime_error("Function " + this->get_name() + " missing return path.");
+                throw std::runtime_error(
+                    "Function " + this->get_name() + " missing return path.");
             }
         }
     }
 
     if (llvm::verifyFunction(*function, &llvm::errs()))
     {
-        function->print(llvm::errs(), nullptr); // Print IR to console to see what's wrong
-        throw std::runtime_error("LLVM Function Verification Failed for: " + this->get_name());
+        function->print(llvm::errs(), nullptr);
+        // Print IR to console to see what's wrong
+        throw std::runtime_error(
+            "LLVM Function Verification Failed for: " + this->get_name());
     }
 
     return function;
@@ -249,8 +270,7 @@ llvm::Value* IAstCallable::codegen(
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    [[maybe_unused]] VisibilityModifier modifier
-)
+    [[maybe_unused]] VisibilityModifier modifier)
 {
     int function_flags = 0;
     if (set.peek_next_eq(TokenType::KEYWORD_EXTERN))
@@ -268,10 +288,13 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     auto reference_token = set.expect(TokenType::KEYWORD_FN);
 
     // Here we expect to receive the function name
-    const auto fn_name_tok = set.expect(TokenType::IDENTIFIER, "Expected function name after 'fn'");
+    const auto fn_name_tok = set.expect(TokenType::IDENTIFIER,
+                                        "Expected function name after 'fn'");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
-    auto function_scope = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
+    auto function_scope = std::make_shared<ParsingContext>(
+        context,
+        ScopeType::FUNCTION);
 
     set.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -286,7 +309,8 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         }
         else
         {
-            parameters.push_back(parse_standalone_fn_param(function_scope, set));
+            parameters.
+                push_back(parse_standalone_fn_param(function_scope, set));
         }
 
         parse_subsequent_fn_params(function_scope, set, parameters);
@@ -301,7 +325,11 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     set.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(context, set, "Expected return type in function header", SRFLAG_NONE);
+    auto return_type =
+        parse_type(context,
+                   set,
+                   "Expected return type in function header",
+                   SRFLAG_NONE);
 
     std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
     parameter_types_cloned.reserve(parameters.size());
@@ -310,7 +338,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     {
         parameter_types_cloned.push_back(param->get_type()->clone());
     }
-    const auto position = reference_token.get_source_position();
+    const auto& position = reference_token.get_source_position();
     auto symbol_name = Symbol(position, context->get_name(), fn_name);
 
     // Prevent tagging extern functions with different internal names.
@@ -324,7 +352,11 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        symbol_name = resolve_internal_function_name(context, position, {fn_name}, parameter_types);
+        symbol_name =
+            resolve_internal_function_name(context,
+                                           position,
+                                           { fn_name },
+                                           parameter_types);
     }
 
     context->define_function(
@@ -333,15 +365,14 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
             symbol_name.symbol_position,
             context,
             std::move(parameter_types_cloned),
-            return_type->clone()
-        )
-    );
+            return_type->clone()));
 
     std::unique_ptr<AstBlock> body = nullptr;
 
     if (function_flags & SRFLAG_FN_DEF_EXTERN)
     {
-        set.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
+        set.expect(TokenType::SEMICOLON,
+                   "Expected ';' after extern function declaration");
     }
     else
     {
@@ -354,11 +385,12 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         std::move(parameters),
         std::move(body),
         std::move(return_type),
-        function_flags
-    );
+        function_flags);
 }
 
-std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(llvm::Module* module) const
+std::optional<std::vector<llvm::Type*>>
+AstFunctionDeclaration::resolve_parameter_types(
+    llvm::Module* module) const
 {
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())
@@ -375,8 +407,7 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
 
 std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+    TokenSet& set)
 {
     const auto reference_token = set.peek_next();
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -386,19 +417,25 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     if (auto header_definition = collect_parenthesized_block(set);
         header_definition.has_value())
     {
-        parameters.push_back(parse_standalone_fn_param(
-            context,
-            header_definition.value()
-        ));
+        parameters.push_back(
+            parse_standalone_fn_param(context, header_definition.value()));
 
         parse_subsequent_fn_params(context, set, parameters);
     }
 
-    set.expect(TokenType::COLON, "Expected ':' after lambda function header definition");
-    auto return_type = parse_type(context, set, "Expected type after anonymous function header definition");
-    const auto lambda_arrow = set.expect(TokenType::DASH_RARROW, "Expected '->' after lambda parameters");
+    set.expect(TokenType::COLON,
+               "Expected ':' after lambda function header definition");
+    auto return_type =
+        parse_type(context,
+                   set,
+                   "Expected type after anonymous function header definition");
+    const auto lambda_arrow =
+        set.expect(TokenType::DASH_RARROW,
+                   "Expected '->' after lambda parameters");
 
-    auto body_context = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
+    auto body_context = std::make_shared<ParsingContext>(
+        context,
+        ScopeType::FUNCTION);
 
     auto lambda_body = parse_block(body_context, set);
 
@@ -408,10 +445,9 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
         SourceLocation(
             set.get_source(),
             reference_token.get_source_position().offset,
-            lambda_arrow.get_source_position().offset - reference_token.get_source_position().offset
-        ),
-        ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++)
-    );
+            lambda_arrow.get_source_position().offset -
+            reference_token.get_source_position().offset),
+        ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++));
 
     std::vector<std::unique_ptr<IAstType>> cloned_params;
     cloned_params.reserve(parameters.size());
@@ -425,9 +461,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
             symbol_name.symbol_position,
             context,
             std::move(cloned_params),
-            return_type->clone()
-        )
-    );
+            return_type->clone()));
 
     return std::make_unique<AstLambdaFunctionExpression>(
         context,
@@ -435,53 +469,60 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
         std::move(parameters),
         std::move(lambda_body),
         std::move(return_type),
-        SRFLAG_FN_DEF_ANONYMOUS
-    );
+        SRFLAG_FN_DEF_ANONYMOUS);
 }
 
 bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
 {
-    return set.peek_eq(TokenType::LPAREN, 0)
-        && set.peek_eq(TokenType::IDENTIFIER, 1)
-        && set.peek_eq(TokenType::COLON, 2);
+    return set.peek_eq(TokenType::LPAREN, 0) && set.peek_eq(
+            TokenType::IDENTIFIER,
+            1) &&
+        set.peek_eq(TokenType::COLON, 2);
 }
 
 void IAstCallable::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+    llvm::IRBuilder<>* builder)
 {
     const auto& fn_name = this->get_internal_name();
 
     // Avoid re-registering if already declared (e.g. called multiple times)
-    if (module->getFunction(fn_name)) return;
+    if (module->getFunction(fn_name))
+        return;
 
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())
     {
-        llvm::Type* llvm_type = internal_type_to_llvm_type(param->get_type(), module);
+        llvm::Type* llvm_type = internal_type_to_llvm_type(
+            param->get_type(),
+            module);
         if (!llvm_type)
         {
-            throw std::runtime_error("Failed to resolve parameter type for lambda: " + fn_name);
+            throw std::runtime_error(
+                "Failed to resolve parameter type for lambda: " + fn_name);
         }
         param_types.push_back(llvm_type);
     }
 
-    llvm::Type* return_type = internal_type_to_llvm_type(this->get_return_type(), module);
+    llvm::Type* return_type = internal_type_to_llvm_type(
+        this->get_return_type(),
+        module);
     if (!return_type)
     {
-        throw std::runtime_error("Failed to resolve return type for lambda: " + fn_name);
+        throw std::runtime_error(
+            "Failed to resolve return type for lambda: " + fn_name);
     }
 
-    llvm::FunctionType* function_type = llvm::FunctionType::get(return_type, param_types, false);
+    llvm::FunctionType* function_type = llvm::FunctionType::get(
+        return_type,
+        param_types,
+        false);
 
-    llvm::Function::Create(
-        function_type,
-        llvm::Function::ExternalLinkage,
-        fn_name,
-        module
-    );
+    llvm::Function::Create(function_type,
+                           llvm::Function::ExternalLinkage,
+                           fn_name,
+                           module);
 }
 
 std::string AstFunctionDeclaration::to_string()
@@ -494,7 +535,9 @@ std::string AstFunctionDeclaration::to_string()
         params += param->to_string();
     }
 
-    const auto body_str = this->get_body() == nullptr ? "<empty>" : this->get_body()->to_string();
+    const auto body_str = this->get_body() == nullptr
+        ? "<empty>"
+        : this->get_body()->to_string();
 
     return std::format(
         "FunctionDeclaration(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
@@ -503,8 +546,7 @@ std::string AstFunctionDeclaration::to_string()
         params,
         body_str,
         this->is_extern() ? " (extern)" : "",
-        this->get_return_type()->to_string()
-    );
+        this->get_return_type()->to_string());
 }
 
 std::string AstLambdaFunctionExpression::to_string()

@@ -1,8 +1,8 @@
+#include "ast/nodes/expression.h"
+
 #include <format>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-
-#include "ast/nodes/expression.h"
 
 using namespace stride::ast;
 
@@ -13,19 +13,24 @@ std::string AstLogicalOp::to_string()
         this->get_left()->to_string(),
         token_type_to_str(
             this->get_op_type() == LogicalOpType::AND
-                ? TokenType::DOUBLE_AMPERSAND
-                : TokenType::DOUBLE_PIPE),
+            ? TokenType::DOUBLE_AMPERSAND
+            : TokenType::DOUBLE_PIPE),
         this->get_right()->to_string()
     );
 }
 
-std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType type)
+std::optional<LogicalOpType> stride::ast::get_logical_op_type(
+    const TokenType type
+)
 {
     switch (type)
     {
-    case TokenType::DOUBLE_AMPERSAND: return LogicalOpType::AND;
-    case TokenType::DOUBLE_PIPE: return LogicalOpType::OR;
-    default: return std::nullopt;
+    case TokenType::DOUBLE_AMPERSAND:
+        return LogicalOpType::AND;
+    case TokenType::DOUBLE_PIPE:
+        return LogicalOpType::OR;
+    default:
+        return std::nullopt;
     }
 }
 
@@ -36,9 +41,14 @@ llvm::Value* AstLogicalOp::codegen(
 )
 {
     // Implementation following short-circuiting logic
-    llvm::Value* lhs_value = this->get_left()->codegen(context, module, ir_builder);
+    llvm::Value* lhs_value = this->get_left()->codegen(
+        context,
+        module,
+        ir_builder
+    );
 
-    if (!lhs_value) return nullptr;
+    if (!lhs_value)
+        return nullptr;
 
     // We need to ensure we are operating on booleans (i1).
     // If language supports truthy values, we should convert here.
@@ -48,21 +58,34 @@ llvm::Value* AstLogicalOp::codegen(
     // Ideally we should check type.
 
     // Helper to convert to bool (i1)
-    auto to_bool = [&](llvm::Value* v) -> llvm::Value*
+    auto to_bool = [&](llvm::Value* val) -> llvm::Value*
     {
-        if (v->getType()->isIntegerTy(1)) return v; // Is already bool
-
-        if (v->getType()->isIntegerTy())
+        if (val->getType()->isIntegerTy(1))
         {
-            return ir_builder->CreateICmpNE(v, llvm::ConstantInt::get(v->getType(), 0), "to_bool");
+            // Is already bool
+            return val;
         }
 
-        if (v->getType()->isFloatingPointTy())
+        if (val->getType()->isIntegerTy())
         {
-            return ir_builder->CreateFCmpUNE(v, llvm::ConstantFP::get(v->getType(), 0.0), "to_bool");
+            return ir_builder->CreateICmpNE(
+                val,
+                llvm::ConstantInt::get(
+                    val->getType(),
+                    0),
+                "to_bool"
+            );
+        }
+
+        if (val->getType()->isFloatingPointTy())
+        {
+            return ir_builder->CreateFCmpUNE(
+                val,
+                llvm::ConstantFP::get(val->getType(), 0.0),
+                "to_bool");
         }
         // Pointers etc can be added if needed
-        return v; // fallback
+        return val; // fallback
     };
 
     lhs_value = to_bool(lhs_value);
@@ -70,8 +93,12 @@ llvm::Value* AstLogicalOp::codegen(
     llvm::Function* function = ir_builder->GetInsertBlock()->getParent();
 
     llvm::BasicBlock* start_bb = ir_builder->GetInsertBlock();
-    llvm::BasicBlock* eval_right_bb = llvm::BasicBlock::Create(module->getContext(), "eval_right", function);
-    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(module->getContext(), "merge");
+    llvm::BasicBlock* eval_right_bb =
+        llvm::BasicBlock::Create(module->getContext(), "eval_right", function);
+    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+        module->getContext(),
+        "merge"
+    );
 
     switch (this->get_op_type())
     {
@@ -89,7 +116,10 @@ llvm::Value* AstLogicalOp::codegen(
     // Emit Right block
     ir_builder->SetInsertPoint(eval_right_bb);
     llvm::Value* r = this->get_right()->codegen(context, module, ir_builder);
-    if (!r) return nullptr;
+    if (!r)
+    {
+        return nullptr;
+    }
 
     r = to_bool(r);
 
@@ -100,7 +130,11 @@ llvm::Value* AstLogicalOp::codegen(
     // Emit Merge block
     function->insert(function->end(), merge_bb);
     ir_builder->SetInsertPoint(merge_bb);
-    llvm::PHINode* phi = ir_builder->CreatePHI(llvm::Type::getInt1Ty(module->getContext()), 2, "logical_result");
+    llvm::PHINode* phi = ir_builder->CreatePHI(
+        llvm::Type::getInt1Ty(module->getContext()),
+        2,
+        "logical_result"
+    );
 
     if (this->get_op_type() == LogicalOpType::AND)
     {

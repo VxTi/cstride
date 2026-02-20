@@ -1,22 +1,23 @@
 #include "ast/nodes/return.h"
-#include <format>
-#include <llvm/IR/IRBuilder.h>
 
 #include "ast/optionals.h"
+
+#include <format>
+#include <llvm/IR/IRBuilder.h>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
 std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+    TokenSet& set)
 {
     // We can just do a quick check here, as we don't know yet whether in what context it's used.
     if (context->get_current_scope_type() == ScopeType::GLOBAL ||
         context->get_current_scope_type() == ScopeType::MODULE)
     {
-        set.throw_error("Return statements are not allowed outside of functions");
+        set.throw_error(
+            "Return statements are not allowed outside of functions");
     }
     const auto reference_token = set.next();
 
@@ -27,15 +28,11 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
         const auto ref_pos = SourceLocation(
             set.get_source(),
             reference_token.get_source_position().offset,
-            reference_token.get_source_position().offset + end.get_source_position().offset - end.get_source_position().
-            length
-        );
+            reference_token.get_source_position().offset + end.
+            get_source_position().offset -
+            end.get_source_position().length);
 
-        return std::make_unique<AstReturn>(
-            ref_pos,
-            context,
-            nullptr
-        );
+        return std::make_unique<AstReturn>(ref_pos, context, nullptr);
     }
 
     auto value = parse_inline_expression(context, set);
@@ -49,10 +46,12 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     const auto expr_pos = value->get_source_position();
 
     return std::make_unique<AstReturn>(
-        SourceLocation(set.get_source(), ref_pos.offset, expr_pos.offset + expr_pos.length - ref_pos.offset),
+        SourceLocation(
+            set.get_source(),
+            ref_pos.offset,
+            expr_pos.offset + expr_pos.length - ref_pos.offset),
         context,
-        std::move(value)
-    );
+        std::move(value));
 }
 
 
@@ -60,7 +59,8 @@ void AstReturn::validate()
 {
     auto context = this->get_context().get();
 
-    while (context->get_current_scope_type() != ScopeType::FUNCTION && context->get_parent_registry() != nullptr)
+    while (context->get_current_scope_type() != ScopeType::FUNCTION &&
+        context->get_parent_registry() != nullptr)
     {
         context = context->get_parent_registry();
     }
@@ -69,35 +69,36 @@ void AstReturn::validate()
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             "Return statement cannot appear outside of functions",
-            this->get_source_position()
-        );
+            this->get_source_position());
     }
 
-    if (this->get_return_expr()) this->get_return_expr()->validate();
+    if (this->get_return_expr())
+        this->get_return_expr()->validate();
 }
 
 std::string AstReturn::to_string()
 {
-    return std::format(
-        "Return(value: {})",
-        _value ? _value->to_string() : "nullptr"
-    );
+    return std::format("Return(value: {})",
+                       _value ? _value->to_string() : "nullptr");
 }
 
 llvm::Value* AstReturn::codegen(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+    llvm::IRBuilder<>* builder)
 {
     if (!this->get_return_expr())
     {
         return builder->CreateRetVoid();
     }
 
-    llvm::Value* expr_return_val = this->get_return_expr()->codegen(context, module, builder);
+    llvm::Value* expr_return_val = this->get_return_expr()->codegen(
+        context,
+        module,
+        builder);
 
-    if (!expr_return_val) return nullptr;
+    if (!expr_return_val)
+        return nullptr;
 
     llvm::BasicBlock* cur_bb = builder->GetInsertBlock();
 
@@ -106,8 +107,7 @@ llvm::Value* AstReturn::codegen(
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
             "Cannot return from a function that has no basic block",
-            this->get_source_position()
-        );
+            this->get_source_position());
     }
 
     // Implicitly unwrap optional if the return type is not optional
@@ -119,18 +119,25 @@ llvm::Value* AstReturn::codegen(
         if (llvm::Type* expected_return_ty = cur_func->getReturnType();
             expr_return_val->getType() != expected_return_ty)
         {
-            const auto is_expr_optional = is_optional_wrapped_type(expr_return_val->getType());
+            const auto is_expr_optional = is_optional_wrapped_type(
+                expr_return_val->getType());
 
             // Function returns non-optional, but we have an optional -> Unwrap
-            if (const auto is_fn_return_optional = is_optional_wrapped_type(expected_return_ty);
+            if (const auto is_fn_return_optional = is_optional_wrapped_type(
+                    expected_return_ty);
                 is_expr_optional && !is_fn_return_optional)
             {
-                expr_return_val = unwrap_optional_value(expr_return_val, builder);
+                expr_return_val = unwrap_optional_value(
+                    expr_return_val,
+                    builder);
             }
             // Function returns optional, but we have a non-optional (or nil) -> Wrap
             else if (!is_expr_optional && is_fn_return_optional)
             {
-                expr_return_val = wrap_optional_value(expr_return_val, expected_return_ty, builder);
+                expr_return_val = wrap_optional_value(
+                    expr_return_val,
+                    expected_return_ty,
+                    builder);
             }
         }
     }

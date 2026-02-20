@@ -1,8 +1,9 @@
-#include <sstream>
-
 #include "ast/nodes/import.h"
+
 #include "errors.h"
 #include "formatting.h"
+
+#include <sstream>
 
 using namespace stride::ast;
 
@@ -17,26 +18,29 @@ using namespace stride::ast;
  */
 Symbol consume_import_module_base(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& tokens
-)
+    TokenSet& tokens)
 {
     const auto base = tokens.expect(
         TokenType::IDENTIFIER,
-        "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'"
-    );
-    std::vector parts = {base.get_lexeme()};
+        "Expected package name after 'use' keyword, e.g., 'use <package>::{ ... }'");
+    std::vector parts = { base.get_lexeme() };
 
     while (tokens.peek(0) == TokenType::DOUBLE_COLON)
     {
         tokens.next();
-        const auto part = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import statement");
+        const auto part =
+            tokens.expect(TokenType::IDENTIFIER,
+                          "Expected module name in import statement");
 
         parts.push_back(part.get_lexeme());
     }
 
-    // TODO: Fix source position. This is currently only the base, which means the rest of the statement
+    // TODO: Fix source position. This is currently only the base, which means the rest of the
+    // statement
     //  won't be used in error message logging.
-    return resolve_internal_name(context->get_name(), base.get_source_position(), parts);
+    return resolve_internal_name(context->get_name(),
+                                 base.get_source_position(),
+                                 parts);
 }
 
 /**
@@ -47,27 +51,37 @@ Symbol consume_import_module_base(
  */
 std::vector<Symbol> consume_import_submodules(TokenSet& tokens)
 {
-    tokens.expect(TokenType::DOUBLE_COLON, "Expected a '::' before import submodule list");
-    tokens.expect(TokenType::LBRACE, "Expected opening brace with modules after '::', e.g., {module1, module2, ...}");
-    const auto first = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
+    tokens.expect(TokenType::DOUBLE_COLON,
+                  "Expected a '::' before import submodule list");
+    tokens.expect(
+        TokenType::LBRACE,
+        "Expected opening brace with modules after '::', e.g., {module1, module2, ...}");
+    const auto first = tokens.expect(TokenType::IDENTIFIER,
+                                     "Expected module name in import list");
 
-    std::vector<Symbol> submodules = {Symbol(first.get_source_position(), first.get_lexeme())};
+    std::vector<Symbol> submodules = {
+        Symbol(first.get_source_position(), first.get_lexeme()) };
 
-    while (tokens.peek(0) == TokenType::COMMA && tokens.peek(1) == TokenType::IDENTIFIER)
+    while (tokens.peek(0) == TokenType::COMMA && tokens.peek(1) ==
+        TokenType::IDENTIFIER)
     {
-        tokens.expect(TokenType::COMMA, "Expected comma between module names in import list");
-        const auto submodule_iden = tokens.expect(TokenType::IDENTIFIER, "Expected module name in import list");
+        tokens.expect(TokenType::COMMA,
+                      "Expected comma between module names in import list");
+        const auto submodule_iden =
+            tokens.expect(TokenType::IDENTIFIER,
+                          "Expected module name in import list");
 
-        submodules.emplace_back(submodule_iden.get_source_position(), submodule_iden.get_lexeme());
+        submodules.emplace_back(submodule_iden.get_source_position(),
+                                submodule_iden.get_lexeme());
     }
 
-    tokens.expect(TokenType::RBRACE, "Expected closing brace after import list");
+    tokens.expect(TokenType::RBRACE,
+                  "Expected closing brace after import list");
 
     if (submodules.empty())
     {
         tokens.throw_error(
-            "Expected at least one symbol in import submodule list"
-        );
+            "Expected at least one symbol in import submodule list");
     }
 
     return submodules;
@@ -78,17 +92,14 @@ std::vector<Symbol> consume_import_submodules(TokenSet& tokens)
  */
 std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+    TokenSet& set)
 {
     if (context->get_current_scope_type() != definition::ScopeType::GLOBAL)
     {
         set.throw_error(
             std::format(
                 "Import statements are only allowed in global scope, but was found in {} scope",
-                scope_type_to_str(context->get_current_scope_type())
-            )
-        );
+                scope_type_to_str(context->get_current_scope_type())));
     }
     const auto reference_token = set.expect(TokenType::KEYWORD_IMPORT);
     // With the guard clause, this will always be the case.
@@ -96,17 +107,13 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     const auto import_module = consume_import_module_base(context, set);
     const auto import_list = consume_import_submodules(set);
 
-    const Dependency dependency = {
-        .module_base = import_module,
-        .submodules  = import_list
-    };
+    const Dependency dependency = { .module_base = import_module,
+                                    .submodules  = import_list };
 
 
-    return std::make_unique<AstImport>(
-        reference_token.get_source_position(),
-        context,
-        dependency
-    );
+    return std::make_unique<AstImport>(reference_token.get_source_position(),
+                                       context,
+                                       dependency);
 }
 
 std::string AstImport::to_string()
@@ -118,5 +125,7 @@ std::string AstImport::to_string()
     {
         modules.push_back(module.name);
     }
-    return std::format("Import [{}] {{ {} }}", this->get_module().name, join(modules, ", "));
+    return std::format("Import [{}] {{ {} }}",
+                       this->get_module().name,
+                       join(modules, ", "));
 };

@@ -9,31 +9,31 @@ Many standard library functions are currently available through the C runtime. Y
 ### Input / Output (`stdio`)
 
 ```stride
-extern fn printf(format: string, ...): i32;
-extern fn scanf(format: string, ...): i32;
+extern fn printf(format: string, ...): int32;
+extern fn scanf(format: string, ...): int32;
 ```
 
 ### Math (`math.h`)
 
 ```stride
-extern fn powl(x: f64, y: f64): f64;
-extern fn sqrt(x: f64): f64;
-extern fn floor(x: f64): f64;
-extern fn ceil(x: f64): f64;
+extern fn powl(x: float64, y: float64): float64;
+extern fn sqrt(x: float64): float64;
+extern fn floor(x: float64): float64;
+extern fn ceil(x: float64): float64;
 ```
 
 ### String Utilities (`string.h`)
 
 ```stride
-extern fn strlen(s: string): i32;
-extern fn strcmp(s1: string, s2: string): i32;
+extern fn strlen(s: string): int32;
+extern fn strcmp(s1: string, s2: string): int32;
 ```
 
 ### System Operations
 
 ```stride
 extern fn system_time_ns(): u64;
-extern fn exit(code: i32): void;
+extern fn exit(code: int32): void;
 ```
 
 ## Planned Module System

@@ -1,7 +1,8 @@
-#include <sstream>
-
 #include "files.h"
+
 #include "errors.h"
+
+#include <sstream>
 
 using namespace stride;
 
@@ -19,8 +20,5 @@ std::shared_ptr<SourceFile> stride::read_file(const std::string& path)
 
     auto content = buffer.str();
 
-    return std::make_shared<SourceFile>(
-        path,
-        std::move(content)
-    );
+    return std::make_shared<SourceFile>(path, std::move(content));
 }

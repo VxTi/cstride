@@ -31,10 +31,10 @@ features:
 
 ```stride
 fn main(): void {
-    let limit: i32 = 10
+    let limit: int32 = 10
     printf("Counting to %d:\n", limit)
     
-    for (let i: i32 = 1; i <= limit; i++) {
+    for (let i: int32 = 1; i <= limit; i++) {
         if (i % 2 == 0) {
             printf("%d is even\n", i)
         } else {
