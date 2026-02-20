@@ -25,7 +25,6 @@ void AstVariableReassignment::validate()
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Unable to reassign variable, variable '{}' not found", this->get_variable_name()),
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -37,7 +36,6 @@ void AstVariableReassignment::validate()
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Variable '{}' is immutable and cannot be reassigned", this->get_variable_name()),
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -70,7 +68,6 @@ IAstNode* AstVariableReassignment::reduce()
         if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced); reduced_expr != nullptr)
         {
             return std::make_unique<AstVariableReassignment>(
-                this->get_source(),
                 this->get_source_position(),
                 this->get_context(),
                 this->get_variable_name(),
@@ -316,7 +313,6 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Unable to reassign variable '{}', variable not found", reassignment_iden_name),
-            *set.get_source(),
             reference_token.get_source_position()
         );
     }
@@ -327,7 +323,6 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     auto expression = parse_inline_expression(context, set);
 
     return std::make_unique<AstVariableReassignment>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         reassignment_iden_name,

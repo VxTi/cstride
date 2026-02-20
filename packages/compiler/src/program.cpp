@@ -90,7 +90,6 @@ void Program::optimize_ast_nodes()
     }
 
     this->_root_node = std::make_unique<ast::AstBlock>(
-        this->_root_node->get_source(),
         this->_root_node->get_source_position(),
         this->get_global_scope(),
         std::move(new_children)

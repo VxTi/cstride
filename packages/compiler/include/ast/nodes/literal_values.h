@@ -39,13 +39,12 @@ namespace stride::ast
 
     public:
         AstLiteral(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
             const short bit_count
         )
-            : AstExpression(source, source_position, context),
+            : AstExpression(source, context),
               _bit_count(bit_count),
               _type(type) {}
 
@@ -67,14 +66,13 @@ namespace stride::ast
 
     public:
         explicit AbstractAstLiteralBase(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
             T value,
             const short bit_count
         ) :
-            AstLiteral(source, source_position, context, type, bit_count),
+            AstLiteral(source, context, type, bit_count),
             _value(std::move(value)) {}
 
         [[nodiscard]]
@@ -85,8 +83,7 @@ namespace stride::ast
     {
     public:
         explicit AstStringLiteral(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string val
         ) :
@@ -94,7 +91,6 @@ namespace stride::ast
             // as they're pointing to a memory location
             AbstractAstLiteralBase(
                 source,
-                source_position,
                 context,
                 LiteralType::STRING,
                 std::move(val),
@@ -118,8 +114,7 @@ namespace stride::ast
 
     public:
         explicit AstIntLiteral(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const int64_t value,
             const short bit_count,
@@ -127,7 +122,6 @@ namespace stride::ast
         ) :
             AbstractAstLiteralBase(
                 source,
-                source_position,
                 context,
                 LiteralType::INTEGER,
                 value,
@@ -154,15 +148,13 @@ namespace stride::ast
     {
     public :
         explicit AstFpLiteral(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const long double value,
             const short bit_count
         ) :
             AbstractAstLiteralBase(
                 source,
-                source_position,
                 context,
                 LiteralType::FLOAT,
                 value,
@@ -182,14 +174,12 @@ namespace stride::ast
     {
     public:
         explicit AstBooleanLiteral(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const bool value
         ) :
             AbstractAstLiteralBase(
                 source,
-                source_position,
                 context,
                 LiteralType::BOOLEAN,
                 value,
@@ -206,14 +196,12 @@ namespace stride::ast
     {
     public:
         explicit AstCharLiteral(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const char value
         ) :
             AbstractAstLiteralBase(
                 source,
-                source_position,
                 context,
                 LiteralType::CHAR,
                 value,
@@ -234,13 +222,11 @@ namespace stride::ast
     {
     public:
         AstNilLiteral(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context
         ) :
             AstLiteral(
                 source,
-                source_position,
                 context,
                 LiteralType::NIL,
                 8

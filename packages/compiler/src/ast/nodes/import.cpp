@@ -103,7 +103,6 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
 
 
     return std::make_unique<AstImport>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         dependency

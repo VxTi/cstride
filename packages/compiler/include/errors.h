@@ -1,6 +1,7 @@
 #pragma once
 #include <format>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "files.h"
@@ -18,14 +19,14 @@ namespace stride
     struct ErrorSourceReference
     {
         const SourceFile& source;
-        const SourcePosition source_position;
+        const SourceLocation source_position;
         std::string message;
 
         ErrorSourceReference(
             std::string message,
             const SourceFile& source,
-            const SourcePosition source_position
-        ) : source(source), source_position(source_position), message(std::move(message)) {}
+            SourceLocation  source_position
+        ) : source(source), source_position(std::move(source_position)), message(std::move(message)) {}
     };
 
     std::string error_type_to_string(ErrorType error_type);
@@ -37,8 +38,7 @@ namespace stride
     std::string make_source_error(
         ErrorType error_type,
         const std::string& error,
-        const SourceFile& source_file,
-        SourcePosition source_position,
+        const SourceLocation& source_position,
         const std::string& suggestion = ""
     );
 
@@ -66,10 +66,9 @@ namespace stride
         explicit parsing_error(
             const ErrorType error_type,
             const std::string& error,
-            const SourceFile& source_file,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::string& suggestion = ""
-        ) : parsing_error(make_source_error(error_type, error, source_file, source_position, suggestion)) {}
+        ) : parsing_error(make_source_error(error_type, error, source, suggestion)) {}
 
         explicit parsing_error(
             const ErrorType error_type,

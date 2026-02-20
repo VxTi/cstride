@@ -22,14 +22,17 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
 
     if (set.peek_next_eq(TokenType::SEMICOLON))
     {
-        set.next();
+        const auto end = set.next();
 
-        const auto ref_pos = reference_token.get_source_position();
-        const auto expr_pos = SourcePosition(ref_pos.offset, ref_pos.length);
+        const auto ref_pos = SourceLocation(
+            set.get_source(),
+            reference_token.get_source_position().offset,
+            reference_token.get_source_position().offset + end.get_source_position().offset - end.get_source_position().
+            length
+        );
 
         return std::make_unique<AstReturn>(
-            set.get_source(),
-            SourcePosition(ref_pos.offset, expr_pos.offset + expr_pos.length - ref_pos.offset),
+            ref_pos,
             context,
             nullptr
         );
@@ -46,8 +49,7 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     const auto expr_pos = value->get_source_position();
 
     return std::make_unique<AstReturn>(
-        set.get_source(),
-        SourcePosition(ref_pos.offset, expr_pos.offset + expr_pos.length - ref_pos.offset),
+        SourceLocation(set.get_source(), ref_pos.offset, expr_pos.offset + expr_pos.length - ref_pos.offset),
         context,
         std::move(value)
     );
@@ -67,7 +69,6 @@ void AstReturn::validate()
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             "Return statement cannot appear outside of functions",
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -105,7 +106,6 @@ llvm::Value* AstReturn::codegen(
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
             "Cannot return from a function that has no basic block",
-            *this->get_source(),
             this->get_source_position()
         );
     }

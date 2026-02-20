@@ -33,7 +33,6 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
     set.expect(TokenType::SEMICOLON, "Expected semicolon after package declaration");
 
     return std::make_unique<AstPackage>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         package_name

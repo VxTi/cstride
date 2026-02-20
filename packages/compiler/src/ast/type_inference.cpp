@@ -17,7 +17,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* str = cast_expr<AstStringLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
-            str->get_source(),
             str->get_source_position(),
             context,
             PrimitiveType::STRING,
@@ -29,7 +28,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     {
         auto type = fp_lit->bit_count() > 32 ? PrimitiveType::FLOAT64 : PrimitiveType::FLOAT32;
         return std::make_unique<AstPrimitiveType>(
-            fp_lit->get_source(),
             fp_lit->get_source_position(),
             context,
             type,
@@ -44,7 +42,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
                         : (int_lit->bit_count() > 32 ? PrimitiveType::UINT64 : PrimitiveType::UINT32);
 
         return std::make_unique<AstPrimitiveType>(
-            int_lit->get_source(),
+
             int_lit->get_source_position(),
             context,
             type,
@@ -56,7 +54,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* char_lit = cast_expr<AstCharLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
-            char_lit->get_source(),
+
             char_lit->get_source_position(),
             context,
             PrimitiveType::CHAR,
@@ -67,7 +65,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* bool_lit = cast_expr<AstBooleanLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
-            bool_lit->get_source(),
+
             bool_lit->get_source_position(),
             context,
             PrimitiveType::BOOL,
@@ -78,7 +76,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     if (const auto* nil_lit = cast_expr<AstNilLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
-            nil_lit->get_source(),
+
             nil_lit->get_source_position(),
             context,
             PrimitiveType::NIL,
@@ -89,7 +87,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
     throw parsing_error(
         ErrorType::TYPE_ERROR,
         "Unable to resolve expression literal type",
-        *literal->get_source(),
         literal->get_source_position()
     );
 }
@@ -131,7 +128,6 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
             "Unable to resolve return type for function '{}'",
             fn_call->get_function_name()
         ),
-        *fn_call->get_source(),
         fn_call->get_source_position()
     );
 }
@@ -175,7 +171,6 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
         if (const auto* prim = cast_type<AstPrimitiveType*>(type.get()))
         {
             return std::make_unique<AstPrimitiveType>(
-                prim->get_source(),
                 prim->get_source_position(),
                 context,
                 prim->get_type(),
@@ -186,7 +181,6 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
         if (const auto* named = cast_type<AstNamedType*>(type.get()))
         {
             return std::make_unique<AstNamedType>(
-                named->get_source(),
                 named->get_source_position(),
                 context,
                 named->name(),
@@ -201,7 +195,6 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 "Cannot dereference non-pointer type",
-                *operation->get_source(),
                 operation->get_source_position()
             );
         }
@@ -211,7 +204,6 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
         if (const auto* prim = cast_type<AstPrimitiveType*>(type.get()))
         {
             return std::make_unique<AstPrimitiveType>(
-                prim->get_source(),
                 prim->get_source_position(),
                 context,
                 prim->get_type(),
@@ -222,7 +214,6 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
         if (const auto* named = cast_type<AstNamedType*>(type.get()))
         {
             return std::make_unique<AstNamedType>(
-                named->get_source(),
                 named->get_source_position(),
                 context,
                 named->name(),
@@ -233,7 +224,6 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
     else if (op_type == UnaryOpType::LOGICAL_NOT)
     {
         return std::make_unique<AstPrimitiveType>(
-            operation->get_source(),
             operation->get_source_position(),
             context,
             PrimitiveType::BOOL,
@@ -254,7 +244,6 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(
         // This is one of those cases where it's impossible to deduce the type
         // Therefore, we have an UNKNOWN type.
         return std::make_unique<AstPrimitiveType>(
-            array->get_source(),
             array->get_source_position(),
             context,
             PrimitiveType::UNKNOWN,
@@ -278,7 +267,6 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Member access base must be an identifier",
-            *expr->get_source(),
             expr->get_source_position()
         );
     }
@@ -292,7 +280,6 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             std::format(
                 "Variable '{}' not found in current scope", base_iden->get_name()
             ),
-            *expr->get_source(),
             expr->get_source_position()
         );
     }
@@ -314,7 +301,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
                     "Cannot access member of non-struct type '{}'",
                     current_type->get_internal_name()
                 ),
-                *expr->get_source(), expr->get_source_position()
+                expr->get_source_position()
             );
         }
 
@@ -327,7 +314,6 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format("Undefined struct '{}'", struct_type->name()),
-                *expr->get_source(),
                 expr->get_source_position()
             );
         }
@@ -339,7 +325,6 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 "Member accessor must be an identifier",
-                *expr->get_source(),
                 expr->get_source_position()
             );
         }
@@ -359,7 +344,6 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
                     struct_def.value()->get_internal_symbol_name(),
                     segment_iden->get_name()
                 ),
-                *expr->get_source(),
                 expr->get_source_position()
             );
         }
@@ -378,7 +362,7 @@ std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
 )
 {
     return std::make_unique<AstNamedType>(
-        initializer->get_source(),
+
         initializer->get_source_position(),
         context,
         initializer->get_struct_name()
@@ -407,7 +391,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
                 ErrorType::SEMANTIC_ERROR,
                 std::format("Unable to infer expression type for '{}': variable or function not found",
                             identifier->get_name()),
-                *identifier->get_source(),
                 identifier->get_source_position()
             );
         }
@@ -421,7 +404,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
             }
 
             return std::make_unique<AstFunctionType>(
-                identifier->get_source(),
+
                 identifier->get_source_position(),
                 context,
                 std::move(param_types),
@@ -438,7 +421,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
             ErrorType::SEMANTIC_ERROR,
             std::format("Unable to infer expression type for variable '{}': variable is not a field or function",
                         identifier->get_name()),
-            *identifier->get_source(),
             identifier->get_source_position()
         );
     }
@@ -457,7 +439,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     {
         // TODO: Do some validation on lhs and rhs; cannot compare strings with one another (yet)
         return std::make_unique<AstPrimitiveType>(
-            expr->get_source(),
+
             expr->get_source_position(),
             context,
             PrimitiveType::BOOL,
@@ -496,7 +478,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         auto member_type = infer_array_member_type(context, array_expr);
 
         return std::make_unique<AstArrayType>(
-            array_expr->get_source(),
             array_expr->get_source_position(),
             context,
             std::move(member_type),
@@ -534,7 +515,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         }
 
         return std::make_unique<AstFunctionType>(
-            static_cast<const AstExpression*>(function_definition)->get_source(),
             static_cast<const AstExpression*>(function_definition)->get_source_position(),
             context,
             std::move(param_types),
@@ -545,7 +525,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
         "Unable to resolve expression type",
-        *expr->get_source(),
         expr->get_source_position()
     );
 }

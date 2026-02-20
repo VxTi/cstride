@@ -15,14 +15,28 @@ namespace stride
               source(std::move(source)) {}
     };
 
-    struct SourcePosition
+    struct SourceLocation
     {
         size_t offset;
         size_t length;
 
-        SourcePosition(const size_t offset, const size_t length)
-            : offset(offset),
-              length(length) {}
+        const std::shared_ptr<SourceFile> source;
+
+        SourceLocation(
+            const std::shared_ptr<SourceFile>& source,
+            const size_t offset,
+            const size_t length
+        ) : offset(offset),
+            length(length),
+            source(source) {}
+
+        SourceLocation operator=(const SourceLocation& other) {
+            if (this != &other) {
+                offset = other.offset;
+                length = other.length;
+            }
+            return *this;
+        }
     };
 
     std::shared_ptr<SourceFile> read_file(const std::string& path);

@@ -31,7 +31,6 @@ std::unique_ptr<AstBlock> parse_else_optional(const std::shared_ptr<ParsingConte
 
     // Otherwise, we can just parse_file it as a next statement.
     return std::make_unique<AstBlock>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         std::move(nodes)
@@ -64,7 +63,6 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
             throw parsing_error(
                 ErrorType::SYNTAX_ERROR,
                 "Expected condition after 'if' keyword",
-                *set.get_source(),
                 reference_token.get_source_position()
             );
         }
@@ -73,7 +71,6 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
         nodes.push_back(std::move(if_body_expr));
 
         auto if_body = std::make_unique<AstBlock>(
-            set.get_source(),
             reference_token.get_source_position(),
             if_header_scope,
             std::move(nodes)
@@ -88,7 +85,6 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
         auto else_statement = parse_else_optional(if_header_scope, set);
 
         return std::make_unique<AstIfStatement>(
-            set.get_source(),
             reference_token.get_source_position(),
             context,
             std::move(condition),
@@ -103,7 +99,6 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(const std::share
     auto else_statement = parse_else_optional(context, set);
 
     return std::make_unique<AstIfStatement>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         std::move(condition),
@@ -133,7 +128,6 @@ llvm::Value* AstIfStatement::codegen(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "If statement condition is empty",
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -143,7 +137,6 @@ llvm::Value* AstIfStatement::codegen(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "If statement body is empty",
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -156,7 +149,6 @@ llvm::Value* AstIfStatement::codegen(
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
             "Unable to generate condition value",
-            *this->get_source(),
             this->get_source_position()
         );
     }

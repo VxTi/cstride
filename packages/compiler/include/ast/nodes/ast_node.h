@@ -3,11 +3,12 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
 
+#include <utility>
+
 #include "files.h"
 
 namespace stride::ast
 {
-
 #define MAX_RECURSION_DEPTH 100
 
     class AstBlock;
@@ -34,18 +35,15 @@ namespace stride::ast
 
     class IAstNode
     {
-        const std::shared_ptr<SourceFile> _source;
-        const SourcePosition _source_position;
+        const SourceLocation _source_position;
         const std::shared_ptr<ParsingContext> _scope;
 
     public:
         explicit IAstNode(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            SourceLocation source,
             const std::shared_ptr<ParsingContext>& context
         )
-            : _source(source),
-              _source_position(source_position),
+            : _source_position(std::move(source)),
               _scope(context) {}
 
         virtual ~IAstNode() = default;
@@ -55,13 +53,13 @@ namespace stride::ast
         virtual void validate() {}
 
         [[nodiscard]]
-        std::shared_ptr<SourceFile> get_source() const { return this->_source; }
+        std::shared_ptr<SourceFile> get_source() const { return this->_source_position.source; }
 
         [[nodiscard]]
         std::shared_ptr<ParsingContext> get_context() const { return this->_scope; }
 
         [[nodiscard]]
-        SourcePosition get_source_position() const { return this->_source_position; }
+        SourceLocation get_source_position() const { return this->_source_position; }
     };
 
     class IReducible

@@ -90,8 +90,7 @@ Token TokenSet::expect(const TokenType type)
                 "Expected '{}', but reached end of block",
                 token_type_to_str(type)
             ),
-            *this->get_source(),
-            SourcePosition(last_token_pos.offset + last_token_pos.length - 1, 1)
+            SourceLocation(this->get_source(), last_token_pos.offset + last_token_pos.length - 1, 1)
         );
     }
 
@@ -119,8 +118,7 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             message,
-            *this->get_source(),
-            SourcePosition(last_token_pos.offset + last_token_pos.length - 1, 1)
+            SourceLocation(this->get_source(), last_token_pos.offset + last_token_pos.length - 1, 1)
         );
     }
 
@@ -176,7 +174,6 @@ std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
     throw parsing_error(
         error_type,
         message,
-        *this->get_source(),
         token.get_source_position()
     );
 }

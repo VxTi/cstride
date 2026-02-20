@@ -19,13 +19,12 @@ namespace stride::ast
         std::string to_string() override;
 
         explicit AstModule(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::unique_ptr<AstBlock> body
         )
-            : IAstNode(source, source_position, context),
+            : IAstNode(source, context),
               _name(std::move(name)),
               _body(std::move(body)) {}
 

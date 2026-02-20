@@ -39,7 +39,6 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
     auto module_body = parse_block(module_scope, set);
 
     return std::make_unique<AstModule>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         module_name,

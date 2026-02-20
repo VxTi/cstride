@@ -324,14 +324,14 @@ namespace stride::ast
 
     class Token
     {
-        SourcePosition _position;
+        SourceLocation _position;
         std::string _lexeme{};
         TokenType _type;
 
     public:
         explicit Token(
             const TokenType type,
-            SourcePosition position,
+            SourceLocation position,
             std::string lexeme
         ) : _position(std::move(position)),
             _lexeme(std::move(lexeme)),
@@ -346,7 +346,7 @@ namespace stride::ast
         const std::string& get_lexeme() const { return _lexeme; }
 
         [[nodiscard]]
-        const SourcePosition& get_source_position() const { return _position; }
+        const SourceLocation& get_source_position() const { return _position; }
 
         bool operator ==(const TokenType& other) const
         {
@@ -356,5 +356,5 @@ namespace stride::ast
 
     extern std::vector<TokenDefinition> tokenTypes;
 
-    static auto END_OF_FILE = Token(TokenType::END_OF_FILE, {static_cast<size_t>(-1), 0}, "\0");
+    static auto END_OF_FILE = Token(TokenType::END_OF_FILE, {nullptr, static_cast<size_t>(-1), 0}, "\0");
 }

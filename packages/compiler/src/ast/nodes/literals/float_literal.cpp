@@ -15,7 +15,6 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
         // Remove the trailing D
 
         return std::make_unique<AstFpLiteral>(
-            set.get_source(),
             reference_token.get_source_position(),
             context,
             std::stod(numeric),
@@ -26,7 +25,6 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
     {
         const auto next = set.next();
         return std::make_unique<AstFpLiteral>(
-            set.get_source(),
             reference_token.get_source_position(),
             context,
             std::stof(next.get_lexeme()),

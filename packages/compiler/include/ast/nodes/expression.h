@@ -72,10 +72,9 @@ namespace stride::ast
     {
     public:
         explicit AstExpression(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source_position,
             const std::shared_ptr<ParsingContext>& context
-        ) : IAstNode(source, source_position, context) {}
+        ) : IAstNode(source_position, context) {}
 
         ~AstExpression() override = default;
 
@@ -99,11 +98,10 @@ namespace stride::ast
 
     public:
         explicit AstArray(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<AstExpression>> elements
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, context),
             _elements(std::move(elements)) {}
 
         [[nodiscard]]
@@ -127,10 +125,9 @@ namespace stride::ast
 
     public:
         explicit AstIdentifier(
-            const std::shared_ptr<SourceFile>& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol
-        ) : AstExpression(source, symbol.symbol_position, context),
+        ) : AstExpression(symbol.symbol_position, context),
             _symbol(std::move(symbol)) {}
 
         [[nodiscard]]
@@ -162,12 +159,11 @@ namespace stride::ast
 
     public:
         explicit AstArrayMemberAccessor(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> array_identifier,
             std::unique_ptr<AstExpression> index_expr
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, context),
             _array_identifier(std::move(array_identifier)),
             _index_accessor_expr(std::move(index_expr)) {}
 
@@ -202,12 +198,11 @@ namespace stride::ast
 
     public:
         explicit AstMemberAccessor(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> base,
             std::vector<std::unique_ptr<AstIdentifier>> members
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, context),
             _base(std::move(base)),
             _members(std::move(members)) {}
 
@@ -254,18 +249,16 @@ namespace stride::ast
 
     public:
         explicit AstFunctionCall(
-            const std::shared_ptr<SourceFile>& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym
-        ) : AstExpression(source, function_call_sym.symbol_position, context),
+        ) : AstExpression(function_call_sym.symbol_position, context),
             _symbol(std::move(function_call_sym)) {}
 
         explicit AstFunctionCall(
-            const std::shared_ptr<SourceFile>& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym,
             std::vector<std::unique_ptr<AstExpression>> arguments
-        ) : AstExpression(source, function_call_sym.symbol_position, context),
+        ) : AstExpression(function_call_sym.symbol_position, context),
             _arguments(std::move(arguments)),
             _symbol(std::move(function_call_sym)) {}
 
@@ -308,13 +301,12 @@ namespace stride::ast
 
     public:
         explicit AstVariableDeclaration(
-            const std::shared_ptr<SourceFile>& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::unique_ptr<IAstType> variable_type,
             std::unique_ptr<AstExpression> initial_value,
             VisibilityModifier visibility
-        ) : AstExpression(source, symbol.symbol_position, context),
+        ) : AstExpression(symbol.symbol_position, context),
             _variable_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)),
             _visibility(visibility),
@@ -390,12 +382,11 @@ namespace stride::ast
 
     public:
         explicit AbstractBinaryOp(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> lsh,
             std::unique_ptr<AstExpression> rsh
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, context),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
 
@@ -413,13 +404,12 @@ namespace stride::ast
 
     public:
         explicit AstBinaryArithmeticOp(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_position, context, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -445,13 +435,12 @@ namespace stride::ast
 
     public:
         explicit AstLogicalOp(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_position, context, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -473,13 +462,12 @@ namespace stride::ast
 
     public:
         explicit AstComparisonOp(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
-        ) : AbstractBinaryOp(source, source_position, context, std::move(left), std::move(right)),
+        ) : AbstractBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -505,13 +493,12 @@ namespace stride::ast
 
     public:
         explicit AstUnaryOp(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
             const bool is_lsh = false
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, context),
             _op_type(op),
             _operand(std::move(operand)),
             _is_lsh(is_lsh) {}
@@ -550,14 +537,13 @@ namespace stride::ast
 
     public:
         explicit AstVariableReassignment(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
             std::unique_ptr<AstExpression> value
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, context),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
             _value(std::move(value)),
@@ -598,13 +584,12 @@ namespace stride::ast
 
     public:
         explicit AstStructInitializer(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::string struct_name,
             std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>> initializers
         ) :
-            AstExpression(source, source_position, context),
+            AstExpression(source, context),
             _struct_name(std::move(struct_name)),
             _initializers(std::move(initializers)) {}
 

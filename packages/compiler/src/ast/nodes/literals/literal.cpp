@@ -51,11 +51,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
     if (tokens.peek_next_eq(TokenType::KEYWORD_NIL))
     {
         const auto reference_token = tokens.next();
-        return std::make_unique<AstNilLiteral>(
-            tokens.get_source(),
-            reference_token.get_source_position(),
-            context
-        );
+        return std::make_unique<AstNilLiteral>(reference_token.get_source_position(), context);
     }
 
     return std::nullopt;

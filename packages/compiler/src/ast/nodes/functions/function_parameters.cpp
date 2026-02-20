@@ -15,7 +15,6 @@ void stride::ast::parse_variadic_fn_param(
 
     // Create a new parameter with the variadic flag
     parameters.push_back(std::make_unique<AstFunctionParameter>(
-        param->get_source(),
         param->get_source_position(),
         param->get_context(),
         param->get_name(),
@@ -40,7 +39,6 @@ void stride::ast::parse_subsequent_fn_params(
             throw parsing_error(
                 ErrorType::SYNTAX_ERROR,
                 "Function cannot have more than " + std::to_string(MAX_FUNCTION_PARAMETERS) + " parameters",
-                *set.get_source(),
                 next.get_source_position()
             );
         }
@@ -121,7 +119,6 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     context->define_variable(fn_param_symbol, fn_param_type->clone());
 
     return std::make_unique<AstFunctionParameter>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         reference_token.get_lexeme(),

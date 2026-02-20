@@ -121,7 +121,6 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
             }
 
             lhs = std::make_unique<AstBinaryArithmeticOp>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 std::move(lhs),

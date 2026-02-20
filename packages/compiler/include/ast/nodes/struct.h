@@ -15,12 +15,11 @@ namespace stride::ast
 
     public:
         AstStructMember(
-            const std::shared_ptr<SourceFile>& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol struct_member_symbol,
             std::unique_ptr<IAstType> type
         ) :
-            IAstNode(source, struct_member_symbol.symbol_position, context),
+            IAstNode(struct_member_symbol.symbol_position, context),
             _struct_member_symbol(std::move(struct_member_symbol)),
             _type(std::move(type)) {}
 
@@ -49,25 +48,23 @@ namespace stride::ast
 
     public:
         explicit AstStruct(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::unique_ptr<IAstType> reference
         )
             :
-            IAstNode(source, source_position, context),
+            IAstNode(source, context),
             _name(std::move(name)),
             _reference(std::move(reference)) {}
 
         explicit AstStruct(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::vector<std::unique_ptr<AstStructMember>> members
         ) :
-            IAstNode(source, source_position, context),
+            IAstNode(source, context),
             _name(std::move(name)),
             _members(std::move(members)),
             _reference(std::nullopt) {}

@@ -77,7 +77,6 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     }
 
     return std::make_unique<AstStructInitializer>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         reference_token.get_lexeme(),
@@ -117,7 +116,6 @@ void AstStructInitializer::validate()
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format("Struct '{}' does not exist", this->_struct_name),
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -135,7 +133,6 @@ void AstStructInitializer::validate()
                 this->_struct_name,
                 fields.size(), this->_initializers.size()
             ),
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -149,7 +146,6 @@ void AstStructInitializer::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format("Struct '{}' has no member named '{}'", this->_struct_name, field_name),
-                *this->get_source(),
                 this->get_source_position()
             );
         }
@@ -166,7 +162,6 @@ void AstStructInitializer::validate()
                     found_member.value()->to_string(),
                     member_type->to_string()
                 ),
-                *this->get_source(),
                 initializer_expr->get_source_position()
             );
         }
@@ -191,7 +186,6 @@ void AstStructInitializer::validate()
                     field_name,
                     member_name
                 ),
-                *this->get_source(),
                 field_type->get_source_position()
             );
         }
@@ -250,7 +244,6 @@ llvm::Value* AstStructInitializer::codegen(
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
             std::format("Struct type '{}' is undefined", this->_struct_name),
-            *this->get_source(),
             this->get_source_position()
         );
     }

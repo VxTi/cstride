@@ -77,7 +77,6 @@ llvm::Value* AstComparisonOp::codegen(
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
                 "Cannot compare a non-optional value with nil",
-                *this->get_source(),
                 this->get_source_position()
             );
         }
@@ -201,7 +200,6 @@ void AstComparisonOp::validate()
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             "Unable to infer types for comparison operation",
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -242,7 +240,6 @@ void AstComparisonOp::validate()
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
         "Comparison operation operands must be used on primitive or optional types",
-        *this->get_source(),
         this->get_source_position()
     );
 }

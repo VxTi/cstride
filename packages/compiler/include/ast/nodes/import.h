@@ -21,11 +21,10 @@ namespace stride::ast
 
     public:
         explicit AstImport(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             Dependency dependency
-        ) : IAstNode(source, source_position, context),
+        ) : IAstNode(source, context),
             _dependency(std::move(dependency)) {}
 
         [[nodiscard]]

@@ -82,7 +82,6 @@ void IAstCallable::validate()
                         "Function '{}' has return type 'void' and cannot return a value.",
                         this->get_name()
                     ),
-                    *this->get_source(),
                     return_stmt->get_source_position()
                 );
             }
@@ -99,7 +98,6 @@ void IAstCallable::validate()
                 std::format(
                     "Function '{}' returns a struct type, but no return statement is present.",
                     this->get_name()),
-                *this->get_source(),
                 this->get_source_position()
             );
         }
@@ -108,7 +106,6 @@ void IAstCallable::validate()
             ErrorType::RUNTIME_ERROR,
             std::format("Function '{}' is missing a return statement.",
                         this->is_anonymous() ? "<anonymous function>" : this->get_name()),
-            *this->get_source(),
             this->get_source_position()
         );
     }
@@ -328,7 +325,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     context->define_function(
         symbol_name,
         std::make_unique<AstFunctionType>(
-            set.get_source(),
             symbol_name.symbol_position,
             context,
             std::move(parameter_types_cloned),
@@ -348,7 +344,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
 
     return std::make_unique<AstFunctionDeclaration>(
-        set.get_source(),
         context,
         symbol_name,
         std::move(parameters),
@@ -405,7 +400,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     static int anonymous_lambda_id = 0;
 
     auto symbol_name = Symbol(
-        SourcePosition(
+        SourceLocation(
+            set.get_source(),
             reference_token.get_source_position().offset,
             lambda_arrow.get_source_position().offset - reference_token.get_source_position().offset
         ),
@@ -421,7 +417,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     context->define_function(
         symbol_name,
         std::make_unique<AstFunctionType>(
-            set.get_source(),
             symbol_name.symbol_position,
             context,
             std::move(cloned_params),
@@ -430,7 +425,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     );
 
     return std::make_unique<AstLambdaFunctionExpression>(
-        set.get_source(),
         context,
         symbol_name,
         std::move(parameters),

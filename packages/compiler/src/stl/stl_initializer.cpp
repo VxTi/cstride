@@ -58,11 +58,10 @@ void stride::stl::llvm_insert_function_definitions(llvm::Module* module)
 
 void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::ParsingContext>& context)
 {
-    const auto placeholder_position = SourcePosition(0, 0);
+    const auto placeholder_position = SourceLocation(nullptr, 0, 0);
     /// Printf definition
     std::vector<std::unique_ptr<ast::IAstType>> printf_params = {};
     printf_params.push_back(std::make_unique<ast::AstPrimitiveType>(
-        nullptr,
         placeholder_position,
         context,
         ast::PrimitiveType::INT32,
@@ -72,12 +71,10 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
     context->define_function(
         ast::Symbol(placeholder_position, "printf"),
         std::make_unique<ast::AstFunctionType>(
-            nullptr,
             placeholder_position,
             context,
             std::move(printf_params),
             std::make_unique<ast::AstPrimitiveType>(
-                nullptr,
                 placeholder_position,
                 context,
                 ast::PrimitiveType::INT32,
@@ -90,12 +87,10 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
     context->define_function(
         ast::Symbol(placeholder_position, "system_time_ns"),
         std::make_unique<ast::AstFunctionType>(
-            nullptr,
             placeholder_position,
             context,
             std::vector<std::unique_ptr<ast::IAstType>>{},
             std::make_unique<ast::AstPrimitiveType>(
-                nullptr,
                 placeholder_position,
                 context,
                 ast::PrimitiveType::UINT64,
@@ -108,12 +103,10 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
     context->define_function(
         ast::Symbol(placeholder_position, "system_time_us"),
         std::make_unique<ast::AstFunctionType>(
-            nullptr,
             placeholder_position,
             context,
             std::vector<std::unique_ptr<ast::IAstType>>{},
             std::make_unique<ast::AstPrimitiveType>(
-                nullptr,
                 placeholder_position,
                 context,
                 ast::PrimitiveType::UINT64,
@@ -126,12 +119,10 @@ void stride::stl::predefine_internal_functions(const std::shared_ptr<ast::Parsin
     context->define_function(
         ast::Symbol(placeholder_position, "system_time_ms"),
         std::make_unique<ast::AstFunctionType>(
-            nullptr,
             placeholder_position,
             context,
             std::vector<std::unique_ptr<ast::IAstType>>{},
             std::make_unique<ast::AstPrimitiveType>(
-                nullptr,
                 placeholder_position,
                 context,
                 ast::PrimitiveType::UINT64,

@@ -182,7 +182,6 @@ llvm::Value* AstFunctionCall::codegen(
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
             std::format("Function '{}' was not found in this scope", this->format_function_name()),
-            *this->get_source(),
             this->get_source_position(),
             suggested_alternative
         );
@@ -197,7 +196,6 @@ llvm::Value* AstFunctionCall::codegen(
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
             std::format("Incorrect arguments passed for function '{}'", this->get_function_name()),
-            *this->get_source(),
             this->get_source_position(),
             std::format("Incorrect arguments passed for function '{}'", this->get_function_name())
         );
@@ -286,8 +284,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                     throw parsing_error(
                         ErrorType::SYNTAX_ERROR,
                         "Expected expression for function argument",
-                        *subset.get_source(),
-                        SourcePosition(
+                        SourceLocation(
+                                subset.get_source(),
                             preceding.get_source_position().offset + 1,
                             len
                         )
@@ -302,7 +300,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         }
     }
 
-    auto position = SourcePosition(
+    auto position = SourceLocation(
+        set.get_source(),
         reference_token.get_source_position().offset,
         parameter_types.empty()
             ? reference_token.get_source_position().length
@@ -311,7 +310,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
             - reference_token.get_source_position().offset
     );
 
-    Symbol internal_fn_sym = resolve_internal_function_name(
+    Symbol function_name = resolve_internal_function_name(
         context,
         position,
         function_name_segments,
@@ -319,9 +318,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     );
 
     return std::make_unique<AstFunctionCall>(
-        set.get_source(),
         context,
-        internal_fn_sym,
+        function_name,
         std::move(function_arg_nodes)
     );
 }
