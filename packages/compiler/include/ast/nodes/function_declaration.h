@@ -18,7 +18,8 @@ namespace stride::ast
      *                Function parameter definitions               *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-    class AstFunctionParameter : public IAstNode
+    class AstFunctionParameter
+        : public IAstNode
     {
         const std::string _name;
         std::unique_ptr<IAstType> _type;
@@ -28,7 +29,8 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string param_name,
-            std::unique_ptr<IAstType> param_type) :
+            std::unique_ptr<IAstType> param_type
+        ) :
             IAstNode(source, context),
             _name(std::move(param_name)),
             _type(std::move(param_type)) {}
@@ -148,7 +150,8 @@ namespace stride::ast
             llvm::IRBuilder<>* builder) override;
     };
 
-    class AstFunctionDeclaration : public IAstCallable
+    class AstFunctionDeclaration
+        : public IAstCallable
     {
     public:
         explicit AstFunctionDeclaration(
@@ -157,7 +160,8 @@ namespace stride::ast
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
-            const int flags) :
+            const int flags
+        ) :
             IAstCallable(
                 symbol.symbol_position,
                 context,
@@ -172,11 +176,11 @@ namespace stride::ast
         ~AstFunctionDeclaration() override = default;
 
     private:
-        std::optional<std::vector<llvm::Type*>> resolve_parameter_types(
-            llvm::Module* module) const;
+        std::optional<std::vector<llvm::Type*>> resolve_parameter_types(llvm::Module* module) const;
     };
 
-    class AstLambdaFunctionExpression : public IAstCallable
+    class AstLambdaFunctionExpression
+        : public IAstCallable
     {
     public:
         explicit AstLambdaFunctionExpression(
@@ -185,7 +189,8 @@ namespace stride::ast
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
-            const int flags) :
+            const int flags
+        ) :
             IAstCallable(
                 symbol.symbol_position,
                 context,
@@ -193,7 +198,8 @@ namespace stride::ast
                 std::move(parameters),
                 std::move(body),
                 std::move(return_type),
-                flags) {}
+                flags
+            ) {}
 
         std::string to_string() override;
 
@@ -203,19 +209,18 @@ namespace stride::ast
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        VisibilityModifier modifier);
+        VisibilityModifier modifier
+    );
 
     std::unique_ptr<AstFunctionParameter> parse_standalone_fn_param(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+        TokenSet& set
+    );
 
-    void parse_subsequent_fn_params(
+    void parse_function_parameters(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        std::vector<std::unique_ptr<AstFunctionParameter>>& parameters);
-
-    void parse_variadic_fn_param(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& tokens,
-        std::vector<std::unique_ptr<AstFunctionParameter>>& parameters);
+        std::vector<std::unique_ptr<AstFunctionParameter>>& parameters,
+        int& function_flags
+    );
 } // namespace stride::ast

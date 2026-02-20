@@ -6,7 +6,9 @@
 
 namespace stride::ast
 {
-    class AstBlock : public IAstNode, public ISynthesisable
+    class AstBlock
+        : public IAstNode,
+          public ISynthesisable
     {
         std::vector<std::unique_ptr<IAstNode>> _children;
 
@@ -14,7 +16,8 @@ namespace stride::ast
         explicit AstBlock(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::vector<std::unique_ptr<IAstNode>> children) :
+            std::vector<std::unique_ptr<IAstNode>> children
+        ) :
             IAstNode(source, context),
             _children(std::move(children)) {};
 
@@ -31,12 +34,14 @@ namespace stride::ast
         llvm::Value* codegen(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilder<>* builder
+        ) override;
 
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilder<>* builder
+        ) override;
 
         void aggregate_block(AstBlock* other)
         {
@@ -53,6 +58,14 @@ namespace stride::ast
         }
 
         ~AstBlock() override = default;
+
+        static std::unique_ptr<AstBlock> create_empty(
+            const std::shared_ptr<ParsingContext>& context,
+            const SourceFragment& source
+        )
+        {
+            return std::make_unique<AstBlock>(source, context, std::vector<std::unique_ptr<IAstNode>>{});
+        }
     };
 
     std::unique_ptr<AstBlock> parse_block(

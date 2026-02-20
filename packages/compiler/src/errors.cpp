@@ -14,6 +14,8 @@ std::string stride::error_type_to_string(const ErrorType error_type)
         return "Compilation Error";
     case ErrorType::SEMANTIC_ERROR:
         return "Semantic Error";
+    case ErrorType::REFERENCE_ERROR:
+        return "Reference Error";
     }
     return "Unknown Error";
 }

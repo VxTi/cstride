@@ -9,12 +9,13 @@ AstMemberAccessor::AstMemberAccessor(
     const SourceFragment& source,
     const std::shared_ptr<ParsingContext>& context,
     std::unique_ptr<AstIdentifier> base,
-    std::vector<std::unique_ptr<AstIdentifier>> members) :
+    std::vector<std::unique_ptr<AstIdentifier>> members
+) :
     AstExpression(source, context),
     _base(std::move(base)),
     _members(std::move(members))
 {
-    this->_base_type = infer_expression_type(context, base.get());
+    this->_base_type = infer_expression_type(context, _base.get());
 }
 
 std::vector<AstIdentifier*> AstMemberAccessor::get_members() const
@@ -81,7 +82,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
     const auto lhs_source_pos = lhs->get_source_fragment();
 
     // TODO: Allow function calls to be the last element as well.
-    const auto lhs_identifier = dynamic_cast<AstIdentifier*>(lhs.get());
+    auto lhs_identifier = dynamic_cast<AstIdentifier*>(lhs.get());
     if (!lhs_identifier)
     {
         throw parsing_error(
@@ -90,8 +91,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             lhs_source_pos);
     }
 
-    const auto last_source_pos = chained_accessors.back().get()->
-                                                   get_source_fragment();
+    const auto last_source_pos = chained_accessors.back().get()->get_source_fragment();
 
     return std::make_unique<AstMemberAccessor>(
         SourceFragment(
@@ -100,7 +100,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             last_source_pos.offset + last_source_pos.length - lhs_source_pos.
             offset),
         context,
-        std::unique_ptr<AstIdentifier>(lhs_identifier),
+        std::make_unique<AstIdentifier>(*lhs_identifier),
         std::move(chained_accessors));
 }
 

@@ -25,7 +25,7 @@ void AstVariableReassignment::validate()
     if (!identifier_def)
     {
         throw parsing_error(
-            ErrorType::SEMANTIC_ERROR,
+            ErrorType::REFERENCE_ERROR,
             std::format(
                 "Unable to reassign variable, variable '{}' not found",
                 this->get_variable_name()),
@@ -111,8 +111,11 @@ llvm::Value* AstVariableReassignment::codegen(
 
     if (!variable)
     {
-        throw std::runtime_error(
-            std::format("Variable '{}' not found", this->get_variable_name()));
+        throw parsing_error(
+            ErrorType::REFERENCE_ERROR,
+            std::format("Variable '{}' not found", this->get_variable_name()),
+            this->get_source_fragment()
+        );
     }
 
     // Generate the RHS value
@@ -161,7 +164,7 @@ llvm::Value* AstVariableReassignment::codegen(
                 value = assign_val;
 
                 if (value->getType() != value_ty && value->getType()->
-                    isIntegerTy() &&
+                                                           isIntegerTy() &&
                     value_ty->isIntegerTy())
                 {
                     value = builder->CreateIntCast(value, value_ty, true);
@@ -344,7 +347,7 @@ stride::ast::parse_variable_reassignment(
     if (!reassign_internal_variable_name)
     {
         throw parsing_error(
-            ErrorType::SEMANTIC_ERROR,
+            ErrorType::REFERENCE_ERROR,
             std::format(
                 "Unable to reassign variable '{}', variable not found",
                 reassignment_iden_name),

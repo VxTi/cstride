@@ -171,7 +171,8 @@ void IAstCallable::validate()
 llvm::Value* IAstCallable::codegen(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilder<>* builder
+)
 {
     llvm::Function* function = module->getFunction(this->get_internal_name());
     if (!function)
@@ -283,7 +284,8 @@ llvm::Value* IAstCallable::codegen(
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    [[maybe_unused]] VisibilityModifier modifier)
+    [[maybe_unused]] VisibilityModifier modifier
+)
 {
     int function_flags = 0;
     if (set.peek_next_eq(TokenType::KEYWORD_EXTERN))
@@ -305,44 +307,29 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
                                         "Expected function name after 'fn'");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
-    auto function_scope = std::make_shared<ParsingContext>(
-        context,
-        ScopeType::FUNCTION);
+    auto function_scope = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
 
     set.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
-    // If we don't receive a ')', the function has parameters, so we'll
-    // have to parse it a little differently
+    // Parameter parsing
     if (!set.peek_next_eq(TokenType::RPAREN))
     {
-        if (set.peek_next_eq(TokenType::THREE_DOTS))
-        {
-            parse_variadic_fn_param(function_scope, set, parameters);
-        }
-        else
-        {
-            parameters.
-                push_back(parse_standalone_fn_param(function_scope, set));
-        }
+        parse_function_parameters(context, set, parameters, function_flags);
 
-        parse_subsequent_fn_params(function_scope, set, parameters);
-    }
-
-    if (!parameters.empty() && parameters.back()->get_type()->is_variadic())
-    {
-        function_flags |= SRFLAG_FN_DEF_VARIADIC;
+        if (!set.peek_next_eq(TokenType::RPAREN))
+        {
+            set.throw_error(
+                "Expected closing parenthesis after variadic parameter; variadic parameter must be the last parameter in the function signature"
+            );
+        }
     }
 
     set.expect(TokenType::RPAREN, "Expected ')' after function parameters");
     set.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type =
-        parse_type(context,
-                   set,
-                   "Expected return type in function header",
-                   SRFLAG_NONE);
+    auto return_type = parse_type(context, set, "Expected return type in function header");
 
     std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
     parameter_types_cloned.reserve(parameters.size());
@@ -365,11 +352,12 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        symbol_name =
-            resolve_internal_function_name(context,
-                                           position,
-                                           { fn_name },
-                                           parameter_types);
+        symbol_name = resolve_internal_function_name(
+            context,
+            position,
+            { fn_name },
+            parameter_types
+        );
     }
 
     context->define_function(
@@ -378,14 +366,16 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
             symbol_name.symbol_position,
             context,
             std::move(parameter_types_cloned),
-            return_type->clone()));
+            return_type->clone()
+        )
+    );
 
     std::unique_ptr<AstBlock> body = nullptr;
 
     if (function_flags & SRFLAG_FN_DEF_EXTERN)
     {
-        set.expect(TokenType::SEMICOLON,
-                   "Expected ';' after extern function declaration");
+        set.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
+        body = AstBlock::create_empty(context, position);
     }
     else
     {
@@ -425,15 +415,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     const auto reference_token = set.peek_next();
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
+    int function_flags = SRFLAG_FN_DEF_ANONYMOUS;
+
     // Parses expressions like:
     // (<param1>: <type1>, ...): <ret_type> -> {}
     if (auto header_definition = collect_parenthesized_block(set);
         header_definition.has_value())
     {
-        parameters.push_back(
-            parse_standalone_fn_param(context, header_definition.value()));
-
-        parse_subsequent_fn_params(context, set, parameters);
+        parse_function_parameters(context, set, parameters, function_flags);
     }
 
     set.expect(TokenType::COLON,
@@ -482,7 +471,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
         std::move(parameters),
         std::move(lambda_body),
         std::move(return_type),
-        SRFLAG_FN_DEF_ANONYMOUS);
+        function_flags);
 }
 
 bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
@@ -539,6 +528,103 @@ void IAstCallable::resolve_forward_references(
         module);
 }
 
+
+void stride::ast::parse_function_parameters(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set,
+    std::vector<std::unique_ptr<AstFunctionParameter>>& parameters,
+    int& function_flags
+)
+{
+    int recursion_depth = 0;
+    while (set.peek_next_eq(TokenType::COMMA))
+    {
+        set.next(); // Skip comma
+        const auto next = set.peek_next();
+
+        if (parameters.size() > MAX_FUNCTION_PARAMETERS)
+        {
+            throw parsing_error(
+                ErrorType::SYNTAX_ERROR,
+                std::format("Function cannot have more than {} parameters",
+                            MAX_FUNCTION_PARAMETERS),
+                next.get_source_fragment()
+            );
+        }
+
+        // Variadic arguments are noted like "..." and must be the last parameter,
+        // so if we encounter it, we can break out of the loop immediately.
+        if (next.get_type() == TokenType::THREE_DOTS)
+        {
+            function_flags |= SRFLAG_FN_DEF_VARIADIC;
+            break;
+        }
+
+        auto param = parse_standalone_fn_param(context, set);
+
+        if (std::ranges::find_if(
+            parameters,
+            [&](const std::unique_ptr<AstFunctionParameter>& p)
+            {
+                return p->get_name() == param->get_name();
+            }) != parameters.end())
+        {
+            set.throw_error(
+                next,
+                ErrorType::SEMANTIC_ERROR,
+                std::format(
+                    "Duplicate parameter name '{}' in function definition",
+                    param->get_name()
+                )
+            );
+        }
+
+        parameters.push_back(std::move(param));
+
+        if (recursion_depth++ > MAX_RECURSION_DEPTH)
+        {
+            set.throw_error(
+                "Maximum recursion depth exceeded when parsing function parameters"
+            );
+        }
+    }
+}
+
+std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set
+)
+{
+    int flags = 0;
+
+    if (set.peek_next_eq(TokenType::KEYWORD_LET))
+    {
+        flags |= SRFLAG_FN_PARAM_DEF_MUTABLE;
+        set.next();
+    }
+
+    const auto reference_token =
+        set.expect(TokenType::IDENTIFIER, "Expected a function parameter name");
+    set.expect(TokenType::COLON);
+
+    std::unique_ptr<IAstType> fn_param_type =
+        parse_type(context, set, "Expected function parameter type", flags);
+
+    const auto fn_param_symbol =
+        Symbol(reference_token.get_source_fragment(),
+               reference_token.get_lexeme());
+
+    // Define it without a context name to properly resolve it
+    context->define_variable(fn_param_symbol, fn_param_type->clone());
+
+    return std::make_unique<AstFunctionParameter>(
+        reference_token.get_source_fragment(),
+        context,
+        reference_token.get_lexeme(),
+        std::move(fn_param_type)
+    );
+}
+
 std::string AstFunctionDeclaration::to_string()
 {
     std::string params;
@@ -566,4 +652,11 @@ std::string AstFunctionDeclaration::to_string()
 std::string AstLambdaFunctionExpression::to_string()
 {
     return "LambdaFunction";
+}
+
+std::string AstFunctionParameter::to_string()
+{
+    const auto name = this->get_name();
+    auto type_str = this->get_type()->to_string();
+    return std::format("{}({})", name, type_str);
 }

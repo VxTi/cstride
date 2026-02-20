@@ -13,7 +13,8 @@ namespace stride
         SYNTAX_ERROR      = 1,
         TYPE_ERROR        = 2,
         COMPILATION_ERROR = 3,
-        SEMANTIC_ERROR    = 4
+        SEMANTIC_ERROR    = 4,
+        REFERENCE_ERROR   = 5
     };
 
     struct ErrorSourceReference

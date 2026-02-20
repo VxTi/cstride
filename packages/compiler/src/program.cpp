@@ -110,26 +110,24 @@ void Program::resolve_forward_references(llvm::Module* module,
     this->_root_node->resolve_forward_references(
         this->get_global_context().get(),
         module,
-        builder);
+        builder
+    );
 }
 
 void Program::generate_llvm_ir(llvm::Module* module,
                                llvm::IRBuilder<>* builder) const
 {
-    if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(this->
-        _root_node.get()))
+    if (!this->_root_node->codegen(
+        this->get_global_context().get(),
+        module,
+        builder
+    ))
     {
-        if (const auto entry =
-                synthesisable->codegen(this->get_global_context().get(),
-                                       module,
-                                       builder);
-            entry == nullptr)
-        {
-            throw std::runtime_error(
-                std::format(
-                    "Failed to build executable for file '{}'",
-                    this->_root_node->get_source()->path));
-        }
+        throw std::runtime_error(
+            std::format(
+                "Failed to build executable for file '{}'",
+                this->_root_node->get_source()->path)
+        );
     }
 }
 
@@ -181,7 +179,8 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
         llvm::logAllUnhandledErrors(
             jit_target_machine_builder.takeError(),
             llvm::errs(),
-            "JITTargetMachineBuilder error: ");
+            "JITTargetMachineBuilder error: "
+        );
         return 1;
     }
     auto jtmb = std::move(*jit_target_machine_builder);
@@ -198,7 +197,8 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     jit->getMainJITDylib().addGenerator(
         llvm::cantFail(
             llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
-                jit->getDataLayout().getGlobalPrefix())));
+                jit->getDataLayout().getGlobalPrefix()))
+    );
 
     const auto triple = llvm::Triple(jit->getTargetTriple().getTriple());
     auto module = std::make_unique<llvm::Module>("stride_jit_module", *context);
@@ -260,9 +260,10 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
 
     if (auto err = jit->initialize(jit->getMainJITDylib()))
     {
-        llvm::logAllUnhandledErrors(std::move(err),
-                                    llvm::errs(),
-                                    "JIT initialization error: ");
+        llvm::logAllUnhandledErrors(
+            std::move(err),
+            llvm::errs(),
+            "JIT initialization error: ");
         return 1;
     }
 
@@ -279,9 +280,10 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
 
     if (auto err = jit->deinitialize(jit->getMainJITDylib()))
     {
-        llvm::logAllUnhandledErrors(std::move(err),
-                                    llvm::errs(),
-                                    "JIT deinitialization error: ");
+        llvm::logAllUnhandledErrors(
+            std::move(err),
+            llvm::errs(),
+            "JIT deinitialization error: ");
     }
 
     return result;
