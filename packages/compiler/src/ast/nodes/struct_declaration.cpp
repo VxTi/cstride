@@ -272,9 +272,9 @@ void AstStructDeclaration::resolve_forward_references(
         if (!ref_struct)
         {
             throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
+                ErrorType::REFERENCE_ERROR,
                 std::format(
-                    "Referenced struct type '{}' not found during codegen",
+                    "Referenced struct type '{}' not found",
                     ref_name),
                 this->get_source_fragment());
         }

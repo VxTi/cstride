@@ -25,7 +25,7 @@
     WHILE='while'
     MODULE='module'
     PACKAGE='package'
-    PUB='pub'
+    PUBLIC='public'
     ASYNC='async'
     IF='if'
     ELSE='else'
@@ -233,7 +233,7 @@ ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)* {
   ]
 }
 
-AccessModifier ::= PUB
+AccessModifier ::= PUBLIC
 
 private BOOLEAN_LITERAL ::= 'true' | 'false'
 private LogicalOp ::= '&&' | '||'

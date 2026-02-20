@@ -25,7 +25,8 @@ namespace stride
         SourceFragment(
             const std::shared_ptr<SourceFile>& source,
             const size_t offset,
-            const size_t length) :
+            const size_t length
+        ) :
             offset(offset),
             length(length),
             source(source) {}

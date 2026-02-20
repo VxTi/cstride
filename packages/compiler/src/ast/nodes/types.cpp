@@ -554,7 +554,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         if (!struct_ty)
         {
             throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
+                ErrorType::REFERENCE_ERROR,
                 std::format("Struct type '{}' not found",
                             ast_struct_ty->name()),
                 ast_struct_ty->get_source_fragment());

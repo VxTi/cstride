@@ -54,7 +54,7 @@ llvm::Value* AstIdentifier::codegen(
                 }
 
                 throw parsing_error(
-                    ErrorType::COMPILATION_ERROR,
+                    ErrorType::REFERENCE_ERROR,
                     std::format("Identifier '{}' not found in this scope", this->get_name()),
                     this->get_source_fragment());
             }
@@ -102,7 +102,7 @@ llvm::Value* AstIdentifier::codegen(
     }
 
     throw parsing_error(
-        ErrorType::COMPILATION_ERROR,
+        ErrorType::REFERENCE_ERROR,
         std::format("Identifier '{}' not found in this scope", this->get_name()),
         this->get_source_fragment()
     );

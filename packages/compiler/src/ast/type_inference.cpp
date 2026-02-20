@@ -274,8 +274,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     if (!variable_definition)
     {
         throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            std::format("Variable '{}' not found in current scope",
+            ErrorType::REFERENCE_ERROR,
+            std::format("Variable '{}' not found in scope",
                         base_iden->get_name()),
             expr->get_source_fragment());
     }
@@ -360,8 +360,13 @@ std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
 
 std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     const std::shared_ptr<ParsingContext>& context,
-    AstExpression* expr)
+    AstExpression* expr
+    )
 {
+    if (!expr)
+    {
+        throw parsing_error("Expression cannot be null");
+    }
     if (auto* literal = cast_expr<AstLiteral*>(expr))
     {
         return infer_expression_literal_type(context, literal);
@@ -377,7 +382,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         if (!reference_sym)
         {
             throw parsing_error(
-                ErrorType::SEMANTIC_ERROR,
+                ErrorType::REFERENCE_ERROR,
                 std::format(
                     "Unable to infer expression type for '{}': variable or function not found",
                     identifier->get_name()),
@@ -519,5 +524,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
         "Unable to resolve expression type",
-        expr->get_source_fragment());
+        expr->get_source_fragment()
+        );
 }
