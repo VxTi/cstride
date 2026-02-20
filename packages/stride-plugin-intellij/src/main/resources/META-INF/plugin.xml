@@ -25,5 +25,7 @@
         <enterHandlerDelegate implementation="com.stride.intellij.editor.StrideEnterHandlerDelegate"/>
 
         <lang.formatter language="Stride" implementationClass="com.stride.intellij.StrideFormattingModelBuilder"/>
+        <configurationType implementation="com.stride.intellij.run.StrideRunConfigurationType"/>
+        <runConfigurationProducer implementation="com.stride.intellij.run.StrideRunConfigurationProducer"/>
     </extensions>
 </idea-plugin>
