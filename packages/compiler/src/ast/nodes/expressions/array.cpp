@@ -1,8 +1,8 @@
-#include <llvm/IR/Module.h>
-
-#include "ast/optionals.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
+#include "ast/optionals.h"
+
+#include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 
@@ -30,26 +30,30 @@ llvm::Value* AstArray::codegen(
 
     llvm::ArrayType* concrete_array_type = nullptr;
 
-    if (const auto* array_type = dynamic_cast<AstArrayType*>(resolved_type.get()))
+    if (const auto* array_type = dynamic_cast<AstArrayType*>(resolved_type.
+        get()))
     {
-        llvm::Type* element_llvm_type = internal_type_to_llvm_type(
-            array_type->get_element_type(),
-            module
-        );
-        concrete_array_type = llvm::ArrayType::get(element_llvm_type, this->get_elements().size());
+        llvm::Type* element_llvm_type =
+            internal_type_to_llvm_type(array_type->get_element_type(), module);
+        concrete_array_type = llvm::ArrayType::get(
+            element_llvm_type,
+            this->get_elements().size());
     }
     else
     {
         // Fallback: If we can't determine the type from the AST, try to verify
         // if the resolved LLVM type is already an array type.
-        if (llvm::Type* possible_type = internal_type_to_llvm_type(resolved_type.get(), module);
+        if (llvm::Type* possible_type = internal_type_to_llvm_type(
+                resolved_type.get(),
+                module);
             llvm::isa<llvm::ArrayType>(possible_type))
         {
             concrete_array_type = llvm::cast<llvm::ArrayType>(possible_type);
         }
         else
         {
-            throw std::runtime_error("Codegen failed: Array literal must have a valid array type.");
+            throw std::runtime_error(
+                "Codegen failed: Array literal must have a valid array type.");
         }
     }
 
@@ -58,7 +62,9 @@ llvm::Value* AstArray::codegen(
     // If we have no members, we'll return a nullptr.
     if (array_size == 0)
     {
-        llvm::PointerType* array_ptr_type = llvm::PointerType::get(module->getContext(), 0);
+        llvm::PointerType* array_ptr_type = llvm::PointerType::get(
+            module->getContext(),
+            0);
         return llvm::ConstantPointerNull::get(array_ptr_type);
     }
 
@@ -71,7 +77,10 @@ llvm::Value* AstArray::codegen(
 
     for (size_t i = 0; i < array_size; ++i)
     {
-        llvm::Value* v = this->get_elements()[i]->codegen(context, module, builder);
+        llvm::Value* v = this->get_elements()[i]->codegen(
+            context,
+            module,
+            builder);
         auto* c = llvm::dyn_cast<llvm::Constant>(v);
         if (!c)
         {
@@ -87,8 +96,7 @@ llvm::Value* AstArray::codegen(
     {
         llvm::Constant* init = llvm::ConstantArray::get(
             concrete_array_type,
-            const_elements
-        );
+            const_elements);
         builder->CreateStore(init, array_alloca);
         return array_alloca;
     }
@@ -96,16 +104,22 @@ llvm::Value* AstArray::codegen(
     // Fallback: element-by-element stores into the aggregate
     for (size_t i = 0; i < array_size; ++i)
     {
-        llvm::Value* element_value = this->get_elements()[i]->codegen(context, module, builder);
+        llvm::Value* element_value = this->get_elements()[i]->codegen(
+            context,
+            module,
+            builder);
 
         llvm::Value* elementPtr = builder->CreateInBoundsGEP(
             concrete_array_type,
             array_alloca,
             {
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(module->getContext()), 0),
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(module->getContext()), i),
-            }
-        );
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(module->getContext()),
+                    0),
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(module->getContext()),
+                    i),
+            });
 
         builder->CreateStore(element_value, elementPtr);
     }

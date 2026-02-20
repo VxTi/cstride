@@ -1,14 +1,14 @@
 #pragma once
 
-#include <memory>
-#include <optional>
-#include <llvm/IR/InlineAsm.h>
-
-#include "ast_node.h"
-#include "formatting.h"
 #include "ast/casting.h"
 #include "ast/flags.h"
 #include "ast/tokens/token_set.h"
+#include "ast_node.h"
+#include "formatting.h"
+
+#include <llvm/IR/InlineAsm.h>
+#include <memory>
+#include <optional>
 
 namespace stride::ast
 {
@@ -38,10 +38,10 @@ namespace stride::ast
         UNKNOWN
     };
 
-    std::string primitive_type_to_str(PrimitiveType type, int flags = SRFLAG_NONE);
+    std::string primitive_type_to_str(PrimitiveType type,
+                                      int flags = SRFLAG_NONE);
 
-    class IAstType :
-        public IAstNode
+    class IAstType : public IAstNode
     {
         int _flags;
 
@@ -49,10 +49,9 @@ namespace stride::ast
         IAstType(
             const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
-            const int flags
-        )
-            : IAstNode(source, context),
-              _flags(flags) {}
+            const int flags) :
+            IAstNode(source, context),
+            _flags(flags) {}
 
         ~IAstType() override = default;
 
@@ -60,28 +59,52 @@ namespace stride::ast
         virtual std::unique_ptr<IAstType> clone() const = 0;
 
         [[nodiscard]]
-        bool is_pointer() const { return this->_flags & SRFLAG_TYPE_PTR; }
+        bool is_pointer() const
+        {
+            return this->_flags & SRFLAG_TYPE_PTR;
+        }
 
         [[nodiscard]]
-        bool is_reference() const { return this->_flags & SRFLAG_TYPE_REFERENCE; }
+        bool is_reference() const
+        {
+            return this->_flags & SRFLAG_TYPE_REFERENCE;
+        }
 
         [[nodiscard]]
-        bool is_mutable() const { return this->_flags & SRFLAG_TYPE_MUTABLE; }
+        bool is_mutable() const
+        {
+            return this->_flags & SRFLAG_TYPE_MUTABLE;
+        }
 
         [[nodiscard]]
-        bool is_optional() const { return this->_flags & SRFLAG_TYPE_OPTIONAL; }
+        bool is_optional() const
+        {
+            return this->_flags & SRFLAG_TYPE_OPTIONAL;
+        }
 
         [[nodiscard]]
-        bool is_global() const { return this->_flags & SRFLAG_TYPE_GLOBAL; }
+        bool is_global() const
+        {
+            return this->_flags & SRFLAG_TYPE_GLOBAL;
+        }
 
         [[nodiscard]]
-        bool is_variadic() const { return this->_flags & SRFLAG_TYPE_VARIADIC; }
+        bool is_variadic() const
+        {
+            return this->_flags & SRFLAG_TYPE_VARIADIC;
+        }
 
         [[nodiscard]]
-        bool is_function() const { return this->_flags & SRFLAG_TYPE_FUNCTION; }
+        bool is_function() const
+        {
+            return this->_flags & SRFLAG_TYPE_FUNCTION;
+        }
 
         [[nodiscard]]
-        int get_flags() const { return this->_flags; }
+        int get_flags() const
+        {
+            return this->_flags;
+        }
 
         void set_flags(const int flags)
         {
@@ -94,11 +117,13 @@ namespace stride::ast
         virtual bool equals(IAstType& other) = 0;
 
         [[nodiscard]]
-        virtual bool is_primitive() const { return false; }
+        virtual bool is_primitive() const
+        {
+            return false;
+        }
     };
 
-    class AstPrimitiveType
-        : public IAstType
+    class AstPrimitiveType : public IAstType
     {
         PrimitiveType _type;
         size_t _bit_count;
@@ -109,8 +134,7 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             const PrimitiveType type,
             const size_t bit_count,
-            const int flags = SRFLAG_NONE
-        ) :
+            const int flags = SRFLAG_NONE) :
             IAstType(source, context, flags),
             _type(type),
             _bit_count(bit_count) {}
@@ -118,7 +142,10 @@ namespace stride::ast
         ~AstPrimitiveType() override = default;
 
         [[nodiscard]]
-        PrimitiveType get_type() const { return this->_type; }
+        PrimitiveType get_type() const
+        {
+            return this->_type;
+        }
 
         [[nodiscard]]
         bool is_integer_ty() const
@@ -153,7 +180,10 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        size_t bit_count() const { return this->_bit_count; }
+        size_t bit_count() const
+        {
+            return this->_bit_count;
+        }
 
         [[nodiscard]]
         std::unique_ptr<IAstType> clone() const override
@@ -174,11 +204,13 @@ namespace stride::ast
         bool equals(IAstType& other) override;
 
         [[nodiscard]]
-        bool is_primitive() const override { return true; }
+        bool is_primitive() const override
+        {
+            return true;
+        }
     };
 
-    class AstNamedType
-        : public IAstType
+    class AstNamedType : public IAstType
     {
         std::string _name;
 
@@ -187,8 +219,7 @@ namespace stride::ast
             const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
-            const int flags = SRFLAG_NONE
-        ) :
+            const int flags = SRFLAG_NONE) :
             IAstType(source, context, flags),
             _name(std::move(name)) {}
 
@@ -204,7 +235,10 @@ namespace stride::ast
             return std::make_unique<AstNamedType>(*this);
         }
 
-        std::string get_internal_name() override { return this->_name; }
+        std::string get_internal_name() override
+        {
+            return this->_name;
+        }
 
         std::string to_string() override
         {
@@ -212,15 +246,13 @@ namespace stride::ast
                 "{}{}{}",
                 this->is_pointer() ? "*" : "",
                 this->name(),
-                this->is_optional() ? "?" : ""
-            );
+                this->is_optional() ? "?" : "");
         }
 
         bool equals(IAstType& other) override;
     };
 
-    class AstFunctionType
-        : public IAstType
+    class AstFunctionType : public IAstType
     {
         std::vector<std::unique_ptr<IAstType>> _parameters;
         std::unique_ptr<IAstType> _return_type;
@@ -231,16 +263,25 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
-            const int flags = SRFLAG_NONE
-        ) : IAstType(source, context, flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
+            const int flags = SRFLAG_NONE) :
+            IAstType(source,
+                     context,
+                     flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstType>>& get_parameter_types() const { return _parameters; }
+        const std::vector<std::unique_ptr<IAstType>>&
+        get_parameter_types() const
+        {
+            return _parameters;
+        }
 
         [[nodiscard]]
-        const std::unique_ptr<IAstType>& get_return_type() const { return _return_type; }
+        const std::unique_ptr<IAstType>& get_return_type() const
+        {
+            return _return_type;
+        }
 
         [[nodiscard]]
         std::unique_ptr<IAstType> clone() const override
@@ -255,8 +296,7 @@ namespace stride::ast
                 this->get_source_position(),
                 this->get_context(),
                 std::move(parameters_clone),
-                this->_return_type->clone()
-            );
+                this->_return_type->clone());
         }
 
         std::string to_string() override
@@ -268,21 +308,24 @@ namespace stride::ast
             return std::format(
                 "({}) -> {}",
                 join(param_strings, ", "),
-                this->_return_type->to_string()
-            );
+                this->_return_type->to_string());
         }
 
         bool equals(IAstType& other) override
         {
             if (const auto* other_func = dynamic_cast<AstFunctionType*>(&other))
             {
-                if (!other_func->get_return_type()->equals(*this->get_return_type())) return false;
+                if (!other_func->get_return_type()->equals(
+                    *this->get_return_type()))
+                    return false;
 
-                if (this->_parameters.size() != other_func->_parameters.size()) return false;
+                if (this->_parameters.size() != other_func->_parameters.size())
+                    return false;
 
                 for (size_t i = 0; i < this->_parameters.size(); i++)
                 {
-                    if (!this->_parameters[i]->equals(*other_func->_parameters[i]))
+                    if (!this->_parameters[i]->equals(
+                        *other_func->_parameters[i]))
                     {
                         return false;
                     }
@@ -298,8 +341,7 @@ namespace stride::ast
         }
     };
 
-    class AstArrayType
-        : public IAstType
+    class AstArrayType : public IAstType
     {
         std::unique_ptr<IAstType> _element_type;
         size_t _initial_length;
@@ -309,8 +351,12 @@ namespace stride::ast
             const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<IAstType> element_type,
-            const size_t initial_length
-        ) : IAstType(source, context, (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR),
+            const size_t initial_length) :
+            IAstType(
+                source,
+                context,
+                (element_type ? element_type->get_flags() : 0) |
+                SRFLAG_TYPE_PTR),
             // Arrays are always ptrs
             _element_type(std::move(element_type)),
             _initial_length(initial_length) {}
@@ -319,22 +365,27 @@ namespace stride::ast
         std::unique_ptr<IAstType> clone() const override
         {
             auto element_clone = this->_element_type
-                                     ? this->_element_type->clone()
-                                     : nullptr;
+                ? this->_element_type->clone()
+                : nullptr;
 
             return std::make_unique<AstArrayType>(
                 this->get_source_position(),
                 this->get_context(),
                 std::move(element_clone),
-                this->_initial_length
-            );
+                this->_initial_length);
         }
 
         [[nodiscard]]
-        IAstType* get_element_type() const { return this->_element_type.get(); }
+        IAstType* get_element_type() const
+        {
+            return this->_element_type.get();
+        }
 
         [[nodiscard]]
-        size_t get_initial_length() const { return this->_initial_length; }
+        size_t get_initial_length() const
+        {
+            return this->_initial_length;
+        }
 
         std::string to_string() override
         {
@@ -343,20 +394,19 @@ namespace stride::ast
                 return std::format(
                     "({}{})[]",
                     this->_element_type->to_string(),
-                    (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
-                );
+                    (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
             }
             return std::format(
                 "{}{}[]",
                 this->_element_type->to_string(),
-                (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : ""
-            );
+                (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
         }
 
         [[nodiscard]]
         std::string get_internal_name() override
         {
-            return std::format("[{}]", this->_element_type->get_internal_name());
+            return std::format("[{}]",
+                               this->_element_type->get_internal_name());
         }
 
         bool equals(IAstType& other) override;
@@ -366,40 +416,32 @@ namespace stride::ast
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const std::string& error,
-        int type_flags = SRFLAG_NONE
-    );
+        int type_flags = SRFLAG_NONE);
 
-    llvm::Type* internal_type_to_llvm_type(
-        IAstType* type,
-        llvm::Module* module
-    );
+    llvm::Type*
+    internal_type_to_llvm_type(IAstType* type, llvm::Module* module);
 
     std::unique_ptr<IAstType> get_dominant_field_type(
         const std::shared_ptr<ParsingContext>& context,
         IAstType* lhs,
-        IAstType* rhs
-    );
+        IAstType* rhs);
 
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags = SRFLAG_NONE
-    );
+        int context_type_flags = SRFLAG_NONE);
 
     std::optional<std::unique_ptr<IAstType>> parse_named_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags = SRFLAG_NONE
-    );
+        int context_type_flags = SRFLAG_NONE);
 
     std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags
-    );
+        int context_type_flags);
 
     std::string get_root_reference_struct_name(
         const std::string& name,
-        const std::shared_ptr<ParsingContext>& context
-    );
-}
+        const std::shared_ptr<ParsingContext>& context);
+} // namespace stride::ast

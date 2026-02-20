@@ -17,25 +17,34 @@ namespace stride::ast
 
     public:
         explicit AstIfStatement(
-            const SourceLocation &source,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> body,
-            std::unique_ptr<AstBlock> else_body
-        ) : IAstNode(source, context),
+            std::unique_ptr<AstBlock> else_body) :
+            IAstNode(source, context),
             _condition(std::move(condition)),
             _body(std::move(body)),
             _else_body(std::move(else_body)) {}
 
 
         [[nodiscard]]
-        AstExpression* get_condition() const { return this->_condition.get(); }
+        AstExpression* get_condition() const
+        {
+            return this->_condition.get();
+        }
 
         [[nodiscard]]
-        AstBlock* get_body() override { return this->_body.get(); }
+        AstBlock* get_body() override
+        {
+            return this->_body.get();
+        }
 
         [[nodiscard]]
-        AstBlock* get_else_body() const { return this->_else_body.get(); }
+        AstBlock* get_else_body() const
+        {
+            return this->_else_body.get();
+        }
 
         ~AstIfStatement() override = default;
 
@@ -48,11 +57,12 @@ namespace stride::ast
         llvm::Value* codegen(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) override;
+            llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstIfStatement> parse_if_statement(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
-}
+    std::unique_ptr<AstIfStatement> parse_if_statement(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set);
+} // namespace stride::ast

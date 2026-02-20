@@ -1,6 +1,6 @@
-#include <algorithm>
-
 #include "ast/tokens/token.h"
+
+#include <algorithm>
 
 using namespace stride::ast;
 
@@ -15,7 +15,9 @@ std::vector stride::ast::operatorPrecedence = {
 
 bool stride::ast::precedes(const TokenType lhs, const TokenType rhs)
 {
-    return std::ranges::find(operatorPrecedence, lhs) < std::ranges::find(operatorPrecedence, rhs);
+    return std::ranges::find(operatorPrecedence, lhs) < std::ranges::find(
+        operatorPrecedence,
+        rhs);
 }
 
 
@@ -62,16 +64,16 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
 
     // Primitives
     TOKEN(TokenType::PRIMITIVE_BOOL, R"(\bbool\b)"),
-    TOKEN(TokenType::PRIMITIVE_INT8, R"(\bi8\b)"),
-    TOKEN(TokenType::PRIMITIVE_INT16, R"(\bi16\b)"),
-    TOKEN(TokenType::PRIMITIVE_INT32, R"(\bi32\b)"),
-    TOKEN(TokenType::PRIMITIVE_INT64, R"(\bi64\b)"),
+    TOKEN(TokenType::PRIMITIVE_INT8, R"(\bint8\b)"),
+    TOKEN(TokenType::PRIMITIVE_INT16, R"(\bint16\b)"),
+    TOKEN(TokenType::PRIMITIVE_INT32, R"(\bint32\b)"),
+    TOKEN(TokenType::PRIMITIVE_INT64, R"(\bint64\b)"),
     TOKEN(TokenType::PRIMITIVE_UINT8, R"(\bu8\b)"),
     TOKEN(TokenType::PRIMITIVE_UINT16, R"(\bu16\b)"),
     TOKEN(TokenType::PRIMITIVE_UINT32, R"(\bu32\b)"),
     TOKEN(TokenType::PRIMITIVE_UINT64, R"(\bu64\b)"),
-    TOKEN(TokenType::PRIMITIVE_FLOAT32, R"(\bf32\b)"),
-    TOKEN(TokenType::PRIMITIVE_FLOAT64, R"(\bf64\b)"),
+    TOKEN(TokenType::PRIMITIVE_FLOAT32, R"(\bfloat32\b)"),
+    TOKEN(TokenType::PRIMITIVE_FLOAT64, R"(\bfloat64\b)"),
     TOKEN(TokenType::PRIMITIVE_CHAR, R"(\bchar\b)"),
     TOKEN(TokenType::PRIMITIVE_STRING, R"(\bstring\b)"),
     TOKEN(TokenType::PRIMITIVE_VOID, R"(\bvoid\b)"),

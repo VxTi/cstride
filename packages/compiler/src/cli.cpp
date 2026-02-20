@@ -1,9 +1,9 @@
 #include "cli.h"
 
+#include "program.h"
+
 #include <format>
 #include <iostream>
-
-#include "program.h"
 
 using namespace stride::cli;
 
@@ -13,8 +13,7 @@ std::string format_message(std::string text)
         "\x1b[48;2;0;102;204m\x1b[38;2;255;255;255mstride\x1b[0m"
         " \x1b[94m■\x1b[0m"
         " \x1b[0m{}\n",
-        text
-    );
+        text);
 }
 
 int stride::cli::resolve_cli_command(const int argc, char** argv)
@@ -22,7 +21,8 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
     // The first argument is always the command itself,
     if (argc < 2)
     {
-        std::cout << format_message("No command provided. Usage: cstride <command> [options]");
+        std::cout << format_message(
+            "No command provided. Usage: cstride <command> [options]");
         return 1;
     }
 
@@ -32,9 +32,14 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
     {
         std::cout << format_message("Usage: cstride <command> [options]\n");
         std::cout << "Available commands:" << std::endl;
-        std::cout << "  -c, --compile <file1> <file2> ...    Compile stride files" << std::endl;
-        std::cout << "  install, i <dependency>@<version>    Install the stride compiler" << std::endl;
-        std::cout << "  -tc, --typecheck <file1> <file2> ... Typecheck a file" << std::endl;
+        std::cout <<
+            "  -c, --compile <file1> <file2> ...    Compile stride files" <<
+            std::endl;
+        std::cout <<
+            "  install, i <dependency>@<version>    Install the stride compiler"
+            << std::endl;
+        std::cout << "  -tc, --typecheck <file1> <file2> ... Typecheck a file"
+            << std::endl;
         return 0;
     }
 
@@ -59,10 +64,8 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
 
 CompilationOptions resolve_compilation_options(const int argc, char** argv)
 {
-    CompilationOptions options = {
-        .mode = CompilationMode::COMPILE_JIT,
-        .debug_mode = false
-    };
+    CompilationOptions options = { .mode       = CompilationMode::COMPILE_JIT,
+                                   .debug_mode = false };
 
     for (int i = 0; i < argc; ++i)
     {
@@ -81,8 +84,8 @@ CompilationOptions resolve_compilation_options(const int argc, char** argv)
             const auto mode = argument.substr(7);
             options.mode =
                 mode == "interpret"
-                    ? CompilationMode::INTERPRET
-                    : CompilationMode::COMPILE_JIT;
+                ? CompilationMode::INTERPRET
+                : CompilationMode::COMPILE_JIT;
         }
 
         if (argument == "--debug")

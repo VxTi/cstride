@@ -113,16 +113,16 @@ The editor is a web-based IDE for Stride, built with Monaco Editor.
 
 ```stride
 // Creating a mutable 32 bit int variable
-let x: i32 = 10
+let x: int32 = 10
 
 // Creating a constant variable
-const y: f64 = 3.0D
+const y: float64 = 3.0D
 
 // There are a few different kinds of integer literals, like so:
-let hex: i32 = 0x12345
+let hex: int32 = 0x12345
 
 // 64-bit integer literal, suffixed with an 'L'
-let large_int: i64 = 12345678901234567890L
+let large_int: int64 = 12345678901234567890L
 ```
 
 ### Integer Literals
@@ -140,15 +140,15 @@ For example, `3.14F` is a single precision float, and `2.71828D` is a double pre
 The language uses the traditional arithmetic operators, as well as comparison operators.
 An example of these operators is shown below:
 ```stride
-let x: i32 = 10
-let y: f64 = 3.0D
+let x: int32 = 10
+let y: float64 = 3.0D
 
 // Arithmetic operators
-let sum: f64 = x + y
-let difference: f64 = x - y
-let product: f64 = x * y
-let quotient: f64 = x / y
-let remainder: f64 = x % y
+let sum: float64 = x + y
+let difference: float64 = x - y
+let product: float64 = x * y
+let quotient: float64 = x / y
+let remainder: float64 = x % y
 
 // Comparison operators
 let is_equal: bool = x == y
@@ -164,17 +164,17 @@ let is_greater_than_or_equal: bool = x >= y
 Functions are declared using the `fn` keyword, followed by the function name,
 a list of parameters (optionally), and the return type. For example:
 ```stride
-fn add(a: i32, b: i32): i32 {
+fn add(a: int32, b: int32): int32 {
     return a + b
 }
 
 // You can also create externally linked functions,
 // if they are defined in another library.
-extern fn some_c_function(x: i32): i32;
+extern fn some_c_function(x: int32): int32;
 
 
 // You can invoke functions using the following syntax:
-const result: i32 = add(10, 5)
+const result: int32 = add(10, 5)
 ```
 
 ### Local Documentation Preview
@@ -202,8 +202,8 @@ Structs are still in development, but they are similar to classes in other langu
 The current syntax is as follows:
 ```stride
 struct Point {
-    x: i32,
-    y: i32,
+    x: int32,
+    y: int32,
 }
 
 const p = Point::{ x: 10, y: 20 }

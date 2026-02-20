@@ -1,11 +1,10 @@
 #pragma once
 
+#include "files.h"
+
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
-
 #include <utility>
-
-#include "files.h"
 
 namespace stride::ast
 {
@@ -22,15 +21,13 @@ namespace stride::ast
         virtual llvm::Value* codegen(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) = 0;
+            llvm::IRBuilder<>* builder) = 0;
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) {}
+            llvm::IRBuilder<>* builder) {}
     };
 
     class IAstNode
@@ -40,11 +37,11 @@ namespace stride::ast
 
     public:
         explicit IAstNode(
-            SourceLocation source,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context
-        )
-            : _source_position(std::move(source)),
-              _scope(context) {}
+        ) :
+            _source_position(source),
+            _scope(context) {}
 
         virtual ~IAstNode() = default;
 
@@ -53,13 +50,22 @@ namespace stride::ast
         virtual void validate() {}
 
         [[nodiscard]]
-        std::shared_ptr<SourceFile> get_source() const { return this->_source_position.source; }
+        std::shared_ptr<SourceFile> get_source() const
+        {
+            return this->_source_position.source;
+        }
 
         [[nodiscard]]
-        std::shared_ptr<ParsingContext> get_context() const { return this->_scope; }
+        std::shared_ptr<ParsingContext> get_context() const
+        {
+            return this->_scope;
+        }
 
         [[nodiscard]]
-        SourceLocation get_source_position() const { return this->_source_position; }
+        SourceLocation get_source_position() const
+        {
+            return this->_source_position;
+        }
     };
 
     class IReducible
@@ -90,4 +96,4 @@ namespace stride::ast
         [[nodiscard]]
         virtual AstBlock* get_body() = 0;
     };
-}
+} // namespace stride::ast

@@ -1,10 +1,10 @@
 #pragma once
+#include "files.h"
+
 #include <format>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "files.h"
 
 namespace stride
 {
@@ -25,8 +25,10 @@ namespace stride
         ErrorSourceReference(
             std::string message,
             const SourceFile& source,
-            SourceLocation  source_position
-        ) : source(source), source_position(std::move(source_position)), message(std::move(message)) {}
+            SourceLocation source_position) :
+            source(source),
+            source_position(std::move(source_position)),
+            message(std::move(message)) {}
     };
 
     std::string error_type_to_string(ErrorType error_type);
@@ -39,8 +41,7 @@ namespace stride
         ErrorType error_type,
         const std::string& error,
         const SourceLocation& source_position,
-        const std::string& suggestion = ""
-    );
+        const std::string& suggestion = "");
 
     /**
      * Will produce an error for the given source file with multiple highlighted sections.
@@ -49,32 +50,33 @@ namespace stride
     std::string make_source_error(
         ErrorType error_type,
         const std::string& error,
-        const std::vector<ErrorSourceReference>& references
-    );
+        const std::vector<ErrorSourceReference>& references);
 
     class parsing_error : public std::runtime_error
     {
         std::string what_msg;
 
     public:
-        explicit parsing_error(const char* str)
-            : std::runtime_error(str), what_msg(str) {}
+        explicit parsing_error(const char* str) :
+            std::runtime_error(str),
+            what_msg(str) {}
 
-        explicit parsing_error(const std::string& str)
-            : parsing_error(str.c_str()) {}
+        explicit parsing_error(const std::string& str) :
+            parsing_error(str.c_str()) {}
 
         explicit parsing_error(
             const ErrorType error_type,
             const std::string& error,
             const SourceLocation& source,
-            const std::string& suggestion = ""
-        ) : parsing_error(make_source_error(error_type, error, source, suggestion)) {}
+            const std::string& suggestion = "") :
+            parsing_error(
+                make_source_error(error_type, error, source, suggestion)) {}
 
         explicit parsing_error(
             const ErrorType error_type,
             const std::string& error,
-            const std::vector<ErrorSourceReference>& references
-        ) : parsing_error(make_source_error(error_type, error, references)) {}
+            const std::vector<ErrorSourceReference>& references) :
+            parsing_error(make_source_error(error_type, error, references)) {}
 
         [[nodiscard]]
         const char* what() const noexcept override
@@ -82,4 +84,4 @@ namespace stride
             return what_msg.c_str();
         }
     };
-}
+} // namespace stride

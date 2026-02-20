@@ -1,19 +1,18 @@
-#include <format>
-#include <sstream>
-#include <vector>
+#include "ast/nodes/blocks.h"
+#include "ast/nodes/expression.h"
+#include "ast/nodes/types.h"
+#include "ast/optionals.h"
+#include "ast/symbols.h"
+#include "formatting.h"
 
+#include <format>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/ValueSymbolTable.h>
-
-#include "formatting.h"
-#include "ast/optionals.h"
-#include "ast/symbols.h"
-#include "ast/nodes/blocks.h"
-#include "ast/nodes/expression.h"
-#include "ast/nodes/types.h"
+#include <sstream>
+#include <vector>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -45,8 +44,7 @@ std::string AstFunctionCall::to_string()
         "FunctionCall({} ({}) [{}])",
         this->get_function_name(),
         this->get_internal_name(),
-        join(arg_types, ", ")
-    );
+        join(arg_types, ", "));
 }
 
 std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
@@ -61,13 +59,12 @@ std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
             arg_types.push_back(arg->get_internal_name());
         }
 
-        if (arg_types.empty()) arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
+        if (arg_types.empty())
+            arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
 
-        return std::format(
-            "{}({})",
-            fn_call->get_symbol().name,
-            join(arg_types, ", ")
-        );
+        return std::format("{}({})",
+                           fn_call->get_symbol().name,
+                           join(arg_types, ", "));
     }
 
     return suggestion->get_internal_symbol_name();
@@ -84,16 +81,18 @@ std::string AstFunctionCall::format_function_name() const
 
         arg_types.push_back(type->get_internal_name());
     }
-    if (arg_types.empty()) arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
+    if (arg_types.empty())
+        arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
 
-    return std::format("{}({})", this->get_function_name(), join(arg_types, ", "));
+    return std::format("{}({})",
+                       this->get_function_name(),
+                       join(arg_types, ", "));
 }
 
 llvm::Value* AstFunctionCall::codegen(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+    llvm::IRBuilder<>* builder)
 {
     llvm::Function* callee = module->getFunction(this->get_internal_name());
 
@@ -108,18 +107,25 @@ llvm::Value* AstFunctionCall::codegen(
     // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
     if (!callee)
     {
-        if (const auto* var_def = context->lookup_variable(this->get_function_name(), true))
+        if (const auto* var_def = context->lookup_variable(
+            this->get_function_name(),
+            true))
         {
-            if (const auto* fn_type = dynamic_cast<AstFunctionType*>(var_def->get_type()))
+            if (const auto* fn_type = dynamic_cast<AstFunctionType*>(var_def->
+                get_type()))
             {
                 // Reconstruct the concrete llvm::FunctionType from the AST type
                 std::vector<llvm::Type*> param_types;
                 for (const auto& param : fn_type->get_parameter_types())
                 {
-                    param_types.push_back(internal_type_to_llvm_type(param.get(), module));
+                    param_types.push_back(
+                        internal_type_to_llvm_type(param.get(), module));
                 }
-                llvm::Type* ret_type = internal_type_to_llvm_type(fn_type->get_return_type().get(), module);
-                llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(ret_type, param_types, false);
+                llvm::Type* ret_type =
+                    internal_type_to_llvm_type(fn_type->get_return_type().get(),
+                                               module);
+                llvm::FunctionType* llvm_fn_type =
+                    llvm::FunctionType::get(ret_type, param_types, false);
 
                 // Load the function pointer from the variable
                 const auto fn_ptr = var_def->get_internal_symbol_name();
@@ -127,12 +133,18 @@ llvm::Value* AstFunctionCall::codegen(
 
                 if (const auto block = builder->GetInsertBlock())
                 {
-                    fn_ptr_val = block->getParent()->getValueSymbolTable()->lookup(fn_ptr);
+                    fn_ptr_val = block->getParent()->getValueSymbolTable()->
+                                        lookup(fn_ptr);
                     if (fn_ptr_val)
                     {
-                        if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(fn_ptr_val))
+                        if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(
+                            fn_ptr_val))
                         {
-                            fn_ptr_val = builder->CreateLoad(alloca->getAllocatedType(), alloca, fn_ptr);
+                            fn_ptr_val =
+                                builder->CreateLoad(
+                                    alloca->getAllocatedType(),
+                                    alloca,
+                                    fn_ptr);
                         }
                     }
                 }
@@ -142,8 +154,12 @@ llvm::Value* AstFunctionCall::codegen(
                     fn_ptr_val = module->getNamedGlobal(fn_ptr);
                     if (fn_ptr_val)
                     {
-                        auto* global = llvm::cast<llvm::GlobalVariable>(fn_ptr_val);
-                        fn_ptr_val = builder->CreateLoad(global->getValueType(), global, fn_ptr);
+                        auto* global = llvm::cast<llvm::GlobalVariable>(
+                            fn_ptr_val);
+                        fn_ptr_val = builder->CreateLoad(
+                            global->getValueType(),
+                            global,
+                            fn_ptr);
                     }
                 }
 
@@ -154,18 +170,28 @@ llvm::Value* AstFunctionCall::codegen(
                     const auto& arguments = this->get_arguments();
                     for (size_t i = 0; i < arguments.size(); ++i)
                     {
-                        auto* arg_val = arguments[i]->codegen(context, module, builder);
-                        if (!arg_val) return nullptr;
+                        auto* arg_val = arguments[i]->codegen(
+                            context,
+                            module,
+                            builder);
+                        if (!arg_val)
+                            return nullptr;
 
-                        if (i < param_types.size() && arg_val->getType() != param_types[i])
+                        if (i < param_types.size() && arg_val->getType() !=
+                            param_types[i])
                         {
                             arg_val = unwrap_optional_value(arg_val, builder);
                         }
                         args_v.push_back(arg_val);
                     }
 
-                    const auto instruction_name = ret_type->isVoidTy() ? "" : "indcalltmp";
-                    return builder->CreateCall(llvm_fn_type, fn_ptr_val, args_v, instruction_name);
+                    const auto instruction_name = ret_type->isVoidTy()
+                        ? ""
+                        : "indcalltmp";
+                    return builder->CreateCall(llvm_fn_type,
+                                               fn_ptr_val,
+                                               args_v,
+                                               instruction_name);
                 }
             }
         }
@@ -173,32 +199,36 @@ llvm::Value* AstFunctionCall::codegen(
 
     if (!callee)
     {
-        const auto suggested_alternative_symbol = context->fuzzy_find(this->get_function_name());
-        const auto suggested_alternative =
-            suggested_alternative_symbol
-                ? std::format("Did you mean '{}'?", format_suggestion(suggested_alternative_symbol))
-                : "";
+        const auto suggested_alternative_symbol = context->fuzzy_find(
+            this->get_function_name());
+        const auto suggested_alternative = suggested_alternative_symbol
+            ? std::format("Did you mean '{}'?",
+                          format_suggestion(suggested_alternative_symbol))
+            : "";
 
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
-            std::format("Function '{}' was not found in this scope", this->format_function_name()),
+            std::format("Function '{}' was not found in this scope",
+                        this->format_function_name()),
             this->get_source_position(),
-            suggested_alternative
-        );
+            suggested_alternative);
     }
 
     // Reduce last argument if variadic
-    const auto minimum_arg_count = callee->arg_size() - (callee->isVarArg() ? 1 : 0);
+    const auto minimum_arg_count = callee->arg_size() - (callee->isVarArg()
+        ? 1
+        : 0);
 
     if (const auto provided_arg_count = this->get_arguments().size();
         provided_arg_count < minimum_arg_count)
     {
         throw parsing_error(
             ErrorType::RUNTIME_ERROR,
-            std::format("Incorrect arguments passed for function '{}'", this->get_function_name()),
+            std::format("Incorrect arguments passed for function '{}'",
+                        this->get_function_name()),
             this->get_source_position(),
-            std::format("Incorrect arguments passed for function '{}'", this->get_function_name())
-        );
+            std::format("Incorrect arguments passed for function '{}'",
+                        this->get_function_name()));
     }
 
     std::vector<llvm::Value*> args_v;
@@ -220,7 +250,8 @@ llvm::Value* AstFunctionCall::codegen(
         {
             // Check for strict type equality.
             // If the argument is Optional<T> but the function expects T, we unwrap.
-            if (const llvm::Type* expected_type = callee->getFunctionType()->getParamType(i);
+            if (const llvm::Type* expected_type = callee->getFunctionType()->
+                    getParamType(i);
                 arg_val->getType() != expected_type)
             {
                 final_val = unwrap_optional_value(arg_val, builder);
@@ -235,15 +266,16 @@ llvm::Value* AstFunctionCall::codegen(
         args_v.push_back(final_val);
     }
 
-    const auto instruction_name = callee->getReturnType()->isVoidTy() ? "" : "calltmp";
+    const auto instruction_name = callee->getReturnType()->isVoidTy()
+        ? ""
+        : "calltmp";
     return builder->CreateCall(callee, args_v, instruction_name);
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     const std::shared_ptr<ParsingContext>& context,
     const SymbolNameSegments& function_name_segments,
-    TokenSet& set
-)
+    TokenSet& set)
 {
     const auto reference_token = set.peek(-1);
     auto function_parameter_set = collect_parenthesized_block(set);
@@ -260,9 +292,12 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
 
         if (initial_arg)
         {
-            // TODO: Evaluate this. One might not be able to infer expression types if they invoke functions that
+            // TODO: Evaluate this. One might not be able to infer expression types if they invoke
+            // functions that
             //  haven't been declared yet, hence throwing an error
-            auto initial_type = infer_expression_type(context, initial_arg.get());
+            auto initial_type = infer_expression_type(
+                context,
+                initial_arg.get());
 
             parameter_types.push_back(initial_type.get());
             parameter_type_owners.push_back(std::move(initial_type));
@@ -271,25 +306,26 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
             // Consume next parameters
             while (subset.has_next())
             {
-                const auto preceding = subset.expect(TokenType::COMMA, "Expected ',' between function arguments");
+                const auto preceding =
+                    subset.expect(TokenType::COMMA,
+                                  "Expected ',' between function arguments");
 
                 auto next_arg = parse_inline_expression(context, subset);
 
                 if (!next_arg)
                 {
-                    // Since the RParen is already consumed, we have to manually extract its position with the following assumption
-                    // It's possible this yields END_OF_FILE
-                    const auto len = set.at(set.position() - 1).get_source_position().offset - 1 - preceding.
-                        get_source_position().offset;
+                    // Since the RParen is already consumed, we have to manually extract its
+                    // position with the following assumption It's possible this yields END_OF_FILE
+                    const auto len = set.at(set.position() - 1).
+                                         get_source_position().offset - 1 -
+                        preceding.get_source_position().offset;
                     throw parsing_error(
                         ErrorType::SYNTAX_ERROR,
                         "Expected expression for function argument",
                         SourceLocation(
-                                subset.get_source(),
+                            subset.get_source(),
                             preceding.get_source_position().offset + 1,
-                            len
-                        )
-                    );
+                            len));
                 }
 
                 auto next_type = infer_expression_type(context, next_arg.get());
@@ -304,22 +340,18 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         set.get_source(),
         reference_token.get_source_position().offset,
         parameter_types.empty()
-            ? reference_token.get_source_position().length
-            : parameter_types.back()->get_source_position().offset
-            + parameter_types.back()->get_source_position().length
-            - reference_token.get_source_position().offset
-    );
+        ? reference_token.get_source_position().length
+        : parameter_types.back()->get_source_position().offset +
+        parameter_types.back()->get_source_position().length -
+        reference_token.get_source_position().offset);
 
-    Symbol function_name = resolve_internal_function_name(
-        context,
-        position,
-        function_name_segments,
-        parameter_types
-    );
+    Symbol function_name =
+        resolve_internal_function_name(context,
+                                       position,
+                                       function_name_segments,
+                                       parameter_types);
 
-    return std::make_unique<AstFunctionCall>(
-        context,
-        function_name,
-        std::move(function_arg_nodes)
-    );
+    return std::make_unique<AstFunctionCall>(context,
+                                             function_name,
+                                             std::move(function_arg_nodes));
 }

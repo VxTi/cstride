@@ -1,9 +1,9 @@
-#include <iostream>
-#include <ranges>
-#include <llvm/IR/Module.h>
-
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
+
+#include <iostream>
+#include <llvm/IR/Module.h>
+#include <ranges>
 
 using namespace stride::ast;
 
@@ -11,9 +11,10 @@ bool stride::ast::is_struct_initializer(const TokenSet& set)
 {
     // We assume an expression is a struct initializer if it starts with `<name>::{ <identifier`
     // Obviously, this can also be a block, but we will disambiguate that during parsing
-    return set.peek_eq(TokenType::IDENTIFIER, 0)
-        && set.peek_eq(TokenType::DOUBLE_COLON, 1)
-        && set.peek_eq(TokenType::LBRACE, 2);
+    return set.peek_eq(TokenType::IDENTIFIER, 0) && set.peek_eq(
+            TokenType::DOUBLE_COLON,
+            1) &&
+        set.peek_eq(TokenType::LBRACE, 2);
 }
 
 std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initializer(
@@ -29,16 +30,21 @@ std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initi
 
     auto member_expr = parse_inline_expression(context, set);
 
-    return {member_iden.get_lexeme(), std::move(member_expr)};
+    return { member_iden.get_lexeme(), std::move(member_expr) };
 }
 
 std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+    TokenSet& set)
 {
-    const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected struct name in struct initializer");
-    set.expect(TokenType::DOUBLE_COLON, "Expected '::' after struct name in struct initializer");
+    const auto reference_token = set.expect(
+        TokenType::IDENTIFIER,
+        "Expected struct name in struct initializer"
+    );
+    set.expect(
+        TokenType::DOUBLE_COLON,
+        "Expected '::' after struct name in struct initializer"
+    );
 
     std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>> member_map = {};
     auto member_set = collect_block(set);
@@ -49,24 +55,28 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     }
 
     // Parse initial member
-    auto [initial_member_iden, initial_member_expr] = parse_struct_member_initializer(
-        context,
-        member_set.value()
-    );
-    member_map.emplace_back(std::move(initial_member_iden), std::move(initial_member_expr));
+    auto [initial_member_iden, initial_member_expr] =
+        parse_struct_member_initializer(context, member_set.value());
+    member_map.emplace_back(std::move(initial_member_iden),
+                            std::move(initial_member_expr));
 
     // Subsequent member parsing
     while (member_set->has_next())
     {
-        member_set->expect(TokenType::COMMA, "Expected ',' between struct initializer members");
-
-        // It's possible that this previous comma *was* the trailing one, so we'll have to do an additional check
-        if (!member_set->has_next()) break;
-
-        auto [member_iden, member_expr] = parse_struct_member_initializer(
-            context,
-            member_set.value()
+        member_set->expect(
+            TokenType::COMMA,
+            "Expected ',' between struct initializer members"
         );
+
+        // It's possible that this previous comma *was* the trailing one, so we'll have to do an
+        // additional check
+        if (!member_set->has_next())
+        {
+            break;
+        }
+
+        auto [member_iden, member_expr] =
+            parse_struct_member_initializer(context, member_set.value());
         member_map.emplace_back(std::move(member_iden), std::move(member_expr));
     }
 
@@ -80,8 +90,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         reference_token.get_source_position(),
         context,
         reference_token.get_lexeme(),
-        std::move(member_map)
-    );
+        std::move(member_map));
 }
 
 std::string AstStructInitializer::to_string()
@@ -96,7 +105,8 @@ definition::StructDef* get_super_referencing_struct_def(
 {
     const auto definition = context->get_struct_def(struct_name);
 
-    if (!definition.has_value()) return nullptr;
+    if (!definition.has_value())
+        return nullptr;
 
     if (definition.value()->is_reference_struct())
     {
@@ -109,7 +119,8 @@ definition::StructDef* get_super_referencing_struct_def(
 
 void AstStructInitializer::validate()
 {
-    const auto definition = get_super_referencing_struct_def(this->get_context(), this->_struct_name);
+    const auto definition =
+        get_super_referencing_struct_def(this->get_context(), this->_struct_name);
     // Check whether the struct we're trying to assign actually exists
     if (definition == nullptr)
     {
@@ -131,8 +142,8 @@ void AstStructInitializer::validate()
                 "Too {} members found in struct '{}': expected {}, got {}",
                 fields.size() > this->_initializers.size() ? "few" : "many",
                 this->_struct_name,
-                fields.size(), this->_initializers.size()
-            ),
+                fields.size(),
+                this->_initializers.size()),
             this->get_source_position()
         );
     }
@@ -145,23 +156,26 @@ void AstStructInitializer::validate()
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Struct '{}' has no member named '{}'", this->_struct_name, field_name),
-                this->get_source_position()
-            );
+                std::format("Struct '{}' has no member named '{}'",
+                            this->_struct_name,
+                            field_name
+                ),
+                this->get_source_position());
         }
 
-        if (const auto member_type = infer_expression_type(this->get_context(), initializer_expr.get());
+        if (const auto member_type = infer_expression_type(this->get_context(),
+                                                           initializer_expr.get());
             !member_type->equals(*found_member.value()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got '{}'",
+                    "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got "
+                    "'{}'",
                     field_name,
                     this->_struct_name,
                     found_member.value()->to_string(),
-                    member_type->to_string()
-                ),
+                    member_type->to_string()),
                 initializer_expr->get_source_position()
             );
         }
@@ -175,8 +189,8 @@ void AstStructInitializer::validate()
     size_t index = 0;
     for (const auto& member_name : this->_initializers | std::views::keys)
     {
-        if (const auto [field_name, field_type] = fields[index];
-            member_name != field_name)
+        if (const auto [field_name, field_type] = fields[index]; member_name !=
+            field_name)
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -184,8 +198,7 @@ void AstStructInitializer::validate()
                     "Struct member order mismatch at index {}: expected '{}', got '{}'",
                     index,
                     field_name,
-                    member_name
-                ),
+                    member_name),
                 field_type->get_source_position()
             );
         }
@@ -208,7 +221,10 @@ llvm::Value* AstStructInitializer::codegen(
     for (const auto& expr : this->_initializers | std::views::values)
     {
         llvm::Value* val = expr->codegen(context, module, builder);
-        if (!val) return nullptr;
+        if (!val)
+        {
+            return nullptr;
+        }
 
         if (auto* c = llvm::dyn_cast<llvm::Constant>(val))
         {
@@ -232,12 +248,18 @@ llvm::Value* AstStructInitializer::codegen(
         {
             actual_struct_name = struct_def->get_reference_struct().value().name;
             struct_def_opt = context->get_struct_def(actual_struct_name);
-            if (!struct_def_opt.has_value()) break;
+            if (!struct_def_opt.has_value())
+            {
+                break;
+            }
             struct_def = struct_def_opt.value();
         }
     }
 
-    llvm::StructType* struct_type = llvm::StructType::getTypeByName(module->getContext(), actual_struct_name);
+    llvm::StructType* struct_type = llvm::StructType::getTypeByName(
+        module->getContext(),
+        actual_struct_name
+    );
 
     if (!struct_type)
     {
@@ -267,7 +289,7 @@ llvm::Value* AstStructInitializer::codegen(
         current_struct_val = builder->CreateInsertValue(
             current_struct_val,
             dynamic_members[i],
-            {static_cast<unsigned int>(i)},
+            { static_cast<unsigned int>(i) },
             "struct.build"
         );
     }

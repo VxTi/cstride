@@ -1,21 +1,23 @@
 #include "ast/parser.h"
-#include "files.h"
-#include "program.h"
+
 #include "ast/modifiers.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/for_loop.h"
 #include "ast/nodes/if_statement.h"
 #include "ast/nodes/import.h"
-#include "ast/nodes/while_loop.h"
-#include "ast/nodes/for_loop.h"
 #include "ast/nodes/module.h"
 #include "ast/nodes/package.h"
 #include "ast/nodes/return.h"
 #include "ast/nodes/struct.h"
+#include "ast/nodes/while_loop.h"
 #include "ast/tokens/tokenizer.h"
+#include "files.h"
+#include "program.h"
 
 using namespace stride::ast;
 
-std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::string& source_path)
+std::unique_ptr<AstBlock> parser::parse_file(const Program& program,
+                                             const std::string& source_path)
 {
     const auto source_file = read_file(source_path);
     auto tokens = tokenizer::tokenize(source_file);
@@ -23,10 +25,12 @@ std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::
     return std::move(parse_sequential(program.get_global_context(), tokens));
 }
 
-std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
+std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set)
 {
-    // Phase 1 - These sequences are simple to parse; they have no visibility modifiers, hence we can just
-    // assume that their first keyword determines their body.
+    // Phase 1 - These sequences are simple to parse; they have no visibility modifiers, hence we
+    // can just assume that their first keyword determines their body.
     auto visibility_modifier = VisibilityModifier::NONE;
     int offset = 0;
 
@@ -43,7 +47,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
     case TokenType::KEYWORD_IMPORT:
         return parse_import_statement(context, set);
 
-        // Modifiers. These are used in the next phase of parsing.
+    // Modifiers. These are used in the next phase of parsing.
     case TokenType::KEYWORD_PUBLIC:
         visibility_modifier = VisibilityModifier::GLOBAL;
         offset = 1;
@@ -75,7 +79,8 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
     case TokenType::KEYWORD_LET:
     case TokenType::KEYWORD_CONST:
         return parse_variable_declaration(context, set, visibility_modifier);
-    default: break;
+    default:
+        break;
     }
 
     return parse_standalone_expression(context, set);
@@ -83,8 +88,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_pt
 
 std::unique_ptr<AstBlock> stride::ast::parse_sequential(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+    TokenSet& set)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
@@ -101,6 +105,5 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
     return std::make_unique<AstBlock>(
         initial_token.get_source_position(),
         context,
-        std::move(nodes)
-    );
+        std::move(nodes));
 }

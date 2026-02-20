@@ -1,7 +1,7 @@
-import { type IDisposable, type languages } from 'monaco-editor';
-import { strideLanguageId } from '../language-config';
+import { type IDisposable, type languages }    from 'monaco-editor';
+import { strideLanguageId }                    from '../language-config';
 import { provideFunctionReferenceCompletions } from './function-reference-completions';
-import { provideKeywordCompletions } from './keyword-completions';
+import { provideKeywordCompletions }           from './keyword-completions';
 
 export function registerCompletionProvider(
   monaco: typeof import('monaco-editor')
