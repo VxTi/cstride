@@ -131,7 +131,7 @@ void AstStructInitializer::validate()
         );
     }
 
-    const auto fields = definition->get_fields();
+    const auto fields = definition->get_struct_fields();
 
     // Quick check: Ensure the number of members matches (no type comparisons required)
     if (fields.size() != this->_initializers.size())

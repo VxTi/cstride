@@ -118,14 +118,17 @@ llvm::Value* AstFunctionCall::codegen(
                 std::vector<llvm::Type*> param_types;
                 for (const auto& param : fn_type->get_parameter_types())
                 {
-                    param_types.push_back(
-                        internal_type_to_llvm_type(param.get(), module));
+                    param_types.push_back(internal_type_to_llvm_type(param.get(), module));
                 }
-                llvm::Type* ret_type =
-                    internal_type_to_llvm_type(fn_type->get_return_type().get(),
-                                               module);
-                llvm::FunctionType* llvm_fn_type =
-                    llvm::FunctionType::get(ret_type, param_types, false);
+                llvm::Type* ret_type = internal_type_to_llvm_type(
+                    fn_type->get_return_type().get(),
+                    module
+                );
+                llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
+                    ret_type,
+                    param_types,
+                    false
+                );
 
                 // Load the function pointer from the variable
                 const auto fn_ptr = var_def->get_internal_symbol_name();
@@ -329,7 +332,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                             subset.get_source(),
                             preceding.get_source_fragment().offset + 1,
                             len)
-                            );
+                    );
                 }
 
                 if (cast_expr<AstVariadicArgReference*>(next_arg.get()))

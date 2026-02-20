@@ -2,9 +2,14 @@ struct Test {
     some_field: float32;
 }
 
+const lambda: (int32) -> int32 = (x: int32): int32 -> {
+    return x + 1;
+};
+
+
 module io {
     /** test */
-    public fn println(arg: string, ...): void
+    pub fn println(arg: string, ...): void
     {
         printf(arg, ...);
     }
@@ -13,6 +18,10 @@ module io {
 let x = Test::{ some_field: 3.14 };
 
 fn main(): void {
-
     io::println("z: %d", x.some_field);
+    const result: int32 = lambda(10);
+
+    io::println("result: %d", result);
 }
+
+
