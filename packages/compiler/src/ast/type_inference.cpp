@@ -361,7 +361,7 @@ std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
 std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     const std::shared_ptr<ParsingContext>& context,
     AstExpression* expr
-    )
+)
 {
     if (!expr)
     {
@@ -514,16 +514,29 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         }
 
         return std::make_unique<AstFunctionType>(
-            static_cast<const AstExpression*>(function_definition)->
-            get_source_fragment(),
+            static_cast<const AstExpression*>(function_definition)->get_source_fragment(),
             context,
             std::move(param_types),
-            function_definition->get_return_type()->clone());
+            function_definition->get_return_type()->clone()
+        );
+    }
+
+    if (cast_expr<AstVariadicArgReference*>(expr))
+    {
+        // Variadic argument reference (...) represents a va_list in LLVM
+        // We return a pointer type (i8*) to represent the va_list pointer
+        return std::make_unique<AstPrimitiveType>(
+            expr->get_source_fragment(),
+            context,
+            PrimitiveType::INT8,
+            8,
+            SRFLAG_TYPE_PTR
+        );
     }
 
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
         "Unable to resolve expression type",
         expr->get_source_fragment()
-        );
+    );
 }

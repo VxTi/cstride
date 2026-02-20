@@ -6,6 +6,7 @@
 #include "ast_node.h"
 #include "types.h"
 
+#include <set>
 #include <utility>
 
 namespace stride::ast
@@ -43,7 +44,7 @@ namespace stride::ast
     {
         LOGICAL_NOT, //  !<..>
         NEGATE,      //  -<..>
-        PLUS,    //  +<..>
+        PLUS,        //  +<..>
         COMPLEMENT,  //  ~<..>
         INCREMENT,   // ++<..> or <..>++
         DECREMENT,   // --<..> or <..>--
@@ -688,6 +689,25 @@ namespace stride::ast
         {
             return _struct_name;
         }
+
+        llvm::Value* codegen(
+            const ParsingContext* context,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder) override;
+
+        std::string to_string() override;
+
+        void validate() override;
+    };
+
+    class AstVariadicArgReference
+        : public AstExpression
+    {
+    public:
+        explicit AstVariadicArgReference(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context) :
+            AstExpression(source, context) {}
 
         llvm::Value* codegen(
             const ParsingContext* context,

@@ -251,7 +251,7 @@ llvm::Value* AstFunctionCall::codegen(
             // Check for strict type equality.
             // If the argument is Optional<T> but the function expects T, we unwrap.
             if (const llvm::Type* expected_type = callee->getFunctionType()->
-                    getParamType(i);
+                                                          getParamType(i);
                 arg_val->getType() != expected_type)
             {
                 final_val = unwrap_optional_value(arg_val, builder);
@@ -284,6 +284,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     std::vector<IAstType*> parameter_types = {};
     std::vector<std::unique_ptr<IAstType>> parameter_type_owners = {};
 
+    int function_call_flags = SRFLAG_NONE;
+
     // Parsing function parameter values
     if (function_parameter_set.has_value())
     {
@@ -306,9 +308,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
             // Consume next parameters
             while (subset.has_next())
             {
-                const auto preceding =
-                    subset.expect(TokenType::COMMA,
-                                  "Expected ',' between function arguments");
+                const auto preceding = subset.expect(
+                    TokenType::COMMA,
+                    "Expected ',' between function arguments"
+                );
 
                 auto next_arg = parse_inline_expression(context, subset);
 
@@ -316,8 +319,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                 {
                     // Since the RParen is already consumed, we have to manually extract its
                     // position with the following assumption It's possible this yields END_OF_FILE
-                    const auto len = set.at(set.position() - 1).
-                                         get_source_fragment().offset - 1 -
+                    const auto len =
+                        set.at(set.position() - 1).get_source_fragment().offset - 1 -
                         preceding.get_source_fragment().offset;
                     throw parsing_error(
                         ErrorType::SYNTAX_ERROR,
@@ -325,7 +328,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                         SourceFragment(
                             subset.get_source(),
                             preceding.get_source_fragment().offset + 1,
-                            len));
+                            len)
+                            );
+                }
+
+                if (cast_expr<AstVariadicArgReference*>(next_arg.get()))
+                {
+
+                    break;
                 }
 
                 auto next_type = infer_expression_type(context, next_arg.get());
@@ -336,22 +346,26 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         }
     }
 
+    const auto& last_pos = parameter_types.back()->get_source_fragment();
+    const auto& ref_pos = reference_token.get_source_fragment();
+
     auto position = SourceFragment(
         set.get_source(),
-        reference_token.get_source_fragment().offset,
+        ref_pos.offset,
         parameter_types.empty()
-        ? reference_token.get_source_fragment().length
-        : parameter_types.back()->get_source_fragment().offset +
-        parameter_types.back()->get_source_fragment().length -
-        reference_token.get_source_fragment().offset);
+        ? ref_pos.length
+        : last_pos.offset + last_pos.length - ref_pos.offset);
 
-    Symbol function_name =
-        resolve_internal_function_name(context,
-                                       position,
-                                       function_name_segments,
-                                       parameter_types);
+    Symbol function_name = resolve_internal_function_name(
+        context,
+        position,
+        function_name_segments,
+        parameter_types
+    );
 
-    return std::make_unique<AstFunctionCall>(context,
-                                             function_name,
-                                             std::move(function_arg_nodes));
+    return std::make_unique<AstFunctionCall>(
+        context,
+        function_name,
+        std::move(function_arg_nodes)
+    );
 }

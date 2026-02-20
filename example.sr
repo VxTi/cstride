@@ -4,9 +4,9 @@ struct Test {
 
 module io {
     /** test */
-    public fn println(arg: string, varargs: int32): void
+    public fn println(arg: string, ...): void
     {
-        printf(arg, varargs);
+        printf(arg, ...);
     }
 }
 

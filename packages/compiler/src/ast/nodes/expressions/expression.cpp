@@ -111,6 +111,15 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         return expr;
     }
 
+    if (set.peek_next_eq(TokenType::THREE_DOTS))
+    {
+        const auto& ref = set.next();
+        return std::make_unique<AstVariadicArgReference>(
+            ref.get_source_fragment(),
+            context
+        );
+    }
+
     set.throw_error("Invalid token found in expression");
 }
 
