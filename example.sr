@@ -21,13 +21,15 @@ module io {
 let x = Test::{ some_field: 3.14 };
 
  const k: ((int32, int32) -> int32)[] = [
-    (x: int32, y: int32): int32 -> { return 1; }
+    (x: int32, y: int32): int32 -> {
+        return x + y;
+    }
 ];
 
 fn main(): void {
     // io::println("z: %d", x.some_field);
     const func = k[0];
-    const result: int32 = func(10);
+    const result: int32 = func(10, 20);
 
     printf("result: %d", result);
 }

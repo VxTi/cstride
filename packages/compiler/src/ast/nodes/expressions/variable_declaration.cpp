@@ -423,6 +423,15 @@ llvm::Value* AstVariableDeclaration::codegen(
         module
     );
 
+    if (variable_ty == nullptr)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Failed to determine LLVM type for variable declaration",
+            this->get_source_fragment()
+        );
+    }
+
     // If we are generating a global, we might rely on constant initialization
     // or dynamic initialization handled later.
     if (const std::optional<llvm::GlobalVariable*> global_var =

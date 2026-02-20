@@ -15,6 +15,18 @@ void AstArray::validate()
     }
 }
 
+void AstArray::resolve_forward_references(
+    const ParsingContext* context,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
+{
+    for (const auto& element : this->get_elements())
+    {
+        element->resolve_forward_references(context, module, builder);
+    }
+}
+
 std::string AstArray::to_string()
 {
     return "Array";
@@ -69,18 +81,23 @@ llvm::Value* AstArray::codegen(
         return llvm::ConstantPointerNull::get(array_ptr_type);
     }
 
-    llvm::Value* array_alloca = builder->CreateAlloca(concrete_array_type);
-
     // Try to build a constant aggregate initializer
     bool all_const_initializers = true;
     std::vector<llvm::Constant*> const_elements;
     const_elements.reserve(array_size);
+
+    // Save the insert point before generating elements
+    llvm::BasicBlock* saved_block = builder->GetInsertBlock();
 
     for (size_t i = 0; i < array_size; ++i)
     {
         llvm::Value* v = this->get_elements()[i]->codegen(
             module,
             builder);
+
+        // Restore insert point after each element (in case it's a lambda)
+        builder->SetInsertPoint(saved_block);
+
         auto* c = llvm::dyn_cast<llvm::Constant>(v);
         if (!c)
         {
@@ -90,23 +107,42 @@ llvm::Value* AstArray::codegen(
         const_elements.push_back(c);
     }
 
-    // If we have all-const initializers, we can store them
-    // all in a single [N x T] operation
+    // If we have all-const initializers, create a global array
+    // (This is important for arrays used in global variable initialization)
     if (all_const_initializers)
     {
         llvm::Constant* init = llvm::ConstantArray::get(
             concrete_array_type,
             const_elements);
-        builder->CreateStore(init, array_alloca);
-        return array_alloca;
+
+        llvm::GlobalVariable* global_array = new llvm::GlobalVariable(
+            *module,
+            concrete_array_type,
+            true,  // isConstant
+            llvm::GlobalValue::PrivateLinkage,
+            init,
+            ""  // anonymous
+        );
+
+        return global_array;
     }
+
+    // For non-constant arrays, use stack allocation
+    llvm::Value* array_alloca = builder->CreateAlloca(concrete_array_type);
 
     // Fallback: element-by-element stores into the aggregate
     for (size_t i = 0; i < array_size; ++i)
     {
+        // Save the current insert point before generating element code
+        // (element codegen might be a lambda that redirects the builder)
+        llvm::BasicBlock* saved_block = builder->GetInsertBlock();
+
         llvm::Value* element_value = this->get_elements()[i]->codegen(
             module,
             builder);
+
+        // Restore the insert point after element codegen
+        builder->SetInsertPoint(saved_block);
 
         llvm::Value* elementPtr = builder->CreateInBoundsGEP(
             concrete_array_type,
