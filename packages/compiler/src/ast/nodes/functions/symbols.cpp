@@ -68,7 +68,7 @@ size_t ast_type_to_internal_id(IAstType* type)
  */
 Symbol stride::ast::resolve_internal_function_name(
     const std::shared_ptr<ParsingContext>& context,
-    const SourceLocation& position,
+    const SourceFragment& position,
     const SymbolNameSegments& function_name_segments,
     const std::vector<IAstType*>& parameter_types)
 {
@@ -100,7 +100,7 @@ Symbol stride::ast::resolve_internal_function_name(
 
 Symbol stride::ast::resolve_internal_name(
     const std::string& context_name,
-    const SourceLocation& position,
+    const SourceFragment& position,
     const SymbolNameSegments& segments)
 {
     return Symbol(position, context_name, resolve_internal_name(segments));

@@ -10,20 +10,20 @@ namespace stride
 {
     enum class ErrorType
     {
-        SYNTAX_ERROR   = 1,
-        TYPE_ERROR     = 2,
-        RUNTIME_ERROR  = 3,
-        SEMANTIC_ERROR = 4
+        SYNTAX_ERROR      = 1,
+        TYPE_ERROR        = 2,
+        COMPILATION_ERROR = 3,
+        SEMANTIC_ERROR    = 4
     };
 
     struct ErrorSourceReference
     {
-        const SourceLocation source_position;
+        const SourceFragment source_position;
         std::string message;
 
         ErrorSourceReference(
             std::string message,
-            const SourceLocation& source) :
+            const SourceFragment& source) :
             source_position(source),
             message(std::move(message)) {}
     };
@@ -37,7 +37,7 @@ namespace stride
     std::string make_source_error(
         ErrorType error_type,
         const std::string& error,
-        const SourceLocation& source_position,
+        const SourceFragment& source_position,
         const std::string& suggestion = "");
 
     /**
@@ -64,7 +64,7 @@ namespace stride
         explicit parsing_error(
             const ErrorType error_type,
             const std::string& error,
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::string& suggestion = "") :
             parsing_error(
                 make_source_error(error_type, error, source, suggestion)) {}

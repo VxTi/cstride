@@ -18,10 +18,10 @@ namespace stride::ast
         /// Can be the same as `name`, if there's no need for internalization.
         std::string internal_name;
 
-        SourceLocation symbol_position;
+        SourceFragment symbol_position;
 
         explicit Symbol(
-            const SourceLocation& position,
+            const SourceFragment& position,
             const std::string& context_name,
             std::string name,
             const std::string& internal_name) :
@@ -33,12 +33,12 @@ namespace stride::ast
             symbol_position(position) {}
 
         explicit Symbol(
-            const SourceLocation& position,
+            const SourceFragment& position,
             const std::string& context_name,
             const std::string& name) :
             Symbol(position, context_name, name, name) {}
 
-        explicit Symbol(const SourceLocation& position,
+        explicit Symbol(const SourceFragment& position,
                         const std::string& name) :
             Symbol(position, "", name) {}
 
@@ -52,13 +52,13 @@ namespace stride::ast
 
     Symbol resolve_internal_function_name(
         const std::shared_ptr<ParsingContext>& context,
-        const SourceLocation& position,
+        const SourceFragment& position,
         const SymbolNameSegments& function_name_segments,
         const std::vector<IAstType*>& parameter_types);
 
     Symbol resolve_internal_name(
         const std::string& context_name,
-        const SourceLocation& position,
+        const SourceFragment& position,
         const SymbolNameSegments& segments);
 
     std::string resolve_internal_name(const SymbolNameSegments& segments);

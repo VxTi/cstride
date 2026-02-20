@@ -207,10 +207,10 @@ llvm::Value* AstFunctionCall::codegen(
             : "";
 
         throw parsing_error(
-            ErrorType::RUNTIME_ERROR,
+            ErrorType::COMPILATION_ERROR,
             std::format("Function '{}' was not found in this scope",
                         this->format_function_name()),
-            this->get_source_position(),
+            this->get_source_fragment(),
             suggested_alternative);
     }
 
@@ -223,10 +223,10 @@ llvm::Value* AstFunctionCall::codegen(
         provided_arg_count < minimum_arg_count)
     {
         throw parsing_error(
-            ErrorType::RUNTIME_ERROR,
+            ErrorType::COMPILATION_ERROR,
             std::format("Incorrect arguments passed for function '{}'",
                         this->get_function_name()),
-            this->get_source_position(),
+            this->get_source_fragment(),
             std::format("Incorrect arguments passed for function '{}'",
                         this->get_function_name()));
     }
@@ -317,14 +317,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                     // Since the RParen is already consumed, we have to manually extract its
                     // position with the following assumption It's possible this yields END_OF_FILE
                     const auto len = set.at(set.position() - 1).
-                                         get_source_position().offset - 1 -
-                        preceding.get_source_position().offset;
+                                         get_source_fragment().offset - 1 -
+                        preceding.get_source_fragment().offset;
                     throw parsing_error(
                         ErrorType::SYNTAX_ERROR,
                         "Expected expression for function argument",
-                        SourceLocation(
+                        SourceFragment(
                             subset.get_source(),
-                            preceding.get_source_position().offset + 1,
+                            preceding.get_source_fragment().offset + 1,
                             len));
                 }
 
@@ -336,14 +336,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         }
     }
 
-    auto position = SourceLocation(
+    auto position = SourceFragment(
         set.get_source(),
-        reference_token.get_source_position().offset,
+        reference_token.get_source_fragment().offset,
         parameter_types.empty()
-        ? reference_token.get_source_position().length
-        : parameter_types.back()->get_source_position().offset +
-        parameter_types.back()->get_source_position().length -
-        reference_token.get_source_position().offset);
+        ? reference_token.get_source_fragment().length
+        : parameter_types.back()->get_source_fragment().offset +
+        parameter_types.back()->get_source_fragment().length -
+        reference_token.get_source_fragment().offset);
 
     Symbol function_name =
         resolve_internal_function_name(context,

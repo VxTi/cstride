@@ -12,7 +12,7 @@ namespace stride::ast
     {
     public:
         AstSwitchBranch(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context) :
             IAstNode(source, context) {}
     };
@@ -24,7 +24,7 @@ namespace stride::ast
 
     public:
         explicit AstSwitch(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name) :
             IAstNode(source, context),

@@ -87,7 +87,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     }
 
     return std::make_unique<AstStructInitializer>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         reference_token.get_lexeme(),
         std::move(member_map));
@@ -127,7 +127,7 @@ void AstStructInitializer::validate()
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format("Struct '{}' does not exist", this->_struct_name),
-            this->get_source_position()
+            this->get_source_fragment()
         );
     }
 
@@ -144,7 +144,7 @@ void AstStructInitializer::validate()
                 this->_struct_name,
                 fields.size(),
                 this->_initializers.size()),
-            this->get_source_position()
+            this->get_source_fragment()
         );
     }
 
@@ -160,7 +160,7 @@ void AstStructInitializer::validate()
                             this->_struct_name,
                             field_name
                 ),
-                this->get_source_position());
+                this->get_source_fragment());
         }
 
         if (const auto member_type = infer_expression_type(this->get_context(),
@@ -176,7 +176,7 @@ void AstStructInitializer::validate()
                     this->_struct_name,
                     found_member.value()->to_string(),
                     member_type->to_string()),
-                initializer_expr->get_source_position()
+                initializer_expr->get_source_fragment()
             );
         }
 
@@ -199,7 +199,7 @@ void AstStructInitializer::validate()
                     index,
                     field_name,
                     member_name),
-                field_type->get_source_position()
+                field_type->get_source_fragment()
             );
         }
 
@@ -264,9 +264,9 @@ llvm::Value* AstStructInitializer::codegen(
     if (!struct_type)
     {
         throw parsing_error(
-            ErrorType::RUNTIME_ERROR,
+            ErrorType::COMPILATION_ERROR,
             std::format("Struct type '{}' is undefined", this->_struct_name),
-            this->get_source_position()
+            this->get_source_fragment()
         );
     }
 

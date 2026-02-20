@@ -41,7 +41,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
     {
         const auto reference_token = tokens.next();
         return std::make_unique<AstNilLiteral>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context);
     }
 

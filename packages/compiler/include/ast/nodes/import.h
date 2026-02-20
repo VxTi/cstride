@@ -20,7 +20,7 @@ namespace stride::ast
 
     public:
         explicit AstImport(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             Dependency dependency) :
             IAstNode(source, context),

@@ -54,9 +54,9 @@ llvm::Value* AstIdentifier::codegen(
                 }
 
                 throw parsing_error(
-                    ErrorType::RUNTIME_ERROR,
+                    ErrorType::COMPILATION_ERROR,
                     std::format("Identifier '{}' not found in this scope", this->get_name()),
-                    this->get_source_position());
+                    this->get_source_fragment());
             }
         }
     }
@@ -102,9 +102,9 @@ llvm::Value* AstIdentifier::codegen(
     }
 
     throw parsing_error(
-        ErrorType::RUNTIME_ERROR,
+        ErrorType::COMPILATION_ERROR,
         std::format("Identifier '{}' not found in this scope", this->get_name()),
-        this->get_source_position()
+        this->get_source_fragment()
     );
 }
 

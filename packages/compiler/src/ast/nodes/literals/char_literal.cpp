@@ -17,7 +17,7 @@ stride::ast::parse_char_literal_optional(
         const char value = next.get_lexeme()[0];
 
         return std::make_unique<AstCharLiteral>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             value);
     }

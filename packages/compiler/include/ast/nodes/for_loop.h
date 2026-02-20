@@ -19,7 +19,7 @@ namespace stride::ast
 
     public:
         explicit AstForLoop(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> initiator,
             std::unique_ptr<AstExpression> condition,

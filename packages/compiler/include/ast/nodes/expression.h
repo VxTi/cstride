@@ -43,6 +43,7 @@ namespace stride::ast
     {
         LOGICAL_NOT, //  !<..>
         NEGATE,      //  -<..>
+        PLUS,    //  +<..>
         COMPLEMENT,  //  ~<..>
         INCREMENT,   // ++<..> or <..>++
         DECREMENT,   // --<..> or <..>--
@@ -72,7 +73,7 @@ namespace stride::ast
     {
     public:
         explicit AstExpression(
-            const SourceLocation& source_position,
+            const SourceFragment& source_position,
             const std::shared_ptr<ParsingContext>& context) :
             IAstNode(source_position, context) {}
 
@@ -103,7 +104,7 @@ namespace stride::ast
 
     public:
         explicit AstArray(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<AstExpression>> elements) :
             AstExpression(source, context),
@@ -174,7 +175,7 @@ namespace stride::ast
 
     public:
         explicit AstArrayMemberAccessor(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> array_identifier,
             std::unique_ptr<AstExpression> index_expr) :
@@ -219,7 +220,7 @@ namespace stride::ast
 
     public:
         explicit AstMemberAccessor(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> base,
             std::vector<std::unique_ptr<AstIdentifier>> members
@@ -409,7 +410,7 @@ namespace stride::ast
 
     public:
         explicit AbstractBinaryOp(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> lsh,
             std::unique_ptr<AstExpression> rsh
@@ -438,7 +439,7 @@ namespace stride::ast
 
     public:
         explicit AstBinaryArithmeticOp(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
@@ -477,7 +478,7 @@ namespace stride::ast
 
     public:
         explicit AstLogicalOp(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
@@ -512,7 +513,7 @@ namespace stride::ast
 
     public:
         explicit AstComparisonOp(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
@@ -551,7 +552,7 @@ namespace stride::ast
 
     public:
         explicit AstUnaryOp(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
@@ -604,7 +605,7 @@ namespace stride::ast
 
     public:
         explicit AstVariableReassignment(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string variable_name,
             std::string internal_name,
@@ -664,7 +665,7 @@ namespace stride::ast
 
     public:
         explicit AstStructInitializer(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string struct_name,
             std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>>

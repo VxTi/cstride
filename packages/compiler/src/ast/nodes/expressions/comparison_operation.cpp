@@ -90,9 +90,9 @@ llvm::Value* AstComparisonOp::codegen(
         if (!struct_val)
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
+                ErrorType::COMPILATION_ERROR,
                 "Cannot compare a non-optional value with nil",
-                this->get_source_position()
+                this->get_source_fragment()
             );
         }
 
@@ -219,7 +219,7 @@ void AstComparisonOp::validate()
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             "Unable to infer types for comparison operation",
-            this->get_source_position()
+            this->get_source_fragment()
         );
     }
 
@@ -258,6 +258,6 @@ void AstComparisonOp::validate()
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
         "Comparison operation operands must be used on primitive or optional types",
-        this->get_source_position()
+        this->get_source_fragment()
     );
 }

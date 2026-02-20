@@ -10,7 +10,8 @@ using namespace stride::ast::definition;
 
 std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     // We can just do a quick check here, as we don't know yet whether in what context it's used.
     if (context->get_current_scope_type() == ScopeType::GLOBAL ||
@@ -20,38 +21,34 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
             "Return statements are not allowed outside of functions");
     }
     const auto reference_token = set.next();
+    const auto& ref_pos = reference_token.get_source_fragment();
 
-    if (set.peek_next_eq(TokenType::SEMICOLON))
+    std::unique_ptr<AstExpression> return_value = nullptr;
+
+    // If we don't see a semicolon immediately after, we expect a return expression.
+    if (!set.peek_next_eq(TokenType::SEMICOLON))
     {
-        const auto end = set.next();
-
-        const auto ref_pos = SourceLocation(
-            set.get_source(),
-            reference_token.get_source_position().offset,
-            reference_token.get_source_position().offset + end.
-                                                           get_source_position().offset -
-            end.get_source_position().length);
-
-        return std::make_unique<AstReturnStatement>(ref_pos, context, nullptr);
+        return_value = parse_inline_expression(context, set);
+        if (!return_value)
+        {
+            set.throw_error("Expected expression after return keyword");
+        }
     }
 
-    auto value = parse_inline_expression(context, set);
-    if (!value)
-    {
-        set.throw_error("Expected expression after return keyword");
-    }
+    const auto& end_tok = set.expect(TokenType::SEMICOLON, "Expected ';' after return statement");
+    const auto& end_pos = end_tok.get_source_fragment();
 
-    set.expect(TokenType::SEMICOLON, "Expected ';' after return statement");
-    const auto& ref_pos = reference_token.get_source_position();
-    const auto& expr_pos = value->get_source_position();
+    const auto position = SourceFragment(
+        set.get_source(),
+        ref_pos.offset,
+        ref_pos.offset + end_pos.offset - end_pos.length
+    );
 
     return std::make_unique<AstReturnStatement>(
-        SourceLocation(
-            set.get_source(),
-            ref_pos.offset,
-            expr_pos.offset + expr_pos.length - ref_pos.offset),
+        position,
         context,
-        std::move(value));
+        std::move(return_value)
+    );
 }
 
 
@@ -69,7 +66,7 @@ void AstReturnStatement::validate()
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             "Return statement cannot appear outside of functions",
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     if (this->get_return_expr())
@@ -106,9 +103,9 @@ llvm::Value* AstReturnStatement::codegen(
     if (!cur_bb)
     {
         throw parsing_error(
-            ErrorType::RUNTIME_ERROR,
+            ErrorType::COMPILATION_ERROR,
             "Cannot return from a function that has no basic block",
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     // Implicitly unwrap optional if the return type is not optional
@@ -145,9 +142,9 @@ llvm::Value* AstReturnStatement::codegen(
     else
     {
         throw parsing_error(
-            ErrorType::RUNTIME_ERROR,
+            ErrorType::COMPILATION_ERROR,
             "Cannot determine the function return type for return statement",
-            this->get_source_position()
+            this->get_source_fragment()
         );
     }
 

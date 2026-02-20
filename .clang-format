@@ -18,8 +18,9 @@ IncludeCategories:
     Priority:        4
 IncludeIsMainRegex: '([-_](test|unittest))?$'
 BreakAfterReturnType: None
+
 # Penalties
-PenaltyReturnTypeOnItsOwnLine: 1000 # Ensure that return type never on its own line
+PenaltyReturnTypeOnItsOwnLine: 10000 # Ensure that return type never on its own line
 PenaltyBreakBeforeFirstCallParameter: 1
 
 # Very important settings

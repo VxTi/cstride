@@ -9,7 +9,6 @@ TEST(Variables, BasicDeclarations)
     const std::string code = R"(
         fn main(): void {
             const pi: float64 = 3.14159;
-            // const pi_suffix: float64 = 3.14159D; // TODO: Verify suffix support
             let x: int32 = 10;
             x = 20;
         }

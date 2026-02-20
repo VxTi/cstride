@@ -23,7 +23,7 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
 
     context->define_symbol(
         Symbol(
-            member_name_tok.get_source_position(),
+            member_name_tok.get_source_fragment(),
             context->get_name(),
             member_sym,
             /* internal_name = */
@@ -42,7 +42,7 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     tokens.expect(TokenType::COMMA, "Expected a comma after enum member value");
 
     return std::make_unique<AstEnumerableMember>(
-        member_name_tok.get_source_position(),
+        member_name_tok.get_source_fragment(),
         context,
         std::move(member_sym),
         std::move(value.value()));
@@ -85,7 +85,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     auto enumerable_name = enumerable_name_tok.get_lexeme();
 
     context->define_symbol(
-        Symbol(reference_token.get_source_position(),
+        Symbol(reference_token.get_source_fragment(),
                context->get_name(),
                enumerable_name),
         definition::SymbolType::ENUM);
@@ -111,7 +111,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     }
 
     return std::make_unique<AstEnumerable>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         std::move(members),
         enumerable_name);

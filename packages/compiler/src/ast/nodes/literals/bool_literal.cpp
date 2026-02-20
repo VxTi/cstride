@@ -17,7 +17,7 @@ stride::ast::parse_boolean_literal_optional(
         const bool value = next.get_lexeme() == "true";
 
         return std::make_unique<AstBooleanLiteral>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             value);
     }

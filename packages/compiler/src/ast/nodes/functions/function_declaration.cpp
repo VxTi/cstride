@@ -96,7 +96,7 @@ void IAstCallable::validate()
                     std::format(
                         "Function '{}' has return type 'void' and cannot return a value.",
                         this->get_name()),
-                    return_stmt->get_source_position());
+                    return_stmt->get_source_fragment());
             }
         }
         return;
@@ -111,17 +111,17 @@ void IAstCallable::validate()
                 std::format(
                     "Function '{}' returns a struct type, but no return statement is present.",
                     this->get_name()),
-                this->get_source_position());
+                this->get_source_fragment());
         }
 
         throw parsing_error(
-            ErrorType::RUNTIME_ERROR,
+            ErrorType::COMPILATION_ERROR,
             std::format(
                 "Function '{}' is missing a return statement.",
                 this->is_anonymous()
                 ? "<anonymous function>"
                 : this->get_name()),
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     for (const auto& return_stmt : return_statements)
@@ -146,8 +146,8 @@ void IAstCallable::validate()
                     ? "function-type "
                     : "struct-type ",
                     this->get_return_type()->to_string()),
-                return_stmt->get_return_expr()->get_source_position()
-                );
+                return_stmt->get_return_expr()->get_source_fragment()
+            );
 
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -177,8 +177,11 @@ llvm::Value* IAstCallable::codegen(
     if (!function)
     {
         module->print(llvm::errs(), nullptr);
-        throw std::runtime_error(
-            "Function symbol missing: " + this->get_internal_name());
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Function symbol missing: " + this->get_internal_name(),
+            this->get_source_fragment()
+        );
     }
 
     if (this->is_extern())
@@ -193,9 +196,12 @@ llvm::Value* IAstCallable::codegen(
     builder->SetInsertPoint(entry_bb);
 
     // We create a new builder for the prologue to ensure allocas are at the very top
-    llvm::IRBuilder prologue_builder(&function->getEntryBlock(),
-                                     function->getEntryBlock().begin());
+    llvm::IRBuilder prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
 
+    //
+    // Function parameter handling
+    // Here we define the parameters on the stack as memory slots for the function
+    //
     auto arg_it = function->arg_begin();
     for (const auto& param : this->get_parameters())
     {
@@ -203,11 +209,12 @@ llvm::Value* IAstCallable::codegen(
         {
             arg_it->setName(param->get_name() + ".arg");
 
-            // Create memory slot on the stack for the parameter
-            llvm::AllocaInst* alloca =
-                prologue_builder.CreateAlloca(arg_it->getType(),
-                                              nullptr,
-                                              param->get_name());
+            // Create a memory slot on the stack for the parameter
+            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
+                arg_it->getType(),
+                nullptr,
+                param->get_name()
+            );
 
             // Store the initial argument value into the alloca
             builder->CreateStore(arg_it, alloca);
@@ -250,8 +257,11 @@ llvm::Value* IAstCallable::codegen(
             }
             else
             {
-                throw std::runtime_error(
-                    "Function " + this->get_name() + " missing return path.");
+                throw parsing_error(
+                    ErrorType::COMPILATION_ERROR,
+                    "Function " + this->get_name() + " missing return path.",
+                    this->get_source_fragment()
+                );
             }
         }
     }
@@ -341,7 +351,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     {
         parameter_types_cloned.push_back(param->get_type()->clone());
     }
-    const auto& position = reference_token.get_source_position();
+    const auto& position = reference_token.get_source_fragment();
     auto symbol_name = Symbol(position, context->get_name(), fn_name);
 
     // Prevent tagging extern functions with different internal names.
@@ -445,11 +455,11 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     static int anonymous_lambda_id = 0;
 
     auto symbol_name = Symbol(
-        SourceLocation(
+        SourceFragment(
             set.get_source(),
-            reference_token.get_source_position().offset,
-            lambda_arrow.get_source_position().offset -
-            reference_token.get_source_position().offset),
+            reference_token.get_source_fragment().offset,
+            lambda_arrow.get_source_fragment().offset -
+            reference_token.get_source_fragment().offset),
         ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++));
 
     std::vector<std::unique_ptr<IAstType>> cloned_params;

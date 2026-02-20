@@ -28,10 +28,10 @@ std::unique_ptr<AstStructMember> parse_struct_member(
         "Expected ';' after struct member declaration"
     );
 
-    const auto& last_pos = last_token.get_source_position();
-    const auto& mem_pos = struct_member_name_tok.get_source_position();
+    const auto& last_pos = last_token.get_source_fragment();
+    const auto& mem_pos = struct_member_name_tok.get_source_fragment();
 
-    const auto position = stride::SourceLocation(
+    const auto position = stride::SourceFragment(
         set.get_source(),
         mem_pos.offset,
         last_pos.offset + last_pos.length - mem_pos.offset
@@ -84,13 +84,13 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
         // We define it as a reference to `reference_sym`. Validation happens later
         context->define_struct(
             /* Base struct sym */
-            Symbol(struct_name_tok.get_source_position(), struct_name),
+            Symbol(struct_name_tok.get_source_fragment(), struct_name),
             /* Reference struct sym */
-            Symbol(reference_sym->get_source_position(),
+            Symbol(reference_sym->get_source_fragment(),
                    reference_sym->get_internal_name()));
 
         return std::make_unique<AstStructDeclaration>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             struct_name,
             std::move(reference_sym));
@@ -101,13 +101,13 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
     // Ensure we have at least one member in the struct body
     if (!struct_body_set.has_value() || !struct_body_set.value().has_next())
     {
-        const auto& ref_src_pos = reference_token.get_source_position();
-        const auto& struct_name_pos = struct_name_tok.get_source_position();
+        const auto& ref_src_pos = reference_token.get_source_fragment();
+        const auto& struct_name_pos = struct_name_tok.get_source_fragment();
 
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             "A struct must have at least 1 member",
-            SourceLocation(
+            SourceFragment(
                 tokens.get_source(),
                 ref_src_pos.offset,
                 struct_name_pos.offset + struct_name_pos.length - ref_src_pos.
@@ -139,11 +139,11 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
     }
 
     context->define_struct(
-        Symbol(struct_name_tok.get_source_position(), struct_name),
+        Symbol(struct_name_tok.get_source_fragment(), struct_name),
         std::move(fields));
 
     return std::make_unique<AstStructDeclaration>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         struct_name,
         std::move(members)
@@ -166,7 +166,7 @@ void AstStructMember::validate()
                 ErrorType::TYPE_ERROR,
                 std::format("Undefined struct type for member '{}'",
                             this->get_name()),
-                this->get_source_position());
+                this->get_source_fragment());
         }
     }
 }
@@ -188,7 +188,7 @@ void AstStructDeclaration::validate()
                     "undefined",
                     this->get_name(),
                     this->_reference.value()->get_internal_name()),
-                this->_reference.value()->get_source_position());
+                this->_reference.value()->get_source_fragment());
         }
         return;
     }
@@ -272,11 +272,11 @@ void AstStructDeclaration::resolve_forward_references(
         if (!ref_struct)
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
+                ErrorType::COMPILATION_ERROR,
                 std::format(
                     "Referenced struct type '{}' not found during codegen",
                     ref_name),
-                this->get_source_position());
+                this->get_source_fragment());
         }
 
         // If the referenced struct is still opaque/incomplete, we cannot alias it yet.
@@ -286,7 +286,7 @@ void AstStructDeclaration::resolve_forward_references(
                 ErrorType::TYPE_ERROR,
                 std::format("Referenced struct type '{}' is not fully defined",
                             ref_name),
-                this->get_source_position());
+                this->get_source_fragment());
         }
 
         member_types = ref_struct->elements();
@@ -311,7 +311,7 @@ void AstStructDeclaration::resolve_forward_references(
                         member->get_type().get_internal_name(),
                         member->get_name()
                     ),
-                    member->get_source_position());
+                    member->get_source_fragment());
             }
 
             member_types.push_back(llvm_type);

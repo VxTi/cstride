@@ -6,7 +6,7 @@
 using namespace stride::ast;
 
 AstMemberAccessor::AstMemberAccessor(
-    const SourceLocation& source,
+    const SourceFragment& source,
     const std::shared_ptr<ParsingContext>& context,
     std::unique_ptr<AstIdentifier> base,
     std::vector<std::unique_ptr<AstIdentifier>> members) :
@@ -71,14 +71,14 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
                        "Expected identifier after '.' in member access");
 
         auto symbol =
-            Symbol(accessor_iden_tok.get_source_position(),
+            Symbol(accessor_iden_tok.get_source_fragment(),
                    accessor_iden_tok.get_lexeme());
 
         chained_accessors.push_back(
             std::make_unique<AstIdentifier>(context, symbol));
     }
 
-    const auto lhs_source_pos = lhs->get_source_position();
+    const auto lhs_source_pos = lhs->get_source_fragment();
 
     // TODO: Allow function calls to be the last element as well.
     const auto lhs_identifier = dynamic_cast<AstIdentifier*>(lhs.get());
@@ -91,10 +91,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
     }
 
     const auto last_source_pos = chained_accessors.back().get()->
-                                                   get_source_position();
+                                                   get_source_fragment();
 
     return std::make_unique<AstMemberAccessor>(
-        SourceLocation(
+        SourceFragment(
             set.get_source(),
             lhs_source_pos.offset,
             last_source_pos.offset + last_source_pos.length - lhs_source_pos.
@@ -205,10 +205,10 @@ llvm::Value* AstMemberAccessor::codegen(
         if (!struct_def_opt.has_value())
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
+                ErrorType::COMPILATION_ERROR,
                 std::format("Unknown struct type '{}' during codegen",
                             current_struct_name),
-                this->get_source_position()
+                this->get_source_fragment()
             );
         }
 
@@ -221,11 +221,11 @@ llvm::Value* AstMemberAccessor::codegen(
             if (!struct_def_opt.has_value())
             {
                 throw parsing_error(
-                    ErrorType::RUNTIME_ERROR,
+                    ErrorType::COMPILATION_ERROR,
                     std::format(
                         "Unknown struct type '{}' during codegen",
                         struct_def->get_reference_struct().value().name),
-                    this->get_source_position());
+                    this->get_source_fragment());
             }
             struct_def = struct_def_opt.value();
         }
@@ -236,12 +236,12 @@ llvm::Value* AstMemberAccessor::codegen(
         if (!member_index.has_value())
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
+                ErrorType::COMPILATION_ERROR,
                 std::format(
                     "Unknown member '{}' in struct '{}'",
                     accessor->get_name(),
                     current_struct_name),
-                this->get_source_position());
+                this->get_source_fragment());
         }
 
         if (is_pointer_ty)

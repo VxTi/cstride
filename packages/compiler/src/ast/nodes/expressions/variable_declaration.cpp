@@ -94,16 +94,16 @@ stride::ast::parse_variable_declaration_inline(
                 throw parsing_error(
                     ErrorType::SYNTAX_ERROR,
                     "Expected '=' after type annotation in variable declaration",
-                    variable_type->get_source_position());
+                    variable_type->get_source_fragment());
             }
 
             // If no expression was provided (lacking '='), initialize with nil if the initial type
             // is optional
-            const auto& ref_src_pos = reference_token.get_source_position();
-            const auto& var_type_src_pos = variable_type->get_source_position();
+            const auto& ref_src_pos = reference_token.get_source_fragment();
+            const auto& var_type_src_pos = variable_type->get_source_fragment();
 
             value = std::make_unique<AstNilLiteral>(
-                SourceLocation(
+                SourceFragment(
                     ref_src_pos.source,
                     ref_src_pos.offset,
                     var_type_src_pos.offset + var_type_src_pos.length -
@@ -113,9 +113,9 @@ stride::ast::parse_variable_declaration_inline(
         }
     }
 
-    const auto& ref_tok_pos = reference_token.get_source_position();
-    const auto& var_type_pos = variable_type->get_source_position();
-    const auto symbol_position = SourceLocation(
+    const auto& ref_tok_pos = reference_token.get_source_fragment();
+    const auto& var_type_pos = variable_type->get_source_fragment();
+    const auto symbol_position = SourceFragment(
         ref_tok_pos.source,
         ref_tok_pos.offset,
         var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset
@@ -192,8 +192,8 @@ void AstVariableDeclaration::validate()
             }
 
             const std::vector references = {
-                ErrorSourceReference(lhs_type->to_string(), this->get_source_position()),
-                ErrorSourceReference(rhs_type->to_string(), init_val->get_source_position())
+                ErrorSourceReference(lhs_type->to_string(), this->get_source_fragment()),
+                ErrorSourceReference(rhs_type->to_string(), init_val->get_source_fragment())
             };
 
             throw parsing_error(
@@ -210,8 +210,8 @@ void AstVariableDeclaration::validate()
         const std::string rhs_type_str = rhs_type->to_string();
 
         const std::vector references = {
-            ErrorSourceReference(lhs_type_str, this->get_source_position()),
-            ErrorSourceReference(rhs_type_str, init_val->get_source_position())
+            ErrorSourceReference(lhs_type_str, this->get_source_fragment()),
+            ErrorSourceReference(rhs_type_str, init_val->get_source_fragment())
         };
 
         throw parsing_error(

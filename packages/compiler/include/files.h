@@ -15,14 +15,14 @@ namespace stride
             source(std::move(source)) {}
     };
 
-    struct SourceLocation
+    struct SourceFragment
     {
         size_t offset;
         size_t length;
 
         std::shared_ptr<SourceFile> source;
 
-        SourceLocation(
+        SourceFragment(
             const std::shared_ptr<SourceFile>& source,
             const size_t offset,
             const size_t length) :
@@ -30,7 +30,7 @@ namespace stride
             length(length),
             source(source) {}
 
-        SourceLocation& operator=(const SourceLocation& other)
+        SourceFragment& operator=(const SourceFragment& other)
         {
             if (this != &other)
             {

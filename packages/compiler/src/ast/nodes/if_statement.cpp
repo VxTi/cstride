@@ -32,7 +32,7 @@ std::unique_ptr<AstBlock> parse_else_optional(
 
     // Otherwise, we can just parse_file it as a next statement.
     return std::make_unique<AstBlock>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         std::move(nodes));
 }
@@ -67,14 +67,14 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
             throw parsing_error(
                 ErrorType::SYNTAX_ERROR,
                 "Expected condition after 'if' keyword",
-                reference_token.get_source_position());
+                reference_token.get_source_fragment());
         }
 
         std::vector<std::unique_ptr<IAstNode>> nodes;
         nodes.push_back(std::move(if_body_expr));
 
         auto if_body = std::make_unique<AstBlock>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             if_header_scope,
             std::move(nodes));
 
@@ -87,7 +87,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
         auto else_statement = parse_else_optional(if_header_scope, set);
 
         return std::make_unique<AstIfStatement>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             std::move(condition),
             std::move(if_body),
@@ -100,7 +100,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
     auto else_statement = parse_else_optional(context, set);
 
     return std::make_unique<AstIfStatement>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         std::move(condition),
         std::move(body),
@@ -127,7 +127,7 @@ llvm::Value* AstIfStatement::codegen(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "If statement condition is empty",
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     if (this->get_body() == nullptr)
@@ -135,7 +135,7 @@ llvm::Value* AstIfStatement::codegen(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "If statement body is empty",
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     // Generate Condition
@@ -147,9 +147,9 @@ llvm::Value* AstIfStatement::codegen(
     if (cond_value == nullptr)
     {
         throw parsing_error(
-            ErrorType::RUNTIME_ERROR,
+            ErrorType::COMPILATION_ERROR,
             "Unable to generate condition value",
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     llvm::Function* parent_function = builder->GetInsertBlock()->getParent();

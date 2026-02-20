@@ -39,7 +39,7 @@ Symbol consume_import_module_base(
     // statement
     //  won't be used in error message logging.
     return resolve_internal_name(context->get_name(),
-                                 base.get_source_position(),
+                                 base.get_source_fragment(),
                                  parts);
 }
 
@@ -60,7 +60,7 @@ std::vector<Symbol> consume_import_submodules(TokenSet& tokens)
                                      "Expected module name in import list");
 
     std::vector<Symbol> submodules = {
-        Symbol(first.get_source_position(), first.get_lexeme()) };
+        Symbol(first.get_source_fragment(), first.get_lexeme()) };
 
     while (tokens.peek(0) == TokenType::COMMA && tokens.peek(1) ==
         TokenType::IDENTIFIER)
@@ -71,7 +71,7 @@ std::vector<Symbol> consume_import_submodules(TokenSet& tokens)
             tokens.expect(TokenType::IDENTIFIER,
                           "Expected module name in import list");
 
-        submodules.emplace_back(submodule_iden.get_source_position(),
+        submodules.emplace_back(submodule_iden.get_source_fragment(),
                                 submodule_iden.get_lexeme());
     }
 
@@ -111,7 +111,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
                                     .submodules  = import_list };
 
 
-    return std::make_unique<AstImport>(reference_token.get_source_position(),
+    return std::make_unique<AstImport>(reference_token.get_source_fragment(),
                                        context,
                                        dependency);
 }

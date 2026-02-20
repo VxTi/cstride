@@ -35,7 +35,7 @@ namespace stride::ast
 
     public:
         AstLiteral(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
             const short bit_count) :
@@ -67,7 +67,7 @@ namespace stride::ast
 
     public:
         explicit AbstractAstLiteralBase(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
             T value,
@@ -86,7 +86,7 @@ namespace stride::ast
     {
     public:
         explicit AstStringLiteral(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string val) :
             // Strings are only considered to be a single byte,
@@ -113,7 +113,7 @@ namespace stride::ast
 
     public:
         explicit AstIntLiteral(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const int64_t value,
             const short bit_count,
@@ -149,7 +149,7 @@ namespace stride::ast
     {
     public:
         explicit AstFpLiteral(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const long double value,
             const short bit_count) :
@@ -171,7 +171,7 @@ namespace stride::ast
     {
     public:
         explicit AstBooleanLiteral(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const bool value) :
             AbstractAstLiteralBase(
@@ -194,7 +194,7 @@ namespace stride::ast
     {
     public:
         explicit AstCharLiteral(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const char value) :
             AbstractAstLiteralBase(source,
@@ -214,7 +214,7 @@ namespace stride::ast
     class AstNilLiteral : public AstLiteral
     {
     public:
-        AstNilLiteral(const SourceLocation& source,
+        AstNilLiteral(const SourceFragment& source,
                       const std::shared_ptr<ParsingContext>& context) :
             AstLiteral(source, context, LiteralType::NIL, 8) {}
 

@@ -76,15 +76,17 @@ std::string AstBinaryArithmeticOp::to_string()
  * This parses expressions that requires precedence, such as binary expressions.
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
-std::optional<std::unique_ptr<AstExpression>> stride::ast::
-parse_arithmetic_binary_operation_optional(
+std::optional<std::unique_ptr<AstExpression>>
+stride::ast::parse_arithmetic_binary_operation_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::unique_ptr<AstExpression> lhs,
     const int min_precedence
 )
 {
+    const size_t starting_offset = lhs->get_source_fragment().offset;
     int recursion_depth = 0;
+
     while (set.has_next())
     {
         const auto reference_token = set.peek_next();
@@ -142,8 +144,13 @@ parse_arithmetic_binary_operation_optional(
                 }
             }
 
+            const auto& rhs_pos = rhs->get_source_fragment();
             lhs = std::make_unique<AstBinaryArithmeticOp>(
-                reference_token.get_source_position(),
+                SourceFragment(
+                    set.get_source(),
+                    starting_offset,
+                    rhs_pos.offset + rhs_pos.length - starting_offset
+                ),
                 context,
                 std::move(lhs),
                 binary_op.value(),

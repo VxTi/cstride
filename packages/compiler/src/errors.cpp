@@ -10,8 +10,8 @@ std::string stride::error_type_to_string(const ErrorType error_type)
         return "Syntax Error";
     case ErrorType::TYPE_ERROR:
         return "Type Error";
-    case ErrorType::RUNTIME_ERROR:
-        return "Runtime Error";
+    case ErrorType::COMPILATION_ERROR:
+        return "Compilation Error";
     case ErrorType::SEMANTIC_ERROR:
         return "Semantic Error";
     }
@@ -21,7 +21,7 @@ std::string stride::error_type_to_string(const ErrorType error_type)
 std::string stride::make_source_error(
     const ErrorType error_type,
     const std::string& error,
-    const SourceLocation& source_position,
+    const SourceFragment& source_position,
     const std::string& suggestion)
 {
     const auto error_type_str = error_type_to_string(error_type);
