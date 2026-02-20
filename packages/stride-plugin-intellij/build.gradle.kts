@@ -26,7 +26,6 @@ repositories {
 dependencies {
     intellijPlatform {
         intellijIdeaCommunity("2023.3.6")
-        instrumentationTools()
         pluginVerifier()
         zipSigner()
         testFramework(TestFrameworkType.Platform)
@@ -72,6 +71,13 @@ val generateStrideLexer = tasks.register<GenerateLexerTask>("generateStrideLexer
     sourceFile.set(file("src/main/grammars/Stride.flex"))
     targetOutputDir.set(layout.projectDirectory.dir("src/main/gen/com/stride/intellij/lexer"))
     purgeOldFiles.set(true)
+}
+
+tasks {
+    runIde {
+        val projectRoot = layout.projectDirectory.asFile.resolve("../..")
+        args(projectRoot.canonicalPath, File(projectRoot, "example.sr").canonicalPath)
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
