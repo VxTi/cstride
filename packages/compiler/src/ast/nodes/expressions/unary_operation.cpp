@@ -51,35 +51,41 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
     TokenSet& set
 )
 {
-    const auto next = set.peek_next();
+    const auto& op_type_tok = set.peek_next();
+    const auto& op_type_pos = op_type_tok.get_source_fragment();
 
     // Prefix Parsing
-    if (const auto op_type = get_unary_op_type(next.get_type());
+    if (const auto op_type = get_unary_op_type(op_type_tok.get_type());
         op_type.has_value())
     {
         set.next(); // Consume operator
 
         // Recursive call to handle chained unaries like !!x or - -x etc.
-        auto distinct_expr = parse_binary_unary_op(context, set);
-        if (!distinct_expr)
+        auto rhs_expr = parse_binary_unary_op(context, set);
+        if (!rhs_expr)
         {
             set.throw_error("Expected expression after unary operator");
         }
 
         // Validation for identifiers
-        if (requires_identifier_operand(op_type.value()))
+        if (requires_identifier_operand(op_type.value()) &&
+            !cast_expr<AstIdentifier*>(rhs_expr.value().get()))
         {
-            if (!cast_expr<AstIdentifier*>(distinct_expr.value().get()))
-            {
-                set.throw_error("Unary operator requires identifier operand");
-            }
+            set.throw_error("Unary operator requires identifier operand");
         }
 
+        const auto rhs_expr_pos = rhs_expr->get()->get_source_fragment();
+        const auto source = SourceFragment(
+            op_type_pos.source,
+            op_type_pos.offset,
+            rhs_expr_pos.offset + rhs_expr_pos.length - op_type_pos.offset
+        );
+
         return std::make_unique<AstUnaryOp>(
-            next.get_source_fragment(),
+            source,
             context,
             op_type.value(),
-            std::move(distinct_expr.value()),
+            std::move(rhs_expr.value()),
             false // Prefix
         );
     }
@@ -96,17 +102,20 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
             ? UnaryOpType::INCREMENT
             : UnaryOpType::DECREMENT;
 
-        // Validation: Postfix requires identifier
-        // Note: We might want allow array access etc in future, but stick to ident for now
-        if (!dynamic_cast<AstIdentifier*>(expr.get()))
+        if (!cast_expr<AstIdentifier*>(expr.get()))
         {
-            // For strict backward compatibility with original check, though not sure if strictly
-            // required Original: "only Identifier supported"
             set.throw_error("Postfix operator requires identifier operand");
         }
 
+        const auto& expr_pos = expr->get_source_fragment();
+        const auto source = SourceFragment(
+            expr_pos.source,
+            expr_pos.offset,
+            expr_pos.offset + expr_pos.length - op_type_pos.offset
+        );
+
         expr = std::make_unique<AstUnaryOp>(
-            op_tok.get_source_fragment(),
+            source,
             context,
             type,
             std::move(expr),
@@ -175,7 +184,7 @@ void AstUnaryOp::validate()
     // For negation / plus, we require the identifier to be of type float or int
     if (op == UnaryOpType::NEGATE || op == UnaryOpType::PLUS)
     {
-        if (const auto prim = dynamic_cast<AstPrimitiveType*>(operand_type.get());
+        if (const auto prim = cast_type<AstPrimitiveType*>(operand_type.get());
             !prim || (!prim->is_integer_ty() && !prim->is_fp()))
         {
             throw parsing_error(
@@ -191,7 +200,7 @@ void AstUnaryOp::validate()
 
     if (operand_type->is_primitive())
     {
-        const auto* prim = dynamic_cast<AstPrimitiveType*>(operand_type.get());
+        const auto* prim = cast_type<AstPrimitiveType*>(operand_type.get());
         const bool is_int = prim->is_integer_ty();
         const bool is_fp = prim->is_fp();
 
@@ -240,7 +249,6 @@ void AstUnaryOp::validate()
 }
 
 llvm::Value* AstUnaryOp::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -261,7 +269,7 @@ llvm::Value* AstUnaryOp::codegen(
 
         auto internal_name = identifier->get_internal_name();
 
-        if (const auto definition = context->lookup_variable(
+        if (const auto definition = this->get_context()->lookup_variable(
             identifier->get_name(),
             true))
         {
@@ -348,7 +356,7 @@ llvm::Value* AstUnaryOp::codegen(
         return this->is_lsh() ? loaded_val : new_val;
     }
 
-    auto* val = get_operand().codegen(context, module, builder);
+    auto* val = get_operand().codegen(module, builder);
 
     if (!val)
     {

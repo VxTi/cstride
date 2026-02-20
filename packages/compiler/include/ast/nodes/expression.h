@@ -81,7 +81,6 @@ namespace stride::ast
         ~AstExpression() override = default;
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -118,7 +117,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -151,7 +149,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -197,7 +194,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -245,7 +241,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -264,22 +259,19 @@ namespace stride::ast
     {
         std::vector<std::unique_ptr<AstExpression>> _arguments;
         const Symbol _symbol;
+        int _flags;
 
     public:
         explicit AstFunctionCall(
             const std::shared_ptr<ParsingContext>& context,
-            Symbol function_call_sym) :
-            AstExpression(function_call_sym.symbol_position, context),
-            _symbol(std::move(function_call_sym)) {}
-
-        explicit AstFunctionCall(
-            const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym,
-            std::vector<std::unique_ptr<AstExpression>> arguments
+            std::vector<std::unique_ptr<AstExpression>> arguments,
+            int function_call_flags = SRFLAG_NONE
         ) :
             AstExpression(function_call_sym.symbol_position, context),
             _arguments(std::move(arguments)),
-            _symbol(std::move(function_call_sym)) {}
+            _symbol(std::move(function_call_sym)),
+            _flags(function_call_flags) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<AstExpression>>& get_arguments() const
@@ -302,7 +294,6 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -386,7 +377,6 @@ namespace stride::ast
             llvm::IRBuilder<>* builder) override;
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -461,7 +451,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -500,7 +489,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -535,7 +523,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -583,9 +570,9 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilder<>* builder
+            ) override;
 
         bool is_reducible() override;
 
@@ -644,7 +631,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -691,7 +677,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
@@ -710,7 +695,6 @@ namespace stride::ast
             AstExpression(source, context) {}
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 

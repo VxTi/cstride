@@ -79,7 +79,7 @@ namespace
     }
 }
 
-llvm::Value* AstVariadicArgReference::codegen(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstVariadicArgReference::codegen(llvm::Module* module, llvm::IRBuilder<>* builder)
 {
     // Verify we're inside a variadic function
     if (const llvm::Function* current_function = builder->GetInsertBlock()->getParent();

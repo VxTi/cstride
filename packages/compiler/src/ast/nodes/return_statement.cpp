@@ -80,7 +80,6 @@ std::string AstReturnStatement::to_string()
 }
 
 llvm::Value* AstReturnStatement::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {
@@ -90,7 +89,6 @@ llvm::Value* AstReturnStatement::codegen(
     }
 
     llvm::Value* expr_return_val = this->get_return_expr()->codegen(
-        context,
         module,
         builder
     );

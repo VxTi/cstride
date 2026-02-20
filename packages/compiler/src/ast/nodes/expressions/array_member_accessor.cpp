@@ -62,6 +62,8 @@ void AstArrayMemberAccessor::validate()
                     primitive_type->to_string()),
                 this->get_source_fragment());
         }
+
+        return;
     }
 
     throw parsing_error(
@@ -74,7 +76,6 @@ void AstArrayMemberAccessor::validate()
 }
 
 llvm::Value* AstArrayMemberAccessor::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -85,12 +86,10 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     );
 
     llvm::Value* base_ptr = this->_array_identifier->codegen(
-        context,
         module,
         builder
     );
     llvm::Value* index_val = this->_index_accessor_expr->codegen(
-        context,
         module,
         builder
     );

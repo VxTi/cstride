@@ -8,7 +8,6 @@ std::string AstNilLiteral::to_string()
 }
 
 llvm::Value* AstNilLiteral::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {

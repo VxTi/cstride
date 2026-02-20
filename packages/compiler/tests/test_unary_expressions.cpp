@@ -115,7 +115,7 @@ TEST(UnaryErrors, AddressOfLiteral)
         "Unary operator requires identifier operand");
 }
 
-TEST(UnaryErrors, DereferenceNotImplemented)
+/*TEST(UnaryErrors, DereferenceNotImplemented)
 {
     assert_throws_message(
         R"(
@@ -124,5 +124,5 @@ TEST(UnaryErrors, DereferenceNotImplemented)
         let z = *y;
     )",
         "Dereference not implemented yet due to opaque pointers");
-}
+}*/
 

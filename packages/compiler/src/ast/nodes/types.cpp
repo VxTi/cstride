@@ -334,8 +334,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     const std::string& error,
     const int type_flags)
 {
-    if (auto primitive = parse_primitive_type_optional(context, set, type_flags)
-        ;
+    if (auto primitive = parse_primitive_type_optional(context, set, type_flags);
         primitive.has_value())
     {
         return std::move(primitive.value());

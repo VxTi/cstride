@@ -11,7 +11,6 @@
 using namespace stride::ast;
 
 llvm::Value* AstExpression::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder)
 {

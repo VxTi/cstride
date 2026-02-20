@@ -208,7 +208,6 @@ void AstStructInitializer::validate()
 }
 
 llvm::Value* AstStructInitializer::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -220,7 +219,7 @@ llvm::Value* AstStructInitializer::codegen(
 
     for (const auto& expr : this->_initializers | std::views::values)
     {
-        llvm::Value* val = expr->codegen(context, module, builder);
+        llvm::Value* val = expr->codegen(module, builder);
         if (!val)
         {
             return nullptr;
@@ -238,7 +237,7 @@ llvm::Value* AstStructInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    auto struct_def_opt = context->get_struct_def(this->_struct_name);
+    auto struct_def_opt = this->get_context()->get_struct_def(this->_struct_name);
     std::string actual_struct_name = this->_struct_name;
 
     if (struct_def_opt.has_value())
@@ -247,7 +246,7 @@ llvm::Value* AstStructInitializer::codegen(
         while (struct_def->is_reference_struct())
         {
             actual_struct_name = struct_def->get_reference_struct().value().name;
-            struct_def_opt = context->get_struct_def(actual_struct_name);
+            struct_def_opt = this->get_context()->get_struct_def(actual_struct_name);
             if (!struct_def_opt.has_value())
             {
                 break;

@@ -21,7 +21,6 @@ std::string AstArray::to_string()
 }
 
 llvm::Value* AstArray::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -33,20 +32,22 @@ llvm::Value* AstArray::codegen(
     if (const auto* array_type = dynamic_cast<AstArrayType*>(resolved_type.
         get()))
     {
-        llvm::Type* element_llvm_type =
-            internal_type_to_llvm_type(array_type->get_element_type(), module);
+        llvm::Type* element_llvm_type = internal_type_to_llvm_type(
+            array_type->get_element_type(),
+            module
+        );
         concrete_array_type = llvm::ArrayType::get(
             element_llvm_type,
-            this->get_elements().size());
+            this->get_elements().size()
+        );
     }
     else
     {
         // Fallback: If we can't determine the type from the AST, try to verify
         // if the resolved LLVM type is already an array type.
         if (llvm::Type* possible_type = internal_type_to_llvm_type(
-                resolved_type.get(),
-                module);
-            llvm::isa<llvm::ArrayType>(possible_type))
+            resolved_type.get(),
+            module); llvm::isa<llvm::ArrayType>(possible_type))
         {
             concrete_array_type = llvm::cast<llvm::ArrayType>(possible_type);
         }
@@ -78,7 +79,6 @@ llvm::Value* AstArray::codegen(
     for (size_t i = 0; i < array_size; ++i)
     {
         llvm::Value* v = this->get_elements()[i]->codegen(
-            context,
             module,
             builder);
         auto* c = llvm::dyn_cast<llvm::Constant>(v);
@@ -105,7 +105,6 @@ llvm::Value* AstArray::codegen(
     for (size_t i = 0; i < array_size; ++i)
     {
         llvm::Value* element_value = this->get_elements()[i]->codegen(
-            context,
             module,
             builder);
 

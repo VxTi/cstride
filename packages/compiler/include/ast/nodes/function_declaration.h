@@ -138,7 +138,6 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 

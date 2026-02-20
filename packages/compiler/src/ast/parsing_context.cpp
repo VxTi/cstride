@@ -270,7 +270,7 @@ void ParsingContext::define_variable_globally(
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Field '{}' is already defined in global scope", variable_symbol.name),
+            std::format("Variable '{}' is already defined in global scope", variable_symbol.name),
             type->get_source_fragment()
         );
     }
@@ -287,26 +287,23 @@ void ParsingContext::define_variable_globally(
 void ParsingContext::define_variable(
     Symbol variable_sym,
     std::unique_ptr<IAstType> type
-) const
+)
 {
     if (this->is_global_scope())
     {
         this->define_variable_globally(std::move(variable_sym), std::move(type));
         return;
     }
+
     if (is_field_defined_in_scope(variable_sym.internal_name))
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Field '{}' is already defined in this scope", variable_sym.name),
+            std::format("Variable '{}' is already defined in this scope", variable_sym.name),
             type->get_source_fragment());
     }
 
-    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
-
-    global_scope._symbols.push_back(
-        std::make_unique<FieldDef>(std::move(variable_sym), std::move(type))
-    );
+    this->_symbols.push_back(std::make_unique<FieldDef>(std::move(variable_sym), std::move(type)));
 }
 
 IDefinition* ParsingContext::lookup_symbol(const std::string& symbol_name) const
@@ -419,7 +416,7 @@ void ParsingContext::define_struct(
 
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
 
-    auto def = std::make_unique<StructDef>(std::move(struct_symbol), std::move(fields));
+    auto def = std::make_unique<StructDef>(struct_symbol, std::move(fields));
 
     root._symbols.push_back(std::move(def));
 }

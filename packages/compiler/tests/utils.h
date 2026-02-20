@@ -55,7 +55,7 @@ namespace stride::tests
 
         block->resolve_forward_references(context.get(), &module, &builder);
         block->validate();
-        block->codegen(context.get(), &module, &builder);
+        block->codegen(&module, &builder);
     }
 
 
