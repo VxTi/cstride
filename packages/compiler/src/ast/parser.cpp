@@ -1,5 +1,7 @@
 #include "ast/parser.h"
 
+#include "files.h"
+#include "program.h"
 #include "ast/modifiers.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/for_loop.h"
@@ -7,17 +9,17 @@
 #include "ast/nodes/import.h"
 #include "ast/nodes/module.h"
 #include "ast/nodes/package.h"
-#include "ast/nodes/return.h"
-#include "ast/nodes/struct.h"
+#include "ast/nodes/return_statement.h"
+#include "ast/nodes/struct_declaration.h"
 #include "ast/nodes/while_loop.h"
 #include "ast/tokens/tokenizer.h"
-#include "files.h"
-#include "program.h"
 
 using namespace stride::ast;
 
-std::unique_ptr<AstBlock> parser::parse_file(const Program& program,
-                                             const std::string& source_path)
+std::unique_ptr<AstBlock> parser::parse_file(
+    const Program& program,
+    const std::string& source_path
+)
 {
     const auto source_file = read_file(source_path);
     auto tokens = tokenizer::tokenize(source_file);

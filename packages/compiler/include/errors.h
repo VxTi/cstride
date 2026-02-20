@@ -18,16 +18,13 @@ namespace stride
 
     struct ErrorSourceReference
     {
-        const SourceFile& source;
         const SourceLocation source_position;
         std::string message;
 
         ErrorSourceReference(
             std::string message,
-            const SourceFile& source,
-            SourceLocation source_position) :
-            source(source),
-            source_position(std::move(source_position)),
+            const SourceLocation& source) :
+            source_position(source),
             message(std::move(message)) {}
     };
 

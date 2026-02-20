@@ -1,4 +1,4 @@
-#include "ast/nodes/return.h"
+#include "ast/nodes/return_statement.h"
 
 #include "ast/optionals.h"
 
@@ -8,7 +8,7 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
+std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set)
 {
@@ -29,10 +29,10 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
             set.get_source(),
             reference_token.get_source_position().offset,
             reference_token.get_source_position().offset + end.
-            get_source_position().offset -
+                                                           get_source_position().offset -
             end.get_source_position().length);
 
-        return std::make_unique<AstReturn>(ref_pos, context, nullptr);
+        return std::make_unique<AstReturnStatement>(ref_pos, context, nullptr);
     }
 
     auto value = parse_inline_expression(context, set);
@@ -42,10 +42,10 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
     }
 
     set.expect(TokenType::SEMICOLON, "Expected ';' after return statement");
-    const auto ref_pos = reference_token.get_source_position();
-    const auto expr_pos = value->get_source_position();
+    const auto& ref_pos = reference_token.get_source_position();
+    const auto& expr_pos = value->get_source_position();
 
-    return std::make_unique<AstReturn>(
+    return std::make_unique<AstReturnStatement>(
         SourceLocation(
             set.get_source(),
             ref_pos.offset,
@@ -55,7 +55,7 @@ std::unique_ptr<AstReturn> stride::ast::parse_return_statement(
 }
 
 
-void AstReturn::validate()
+void AstReturnStatement::validate()
 {
     auto context = this->get_context().get();
 
@@ -76,13 +76,13 @@ void AstReturn::validate()
         this->get_return_expr()->validate();
 }
 
-std::string AstReturn::to_string()
+std::string AstReturnStatement::to_string()
 {
     return std::format("Return(value: {})",
                        _value ? _value->to_string() : "nullptr");
 }
 
-llvm::Value* AstReturn::codegen(
+llvm::Value* AstReturnStatement::codegen(
     const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
@@ -95,7 +95,8 @@ llvm::Value* AstReturn::codegen(
     llvm::Value* expr_return_val = this->get_return_expr()->codegen(
         context,
         module,
-        builder);
+        builder
+    );
 
     if (!expr_return_val)
         return nullptr;
@@ -119,17 +120,16 @@ llvm::Value* AstReturn::codegen(
         if (llvm::Type* expected_return_ty = cur_func->getReturnType();
             expr_return_val->getType() != expected_return_ty)
         {
-            const auto is_expr_optional = is_optional_wrapped_type(
-                expr_return_val->getType());
+            const auto is_expr_optional = is_optional_wrapped_type(expr_return_val->getType());
 
             // Function returns non-optional, but we have an optional -> Unwrap
-            if (const auto is_fn_return_optional = is_optional_wrapped_type(
-                    expected_return_ty);
+            if (const auto is_fn_return_optional = is_optional_wrapped_type(expected_return_ty);
                 is_expr_optional && !is_fn_return_optional)
             {
                 expr_return_val = unwrap_optional_value(
                     expr_return_val,
-                    builder);
+                    builder
+                );
             }
             // Function returns optional, but we have a non-optional (or nil) -> Wrap
             else if (!is_expr_optional && is_fn_return_optional)
@@ -137,9 +137,18 @@ llvm::Value* AstReturn::codegen(
                 expr_return_val = wrap_optional_value(
                     expr_return_val,
                     expected_return_ty,
-                    builder);
+                    builder
+                );
             }
         }
+    }
+    else
+    {
+        throw parsing_error(
+            ErrorType::RUNTIME_ERROR,
+            "Cannot determine the function return type for return statement",
+            this->get_source_position()
+        );
     }
 
     // Create the return instruction

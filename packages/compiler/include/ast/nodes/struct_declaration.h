@@ -8,7 +8,8 @@
 
 namespace stride::ast
 {
-    class AstStructMember : public IAstNode
+    class AstStructMember
+        : public IAstNode
     {
         Symbol _struct_member_symbol;
         std::unique_ptr<IAstType> _type;
@@ -17,7 +18,8 @@ namespace stride::ast
         AstStructMember(
             const std::shared_ptr<ParsingContext>& context,
             Symbol struct_member_symbol,
-            std::unique_ptr<IAstType> type) :
+            std::unique_ptr<IAstType> type
+        ) :
             IAstNode(struct_member_symbol.symbol_position, context),
             _struct_member_symbol(std::move(struct_member_symbol)),
             _type(std::move(type)) {}
@@ -39,7 +41,9 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AstStruct : public IAstNode, public ISynthesisable
+    class AstStructDeclaration
+        : public IAstNode,
+          public ISynthesisable
     {
         std::string _name;
         std::vector<std::unique_ptr<AstStructMember>> _members;
@@ -50,20 +54,22 @@ namespace stride::ast
         std::optional<std::unique_ptr<IAstType>> _reference;
 
     public:
-        explicit AstStruct(
+        explicit AstStructDeclaration(
             const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
-            std::unique_ptr<IAstType> reference) :
+            std::unique_ptr<IAstType> reference
+        ) :
             IAstNode(source, context),
             _name(std::move(name)),
             _reference(std::move(reference)) {}
 
-        explicit AstStruct(
+        explicit AstStructDeclaration(
             const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
-            std::vector<std::unique_ptr<AstStructMember>> members) :
+            std::vector<std::unique_ptr<AstStructMember>> members
+        ) :
             IAstNode(source, context),
             _name(std::move(name)),
             _members(std::move(members)),
@@ -108,7 +114,7 @@ namespace stride::ast
             llvm::IRBuilder<>* builder) override;
     };
 
-    std::unique_ptr<AstStruct> parse_struct_declaration(
+    std::unique_ptr<AstStructDeclaration> parse_struct_declaration(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& tokens,
         VisibilityModifier modifier);

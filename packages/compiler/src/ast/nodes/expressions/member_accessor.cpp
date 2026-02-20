@@ -17,6 +17,21 @@ AstMemberAccessor::AstMemberAccessor(
     this->_base_type = infer_expression_type(context, base.get());
 }
 
+std::vector<AstIdentifier*> AstMemberAccessor::get_members() const
+{
+    // We don't wanna transfer ownership to anyone else...
+    std::vector<AstIdentifier*> result;
+    result.reserve(this->_members.size());
+    std::ranges::transform(
+        this->_members,
+        std::back_inserter(result),
+        [](const std::unique_ptr<AstIdentifier>& member)
+        {
+            return member.get();
+        });
+    return result;
+}
+
 bool stride::ast::is_member_accessor(AstExpression* lhs, const TokenSet& set)
 {
     // We assume the expression and subsequent tokens are "member accessors"
@@ -92,7 +107,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 llvm::Value* AstMemberAccessor::codegen(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilder<>* builder
+)
 {
     // Special handling for Global context (no active block)
     // We must evaluate to a constant (Constant Folding) as we cannot generate instructions.

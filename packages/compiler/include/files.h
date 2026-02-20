@@ -20,7 +20,7 @@ namespace stride
         size_t offset;
         size_t length;
 
-        const std::shared_ptr<SourceFile> source;
+        std::shared_ptr<SourceFile> source;
 
         SourceLocation(
             const std::shared_ptr<SourceFile>& source,
@@ -30,12 +30,13 @@ namespace stride
             length(length),
             source(source) {}
 
-        SourceLocation operator=(const SourceLocation& other)
+        SourceLocation& operator=(const SourceLocation& other)
         {
             if (this != &other)
             {
                 offset = other.offset;
                 length = other.length;
+                source = other.source;
             }
             return *this;
         }

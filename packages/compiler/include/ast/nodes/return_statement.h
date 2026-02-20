@@ -5,12 +5,12 @@
 
 namespace stride::ast
 {
-    class AstReturn : public IAstNode, public ISynthesisable
+    class AstReturnStatement : public IAstNode, public ISynthesisable
     {
         const std::unique_ptr<AstExpression> _value;
 
     public:
-        explicit AstReturn(
+        explicit AstReturnStatement(
             const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> value) :
@@ -34,7 +34,7 @@ namespace stride::ast
         void validate() override;
     };
 
-    std::unique_ptr<AstReturn> parse_return_statement(
+    std::unique_ptr<AstReturnStatement> parse_return_statement(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 } // namespace stride::ast

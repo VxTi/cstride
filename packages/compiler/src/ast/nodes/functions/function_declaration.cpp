@@ -5,7 +5,7 @@
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/if_statement.h"
-#include "ast/nodes/return.h"
+#include "ast/nodes/return_statement.h"
 #include "ast/symbols.h"
 
 #include <iostream>
@@ -23,17 +23,17 @@ using namespace stride::ast::definition;
 
 #define ANONYMOUS_FN_PREFIX "#__anonymous_"
 
-std::vector<AstReturn*> collect_return_statements(const AstBlock* body)
+std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body)
 {
     if (!body)
     {
         return {};
     }
 
-    std::vector<AstReturn*> return_statements;
+    std::vector<AstReturnStatement*> return_statements;
     for (const auto& child : body->children())
     {
-        if (auto* return_stmt = dynamic_cast<AstReturn*>(child.get()))
+        if (auto* return_stmt = dynamic_cast<AstReturnStatement*>(child.get()))
         {
             return_statements.push_back(return_stmt);
         }
@@ -137,24 +137,27 @@ void IAstCallable::validate()
                 infer_expression_type(return_stmt->get_context(), ret_expr);
             !return_stmt_type->equals(*this->get_return_type()))
         {
+            const auto error_fragment = ErrorSourceReference(
+                std::format(
+                    "expected {}{}",
+                    this->get_return_type()->is_primitive()
+                    ? ""
+                    : this->get_return_type()->is_function()
+                    ? "function-type "
+                    : "struct-type ",
+                    this->get_return_type()->to_string()),
+                return_stmt->get_return_expr()->get_source_position()
+                );
+
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' expected a return type of '{}', but received '{}'.",
-                    this->get_name(),
+                    this->is_anonymous() ? "<anonymous function>" : this->get_name(),
                     this->get_return_type()->to_string(),
                     return_stmt_type->to_string()),
-                { ErrorSourceReference(
-                    std::format(
-                        "expected {}{}",
-                        this->get_return_type()->is_primitive()
-                        ? ""
-                        : this->get_return_type()->is_function()
-                        ? "function-type "
-                        : "struct-type ",
-                        this->get_return_type()->to_string()),
-                    *this->get_source(),
-                    return_stmt->get_return_expr()->get_source_position()) });
+                { error_fragment }
+            );
         }
     }
 
@@ -521,9 +524,9 @@ void IAstCallable::resolve_forward_references(
 
     llvm::Function::Create(
         function_type,
-                           llvm::Function::ExternalLinkage,
-                           fn_name,
-                           module);
+        llvm::Function::ExternalLinkage,
+        fn_name,
+        module);
 }
 
 std::string AstFunctionDeclaration::to_string()
