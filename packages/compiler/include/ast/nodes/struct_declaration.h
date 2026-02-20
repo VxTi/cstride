@@ -104,7 +104,6 @@ namespace stride::ast
         void validate() override;
 
         llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 

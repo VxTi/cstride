@@ -105,7 +105,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 }
 
 llvm::Value* AstMemberAccessor::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -121,7 +120,6 @@ llvm::Value* AstMemberAccessor::codegen(
     if (!builder->GetInsertBlock())
     {
         llvm::Value* base_val = this->get_base()->codegen(
-            context,
             module,
             builder);
 
@@ -139,25 +137,29 @@ llvm::Value* AstMemberAccessor::codegen(
 
         for (const auto& accessor : this->get_members())
         {
-            auto struct_def_opt = context->get_struct_def(current_struct_name);
+            auto struct_def_opt = this->get_context()->get_struct_def(current_struct_name);
             if (!struct_def_opt.has_value())
                 return nullptr;
 
             auto struct_def = struct_def_opt.value();
             while (struct_def->is_reference_struct())
             {
-                struct_def_opt =
-                    context->get_struct_def(
-                        struct_def->get_reference_struct().value().name);
+                struct_def_opt = this->get_context()->get_struct_def(
+                    struct_def->get_reference_struct().value().name);
+
                 if (!struct_def_opt.has_value())
+                {
                     return nullptr;
+                }
                 struct_def = struct_def_opt.value();
             }
 
             const auto member_index =
                 struct_def->get_struct_field_member_index(accessor->get_name());
             if (!member_index.has_value())
+            {
                 return nullptr;
+            }
 
             // Extract the constant field value
             current_const = current_const->getAggregateElement(
@@ -184,7 +186,6 @@ llvm::Value* AstMemberAccessor::codegen(
 
     // Standard Code Generation (Function context)
     llvm::Value* current_val = this->get_base()->codegen(
-        context,
         module,
         builder
     );
@@ -201,7 +202,7 @@ llvm::Value* AstMemberAccessor::codegen(
 
     for (const auto& accessor : this->get_members())
     {
-        auto struct_def_opt = context->get_struct_def(current_struct_name);
+        auto struct_def_opt = this->get_context()->get_struct_def(current_struct_name);
         if (!struct_def_opt.has_value())
         {
             throw parsing_error(
@@ -215,7 +216,7 @@ llvm::Value* AstMemberAccessor::codegen(
         auto struct_def = struct_def_opt.value();
         while (struct_def->is_reference_struct())
         {
-            struct_def_opt = context->get_struct_def(
+            struct_def_opt = this->get_context()->get_struct_def(
                 struct_def->get_reference_struct().value().name
             );
             if (!struct_def_opt.has_value())

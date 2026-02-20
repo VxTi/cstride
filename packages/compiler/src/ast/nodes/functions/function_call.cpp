@@ -90,7 +90,6 @@ std::string AstFunctionCall::format_function_name() const
 }
 
 llvm::Value* AstFunctionCall::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {
@@ -107,7 +106,7 @@ llvm::Value* AstFunctionCall::codegen(
     // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
     if (!callee)
     {
-        if (const auto* var_def = context->lookup_variable(
+        if (const auto* var_def = this->get_context()->lookup_variable(
             this->get_function_name(),
             true))
         {
@@ -174,7 +173,6 @@ llvm::Value* AstFunctionCall::codegen(
                     for (size_t i = 0; i < arguments.size(); ++i)
                     {
                         auto* arg_val = arguments[i]->codegen(
-                            context,
                             module,
                             builder);
                         if (!arg_val)
@@ -202,7 +200,7 @@ llvm::Value* AstFunctionCall::codegen(
 
     if (!callee)
     {
-        const auto suggested_alternative_symbol = context->fuzzy_find(
+        const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(
             this->get_function_name());
         const auto suggested_alternative = suggested_alternative_symbol
             ? std::format("Did you mean '{}'?",
@@ -239,7 +237,7 @@ llvm::Value* AstFunctionCall::codegen(
 
     for (size_t i = 0; i < arguments.size(); ++i)
     {
-        const auto arg_val = arguments[i]->codegen(context, module, builder);
+        const auto arg_val = arguments[i]->codegen(module, builder);
 
         if (!arg_val)
         {
@@ -349,19 +347,20 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
         }
     }
 
-    const auto& last_pos = parameter_types.back()->get_source_fragment();
     const auto& ref_pos = reference_token.get_source_fragment();
 
+    /* TODO: Fix this. Functions might not have parameters, in which case `back` returns a nullptr and segfaults here.
+     const auto& last_pos = parameter_types.back()->get_source_fragment();
     auto position = SourceFragment(
         set.get_source(),
         ref_pos.offset,
         parameter_types.empty()
         ? ref_pos.length
-        : last_pos.offset + last_pos.length - ref_pos.offset);
+        : last_pos.offset + last_pos.length - ref_pos.offset);*/
 
     Symbol function_name = resolve_internal_function_name(
         context,
-        position,
+        ref_pos,
         function_name_segments,
         parameter_types
     );
@@ -369,6 +368,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
     return std::make_unique<AstFunctionCall>(
         context,
         function_name,
-        std::move(function_arg_nodes)
+        std::move(function_arg_nodes),
+        function_call_flags
     );
 }

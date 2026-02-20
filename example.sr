@@ -1,3 +1,4 @@
+
 struct Test {
     some_field: float32;
 }
@@ -7,21 +8,26 @@ const lambda: (int32) -> int32 = (x: int32): int32 -> {
 };
 
 
+    /*
 module io {
-    /** test */
-    pub fn println(arg: string, ...): void
+
+     pub fn println(arg: string, ...): void
     {
         printf(arg, ...);
     }
 }
+    */
 
 let x = Test::{ some_field: 3.14 };
 
+ const k: ((int32, int32) -> int32)[] = [
+    (x: int32, y: int32): int32 -> { return 1; }
+];
+
 fn main(): void {
-    io::println("z: %d", x.some_field);
-    const result: int32 = lambda(10);
+    // io::println("z: %d", x.some_field);
+    const func = k[0];
+    const result: int32 = func(10);
 
-    io::println("result: %d", result);
+    printf("result: %d", result);
 }
-
-

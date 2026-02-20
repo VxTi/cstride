@@ -172,13 +172,12 @@ stride::ast::parse_arithmetic_binary_operation_optional(
 }
 
 llvm::Value* AstBinaryArithmeticOp::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
-    llvm::Value* lhs = this->get_left()->codegen(context, module, builder);
-    llvm::Value* rhs = this->get_right()->codegen(context, module, builder);
+    llvm::Value* lhs = this->get_left()->codegen(module, builder);
+    llvm::Value* rhs = this->get_right()->codegen(module, builder);
 
     if (!lhs || !rhs)
     {

@@ -59,12 +59,11 @@ std::string AstComparisonOp::to_string()
 }
 
 llvm::Value* AstComparisonOp::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {
-    llvm::Value* left = this->get_left()->codegen(context, module, builder);
-    llvm::Value* right = this->get_right()->codegen(context, module, builder);
+    llvm::Value* left = this->get_left()->codegen(module, builder);
+    llvm::Value* right = this->get_right()->codegen(module, builder);
 
     if (!left || !right)
     {

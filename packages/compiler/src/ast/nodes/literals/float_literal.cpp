@@ -45,7 +45,6 @@ std::string AstFpLiteral::to_string()
 }
 
 llvm::Value* AstFpLiteral::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {

@@ -118,7 +118,6 @@ void Program::generate_llvm_ir(llvm::Module* module,
                                llvm::IRBuilder<>* builder) const
 {
     if (!this->_root_node->codegen(
-        this->get_global_context().get(),
         module,
         builder
     ))

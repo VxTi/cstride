@@ -330,7 +330,6 @@ void AstStructDeclaration::resolve_forward_references(
 }
 
 llvm::Value* AstStructDeclaration::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {

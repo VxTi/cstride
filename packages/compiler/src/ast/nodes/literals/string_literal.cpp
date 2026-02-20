@@ -30,7 +30,6 @@ std::string AstStringLiteral::to_string()
 }
 
 llvm::Value* AstStringLiteral::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder)
 {

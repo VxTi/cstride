@@ -19,7 +19,6 @@ namespace stride::ast
         virtual ~ISynthesisable() = default;
 
         virtual llvm::Value* codegen(
-            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder) = 0;
 

@@ -118,7 +118,6 @@ bool AstIfStatement::is_reducible()
 }
 
 llvm::Value* AstIfStatement::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {
@@ -140,7 +139,6 @@ llvm::Value* AstIfStatement::codegen(
 
     // Generate Condition
     llvm::Value* cond_value = this->get_condition()->codegen(
-        context,
         module,
         builder);
 
@@ -174,7 +172,7 @@ llvm::Value* AstIfStatement::codegen(
         else_body_bb != nullptr ? else_body_bb : merge_bb);
     builder->SetInsertPoint(then_body_bb);
 
-    this->get_body()->codegen(context, module, builder);
+    this->get_body()->codegen(module, builder);
 
     // Only create a branch to the merge block if the current block
     // does not already have a terminator (like a 'ret' or 'break').
@@ -186,7 +184,7 @@ llvm::Value* AstIfStatement::codegen(
     if (else_body_bb != nullptr)
     {
         builder->SetInsertPoint(else_body_bb);
-        this->get_else_body()->codegen(context, module, builder);
+        this->get_else_body()->codegen(module, builder);
 
         // Same check for the else block
         if (builder->GetInsertBlock()->getTerminator() == nullptr)

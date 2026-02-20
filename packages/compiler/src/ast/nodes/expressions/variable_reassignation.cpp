@@ -90,7 +90,6 @@ IAstNode* AstVariableReassignment::reduce()
 }
 
 llvm::Value* AstVariableReassignment::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {
@@ -120,7 +119,6 @@ llvm::Value* AstVariableReassignment::codegen(
 
     // Generate the RHS value
     llvm::Value* assign_val = this->get_value()->codegen(
-        context,
         module,
         builder);
 
@@ -130,13 +128,11 @@ llvm::Value* AstVariableReassignment::codegen(
     const auto assign_ty = assign_val->getType();
 
     // Check if we're assigning to an optional type
-    if (const auto variable_def = context->lookup_variable(
-            this->get_variable_name());
-        variable_def && variable_def->get_type()->is_optional())
+    if (const auto variable_def = this->get_context()->lookup_variable(this->get_variable_name());
+        variable_def != nullptr &&
+        variable_def->get_type()->is_optional())
     {
-        if (llvm::Type* optional_ty = internal_type_to_llvm_type(
-                variable_def->get_type(),
-                module);
+        if (llvm::Type* optional_ty = internal_type_to_llvm_type(variable_def->get_type(), module);
             assign_ty == optional_ty)
         {
             builder->CreateStore(assign_val, variable);
@@ -163,8 +159,8 @@ llvm::Value* AstVariableReassignment::codegen(
                     OPT_HAS_VALUE);
                 value = assign_val;
 
-                if (value->getType() != value_ty && value->getType()->
-                                                           isIntegerTy() &&
+                if (value->getType() != value_ty
+                    && value->getType()->isIntegerTy() &&
                     value_ty->isIntegerTy())
                 {
                     value = builder->CreateIntCast(value, value_ty, true);

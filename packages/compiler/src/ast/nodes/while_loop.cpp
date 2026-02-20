@@ -42,7 +42,6 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
 }
 
 llvm::Value* AstWhileLoop::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {
@@ -61,7 +60,7 @@ llvm::Value* AstWhileLoop::codegen(
     llvm::Value* condValue = nullptr;
     if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->get_condition()->codegen(context, module, builder);
+        condValue = this->get_condition()->codegen(module, builder);
 
         if (condValue == nullptr)
         {
@@ -83,7 +82,7 @@ llvm::Value* AstWhileLoop::codegen(
     builder->SetInsertPoint(loop_body_bb);
     if (this->get_body())
     {
-        this->get_body()->codegen(context, module, builder);
+        this->get_body()->codegen(module, builder);
     }
     builder->CreateBr(loop_cond_bb);
 

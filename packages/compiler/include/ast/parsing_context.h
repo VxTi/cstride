@@ -283,7 +283,7 @@ namespace stride::ast
         void define_variable(
             Symbol variable_sym,
             std::unique_ptr<IAstType> type
-        ) const;
+        );
 
         void define_variable_globally(
             Symbol variable_symbol,

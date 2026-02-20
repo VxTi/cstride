@@ -23,7 +23,6 @@ void AstBlock::resolve_forward_references(
 }
 
 llvm::Value* AstBlock::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {
@@ -45,7 +44,7 @@ llvm::Value* AstBlock::codegen(
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(context, module, builder);
+            last_value = synthesisable->codegen(module, builder);
         }
     }
 

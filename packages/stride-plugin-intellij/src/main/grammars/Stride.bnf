@@ -106,7 +106,7 @@ private StandaloneItem ::= (
 ExternFunctionDeclaration ::= [AccessModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
 FunctionDeclaration ::= [AccessModifier] [ASYNC] FunctionDeclarationHeader BlockStatement
 private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterList] RPAREN COLON Type
-FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)* [COMMA]
+FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)*
 FunctionParameter ::= IDENTIFIER COLON Type
 
 StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
@@ -198,6 +198,7 @@ PrimaryExpression ::= LiteralExpression
                      | ParenthesizedExpression
                      | FunctionCallExpression
                      | ScopedIdentifier
+                     | (LSQUARE_BRACKET PrimaryExpression RSQUARE_BRACKET)
 
 FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {
   methods=[
@@ -222,7 +223,7 @@ ArgumentList ::= Expression (COMMA Expression)*
 ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
 
 // (p: int32) -> int32 { ... }
-LambdaExpression ::= LPAREN FunctionParameter* RPAREN COLON Type ARROW BlockStatement
+LambdaExpression ::= LPAREN [FunctionParameterList] RPAREN COLON Type ARROW BlockStatement
 
 // some::field
 ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)* {

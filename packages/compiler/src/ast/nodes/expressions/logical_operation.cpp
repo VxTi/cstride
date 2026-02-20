@@ -35,14 +35,12 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(
 }
 
 llvm::Value* AstLogicalOp::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder
 )
 {
     // Implementation following short-circuiting logic
     llvm::Value* lhs_value = this->get_left()->codegen(
-        context,
         module,
         ir_builder
     );
@@ -115,7 +113,7 @@ llvm::Value* AstLogicalOp::codegen(
 
     // Emit Right block
     ir_builder->SetInsertPoint(eval_right_bb);
-    llvm::Value* r = this->get_right()->codegen(context, module, ir_builder);
+    llvm::Value* r = this->get_right()->codegen(module, ir_builder);
     if (!r)
     {
         return nullptr;

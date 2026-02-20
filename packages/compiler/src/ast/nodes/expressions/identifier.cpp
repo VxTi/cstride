@@ -6,7 +6,6 @@
 using namespace stride::ast;
 
 llvm::Value* AstIdentifier::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -15,7 +14,7 @@ llvm::Value* AstIdentifier::codegen(
 
     std::string internal_name = this->get_internal_name();
 
-    if (const auto symbol_definition = context->lookup_symbol(this->get_name()))
+    if (const auto symbol_definition = this->get_context()->lookup_symbol(this->get_name()))
     {
         internal_name = symbol_definition->get_internal_symbol_name();
     }
@@ -43,8 +42,7 @@ llvm::Value* AstIdentifier::codegen(
                 // variables. For functions, the internal name is mangled, so we need to look
                 // up the function definition from the context by its raw name to get the
                 // mangled internal name, then look it up in the module.
-                if (const auto fn_def = context->
-                    lookup_symbol(this->get_name()))
+                if (const auto fn_def = this->get_context()->lookup_symbol(this->get_name()))
                 {
                     if (auto* fn = module->getFunction(
                         fn_def->get_internal_symbol_name()))

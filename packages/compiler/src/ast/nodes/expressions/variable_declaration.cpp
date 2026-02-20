@@ -50,9 +50,9 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
     }
 
     const std::string variable_name =
-        set.expect(TokenType::IDENTIFIER,
-                   "Expected variable name in variable declaration")
-           .get_lexeme();
+        set
+       .expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration")
+       .get_lexeme();
 
     std::unique_ptr<IAstType> variable_type = nullptr;
     std::unique_ptr<AstExpression> value = nullptr;
@@ -352,12 +352,10 @@ void global_var_declaration_codegen(
     // Re-generate the initial value inside the constructor function
     // Note: we MUST NOT call codegen on something that might have already been generated
     // if it's not designed to be called multiple times.
-    // However, for global initialization, we need the value.
     llvm::Value* dynamic_init_value = nullptr;
     if (const auto initial_value = self->get_initial_value().get())
     {
         dynamic_init_value = initial_value->codegen(
-            self->get_context().get(),
             module,
             &tempBuilder
         );
@@ -415,7 +413,6 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
 }
 
 llvm::Value* AstVariableDeclaration::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder
 )
@@ -439,7 +436,6 @@ llvm::Value* AstVariableDeclaration::codegen(
             initial_value != nullptr && is_literal_ast_node(initial_value))
         {
             init_value = initial_value->codegen(
-                this->get_context().get(),
                 module,
                 ir_builder
             );
@@ -480,7 +476,6 @@ llvm::Value* AstVariableDeclaration::codegen(
     if (const auto initial_value = this->get_initial_value().get())
     {
         init_value = initial_value->codegen(
-            this->get_context().get(),
             module,
             ir_builder
         );

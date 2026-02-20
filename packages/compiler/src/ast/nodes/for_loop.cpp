@@ -83,7 +83,6 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
 }
 
 llvm::Value* AstForLoop::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
 {
@@ -100,7 +99,7 @@ llvm::Value* AstForLoop::codegen(
 
     if (this->get_initializer())
     {
-        this->get_initializer()->codegen(context, module, builder);
+        this->get_initializer()->codegen(module, builder);
     }
 
     builder->CreateBr(loop_cond_bb);
@@ -109,7 +108,7 @@ llvm::Value* AstForLoop::codegen(
     llvm::Value* condValue = nullptr;
     if (const auto cond = this->get_condition(); cond != nullptr)
     {
-        condValue = this->get_condition()->codegen(context, module, builder);
+        condValue = this->get_condition()->codegen(module, builder);
 
         if (condValue == nullptr)
         {
@@ -131,14 +130,14 @@ llvm::Value* AstForLoop::codegen(
     builder->SetInsertPoint(loop_body_bb);
     if (this->get_body())
     {
-        this->get_body()->codegen(context, module, builder);
+        this->get_body()->codegen(module, builder);
     }
     builder->CreateBr(loop_incr_bb);
 
     builder->SetInsertPoint(loop_incr_bb);
     if (get_incrementor())
     {
-        this->get_incrementor()->codegen(context, module, builder);
+        this->get_incrementor()->codegen(module, builder);
     }
     builder->CreateBr(loop_cond_bb);
 

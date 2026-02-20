@@ -169,7 +169,6 @@ void IAstCallable::validate()
 }
 
 llvm::Value* IAstCallable::codegen(
-    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -229,7 +228,7 @@ llvm::Value* IAstCallable::codegen(
     llvm::Value* last_val = nullptr;
     if (this->get_body())
     {
-        last_val = this->get_body()->codegen(context, module, builder);
+        last_val = this->get_body()->codegen(module, builder);
     }
 
     // Final Safety: Implicit Return
@@ -376,7 +375,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     if (function_flags & SRFLAG_FN_DEF_EXTERN)
     {
         set.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
-        body = AstBlock::create_empty(context, position);
+        body = AstBlock::create_empty(function_context, position);
     }
     else
     {
@@ -389,12 +388,13 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         std::move(parameters),
         std::move(body),
         std::move(return_type),
-        function_flags);
+        function_flags
+    );
 }
 
-std::optional<std::vector<llvm::Type*>>
-AstFunctionDeclaration::resolve_parameter_types(
-    llvm::Module* module) const
+std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(
+    llvm::Module* module
+) const
 {
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())
@@ -411,7 +411,8 @@ AstFunctionDeclaration::resolve_parameter_types(
 
 std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     const auto reference_token = set.peek_next();
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -479,21 +480,22 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
         std::move(parameters),
         std::move(lambda_body),
         std::move(return_type),
-        function_flags);
+        function_flags
+    );
 }
 
 bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
 {
-    return set.peek_eq(TokenType::LPAREN, 0) && set.peek_eq(
-            TokenType::IDENTIFIER,
-            1) &&
-        set.peek_eq(TokenType::COLON, 2);
+    return set.peek_eq(TokenType::LPAREN, 0)
+        && set.peek_eq(TokenType::IDENTIFIER, 1)
+        && set.peek_eq(TokenType::COLON, 2);
 }
 
 void IAstCallable::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilder<>* builder
+)
 {
     const auto& fn_name = this->get_internal_name();
 
@@ -506,34 +508,44 @@ void IAstCallable::resolve_forward_references(
     {
         llvm::Type* llvm_type = internal_type_to_llvm_type(
             param->get_type(),
-            module);
+            module
+        );
         if (!llvm_type)
         {
-            throw std::runtime_error(
-                "Failed to resolve parameter type for lambda: " + fn_name);
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format("Failed to resolve parameter type for function '{}'", fn_name),
+                param->get_type()->get_source_fragment()
+            );
         }
         param_types.push_back(llvm_type);
     }
 
     llvm::Type* return_type = internal_type_to_llvm_type(
         this->get_return_type(),
-        module);
+        module
+    );
     if (!return_type)
     {
-        throw std::runtime_error(
-            "Failed to resolve return type for lambda: " + fn_name);
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Failed to resolve return type for function '{}'", fn_name),
+            this->get_return_type()->get_source_fragment()
+        );
     }
 
     llvm::FunctionType* function_type = llvm::FunctionType::get(
         return_type,
         param_types,
-        false);
+        false
+    );
 
     llvm::Function::Create(
         function_type,
         llvm::Function::ExternalLinkage,
         fn_name,
-        module);
+        module
+    );
 }
 
 
