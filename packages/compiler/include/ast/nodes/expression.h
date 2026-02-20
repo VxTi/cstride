@@ -79,7 +79,7 @@ namespace stride::ast
         ~AstExpression() override = default;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -108,7 +108,7 @@ namespace stride::ast
         const std::vector<std::unique_ptr<AstExpression>>& get_elements() const { return this->_elements; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -140,7 +140,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -174,7 +174,7 @@ namespace stride::ast
         const AstExpression* get_index() const { return this->_index_accessor_expr.get(); }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -195,16 +195,15 @@ namespace stride::ast
         // these types will have to be changed to AstExpression
         std::unique_ptr<AstIdentifier> _base;
         std::vector<std::unique_ptr<AstIdentifier>> _members;
+        std::unique_ptr<IAstType> _base_type;
 
     public:
         explicit AstMemberAccessor(
-            const SourceLocation &source,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> base,
             std::vector<std::unique_ptr<AstIdentifier>> members
-        ) : AstExpression(source, context),
-            _base(std::move(base)),
-            _members(std::move(members)) {}
+        );
 
         [[nodiscard]]
         AstIdentifier* get_base() const { return this->_base.get(); }
@@ -227,7 +226,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -274,7 +273,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -351,13 +350,13 @@ namespace stride::ast
         std::string to_string() override;
 
         void resolve_forward_references(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -416,7 +415,7 @@ namespace stride::ast
         BinaryOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -447,7 +446,7 @@ namespace stride::ast
         LogicalOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -474,7 +473,7 @@ namespace stride::ast
         ComparisonOpType get_op_type() const { return this->_op_type; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -493,7 +492,7 @@ namespace stride::ast
 
     public:
         explicit AstUnaryOp(
-            const SourceLocation &source,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
@@ -513,7 +512,7 @@ namespace stride::ast
         AstExpression& get_operand() const { return *this->_operand; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -562,7 +561,7 @@ namespace stride::ast
         MutativeAssignmentType get_operator() const { return this->_operator; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -584,7 +583,7 @@ namespace stride::ast
 
     public:
         explicit AstStructInitializer(
-            const SourceLocation &source,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string struct_name,
             std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>> initializers
@@ -606,7 +605,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;

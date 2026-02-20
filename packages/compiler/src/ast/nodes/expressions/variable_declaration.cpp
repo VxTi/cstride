@@ -292,7 +292,7 @@ void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, con
 }
 
 void AstVariableDeclaration::resolve_forward_references(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -359,7 +359,7 @@ void global_var_declaration_codegen(
     llvm::Value* dynamic_init_value = nullptr;
     if (const auto initial_value = self->get_initial_value().get(); initial_value != nullptr)
     {
-        dynamic_init_value = initial_value->codegen(self->get_context(), module, &tempBuilder);
+        dynamic_init_value = initial_value->codegen(self->get_context().get(), module, &tempBuilder);
     }
 
     // IAstCallable::codegen (e.g. a lambda) redirects the builder's insert point into its
@@ -411,7 +411,7 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
 }
 
 llvm::Value* AstVariableDeclaration::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder
 )
@@ -430,7 +430,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         if (const auto initial_value = this->get_initial_value().get();
             initial_value != nullptr && is_literal_ast_node(initial_value))
         {
-            init_value = initial_value->codegen(this->get_context(), module, ir_builder);
+            init_value = initial_value->codegen(this->get_context().get(), module, ir_builder);
         }
 
         if (init_value != nullptr)
@@ -460,9 +460,9 @@ llvm::Value* AstVariableDeclaration::codegen(
 
     // Generate code for the initial value at the current insertion point
     llvm::Value* init_value = nullptr;
-    if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
+    if (const auto initial_value = this->get_initial_value().get())
     {
-        init_value = initial_value->codegen(this->get_context(), module, ir_builder);
+        init_value = initial_value->codegen(this->get_context().get(), module, ir_builder);
     }
 
     if (init_value)

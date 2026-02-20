@@ -47,7 +47,7 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
 }
 
 llvm::Value* AstModule::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -63,7 +63,7 @@ llvm::Value* AstModule::codegen(
 }
 
 void AstModule::resolve_forward_references(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

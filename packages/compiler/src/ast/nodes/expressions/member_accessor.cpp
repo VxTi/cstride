@@ -5,6 +5,18 @@
 
 using namespace stride::ast;
 
+AstMemberAccessor::AstMemberAccessor(
+    const SourceLocation& source,
+    const std::shared_ptr<ParsingContext>& context,
+    std::unique_ptr<AstIdentifier> base,
+    std::vector<std::unique_ptr<AstIdentifier>> members
+) : AstExpression(source, context),
+    _base(std::move(base)),
+    _members(std::move(members))
+{
+    this->_base_type = infer_expression_type(context, base.get());
+}
+
 bool stride::ast::is_member_accessor(AstExpression* lhs, const TokenSet& set)
 {
     // We assume the expression and subsequent tokens are "member accessors"
@@ -75,7 +87,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 }
 
 llvm::Value* AstMemberAccessor::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -84,6 +96,10 @@ llvm::Value* AstMemberAccessor::codegen(
     // We must evaluate to a constant (Constant Folding) as we cannot generate instructions.
     // Note: This assumes the base identifier's codegen handles null blocks gracefully
     // and returns the GlobalVariable* (pointer) rather than loading it.
+
+    auto cloned_base_type = this->_base_type->clone();
+    std::string base_type_name = cloned_base_type->get_internal_name();
+
     if (!builder->GetInsertBlock())
     {
         llvm::Value* base_val = this->get_base()->codegen(context, module, builder);
@@ -97,8 +113,7 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         llvm::Constant* current_const = global_var->getInitializer();
-        std::unique_ptr<IAstType> current_ast_type = infer_expression_type(context, this->get_base());
-        std::string current_struct_name = current_ast_type->get_internal_name();
+        std::string current_struct_name = base_type_name;
 
         for (const auto& accessor : this->get_members())
         {
@@ -123,8 +138,8 @@ llvm::Value* AstMemberAccessor::codegen(
             auto member_field_type = struct_def->get_struct_member_field_type(accessor->get_name());
             if (!member_field_type.has_value()) return nullptr;
 
-            current_ast_type = member_field_type.value()->clone();
-            current_struct_name = current_ast_type->get_internal_name();
+            cloned_base_type = member_field_type.value()->clone();
+            current_struct_name = cloned_base_type->get_internal_name();
         }
 
         return current_const;
@@ -137,8 +152,7 @@ llvm::Value* AstMemberAccessor::codegen(
         return nullptr;
     }
 
-    std::unique_ptr<IAstType> current_ast_type = infer_expression_type(context, this->get_base());
-    std::string current_struct_name = current_ast_type->get_internal_name();
+    std::string current_struct_name = cloned_base_type->get_internal_name();
 
     // With opaque pointers, we need to know if we are operating on an address (L-value)
     // or a loaded struct value (R-value). Pointers allow GEP, values require ExtractValue.
@@ -211,14 +225,14 @@ llvm::Value* AstMemberAccessor::codegen(
         auto member_field_type = struct_def->get_struct_member_field_type(accessor->get_name());
         if (!member_field_type.has_value()) return nullptr;
 
-        current_ast_type = member_field_type.value()->clone();
-        current_struct_name = current_ast_type->get_internal_name();
+        cloned_base_type = member_field_type.value()->clone();
+        current_struct_name = cloned_base_type->get_internal_name();
     }
 
     // if we were working with pointers, we need to load the final result
     if (is_pointer_ty)
     {
-        llvm::Type* final_llvm_type = internal_type_to_llvm_type(current_ast_type.get(), module);
+        llvm::Type* final_llvm_type = internal_type_to_llvm_type(cloned_base_type.get(), module);
         return builder->CreateLoad(
             final_llvm_type,
             current_val,

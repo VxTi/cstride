@@ -149,7 +149,7 @@ void IAstCallable::validate()
 }
 
 llvm::Value* IAstCallable::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -470,7 +470,7 @@ std::string AstLambdaFunctionExpression::to_string()
 }
 
 void IAstCallable::resolve_forward_references(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

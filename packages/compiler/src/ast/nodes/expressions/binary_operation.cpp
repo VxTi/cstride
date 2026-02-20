@@ -142,7 +142,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_arithmetic_bina
 }
 
 llvm::Value* AstBinaryArithmeticOp::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

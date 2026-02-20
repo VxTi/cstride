@@ -13,11 +13,10 @@ namespace stride::ast
     {
     public:
         AstSwitchBranch(
-            const std::shared_ptr<SourceFile>& source,
-            const SourceLocation source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context
         )
-            : IAstNode(source, source_position, context) {}
+            : IAstNode(source, context) {}
     };
 
     class AstSwitch :
@@ -29,18 +28,17 @@ namespace stride::ast
 
     public:
         explicit AstSwitch(
-            const std::shared_ptr<SourceFile>& source,
-            const SourceLocation source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name
         )
-            : IAstNode(source, source_position, context),
+            : IAstNode(source, context),
               _name(std::move(name)) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;

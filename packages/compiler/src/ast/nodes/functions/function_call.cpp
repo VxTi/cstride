@@ -90,7 +90,7 @@ std::string AstFunctionCall::format_function_name() const
 }
 
 llvm::Value* AstFunctionCall::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

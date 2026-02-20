@@ -42,7 +42,7 @@ namespace stride
         ~Program() = default;
 
         [[nodiscard]]
-        std::shared_ptr<ast::ParsingContext> get_global_scope() const { return this->_global_scope; }
+        std::shared_ptr<ast::ParsingContext> get_global_context() const { return this->_global_scope; }
 
         Program(const Program&) = delete;
         Program& operator=(const Program&) = delete;

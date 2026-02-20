@@ -5,15 +5,13 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
-#include "ast/flags.h"
 #include "ast/nodes/blocks.h"
-#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
 
 using namespace stride::ast;
 
 llvm::Value* AstExpression::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder
 )

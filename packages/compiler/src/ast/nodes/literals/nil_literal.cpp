@@ -7,7 +7,7 @@ std::string AstNilLiteral::to_string()
     return "nil";
 }
 
-llvm::Value* AstNilLiteral::codegen(const std::shared_ptr<ParsingContext>& context, llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstNilLiteral::codegen(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
 {
     return llvm::Constant::getNullValue(builder->getPtrTy());
 }

@@ -20,7 +20,7 @@ std::unique_ptr<AstBlock> parser::parse_file(const Program& program, const std::
     const auto source_file = read_file(source_path);
     auto tokens = tokenizer::tokenize(source_file);
 
-    return std::move(parse_sequential(program.get_global_scope(), tokens));
+    return std::move(parse_sequential(program.get_global_context(), tokens));
 }
 
 std::unique_ptr<IAstNode> stride::ast::parse_next_statement(const std::shared_ptr<ParsingContext>& context, TokenSet& set)

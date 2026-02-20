@@ -77,7 +77,7 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
 }
 
 llvm::Value* AstForLoop::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

@@ -43,7 +43,7 @@ std::string AstComparisonOp::to_string()
 }
 
 llvm::Value* AstComparisonOp::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
