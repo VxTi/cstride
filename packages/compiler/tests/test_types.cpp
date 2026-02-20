@@ -150,10 +150,9 @@ TEST(TypeErrors, FunctionTypeMismatch)
 {
     assert_throws_message(
         R"(
-        const k: ((int32, int32) -> int32)[] = [(x: int32, y: int32): int32 -> { return 1; }];
+        const k: (int32, int32) -> int32 = [(x: int32, y: int32): int32 -> { return 1; }];
     )",
-        "Type mismatch in variable declaration; expected type '((int32, int32) -> int32)[]', got '((int32) "
-        "-> int32)[]'");
+        "Type mismatch in variable declaration; expected type '(int32, int32) -> int32', got '((int32, int32) -> int32)[]'");
 
     assert_throws_message(
         R"(
@@ -161,8 +160,7 @@ TEST(TypeErrors, FunctionTypeMismatch)
 
         let a: (int32, int32) -> int32 = test;
     )",
-        "Type mismatch in variable declaration; expected type '(int32, int32) -> int32', got '(int32) -> "
-        "int32'");
+        "Type mismatch in variable declaration; expected type '(int32, int32) -> int32', got '(int32) -> int32'");
 
     assert_compiles(R"(
         fn test(p: int32): int32 { return 0; }

@@ -485,7 +485,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         return llvm::PointerType::get(module->getContext(), 0);
     }
 
-    if (const auto* ast_array_ty = dynamic_cast<AstArrayType*>(type))
+    if (const auto* ast_array_ty = cast_type<AstArrayType*>(type))
     {
         llvm::Type* element_type =
             internal_type_to_llvm_type(ast_array_ty->get_element_type(),
@@ -503,7 +503,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
                                     ast_array_ty->get_initial_length());
     }
 
-    if (const auto* ast_primitive_ty = dynamic_cast<AstPrimitiveType*>(type))
+    if (const auto* ast_primitive_ty = cast_type<AstPrimitiveType*>(type))
     {
         switch (ast_primitive_ty->get_type())
         {
@@ -535,7 +535,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
     }
 
-    if (const auto* ast_struct_ty = dynamic_cast<AstNamedType*>(type))
+    if (const auto* ast_struct_ty = cast_type<AstNamedType*>(type))
     {
         // If it's a pointer, we don't even need to look up the struct name
         // to return the LLVM type, because all pointers are the same.
@@ -560,6 +560,11 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
 
         return struct_ty;
+    }
+
+    if (const auto* ast_function_ty = cast_type<AstFunctionType*>(type))
+    {
+        return llvm::PointerType::get(module->getContext(), 0);
     }
 
     return nullptr;
