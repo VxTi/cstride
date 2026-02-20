@@ -1,0 +1,55 @@
+---
+# Base style to build upon
+BasedOnStyle: LLVM
+
+# Language standard
+Standard: Latest
+
+# -----------------------------------------------------------------------------
+# HEADER SORTING & INCLUDES
+# -----------------------------------------------------------------------------
+SortIncludes: true
+
+# This section defines the priority of include categories.
+# Lower numbers are placed higher in the file.
+IncludeCategories:
+  # 1. The main header corresponding to the .cpp file (e.g., MyClass.h)
+  - Regex:           '^"(.*)\.h"'
+    Priority:        1
+  # 2. Project-local headers (using double quotes)
+  - Regex:           '^"(.*)"'
+    Priority:        2
+  # 3. System/Standard Library headers (e.g., <vector>, <string>)
+  - Regex:           '^<(.*)>'
+    Priority:        3
+  # 4. Specifically catch and group nested library headers
+  - Regex:           '^<.*\/'
+    Priority:        4
+
+# Ensures that includes are grouped based on the categories above
+IncludeBlocks: Regroup
+
+# -----------------------------------------------------------------------------
+# GENERAL FORMATTING (Professional Defaults)
+# -----------------------------------------------------------------------------
+IndentWidth: 4
+ColumnLimit: 100
+TabWidth: 4
+UseTab: Never
+
+# Bracing and Alignment
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: Never
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: false
+  BeforeElse: false
+  BeforeCatch: true
+
+# Cleanliness
+AllowShortFunctionsOnASingleLine: Empty
+PointerAlignment: Left  # e.g., int* ptr;
+FixNamespaceComments: true
+---
