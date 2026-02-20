@@ -25,7 +25,7 @@
     WHILE='while'
     MODULE='module'
     PACKAGE='package'
-    PUBLIC='public'
+    PUBLIC='pub'
     ASYNC='async'
     IF='if'
     ELSE='else'

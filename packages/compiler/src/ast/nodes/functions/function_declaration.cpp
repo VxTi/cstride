@@ -308,7 +308,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
                                         "Expected function name after 'fn'");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
-    auto function_scope = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
+    auto function_context = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
 
     set.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -316,7 +316,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // Parameter parsing
     if (!set.peek_next_eq(TokenType::RPAREN))
     {
-        parse_function_parameters(context, set, parameters, function_flags);
+        parse_function_parameters(function_context, set, parameters, function_flags);
 
         if (!set.peek_next_eq(TokenType::RPAREN))
         {
@@ -340,7 +340,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         parameter_types_cloned.push_back(param->get_type()->clone());
     }
     const auto& position = reference_token.get_source_fragment();
-    auto symbol_name = Symbol(position, context->get_name(), fn_name);
+    auto function_name_symbol = Symbol(position, context->get_name(), fn_name);
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
@@ -353,7 +353,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        symbol_name = resolve_internal_function_name(
+        function_name_symbol = resolve_internal_function_name(
             context,
             position,
             { fn_name },
@@ -362,9 +362,9 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
 
     context->define_function(
-        symbol_name,
+        function_name_symbol,
         std::make_unique<AstFunctionType>(
-            symbol_name.symbol_position,
+            function_name_symbol.symbol_position,
             context,
             std::move(parameter_types_cloned),
             return_type->clone()
@@ -380,12 +380,12 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
     else
     {
-        body = parse_block(function_scope, set);
+        body = parse_block(function_context, set);
     }
 
     return std::make_unique<AstFunctionDeclaration>(
         context,
-        symbol_name,
+        function_name_symbol,
         std::move(parameters),
         std::move(body),
         std::move(return_type),
@@ -417,40 +417,46 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
     int function_flags = SRFLAG_FN_DEF_ANONYMOUS;
+    auto function_context = std::make_shared<ParsingContext>(
+        context,
+        ScopeType::FUNCTION
+    );
 
     // Parses expressions like:
     // (<param1>: <type1>, ...): <ret_type> -> {}
     if (auto header_definition = collect_parenthesized_block(set);
         header_definition.has_value())
     {
-        parse_function_parameters(context, set, parameters, function_flags);
+        parse_function_parameters(
+            function_context,
+            header_definition.value(),
+            parameters,
+            function_flags
+        );
     }
 
-    set.expect(TokenType::COLON,
-               "Expected ':' after lambda function header definition");
-    auto return_type =
-        parse_type(context,
-                   set,
-                   "Expected type after anonymous function header definition");
-    const auto lambda_arrow =
-        set.expect(TokenType::DASH_RARROW,
-                   "Expected '->' after lambda parameters");
+    set.expect(TokenType::COLON, "Expected ':' after lambda function header definition");
+    auto return_type = parse_type(
+        function_context,
+        set,
+        "Expected type after anonymous function header definition"
+    );
+    const auto lambda_arrow = set.expect(
+        TokenType::DASH_RARROW,
+        "Expected '->' after lambda parameters"
+    );
 
-    auto body_context = std::make_shared<ParsingContext>(
-        context,
-        ScopeType::FUNCTION);
-
-    auto lambda_body = parse_block(body_context, set);
+    auto lambda_body = parse_block(function_context, set);
 
     static int anonymous_lambda_id = 0;
 
     auto symbol_name = Symbol(
-        SourceFragment(
-            set.get_source(),
-            reference_token.get_source_fragment().offset,
-            lambda_arrow.get_source_fragment().offset -
-            reference_token.get_source_fragment().offset),
-        ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++));
+        { set.get_source(),
+          reference_token.get_source_fragment().offset,
+          lambda_arrow.get_source_fragment().offset -
+          reference_token.get_source_fragment().offset },
+        ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++)
+    );
 
     std::vector<std::unique_ptr<IAstType>> cloned_params;
     cloned_params.reserve(parameters.size());
@@ -464,7 +470,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
             symbol_name.symbol_position,
             context,
             std::move(cloned_params),
-            return_type->clone()));
+            return_type->clone())
+    );
 
     return std::make_unique<AstLambdaFunctionExpression>(
         context,

@@ -4,6 +4,7 @@
 #include "errors.h"
 
 #include <algorithm>
+#include <ranges>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -262,45 +263,50 @@ bool ParsingContext::is_field_defined_globally(
 
 void ParsingContext::define_variable_globally(
     Symbol variable_symbol,
-    std::unique_ptr<IAstType> type) const
+    std::unique_ptr<IAstType> type
+) const
 {
     if (is_field_defined_globally(variable_symbol.internal_name))
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Field '{}' is already defined in global scope",
-                        variable_symbol.name),
-            type->get_source_fragment());
+            std::format("Field '{}' is already defined in global scope", variable_symbol.name),
+            type->get_source_fragment()
+        );
     }
 
     auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
     global_scope._symbols.push_back(
-        std::make_unique<FieldDef>(std::move(variable_symbol),
-                                   std::move(type)));
+        std::make_unique<FieldDef>(
+            std::move(variable_symbol),
+            std::move(type)
+        )
+    );
 }
 
-void ParsingContext::define_variable(Symbol variable_sym,
-                                     std::unique_ptr<IAstType> type) const
+void ParsingContext::define_variable(
+    Symbol variable_sym,
+    std::unique_ptr<IAstType> type
+) const
 {
     if (this->is_global_scope())
     {
-        this->define_variable_globally(std::move(variable_sym),
-                                       std::move(type));
+        this->define_variable_globally(std::move(variable_sym), std::move(type));
         return;
     }
     if (is_field_defined_in_scope(variable_sym.internal_name))
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Field '{}' is already defined in this scope",
-                        variable_sym.name),
+            std::format("Field '{}' is already defined in this scope", variable_sym.name),
             type->get_source_fragment());
     }
 
     auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
 
     global_scope._symbols.push_back(
-        std::make_unique<FieldDef>(std::move(variable_sym), std::move(type)));
+        std::make_unique<FieldDef>(std::move(variable_sym), std::move(type))
+    );
 }
 
 IDefinition* ParsingContext::lookup_symbol(const std::string& symbol_name) const
@@ -320,8 +326,10 @@ IDefinition* ParsingContext::lookup_symbol(const std::string& symbol_name) const
     return nullptr;
 }
 
-const FieldDef* ParsingContext::lookup_variable(const std::string& name,
-                                                const bool use_raw_name)
+const FieldDef* ParsingContext::lookup_variable(
+    const std::string& name,
+    const bool use_raw_name
+)
 const
 {
     auto current = this;
@@ -369,9 +377,9 @@ std::optional<StructDef*> ParsingContext::get_struct_def(
     return std::nullopt;
 }
 
-std::optional<std::vector<std::pair<std::string, IAstType*>>>
-ParsingContext::get_struct_fields(
-    const std::string& name) const
+std::optional<std::vector<std::pair<std::string, IAstType*>>> ParsingContext::get_struct_fields(
+    const std::string& name
+) const
 {
     auto definition = get_struct_def(name);
 
@@ -391,35 +399,38 @@ ParsingContext::get_struct_fields(
         }
     }
 
-    return definition.value()->get_fields();
+    return definition.value()->get_struct_fields();
 }
 
 void ParsingContext::define_struct(
     const Symbol& struct_symbol,
-    std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields) const
+    std::vector<StructFieldPair> fields
+) const
 {
-    if (const auto existing_def = this->get_struct_def(
-            struct_symbol.internal_name);
+    if (const auto existing_def = this->get_struct_def(struct_symbol.internal_name);
         existing_def.has_value())
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Struct '{}' is already defined in this scope",
-                        struct_symbol.name),
-            fields.begin()->second->get_source_fragment());
+            std::format("Struct '{}' is already defined in this scope", struct_symbol.name),
+            fields.begin()->second->get_source_fragment()
+        );
     }
 
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
-    root._symbols.push_back(
-        std::make_unique<
-            StructDef>(std::move(struct_symbol), std::move(fields)));
+
+    auto def = std::make_unique<StructDef>(std::move(struct_symbol), std::move(fields));
+
+    root._symbols.push_back(std::move(def));
 }
 
-void ParsingContext::define_struct(const Symbol& struct_name,
-                                   const Symbol& reference_struct_name)
+void ParsingContext::define_struct(
+    const Symbol& struct_name,
+    const Symbol& reference_struct_name
+)
 const
 {
-    if (this->_current_scope != ScopeType::GLOBAL && this->_current_scope !=
+    if (this->_scope_type != ScopeType::GLOBAL && this->_scope_type !=
         ScopeType::MODULE)
     {
         throw parsing_error(
@@ -440,7 +451,39 @@ const
         std::make_unique<StructDef>(struct_name, reference_struct_name));
 }
 
-std::vector<std::pair<std::string, IAstType*>> StructDef::get_fields() const
+void ParsingContext::define_struct_member(
+    const std::string& struct_name,
+    const std::string& member_name,
+    std::unique_ptr<IAstType> type
+) const
+{
+    const auto& struct_definition = get_struct_def(struct_name);
+    if (!struct_definition.has_value())
+    {
+        throw parsing_error(
+            std::format("Struct '{}' is not defined in this scope", struct_name)
+        );
+    }
+
+    struct_definition.value()->define_member(member_name, std::move(type));
+}
+
+void StructDef::define_member(const std::string& member_name, std::unique_ptr<IAstType> type)
+{
+    for (const auto& key : this->_fields | std::views::keys)
+    {
+        if (key == member_name)
+        {
+            throw parsing_error(
+                "Struct member already defined in scope"
+            );
+        }
+    }
+
+    this->_fields.emplace_back(member_name, std::move(type));
+}
+
+std::vector<std::pair<std::string, IAstType*>> StructDef::get_struct_fields() const
 {
     std::vector<std::pair<std::string, IAstType*>> copy{};
     copy.reserve(this->_fields.size());

@@ -11,12 +11,11 @@
 
 using namespace stride::ast;
 
-/*----------------------------------- PARSING AND VALIDATION ------------------------------------*/
-
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    const VisibilityModifier modifier)
+    const VisibilityModifier modifier
+)
 {
     auto decl = parse_variable_declaration_inline(context, set, modifier);
     set.expect(TokenType::SEMICOLON,
@@ -25,11 +24,11 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     return decl;
 }
 
-std::unique_ptr<AstVariableDeclaration>
-stride::ast::parse_variable_declaration_inline(
+std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_inline(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    VisibilityModifier modifier)
+    VisibilityModifier modifier
+)
 {
     int flags = 0;
 

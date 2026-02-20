@@ -82,8 +82,8 @@ namespace
 llvm::Value* AstVariadicArgReference::codegen(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
 {
     // Verify we're inside a variadic function
-    llvm::Function* current_function = builder->GetInsertBlock()->getParent();
-    if (!current_function || !current_function->isVarArg())
+    if (const llvm::Function* current_function = builder->GetInsertBlock()->getParent();
+        !current_function || !current_function->isVarArg())
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
@@ -110,13 +110,40 @@ llvm::Value* AstVariadicArgReference::codegen(const ParsingContext* context, llv
         "varargs_list.cast"
     );
 
-    // Get or declare and call the va_start intrinsic
+    // Declare the va_start intrinsic and call it to initialize the va_list
+    // va_start captures the current state of the variadic arguments
     llvm::Function* va_start_fn = get_or_declare_va_start(module);
     builder->CreateCall(va_start_fn, {va_list_i8_ptr});
 
-    // Return the va_list pointer
-    // Note: The caller is responsible for calling va_end when done
-    return va_list_ptr;
+    // When forwarding variadic arguments, we need to create a copy of the va_list
+    // This is because the receiving function will consume the va_list, and we may
+    // need the original for cleanup or multiple uses.
+    llvm::AllocaInst* va_list_copy_ptr = builder->CreateAlloca(
+        va_list_ty,
+        nullptr,
+        "varargs_list_copy"
+    );
+
+    llvm::Value* va_list_copy_i8_ptr = builder->CreateBitCast(
+        va_list_copy_ptr,
+        llvm::PointerType::get(module->getContext(), 0),
+        "varargs_list_copy.cast"
+    );
+
+    // Declare and call va_copy to create a copy of the va_list
+    // va_copy(dest, src) copies the state from src to dest
+    llvm::Function* va_copy_fn = get_or_declare_va_copy(module);
+    builder->CreateCall(va_copy_fn, {va_list_copy_i8_ptr, va_list_i8_ptr});
+
+    // Clean up the original va_list immediately since we're using the copy
+    // This ensures proper resource management
+    llvm::Function* va_end_fn = get_or_declare_va_end(module);
+    builder->CreateCall(va_end_fn, {va_list_i8_ptr});
+
+    // Return the copied va_list pointer
+    // Note: The caller (or function cleanup) is responsible for calling va_end
+    // on this copy when done using it
+    return va_list_copy_ptr;
 }
 
 void AstVariadicArgReference::validate()

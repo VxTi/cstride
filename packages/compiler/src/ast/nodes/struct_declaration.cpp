@@ -10,7 +10,9 @@ using namespace stride::ast::definition;
 
 std::unique_ptr<AstStructMember> parse_struct_member(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set,
+    const std::string& struct_name
+)
 {
     const auto struct_member_name_tok =
         set.expect(TokenType::IDENTIFIER, "Expected struct member name");
@@ -38,8 +40,7 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     );
     auto struct_member_symbol = Symbol(position, struct_member_name);
 
-    // TODO: Replace with struct-field-specific method (optional)
-    context->define_variable(struct_member_symbol, struct_member_type->clone());
+    context->define_struct_member(struct_name, struct_member_name, struct_member_type->clone());
 
     return std::make_unique<AstStructMember>(
         context,
@@ -115,7 +116,12 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
     }
 
     std::vector<std::unique_ptr<AstStructMember>> members = {};
-    std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> fields = {};
+    std::vector<StructFieldPair> struct_fields = {};
+
+    context->define_struct(
+        Symbol(struct_name_tok.get_source_fragment(), struct_name),
+        std::move(struct_fields)
+    );
 
     if (struct_body_set.has_value())
     {
@@ -124,10 +130,13 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
             ScopeType::BLOCK);
         while (struct_body_set.value().has_next())
         {
-            auto member = parse_struct_member(nested_scope,
-                                              struct_body_set.value());
+            auto member = parse_struct_member(
+                nested_scope,
+                struct_body_set.value(),
+                struct_name
+            );
 
-            fields.emplace_back(member->get_name(), member->get_type().clone());
+            struct_fields.emplace_back(member->get_name(), member->get_type().clone());
             members.push_back(std::move(member));
         }
     }
@@ -137,10 +146,6 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
     {
         tokens.throw_error("Struct must have at least one member");
     }
-
-    context->define_struct(
-        Symbol(struct_name_tok.get_source_fragment(), struct_name),
-        std::move(fields));
 
     return std::make_unique<AstStructDeclaration>(
         reference_token.get_source_fragment(),
