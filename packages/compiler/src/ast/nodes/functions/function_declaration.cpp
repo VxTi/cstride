@@ -426,7 +426,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     // Parses expressions like:
     // (<param1>: <type1>, ...): <ret_type> -> {}
     if (auto header_definition = collect_parenthesized_block(set);
-        header_definition.has_value())
+        header_definition.has_value() && header_definition->has_next())
     {
         parse_function_parameters(
             function_context,
@@ -546,6 +546,13 @@ void IAstCallable::resolve_forward_references(
         fn_name,
         module
     );
+
+    // Recursively resolve forward references in the function body
+    // This is necessary for nested lambdas (e.g., lambdas that return lambdas)
+    if (this->get_body())
+    {
+        this->get_body()->resolve_forward_references(context, module, builder);
+    }
 }
 
 

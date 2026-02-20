@@ -96,8 +96,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
     // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
     if (set.peek_next_eq(TokenType::LPAREN))
     {
-        if (set.peek_eq(TokenType::IDENTIFIER, 1)
+        if ((set.peek_eq(TokenType::IDENTIFIER, 1)
             && set.peek_eq(TokenType::COLON, 2))
+            || (set.peek_eq(TokenType::RPAREN, 1) &&
+                set.peek_eq(TokenType::COLON, 2)))
         {
             return parse_lambda_fn_expression(context, set);
         }
