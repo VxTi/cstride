@@ -17,7 +17,7 @@ namespace stride::ast
 
     public:
         explicit AstEnumerableMember(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::unique_ptr<AstLiteral> value) :
@@ -47,7 +47,7 @@ namespace stride::ast
 
     public:
         explicit AstEnumerable(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
             std::string name) :

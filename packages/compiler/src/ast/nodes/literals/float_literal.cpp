@@ -19,7 +19,7 @@ stride::ast::parse_float_literal_optional(
         // Remove the trailing D
 
         return std::make_unique<AstFpLiteral>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             std::stod(numeric),
             64);
@@ -29,7 +29,7 @@ stride::ast::parse_float_literal_optional(
     {
         const auto next = set.next();
         return std::make_unique<AstFpLiteral>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             std::stof(next.get_lexeme()),
             32);

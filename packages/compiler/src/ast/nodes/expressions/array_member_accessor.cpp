@@ -27,7 +27,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
         expression_block.value());
 
     auto base_expr = std::make_unique<AstArrayMemberAccessor>(
-        array_identifier->get_source_position(),
+        array_identifier->get_source_fragment(),
         context,
         std::move(array_identifier),
         std::move(index_expression));
@@ -60,7 +60,7 @@ void AstArrayMemberAccessor::validate()
                 std::format(
                     "Array index accessor must be of type int, got '{}'",
                     primitive_type->to_string()),
-                this->get_source_position());
+                this->get_source_fragment());
         }
     }
 
@@ -69,7 +69,7 @@ void AstArrayMemberAccessor::validate()
         std::format(
             "Array index accessor must be of type int, got '{}'",
             index_accessor_type->to_string()),
-        this->get_source_position()
+        this->get_source_fragment()
     );
 }
 
@@ -103,7 +103,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             "Array member accessor used on non-array type",
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     llvm::Type* elem_llvm_ty = internal_type_to_llvm_type(

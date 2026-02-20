@@ -55,7 +55,7 @@ namespace stride::ast
 
     public:
         explicit AstStructDeclaration(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::unique_ptr<IAstType> reference
@@ -65,7 +65,7 @@ namespace stride::ast
             _reference(std::move(reference)) {}
 
         explicit AstStructDeclaration(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::vector<std::unique_ptr<AstStructMember>> members

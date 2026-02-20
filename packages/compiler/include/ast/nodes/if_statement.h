@@ -17,7 +17,7 @@ namespace stride::ast
 
     public:
         explicit AstIfStatement(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> body,

@@ -17,7 +17,7 @@ namespace stride::ast
         std::string to_string() override;
 
         explicit AstModule(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             std::unique_ptr<AstBlock> body) :

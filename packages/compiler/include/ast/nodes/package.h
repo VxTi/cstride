@@ -10,7 +10,7 @@ namespace stride::ast
 
     public:
         explicit AstPackage(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string package_name) :
             IAstNode(source, context),

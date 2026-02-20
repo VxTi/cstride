@@ -29,7 +29,7 @@ void AstVariableReassignment::validate()
             std::format(
                 "Unable to reassign variable, variable '{}' not found",
                 this->get_variable_name()),
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     if (this->get_value() == nullptr)
@@ -42,7 +42,7 @@ void AstVariableReassignment::validate()
             std::format(
                 "Variable '{}' is immutable and cannot be reassigned",
                 this->get_variable_name()),
-            this->get_source_position());
+            this->get_source_fragment());
     }
 
     const auto expression_type = infer_expression_type(
@@ -76,7 +76,7 @@ IAstNode* AstVariableReassignment::reduce()
             reduced_expr != nullptr)
         {
             return std::make_unique<AstVariableReassignment>(
-                    this->get_source_position(),
+                    this->get_source_fragment(),
                     this->get_context(),
                     this->get_variable_name(),
                     this->get_internal_name(),
@@ -348,7 +348,7 @@ stride::ast::parse_variable_reassignment(
             std::format(
                 "Unable to reassign variable '{}', variable not found",
                 reassignment_iden_name),
-            reference_token.get_source_position());
+            reference_token.get_source_fragment());
     }
 
 
@@ -358,7 +358,7 @@ stride::ast::parse_variable_reassignment(
     auto expression = parse_inline_expression(context, set);
 
     return std::make_unique<AstVariableReassignment>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         reassignment_iden_name,
         reassign_internal_name,

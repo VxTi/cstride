@@ -435,15 +435,15 @@ namespace stride::ast
 
     class Token
     {
-        SourceLocation _position;
+        SourceFragment _position;
         std::string _lexeme{};
         TokenType _type;
 
     public:
         explicit Token(const TokenType type,
-                       SourceLocation position,
+                       const SourceFragment& position,
                        std::string lexeme) :
-            _position(std::move(position)),
+            _position(position),
             _lexeme(std::move(lexeme)),
             _type(type) {}
 
@@ -462,7 +462,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const SourceLocation& get_source_position() const
+        const SourceFragment& get_source_fragment() const
         {
             return _position;
         }

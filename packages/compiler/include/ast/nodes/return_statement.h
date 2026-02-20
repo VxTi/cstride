@@ -11,7 +11,7 @@ namespace stride::ast
 
     public:
         explicit AstReturnStatement(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> value) :
             IAstNode(source, context),

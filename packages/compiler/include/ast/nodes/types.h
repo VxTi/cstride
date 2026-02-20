@@ -47,7 +47,7 @@ namespace stride::ast
 
     public:
         IAstType(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const int flags) :
             IAstNode(source, context),
@@ -130,7 +130,7 @@ namespace stride::ast
 
     public:
         explicit AstPrimitiveType(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const PrimitiveType type,
             const size_t bit_count,
@@ -216,7 +216,7 @@ namespace stride::ast
 
     public:
         explicit AstNamedType(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             const int flags = SRFLAG_NONE) :
@@ -259,7 +259,7 @@ namespace stride::ast
 
     public:
         explicit AstFunctionType(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
@@ -293,7 +293,7 @@ namespace stride::ast
             }
 
             return std::make_unique<AstFunctionType>(
-                this->get_source_position(),
+                this->get_source_fragment(),
                 this->get_context(),
                 std::move(parameters_clone),
                 this->_return_type->clone());
@@ -348,7 +348,7 @@ namespace stride::ast
 
     public:
         explicit AstArrayType(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<IAstType> element_type,
             const size_t initial_length) :
@@ -369,7 +369,7 @@ namespace stride::ast
                 : nullptr;
 
             return std::make_unique<AstArrayType>(
-                this->get_source_position(),
+                this->get_source_fragment(),
                 this->get_context(),
                 std::move(element_clone),
                 this->_initial_length);

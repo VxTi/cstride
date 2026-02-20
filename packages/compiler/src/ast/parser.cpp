@@ -105,7 +105,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
     }
 
     return std::make_unique<AstBlock>(
-        initial_token.get_source_position(),
+        initial_token.get_source_fragment(),
         context,
         std::move(nodes));
 }

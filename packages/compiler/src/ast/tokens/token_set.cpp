@@ -83,13 +83,13 @@ Token TokenSet::expect(const TokenType type)
 {
     if (!this->has_next())
     {
-        const auto last_token_pos = this->last().get_source_position();
+        const auto last_token_pos = this->last().get_source_fragment();
 
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             std::format("Expected '{}', but reached end of block",
                         token_type_to_str(type)),
-            SourceLocation(
+            SourceFragment(
                 this->get_source(),
                 last_token_pos.offset + last_token_pos.length - 1,
                 1));
@@ -112,12 +112,12 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 {
     if (!this->has_next())
     {
-        const auto last_token_pos = this->last().get_source_position();
+        const auto last_token_pos = this->last().get_source_fragment();
 
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             message,
-            SourceLocation(
+            SourceFragment(
                 this->get_source(),
                 last_token_pos.offset + last_token_pos.length - 1,
                 1));
@@ -170,7 +170,7 @@ std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
     const ErrorType error_type,
     const std::string& message) const
 {
-    throw parsing_error(error_type, message, token.get_source_position());
+    throw parsing_error(error_type, message, token.get_source_fragment());
 }
 
 [[noreturn]] void TokenSet::throw_error(const ErrorType error_type,

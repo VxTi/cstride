@@ -57,7 +57,7 @@ stride::ast::parse_integer_literal_optional(
                 : INFER_INT_BIT_COUNT(value);
 
             return std::make_unique<AstIntLiteral>(
-                reference_token.get_source_position(),
+                reference_token.get_source_fragment(),
                 context,
                 value,
                 bit_count);
@@ -68,7 +68,7 @@ stride::ast::parse_integer_literal_optional(
             throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
                 reason,
-                reference_token.get_source_position());
+                reference_token.get_source_fragment());
         }
     }
     default:

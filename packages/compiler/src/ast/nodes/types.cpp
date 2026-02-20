@@ -74,7 +74,7 @@ std::unique_ptr<IAstType> parse_type_metadata(
     TokenSet& set,
     int context_type_flags)
 {
-    const auto src_pos = set.peek_next().get_source_position();
+    const auto src_pos = set.peek_next().get_source_fragment();
     int offset = 0;
 
     while (is_array_notation(set))
@@ -82,7 +82,7 @@ std::unique_ptr<IAstType> parse_type_metadata(
         offset += 2;
         set.skip(2);
         base_type = std::make_unique<AstArrayType>(
-            stride::SourceLocation(
+            stride::SourceFragment(
                 base_type->get_source(),
                 src_pos.offset,
                 src_pos.length + offset),
@@ -134,7 +134,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_INT8:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT8,
             /* bit_count = */
@@ -145,7 +145,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_INT16:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT16,
             /* bit_count = */
@@ -156,7 +156,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_INT32:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT32,
             /* bit_count = */
@@ -167,7 +167,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_INT64:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT64,
             /* bit_count = */
@@ -178,7 +178,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_UINT8:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT8,
             /* bit_count = */
@@ -189,7 +189,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_UINT16:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT16,
             /* bit_count = */
@@ -200,7 +200,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_UINT32:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT32,
             /* bit_count = */
@@ -211,7 +211,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_UINT64:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT64,
             /* bit_count = */
@@ -222,7 +222,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_FLOAT32:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::FLOAT32,
             /* bit_count = */
@@ -233,7 +233,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_FLOAT64:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::FLOAT64,
             /* bit_count = */
@@ -244,7 +244,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_BOOL:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::BOOL,
             /* bit_count = */
@@ -255,7 +255,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_CHAR:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::CHAR,
             /* bit_count = */
@@ -266,7 +266,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_STRING:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::STRING,
             /* bit_count = */
@@ -277,7 +277,7 @@ stride::ast::parse_primitive_type_optional(
     case TokenType::PRIMITIVE_VOID:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             PrimitiveType::VOID,
             /* bit_count = */
@@ -320,7 +320,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     const auto name = set.next().get_lexeme();
 
     auto named_type = std::make_unique<AstNamedType>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         name,
         context_type_flags);
@@ -423,7 +423,7 @@ stride::ast::parse_function_type_optional(
 
 
     auto fn_type = std::make_unique<AstFunctionType>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         std::move(parameters),
         std::move(return_type),
@@ -495,9 +495,9 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         if (!element_type)
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
+                ErrorType::COMPILATION_ERROR,
                 "Unable to resolve internal type for array element",
-                ast_array_ty->get_source_position());
+                ast_array_ty->get_source_fragment());
         }
 
         return llvm::ArrayType::get(element_type,
@@ -554,10 +554,10 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         if (!struct_ty)
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
+                ErrorType::COMPILATION_ERROR,
                 std::format("Struct type '{}' not found",
                             ast_struct_ty->name()),
-                ast_struct_ty->get_source_position());
+                ast_struct_ty->get_source_fragment());
         }
 
         return struct_ty;
@@ -582,7 +582,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Cannot mix primitive type with named type",
-            lhs->get_source_position());
+            lhs->get_source_fragment());
     }
 
     // Both must be primitives for dominance calculation
@@ -591,7 +591,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Cannot compute dominant type for non-primitive types",
-            lhs->get_source_position());
+            lhs->get_source_fragment());
     }
 
     const bool are_both_sides_integers =
@@ -621,7 +621,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         if (rhs_primitive->bit_count() > lhs_primitive->bit_count())
         {
             return std::make_unique<AstPrimitiveType>(
-                lhs_primitive->get_source_position(),
+                lhs_primitive->get_source_fragment(),
                 context,
                 PrimitiveType::FLOAT64,
                 rhs_primitive->bit_count(),
@@ -633,8 +633,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     }
 
     const std::vector references = {
-        ErrorSourceReference(lhs->to_string(), lhs->get_source_position()),
-        ErrorSourceReference(rhs->get_internal_name(), rhs->get_source_position())
+        ErrorSourceReference(lhs->to_string(), lhs->get_source_fragment()),
+        ErrorSourceReference(rhs->get_internal_name(), rhs->get_source_fragment())
     };
 
     throw parsing_error(

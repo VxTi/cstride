@@ -59,7 +59,7 @@ void stride::stl::llvm_insert_function_definitions(llvm::Module* module)
 void stride::stl::predefine_internal_functions(
     const std::shared_ptr<ast::ParsingContext>& context)
 {
-    const auto placeholder_position = SourceLocation(nullptr, 0, 0);
+    const auto placeholder_position = SourceFragment(nullptr, 0, 0);
     /// Printf definition
     std::vector<std::unique_ptr<ast::IAstType>> printf_params = {};
     printf_params.push_back(

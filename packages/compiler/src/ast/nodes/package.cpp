@@ -34,7 +34,7 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
                "Expected semicolon after package declaration");
 
     return std::make_unique<AstPackage>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         package_name);
 }

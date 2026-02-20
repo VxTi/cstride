@@ -12,7 +12,7 @@ namespace stride::ast
 
     public:
         explicit AstBlock(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstNode>> children) :
             IAstNode(source, context),

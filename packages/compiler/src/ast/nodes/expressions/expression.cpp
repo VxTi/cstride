@@ -58,7 +58,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
 
         auto identifier = std::make_unique<AstIdentifier>(
             context,
-            Symbol(reference_token.get_source_position(), internal_name));
+            Symbol(reference_token.get_source_fragment(), internal_name));
 
         if (auto reassignment = parse_variable_reassignment(context, internal_name, set);
             reassignment.has_value())
@@ -157,7 +157,7 @@ std::unique_ptr<AstExpression> parse_comparison_tier(
         const auto token = set.next();
         auto rhs = parse_arithmetic_tier(context, set);
         lhs = std::make_unique<AstComparisonOp>(
-            token.get_source_position(),
+            token.get_source_fragment(),
             context,
             std::move(lhs),
             op.value(),
@@ -179,7 +179,7 @@ std::unique_ptr<AstExpression> parse_logical_tier(
         const auto token = set.next();
         auto rhs = parse_comparison_tier(context, set);
         lhs = std::make_unique<AstLogicalOp>(
-            token.get_source_position(),
+            token.get_source_fragment(),
             context,
             std::move(lhs),
             op.value(),
@@ -207,7 +207,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
         // Note: calling parse_comparison_tier here is safer than parse_inline_expression_part
 
         return std::make_unique<AstLogicalOp>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             std::move(lhs),
             logical_op.value(),
@@ -234,7 +234,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
         auto rhs = parse_arithmetic_tier(context, set);
 
         return std::make_unique<AstComparisonOp>(
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             std::move(lhs),
             comparative_op.value(),

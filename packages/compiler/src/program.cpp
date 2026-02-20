@@ -91,7 +91,7 @@ void Program::optimize_ast_nodes()
     }
 
     this->_root_node = std::make_unique<ast::AstBlock>(
-        this->_root_node->get_source_position(),
+        this->_root_node->get_source_fragment(),
         this->get_global_context(),
         std::move(new_children));
 }

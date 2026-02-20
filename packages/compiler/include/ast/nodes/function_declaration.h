@@ -25,7 +25,7 @@ namespace stride::ast
 
     public:
         explicit AstFunctionParameter(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string param_name,
             std::unique_ptr<IAstType> param_type) :
@@ -65,7 +65,7 @@ namespace stride::ast
 
     public:
         explicit IAstCallable(
-            const SourceLocation& source,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,

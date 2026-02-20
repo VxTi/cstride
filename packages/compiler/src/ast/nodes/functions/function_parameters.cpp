@@ -16,7 +16,7 @@ void stride::ast::parse_variadic_fn_param(
     // Create a new parameter with the variadic flag
     parameters.push_back(
         std::make_unique<AstFunctionParameter>(
-            param->get_source_position(),
+            param->get_source_fragment(),
             param->get_context(),
             param->get_name(),
             param->get_type()->clone()));
@@ -40,7 +40,7 @@ void stride::ast::parse_subsequent_fn_params(
                 "Function cannot have more than " + std::to_string(
                     MAX_FUNCTION_PARAMETERS) +
                 " parameters",
-                next.get_source_position());
+                next.get_source_fragment());
         }
 
         if (next.get_type() == TokenType::THREE_DOTS)
@@ -111,14 +111,14 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
         parse_type(context, set, "Expected function parameter type", flags);
 
     const auto fn_param_symbol =
-        Symbol(reference_token.get_source_position(),
+        Symbol(reference_token.get_source_fragment(),
                reference_token.get_lexeme());
 
     // Define it without a context name to properly resolve it
     context->define_variable(fn_param_symbol, fn_param_type->clone());
 
     return std::make_unique<AstFunctionParameter>(
-        reference_token.get_source_position(),
+        reference_token.get_source_fragment(),
         context,
         reference_token.get_lexeme(),
         std::move(fn_param_type));
