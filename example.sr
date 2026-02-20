@@ -1,15 +1,15 @@
-fn hoisted_function(x: int64): (int64) -> int64 {
-    return (y: int64): float64 -> {
+fn ref(x: int64): (int64) -> int64 {
+    return (y: int64): int64 -> {
         return 0.0D + x + y;
     };
 }
 
 fn main(): int32 {
 
-    const yielded_function = hoisted_function(10);
-    const result = yielded_function(20);
+    const res = ref(10);
+    const sec = res(20);
 
-    printf("Output: %d", result);
+    printf("Output: %d", sec);
 
     return 0;
 }

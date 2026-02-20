@@ -633,13 +633,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     }
 
     const std::vector references = {
-        ErrorSourceReference(lhs->to_string(),
-                             *rhs->get_source(),
-                             lhs->get_source_position()),
-        ErrorSourceReference(
-            rhs->get_internal_name(),
-            *rhs->get_source(),
-            rhs->get_source_position())
+        ErrorSourceReference(lhs->to_string(), lhs->get_source_position()),
+        ErrorSourceReference(rhs->get_internal_name(), rhs->get_source_position())
     };
 
     throw parsing_error(
@@ -650,14 +645,14 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
 bool AstNamedType::equals(IAstType& other)
 {
-    if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
+    if (const auto* other_primitive = cast_type<AstPrimitiveType*>(&other))
     {
         // The other type might be a primitive "NIL" type,
         // then we consider the types equal if this is optional
         return other_primitive->get_type() == PrimitiveType::NIL && this->
             is_optional();
     }
-    if (auto* other_named = dynamic_cast<AstNamedType*>(&other))
+    if (auto* other_named = cast_type<AstNamedType*>(&other))
     {
         return this->get_internal_name() == other_named->get_internal_name();
     }
@@ -666,23 +661,20 @@ bool AstNamedType::equals(IAstType& other)
 
 bool AstPrimitiveType::equals(IAstType& other)
 {
-    if (const auto* other_primitive = dynamic_cast<AstPrimitiveType*>(&other))
+    if (const auto* other_primitive = cast_type<AstPrimitiveType*>(&other))
     {
         // If either types is optional, and the other is NIL, they're also "equal".
         const auto is_one_optional =
-            (this->get_type() == PrimitiveType::NIL && other_primitive->
-                is_optional()) ||
-            (other_primitive->get_type() == PrimitiveType::NIL && this->
-                is_optional());
+            (this->get_type() == PrimitiveType::NIL && other_primitive->is_optional()) ||
+            (other_primitive->get_type() == PrimitiveType::NIL && this->is_optional());
 
         return this->get_type() == other_primitive->get_type() ||
             is_one_optional;
     }
 
-    if (const auto* struct_type = dynamic_cast<AstNamedType*>(&other))
+    if (const auto* struct_type = cast_type<AstNamedType*>(&other))
     {
-        return this->get_type() == PrimitiveType::NIL && struct_type->
-            is_optional();
+        return this->get_type() == PrimitiveType::NIL && struct_type->is_optional();
     }
 
     return false;
@@ -690,7 +682,7 @@ bool AstPrimitiveType::equals(IAstType& other)
 
 bool AstArrayType::equals(IAstType& other)
 {
-    if (const auto* other_array = dynamic_cast<AstArrayType*>(&other))
+    if (const auto* other_array = cast_type<AstArrayType*>(&other))
     {
         // Length here doesn't matter; merely the types should be the same.
         return this->_element_type->equals(*other_array->_element_type);

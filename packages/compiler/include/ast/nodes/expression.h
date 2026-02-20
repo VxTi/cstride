@@ -65,8 +65,10 @@ namespace stride::ast
 
     /// Base class for all expression AST nodes.
 
-    class AstExpression : public IAstNode, public ISynthesisable,
-                          public IReducible
+    class AstExpression
+        : public IAstNode,
+          public ISynthesisable,
+          public IReducible
     {
     public:
         explicit AstExpression(
@@ -94,7 +96,8 @@ namespace stride::ast
         }
     };
 
-    class AstArray : public AstExpression
+    class AstArray
+        : public AstExpression
     {
         std::vector<std::unique_ptr<AstExpression>> _elements;
 
@@ -122,7 +125,8 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    class AstIdentifier : public AstExpression
+    class AstIdentifier
+        : public AstExpression
     {
         Symbol _symbol;
 
@@ -162,7 +166,8 @@ namespace stride::ast
         }
     };
 
-    class AstArrayMemberAccessor : public AstExpression
+    class AstArrayMemberAccessor
+        : public AstExpression
     {
         std::unique_ptr<AstIdentifier> _array_identifier;
         std::unique_ptr<AstExpression> _index_accessor_expr;
@@ -203,7 +208,8 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AstMemberAccessor : public AstExpression
+    class AstMemberAccessor
+        : public AstExpression
     {
         // When adding function chaining support,
         // these types will have to be changed to AstExpression
@@ -216,7 +222,8 @@ namespace stride::ast
             const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> base,
-            std::vector<std::unique_ptr<AstIdentifier>> members);
+            std::vector<std::unique_ptr<AstIdentifier>> members
+        );
 
         [[nodiscard]]
         AstIdentifier* get_base() const
@@ -225,20 +232,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::vector<AstIdentifier*> get_members() const
-        {
-            // We don't wanna transfer ownership to anyone else...
-            std::vector<AstIdentifier*> result;
-            result.reserve(this->_members.size());
-            std::ranges::transform(
-                this->_members,
-                std::back_inserter(result),
-                [](const std::unique_ptr<AstIdentifier>& member)
-                {
-                    return member.get();
-                });
-            return result;
-        }
+        std::vector<AstIdentifier*> get_members() const;
 
         [[nodiscard]]
         AstIdentifier* get_last_member() const
@@ -251,7 +245,8 @@ namespace stride::ast
         llvm::Value* codegen(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilder<>* builder
+        ) override;
 
         std::string to_string() override;
 
@@ -262,7 +257,8 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AstFunctionCall : public AstExpression
+    class AstFunctionCall
+        : public AstExpression
     {
         std::vector<std::unique_ptr<AstExpression>> _arguments;
         const Symbol _symbol;
@@ -277,7 +273,8 @@ namespace stride::ast
         explicit AstFunctionCall(
             const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym,
-            std::vector<std::unique_ptr<AstExpression>> arguments) :
+            std::vector<std::unique_ptr<AstExpression>> arguments
+        ) :
             AstExpression(function_call_sym.symbol_position, context),
             _arguments(std::move(arguments)),
             _symbol(std::move(function_call_sym)) {}
@@ -305,7 +302,8 @@ namespace stride::ast
         llvm::Value* codegen(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilder<>* builder
+        ) override;
 
         bool is_reducible() override;
 
@@ -319,7 +317,8 @@ namespace stride::ast
             const definition::IDefinition* suggestion);
     };
 
-    class AstVariableDeclaration : public AstExpression
+    class AstVariableDeclaration
+        : public AstExpression
     {
         const std::unique_ptr<IAstType> _variable_type;
         const std::unique_ptr<AstExpression> _initial_value;
@@ -333,7 +332,8 @@ namespace stride::ast
             Symbol symbol,
             std::unique_ptr<IAstType> variable_type,
             std::unique_ptr<AstExpression> initial_value,
-            VisibilityModifier visibility) :
+            VisibilityModifier visibility
+        ) :
             AstExpression(symbol.symbol_position, context),
             _variable_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)),
@@ -401,7 +401,8 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AbstractBinaryOp : public AstExpression
+    class AbstractBinaryOp
+        : public AstExpression
     {
         std::unique_ptr<AstExpression> _lsh;
         std::unique_ptr<AstExpression> _rsh;
@@ -411,7 +412,8 @@ namespace stride::ast
             const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> lsh,
-            std::unique_ptr<AstExpression> rsh) :
+            std::unique_ptr<AstExpression> rsh
+        ) :
             AstExpression(source, context),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
@@ -429,7 +431,8 @@ namespace stride::ast
         }
     };
 
-    class AstBinaryArithmeticOp : public AbstractBinaryOp
+    class AstBinaryArithmeticOp
+        : public AbstractBinaryOp
     {
         const BinaryOpType _op_type;
 
@@ -439,11 +442,14 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const BinaryOpType op,
-            std::unique_ptr<AstExpression> right) :
-            AbstractBinaryOp(source,
-                             context,
-                             std::move(left),
-                             std::move(right)),
+            std::unique_ptr<AstExpression> right
+        ) :
+            AbstractBinaryOp(
+                source,
+                context,
+                std::move(left),
+                std::move(right)
+            ),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -464,7 +470,8 @@ namespace stride::ast
         IAstNode* reduce() override;
     };
 
-    class AstLogicalOp : public AbstractBinaryOp
+    class AstLogicalOp
+        : public AbstractBinaryOp
     {
         LogicalOpType _op_type;
 
@@ -474,11 +481,14 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const LogicalOpType op,
-            std::unique_ptr<AstExpression> right) :
-            AbstractBinaryOp(source,
-                             context,
-                             std::move(left),
-                             std::move(right)),
+            std::unique_ptr<AstExpression> right
+        ) :
+            AbstractBinaryOp(
+                source,
+                context,
+                std::move(left),
+                std::move(right)
+            ),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -495,7 +505,8 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    class AstComparisonOp : public AbstractBinaryOp
+    class AstComparisonOp
+        : public AbstractBinaryOp
     {
         ComparisonOpType _op_type;
 
@@ -505,11 +516,14 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> left,
             const ComparisonOpType op,
-            std::unique_ptr<AstExpression> right) :
-            AbstractBinaryOp(source,
-                             context,
-                             std::move(left),
-                             std::move(right)),
+            std::unique_ptr<AstExpression> right
+        ) :
+            AbstractBinaryOp(
+                source,
+                context,
+                std::move(left),
+                std::move(right)
+            ),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -528,7 +542,8 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AstUnaryOp : public AstExpression
+    class AstUnaryOp
+        : public AstExpression
     {
         const UnaryOpType _op_type;
         std::unique_ptr<AstExpression> _operand;
@@ -540,7 +555,8 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             const UnaryOpType op,
             std::unique_ptr<AstExpression> operand,
-            const bool is_lsh = false) :
+            const bool is_lsh = false
+        ) :
             AstExpression(source, context),
             _op_type(op),
             _operand(std::move(operand)),
@@ -578,7 +594,8 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AstVariableReassignment : public AstExpression
+    class AstVariableReassignment
+        : public AstExpression
     {
         const std::string _variable_name;
         const std::string _internal_name;
@@ -592,7 +609,8 @@ namespace stride::ast
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
-            std::unique_ptr<AstExpression> value) :
+            std::unique_ptr<AstExpression> value
+        ) :
             AstExpression(source, context),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
@@ -637,7 +655,8 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AstStructInitializer : public AstExpression
+    class AstStructInitializer
+        : public AstExpression
     {
         std::string _struct_name;
         std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>>
@@ -649,7 +668,8 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::string struct_name,
             std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>>
-            initializers) :
+            initializers
+        ) :
             AstExpression(source, context),
             _struct_name(std::move(struct_name)),
             _initializers(std::move(initializers)) {}

@@ -103,30 +103,30 @@ std::string stride::make_source_error(
     }
 
     const auto& first_ref = references[0];
-    const auto& source_file = first_ref.source;
+    const auto& source_file = first_ref.source_position;
     const auto error_type_str = error_type_to_string(error_type);
 
-    if (first_ref.source_position.offset >= source_file.source.length())
+    if (first_ref.source_position.offset >= source_file.source->source.length())
     {
         return std::format(
             "\n┃ {} in {}\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
             error_type_str,
-            source_file.path,
+            source_file.source->path,
             error);
     }
 
     // Find the start of the line
     size_t line_start = first_ref.source_position.offset;
-    while (line_start > 0 && line_start < source_file.source.length() &&
-        source_file.source[line_start - 1] != '\n')
+    while (line_start > 0 && line_start < source_file.source->source.length() &&
+        source_file.source->source[line_start - 1] != '\n')
     {
         line_start--;
     }
 
     // Find the end of the line
     size_t line_end = first_ref.source_position.offset;
-    while (line_end < source_file.source.length() && source_file.source[
-        line_end] != '\n')
+    while (line_end < source_file.source->source.length()
+        && source_file.source->source[line_end] != '\n')
     {
         line_end++;
     }
@@ -135,13 +135,13 @@ std::string stride::make_source_error(
     size_t line_number = 1;
     for (size_t i = 0; i < line_start; i++)
     {
-        if (source_file.source[i] == '\n')
+        if (source_file.source->source[i] == '\n')
         {
             line_number++;
         }
     }
 
-    const std::string line_str = source_file.source.substr(
+    const std::string line_str = source_file.source->source.substr(
         line_start,
         line_end - line_start);
     const auto line_nr_str = std::to_string(line_number);
@@ -195,7 +195,7 @@ std::string stride::make_source_error(
     return std::format(
         "\n┃ {} in \x1b[4m{}\x1b[0m:\n┃\n┃ {}\n┃\n┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m\n┃ {}\n┃ {}",
         error_type_str,
-        source_file.path,
+        source_file.source->path,
         error,
         line_number,
         line_str,

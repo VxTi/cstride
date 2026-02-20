@@ -76,11 +76,12 @@ stride::ast::parse_variable_declaration_inline(
     {
         // For variable declarations with type annotations, the initializer is optional.
         set.expect(TokenType::COLON, "Expected ':' after variable name");
-        variable_type =
-            parse_type(context,
-                       set,
-                       "Expected variable type after variable name",
-                       flags);
+        variable_type = parse_type(
+            context,
+            set,
+            "Expected variable type after variable name",
+            flags
+        );
         if (set.peek_next_eq(TokenType::EQUALS))
         {
             set.next();
@@ -107,7 +108,8 @@ stride::ast::parse_variable_declaration_inline(
                     ref_src_pos.offset,
                     var_type_src_pos.offset + var_type_src_pos.length -
                     ref_src_pos.offset),
-                context);
+                context
+            );
         }
     }
 
@@ -116,17 +118,20 @@ stride::ast::parse_variable_declaration_inline(
     const auto symbol_position = SourceLocation(
         ref_tok_pos.source,
         ref_tok_pos.offset,
-        var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset);
+        var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset
+    );
 
     static int var_unique_counter = 0;
     const auto internal_name = context->is_global_scope()
         ? variable_name
         : std::format("{}.{}", variable_name, var_unique_counter++);
 
-    auto symbol = Symbol(symbol_position,
-                         context->get_name(),
-                         variable_name,
-                         internal_name);
+    auto symbol = Symbol(
+        symbol_position,
+        context->get_name(),
+        variable_name,
+        internal_name
+    );
 
     context->define_variable(symbol, variable_type->clone());
 
@@ -135,7 +140,8 @@ stride::ast::parse_variable_declaration_inline(
         symbol,
         std::move(variable_type),
         std::move(value),
-        modifier);
+        modifier
+    );
 }
 
 /**
@@ -153,7 +159,8 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
         (set.peek_eq(TokenType::KEYWORD_CONST, offset) ||
             set.peek_eq(TokenType::KEYWORD_LET, offset)) &&
         set.peek_eq(TokenType::IDENTIFIER, offset + 1) &&
-        set.peek_eq(TokenType::COLON, offset + 2));
+        set.peek_eq(TokenType::COLON, offset + 2)
+    );
 }
 
 void AstVariableDeclaration::validate()
@@ -175,42 +182,36 @@ void AstVariableDeclaration::validate()
     if (const auto rhs_type = internal_expr_type.get(); !lhs_type->equals(
         *rhs_type))
     {
-        if (const auto primitive_type = dynamic_cast<AstPrimitiveType*>(
-                rhs_type);
-            primitive_type != nullptr && primitive_type->get_type() ==
-            PrimitiveType::NIL)
+        if (const auto primitive_type = cast_type<AstPrimitiveType*>(rhs_type);
+            primitive_type != nullptr &&
+            primitive_type->get_type() == PrimitiveType::NIL)
         {
-            if (lhs_type->get_flags() & SRFLAG_TYPE_OPTIONAL)
+            if (lhs_type->is_optional())
+            {
                 return;
+            }
 
-            const std::vector references = { ErrorSourceReference(
-                                                 lhs_type->to_string(),
-                                                 *this->get_source(),
-                                                 this->get_source_position()),
-                                             ErrorSourceReference(
-                                                 rhs_type->to_string(),
-                                                 *this->get_source(),
-                                                 init_val->
-                                                 get_source_position()) };
+            const std::vector references = {
+                ErrorSourceReference(lhs_type->to_string(), this->get_source_position()),
+                ErrorSourceReference(rhs_type->to_string(), init_val->get_source_position())
+            };
 
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Cannot assign nil to variable of non-optional type '{}'",
-                    lhs_type->to_string()),
-                references);
+                    lhs_type->to_string()
+                ),
+                references
+            );
         }
 
         const std::string lhs_type_str = lhs_type->to_string();
         const std::string rhs_type_str = rhs_type->to_string();
 
         const std::vector references = {
-            ErrorSourceReference(lhs_type_str,
-                                 *this->get_source(),
-                                 this->get_source_position()),
-            ErrorSourceReference(rhs_type_str,
-                                 *this->get_source(),
-                                 init_val->get_source_position())
+            ErrorSourceReference(lhs_type_str, this->get_source_position()),
+            ErrorSourceReference(rhs_type_str, init_val->get_source_position())
         };
 
         throw parsing_error(
@@ -219,43 +220,42 @@ void AstVariableDeclaration::validate()
                 "Type mismatch in variable declaration; expected type '{}', got '{}'",
                 lhs_type_str,
                 rhs_type_str),
-            references);
+            references
+        );
     }
 }
 
-/* ---------------------------------------- LLVM IR GENERATION
- * -------------------------------------------*/
-
 // LLVM calls these functions at startup to initialize global variables
 // This way, we can assign function return values to variables
-void append_to_global_ctors(llvm::Module* module,
-                            llvm::Function* init_func,
-                            const int priority)
+void append_to_global_ctors(
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder,
+    llvm::Function* init_func,
+    const int priority
+)
 {
-    llvm::IRBuilder<> ib(module->getContext());
-
     // The struct type: { int32, void ()*, int8* }
-    llvm::StructType* ctor_struct_type =
-        llvm::StructType::get(ib.getInt32Ty(),
-                              init_func->getType(),
-                              ib.getPtrTy());
+    llvm::StructType* ctor_struct_type = llvm::StructType::get(
+        builder->getInt32Ty(),
+        init_func->getType(),
+        builder->getPtrTy()
+    );
 
     // Create the initializer entry
     llvm::Constant* entry = llvm::ConstantStruct::get(
         ctor_struct_type,
-        { ib.getInt32(priority), init_func,
-          llvm::ConstantPointerNull::get(ib.getPtrTy()) });
+        { builder->getInt32(priority), init_func,
+          llvm::ConstantPointerNull::get(builder->getPtrTy()) });
 
     // Get existing ctors or create new ones
-    llvm::GlobalVariable* existing_ctors = module->getGlobalVariable(
-        "llvm.global_ctors");
+    llvm::GlobalVariable* existing_ctors = module->getGlobalVariable("llvm.global_ctors");
     std::vector<llvm::Constant*> ctor_list;
 
     if (existing_ctors)
     {
-        if (auto* initializer =
-            llvm::dyn_cast<llvm::ConstantArray>(
-                existing_ctors->getInitializer()))
+        if (const auto* initializer =
+            llvm::dyn_cast<llvm::ConstantArray>(existing_ctors->getInitializer())
+        )
         {
             for (unsigned i = 0; i < initializer->getNumOperands(); ++i)
             {
@@ -268,9 +268,7 @@ void append_to_global_ctors(llvm::Module* module,
     ctor_list.push_back(entry);
 
     // Create the new array
-    llvm::ArrayType* array_type = llvm::ArrayType::get(
-        ctor_struct_type,
-        ctor_list.size());
+    llvm::ArrayType* array_type = llvm::ArrayType::get(ctor_struct_type, ctor_list.size());
     new llvm::GlobalVariable(
         *module,
         array_type,
@@ -278,21 +276,20 @@ void append_to_global_ctors(llvm::Module* module,
         false,
         llvm::GlobalValue::AppendingLinkage,
         llvm::ConstantArray::get(array_type, ctor_list),
-        "llvm.global_ctors");
+        "llvm.global_ctors"
+    );
 }
 
 void AstVariableDeclaration::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilder<>* builder
+)
 {
     // If the initial value is itself synthesisable (e.g. a lambda), pre-declare it too.
     if (const auto initial_value = this->get_initial_value().get())
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(initial_value))
-        {
-            synthesisable->resolve_forward_references(context, module, builder);
-        }
+        initial_value->resolve_forward_references(context, module, builder);
     }
 
     if (!this->get_variable_type()->is_global())
@@ -300,15 +297,17 @@ void AstVariableDeclaration::resolve_forward_references(
         return;
     }
 
-    llvm::Type* var_type = internal_type_to_llvm_type(
-        this->get_variable_type(),
-        module);
+    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
     if (!var_type)
+    {
         return;
+    }
 
     // Check if it already exists (should not happen, but for safety)
     if (module->getNamedGlobal(this->get_internal_name()))
+    {
         return;
+    }
 
     // Create the Global Variable with a default null initializer
     llvm::Constant* default_init = llvm::Constant::getNullValue(var_type);
@@ -319,32 +318,33 @@ void AstVariableDeclaration::resolve_forward_references(
         !this->get_variable_type()->is_mutable(),
         llvm::GlobalValue::ExternalLinkage,
         default_init,
-        this->get_internal_name());
+        this->get_internal_name()
+    );
 }
 
 void global_var_declaration_codegen(
     const AstVariableDeclaration* self,
     llvm::GlobalVariable* global_var,
     llvm::Module* module,
-    llvm::IRBuilder<>* irBuilder)
+    llvm::IRBuilder<>* ir_builder)
 {
     // Dynamic Initialization ("Global Constructor" Pattern)
     // Create a function: void __init_variable_name()
     const std::string func_name = "__init_global_" + self->get_internal_name();
-    llvm::FunctionType* func_type = llvm::FunctionType::get(
-        irBuilder->getVoidTy(),
-        false);
-    llvm::Function* init_func =
-        llvm::Function::Create(func_type,
-                               llvm::GlobalValue::InternalLinkage,
-                               func_name,
-                               module);
+    llvm::FunctionType* func_type = llvm::FunctionType::get(ir_builder->getVoidTy(), false);
+    llvm::Function* init_func = llvm::Function::Create(
+        func_type,
+        llvm::GlobalValue::InternalLinkage,
+        func_name,
+        module
+    );
 
     // Set up the entry block for the constructor
     llvm::BasicBlock* entry = llvm::BasicBlock::Create(
         module->getContext(),
         "entry",
-        init_func);
+        init_func
+    );
 
     // Create a temporary builder for the constructor to avoid state pollution
     llvm::IRBuilder<> tempBuilder(module->getContext());
@@ -355,13 +355,13 @@ void global_var_declaration_codegen(
     // if it's not designed to be called multiple times.
     // However, for global initialization, we need the value.
     llvm::Value* dynamic_init_value = nullptr;
-    if (const auto initial_value = self->get_initial_value().get();
-        initial_value != nullptr)
+    if (const auto initial_value = self->get_initial_value().get())
     {
-        dynamic_init_value =
-            initial_value->codegen(self->get_context().get(),
-                                   module,
-                                   &tempBuilder);
+        dynamic_init_value = initial_value->codegen(
+            self->get_context().get(),
+            module,
+            &tempBuilder
+        );
     }
 
     // IAstCallable::codegen (e.g. a lambda) redirects the builder's insert point into its
@@ -378,7 +378,7 @@ void global_var_declaration_codegen(
     tempBuilder.CreateRetVoid();
 
     // Register this function in llvm.global_ctors
-    append_to_global_ctors(module, init_func, 65535);
+    append_to_global_ctors(module, ir_builder, init_func, 65535);
 }
 
 std::optional<llvm::GlobalVariable*> get_global_var_decl(
@@ -387,7 +387,9 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
     llvm::Type* var_type)
 {
     if (!self->get_variable_type()->is_global())
+    {
         return std::nullopt;
+    }
 
     llvm::GlobalVariable* global_var = module->getNamedGlobal(
         self->get_internal_name());
@@ -401,8 +403,8 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
         return new llvm::GlobalVariable(
             *module,
             var_type,
-            false,
             // Set to false to allow initialization
+            false,
             llvm::GlobalValue::ExternalLinkage,
             default_init,
             self->get_internal_name());
@@ -416,12 +418,14 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
 llvm::Value* AstVariableDeclaration::codegen(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* ir_builder)
+    llvm::IRBuilder<>* ir_builder
+)
 {
     // Get the LLVM type for the variable
     llvm::Type* variable_ty = internal_type_to_llvm_type(
         this->get_variable_type(),
-        module);
+        module
+    );
 
     // If we are generating a global, we might rely on constant initialization
     // or dynamic initialization handled later.
@@ -435,9 +439,11 @@ llvm::Value* AstVariableDeclaration::codegen(
         if (const auto initial_value = this->get_initial_value().get();
             initial_value != nullptr && is_literal_ast_node(initial_value))
         {
-            init_value = initial_value->codegen(this->get_context().get(),
-                                                module,
-                                                ir_builder);
+            init_value = initial_value->codegen(
+                this->get_context().get(),
+                module,
+                ir_builder
+            );
         }
 
         if (init_value != nullptr)
@@ -449,10 +455,12 @@ llvm::Value* AstVariableDeclaration::codegen(
         }
         else
         {
-            global_var_declaration_codegen(this,
-                                           global_var.value(),
-                                           module,
-                                           ir_builder);
+            global_var_declaration_codegen(
+                this,
+                global_var.value(),
+                module,
+                ir_builder
+            );
         }
         return global_var.value();
     }
@@ -460,8 +468,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     // Create the Alloca in the Entry block to ensure it dominates all uses
     // and name it so Identifier lookups can find it.
     llvm::Function* function = ir_builder->GetInsertBlock()->getParent();
-    llvm::IRBuilder<> entry_builder(&function->getEntryBlock(),
-                                    function->getEntryBlock().begin());
+    llvm::IRBuilder<> entry_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
 
     llvm::AllocaInst* alloca = entry_builder.CreateAlloca(
         variable_ty,
@@ -473,9 +480,11 @@ llvm::Value* AstVariableDeclaration::codegen(
     llvm::Value* init_value = nullptr;
     if (const auto initial_value = this->get_initial_value().get())
     {
-        init_value = initial_value->codegen(this->get_context().get(),
-                                            module,
-                                            ir_builder);
+        init_value = initial_value->codegen(
+            this->get_context().get(),
+            module,
+            ir_builder
+        );
     }
 
     if (init_value)
