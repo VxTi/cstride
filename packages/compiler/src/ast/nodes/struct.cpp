@@ -217,7 +217,7 @@ std::string AstStruct::to_string()
     return std::format("Struct({}) (\n  {}\n)", this->get_name(), imploded.str());
 }
 
-void AstStruct::resolve_forward_references(const std::shared_ptr<ParsingContext>& context, llvm::Module* module,
+void AstStruct::resolve_forward_references(const ParsingContext* context, llvm::Module* module,
                                            llvm::IRBuilder<>* builder)
 {
     // Retrieve or Create the named struct type (Opaque)
@@ -298,7 +298,7 @@ void AstStruct::resolve_forward_references(const std::shared_ptr<ParsingContext>
 }
 
 llvm::Value* AstStruct::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

@@ -28,7 +28,7 @@ namespace stride::ast
             _condition(std::move(condition)) {}
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;

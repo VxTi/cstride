@@ -102,7 +102,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -138,7 +138,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -164,7 +164,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -188,7 +188,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(const std::shared_ptr<ParsingContext>& context, llvm::Module* module,
+        llvm::Value* codegen(const ParsingContext* context, llvm::Module* module,
                              llvm::IRBuilder<>* builder) override;
     };
 
@@ -211,7 +211,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -235,7 +235,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;

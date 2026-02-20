@@ -21,7 +21,7 @@ std::string AstArray::to_string()
 }
 
 llvm::Value* AstArray::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

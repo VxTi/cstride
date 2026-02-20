@@ -31,13 +31,13 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         void resolve_forward_references(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;

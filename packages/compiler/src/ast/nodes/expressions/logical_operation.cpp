@@ -30,7 +30,7 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
 }
 
 llvm::Value* AstLogicalOp::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder
 )

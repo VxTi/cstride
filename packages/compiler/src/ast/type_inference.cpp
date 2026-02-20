@@ -96,22 +96,29 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     const AstFunctionCall* fn_call
 )
 {
-    if (const auto fn_def = context->get_function_def(fn_call->get_internal_name());
-        fn_def != nullptr)
+    // First steps, if the function call references a "normal" function, e.g., "fn <some name>",
+    // then we can simply use
+    if (const auto fn_def = context->get_function_def(fn_call->get_internal_name()))
     {
         return fn_def->get_type()->get_return_type()->clone();
     }
 
     // It could be an extern function, in which case the function name is just as-is
-    if (const auto fn_def = context->get_function_def(fn_call->get_function_name());
-        fn_def != nullptr)
+    if (const auto fn_def = context->get_function_def(fn_call->get_function_name()))
     {
         return fn_def->get_type()->get_return_type()->clone();
     }
+    std::vector candidates = {fn_call->get_internal_name(), fn_call->get_function_name()};
 
     // It might also be a field that's assigned a function
     if (const auto definition = context->lookup_symbol(fn_call->get_function_name()))
     {
+        // Simple extraction. it's already referencing a 'real' function.
+        if (const auto callable = dynamic_cast<CallableDef *>(definition))
+        {
+            return callable->get_type()->clone();
+        }
+        // In case the symbol has a lambda function as value, we'll need to extract it here
         if (const auto field_fn_like_def = dynamic_cast<FieldDef*>(definition))
         {
             if (const auto field_fn_type = cast_type<AstFunctionType*>(field_fn_like_def->get_type()))

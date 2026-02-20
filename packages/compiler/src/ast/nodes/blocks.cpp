@@ -10,7 +10,7 @@
 using namespace stride::ast;
 
 void AstBlock::resolve_forward_references(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -25,7 +25,7 @@ void AstBlock::resolve_forward_references(
 }
 
 llvm::Value* AstBlock::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -47,7 +47,7 @@ llvm::Value* AstBlock::codegen(
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(this->get_context(), module, builder);
+            last_value = synthesisable->codegen(context, module, builder);
         }
     }
 

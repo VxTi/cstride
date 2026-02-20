@@ -26,7 +26,7 @@ void Program::parse_files(std::vector<std::string> files)
     this->_global_scope = std::make_shared<ast::ParsingContext>();
     this->_files = std::move(files);
 
-    stl::predefine_internal_functions(this->get_global_scope());
+    stl::predefine_internal_functions(this->get_global_context());
 
     std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
 
@@ -91,7 +91,7 @@ void Program::optimize_ast_nodes()
 
     this->_root_node = std::make_unique<ast::AstBlock>(
         this->_root_node->get_source_position(),
-        this->get_global_scope(),
+        this->get_global_context(),
         std::move(new_children)
     );
 }
@@ -106,7 +106,7 @@ void Program::validate_ast_nodes() const
 
 void Program::resolve_forward_references(llvm::Module* module, llvm::IRBuilder<>* builder) const
 {
-    this->_root_node->resolve_forward_references(this->get_global_scope(), module, builder);
+    this->_root_node->resolve_forward_references(this->get_global_context().get(), module, builder);
 }
 
 void Program::generate_llvm_ir(
@@ -116,7 +116,7 @@ void Program::generate_llvm_ir(
 {
     if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(this->_root_node.get()))
     {
-        if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, builder);
+        if (const auto entry = synthesisable->codegen(this->get_global_context().get(), module, builder);
             entry == nullptr)
         {
             throw std::runtime_error(

@@ -123,7 +123,7 @@ void AstUnaryOp::validate()
 }
 
 llvm::Value* AstUnaryOp::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

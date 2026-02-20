@@ -107,14 +107,14 @@ namespace stride::ast
         bool is_anonymous() const { return this->_flags & SRFLAG_FN_DEF_ANONYMOUS; }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         void validate() override;
 
-        void resolve_forward_references(const std::shared_ptr<ParsingContext>& context, llvm::Module* module,
+        void resolve_forward_references(const ParsingContext* context, llvm::Module* module,
                                         llvm::IRBuilder<>* builder) override;
     };
 

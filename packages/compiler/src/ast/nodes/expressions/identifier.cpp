@@ -6,7 +6,7 @@
 using namespace stride::ast;
 
 llvm::Value* AstIdentifier::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -15,9 +15,9 @@ llvm::Value* AstIdentifier::codegen(
 
     std::string internal_name = this->get_internal_name();
 
-    if (const auto definition = context->lookup_variable(this->get_name(), true))
+    if (const auto symbol_definition = context->lookup_symbol(this->get_name()))
     {
-        internal_name = definition->get_internal_symbol_name();
+        internal_name = symbol_definition->get_internal_symbol_name();
     }
 
     if (const auto block = builder->GetInsertBlock())

@@ -40,7 +40,7 @@ std::string AstFpLiteral::to_string()
 }
 
 llvm::Value* AstFpLiteral::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )

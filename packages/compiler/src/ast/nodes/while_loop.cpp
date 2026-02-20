@@ -42,7 +42,7 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
 }
 
 llvm::Value* AstWhileLoop::codegen(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
