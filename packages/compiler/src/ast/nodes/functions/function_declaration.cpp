@@ -193,7 +193,8 @@ llvm::Value* IAstCallable::codegen(
     llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(
         module->getContext(),
         "entry",
-        function);
+        function
+    );
     builder->SetInsertPoint(entry_bb);
 
     // We create a new builder for the prologue to ensure allocas are at the very top
@@ -536,6 +537,16 @@ void stride::ast::parse_function_parameters(
     int& function_flags
 )
 {
+    // If the first argument is variadic, no other parameters are allowed.
+    if (set.peek_next_eq(TokenType::THREE_DOTS))
+    {
+        function_flags |= SRFLAG_FN_DEF_VARIADIC;
+        set.next();
+        return;
+    }
+
+    parse_standalone_fn_param(context, set, parameters);
+
     int recursion_depth = 0;
     while (set.peek_next_eq(TokenType::COMMA))
     {
@@ -557,29 +568,11 @@ void stride::ast::parse_function_parameters(
         if (next.get_type() == TokenType::THREE_DOTS)
         {
             function_flags |= SRFLAG_FN_DEF_VARIADIC;
+            set.next();
             break;
         }
 
-        auto param = parse_standalone_fn_param(context, set);
-
-        if (std::ranges::find_if(
-            parameters,
-            [&](const std::unique_ptr<AstFunctionParameter>& p)
-            {
-                return p->get_name() == param->get_name();
-            }) != parameters.end())
-        {
-            set.throw_error(
-                next,
-                ErrorType::SEMANTIC_ERROR,
-                std::format(
-                    "Duplicate parameter name '{}' in function definition",
-                    param->get_name()
-                )
-            );
-        }
-
-        parameters.push_back(std::move(param));
+        parse_standalone_fn_param(context, set, parameters);
 
         if (recursion_depth++ > MAX_RECURSION_DEPTH)
         {
@@ -590,9 +583,10 @@ void stride::ast::parse_function_parameters(
     }
 }
 
-std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
+void stride::ast::parse_standalone_fn_param(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
+    TokenSet& set,
+    std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
 {
     int flags = 0;
@@ -610,19 +604,36 @@ std::unique_ptr<AstFunctionParameter> stride::ast::parse_standalone_fn_param(
     std::unique_ptr<IAstType> fn_param_type =
         parse_type(context, set, "Expected function parameter type", flags);
 
-    const auto fn_param_symbol =
-        Symbol(reference_token.get_source_fragment(),
-               reference_token.get_lexeme());
+    const auto& param_name = reference_token.get_lexeme();
+
+    if (std::ranges::find_if(
+        parameters,
+        [&](const std::unique_ptr<AstFunctionParameter>& p)
+        {
+            return p->get_name() == param_name;
+        }) != parameters.end())
+    {
+        set.throw_error(
+            reference_token,
+            ErrorType::SEMANTIC_ERROR,
+            std::format(
+                "Duplicate parameter name '{}' in function definition",
+                param_name
+            )
+        );
+    }
+
+    const auto fn_param_symbol = Symbol(reference_token.get_source_fragment(), param_name);
 
     // Define it without a context name to properly resolve it
     context->define_variable(fn_param_symbol, fn_param_type->clone());
 
-    return std::make_unique<AstFunctionParameter>(
+    parameters.push_back(std::make_unique<AstFunctionParameter>(
         reference_token.get_source_fragment(),
         context,
-        reference_token.get_lexeme(),
+        param_name,
         std::move(fn_param_type)
-    );
+    ));
 }
 
 std::string AstFunctionDeclaration::to_string()
