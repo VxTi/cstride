@@ -9,7 +9,7 @@ namespace
     /// Get or declare the va_start intrinsic for the current module
     llvm::Function* get_or_declare_va_start(llvm::Module* module)
     {
-        constexpr std::string intrinsic_name = "llvm.va_start";
+        const auto& intrinsic_name = "llvm.va_start";
         if (auto* existing = module->getFunction(intrinsic_name))
             return existing;
 
@@ -33,7 +33,7 @@ namespace
     /// Get or declare the va_copy intrinsic for the current module
     llvm::Function* get_or_declare_va_copy(llvm::Module* module)
     {
-        constexpr std::string intrinsic_name = "llvm.va_copy";
+        const auto& intrinsic_name = "llvm.va_copy";
         if (auto* existing = module->getFunction(intrinsic_name))
             return existing;
 
@@ -57,7 +57,7 @@ namespace
     /// Get or declare the va_end intrinsic for the current module
     llvm::Function* get_or_declare_va_end(llvm::Module* module)
     {
-        constexpr std::string intrinsic_name = "llvm.va_end";
+        const auto& intrinsic_name = "llvm.va_end";
         if (auto* existing = module->getFunction(intrinsic_name))
             return existing;
 
