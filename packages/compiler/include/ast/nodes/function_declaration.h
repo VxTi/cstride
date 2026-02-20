@@ -25,12 +25,11 @@ namespace stride::ast
 
     public:
         explicit AstFunctionParameter(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string param_name,
             std::unique_ptr<IAstType> param_type
-        ) : IAstNode(source, source_position, context),
+        ) : IAstNode(source, context),
             _name(std::move(param_name)),
             _type(std::move(param_type)) {}
 
@@ -62,15 +61,14 @@ namespace stride::ast
 
     public:
         explicit IAstCallable(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
             const int flags
-        ) : AstExpression(source, source_position, context),
+        ) : AstExpression(source, context),
             _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
@@ -125,7 +123,6 @@ namespace stride::ast
     {
     public:
         explicit AstFunctionDeclaration(
-            const std::shared_ptr<SourceFile>& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
@@ -133,7 +130,6 @@ namespace stride::ast
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) : IAstCallable(
-            source,
             symbol.symbol_position,
             context,
             std::move(symbol),
@@ -157,7 +153,6 @@ namespace stride::ast
     {
     public:
         explicit AstLambdaFunctionExpression(
-            const std::shared_ptr<SourceFile>& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
@@ -165,7 +160,7 @@ namespace stride::ast
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) : IAstCallable(
-            source, symbol.symbol_position, context,
+            symbol.symbol_position, context,
             std::move(symbol),
             std::move(parameters),
             std::move(body),

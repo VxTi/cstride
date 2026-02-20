@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "utils.h"
+#include "ast/parsing_context.h"
 
 using namespace stride::tests;
 
@@ -141,6 +142,29 @@ TEST(Types, FunctionTypeMismatch)
 
         const a: (i32) -> i32 = test;
     )");
+}
+
+TEST(Types, DeepFunctionReferential)
+{
+    auto [block,context] = parse_code_with_context(R"(
+    fn root(x: i32): i32 {
+        return x + 10;
+    }
+
+    const first_ref = root;
+    const second_ref = first_ref;
+    )");
+
+    const auto symbol = context->lookup_symbol("second_ref");
+    const auto field = dynamic_cast<stride::ast::definition::FieldDef*>(symbol);
+
+    EXPECT_NE(field, nullptr); // It should be defined as a FieldDef
+    EXPECT_EQ(field->get_type()->to_string(), "(i32) -> i32");
+}
+
+TEST(Types, StructReference)
+{
+
 }
 
 /*

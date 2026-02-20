@@ -13,13 +13,12 @@ namespace stride::ast
 
     public:
         explicit AstReturn(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> value
         )
             :
-            IAstNode(source, source_position, context),
+            IAstNode(source, context),
             _value(std::move(value)) {}
 
         std::string to_string() override;

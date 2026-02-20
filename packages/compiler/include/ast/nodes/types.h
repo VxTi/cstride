@@ -47,12 +47,11 @@ namespace stride::ast
 
     public:
         IAstType(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const int flags
         )
-            : IAstNode(source, source_position, context),
+            : IAstNode(source, context),
               _flags(flags) {}
 
         ~IAstType() override = default;
@@ -103,14 +102,13 @@ namespace stride::ast
 
     public:
         explicit AstPrimitiveType(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             const PrimitiveType type,
             const size_t bit_count,
             const int flags = SRFLAG_NONE
         ) :
-            IAstType(source, source_position, context, flags),
+            IAstType(source, context, flags),
             _type(type),
             _bit_count(bit_count) {}
 
@@ -183,13 +181,12 @@ namespace stride::ast
 
     public:
         explicit AstNamedType(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             const int flags = SRFLAG_NONE
         ) :
-            IAstType(source, source_position, context, flags),
+            IAstType(source, context, flags),
             _name(std::move(name)) {}
 
         [[nodiscard]]
@@ -227,13 +224,12 @@ namespace stride::ast
 
     public:
         explicit AstFunctionType(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
             const int flags = SRFLAG_NONE
-        ) : IAstType(source, source_position, context, flags | SRFLAG_TYPE_PTR),
+        ) : IAstType(source, context, flags | SRFLAG_TYPE_PTR),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)) {}
 
@@ -253,7 +249,6 @@ namespace stride::ast
             }
 
             return std::make_unique<AstFunctionType>(
-                this->get_source(),
                 this->get_source_position(),
                 this->get_context(),
                 std::move(parameters_clone),
@@ -308,18 +303,12 @@ namespace stride::ast
 
     public:
         explicit AstArrayType(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<IAstType> element_type,
             const size_t initial_length
-        ) : IAstType(
-                source,
-                source_position,
-                context,
-                // Arrays are always ptrs
-                (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR
-            ),
+        ) : IAstType(source, context, (element_type ? element_type->get_flags() : 0) | SRFLAG_TYPE_PTR),
+            // Arrays are always ptrs
             _element_type(std::move(element_type)),
             _initial_length(initial_length) {}
 
@@ -331,7 +320,6 @@ namespace stride::ast
                                      : nullptr;
 
             return std::make_unique<AstArrayType>(
-                this->get_source(),
                 this->get_source_position(),
                 this->get_context(),
                 std::move(element_clone),

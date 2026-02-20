@@ -16,7 +16,6 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optio
         const char value = next.get_lexeme()[0];
 
         return std::make_unique<AstCharLiteral>(
-            set.get_source(),
             reference_token.get_source_position(),
             context,
             value

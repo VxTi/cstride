@@ -56,7 +56,6 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
                         : INFER_INT_BIT_COUNT(value);
 
                 return std::make_unique<AstIntLiteral>(
-                    set.get_source(),
                     reference_token.get_source_position(),
                     context,
                     value,
@@ -69,7 +68,6 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
                 throw parsing_error(
                     ErrorType::SEMANTIC_ERROR,
                     reason,
-                    *set.get_source(),
                     reference_token.get_source_position()
                 );
             }

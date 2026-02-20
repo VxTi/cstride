@@ -57,7 +57,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                     tokens.push_back(
                         Token(
                             TokenType::STRING_LITERAL,
-                            SourcePosition(string_start - 1, length + 2),
+                            SourceLocation(source_file, string_start - 1, length + 2),
                             val
                         )
                     );
@@ -107,7 +107,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                 {
                     tokens.emplace_back(
                         tokenDefinition.type,
-                        SourcePosition(i, lexeme.length()),
+                        SourceLocation(source_file, i, lexeme.length()),
                         lexeme
                     );
                 }
@@ -123,8 +123,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
             throw parsing_error(
                 ErrorType::SYNTAX_ERROR,
                 "Unexpected character encountered",
-                *source_file,
-                SourcePosition(i, 1)
+                SourceLocation(source_file, i, 1)
             );
         }
     }

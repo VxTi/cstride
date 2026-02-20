@@ -17,11 +17,10 @@ namespace stride::ast
 
     public:
         explicit AstEnumerableMember(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name, std::unique_ptr<AstLiteral> value
-        ) : IAstNode(source, source_position, context),
+        ) : IAstNode(source, context),
             _name(std::move(name)),
             _value(std::move(value)) {}
 
@@ -41,12 +40,11 @@ namespace stride::ast
 
     public:
         explicit AstEnumerable(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
             std::string name
-        ) : IAstNode(source, source_position, context),
+        ) : IAstNode(source, context),
             _members(std::move(members)), _name(std::move(name)) {}
 
         [[nodiscard]]

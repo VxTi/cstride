@@ -11,11 +11,10 @@ namespace stride::ast
 
     public:
         explicit AstPackage(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::string package_name
-        ) : IAstNode(source, source_position, context),
+        ) : IAstNode(source, context),
             _name(std::move(package_name)) {};
 
         [[nodiscard]]

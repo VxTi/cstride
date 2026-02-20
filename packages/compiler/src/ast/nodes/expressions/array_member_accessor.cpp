@@ -22,7 +22,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
     auto index_expression = parse_inline_expression(context, expression_block.value());
 
     auto base_expr = std::make_unique<AstArrayMemberAccessor>(
-        array_identifier->get_source(),
         array_identifier->get_source_position(),
         context,
         std::move(array_identifier),
@@ -51,7 +50,6 @@ void AstArrayMemberAccessor::validate()
             throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
                 std::format("Array index accessor must be of type int, got '{}'", primitive_type->to_string()),
-                *this->get_source(),
                 this->get_source_position()
             );
         }
@@ -60,7 +58,6 @@ void AstArrayMemberAccessor::validate()
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
         std::format("Array index accessor must be of type int, got '{}'", index_accessor_type->to_string()),
-        *this->get_source(),
         this->get_source_position()
     );
 }
@@ -84,7 +81,6 @@ llvm::Value* AstArrayMemberAccessor::codegen(
         throw parsing_error(
                 ErrorType::SEMANTIC_ERROR,
                 "Array member accessor used on non-array type",
-                *this->get_source(),
                 this->get_source_position()
         );
     }

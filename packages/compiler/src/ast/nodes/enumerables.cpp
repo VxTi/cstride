@@ -39,7 +39,6 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     tokens.expect(TokenType::COMMA, "Expected a comma after enum member value");
 
     return std::make_unique<AstEnumerableMember>(
-        tokens.get_source(),
         member_name_tok.get_source_position(),
         context,
         std::move(member_sym),
@@ -102,7 +101,6 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     }
 
     return std::make_unique<AstEnumerable>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         std::move(members),

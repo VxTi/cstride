@@ -16,7 +16,6 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_opt
         const auto str_tok = set.next();
 
         return std::make_unique<AstStringLiteral>(
-            set.get_source(),
             reference_token.get_source_position(),
             context,
             str_tok.get_lexeme()

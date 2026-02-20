@@ -14,11 +14,10 @@ namespace stride::ast
 
     public:
         explicit AstBlock(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceLocation &source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstNode>> children
-        ) : IAstNode(source, source_position, context),
+        ) : IAstNode(source, context),
             _children(std::move(children)) {};
 
         std::string to_string() override;

@@ -24,7 +24,8 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     auto struct_member_type = parse_type(context, set, "Expected a struct member type");
     const auto last_token = set.expect(TokenType::SEMICOLON, "Expected ';' after struct member declaration");
 
-    const auto position = stride::SourcePosition(
+    const auto position = stride::SourceLocation(
+        set.get_source(),
         struct_member_name_tok.get_source_position().offset,
         last_token.get_source_position().offset
         + last_token.get_source_position().length
@@ -39,7 +40,6 @@ std::unique_ptr<AstStructMember> parse_struct_member(
     );
 
     return std::make_unique<AstStructMember>(
-        set.get_source(),
         context,
         struct_member_symbol,
         std::move(struct_member_type)
@@ -82,7 +82,6 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         );
 
         return std::make_unique<AstStruct>(
-            tokens.get_source(),
             reference_token.get_source_position(),
             context,
             struct_name,
@@ -101,8 +100,8 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             "A struct must have at least 1 member",
-            *tokens.get_source(),
-            SourcePosition(
+            SourceLocation(
+                tokens.get_source(),
                 ref_src_pos.offset,
                 struct_name_pos.offset + struct_name_pos.length - ref_src_pos.offset
             )
@@ -136,7 +135,6 @@ std::unique_ptr<AstStruct> stride::ast::parse_struct_declaration(
     );
 
     return std::make_unique<AstStruct>(
-        tokens.get_source(),
         reference_token.get_source_position(),
         context,
         struct_name,
@@ -157,7 +155,6 @@ void AstStructMember::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format("Undefined struct type for member '{}'", this->get_name()),
-                *this->get_source(),
                 this->get_source_position()
             );
         }
@@ -181,7 +178,6 @@ void AstStruct::validate()
                     this->get_name(),
                     this->_reference.value()->get_internal_name()
                 ),
-                *this->get_source(),
                 this->_reference.value()->get_source_position()
             );
         }
@@ -254,7 +250,6 @@ void AstStruct::resolve_forward_references(const std::shared_ptr<ParsingContext>
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
                 std::format("Referenced struct type '{}' not found during codegen", ref_name),
-                *this->get_source(),
                 this->get_source_position()
             );
         }
@@ -265,7 +260,6 @@ void AstStruct::resolve_forward_references(const std::shared_ptr<ParsingContext>
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format("Referenced struct type '{}' is not fully defined", ref_name),
-                *this->get_source(),
                 this->get_source_position()
             );
         }
@@ -289,7 +283,6 @@ void AstStruct::resolve_forward_references(const std::shared_ptr<ParsingContext>
                         "Unknown internal type '{}' for struct member '{}'",
                         member->get_type().get_internal_name(), member->get_name()
                     ),
-                    *this->get_source(),
                     member->get_source_position()
                 );
             }

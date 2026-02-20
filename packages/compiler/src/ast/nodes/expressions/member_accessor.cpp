@@ -44,13 +44,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 
         auto symbol = Symbol(accessor_iden_tok.get_source_position(), accessor_iden_tok.get_lexeme());
 
-        chained_accessors.push_back(
-            std::make_unique<AstIdentifier>(
-                set.get_source(),
-                context,
-                symbol
-            )
-        );
+        chained_accessors.push_back(std::make_unique<AstIdentifier>(context, symbol));
     }
 
     const auto lhs_source_pos = lhs->get_source_position();
@@ -62,7 +56,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Member access base must be an identifier",
-            *set.get_source(),
             lhs_source_pos
         );
     }
@@ -70,8 +63,8 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
     const auto last_source_pos = chained_accessors.back().get()->get_source_position();
 
     return std::make_unique<AstMemberAccessor>(
-        set.get_source(),
-        SourcePosition(
+        SourceLocation(
+            set.get_source(),
             lhs_source_pos.offset,
             last_source_pos.offset + last_source_pos.length - lhs_source_pos.offset
         ),
@@ -159,7 +152,6 @@ llvm::Value* AstMemberAccessor::codegen(
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
                 std::format("Unknown struct type '{}' during codegen", current_struct_name),
-                *this->get_source(),
                 this->get_source_position()
             );
         }
@@ -174,7 +166,6 @@ llvm::Value* AstMemberAccessor::codegen(
                     ErrorType::RUNTIME_ERROR,
                     std::format("Unknown struct type '{}' during codegen",
                                 struct_def->get_reference_struct().value().name),
-                    *this->get_source(),
                     this->get_source_position()
                 );
             }
@@ -188,7 +179,6 @@ llvm::Value* AstMemberAccessor::codegen(
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
                 std::format("Unknown member '{}' in struct '{}'", accessor->get_name(), current_struct_name),
-                *this->get_source(),
                 this->get_source_position()
             );
         }

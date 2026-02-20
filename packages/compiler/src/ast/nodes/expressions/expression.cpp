@@ -59,7 +59,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         const auto internal_name = resolve_internal_name(name_segments);
 
         auto identifier = std::make_unique<AstIdentifier>(
-            set.get_source(),
             context,
             Symbol(reference_token.get_source_position(), internal_name)
         );
@@ -147,7 +146,6 @@ std::unique_ptr<AstExpression> parse_comparison_tier(
         const auto token = set.next();
         auto rhs = parse_arithmetic_tier(context, set);
         lhs = std::make_unique<AstComparisonOp>(
-            set.get_source(),
             token.get_source_position(),
             context,
             std::move(lhs),
@@ -170,7 +168,6 @@ std::unique_ptr<AstExpression> parse_logical_tier(
         const auto token = set.next();
         auto rhs = parse_comparison_tier(context, set);
         lhs = std::make_unique<AstLogicalOp>(
-            set.get_source(),
             token.get_source_position(),
             context,
             std::move(lhs),
@@ -198,7 +195,6 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
         // Note: calling parse_comparison_tier here is safer than parse_inline_expression_part
 
         return std::make_unique<AstLogicalOp>(
-            set.get_source(),
             reference_token.get_source_position(),
             context,
             std::move(lhs),
@@ -226,7 +222,6 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
         auto rhs = parse_arithmetic_tier(context, set);
 
         return std::make_unique<AstComparisonOp>(
-            set.get_source(),
             reference_token.get_source_position(),
             context,
             std::move(lhs),

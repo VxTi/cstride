@@ -34,7 +34,6 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
     auto body = parse_block(context, set);
 
     return std::make_unique<AstWhileLoop>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         std::move(condition),
@@ -67,7 +66,6 @@ llvm::Value* AstWhileLoop::codegen(
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
                 "Failed to codegen loop condition",
-                *this->get_source(),
                 this->get_source_position()
             );
         }

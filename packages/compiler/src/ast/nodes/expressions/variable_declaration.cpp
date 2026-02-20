@@ -90,17 +90,17 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
                 throw parsing_error(
                     ErrorType::SYNTAX_ERROR,
                     "Expected '=' after type annotation in variable declaration",
-                    *variable_type->get_source(),
                     variable_type->get_source_position()
                 );
             }
 
             // If no expression was provided (lacking '='), initialize with nil if the initial type is optional
-            const auto ref_src_pos = reference_token.get_source_position();
-            const auto var_type_src_pos = variable_type->get_source_position();
+            const auto& ref_src_pos = reference_token.get_source_position();
+            const auto& var_type_src_pos = variable_type->get_source_position();
+
             value = std::make_unique<AstNilLiteral>(
-                set.get_source(),
-                SourcePosition(
+                SourceLocation(
+                    ref_src_pos.source,
                     ref_src_pos.offset,
                     var_type_src_pos.offset + var_type_src_pos.length - ref_src_pos.offset
                 ),
@@ -109,10 +109,13 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         }
     }
 
-    const auto ref_tok_pos = reference_token.get_source_position();
-    const auto var_type_pos = variable_type->get_source_position();
-    const auto symbol_position = SourcePosition(ref_tok_pos.offset,
-                                                var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset);
+    const auto& ref_tok_pos = reference_token.get_source_position();
+    const auto& var_type_pos = variable_type->get_source_position();
+    const auto symbol_position = SourceLocation(
+        ref_tok_pos.source,
+        ref_tok_pos.offset,
+        var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset
+    );
 
     static int var_unique_counter = 0;
     const auto internal_name =
@@ -133,7 +136,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
     );
 
     return std::make_unique<AstVariableDeclaration>(
-        set.get_source(),
         context,
         symbol,
         std::move(variable_type),

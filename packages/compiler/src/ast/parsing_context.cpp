@@ -249,7 +249,6 @@ void ParsingContext::define_variable_globally(
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Field '{}' is already defined in global scope", variable_symbol.name),
-            *type->get_source(),
             type->get_source_position()
         );
     }
@@ -278,7 +277,6 @@ void ParsingContext::define_variable(
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Field '{}' is already defined in this scope", variable_sym.name),
-            *type->get_source(),
             type->get_source_position()
         );
     }
@@ -396,7 +394,6 @@ void ParsingContext::define_struct(
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Struct '{}' is already defined in this scope", struct_symbol.name),
-            *fields.begin()->second->get_source(),
             fields.begin()->second->get_source_position()
         );
     }

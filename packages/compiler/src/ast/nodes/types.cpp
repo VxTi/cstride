@@ -67,8 +67,7 @@ std::unique_ptr<IAstType> parse_type_metadata(
         offset += 2;
         set.skip(2);
         base_type = std::make_unique<AstArrayType>(
-            base_type->get_source(),
-            stride::SourcePosition(src_pos.offset, src_pos.length + offset),
+            stride::SourceLocation(base_type->get_source(), src_pos.offset, src_pos.length + offset),
             base_type->get_context(),
             std::move(base_type),
             0
@@ -118,7 +117,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_INT8:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::INT8,
@@ -130,7 +128,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_INT16:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::INT16,
@@ -142,7 +139,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_INT32:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::INT32,
@@ -154,7 +150,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_INT64:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::INT64,
@@ -166,7 +161,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_UINT8:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::UINT8,
@@ -178,7 +172,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_UINT16:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::UINT16,
@@ -190,7 +183,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_UINT32:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::UINT32,
@@ -202,7 +194,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_UINT64:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::UINT64,
@@ -214,7 +205,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_FLOAT32:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::FLOAT32,
@@ -226,7 +216,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_FLOAT64:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::FLOAT64,
@@ -238,7 +227,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_BOOL:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::BOOL,
@@ -250,7 +238,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_CHAR:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::CHAR,
@@ -262,7 +249,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_STRING:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::STRING,
@@ -274,7 +260,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_VOID:
         {
             result = std::make_unique<AstPrimitiveType>(
-                set.get_source(),
                 reference_token.get_source_position(),
                 context,
                 PrimitiveType::VOID,
@@ -316,7 +301,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     const auto name = set.next().get_lexeme();
 
     auto named_type = std::make_unique<AstNamedType>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         name,
@@ -405,7 +389,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
 
 
     auto fn_type = std::make_unique<AstFunctionType>(
-        set.get_source(),
         reference_token.get_source_position(),
         context,
         std::move(parameters),
@@ -479,7 +462,6 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
                 "Unable to resolve internal type for array element",
-                *ast_array_ty->get_source(),
                 ast_array_ty->get_source_position()
             );
         }
@@ -537,7 +519,6 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
             throw parsing_error(
                 ErrorType::RUNTIME_ERROR,
                 std::format("Struct type '{}' not found", ast_struct_ty->name()),
-                *ast_struct_ty->get_source(),
                 ast_struct_ty->get_source_position()
             );
         }
@@ -565,7 +546,6 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Cannot mix primitive type with named type",
-            *lhs->get_source(),
             lhs->get_source_position()
         );
     }
@@ -576,7 +556,6 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Cannot compute dominant type for non-primitive types",
-            *lhs->get_source(),
             lhs->get_source_position()
         );
     }
@@ -608,7 +587,6 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         if (rhs_primitive->bit_count() > lhs_primitive->bit_count())
         {
             return std::make_unique<AstPrimitiveType>(
-                lhs_primitive->get_source(),
                 lhs_primitive->get_source_position(),
                 context,
                 PrimitiveType::FLOAT64,
