@@ -127,7 +127,11 @@ VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInfer
 Type ::= (PrimitiveType | UserType | FunctionType)
 // <module>::<type> or <type>
 PrimitiveType ::= (VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING) [ArrayNotion*]
-UserType ::= ScopedIdentifier [GenericTypeArguments] [ArrayNotion*]
+UserType ::= ScopedIdentifier [GenericTypeArguments] [ArrayNotion*] {
+  methods=[
+    getScopedIdentifier
+  ]
+}
 GenericTypeArguments ::= LT Type (COMMA Type)* GT
 FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN [ArrayNotion*])
 SingularFunctionType ::= LPAREN [Type (COMMA Type)*] RPAREN ARROW Type
@@ -185,19 +189,35 @@ private PostfixSuffix ::= CallSuffix
                          | MemberIndexing
                          | IncrDecrOp
 
-private CallSuffix ::= LPAREN [ArgumentList] RPAREN
+CallSuffix ::= LPAREN [ArgumentList] RPAREN
 private MemberAccessor ::= DOT IDENTIFIER
 private MemberIndexing ::= LSQUARE_BRACKET Expression RSQUARE_BRACKET
 
 PrimaryExpression ::= LiteralExpression
                      | StructInitialization
                      | ParenthesizedExpression
+                     | FunctionCallExpression
                      | ScopedIdentifier
 
+FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {
+  methods=[
+    getTarget
+    getScopedIdentifier
+  ]
+}
+
 LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL
-StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] RBRACE
+StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] RBRACE {
+  methods=[
+    getScopedIdentifier
+  ]
+}
 StructInitFields ::= StructInitField (COMMA StructInitField)* [COMMA]
-StructInitField ::= ScopedIdentifier COLON Expression
+StructInitField ::= ScopedIdentifier COLON Expression {
+  methods=[
+    getScopedIdentifier
+  ]
+}
 ArgumentList ::= Expression (COMMA Expression)*
 ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
 
@@ -205,7 +225,13 @@ ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
 LambdaExpression ::= LPAREN FunctionParameter* RPAREN COLON Type ARROW BlockStatement
 
 // some::field
-ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
+ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)* {
+  methods=[
+    getIdentifierList
+    getFirstIdentifier
+    getLastIdentifier
+  ]
+}
 
 AccessModifier ::= PUB
 

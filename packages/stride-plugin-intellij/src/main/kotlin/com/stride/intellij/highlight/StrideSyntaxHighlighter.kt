@@ -22,7 +22,11 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         val COMMA = createTextAttributesKey("STRIDE_COMMA", DefaultLanguageHighlighterColors.COMMA)
         val DOT = createTextAttributesKey("STRIDE_DOT", DefaultLanguageHighlighterColors.DOT)
         val TYPE = createTextAttributesKey("STRIDE_TYPE", DefaultLanguageHighlighterColors.KEYWORD)
-        val FUNCTION_CALL = createTextAttributesKey("STRIDE_FUNCTION_CALL", DefaultLanguageHighlighterColors.FUNCTION_CALL)
+        val FUNCTION_CALL = createTextAttributesKey("STRIDE_FUNCTION_CALL", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
+        val FUNCTION_DECLARATION = createTextAttributesKey("STRIDE_FUNCTION_DECLARATION", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
+        val SCOPED_IDENTIFIER_REFERENCE = createTextAttributesKey("SCOPED_IDENTIFIER_REFERENCE", DefaultLanguageHighlighterColors.CLASS_REFERENCE)
+        val IDENTIFIER = createTextAttributesKey("STRIDE_IDENTIFIER", DefaultLanguageHighlighterColors.IDENTIFIER)
+        val FIELD_IDENTIFIER = createTextAttributesKey("STRIDE_FIELD_IDENTIFIER", DefaultLanguageHighlighterColors.INSTANCE_FIELD)
 
 
         private val KEYWORD_KEYS = arrayOf(KEYWORD)

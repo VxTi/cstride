@@ -1,15 +1,23 @@
-fn ref(x: int64): (int64) -> int64 {
-    return (y: int64): int64 -> {
-        return x + y;
-    };
+struct Test {
+    some_field: float32;
 }
 
-fn main(): int32 {
+module IO {
+    /** test */
+    pub fn println(arg: string, varargs: int32): void
+    {
+        printf("z: %d", z.some_field);
+    }
+}
 
-    const res = ref(10);
-    const sec = res(20);
+/**
+ * Comment
+ */
+fn test(): void {}
 
-    printf("Output: %d", sec);
+let x = Test::{ some_field: 3.14 };
 
-    return 0;
+fn main(): void {
+    test();
+    println("z: %d", z.some_field);
 }

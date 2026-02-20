@@ -10,9 +10,9 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="generateStrideParser" />
-          <option value="generateStrideLexer" />
-          <option value="assemble" />
+          <option value=":generateStrideLexer" />
+          <option value=":generateStrideParser" />
+          <option value=":assemble" />
           <option value=":runIde" />
         </list>
       </option>
