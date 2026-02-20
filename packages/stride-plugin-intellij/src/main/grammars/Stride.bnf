@@ -25,21 +25,21 @@
     WHILE='while'
     MODULE='module'
     PACKAGE='package'
-    PUB='pub'
+    PUBLIC='pub'
     ASYNC='async'
     IF='if'
     ELSE='else'
     VOID='void'
-    I8='i8'
-    I16='i16'
-    I32='i32'
-    I64='i64'
-    U8='u8'
-    U16='u16'
-    U32='u32'
-    U64='u64'
-    F32='f32'
-    F64='f64'
+    INT8='int8'
+    INT16='int16'
+    INT32='int32'
+    INT64='int64'
+    UINT8='u8'
+    UINT16='u16'
+    UINT32='u32'
+    UINT64='u64'
+    FLOAT32='float32'
+    FLOAT64='float64'
     BOOL='bool'
     CHAR='char'
     STRING='string'
@@ -51,6 +51,7 @@
     EQ='='
     PLUS_PLUS='++'
     MINUS_MINUS='--'
+    ARROW='->'
     PLUS_EQ='+='
     MINUS_EQ='-='
     ASTERISK_EQ='*='
@@ -69,8 +70,8 @@
     RBRACE='}'
     LPAREN='('
     RPAREN=')'
-    LBRACKET='['
-    RBRACKET=']'
+    LSQUARE_BRACKET='['
+    RSQUARE_BRACKET=']'
     COLON_COLON='::'
     EQ_EQ='=='
     EXCL_EQ='!='
@@ -105,7 +106,7 @@ private StandaloneItem ::= (
 ExternFunctionDeclaration ::= [AccessModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
 FunctionDeclaration ::= [AccessModifier] [ASYNC] FunctionDeclarationHeader BlockStatement
 private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterList] RPAREN COLON Type
-FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)* [COMMA]
+FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)*
 FunctionParameter ::= IDENTIFIER COLON Type
 
 StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
@@ -123,10 +124,19 @@ VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
 VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
-Type ::= [(ASTERISK | AMPERSAND)*] (PrimitiveType | UserType)
+Type ::= (PrimitiveType | UserType | FunctionType)
 // <module>::<type> or <type>
-PrimitiveType ::= [(IDENTIFIER COLON_COLON)*] VOID | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | BOOL | CHAR | STRING
-UserType ::= ScopedIdentifier
+PrimitiveType ::= (VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING) [ArrayNotion*]
+UserType ::= ScopedIdentifier [GenericTypeArguments] [ArrayNotion*] {
+  methods=[
+    getScopedIdentifier
+  ]
+}
+GenericTypeArguments ::= LT Type (COMMA Type)* GT
+FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN [ArrayNotion*])
+SingularFunctionType ::= LPAREN [Type (COMMA Type)*] RPAREN ARROW Type
+
+ArrayNotion ::= LSQUARE_BRACKET RSQUARE_BRACKET;
 
 // --- Statements ---
 BlockStatement ::= LBRACE Statement* RBRACE
@@ -164,9 +174,9 @@ LogicalExpression ::= ComparisonExpression (LogicalOp ComparisonExpression)*
 
 ComparisonExpression ::= AdditiveExpression (ComparisonOp AdditiveExpression)*
 
-AdditiveExpression ::= ASTERISKtiplicativeExpression (AdditiveOp ASTERISKtiplicativeExpression)*
+AdditiveExpression ::= MultiplicativeExpression (AdditiveOp MultiplicativeExpression)*
 
-ASTERISKtiplicativeExpression ::= UnaryExpression (ASTERISKtiplicativeOp UnaryExpression)*
+MultiplicativeExpression ::= UnaryExpression (MultiplicativeOp UnaryExpression)*
 
 UnaryExpression ::= LhsUnaryOp UnaryExpression
                   | IncrDecrOp UnaryExpression
@@ -179,30 +189,57 @@ private PostfixSuffix ::= CallSuffix
                          | MemberIndexing
                          | IncrDecrOp
 
-private CallSuffix ::= LPAREN [ArgumentList] RPAREN
+CallSuffix ::= LPAREN [ArgumentList] RPAREN
 private MemberAccessor ::= DOT IDENTIFIER
-private MemberIndexing ::= LBRACKET Expression RBRACKET
+private MemberIndexing ::= LSQUARE_BRACKET Expression RSQUARE_BRACKET
 
 PrimaryExpression ::= LiteralExpression
                      | StructInitialization
                      | ParenthesizedExpression
+                     | FunctionCallExpression
                      | ScopedIdentifier
+                     | (LSQUARE_BRACKET PrimaryExpression RSQUARE_BRACKET)
+
+FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {
+  methods=[
+    getTarget
+    getScopedIdentifier
+  ]
+}
 
 LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL
-StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] RBRACE
+StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] RBRACE {
+  methods=[
+    getScopedIdentifier
+  ]
+}
 StructInitFields ::= StructInitField (COMMA StructInitField)* [COMMA]
-StructInitField ::= ScopedIdentifier COLON Expression
+StructInitField ::= ScopedIdentifier COLON Expression {
+  methods=[
+    getScopedIdentifier
+  ]
+}
 ArgumentList ::= Expression (COMMA Expression)*
-ParenthesizedExpression ::= LPAREN Expression RPAREN
+ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
 
-ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
+// (p: int32) -> int32 { ... }
+LambdaExpression ::= LPAREN [FunctionParameterList] RPAREN COLON Type ARROW BlockStatement
 
-AccessModifier ::= PUB
+// some::field
+ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)* {
+  methods=[
+    getIdentifierList
+    getFirstIdentifier
+    getLastIdentifier
+  ]
+}
+
+AccessModifier ::= PUBLIC
 
 private BOOLEAN_LITERAL ::= 'true' | 'false'
 private LogicalOp ::= '&&' | '||'
 private ComparisonOp ::= EQ_EQ | EXCL_EQ | LT | GT | LT_EQ | GT_EQ
 private AdditiveOp ::= PLUS | MINUS
-private ASTERISKtiplicativeOp ::= ASTERISK | DIV | MOD
+private MultiplicativeOp ::= ASTERISK | DIV | MOD
 private LhsUnaryOp ::= PLUS | MINUS | EXCL
 private IncrDecrOp ::= PLUS_PLUS | MINUS_MINUS

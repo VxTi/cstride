@@ -1,0 +1,81 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  # 1. The main header for this file (e.g., MyClass.h in MyClass.cpp)
+  - Regex:           '^"(.*)\.(h|hpp|hxx)"'
+    Priority:        1
+  # 2. Project-local headers using "quotes"
+  - Regex:           '^"(.*)"'
+    Priority:        2
+  # 3. System headers using <brackets>
+  - Regex:           '^<.*'
+    Priority:        3
+  # 4. Everything else
+  - Regex:           '.*'
+    Priority:        4
+IncludeIsMainRegex: '([-_](test|unittest))?$'
+BreakAfterReturnType: None
+
+# Penalties
+PenaltyReturnTypeOnItsOwnLine: 10000 # Ensure that return type never on its own line
+PenaltyBreakBeforeFirstCallParameter: 1
+
+# Very important settings
+ColumnLimit: 100
+IndentWidth: 4
+ContinuationIndentWidth: 4
+AccessModifierOffset: -4
+InsertNewlineAtEOF: true
+
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignOperands: false
+AlignTrailingComments: true
+AlwaysBreakTemplateDeclarations: Yes
+AlwaysBreakAfterReturnType: None
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortFunctionsOnASingleLine: Empty
+SpaceBeforeParens: ControlStatements
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+AlignAfterOpenBracket: BlockIndent
+BinPackParameters: false
+BinPackArguments: false
+Cpp11BracedListStyle: false
+AllowAllArgumentsOnNextLine: false
+PackConstructorInitializers: Never
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: false
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: true
+  BeforeWhile: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+BreakBeforeBraces: Custom
+BreakConstructorInitializersBeforeComma: false
+ConstructorInitializerIndentWidth: 12
+IndentCaseBlocks: true
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: All
+PointerAlignment: Left
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInConditionalStatement: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+TabWidth: 4

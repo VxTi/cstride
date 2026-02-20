@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   compiler-test:
     name: Compiler Tests
@@ -83,3 +86,21 @@ jobs:
       - name: Run Tests
         working-directory: packages/stride-plugin-intellij
         run: ./gradlew test
+  deploy:
+    name: Documentation Site Deployment
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: cd docs; npm install
+
+      - name: Build documentation
+        run: cd docs; npm run docs:build; touch .vitepress/dist/.nojekyll
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/.vitepress/dist

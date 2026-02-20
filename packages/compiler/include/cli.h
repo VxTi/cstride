@@ -38,7 +38,8 @@ namespace stride::cli
          * The CompilationMode variable determines whether the process should
          * operate in interpretive mode or compilation mode
          * It can take one of the values defined in the <code>stride::ast::CompilationMode</code>
-         * enumeration, such as <code>CompilationMode::INTERPRET</code> or <code>CompilationMode::COMPILE</code>.
+         * enumeration, such as <code>CompilationMode::INTERPRET</code> or
+         * <code>CompilationMode::COMPILE</code>.
          */
         CompilationMode mode;
 
@@ -56,7 +57,9 @@ namespace stride::cli
      * Will attempt to resolve compilation options from command-line arguments
      * into a <code>stride::ast::CompilationOptions</code> structure.
      */
-    CompilationOptions resolve_compilation_options_from_args(int argc, char** argv);
+    CompilationOptions resolve_compilation_options_from_args(
+        int argc,
+        char** argv);
 
     int resolve_cli_command(int argc, char** argv);
 
@@ -68,4 +71,4 @@ namespace stride::cli
 
     /// `cstride --typecheck` or `cstride -tc`
     int resolve_typecheck_command(int argc, char** argv);
-}
+} // namespace stride::cli

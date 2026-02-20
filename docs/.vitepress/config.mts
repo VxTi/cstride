@@ -38,7 +38,7 @@ const strideGrammar: Grammar = {
     {
       name: "storage.type.stride",
       match:
-        "\\b(bool|i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|char|string|void|auto)\\b",
+        "\\b(bool|int8|int16|int32|int64|u8|u16|u32|u64|float32|float64|char|string|void|auto)\\b",
     },
     {
       name: "constant.language.stride",

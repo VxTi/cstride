@@ -1,15 +1,11 @@
-//
-// Created by Luca Warmenhoven on 12/01/2026.
-//
-
 #pragma once
+
+#include "ast/tokens/token.h"
+#include "errors.h"
 
 #include <algorithm>
 #include <utility>
 #include <vector>
-
-#include "errors.h"
-#include "ast/tokens/token.h"
 
 namespace stride::ast
 {
@@ -23,10 +19,9 @@ namespace stride::ast
         std::vector<Token> _tokens;
 
     public:
-        explicit TokenSet(
-            std::shared_ptr<SourceFile> source,
-            std::vector<Token>& tokens
-        ) : _source(std::move(source)),
+        explicit TokenSet(std::shared_ptr<SourceFile> source,
+                          std::vector<Token>& tokens) :
+            _source(std::move(source)),
             _cursor(0),
             _size(tokens.size()),
             _tokens(std::move(tokens)) {}
@@ -79,12 +74,16 @@ namespace stride::ast
         std::shared_ptr<SourceFile> get_source() const;
 
         [[noreturn]]
-        void throw_error(const Token& token, ErrorType error_type, const std::string& message) const;
+        void throw_error(const Token& token,
+                         ErrorType error_type,
+                         const std::string& message)
+        const;
 
         [[noreturn]]
-        void throw_error(ErrorType error_type, const std::string& message) const;
+        void throw_error(ErrorType error_type,
+                         const std::string& message) const;
 
         [[noreturn]]
         void throw_error(const std::string& message) const;
     };
-}
+} // namespace stride::ast

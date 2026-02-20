@@ -1,19 +1,17 @@
-#include <iostream>
-
 #include "ast/nodes/blocks.h"
 
-#include <sstream>
-
-#include "ast/parser.h"
 #include "ast/nodes/function_declaration.h"
+#include "ast/parser.h"
+
+#include <iostream>
+#include <sstream>
 
 using namespace stride::ast;
 
 void AstBlock::resolve_forward_references(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+    llvm::IRBuilder<>* builder)
 {
     for (const auto& child : this->children())
     {
@@ -25,10 +23,8 @@ void AstBlock::resolve_forward_references(
 }
 
 llvm::Value* AstBlock::codegen(
-    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
-)
+    llvm::IRBuilder<>* builder)
 {
     llvm::Value* last_value = nullptr;
 
@@ -36,7 +32,8 @@ llvm::Value* AstBlock::codegen(
     {
         // Don't generate unreachable code, unless it's a function declaration
         // (which defines a new code block / function) or a global variable declaration.
-        if (auto* block = builder->GetInsertBlock(); block && block->getTerminator())
+        if (auto* block = builder->GetInsertBlock(); block && block->
+            getTerminator())
         {
             if (dynamic_cast<AstFunctionDeclaration*>(child.get()) == nullptr &&
                 dynamic_cast<AstVariableDeclaration*>(child.get()) == nullptr)
@@ -47,7 +44,7 @@ llvm::Value* AstBlock::codegen(
 
         if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
         {
-            last_value = synthesisable->codegen(this->get_context(), module, builder);
+            last_value = synthesisable->codegen(module, builder);
         }
     }
 
@@ -65,7 +62,9 @@ std::string AstBlock::to_string()
     return result.str();
 }
 
-std::optional<TokenSet> stride::ast::collect_until_token(TokenSet& set, const TokenType token)
+std::optional<TokenSet> stride::ast::collect_until_token(
+    TokenSet& set,
+    const TokenType token)
 {
     const size_t initial_offset = set.position();
 
@@ -87,12 +86,13 @@ std::optional<TokenSet> stride::ast::collect_until_token(TokenSet& set, const To
 }
 
 std::optional<TokenSet> stride::ast::collect_block_variant(
-    TokenSet& set, const TokenType start_token,
-    const TokenType end_token
-)
+    TokenSet& set,
+    const TokenType start_token,
+    const TokenType end_token)
 {
     set.expect(start_token);
-    for (int64_t level = 1, offset = 0; level > 0 && offset < set.size(); ++offset)
+    for (int64_t level = 1, offset = 0; level > 0 && offset < set.size(); ++
+         offset)
     {
         if (const auto next = set.peek(offset); next.get_type() == start_token)
         {
@@ -121,8 +121,10 @@ std::optional<TokenSet> stride::ast::collect_block_variant(
             return block;
         }
     }
-    set.skip(-1); // Ensure we don't point to a random next token that's unrelated
-    set.throw_error(std::format("Unmatched closing '{}' found", token_type_to_str(end_token)));
+    set.skip(-1);
+    // Ensure we don't point to a random next token that's unrelated
+    set.throw_error(std::format("Unmatched closing '{}' found",
+                                token_type_to_str(end_token)));
 }
 
 std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
@@ -130,7 +132,9 @@ std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
     return collect_block_variant(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_block(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
+std::unique_ptr<AstBlock> stride::ast::parse_block(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set)
 {
     auto collected_subset = collect_block(set);
 

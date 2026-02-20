@@ -1,9 +1,9 @@
 #include "ast/symbols.h"
 
-#include <ranges>
-
-#include "formatting.h"
 #include "ast/parsing_context.h"
+#include "formatting.h"
+
+#include <ranges>
 
 using namespace stride::ast;
 
@@ -46,14 +46,14 @@ size_t primitive_type_to_internal_id(const PrimitiveType type)
 
 size_t ast_type_to_internal_id(IAstType* type)
 {
-    if (const auto primitive = dynamic_cast<AstPrimitiveType*>(type);
-        primitive != nullptr)
+    if (const auto primitive = dynamic_cast<AstPrimitiveType*>(type); primitive
+        != nullptr)
     {
         return primitive_type_to_internal_id(primitive->get_type());
     }
 
-    if (const auto* named = dynamic_cast<const AstStructType*>(type);
-        named != nullptr)
+    if (const auto* named = dynamic_cast<const AstNamedType*>(type); named !=
+        nullptr)
     {
         return std::hash<std::string>{}(named->name());
     }
@@ -68,12 +68,12 @@ size_t ast_type_to_internal_id(IAstType* type)
  */
 Symbol stride::ast::resolve_internal_function_name(
     const std::shared_ptr<ParsingContext>& context,
-    const SourcePosition position,
+    const SourceFragment& position,
     const SymbolNameSegments& function_name_segments,
-    const std::vector<IAstType*>& parameter_types
-)
+    const std::vector<IAstType*>& parameter_types)
 {
-    if (function_name_segments.size() == 1 && function_name_segments.at(0) == MAIN_FN_NAME)
+    if (function_name_segments.size() == 1 && function_name_segments.at(0) ==
+        MAIN_FN_NAME)
     {
         return Symbol(position, MAIN_FN_NAME);
     }
@@ -92,21 +92,22 @@ Symbol stride::ast::resolve_internal_function_name(
         position,
         context->get_name(),
         function_name,
-        std::format("{}${:x}", function_name, std::hash<std::string>{}(params))
-    );
+        std::format("{}${:x}",
+                    function_name,
+                    std::hash<std::string>{}(params)));
 }
 
 
 Symbol stride::ast::resolve_internal_name(
     const std::string& context_name,
-    const SourcePosition position,
-    const SymbolNameSegments& segments
-)
+    const SourceFragment& position,
+    const SymbolNameSegments& segments)
 {
     return Symbol(position, context_name, resolve_internal_name(segments));
 }
 
-std::string stride::ast::resolve_internal_name(const SymbolNameSegments& segments)
+std::string stride::ast::resolve_internal_name(
+    const SymbolNameSegments& segments)
 {
     return join(segments, DELIMITER);
 }

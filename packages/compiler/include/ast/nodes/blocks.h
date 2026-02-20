@@ -1,24 +1,24 @@
 #pragma once
 
-#include "ast/parsing_context.h"
 #include "ast/nodes/ast_node.h"
+#include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
 
 namespace stride::ast
 {
-    class AstBlock :
-        public IAstNode,
-        public ISynthesisable
+    class AstBlock
+        : public IAstNode,
+          public ISynthesisable
     {
         std::vector<std::unique_ptr<IAstNode>> _children;
 
     public:
         explicit AstBlock(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstNode>> children
-        ) : IAstNode(source, source_position, context),
+        ) :
+            IAstNode(source, context),
             _children(std::move(children)) {};
 
         std::string to_string() override;
@@ -32,13 +32,12 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
 
         void resolve_forward_references(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) override;
@@ -52,16 +51,32 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstNode>>& children() const { return this->_children; }
+        const std::vector<std::unique_ptr<IAstNode>>& children() const
+        {
+            return this->_children;
+        }
 
         ~AstBlock() override = default;
+
+        static std::unique_ptr<AstBlock> create_empty(
+            const std::shared_ptr<ParsingContext>& context,
+            const SourceFragment& source
+        )
+        {
+            return std::make_unique<AstBlock>(source, context, std::vector<std::unique_ptr<IAstNode>>{});
+        }
     };
 
-    std::unique_ptr<AstBlock> parse_block(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
+    std::unique_ptr<AstBlock> parse_block(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set);
 
     std::optional<TokenSet> collect_block(TokenSet& set);
 
-    std::optional<TokenSet> collect_block_variant(TokenSet& set, TokenType start_token, TokenType end_token);
+    std::optional<TokenSet> collect_block_variant(
+        TokenSet& set,
+        TokenType start_token,
+        TokenType end_token);
 
     std::optional<TokenSet> collect_until_token(TokenSet& set, TokenType token);
 
@@ -69,4 +84,4 @@ namespace stride::ast
     {
         return collect_block_variant(set, TokenType::LPAREN, TokenType::RPAREN);
     }
-}
+} // namespace stride::ast

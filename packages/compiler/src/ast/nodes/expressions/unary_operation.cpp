@@ -11,15 +11,25 @@ std::string unary_op_type_to_str(const UnaryOpType type)
 {
     switch (type)
     {
-    case UnaryOpType::LOGICAL_NOT: return "!";
-    case UnaryOpType::NEGATE: return "-";
-    case UnaryOpType::COMPLEMENT: return "~";
-    case UnaryOpType::INCREMENT: return "++";
-    case UnaryOpType::DECREMENT: return "--";
-    case UnaryOpType::ADDRESS_OF: return "&";
-    case UnaryOpType::DEREFERENCE: return "*";
+    case UnaryOpType::LOGICAL_NOT:
+        return "!";
+    case UnaryOpType::NEGATE:
+        return "-";
+    case UnaryOpType::PLUS:
+        return "+";
+    case UnaryOpType::COMPLEMENT:
+        return "~";
+    case UnaryOpType::INCREMENT:
+        return "++";
+    case UnaryOpType::DECREMENT:
+        return "--";
+    case UnaryOpType::ADDRESS_OF:
+        return "&";
+    case UnaryOpType::DEREFERENCE:
+        return "*";
 
-    default: return "";
+    default:
+        return "";
     }
 }
 
@@ -31,37 +41,129 @@ bool requires_identifier_operand(const UnaryOpType op)
     case UnaryOpType::DECREMENT:
     case UnaryOpType::ADDRESS_OF:
         return true;
-    default: return false;
+    default:
+        return false;
     }
+}
+
+std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set
+)
+{
+    const auto& op_type_tok = set.peek_next();
+    const auto& op_type_pos = op_type_tok.get_source_fragment();
+
+    // Prefix Parsing
+    if (const auto op_type = get_unary_op_type(op_type_tok.get_type());
+        op_type.has_value())
+    {
+        set.next(); // Consume operator
+
+        // Recursive call to handle chained unaries like !!x or - -x etc.
+        auto rhs_expr = parse_binary_unary_op(context, set);
+        if (!rhs_expr)
+        {
+            set.throw_error("Expected expression after unary operator");
+        }
+
+        // Validation for identifiers
+        if (requires_identifier_operand(op_type.value()) &&
+            !cast_expr<AstIdentifier*>(rhs_expr.value().get()))
+        {
+            set.throw_error("Unary operator requires identifier operand");
+        }
+
+        const auto rhs_expr_pos = rhs_expr->get()->get_source_fragment();
+        const auto source = SourceFragment(
+            op_type_pos.source,
+            op_type_pos.offset,
+            rhs_expr_pos.offset + rhs_expr_pos.length - op_type_pos.offset
+        );
+
+        return std::make_unique<AstUnaryOp>(
+            source,
+            context,
+            op_type.value(),
+            std::move(rhs_expr.value()),
+            false // Prefix
+        );
+    }
+
+    // Parse Atom (Primary Expression)
+    auto expr = parse_inline_expression_part(context, set);
+
+    // Postfix Parsing
+    while (set.peek_next_eq(TokenType::DOUBLE_PLUS) || set.peek_next_eq(
+        TokenType::DOUBLE_MINUS))
+    {
+        const auto op_tok = set.next();
+        UnaryOpType type = (op_tok.get_type() == TokenType::DOUBLE_PLUS)
+            ? UnaryOpType::INCREMENT
+            : UnaryOpType::DECREMENT;
+
+        if (!cast_expr<AstIdentifier*>(expr.get()))
+        {
+            set.throw_error("Postfix operator requires identifier operand");
+        }
+
+        const auto& expr_pos = expr->get_source_fragment();
+        const auto source = SourceFragment(
+            expr_pos.source,
+            expr_pos.offset,
+            expr_pos.offset + expr_pos.length - op_type_pos.offset
+        );
+
+        expr = std::make_unique<AstUnaryOp>(
+            source,
+            context,
+            type,
+            std::move(expr),
+            true // Postfix
+        );
+    }
+
+    return std::move(expr);
 }
 
 std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
 {
     switch (type)
     {
-    case TokenType::BANG: return UnaryOpType::LOGICAL_NOT;
-    case TokenType::MINUS: return UnaryOpType::NEGATE;
-    case TokenType::TILDE: return UnaryOpType::COMPLEMENT;
-    case TokenType::DOUBLE_PLUS: return UnaryOpType::INCREMENT;
-    case TokenType::DOUBLE_MINUS: return UnaryOpType::DECREMENT;
-    case TokenType::STAR: return UnaryOpType::DEREFERENCE;
-    case TokenType::AMPERSAND: return UnaryOpType::ADDRESS_OF;
-    default: break;
+    case TokenType::BANG:
+        return UnaryOpType::LOGICAL_NOT;
+    case TokenType::PLUS:
+        return UnaryOpType::PLUS;
+    case TokenType::MINUS:
+        return UnaryOpType::NEGATE;
+    case TokenType::TILDE:
+        return UnaryOpType::COMPLEMENT;
+    case TokenType::DOUBLE_PLUS:
+        return UnaryOpType::INCREMENT;
+    case TokenType::DOUBLE_MINUS:
+        return UnaryOpType::DECREMENT;
+    case TokenType::STAR:
+        return UnaryOpType::DEREFERENCE;
+    case TokenType::AMPERSAND:
+        return UnaryOpType::ADDRESS_OF;
+    default:
+        break;
     }
     return std::nullopt;
 }
 
 void AstUnaryOp::validate()
 {
-    const auto operand_type = infer_expression_type(this->get_context(), this->_operand.get());
+    const auto operand_type = infer_expression_type(
+        this->get_context(),
+        this->_operand.get());
 
     if (!operand_type)
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Cannot infer type of operand",
-            *this->get_source(),
-            this->get_source_position()
+            this->get_source_fragment()
         );
     }
 
@@ -74,29 +176,47 @@ void AstUnaryOp::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 "Cannot modify immutable value",
-                *this->get_source(),
-                this->get_source_position()
+                this->get_source_fragment()
+            );
+        }
+    }
+
+    // For negation / plus, we require the identifier to be of type float or int
+    if (op == UnaryOpType::NEGATE || op == UnaryOpType::PLUS)
+    {
+        if (const auto prim = cast_type<AstPrimitiveType*>(operand_type.get());
+            !prim || (!prim->is_integer_ty() && !prim->is_fp()))
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format("Invalid type '{}' for {} operand",
+                            operand_type->to_string(),
+                            op == UnaryOpType::PLUS ? "unary plus" : "negation"
+                ),
+                this->get_source_fragment()
             );
         }
     }
 
     if (operand_type->is_primitive())
     {
-        const auto* prim = dynamic_cast<AstPrimitiveType*>(operand_type.get());
+        const auto* prim = cast_type<AstPrimitiveType*>(operand_type.get());
         const bool is_int = prim->is_integer_ty();
         const bool is_fp = prim->is_fp();
 
         switch (op)
         {
+        case UnaryOpType::PLUS:
         case UnaryOpType::NEGATE:
             if (!is_int && !is_fp)
             {
                 throw parsing_error(
                     ErrorType::TYPE_ERROR,
-                    "Invalid type for negation",
-                    *this->get_source(),
-                    this->get_source_position()
-                );
+                    std::format("Invalid type '{}' for {} operand",
+                                operand_type->to_string(),
+                                op == UnaryOpType::PLUS ? "unary plus" : "negation"
+                    ),
+                    this->get_source_fragment());
             }
             break;
         case UnaryOpType::COMPLEMENT:
@@ -104,10 +224,9 @@ void AstUnaryOp::validate()
             {
                 throw parsing_error(
                     ErrorType::TYPE_ERROR,
-                    "Invalid type for bitwise complement",
-                    *this->get_source(),
-                    this->get_source_position()
-                );
+                    std::format("Invalid type '{}' for bitwise complement",
+                                operand_type->to_string()),
+                    this->get_source_fragment());
             }
             break;
         case UnaryOpType::INCREMENT:
@@ -116,46 +235,54 @@ void AstUnaryOp::validate()
             {
                 throw parsing_error(
                     ErrorType::TYPE_ERROR,
-                    "Invalid type for increment/decrement",
-                    *this->get_source(),
-                    this->get_source_position()
-                );
+                    std::format("Invalid type '{}' for {} operand",
+                                operand_type->to_string(),
+                                op == UnaryOpType::INCREMENT ? "increment" : "decrement"
+                    ),
+                    this->get_source_fragment());
             }
             break;
-        default: break;
+        default:
+            break;
         }
     }
 }
 
 llvm::Value* AstUnaryOp::codegen(
-    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
     if (requires_identifier_operand(this->get_op_type()))
     {
-        // These operations require an LValue (address), effectively only working on variables (identifiers)
-        const auto* identifier = dynamic_cast<AstIdentifier*>(&this->get_operand());
+        // These operations require an LValue (address), effectively only working on variables
+        // (identifiers)
+        const auto* identifier = cast_expr<AstIdentifier*>(&this->get_operand());
 
         if (!identifier)
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
+                ErrorType::COMPILATION_ERROR,
                 "Operand must be an identifier for this operation",
-                *this->get_source(),
-                this->get_source_position()
-            );
+                this->get_source_fragment());
         }
 
-        const auto internal_name = identifier->get_internal_name();
+        auto internal_name = identifier->get_internal_name();
+
+        if (const auto definition = this->get_context()->lookup_variable(
+            identifier->get_name(),
+            true))
+        {
+            internal_name = definition->get_internal_symbol_name();
+        }
 
         llvm::Value* var_addr = nullptr;
         if (const auto block = builder->GetInsertBlock())
         {
             if (const auto function = block->getParent())
             {
-                var_addr = function->getValueSymbolTable()->lookup(internal_name);
+                var_addr = function->getValueSymbolTable()->lookup(
+                    internal_name);
             }
         }
 
@@ -169,11 +296,9 @@ llvm::Value* AstUnaryOp::codegen(
         if (!var_addr)
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
+                ErrorType::COMPILATION_ERROR,
                 std::format("Unknown variable '{}'", internal_name),
-                *this->get_source(),
-                this->get_source_position()
-            );
+                this->get_source_fragment());
         }
 
         // Address Of (&x) just returns the address
@@ -187,44 +312,42 @@ llvm::Value* AstUnaryOp::codegen(
         {
             loaded_type = alloca->getAllocatedType();
         }
-        else if (const auto* global = llvm::dyn_cast<llvm::GlobalVariable>(var_addr))
+        else if (const auto* global = llvm::dyn_cast<llvm::GlobalVariable>(
+            var_addr))
         {
             loaded_type = global->getValueType();
         }
         else
         {
             throw parsing_error(
-                ErrorType::RUNTIME_ERROR,
-                std::format("Cannot determine type of variable '{}'", internal_name),
-                *this->get_source(),
-                this->get_source_position()
-            );
+                ErrorType::COMPILATION_ERROR,
+                std::format("Cannot determine type of variable '{}'",
+                            internal_name),
+                this->get_source_fragment());
         }
 
         // Increment / Decrement
-        auto* loaded_val = builder->CreateLoad(loaded_type, var_addr, "loadtmp");
+        auto* loaded_val = builder->
+            CreateLoad(loaded_type, var_addr, "loadtmp");
         const bool is_fp = loaded_type->isFloatingPointTy();
 
-        llvm::Value* one =
-            is_fp
-                ? llvm::ConstantFP::get(loaded_type, 1.0)
-                : llvm::ConstantInt::get(loaded_val->getType(), 1);
+        llvm::Value* one = is_fp
+            ? llvm::ConstantFP::get(loaded_type, 1.0)
+            : llvm::ConstantInt::get(loaded_val->getType(), 1);
 
         llvm::Value* new_val;
 
         if (this->get_op_type() == UnaryOpType::INCREMENT)
         {
-            new_val =
-                is_fp
-                    ? builder->CreateFAdd(loaded_val, one, "inctmp")
-                    : builder->CreateAdd(loaded_val, one, "inctmp");
+            new_val = is_fp
+                ? builder->CreateFAdd(loaded_val, one, "inctmp")
+                : builder->CreateAdd(loaded_val, one, "inctmp");
         }
         else
         {
-            new_val =
-                is_fp
-                    ? builder->CreateFSub(loaded_val, one, "dectmp")
-                    : builder->CreateSub(loaded_val, one, "dectmp");
+            new_val = is_fp
+                ? builder->CreateFSub(loaded_val, one, "dectmp")
+                : builder->CreateSub(loaded_val, one, "dectmp");
         }
 
         builder->CreateStore(new_val, var_addr);
@@ -233,123 +356,65 @@ llvm::Value* AstUnaryOp::codegen(
         return this->is_lsh() ? loaded_val : new_val;
     }
 
-    auto* val = get_operand().codegen(context, module, builder);
+    auto* val = get_operand().codegen(module, builder);
 
-    if (!val) return nullptr;
+    if (!val)
+    {
+        return nullptr;
+    }
 
     switch (this->get_op_type())
     {
     case UnaryOpType::LOGICAL_NOT:
+    {
+        // !x equivalent to (x == 0)
+        if (val->getType()->isFloatingPointTy())
         {
-            // !x equivalent to (x == 0)
-            if (val->getType()->isFloatingPointTy())
-            {
-                return builder->CreateFCmpOEQ(
-                    val,
-                    llvm::ConstantFP::get(val->getType(), 0.0),
-                    "lognotcmp"
-                );
-            }
-
-            return builder->CreateICmpEQ(
+            return builder->CreateFCmpOEQ(
                 val,
-                llvm::ConstantInt::get(val->getType(), 0),
-                "lognotcmp"
-            );
+                llvm::ConstantFP::get(val->getType(), 0.0),
+                "lognotcmp");
         }
-    case UnaryOpType::NEGATE:
+
+        return builder->CreateICmpEQ(
+            val,
+            llvm::ConstantInt::get(val->getType(), 0),
+            "lognotcmp");
+    }
+    case UnaryOpType::PLUS:
+    {
+        // For '+', we simply add a 0
+        //
+        if (val->getType()->isFloatingPointTy())
         {
-            if (val->getType()->isFloatingPointTy())
-            {
-                return builder->CreateFNeg(val, "neg");
-            }
-            return builder->CreateNeg(val, "neg");
+            return val;
         }
+        return builder->CreateAdd(
+            val,
+            llvm::ConstantInt::get(val->getType(), 0),
+            "plus"
+        );
+    }
+    case UnaryOpType::NEGATE:
+    {
+        if (val->getType()->isFloatingPointTy())
+        {
+            return builder->CreateFNeg(val, "neg");
+        }
+        return builder->CreateNeg(val, "neg");
+    }
     case UnaryOpType::COMPLEMENT:
         return builder->CreateNot(val, "not");
     case UnaryOpType::DEREFERENCE:
         // Requires type system to know what we are pointing to
         throw parsing_error(
-            ErrorType::RUNTIME_ERROR,
+            ErrorType::COMPILATION_ERROR,
             "Dereference not implemented yet due to opaque pointers",
-            *this->get_source(),
-            this->get_source_position()
+            this->get_source_fragment()
         );
     default:
         return nullptr;
     }
-}
-
-std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
-{
-    const auto next = set.peek_next();
-
-    // Prefix Parsing
-    if (const auto op_type = get_unary_op_type(next.get_type()); op_type.has_value())
-    {
-        set.next(); // Consume operator
-
-        // Recursive call to handle chained unaries like !!x or - -x etc.
-        auto distinct_expr = parse_binary_unary_op(context, set);
-        if (!distinct_expr)
-        {
-            set.throw_error("Expected expression after unary operator");
-        }
-
-        // Validation for identifiers
-        if (requires_identifier_operand(op_type.value()))
-        {
-            if (!dynamic_cast<AstIdentifier*>(distinct_expr.value().get()))
-            {
-                set.throw_error("Unary operator requires identifier operand");
-            }
-        }
-
-        return std::make_unique<AstUnaryOp>(
-            set.get_source(),
-            next.get_source_position(),
-            context,
-            op_type.value(),
-            std::move(distinct_expr.value()),
-            false // Prefix
-        );
-    }
-
-    // Parse Atom (Primary Expression)
-    auto expr = parse_inline_expression_part(context, set);
-
-    // Postfix Parsing
-    while (set.peek_next_eq(TokenType::DOUBLE_PLUS) ||
-        set.peek_next_eq(TokenType::DOUBLE_MINUS))
-    {
-        const auto op_tok = set.next();
-        UnaryOpType type = (op_tok.get_type() == TokenType::DOUBLE_PLUS)
-                               ? UnaryOpType::INCREMENT
-                               : UnaryOpType::DECREMENT;
-
-        // Validation: Postfix requires identifier
-        // Note: We might want allow array access etc in future, but stick to ident for now
-        if (!dynamic_cast<AstIdentifier*>(expr.get()))
-        {
-            // For strict backward compatibility with original check, though not sure if strictly required
-            // Original: "only Identifier supported"
-            set.throw_error("Postfix operator requires identifier operand");
-        }
-
-        expr = std::make_unique<AstUnaryOp>(
-            set.get_source(),
-            op_tok.get_source_position(),
-            context,
-            type,
-            std::move(expr),
-            true // Postfix
-        );
-    }
-
-    return std::move(expr);
 }
 
 bool AstUnaryOp::is_reducible()
@@ -366,7 +431,10 @@ std::string AstUnaryOp::to_string()
 {
     return std::format(
         "UnaryOp({}{})",
-        this->is_lsh() ? unary_op_type_to_str(this->get_op_type()) : this->get_operand().to_string(),
-        this->is_lsh() ? this->get_operand().to_string() : unary_op_type_to_str(this->get_op_type())
-    );
+        this->is_lsh()
+        ? unary_op_type_to_str(this->get_op_type())
+        : this->get_operand().to_string(),
+        this->is_lsh()
+        ? this->get_operand().to_string()
+        : unary_op_type_to_str(this->get_op_type()));
 }

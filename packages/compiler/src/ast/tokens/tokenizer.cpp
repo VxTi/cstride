@@ -1,9 +1,9 @@
 #include "../../../include/ast/tokens/tokenizer.h"
 
-#include <sstream>
-
-#include "errors.h"
 #include "ast/tokens/token_set.h"
+#include "errors.h"
+
+#include <sstream>
 
 using namespace stride::ast;
 
@@ -12,8 +12,10 @@ bool should_ignore_token_type(TokenType type)
     switch (type)
     {
     case TokenType::COMMENT:
-    case TokenType::COMMENT_MULTILINE: return true;
-    default: return false;
+    case TokenType::COMMENT_MULTILINE:
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -27,7 +29,8 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
     size_t string_start = 0;
     std::ostringstream string_stream;
 
-    for (std::size_t i = 0; i < src.length();) // Note: `i` is incremented manually
+    for (std::size_t i = 0; i < src.length();)
+    // Note: `i` is incremented manually
     {
         /**
          * String parsing - This is done a little differently, since strings can be ambiguous
@@ -54,13 +57,12 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                     std::string raw_val = src.substr(string_start, length);
                     std::string val = escape_string(raw_val);
 
-                    tokens.push_back(
-                        Token(
-                            TokenType::STRING_LITERAL,
-                            SourcePosition(string_start - 1, length + 2),
-                            val
-                        )
-                    );
+                    tokens.emplace_back(
+                        TokenType::STRING_LITERAL,
+                        SourceFragment(source_file,
+                                       string_start - 1,
+                                       length + 2),
+                        val);
 
                     is_string = false;
                 }
@@ -95,11 +97,11 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
 
             // Use match_continuous to ensure the regex matches exactly at searchStart
             if (std::smatch match; std::regex_search(
-                    searchStart, searchEnd, match,
-                    tokenDefinition.pattern,
-                    std::regex_constants::match_continuous
-                )
-            )
+                searchStart,
+                searchEnd,
+                match,
+                tokenDefinition.pattern,
+                std::regex_constants::match_continuous))
             {
                 std::string lexeme = match.str(0);
 
@@ -107,9 +109,8 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                 {
                     tokens.emplace_back(
                         tokenDefinition.type,
-                        SourcePosition(i, lexeme.length()),
-                        lexeme
-                    );
+                        SourceFragment(source_file, i, lexeme.length()),
+                        lexeme);
                 }
 
                 i += lexeme.length();
@@ -123,9 +124,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
             throw parsing_error(
                 ErrorType::SYNTAX_ERROR,
                 "Unexpected character encountered",
-                *source_file,
-                SourcePosition(i, 1)
-            );
+                SourceFragment(source_file, i, 1));
         }
     }
 
@@ -145,31 +144,44 @@ std::string tokenizer::escape_string(const std::string& raw_string)
         {
             switch (raw_string[i + 1])
             {
-            case 'n': result += '\n';
+            case 'n':
+                result += '\n';
                 break;
-            case 't': result += '\t';
+            case 't':
+                result += '\t';
                 break;
-            case 'r': result += '\r';
+            case 'r':
+                result += '\r';
                 break;
-            case '\\': result += '\\';
+            case '\\':
+                result += '\\';
                 break;
-            case '"': result += '"';
+            case '"':
+                result += '"';
                 break;
-            case '0': result += '\0';
+            case '0':
+                result += '\0';
                 break;
-            case 'a': result += '\a';
+            case 'a':
+                result += '\a';
                 break;
-            case 'b': result += '\b';
+            case 'b':
+                result += '\b';
                 break;
-            case 'f': result += '\f';
+            case 'f':
+                result += '\f';
                 break;
-            case 'v': result += '\v';
+            case 'v':
+                result += '\v';
                 break;
             case 'x':
                 if (i + 3 < raw_string.length())
                 {
                     std::string hex_str = raw_string.substr(i + 2, 2);
-                    char hex_char = static_cast<char>(std::stoi(hex_str, nullptr, 16));
+                    char hex_char = static_cast<char>(std::stoi(
+                        hex_str,
+                        nullptr,
+                        16));
                     result += hex_char;
                     i += 2; // Skip the two hex digits
                 }

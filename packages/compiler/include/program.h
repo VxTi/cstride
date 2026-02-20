@@ -1,11 +1,11 @@
 #pragma once
-#include "ast/parsing_context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
+#include "ast/parsing_context.h"
+#include "cli.h"
+
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Target/TargetMachine.h>
-
-#include "cli.h"
 
 namespace stride
 {
@@ -18,7 +18,10 @@ namespace stride
             _root(std::move(root)) {}
 
         [[nodiscard]]
-        ast::IAstNode* get_root_ast_node() const { return _root.get(); }
+        ast::IAstNode* get_root_ast_node() const
+        {
+            return _root.get();
+        }
 
         ~ProgramObject() = default;
 
@@ -42,7 +45,10 @@ namespace stride
         ~Program() = default;
 
         [[nodiscard]]
-        std::shared_ptr<ast::ParsingContext> get_global_scope() const { return this->_global_scope; }
+        std::shared_ptr<ast::ParsingContext> get_global_context() const
+        {
+            return this->_global_scope;
+        }
 
         Program(const Program&) = delete;
         Program& operator=(const Program&) = delete;
@@ -53,18 +59,14 @@ namespace stride
     private:
         void print_ast_nodes() const;
 
-        void resolve_forward_references(
-            llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) const;
+        void resolve_forward_references(llvm::Module* module,
+                                        llvm::IRBuilder<>* builder) const;
 
         void validate_ast_nodes() const;
 
         void optimize_ast_nodes();
 
-        void generate_llvm_ir(
-            llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) const;
+        void generate_llvm_ir(llvm::Module* module,
+                              llvm::IRBuilder<>* builder) const;
     };
-}
+} // namespace stride

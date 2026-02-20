@@ -1,23 +1,21 @@
 #include "ast/nodes/expression.h"
 
-#include <llvm/IR/Instructions.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/ValueSymbolTable.h>
-
-#include "ast/flags.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
+
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/ValueSymbolTable.h>
 
 using namespace stride::ast;
 
 llvm::Value* AstExpression::codegen(
-    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
-    llvm::IRBuilder<>* ir_builder
-)
+    llvm::IRBuilder<>* ir_builder)
 {
-    throw parsing_error("Expression codegen not implemented, this must be implemented by subclasses");
+    throw parsing_error(
+        "Expression codegen not implemented, this must be implemented by subclasses");
 }
 
 std::string AstExpression::to_string()
@@ -30,8 +28,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
     TokenSet& set
 )
 {
-    if (auto lit = parse_literal_optional(context, set);
-        lit.has_value())
+    if (auto lit = parse_literal_optional(context, set); lit.has_value())
     {
         return std::move(lit.value());
     }
@@ -48,19 +45,19 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         return parse_array_initializer(context, set);
     }
 
+    // Could either be a function call, or object access
     if (set.peek_next_eq(TokenType::IDENTIFIER))
     {
         /// Regular identifier parsing; can be variable reference
         const auto reference_token = set.peek_next();
         // Mangled name including module, e.g., `Math__PI`
-        const SymbolNameSegments name_segments = parse_segmented_identifier(set);
+        const SymbolNameSegments name_segments =
+            parse_segmented_identifier(set);
         const auto internal_name = resolve_internal_name(name_segments);
 
         auto identifier = std::make_unique<AstIdentifier>(
-            set.get_source(),
             context,
-            Symbol(reference_token.get_source_position(), internal_name)
-        );
+            Symbol(reference_token.get_source_fragment(), internal_name));
 
         if (auto reassignment = parse_variable_reassignment(context, internal_name, set);
             reassignment.has_value())
@@ -76,12 +73,20 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
 
         if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
         {
-            return parse_array_member_accessor(context, set, std::move(identifier));
+            return parse_array_member_accessor(
+                context,
+                set,
+                std::move(identifier)
+            );
         }
 
         if (is_member_accessor(identifier.get(), set))
         {
-            return parse_chained_member_access(context, set, std::move(identifier));
+            return parse_chained_member_access(
+                context,
+                set,
+                std::move(identifier)
+            );
         }
 
         return std::move(identifier);
@@ -91,12 +96,27 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
     // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
     if (set.peek_next_eq(TokenType::LPAREN))
     {
+        if (set.peek_eq(TokenType::IDENTIFIER, 1)
+            && set.peek_eq(TokenType::COLON, 2))
+        {
+            return parse_lambda_fn_expression(context, set);
+        }
+
         set.next();
         // Fixed: Use parse_inline_expression (full expression parser) instead of
         // parse_inline_expression_part to allow binary operations inside parentheses.
         auto expr = parse_inline_expression(context, set);
         set.expect(TokenType::RPAREN, "Expected ')' after expression");
         return expr;
+    }
+
+    if (set.peek_next_eq(TokenType::THREE_DOTS))
+    {
+        const auto& ref = set.next();
+        return std::make_unique<AstVariadicArgReference>(
+            ref.get_source_fragment(),
+            context
+        );
     }
 
     set.throw_error("Invalid token found in expression");
@@ -121,7 +141,12 @@ std::unique_ptr<AstExpression> parse_arithmetic_tier(
     auto lhs = std::move(lhs_opt.value());
 
     // 2. Arithmetic Loop (handled by parse_arithmetic_binary_operation_optional)
-    if (auto arith = parse_arithmetic_binary_operation_optional(context, set, std::move(lhs), 1))
+    if (auto arith = parse_arithmetic_binary_operation_optional(
+        context,
+        set,
+        std::move(lhs),
+        1)
+    )
     {
         return std::move(arith.value());
     }
@@ -140,8 +165,7 @@ std::unique_ptr<AstExpression> parse_comparison_tier(
         const auto token = set.next();
         auto rhs = parse_arithmetic_tier(context, set);
         lhs = std::make_unique<AstComparisonOp>(
-            set.get_source(),
-            token.get_source_position(),
+            token.get_source_fragment(),
             context,
             std::move(lhs),
             op.value(),
@@ -163,8 +187,7 @@ std::unique_ptr<AstExpression> parse_logical_tier(
         const auto token = set.next();
         auto rhs = parse_comparison_tier(context, set);
         lhs = std::make_unique<AstLogicalOp>(
-            set.get_source(),
-            token.get_source_position(),
+            token.get_source_fragment(),
             context,
             std::move(lhs),
             op.value(),
@@ -174,16 +197,17 @@ std::unique_ptr<AstExpression> parse_logical_tier(
     return lhs;
 }
 
-// Kept for backward compatibility / external usage if any, but now updated to use correct tiers for RHS
+// Kept for backward compatibility / external usage if any, but now updated to use correct tiers for
+// RHS
 std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    std::unique_ptr<AstExpression> lhs
-)
+    std::unique_ptr<AstExpression> lhs)
 {
     const auto reference_token = set.peek_next();
 
-    if (auto logical_op = get_logical_op_type(reference_token.get_type()); logical_op.has_value())
+    if (auto logical_op = get_logical_op_type(reference_token.get_type());
+        logical_op.has_value())
     {
         set.next();
 
@@ -191,13 +215,11 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
         // Note: calling parse_comparison_tier here is safer than parse_inline_expression_part
 
         return std::make_unique<AstLogicalOp>(
-            set.get_source(),
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             std::move(lhs),
             logical_op.value(),
-            std::move(rhs)
-        );
+            std::move(rhs));
     }
 
     return lhs;
@@ -207,20 +229,20 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
 std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    std::unique_ptr<AstExpression> lhs
-)
+    std::unique_ptr<AstExpression> lhs)
 {
     const auto reference_token = set.peek_next();
 
-    if (auto comparative_op = get_comparative_op_type(reference_token.get_type()); comparative_op.has_value())
+    if (auto comparative_op = get_comparative_op_type(
+            reference_token.get_type());
+        comparative_op.has_value())
     {
         set.next();
 
         auto rhs = parse_arithmetic_tier(context, set);
 
         return std::make_unique<AstComparisonOp>(
-            set.get_source(),
-            reference_token.get_source_position(),
+            reference_token.get_source_fragment(),
             context,
             std::move(lhs),
             comparative_op.value(),
@@ -253,10 +275,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
     TokenSet& set
 )
 {
-    auto expr = parse_expression_internal(
-        context,
-        set
-    );
+    auto expr = parse_expression_internal(context, set);
 
     set.expect(TokenType::SEMICOLON, "Expected ';' after expression");
 
@@ -268,38 +287,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(
     TokenSet& set
 )
 {
-    return parse_expression_internal(
-        context,
-        set
-    );
-}
-
-std::string stride::ast::parse_property_accessor_statement(
-    [[maybe_unused]] const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
-{
-    const auto reference_token = set.expect(TokenType::IDENTIFIER);
-    auto identifier_name = reference_token.get_lexeme();
-
-    int iterations = 0;
-    while (true)
-    {
-        if (set.peek_next_eq(TokenType::DOT) && set.peek_eq(TokenType::IDENTIFIER, 1))
-        {
-            set.next();
-            const auto accessor_token = set.expect(TokenType::IDENTIFIER);
-            identifier_name += SR_PROPERTY_ACCESSOR_SEPARATOR + accessor_token.get_lexeme();
-        }
-        else break;
-
-        if (++iterations > SR_EXPRESSION_MAX_IDENTIFIER_RESOLUTION)
-        {
-            set.throw_error("Maximum identifier resolution exceeded");
-        }
-    }
-
-    return identifier_name;
+    return parse_expression_internal(context, set);
 }
 
 SymbolNameSegments stride::ast::parse_segmented_identifier(TokenSet& set)
@@ -311,7 +299,10 @@ SymbolNameSegments stride::ast::parse_segmented_identifier(TokenSet& set)
     while (set.peek_next_eq(TokenType::DOUBLE_COLON))
     {
         set.next();
-        const auto subseq_iden = set.expect(TokenType::IDENTIFIER, "Expected identifier in module accessor");
+        const auto subseq_iden = set.expect(
+            TokenType::IDENTIFIER,
+            "Expected identifier in module accessor"
+        );
         segments.push_back(subseq_iden.get_lexeme());
     }
 

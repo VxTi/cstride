@@ -1,17 +1,15 @@
-#include "ast/nodes/expression.h"
-
-#include <llvm/IR/Instructions.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
-
 #include "ast/flags.h"
 #include "ast/modifiers.h"
-#include "ast/optionals.h"
+#include "ast/nodes/expression.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
+#include "ast/optionals.h"
+
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
 
 using namespace stride::ast;
-
-/*----------------------------------- PARSING AND VALIDATION ------------------------------------*/
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
     const std::shared_ptr<ParsingContext>& context,
@@ -20,7 +18,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 )
 {
     auto decl = parse_variable_declaration_inline(context, set, modifier);
-    set.expect(TokenType::SEMICOLON, "Expected ';' at the end of variable declaration");
+    set.expect(TokenType::SEMICOLON,
+               "Expected ';' at the end of variable declaration");
 
     return decl;
 }
@@ -50,7 +49,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         set.expect(TokenType::KEYWORD_CONST);
     }
 
-    const auto& variable_name =
+    const std::string variable_name =
         set
        .expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration")
        .get_lexeme();
@@ -76,7 +75,12 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
     {
         // For variable declarations with type annotations, the initializer is optional.
         set.expect(TokenType::COLON, "Expected ':' after variable name");
-        variable_type = parse_type(context, set, "Expected variable type after variable name", flags);
+        variable_type = parse_type(
+            context,
+            set,
+            "Expected variable type after variable name",
+            flags
+        );
         if (set.peek_next_eq(TokenType::EQUALS))
         {
             set.next();
@@ -89,35 +93,37 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
                 throw parsing_error(
                     ErrorType::SYNTAX_ERROR,
                     "Expected '=' after type annotation in variable declaration",
-                    *variable_type->get_source(),
-                    variable_type->get_source_position()
-                );
+                    variable_type->get_source_fragment());
             }
 
-            // If no expression was provided (lacking '='), initialize with nil if the initial type is optional
-            const auto ref_src_pos = reference_token.get_source_position();
-            const auto var_type_src_pos = variable_type->get_source_position();
+            // If no expression was provided (lacking '='), initialize with nil if the initial type
+            // is optional
+            const auto& ref_src_pos = reference_token.get_source_fragment();
+            const auto& var_type_src_pos = variable_type->get_source_fragment();
+
             value = std::make_unique<AstNilLiteral>(
-                set.get_source(),
-                SourcePosition(
+                SourceFragment(
+                    ref_src_pos.source,
                     ref_src_pos.offset,
-                    var_type_src_pos.offset + var_type_src_pos.length - ref_src_pos.offset
-                ),
+                    var_type_src_pos.offset + var_type_src_pos.length -
+                    ref_src_pos.offset),
                 context
             );
         }
     }
 
-    const auto ref_tok_pos = reference_token.get_source_position();
-    const auto var_type_pos = variable_type->get_source_position();
-    const auto symbol_position = SourcePosition(ref_tok_pos.offset,
-                                                var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset);
+    const auto& ref_tok_pos = reference_token.get_source_fragment();
+    const auto& var_type_pos = variable_type->get_source_fragment();
+    const auto symbol_position = SourceFragment(
+        ref_tok_pos.source,
+        ref_tok_pos.offset,
+        var_type_pos.offset + var_type_pos.length - ref_tok_pos.offset
+    );
 
     static int var_unique_counter = 0;
-    const auto internal_name =
-        context->is_global_scope()
-            ? variable_name
-            : std::format("{}.{}", variable_name, var_unique_counter++);
+    const auto internal_name = context->is_global_scope()
+        ? variable_name
+        : std::format("{}.{}", variable_name, var_unique_counter++);
 
     auto symbol = Symbol(
         symbol_position,
@@ -126,17 +132,14 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         internal_name
     );
 
-    context->define_variable(
-        symbol,
-        variable_type->clone()
-    );
+    context->define_variable(symbol, variable_type->clone());
 
     return std::make_unique<AstVariableDeclaration>(
-        set.get_source(),
         context,
         symbol,
         std::move(variable_type),
-        std::move(value)
+        std::move(value),
+        modifier
     );
 }
 
@@ -147,10 +150,13 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
  */
 bool stride::ast::is_variable_declaration(const TokenSet& set)
 {
-    const int offset = set.peek_next_eq(TokenType::KEYWORD_EXTERN) ? 1 : 0; // Offset the initial token
+    const int offset =
+        set.peek_next_eq(TokenType::KEYWORD_EXTERN) ? 1 : 0;
+    // Offset the initial token
 
     return (
-        (set.peek_eq(TokenType::KEYWORD_CONST, offset) || set.peek_eq(TokenType::KEYWORD_LET, offset)) &&
+        (set.peek_eq(TokenType::KEYWORD_CONST, offset) ||
+            set.peek_eq(TokenType::KEYWORD_LET, offset)) &&
         set.peek_eq(TokenType::IDENTIFIER, offset + 1) &&
         set.peek_eq(TokenType::COLON, offset + 2)
     );
@@ -168,32 +174,25 @@ void AstVariableDeclaration::validate()
 
     init_val->validate();
 
-    const std::unique_ptr<IAstType> internal_expr_type = infer_expression_type(
-        this->get_context(),
-        init_val
-    );
+    const std::unique_ptr<IAstType> internal_expr_type =
+        infer_expression_type(this->get_context(), init_val);
     const auto lhs_type = this->get_variable_type();
 
-    if (const auto rhs_type = internal_expr_type.get();
-        !lhs_type->equals(*rhs_type))
+    if (const auto rhs_type = internal_expr_type.get(); !lhs_type->equals(
+        *rhs_type))
     {
-        if (const auto primitive_type = dynamic_cast<AstPrimitiveType*>(rhs_type);
+        if (const auto primitive_type = cast_type<AstPrimitiveType*>(rhs_type);
             primitive_type != nullptr &&
             primitive_type->get_type() == PrimitiveType::NIL)
         {
-            if (lhs_type->get_flags() & SRFLAG_TYPE_OPTIONAL) return;
+            if (lhs_type->is_optional())
+            {
+                return;
+            }
 
             const std::vector references = {
-                ErrorSourceReference(
-                    lhs_type->to_string(),
-                    *this->get_source(),
-                    this->get_source_position()
-                ),
-                ErrorSourceReference(
-                    rhs_type->to_string(),
-                    *this->get_source(),
-                    init_val->get_source_position()
-                )
+                ErrorSourceReference(lhs_type->to_string(), this->get_source_fragment()),
+                ErrorSourceReference(rhs_type->to_string(), init_val->get_source_fragment())
             };
 
             throw parsing_error(
@@ -210,16 +209,8 @@ void AstVariableDeclaration::validate()
         const std::string rhs_type_str = rhs_type->to_string();
 
         const std::vector references = {
-            ErrorSourceReference(
-                lhs_type_str,
-                *this->get_source(),
-                this->get_source_position()
-            ),
-            ErrorSourceReference(
-                rhs_type_str,
-                *this->get_source(),
-                init_val->get_source_position()
-            )
+            ErrorSourceReference(lhs_type_str, this->get_source_fragment()),
+            ErrorSourceReference(rhs_type_str, init_val->get_source_fragment())
         };
 
         throw parsing_error(
@@ -227,35 +218,33 @@ void AstVariableDeclaration::validate()
             std::format(
                 "Type mismatch in variable declaration; expected type '{}', got '{}'",
                 lhs_type_str,
-                rhs_type_str
-            ),
+                rhs_type_str),
             references
         );
     }
 }
 
-/* ---------------------------------------- LLVM IR GENERATION -------------------------------------------*/
-
 // LLVM calls these functions at startup to initialize global variables
 // This way, we can assign function return values to variables
-void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, const int priority)
+void append_to_global_ctors(
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder,
+    llvm::Function* init_func,
+    const int priority
+)
 {
-    llvm::IRBuilder<> ib(module->getContext());
-
-    // The struct type: { i32, void ()*, i8* }
+    // The struct type: { int32, void ()*, int8* }
     llvm::StructType* ctor_struct_type = llvm::StructType::get(
-        ib.getInt32Ty(),
+        builder->getInt32Ty(),
         init_func->getType(),
-        ib.getPtrTy()
+        builder->getPtrTy()
     );
 
     // Create the initializer entry
     llvm::Constant* entry = llvm::ConstantStruct::get(
-        ctor_struct_type, {
-            ib.getInt32(priority),
-            init_func,
-            llvm::ConstantPointerNull::get(ib.getPtrTy())
-        });
+        ctor_struct_type,
+        { builder->getInt32(priority), init_func,
+          llvm::ConstantPointerNull::get(builder->getPtrTy()) });
 
     // Get existing ctors or create new ones
     llvm::GlobalVariable* existing_ctors = module->getGlobalVariable("llvm.global_ctors");
@@ -263,7 +252,9 @@ void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, con
 
     if (existing_ctors)
     {
-        if (auto* initializer = llvm::dyn_cast<llvm::ConstantArray>(existing_ctors->getInitializer()))
+        if (const auto* initializer =
+            llvm::dyn_cast<llvm::ConstantArray>(existing_ctors->getInitializer())
+        )
         {
             for (unsigned i = 0; i < initializer->getNumOperands(); ++i)
             {
@@ -280,7 +271,8 @@ void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, con
     new llvm::GlobalVariable(
         *module,
         array_type,
-        /* isConstant = */ false,
+        /* isConstant = */
+        false,
         llvm::GlobalValue::AppendingLinkage,
         llvm::ConstantArray::get(array_type, ctor_list),
         "llvm.global_ctors"
@@ -288,21 +280,33 @@ void append_to_global_ctors(llvm::Module* module, llvm::Function* init_func, con
 }
 
 void AstVariableDeclaration::resolve_forward_references(
-    const std::shared_ptr<ParsingContext>& context,
+    const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
+    // If the initial value is itself synthesisable (e.g. a lambda), pre-declare it too.
+    if (const auto initial_value = this->get_initial_value().get())
+    {
+        initial_value->resolve_forward_references(context, module, builder);
+    }
+
     if (!this->get_variable_type()->is_global())
     {
         return;
     }
 
     llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
-    if (!var_type) return;
+    if (!var_type)
+    {
+        return;
+    }
 
     // Check if it already exists (should not happen, but for safety)
-    if (module->getNamedGlobal(this->get_internal_name())) return;
+    if (module->getNamedGlobal(this->get_internal_name()))
+    {
+        return;
+    }
 
     // Create the Global Variable with a default null initializer
     llvm::Constant* default_init = llvm::Constant::getNullValue(var_type);
@@ -321,19 +325,25 @@ void global_var_declaration_codegen(
     const AstVariableDeclaration* self,
     llvm::GlobalVariable* global_var,
     llvm::Module* module,
-    llvm::IRBuilder<>* irBuilder
-)
+    llvm::IRBuilder<>* ir_builder)
 {
     // Dynamic Initialization ("Global Constructor" Pattern)
     // Create a function: void __init_variable_name()
     const std::string func_name = "__init_global_" + self->get_internal_name();
-    llvm::FunctionType* func_type = llvm::FunctionType::get(irBuilder->getVoidTy(), false);
+    llvm::FunctionType* func_type = llvm::FunctionType::get(ir_builder->getVoidTy(), false);
     llvm::Function* init_func = llvm::Function::Create(
-        func_type, llvm::GlobalValue::InternalLinkage, func_name, module
+        func_type,
+        llvm::GlobalValue::InternalLinkage,
+        func_name,
+        module
     );
 
     // Set up the entry block for the constructor
-    llvm::BasicBlock* entry = llvm::BasicBlock::Create(module->getContext(), "entry", init_func);
+    llvm::BasicBlock* entry = llvm::BasicBlock::Create(
+        module->getContext(),
+        "entry",
+        init_func
+    );
 
     // Create a temporary builder for the constructor to avoid state pollution
     llvm::IRBuilder<> tempBuilder(module->getContext());
@@ -342,12 +352,19 @@ void global_var_declaration_codegen(
     // Re-generate the initial value inside the constructor function
     // Note: we MUST NOT call codegen on something that might have already been generated
     // if it's not designed to be called multiple times.
-    // However, for global initialization, we need the value.
     llvm::Value* dynamic_init_value = nullptr;
-    if (const auto initial_value = self->get_initial_value().get(); initial_value != nullptr)
+    if (const auto initial_value = self->get_initial_value().get())
     {
-        dynamic_init_value = initial_value->codegen(self->get_context(), module, &tempBuilder);
+        dynamic_init_value = initial_value->codegen(
+            module,
+            &tempBuilder
+        );
     }
+
+    // IAstCallable::codegen (e.g. a lambda) redirects the builder's insert point into its
+    // own function body. Restore it to the init function's entry block before emitting the
+    // store and return so they land in the right function.
+    tempBuilder.SetInsertPoint(entry);
 
     if (dynamic_init_value)
     {
@@ -358,18 +375,21 @@ void global_var_declaration_codegen(
     tempBuilder.CreateRetVoid();
 
     // Register this function in llvm.global_ctors
-    append_to_global_ctors(module, init_func, 65535);
+    append_to_global_ctors(module, ir_builder, init_func, 65535);
 }
 
 std::optional<llvm::GlobalVariable*> get_global_var_decl(
     const AstVariableDeclaration* self,
     llvm::Module* module,
-    llvm::Type* var_type
-)
+    llvm::Type* var_type)
 {
-    if (!self->get_variable_type()->is_global()) return std::nullopt;
+    if (!self->get_variable_type()->is_global())
+    {
+        return std::nullopt;
+    }
 
-    llvm::GlobalVariable* global_var = module->getNamedGlobal(self->get_internal_name());
+    llvm::GlobalVariable* global_var = module->getNamedGlobal(
+        self->get_internal_name());
 
     if (!global_var)
     {
@@ -380,11 +400,11 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
         return new llvm::GlobalVariable(
             *module,
             var_type,
-            false, // Set to false to allow initialization
+            // Set to false to allow initialization
+            false,
             llvm::GlobalValue::ExternalLinkage,
             default_init,
-            self->get_internal_name()
-        );
+            self->get_internal_name());
     }
 
     // Ensure it's not constant so we can store to it in the constructor
@@ -393,17 +413,29 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
 }
 
 llvm::Value* AstVariableDeclaration::codegen(
-    const std::shared_ptr<ParsingContext>& context,
     llvm::Module* module,
     llvm::IRBuilder<>* ir_builder
 )
 {
     // Get the LLVM type for the variable
-    llvm::Type* variable_ty = internal_type_to_llvm_type(this->get_variable_type(), module);
+    llvm::Type* variable_ty = internal_type_to_llvm_type(
+        this->get_variable_type(),
+        module
+    );
+
+    if (variable_ty == nullptr)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Failed to determine LLVM type for variable declaration",
+            this->get_source_fragment()
+        );
+    }
 
     // If we are generating a global, we might rely on constant initialization
     // or dynamic initialization handled later.
-    if (const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(this, module, variable_ty);
+    if (const std::optional<llvm::GlobalVariable*> global_var =
+            get_global_var_decl(this, module, variable_ty);
         global_var.has_value())
     {
         llvm::Value* init_value = nullptr;
@@ -412,7 +444,10 @@ llvm::Value* AstVariableDeclaration::codegen(
         if (const auto initial_value = this->get_initial_value().get();
             initial_value != nullptr && is_literal_ast_node(initial_value))
         {
-            init_value = initial_value->codegen(this->get_context(), module, ir_builder);
+            init_value = initial_value->codegen(
+                module,
+                ir_builder
+            );
         }
 
         if (init_value != nullptr)
@@ -424,7 +459,12 @@ llvm::Value* AstVariableDeclaration::codegen(
         }
         else
         {
-            global_var_declaration_codegen(this, global_var.value(), module, ir_builder);
+            global_var_declaration_codegen(
+                this,
+                global_var.value(),
+                module,
+                ir_builder
+            );
         }
         return global_var.value();
     }
@@ -442,9 +482,12 @@ llvm::Value* AstVariableDeclaration::codegen(
 
     // Generate code for the initial value at the current insertion point
     llvm::Value* init_value = nullptr;
-    if (const auto initial_value = this->get_initial_value().get(); initial_value != nullptr)
+    if (const auto initial_value = this->get_initial_value().get())
     {
-        init_value = initial_value->codegen(this->get_context(), module, ir_builder);
+        init_value = initial_value->codegen(
+            module,
+            ir_builder
+        );
     }
 
     if (init_value)
@@ -454,49 +497,24 @@ llvm::Value* AstVariableDeclaration::codegen(
         // Handle Optional Wrapping: Value T -> Optional<T>
         if (is_optional_wrapped_type(variable_ty))
         {
-            value_to_store = wrap_optional_value(init_value, variable_ty, ir_builder);
+            value_to_store = wrap_optional_value(
+                init_value,
+                variable_ty,
+                ir_builder);
         }
         else
         {
-            // Handle basic upcasts (e.g. i32 -> i64, etc)
-            value_to_store = optionally_upcast_type(init_value, variable_ty, ir_builder);
+            // Handle basic upcasts (e.g. int32 -> int64, etc)
+            value_to_store = optionally_upcast_type(
+                init_value,
+                variable_ty,
+                ir_builder);
         }
 
         ir_builder->CreateStore(value_to_store, alloca);
     }
 
     return alloca;
-}
-
-bool AstVariableDeclaration::is_reducible()
-{
-    if (this->get_initial_value() == nullptr)
-    {
-        return false;
-    }
-    // Variables are reducible only if their initial value is reducible,
-    // In the future we can also check whether variables are ever referenced,
-    // in which case we can optimize away the variable declaration.
-
-    return this->get_initial_value()->is_reducible();
-}
-
-IAstNode* AstVariableDeclaration::reduce()
-{
-    const auto reduced_value = dynamic_cast<IReducible*>(this->get_initial_value().get())->reduce();
-    auto cloned_type = this->get_variable_type()->clone();
-
-    if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced_value); reduced_expr != nullptr)
-    {
-        return std::make_unique<AstVariableDeclaration>(
-            this->get_source(),
-            this->get_context(),
-            this->get_symbol(),
-            std::move(cloned_type),
-            std::unique_ptr<AstExpression>(reduced_expr)
-        ).release();
-    }
-    return this;
 }
 
 std::string AstVariableDeclaration::to_string()
@@ -506,6 +524,5 @@ std::string AstVariableDeclaration::to_string()
         get_variable_name(),
         get_internal_name(),
         get_variable_type()->to_string(),
-        this->get_initial_value() ? get_initial_value()->to_string() : "nil"
-    );
+        this->get_initial_value() ? get_initial_value()->to_string() : "nil");
 }

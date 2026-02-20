@@ -1,7 +1,10 @@
 #include "program.h"
 
-#include <iostream>
+#include "ast/parser.h"
+#include "stl/stl_functions.h"
+
 #include <ast/symbols.h>
+#include <iostream>
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
@@ -13,11 +16,8 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Passes/OptimizationLevel.h>
 #include <llvm/Passes/PassBuilder.h>
-#include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/TargetSelect.h>
-
-#include "ast/parser.h"
-#include "stl/stl_functions.h"
+#include <llvm/Support/raw_ostream.h>
 
 using namespace stride;
 
@@ -26,7 +26,7 @@ void Program::parse_files(std::vector<std::string> files)
     this->_global_scope = std::make_shared<ast::ParsingContext>();
     this->_files = std::move(files);
 
-    stl::predefine_symbols(this->get_global_scope());
+    stl::predefine_internal_functions(this->get_global_context());
 
     std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
 
@@ -80,7 +80,8 @@ void Program::optimize_ast_nodes()
                 // Note: Assuming reduce() returns a new raw pointer or
                 // you manage ownership correctly in your AST implementation.
                 new_children.push_back(std::unique_ptr<ast::IAstNode>(reduced));
-                std::cout << "Optimized node: " << child->to_string() << " to " << reduced->to_string() << std::endl;
+                std::cout << "Optimized node: " << child->to_string() << " to "
+                    << reduced->to_string() << std::endl;
                 continue;
             }
         }
@@ -90,11 +91,9 @@ void Program::optimize_ast_nodes()
     }
 
     this->_root_node = std::make_unique<ast::AstBlock>(
-        this->_root_node->get_source(),
-        this->_root_node->get_source_position(),
-        this->get_global_scope(),
-        std::move(new_children)
-    );
+        this->_root_node->get_source_fragment(),
+        this->get_global_context(),
+        std::move(new_children));
 }
 
 void Program::validate_ast_nodes() const
@@ -105,25 +104,29 @@ void Program::validate_ast_nodes() const
     }
 }
 
-void Program::resolve_forward_references(llvm::Module* module, llvm::IRBuilder<>* builder) const
+void Program::resolve_forward_references(llvm::Module* module,
+                                         llvm::IRBuilder<>* builder) const
 {
-    this->_root_node->resolve_forward_references(this->get_global_scope(), module, builder);
+    this->_root_node->resolve_forward_references(
+        this->get_global_context().get(),
+        module,
+        builder
+    );
 }
 
-void Program::generate_llvm_ir(
-    llvm::Module* module,
-    llvm::IRBuilder<>* builder
-) const
+void Program::generate_llvm_ir(llvm::Module* module,
+                               llvm::IRBuilder<>* builder) const
 {
-    if (auto* synthesisable = dynamic_cast<ast::ISynthesisable*>(this->_root_node.get()))
+    if (!this->_root_node->codegen(
+        module,
+        builder
+    ))
     {
-        if (const auto entry = synthesisable->codegen(this->get_global_scope(), module, builder);
-            entry == nullptr)
-        {
-            throw std::runtime_error(
-                std::format("Failed to build executable for file '{}'", this->_root_node->get_source()->path)
-            );
-        }
+        throw std::runtime_error(
+            std::format(
+                "Failed to build executable for file '{}'",
+                this->_root_node->get_source()->path)
+        );
     }
 }
 
@@ -140,7 +143,10 @@ llvm::Expected<llvm::orc::ExecutorAddr> locate_main_fn(llvm::orc::LLJIT* jit)
     auto main_symbol_or_err = jit->lookup(*mangled_name);
     if (!main_symbol_or_err)
     {
-        llvm::logAllUnhandledErrors(main_symbol_or_err.takeError(), llvm::errs(), "JIT lookup error: ");
+        llvm::logAllUnhandledErrors(
+            main_symbol_or_err.takeError(),
+            llvm::errs(),
+            "JIT lookup error: ");
         exit(1);
     }
 
@@ -156,19 +162,24 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
 
-    auto tsc = llvm::orc::ThreadSafeContext(std::make_unique<llvm::LLVMContext>());
+    auto tsc = llvm::orc::ThreadSafeContext(
+        std::make_unique<llvm::LLVMContext>());
 
     auto* context = tsc.withContextDo([](llvm::LLVMContext* ctx)
     {
         return ctx;
     });
 
-    auto jit_target_machine_builder = llvm::orc::JITTargetMachineBuilder::detectHost();
+    auto jit_target_machine_builder =
+        llvm::orc::JITTargetMachineBuilder::detectHost();
 
     if (!jit_target_machine_builder)
     {
-        llvm::logAllUnhandledErrors(jit_target_machine_builder.takeError(), llvm::errs(),
-                                    "JITTargetMachineBuilder error: ");
+        llvm::logAllUnhandledErrors(
+            jit_target_machine_builder.takeError(),
+            llvm::errs(),
+            "JITTargetMachineBuilder error: "
+        );
         return 1;
     }
     auto jtmb = std::move(*jit_target_machine_builder);
@@ -178,13 +189,14 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     auto target_machine = llvm::cantFail(jtmb.createTargetMachine());
 
     // Build the JIT using the existing TargetMachineBuilder
-    auto jit = llvm::cantFail(llvm::orc::LLJITBuilder()
-                             .setJITTargetMachineBuilder(std::move(jtmb))
-                             .create());
+    auto jit = llvm::cantFail(
+        llvm::orc::LLJITBuilder().setJITTargetMachineBuilder(std::move(jtmb)).
+                                  create());
 
     jit->getMainJITDylib().addGenerator(
-        llvm::cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
-            jit->getDataLayout().getGlobalPrefix()))
+        llvm::cantFail(
+            llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
+                jit->getDataLayout().getGlobalPrefix()))
     );
 
     const auto triple = llvm::Triple(jit->getTargetTriple().getTriple());
@@ -194,11 +206,14 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     module->setTargetTriple(triple);
 
     llvm::IRBuilder<> builder(*context);
-    stl::llvm_jit_define_functions(jit.get());
-    stl::llvm_insert_function_definitions(module.get());
 
-    this->validate_ast_nodes();
+    // Predefine internal functions (printf, system time, ...)
+    stride::stl::llvm_jit_define_functions(jit.get());
+    stride::stl::llvm_insert_function_definitions(module.get());
+
     this->resolve_forward_references(module.get(), &builder);
+    this->validate_ast_nodes();
+
     this->generate_llvm_ir(module.get(), &builder);
 
 
@@ -231,22 +246,23 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
         loop_analysis_manager,
         function_analysis_manager,
         cgscc_analysis_manager,
-        module_analysis_manager
-    );
+        module_analysis_manager);
 
-    llvm::ModulePassManager module_pass_manager = pass_builder.buildPerModuleDefaultPipeline(
-        llvm::OptimizationLevel::O3);
+    llvm::ModulePassManager module_pass_manager =
+        pass_builder.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
     module_pass_manager.run(*module, module_analysis_manager);
 
     llvm::orc::ThreadSafeModule thread_safe_module(
         std::move(module),
-        std::move(tsc)
-    );
+        std::move(tsc));
     llvm::cantFail(jit->addIRModule(std::move(thread_safe_module)));
 
     if (auto err = jit->initialize(jit->getMainJITDylib()))
     {
-        llvm::logAllUnhandledErrors(std::move(err), llvm::errs(), "JIT initialization error: ");
+        llvm::logAllUnhandledErrors(
+            std::move(err),
+            llvm::errs(),
+            "JIT initialization error: ");
         return 1;
     }
 
@@ -263,7 +279,10 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
 
     if (auto err = jit->deinitialize(jit->getMainJITDylib()))
     {
-        llvm::logAllUnhandledErrors(std::move(err), llvm::errs(), "JIT deinitialization error: ");
+        llvm::logAllUnhandledErrors(
+            std::move(err),
+            llvm::errs(),
+            "JIT deinitialization error: ");
     }
 
     return result;

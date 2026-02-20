@@ -1,7 +1,7 @@
+#include "cli.h"
+
 #include <exception>
 #include <iostream>
-
-#include "cli.h"
 
 int main(const int argc, char* argv[])
 {

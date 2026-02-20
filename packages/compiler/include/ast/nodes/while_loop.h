@@ -1,46 +1,47 @@
 #pragma once
 
-#include "ast_node.h"
-#include "blocks.h"
-#include "expression.h"
 #include "ast/modifiers.h"
 #include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
+#include "ast_node.h"
+#include "blocks.h"
+#include "expression.h"
 
 namespace stride::ast
 {
-    class AstWhileLoop
-        : public IAstNode,
-          public ISynthesisable,
-          public IAstContainer
+    class AstWhileLoop : public IAstNode, public ISynthesisable,
+                         public IAstContainer
     {
         std::unique_ptr<AstBlock> _body;
         std::unique_ptr<AstExpression> _condition;
 
     public:
         AstWhileLoop(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> condition,
-            std::unique_ptr<AstBlock> body
-        ) : IAstNode(source, source_position, context),
+            std::unique_ptr<AstBlock> body) :
+            IAstNode(source, context),
             _body(std::move(body)),
             _condition(std::move(condition)) {}
 
         llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) override;
+            llvm::IRBuilder<>* builder) override;
 
         std::string to_string() override;
 
         [[nodiscard]]
-        AstBlock* get_body() override { return _body.get(); }
+        AstBlock* get_body() override
+        {
+            return _body.get();
+        }
 
         [[nodiscard]]
-        AstExpression* get_condition() const { return _condition.get(); }
+        AstExpression* get_condition() const
+        {
+            return _condition.get();
+        }
 
         void validate() override;
     };
@@ -48,6 +49,5 @@ namespace stride::ast
     std::unique_ptr<AstWhileLoop> parse_while_loop_statement(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        VisibilityModifier modifier
-    );
-}
+        VisibilityModifier modifier);
+} // namespace stride::ast

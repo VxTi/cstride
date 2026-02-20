@@ -15,7 +15,11 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
 )
 {
     const auto reference_token = set.peek_next();
-    const auto expression_block = collect_block_variant(set, TokenType::LSQUARE_BRACKET, TokenType::RSQUARE_BRACKET);
+    const auto expression_block = collect_block_variant(
+        set,
+        TokenType::LSQUARE_BRACKET,
+        TokenType::RSQUARE_BRACKET
+    );
 
     std::vector<std::unique_ptr<AstExpression>> elements;
 
@@ -24,29 +28,28 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
         auto subset = expression_block.value();
 
         /// Here we'll parse the subset of tokens (the actual array initializer)
-        if (auto first_initializer = parse_inline_expression(context, subset);
-            first_initializer != nullptr)
+        if (auto first_initializer = parse_inline_expression(context, subset))
         {
             elements.push_back(std::move(first_initializer));
         }
 
         while (subset.has_next())
         {
-            subset.expect(TokenType::COMMA, "Expected ',' between array elements");
+            subset.expect(TokenType::COMMA,
+                          "Expected ',' between array elements");
             elements.push_back(parse_inline_expression(context, subset));
         }
     }
 
-    const auto ref_src_pos = reference_token.get_source_position();
-    const auto last_token_pos = set.peek(-1).get_source_position(); // `]` is already consumed, so we peek back at it
+    const auto& ref_src_pos = reference_token.get_source_fragment();
+    const auto& last_token_pos = set.peek(-1).get_source_fragment();
+    // `]` is already consumed, so we peek back at it
 
     return std::make_unique<AstArray>(
-        set.get_source(),
-        SourcePosition(
+        SourceFragment(
+            ref_src_pos.source,
             ref_src_pos.offset,
-            last_token_pos.offset + last_token_pos.length - ref_src_pos.offset
-        ),
+            last_token_pos.offset + last_token_pos.length - ref_src_pos.offset),
         context,
-        std::move(elements)
-    );
+        std::move(elements));
 }

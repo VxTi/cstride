@@ -11,11 +11,11 @@ module Memory {
 
     extern fn memcpy(dest: ptr, src: ptr, n: usize): ptr;
 
-    extern fn memset(ptr: ptr, value: i32, num: usize): ptr;
+    extern fn memset(ptr: ptr, value: int32, num: usize): ptr;
 
     extern fn strlen(str: string): usize;
 
-    extern fn strcmp(str1: string, str2: string): i32;
+    extern fn strcmp(str1: string, str2: string): int32;
 
     extern fn strcpy(dest: string, src: string): string;
 

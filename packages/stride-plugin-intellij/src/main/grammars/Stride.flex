@@ -37,7 +37,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
 
    "/*"              { yybegin(BLOCK_COMMENT); }
 
-  "pub"             { return StrideTypes.PUB; }
+  "pub"              { return StrideTypes.PUBLIC; }
   "package"          { return StrideTypes.PACKAGE; }
   "module"           { return StrideTypes.MODULE; }
   "fn"               { return StrideTypes.FN; }
@@ -52,16 +52,16 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "if"               { return StrideTypes.IF; }
   "else"             { return StrideTypes.ELSE; }
   "void"             { return StrideTypes.VOID; }
-  "i8"               { return StrideTypes.I8; }
-  "i16"              { return StrideTypes.I16; }
-  "i32"              { return StrideTypes.I32; }
-  "i64"              { return StrideTypes.I64; }
-  "u8"               { return StrideTypes.U8; }
-  "u16"              { return StrideTypes.U16; }
-  "u32"              { return StrideTypes.U32; }
-  "u64"              { return StrideTypes.U64; }
-  "f32"              { return StrideTypes.F32; }
-  "f64"              { return StrideTypes.F64; }
+  "int8"             { return StrideTypes.INT8; }
+  "int16"            { return StrideTypes.INT16; }
+  "int32"            { return StrideTypes.INT32; }
+  "int64"            { return StrideTypes.INT64; }
+  "uint8"            { return StrideTypes.UINT8; }
+  "uint16"           { return StrideTypes.UINT16; }
+  "uint32"           { return StrideTypes.UINT32; }
+  "uint64"           { return StrideTypes.UINT64; }
+  "float32"          { return StrideTypes.FLOAT32; }
+  "float64"          { return StrideTypes.FLOAT64; }
   "bool"             { return StrideTypes.BOOL; }
   "char"             { return StrideTypes.CHAR; }
   "string"           { return StrideTypes.STRING; }
@@ -81,6 +81,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "/="               { return StrideTypes.SLASH_EQ; }
   "%="               { return StrideTypes.MOD_EQ; }
   "+"                { return StrideTypes.PLUS; }
+  "->"               { return StrideTypes.ARROW; }
   "-"                { return StrideTypes.MINUS; }
   "*"                { return StrideTypes.ASTERISK; }
   "&"                { return StrideTypes.AMPERSAND; }
@@ -89,6 +90,8 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "!"                { return StrideTypes.EXCL; }
   "<"                { return StrideTypes.LT; }
   ">"                { return StrideTypes.GT; }
+  "["                { return StrideTypes.LSQUARE_BRACKET; }
+  "]"                { return StrideTypes.RSQUARE_BRACKET; }
   "{"                { return StrideTypes.LBRACE; }
   "}"                { return StrideTypes.RBRACE; }
   "("                { return StrideTypes.LPAREN; }

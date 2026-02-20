@@ -6,19 +6,20 @@
 
 using namespace stride::ast;
 
-TokenSet TokenSet::create_subset(const int64_t offset, const int64_t length) const
+TokenSet TokenSet::create_subset(const int64_t offset,
+                                 const int64_t length) const
 {
     const auto start = offset;
 
-    if (const auto end = offset + length - 1; start > end || end >= this->size())
+    if (const auto end = offset + length - 1; start > end || end >= this->
+        size())
     {
         throw std::out_of_range("Invalid range for TokenSet copy");
     }
 
     std::vector copied_tokens(
         this->_tokens.begin() + offset,
-        this->_tokens.begin() + offset + length
-    );
+        this->_tokens.begin() + offset + length);
 
     return std::move(TokenSet(this->_source, copied_tokens));
 }
@@ -82,17 +83,16 @@ Token TokenSet::expect(const TokenType type)
 {
     if (!this->has_next())
     {
-        const auto last_token_pos = this->last().get_source_position();
+        const auto last_token_pos = this->last().get_source_fragment();
 
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
-            std::format(
-                "Expected '{}', but reached end of block",
-                token_type_to_str(type)
-            ),
-            *this->get_source(),
-            SourcePosition(last_token_pos.offset + last_token_pos.length - 1, 1)
-        );
+            std::format("Expected '{}', but reached end of block",
+                        token_type_to_str(type)),
+            SourceFragment(
+                this->get_source(),
+                last_token_pos.offset + last_token_pos.length - 1,
+                1));
     }
 
     if (const auto next_type = this->peek_next().get_type(); next_type != type)
@@ -102,9 +102,7 @@ Token TokenSet::expect(const TokenType type)
             std::format(
                 "Expected '{}' but found '{}'",
                 token_type_to_str(type),
-                token_type_to_str(next_type)
-            )
-        );
+                token_type_to_str(next_type)));
     }
 
     return this->next();
@@ -114,14 +112,15 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 {
     if (!this->has_next())
     {
-        const auto last_token_pos = this->last().get_source_position();
+        const auto last_token_pos = this->last().get_source_fragment();
 
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,
             message,
-            *this->get_source(),
-            SourcePosition(last_token_pos.offset + last_token_pos.length - 1, 1)
-        );
+            SourceFragment(
+                this->get_source(),
+                last_token_pos.offset + last_token_pos.length - 1,
+                1));
     }
 
     if (this->peek_next().get_type() != type)
@@ -158,8 +157,7 @@ int64_t TokenSet::remaining() const
 
 bool TokenSet::has_next() const
 {
-    return this->remaining() > 0
-        && !this->peek_next_eq(TokenType::END_OF_FILE);
+    return this->remaining() > 0 && !this->peek_next_eq(TokenType::END_OF_FILE);
 }
 
 std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
@@ -170,18 +168,14 @@ std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
 [[noreturn]] void TokenSet::throw_error(
     const Token& token,
     const ErrorType error_type,
-    const std::string& message
-) const
+    const std::string& message) const
 {
-    throw parsing_error(
-        error_type,
-        message,
-        *this->get_source(),
-        token.get_source_position()
-    );
+    throw parsing_error(error_type, message, token.get_source_fragment());
 }
 
-[[noreturn]] void TokenSet::throw_error(const ErrorType error_type, const std::string& message) const
+[[noreturn]] void TokenSet::throw_error(const ErrorType error_type,
+                                        const std::string& message)
+const
 {
     this->throw_error(this->at(this->position()), error_type, message);
 }

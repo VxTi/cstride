@@ -1,15 +1,16 @@
 #pragma once
 
+#include "files.h"
+
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
-
-#include "files.h"
+#include <utility>
 
 namespace stride::ast
 {
-    class AstBlock;
+#define MAX_RECURSION_DEPTH 100
 
-    // If we include the header, it'll cause circular references, and it'll break everything.
+    class AstBlock;
     class ParsingContext;
 
     class ISynthesisable
@@ -18,34 +19,28 @@ namespace stride::ast
         virtual ~ISynthesisable() = default;
 
         virtual llvm::Value* codegen(
-            const std::shared_ptr<ParsingContext>& context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) = 0;
+            llvm::IRBuilder<>* builder) = 0;
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
-            const std::shared_ptr<ParsingContext>& context,
+            const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
-        ) {}
+            llvm::IRBuilder<>* builder) {}
     };
 
     class IAstNode
     {
-        const std::shared_ptr<SourceFile> _source;
-        const SourcePosition _source_position;
+        const SourceFragment _source_position;
         const std::shared_ptr<ParsingContext> _scope;
 
     public:
         explicit IAstNode(
-            const std::shared_ptr<SourceFile>& source,
-            const SourcePosition source_position,
+            const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context
-        )
-            : _source(source),
-              _source_position(source_position),
-              _scope(context) {}
+        ) :
+            _source_position(source),
+            _scope(context) {}
 
         virtual ~IAstNode() = default;
 
@@ -54,13 +49,22 @@ namespace stride::ast
         virtual void validate() {}
 
         [[nodiscard]]
-        std::shared_ptr<SourceFile> get_source() const { return this->_source; }
+        std::shared_ptr<SourceFile> get_source() const
+        {
+            return this->_source_position.source;
+        }
 
         [[nodiscard]]
-        std::shared_ptr<ParsingContext> get_context() const { return this->_scope; }
+        std::shared_ptr<ParsingContext> get_context() const
+        {
+            return this->_scope;
+        }
 
         [[nodiscard]]
-        SourcePosition get_source_position() const { return this->_source_position; }
+        SourceFragment get_source_fragment() const
+        {
+            return this->_source_position;
+        }
     };
 
     class IReducible
@@ -91,4 +95,4 @@ namespace stride::ast
         [[nodiscard]]
         virtual AstBlock* get_body() = 0;
     };
-}
+} // namespace stride::ast

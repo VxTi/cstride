@@ -22,7 +22,11 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         val COMMA = createTextAttributesKey("STRIDE_COMMA", DefaultLanguageHighlighterColors.COMMA)
         val DOT = createTextAttributesKey("STRIDE_DOT", DefaultLanguageHighlighterColors.DOT)
         val TYPE = createTextAttributesKey("STRIDE_TYPE", DefaultLanguageHighlighterColors.KEYWORD)
-        val FUNCTION_CALL = createTextAttributesKey("STRIDE_FUNCTION_CALL", DefaultLanguageHighlighterColors.FUNCTION_CALL)
+        val FUNCTION_CALL = createTextAttributesKey("STRIDE_FUNCTION_CALL", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
+        val FUNCTION_DECLARATION = createTextAttributesKey("STRIDE_FUNCTION_DECLARATION", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
+        val SCOPED_IDENTIFIER_REFERENCE = createTextAttributesKey("SCOPED_IDENTIFIER_REFERENCE", DefaultLanguageHighlighterColors.CLASS_REFERENCE)
+        val IDENTIFIER = createTextAttributesKey("STRIDE_IDENTIFIER", DefaultLanguageHighlighterColors.IDENTIFIER)
+        val FIELD_IDENTIFIER = createTextAttributesKey("STRIDE_FIELD_IDENTIFIER", DefaultLanguageHighlighterColors.INSTANCE_FIELD)
 
 
         private val KEYWORD_KEYS = arrayOf(KEYWORD)
@@ -43,16 +47,16 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
 
     override fun getTokenHighlights(tokenType: IElementType): Array<TextAttributesKey> {
         return when (tokenType) {
-            StrideTypes.MODULE, StrideTypes.PACKAGE, StrideTypes.PUB,
+            StrideTypes.MODULE, StrideTypes.PACKAGE, StrideTypes.PUBLIC,
             StrideTypes.FN, StrideTypes.STRUCT, StrideTypes.CONST,
             StrideTypes.LET, StrideTypes.EXTERN, StrideTypes.AS,
             StrideTypes.RETURN, StrideTypes.FOR, StrideTypes.WHILE,
             StrideTypes.IF, StrideTypes.ELSE -> KEYWORD_KEYS
 
-            StrideTypes.VOID, StrideTypes.I8, StrideTypes.I16,
-            StrideTypes.I32, StrideTypes.I64, StrideTypes.U8,
-            StrideTypes.U16, StrideTypes.U32, StrideTypes.U64,
-            StrideTypes.F32, StrideTypes.F64, StrideTypes.BOOL,
+            StrideTypes.VOID, StrideTypes.INT8, StrideTypes.INT16,
+            StrideTypes.INT32, StrideTypes.INT64, StrideTypes.UINT8,
+            StrideTypes.UINT16, StrideTypes.UINT32, StrideTypes.UINT64,
+            StrideTypes.FLOAT32, StrideTypes.FLOAT64, StrideTypes.BOOL,
             StrideTypes.CHAR, StrideTypes.STRING -> TYPE_KEYS
 
             StrideTypes.NUMBER_LITERAL -> NUMBER_KEYS
@@ -63,7 +67,8 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.AMPERSAND, StrideTypes.ASTERISK, StrideTypes.DIV,
             StrideTypes.MOD, StrideTypes.EXCL, StrideTypes.LT,
             StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ,
-            StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR -> OPERATOR_KEYS
+            StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR,
+            StrideTypes.ARROW -> OPERATOR_KEYS
             StrideTypes.LPAREN, StrideTypes.RPAREN -> PARENTHESES_KEYS
             StrideTypes.LBRACE, StrideTypes.RBRACE -> BRACES_KEYS
             StrideTypes.SEMICOLON -> SEMICOLON_KEYS

@@ -4,64 +4,118 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.elementType
 import com.stride.intellij.highlight.StrideSyntaxHighlighter
-import com.stride.intellij.psi.StridePostfixExpression
-import com.stride.intellij.psi.StrideTypes
+import com.stride.intellij.psi.*
 
 class StrideAnnotator : Annotator {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
-        if (element is StridePostfixExpression) {
-            annotatePostfixExpression(element, holder)
+        when (element) {
+            is StrideFunctionCallExpression -> annotateFunctionCall(element, holder)
+            is StrideStructInitialization -> annotateStructInitialization(element, holder)
+            is StrideUserType -> annotateUserType(element, holder)
+            is StrideStructInitField -> annotateStructInitField(element, holder)
+            is StrideFunctionDeclaration -> annotateFunctionDeclaration(element, holder)
+            is StrideExternFunctionDeclaration -> annotateExternFunctionDeclaration(element, holder)
+            is StridePostfixExpression -> annotatePostfixExpression(element, holder)
+            is StrideScopedIdentifier -> annotateScopedIdentifier(element, holder)
         }
     }
 
-    private fun annotatePostfixExpression(paramExpression: StridePostfixExpression, holder: AnnotationHolder) {
-        var callTarget: PsiElement? = null
+    private fun annotateFunctionCall(call: StrideFunctionCallExpression, holder: AnnotationHolder) {
+        // Highlight each identifier in the scoped identifier (e.g., io::println)
+        val scopedId = call.scopedIdentifier
+        highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.FUNCTION_CALL)
+    }
 
-        // Check primary expression first
-        val primary = paramExpression.primaryExpression
-        val primaryScoped = primary.scopedIdentifier
-        if (primaryScoped != null) {
-            // Identifier list. Last one is the candidate.
-            // ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)*
-            // We can just find the last IDENTIFIER child.
-            // PsiElement children include tokens.
-            callTarget = primaryScoped.children.findLast { it.node.elementType == StrideTypes.IDENTIFIER }
-        }
+    private fun annotateStructInitialization(init: StrideStructInitialization, holder: AnnotationHolder) {
+        // Highlight the type name in struct initialization (e.g., Test::{ ... })
+        val scopedId = init.scopedIdentifier ?: return
+        highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.SCOPED_IDENTIFIER_REFERENCE)
+    }
 
-        // Now iterate children of postfix expression to process suffixes in order
-        var passedPrimary = false
-        val children = paramExpression.children
+    private fun annotateUserType(userType: StrideUserType, holder: AnnotationHolder) {
+        // Highlight type references (e.g., in variable declarations)
+        val scopedId = userType.scopedIdentifier ?: return
+        highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.SCOPED_IDENTIFIER_REFERENCE)
+    }
 
-        // If for some reason primary is not found in children (should not happen), we handle it
-        if (children.isEmpty()) return
+    private fun annotateStructInitField(field: StrideStructInitField, holder: AnnotationHolder) {
+        // Highlight field names in struct initialization
+        val scopedId = field.scopedIdentifier ?: return
+        highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.IDENTIFIER)
+    }
 
-        for (child in children) {
-            if (!passedPrimary) {
-                if (child == primary) {
-                    passedPrimary = true
-                }
-                continue
+    private fun annotateFunctionDeclaration(func: StrideFunctionDeclaration, holder: AnnotationHolder) {
+        // Highlight the function name in function declarations (e.g., fn myFunction(...))
+        highlightFunctionName(func, holder)
+    }
+
+    private fun annotateExternFunctionDeclaration(func: StrideExternFunctionDeclaration, holder: AnnotationHolder) {
+        // Highlight the function name in extern function declarations
+        highlightFunctionName(func, holder)
+    }
+
+    private fun highlightFunctionName(func: PsiElement, holder: AnnotationHolder) {
+        // Find the IDENTIFIER token that comes after FN keyword
+        var foundFn = false
+        for (child in func.node.getChildren(null)) {
+            if (child.elementType == StrideTypes.FN) {
+                foundFn = true
+            } else if (foundFn && child.elementType == StrideTypes.IDENTIFIER) {
+                holder.newSilentAnnotation(HighlightSeverity.INFORMATION)
+                    .range(child.textRange)
+                    .textAttributes(StrideSyntaxHighlighter.FUNCTION_DECLARATION)
+                    .create()
+                break
             }
+        }
+    }
 
-            val type = child.node.elementType
+    private fun annotatePostfixExpression(postfix: StridePostfixExpression, holder: AnnotationHolder) {
+        // Highlight field names in member access (e.g., obj.fieldName)
+        var foundDot = false
+        for (child in postfix.node.getChildren(null)) {
+            if (child.elementType == StrideTypes.DOT) {
+                foundDot = true
+            } else if (foundDot && child.elementType == StrideTypes.IDENTIFIER) {
+                holder.newSilentAnnotation(HighlightSeverity.INFORMATION)
+                    .range(child.textRange)
+                    .textAttributes(StrideSyntaxHighlighter.FIELD_IDENTIFIER)
+                    .create()
+                foundDot = false
+            }
+        }
+    }
 
-            if (type == StrideTypes.IDENTIFIER) {
-                // This is a member access .bar
-                callTarget = child
-            } else if (type == StrideTypes.LPAREN) {
-                // This is a call!
-                if (callTarget != null) {
-                    holder.newSilentAnnotation(HighlightSeverity.INFORMATION)
-                        .range(callTarget)
-                        .textAttributes(StrideSyntaxHighlighter.FUNCTION_CALL)
-                        .create()
-                    // After call, the result is likely not a function reference we can highlight simply
-                    callTarget = null
-                }
-            } else if (type == StrideTypes.LBRACKET) {
-                // Indexing, resets target
-                callTarget = null
+    private fun annotateScopedIdentifier(scopedId: StrideScopedIdentifier, holder: AnnotationHolder) {
+        // Only highlight standalone scoped identifiers (variable references, etc.)
+        // Check if parent is already being handled
+        val parent = scopedId.parent
+        when (parent) {
+            is StrideFunctionCallExpression,
+            is StrideStructInitialization,
+            is StrideUserType,
+            is StrideStructInitField -> return // Already handled by specific annotators
+            else -> {
+                // Highlight as variable/identifier reference
+                highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.IDENTIFIER)
+            }
+        }
+    }
+
+    private fun highlightIdentifiers(
+        scopedId: StrideScopedIdentifier,
+        holder: AnnotationHolder,
+        attributesKey: com.intellij.openapi.editor.colors.TextAttributesKey
+    ) {
+        // Highlight all IDENTIFIER tokens within the scoped identifier
+        scopedId.node.getChildren(null).forEach { child ->
+            if (child.elementType == StrideTypes.IDENTIFIER) {
+                holder.newSilentAnnotation(HighlightSeverity.INFORMATION)
+                    .range(child.textRange)
+                    .textAttributes(attributesKey)
+                    .create()
             }
         }
     }
