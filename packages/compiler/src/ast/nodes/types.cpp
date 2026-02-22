@@ -57,8 +57,7 @@ std::string primitive_type_to_str_internal(const PrimitiveType type)
     }
 }
 
-std::string stride::ast::primitive_type_to_str(const PrimitiveType type,
-                                               const int flags)
+std::string stride::ast::primitive_type_to_str(const PrimitiveType type, const int flags)
 {
     const auto base_str = primitive_type_to_str_internal(type);
 
@@ -105,8 +104,7 @@ std::unique_ptr<IAstType> parse_type_metadata(
     return std::move(base_type);
 }
 
-std::optional<std::unique_ptr<IAstType>>
-stride::ast::parse_primitive_type_optional(
+std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     int context_type_flags)
@@ -346,10 +344,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
         return std::move(named_type.value());
     }
 
-    if (auto function_type = parse_function_type_optional(
-            context,
-            set,
-            type_flags);
+    if (auto function_type = parse_function_type_optional(context, set, type_flags);
         function_type.has_value())
     {
         return std::move(function_type.value());
@@ -358,15 +353,16 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     set.throw_error(error);
 }
 
-std::optional<std::unique_ptr<IAstType>>
-stride::ast::parse_function_type_optional(
+std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     int context_type_flags)
 {
     // Must start with '('
     if (!set.peek_next_eq(TokenType::LPAREN))
+    {
         return std::nullopt;
+    }
 
     // This tries to parse `(<type>, <type>, ...) -> <return_type>`
     // With no parameters: `() -> <return_type>`
@@ -390,34 +386,37 @@ stride::ast::parse_function_type_optional(
     while (set.has_next() && !set.peek_next_eq(TokenType::RPAREN))
     {
         parameters.push_back(
-            parse_type(context,
-                       set,
-                       "Expected parameter type",
-                       context_type_flags));
+            parse_type(
+                context,
+                set,
+                "Expected parameter type",
+                context_type_flags
+            )
+        );
         if (set.peek_next_eq(TokenType::RPAREN))
+        {
             break;
-        set.expect(TokenType::COMMA,
-                   "Expected ',' between function type parameters");
+        }
+        set.expect(TokenType::COMMA, "Expected ',' between function type parameters");
 
         if (recursion_depth++ > MAX_RECURSION_DEPTH)
         {
-            set.throw_error(
-                "Maximum recursion depth exceeded when parsing function type");
+            set.throw_error("Maximum recursion depth exceeded when parsing function type");
         }
     }
 
     set.expect(TokenType::RPAREN, "Expected ')' after function type notation");
-    set.expect(TokenType::DASH_RARROW,
-               "Expected '->' between function parameters and return type");
-    auto return_type = parse_type(context,
-                                  set,
-                                  "Expected return type",
-                                  context_type_flags);
+    set.expect(TokenType::DASH_RARROW, "Expected '->' between function parameters and return type");
+    auto return_type = parse_type(
+        context,
+        set,
+        "Expected return type",
+        context_type_flags
+    );
 
     if (is_expecting_closing_paren)
     {
-        set.expect(TokenType::RPAREN,
-                   "Expected secondary ')' after function type notation");
+        set.expect(TokenType::RPAREN, "Expected secondary ')' after function type notation");
     }
 
 
@@ -426,7 +425,8 @@ stride::ast::parse_function_type_optional(
         context,
         std::move(parameters),
         std::move(return_type),
-        context_type_flags);
+        context_type_flags
+    );
 
     return parse_type_metadata(std::move(fn_type), set, context_type_flags);
 }
@@ -487,20 +487,21 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 
     if (const auto* ast_array_ty = cast_type<AstArrayType*>(type))
     {
-        llvm::Type* element_type =
-            internal_type_to_llvm_type(ast_array_ty->get_element_type(),
-                                       module);
+        llvm::Type* element_type = internal_type_to_llvm_type(
+            ast_array_ty->get_element_type(),
+            module
+        );
 
         if (!element_type)
         {
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
                 "Unable to resolve internal type for array element",
-                ast_array_ty->get_source_fragment());
+                ast_array_ty->get_source_fragment()
+            );
         }
 
-        return llvm::ArrayType::get(element_type,
-                                    ast_array_ty->get_initial_length());
+        return llvm::ArrayType::get(element_type, ast_array_ty->get_initial_length());
     }
 
     if (const auto* ast_primitive_ty = cast_type<AstPrimitiveType*>(type))
@@ -545,24 +546,28 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
             return llvm::PointerType::get(module->getContext(), 0);
         }
 
-        const std::string actual_name =
-            get_root_reference_struct_name(ast_struct_ty->name(), context);
+        const std::string actual_name = get_root_reference_struct_name(
+            ast_struct_ty->name(),
+            context
+        );
 
-        llvm::StructType* struct_ty =
-            llvm::StructType::getTypeByName(module->getContext(), actual_name);
+        llvm::StructType* struct_ty = llvm::StructType::getTypeByName(
+            module->getContext(),
+            actual_name
+        );
         if (!struct_ty)
         {
             throw parsing_error(
                 ErrorType::REFERENCE_ERROR,
-                std::format("Struct type '{}' not found",
-                            ast_struct_ty->name()),
-                ast_struct_ty->get_source_fragment());
+                std::format("Struct type '{}' not found", ast_struct_ty->name()),
+                ast_struct_ty->get_source_fragment()
+            );
         }
 
         return struct_ty;
     }
 
-    if (const auto* ast_function_ty = cast_type<AstFunctionType*>(type))
+    if (cast_type<AstFunctionType*>(type))
     {
         return llvm::PointerType::get(module->getContext(), 0);
     }
