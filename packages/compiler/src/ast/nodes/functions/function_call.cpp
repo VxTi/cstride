@@ -233,28 +233,58 @@ llvm::Value* AstFunctionCall::codegen(
 
                     // Determine the actual function type to use for the call
                     llvm::FunctionType* call_fn_type = llvm_fn_type;
+                    llvm::Value* actual_fn_ptr = fn_ptr_val;
 
-                    // If we found the lambda function, add captured variable arguments first
+                    // If we found the lambda function, handle captured variables
                     if (lambda_fn)
                     {
                         // Use the lambda's actual function type which includes captures
                         call_fn_type = lambda_fn->getFunctionType();
 
-                        auto capture_args = helpers::generate_capture_arguments(
-                            module,
-                            builder,
-                            lambda_fn,
-                            fn_type->get_parameter_types().size()
-                        );
+                        const size_t num_captures = lambda_fn->arg_size() - fn_type->get_parameter_types().size();
 
-                        // If capture generation failed, return error
-                        const size_t expected_captures = lambda_fn->arg_size() - fn_type->get_parameter_types().size();
-                        if (capture_args.size() != expected_captures)
+                        if (num_captures > 0)
                         {
-                            return nullptr;
-                        }
+                            // This might be a closure - try to extract captures from it
+                            auto capture_args = helpers::extract_closure_captures(
+                                module,
+                                builder,
+                                fn_ptr_val,
+                                num_captures
+                            );
 
-                        args_v.insert(args_v.end(), capture_args.begin(), capture_args.end());
+                            // If closure extraction succeeded, extract the actual function pointer
+                            if (capture_args.size() == num_captures)
+                            {
+                                // Extract the function pointer from the closure (first element)
+                                llvm::Value* closure_ptr = builder->CreatePointerCast(
+                                    fn_ptr_val,
+                                    llvm::PointerType::getUnqual(lambda_fn->getType())
+                                );
+                                actual_fn_ptr = builder->CreateLoad(
+                                    lambda_fn->getType(),
+                                    closure_ptr,
+                                    "closure_fn_ptr"
+                                );
+
+                                args_v.insert(args_v.end(), capture_args.begin(), capture_args.end());
+                            }
+                            else
+                            {
+                                // Try the old method: look up captures in the current scope
+                                auto capture_args_old = helpers::generate_capture_arguments(
+                                    module,
+                                    builder,
+                                    lambda_fn,
+                                    fn_type->get_parameter_types().size()
+                                );
+
+                                if (capture_args_old.size() == num_captures)
+                                {
+                                    args_v.insert(args_v.end(), capture_args_old.begin(), capture_args_old.end());
+                                }
+                            }
+                        }
                     }
 
                     // Add the declared arguments
@@ -279,7 +309,7 @@ llvm::Value* AstFunctionCall::codegen(
                         ? ""
                         : "indcalltmp";
                     return builder->CreateCall(call_fn_type,
-                                               fn_ptr_val,
+                                               actual_fn_ptr,
                                                args_v,
                                                instruction_name);
                 }

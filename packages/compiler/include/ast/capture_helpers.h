@@ -80,4 +80,38 @@ namespace stride::ast::helpers
         llvm::Function* lambda_fn,
         size_t num_declared_params
     );
+
+    /**
+     * Creates a closure structure on the heap for a lambda with captured variables.
+     * The closure contains: {function_ptr, captured_value1, captured_value2, ...}
+     *
+     * @param module The LLVM module
+     * @param builder The IR builder
+     * @param lambda_fn The lambda function to wrap
+     * @param captured_values The values to capture
+     * @return Pointer to the heap-allocated closure structure (cast to function pointer type for compatibility)
+     */
+    llvm::Value* create_closure(
+        llvm::Module* module,
+        llvm::IRBuilder<>* builder,
+        llvm::Function* lambda_fn,
+        const std::vector<llvm::Value*>& captured_values
+    );
+
+    /**
+     * Extracts captured arguments from a closure structure when calling through a function pointer.
+     * If the value is a raw function pointer (no captures), returns empty vector.
+     *
+     * @param module The LLVM module
+     * @param builder The IR builder
+     * @param fn_ptr_val The function pointer value (might be a closure)
+     * @param num_captures The number of captures expected
+     * @return Vector of captured values extracted from the closure
+     */
+    std::vector<llvm::Value*> extract_closure_captures(
+        llvm::Module* module,
+        llvm::IRBuilder<>* builder,
+        llvm::Value* fn_ptr_val,
+        size_t num_captures
+    );
 } // namespace stride::ast::helpers

@@ -202,4 +202,137 @@ namespace stride::ast::helpers
 
         return capture_args;
     }
+
+    llvm::Value* create_closure(
+        llvm::Module* module,
+        llvm::IRBuilder<>* builder,
+        llvm::Function* lambda_fn,
+        const std::vector<llvm::Value*>& captured_values
+    )
+    {
+        // If no captures, just return the function pointer directly
+        if (captured_values.empty())
+        {
+            return lambda_fn;
+        }
+
+        // Create malloc declaration if it doesn't exist
+        llvm::Function* malloc_fn = module->getFunction("malloc");
+        if (!malloc_fn)
+        {
+            llvm::FunctionType* malloc_type = llvm::FunctionType::get(
+                llvm::PointerType::getUnqual(module->getContext()),  // returns void*
+                {llvm::Type::getInt64Ty(module->getContext())},       // takes size_t
+                false
+            );
+            malloc_fn = llvm::Function::Create(
+                malloc_type,
+                llvm::Function::ExternalLinkage,
+                "malloc",
+                module
+            );
+        }
+
+        // Calculate total size needed: 1 pointer (function) + N values (captures)
+        // Size = sizeof(ptr) + sum of sizeof(each captured value)
+        uint64_t total_size = module->getDataLayout().getPointerSize();
+        for (llvm::Value* val : captured_values)
+        {
+            total_size += module->getDataLayout().getTypeAllocSize(val->getType());
+        }
+
+        // Allocate closure structure on heap
+        llvm::Value* closure_ptr = builder->CreateCall(
+            malloc_fn,
+            {llvm::ConstantInt::get(llvm::Type::getInt64Ty(module->getContext()), total_size)}
+        );
+
+        // Cast to appropriate pointer type for storing function pointer
+        llvm::Value* fn_ptr_slot = builder->CreatePointerCast(
+            closure_ptr,
+            llvm::PointerType::getUnqual(lambda_fn->getType())
+        );
+
+        // Store the function pointer at offset 0
+        builder->CreateStore(lambda_fn, fn_ptr_slot);
+
+        // Store each captured value after the function pointer
+        uint64_t offset = module->getDataLayout().getPointerSize();
+        for (size_t i = 0; i < captured_values.size(); ++i)
+        {
+            llvm::Value* capture_val = captured_values[i];
+            llvm::Type* capture_type = capture_val->getType();
+
+            // Calculate pointer to this capture slot
+            llvm::Value* capture_slot = builder->CreateConstGEP1_64(
+                llvm::Type::getInt8Ty(module->getContext()),
+                closure_ptr,
+                offset
+            );
+
+            // Cast to appropriate type
+            llvm::Value* typed_slot = builder->CreatePointerCast(
+                capture_slot,
+                llvm::PointerType::getUnqual(capture_type)
+            );
+
+            // Store the captured value
+            builder->CreateStore(capture_val, typed_slot);
+
+            offset += module->getDataLayout().getTypeAllocSize(capture_type);
+        }
+
+        // Return the closure pointer cast to function pointer type for compatibility
+        return builder->CreatePointerCast(closure_ptr, lambda_fn->getType());
+    }
+
+    std::vector<llvm::Value*> extract_closure_captures(
+        llvm::Module* module,
+        llvm::IRBuilder<>* builder,
+        llvm::Value* fn_ptr_val,
+        const size_t num_captures
+    )
+    {
+        std::vector<llvm::Value*> captures;
+
+        if (num_captures == 0)
+        {
+            return captures;
+        }
+
+        // Cast the function pointer back to generic pointer
+        llvm::Value* closure_ptr = builder->CreatePointerCast(
+            fn_ptr_val,
+            llvm::PointerType::getUnqual(module->getContext())
+        );
+
+        // Skip the function pointer (first slot) and extract captured values
+        uint64_t offset = module->getDataLayout().getPointerSize();
+
+        // We need to know the types of the captures to extract them properly
+        // For now, we'll extract them as i32 values (this is a simplification)
+        // In a full implementation, we'd need to store type information in the closure
+        for (size_t i = 0; i < num_captures; ++i)
+        {
+            llvm::Value* capture_slot = builder->CreateConstGEP1_64(
+                llvm::Type::getInt8Ty(module->getContext()),
+                closure_ptr,
+                offset
+            );
+
+            // For now, assume all captures are i32 (this needs to be improved)
+            llvm::Type* capture_type = llvm::Type::getInt32Ty(module->getContext());
+            llvm::Value* typed_slot = builder->CreatePointerCast(
+                capture_slot,
+                llvm::PointerType::getUnqual(capture_type)
+            );
+
+            llvm::Value* loaded_val = builder->CreateLoad(capture_type, typed_slot);
+            captures.push_back(loaded_val);
+
+            offset += module->getDataLayout().getTypeAllocSize(capture_type);
+        }
+
+        return captures;
+    }
 } // namespace stride::ast::helpers
