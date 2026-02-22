@@ -58,9 +58,11 @@ std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body)
         {
             const auto aggregated = collect_return_statements(
                 if_statement->get_else_body());
-            return_statements.insert(return_statements.end(),
-                                     aggregated.begin(),
-                                     aggregated.end());
+            return_statements.insert(
+                return_statements.end(),
+                aggregated.begin(),
+                aggregated.end()
+            );
         }
     }
     return return_statements;
@@ -321,6 +323,44 @@ llvm::Value* IAstCallable::codegen(
         builder->SetInsertPoint(saved_insert_block, saved_insert_point);
     }
 
+    // For anonymous lambdas with captured variables, create a closure structure
+    // that bundles the function pointer with the current values of captured variables
+    if (this->is_anonymous() && !this->get_captured_variables().empty())
+    {
+        // Collect the current values of captured variables from the enclosing scope
+        std::vector<llvm::Value*> captured_values;
+        for (const auto& capture : this->get_captured_variables())
+        {
+            if (const auto block = builder->GetInsertBlock())
+            {
+                llvm::Function* current_fn = block->getParent();
+                llvm::Value* captured_val = helpers::lookup_variable_or_capture(current_fn, capture.internal_name);
+
+                if (!captured_val)
+                {
+                    captured_val = helpers::lookup_variable_by_base_name(current_fn, capture.name);
+                }
+
+                if (captured_val)
+                {
+                    // Load the value if it's an alloca
+                    if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
+                    {
+                        captured_val = builder->CreateLoad(
+                            alloca->getAllocatedType(),
+                            alloca,
+                            capture.internal_name
+                        );
+                    }
+                    captured_values.push_back(captured_val);
+                }
+            }
+        }
+
+        // Create and return a closure instead of the raw function pointer
+        return helpers::create_closure(module, builder, function, captured_values);
+    }
+
     return function;
 }
 
@@ -526,7 +566,10 @@ void collect_free_variables(
 
             // Recursively collect free variables in the nested lambda's body
             // The nested lambda's context is its own context, and its outer context is our lambda_context
-            collect_free_variables(callable->get_body(), callable->get_context(), lambda_context, nested_captures);
+            collect_free_variables(callable->get_body(),
+                                   callable->get_context(),
+                                   lambda_context,
+                                   nested_captures);
 
             // Now register the nested lambda's captures
             for (const auto& nested_capture : nested_captures)
@@ -536,7 +579,9 @@ void collect_free_variables(
                 // Define the capture in the nested lambda's context so identifier lookup works
                 if (const auto var_def = lambda_context->lookup_variable(nested_capture.name, true))
                 {
-                    callable->get_context()->define_variable(nested_capture, var_def->get_type()->clone());
+                    callable->get_context()->define_variable(
+                        nested_capture,
+                        var_def->get_type()->clone());
                 }
             }
         }
@@ -554,7 +599,10 @@ void collect_free_variables(
     {
         if (return_stmt->get_return_expr())
         {
-            collect_free_variables(return_stmt->get_return_expr(), lambda_context, outer_context, captures);
+            collect_free_variables(return_stmt->get_return_expr(),
+                                   lambda_context,
+                                   outer_context,
+                                   captures);
         }
         return;
     }
@@ -574,7 +622,10 @@ void collect_free_variables(
     {
         if (var_decl->get_initial_value())
         {
-            collect_free_variables(var_decl->get_initial_value().get(), lambda_context, outer_context, captures);
+            collect_free_variables(var_decl->get_initial_value().get(),
+                                   lambda_context,
+                                   outer_context,
+                                   captures);
         }
         return;
     }
@@ -608,7 +659,10 @@ void collect_free_variables(
         collect_free_variables(if_stmt->get_body(), lambda_context, outer_context, captures);
         if (if_stmt->get_else_body())
         {
-            collect_free_variables(if_stmt->get_else_body(), lambda_context, outer_context, captures);
+            collect_free_variables(if_stmt->get_else_body(),
+                                   lambda_context,
+                                   outer_context,
+                                   captures);
         }
         return;
     }
@@ -616,7 +670,10 @@ void collect_free_variables(
     // Handle while loops
     if (auto* while_loop = dynamic_cast<AstWhileLoop*>(node))
     {
-        collect_free_variables(while_loop->get_condition(), lambda_context, outer_context, captures);
+        collect_free_variables(while_loop->get_condition(),
+                               lambda_context,
+                               outer_context,
+                               captures);
         collect_free_variables(while_loop->get_body(), lambda_context, outer_context, captures);
         return;
     }
@@ -625,11 +682,20 @@ void collect_free_variables(
     if (auto* for_loop = dynamic_cast<AstForLoop*>(node))
     {
         if (for_loop->get_initializer())
-            collect_free_variables(for_loop->get_initializer(), lambda_context, outer_context, captures);
+            collect_free_variables(for_loop->get_initializer(),
+                                   lambda_context,
+                                   outer_context,
+                                   captures);
         if (for_loop->get_condition())
-            collect_free_variables(for_loop->get_condition(), lambda_context, outer_context, captures);
+            collect_free_variables(for_loop->get_condition(),
+                                   lambda_context,
+                                   outer_context,
+                                   captures);
         if (for_loop->get_incrementor())
-            collect_free_variables(for_loop->get_incrementor(), lambda_context, outer_context, captures);
+            collect_free_variables(for_loop->get_incrementor(),
+                                   lambda_context,
+                                   outer_context,
+                                   captures);
 
         collect_free_variables(for_loop->get_body(), lambda_context, outer_context, captures);
         return;
