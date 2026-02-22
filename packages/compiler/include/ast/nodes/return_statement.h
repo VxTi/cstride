@@ -31,6 +31,12 @@ namespace stride::ast
         }
 
         void validate() override;
+
+        void resolve_forward_references(
+            const ParsingContext* context,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) override;
     };
 
     std::unique_ptr<AstReturnStatement> parse_return_statement(

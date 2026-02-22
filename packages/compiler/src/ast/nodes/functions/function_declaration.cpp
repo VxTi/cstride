@@ -7,6 +7,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/if_statement.h"
+#include "ast/nodes/while_loop.h"
 #include "ast/nodes/return_statement.h"
 #include "ast/symbols.h"
 
@@ -189,6 +190,23 @@ llvm::Value* IAstCallable::codegen(
         return function;
     }
 
+    // If the function body has already been generated (has basic blocks), just return the function pointer
+    if (!function->empty())
+    {
+        return function;
+    }
+
+    // Save the current insert point to restore it later
+    // This is important when generating nested lambdas
+    llvm::BasicBlock* saved_insert_block = builder->GetInsertBlock();
+    llvm::BasicBlock::iterator saved_insert_point;
+    bool has_insert_point = false;
+    if (saved_insert_block)
+    {
+        saved_insert_point = builder->GetInsertPoint();
+        has_insert_point = true;
+    }
+
     llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(
         module->getContext(),
         "entry",
@@ -295,6 +313,12 @@ llvm::Value* IAstCallable::codegen(
         // Print IR to console to see what's wrong
         throw std::runtime_error(
             "LLVM Function Verification Failed for: " + this->get_name());
+    }
+
+    // Restore the previous insert point for nested lambda generation
+    if (has_insert_point && saved_insert_block)
+    {
+        builder->SetInsertPoint(saved_insert_block, saved_insert_point);
     }
 
     return function;
@@ -443,47 +467,213 @@ void collect_free_variables(
         return;
     }
 
+    auto capture_variable = [&](const std::string& name)
+    {
+        // First check if it's a local variable or parameter in the lambda itself
+        // Use get_variable_def instead of lookup_variable to avoid checking parent contexts
+        const auto local_symbol = lambda_context->get_variable_def(name, true);
+
+        if (local_symbol)
+        {
+            return;
+        }
+
+        // Not local to the lambda - check if it's in an outer scope (and is a variable, not a function)
+        if (const auto outer_symbol = outer_context->lookup_variable(name, true))
+        {
+            // Check if we haven't already captured this variable
+            bool already_captured = false;
+            for (const auto& cap : captures)
+            {
+                if (cap.internal_name == outer_symbol->get_internal_symbol_name())
+                {
+                    already_captured = true;
+                    break;
+                }
+            }
+
+            if (!already_captured)
+            {
+                captures.push_back(outer_symbol->get_symbol());
+            }
+        }
+    };
+
+    // Check specific node types first, then fall back to generic container handling
+
     // If it's an identifier, check if it references a variable from outer scope
     if (const auto* identifier = dynamic_cast<const AstIdentifier*>(node))
     {
-        const auto& name = identifier->get_name();
+        capture_variable(identifier->get_name());
+        return;
+    }
 
-        // First check if it's a local variable or parameter in the lambda itself
-        const auto local_symbol = lambda_context->lookup_variable(name, false);
+    // Handle nested callables (lambdas) - recursively collect their free variables
+    if (auto* callable = dynamic_cast<IAstCallable*>(node))
+    {
+        // For nested lambdas, we need to:
+        // 1. First collect what the nested lambda needs from its body (if not already done)
+        // 2. Then capture those variables that are available in our outer context
 
-        if (!local_symbol)
+        // Check if this nested lambda already has captures collected
+        // If it does, we just need to propagate them upward
+        const auto& existing_captures = callable->get_captured_variables();
+
+        if (existing_captures.empty() && callable->get_body())
         {
-            // Not local to the lambda - check if it's in an outer scope (and is a variable, not a function)
-            if (const auto outer_symbol = outer_context->lookup_variable(name, true))
-            {
-                // Check if we haven't already captured this variable
-                bool already_captured = false;
-                for (const auto& cap : captures)
-                {
-                    if (cap.internal_name == outer_symbol->get_internal_symbol_name())
-                    {
-                        already_captured = true;
-                        break;
-                    }
-                }
+            // Captures haven't been collected yet, so do it now
+            std::vector<Symbol> nested_captures;
 
-                if (!already_captured)
+            // Recursively collect free variables in the nested lambda's body
+            // The nested lambda's context is its own context, and its outer context is our lambda_context
+            collect_free_variables(callable->get_body(), callable->get_context(), lambda_context, nested_captures);
+
+            // Now register the nested lambda's captures
+            for (const auto& nested_capture : nested_captures)
+            {
+                const_cast<IAstCallable*>(callable)->add_captured_variable(nested_capture);
+
+                // Define the capture in the nested lambda's context so identifier lookup works
+                if (const auto var_def = lambda_context->lookup_variable(nested_capture.name, true))
                 {
-                    captures.push_back(outer_symbol->get_symbol());
+                    callable->get_context()->define_variable(nested_capture, var_def->get_type()->clone());
                 }
             }
         }
+
+        // Now capture those variables into OUR scope if they come from outside
+        for (const auto& cap : callable->get_captured_variables())
+        {
+            capture_variable(cap.name);
+        }
+        return;
     }
 
-    // Recursively traverse child nodes
+    // Handle return statements
+    if (const auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
+    {
+        if (return_stmt->get_return_expr())
+        {
+            collect_free_variables(return_stmt->get_return_expr(), lambda_context, outer_context, captures);
+        }
+        return;
+    }
+
+    // Handle function calls
+    if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(node))
+    {
+        for (const auto& arg : fn_call->get_arguments())
+        {
+            collect_free_variables(arg.get(), lambda_context, outer_context, captures);
+        }
+        return;
+    }
+
+    // Handle variable declarations (initializer)
+    if (const auto* var_decl = dynamic_cast<AstVariableDeclaration*>(node))
+    {
+        if (var_decl->get_initial_value())
+        {
+            collect_free_variables(var_decl->get_initial_value().get(), lambda_context, outer_context, captures);
+        }
+        return;
+    }
+
+    // Handle variable reassignment
+    if (const auto* assignment = dynamic_cast<AstVariableReassignment*>(node))
+    {
+        collect_free_variables(assignment->get_value(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle binary ops
+    if (const auto* bin_op = dynamic_cast<AbstractBinaryOp*>(node))
+    {
+        collect_free_variables(bin_op->get_left(), lambda_context, outer_context, captures);
+        collect_free_variables(bin_op->get_right(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle unary ops
+    if (const auto* unary_op = dynamic_cast<AstUnaryOp*>(node))
+    {
+        collect_free_variables(&unary_op->get_operand(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle if statements
+    if (auto* if_stmt = dynamic_cast<AstIfStatement*>(node))
+    {
+        collect_free_variables(if_stmt->get_condition(), lambda_context, outer_context, captures);
+        collect_free_variables(if_stmt->get_body(), lambda_context, outer_context, captures);
+        if (if_stmt->get_else_body())
+        {
+            collect_free_variables(if_stmt->get_else_body(), lambda_context, outer_context, captures);
+        }
+        return;
+    }
+
+    // Handle while loops
+    if (auto* while_loop = dynamic_cast<AstWhileLoop*>(node))
+    {
+        collect_free_variables(while_loop->get_condition(), lambda_context, outer_context, captures);
+        collect_free_variables(while_loop->get_body(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle for loops
+    if (auto* for_loop = dynamic_cast<AstForLoop*>(node))
+    {
+        if (for_loop->get_initializer())
+            collect_free_variables(for_loop->get_initializer(), lambda_context, outer_context, captures);
+        if (for_loop->get_condition())
+            collect_free_variables(for_loop->get_condition(), lambda_context, outer_context, captures);
+        if (for_loop->get_incrementor())
+            collect_free_variables(for_loop->get_incrementor(), lambda_context, outer_context, captures);
+
+        collect_free_variables(for_loop->get_body(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle array literals
+    if (const auto* array = dynamic_cast<AstArray*>(node))
+    {
+        for (const auto& elem : array->get_elements())
+        {
+            collect_free_variables(elem.get(), lambda_context, outer_context, captures);
+        }
+        return;
+    }
+
+    // Handle struct initializers
+    if (const auto* struct_init = dynamic_cast<AstStructInitializer*>(node))
+    {
+        for (const auto& pair : struct_init->get_initializers())
+        {
+            collect_free_variables(pair.second.get(), lambda_context, outer_context, captures);
+        }
+        return;
+    }
+
+    // Handle member access
+    if (const auto* member = dynamic_cast<AstMemberAccessor*>(node))
+    {
+        collect_free_variables(member->get_base(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle blocks (lambda bodies, function bodies, etc.)
     if (auto* block = dynamic_cast<AstBlock*>(node))
     {
         for (const auto& child : block->children())
         {
             collect_free_variables(child.get(), lambda_context, outer_context, captures);
         }
+        return;
     }
-    else if (auto* container = dynamic_cast<IAstContainer*>(node))
+
+    // Generic container handling (if statements, loops, etc.) - this should be last
+    if (auto* container = dynamic_cast<IAstContainer*>(node))
     {
         if (auto* body = container->get_body())
         {
@@ -492,18 +682,7 @@ void collect_free_variables(
                 collect_free_variables(child.get(), lambda_context, outer_context, captures);
             }
         }
-    }
-    else if (auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
-    {
-        if (auto* expr = return_stmt->get_return_expr())
-        {
-            collect_free_variables(expr, lambda_context, outer_context, captures);
-        }
-    }
-    else if (auto* bin_op = dynamic_cast<AbstractBinaryOp*>(node))
-    {
-        collect_free_variables(bin_op->get_left(), lambda_context, outer_context, captures);
-        collect_free_variables(bin_op->get_right(), lambda_context, outer_context, captures);
+        return;
     }
 }
 

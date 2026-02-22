@@ -79,6 +79,14 @@ std::string AstReturnStatement::to_string()
                        _value ? _value->to_string() : "nullptr");
 }
 
+void AstReturnStatement::resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
+{
+    if (this->get_return_expr())
+    {
+        this->get_return_expr()->resolve_forward_references(context, module, builder);
+    }
+}
+
 llvm::Value* AstReturnStatement::codegen(
     llvm::Module* module,
     llvm::IRBuilder<>* builder)
