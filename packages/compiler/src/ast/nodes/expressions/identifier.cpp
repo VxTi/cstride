@@ -1,5 +1,7 @@
 #include "ast/nodes/expression.h"
+#include "ast/capture_helpers.h"
 
+#include <iostream>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
@@ -23,12 +25,7 @@ llvm::Value* AstIdentifier::codegen(
     {
         if (llvm::Function* function = block->getParent())
         {
-            val = function->getValueSymbolTable()->lookup(internal_name);
-
-            if (!val)
-            {
-                val = module->getNamedGlobal(internal_name);
-            }
+            val = helpers::lookup_variable_or_capture(function, internal_name);
 
             if (!val)
             {
@@ -38,17 +35,9 @@ llvm::Value* AstIdentifier::codegen(
                     return fn;
                 }
 
-                // The internal_name above is resolved from lookup_variable, which only covers
-                // variables. For functions, the internal name is mangled, so we need to look
-                // up the function definition from the context by its raw name to get the
-                // mangled internal name, then look it up in the module.
-                if (const auto fn_def = this->get_context()->lookup_symbol(this->get_name()))
+                if (auto* global = module->getNamedGlobal(internal_name))
                 {
-                    if (auto* fn = module->getFunction(
-                        fn_def->get_internal_symbol_name()))
-                    {
-                        return fn;
-                    }
+                    return global;
                 }
 
                 throw parsing_error(

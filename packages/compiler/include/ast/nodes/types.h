@@ -271,8 +271,7 @@ namespace stride::ast
             _return_type(std::move(return_type)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstType>>&
-        get_parameter_types() const
+        const std::vector<std::unique_ptr<IAstType>>& get_parameter_types() const
         {
             return _parameters;
         }

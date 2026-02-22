@@ -64,6 +64,7 @@ namespace stride::ast
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
         std::shared_ptr<IAstType> _return_type;
         int _flags;
+        std::vector<Symbol> _captured_variables;
 
     public:
         explicit IAstCallable(
@@ -135,6 +136,17 @@ namespace stride::ast
         bool is_anonymous() const
         {
             return this->_flags & SRFLAG_FN_DEF_ANONYMOUS;
+        }
+
+        [[nodiscard]]
+        const std::vector<Symbol>& get_captured_variables() const
+        {
+            return this->_captured_variables;
+        }
+
+        void add_captured_variable(const Symbol& symbol)
+        {
+            this->_captured_variables.push_back(symbol);
         }
 
         llvm::Value* codegen(

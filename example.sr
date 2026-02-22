@@ -1,7 +1,10 @@
-const do_nothing: () -> void = (): void -> {
-    printf("noop");
-        };
 
-        fn main(): void {
-            do_nothing();
-        }
+fn main(): void {
+    const factor: int32 = 10;
+
+    const multiply_by_factor: (int32) -> int32 = (x: int32): int32 -> {
+        return x * factor;
+    };
+
+    const result: int32 = multiply_by_factor(5);
+}

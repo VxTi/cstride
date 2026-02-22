@@ -3,6 +3,7 @@
 #include "ast/casting.h"
 #include "ast/modifiers.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/expression.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/if_statement.h"
 #include "ast/nodes/return_statement.h"
@@ -200,10 +201,32 @@ llvm::Value* IAstCallable::codegen(
     llvm::IRBuilder prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
 
     //
+    // Captured variable handling
+    // Map captured variables to function arguments with __capture_ prefix
+    //
+    auto arg_it = function->arg_begin();
+    for (const auto& capture : this->get_captured_variables())
+    {
+        if (arg_it != function->arg_end())
+        {
+            arg_it->setName(capture.internal_name + ".capture");
+
+            // Create alloca with __capture_ prefix so identifier lookup can find it
+            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
+                arg_it->getType(),
+                nullptr,
+                "__capture_" + capture.internal_name
+            );
+
+            builder->CreateStore(arg_it, alloca);
+            ++arg_it;
+        }
+    }
+
+    //
     // Function parameter handling
     // Here we define the parameters on the stack as memory slots for the function
     //
-    auto arg_it = function->arg_begin();
     for (const auto& param : this->get_parameters())
     {
         if (arg_it != function->arg_end())
@@ -409,6 +432,82 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
     return param_types;
 }
 
+void collect_free_variables(
+     IAstNode* node,
+    const std::shared_ptr<ParsingContext>& lambda_context,
+    const std::shared_ptr<ParsingContext>& outer_context,
+    std::vector<Symbol>& captures
+)
+{
+    if (!node)
+    {
+        return;
+    }
+
+    // If it's an identifier, check if it references a variable from outer scope
+    if (const auto* identifier = dynamic_cast<const AstIdentifier*>(node))
+    {
+        const auto& name = identifier->get_name();
+
+        // First check if it's a local variable or parameter in the lambda itself
+        const auto local_symbol = lambda_context->lookup_variable(name, false);
+
+        if (!local_symbol)
+        {
+            // Not local to the lambda - check if it's in an outer scope (and is a variable, not a function)
+            if (const auto outer_symbol = outer_context->lookup_variable(name, true))
+            {
+                // Check if we haven't already captured this variable
+                bool already_captured = false;
+                for (const auto& cap : captures)
+                {
+                    if (cap.internal_name == outer_symbol->get_internal_symbol_name())
+                    {
+                        already_captured = true;
+                        break;
+                    }
+                }
+
+                if (!already_captured)
+                {
+                    captures.push_back(outer_symbol->get_symbol());
+                }
+            }
+        }
+    }
+
+    // Recursively traverse child nodes
+    if (auto* block = dynamic_cast<AstBlock*>(node))
+    {
+        for (const auto& child : block->children())
+        {
+            collect_free_variables(child.get(), lambda_context, outer_context, captures);
+        }
+    }
+    else if (auto* container = dynamic_cast<IAstContainer*>(node))
+    {
+        if (auto* body = container->get_body())
+        {
+            for (const auto& child : body->children())
+            {
+                collect_free_variables(child.get(), lambda_context, outer_context, captures);
+            }
+        }
+    }
+    else if (auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
+    {
+        if (auto* expr = return_stmt->get_return_expr())
+        {
+            collect_free_variables(expr, lambda_context, outer_context, captures);
+        }
+    }
+    else if (auto* bin_op = dynamic_cast<AbstractBinaryOp*>(node))
+    {
+        collect_free_variables(bin_op->get_left(), lambda_context, outer_context, captures);
+        collect_free_variables(bin_op->get_right(), lambda_context, outer_context, captures);
+    }
+}
+
 std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
@@ -474,7 +573,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
             return_type->clone())
     );
 
-    return std::make_unique<AstLambdaFunctionExpression>(
+    auto lambda = std::make_unique<AstLambdaFunctionExpression>(
         context,
         symbol_name,
         std::move(parameters),
@@ -482,6 +581,24 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
         std::move(return_type),
         function_flags
     );
+
+    // Collect captured variables from the lambda body
+    std::vector<Symbol> captures;
+    collect_free_variables(lambda->get_body(), function_context, context, captures);
+
+    // Register captured variables in the lambda's context so they can be referenced
+    for (const auto& capture : captures)
+    {
+        lambda->add_captured_variable(capture);
+
+        // Also define the capture in the lambda's context so identifier lookup works
+        if (const auto outer_var = context->lookup_variable(capture.name, true))
+        {
+            function_context->define_variable(capture, outer_var->get_type()->clone());
+        }
+    }
+
+    return lambda;
 }
 
 bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
@@ -504,6 +621,20 @@ void IAstCallable::resolve_forward_references(
         return;
 
     std::vector<llvm::Type*> param_types;
+
+    // Add captured variables as first parameters
+    for (const auto& capture : this->get_captured_variables())
+    {
+        if (const auto capture_def = this->get_context()->lookup_variable(capture.name, true))
+        {
+            if (llvm::Type* capture_type = internal_type_to_llvm_type(capture_def->get_type(), module))
+            {
+                param_types.push_back(capture_type);
+            }
+        }
+    }
+
+    // Add regular parameters
     for (const auto& param : this->get_parameters())
     {
         llvm::Type* llvm_type = internal_type_to_llvm_type(

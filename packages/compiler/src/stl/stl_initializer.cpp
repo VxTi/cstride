@@ -66,8 +66,8 @@ void stride::stl::predefine_internal_functions(
         std::make_unique<ast::AstPrimitiveType>(
             placeholder_position,
             context,
-            ast::PrimitiveType::INT32,
-            32,
+            ast::PrimitiveType::STRING,
+            64,
             SRFLAG_TYPE_PTR));
     context->define_function(
         ast::Symbol(placeholder_position, "printf"),

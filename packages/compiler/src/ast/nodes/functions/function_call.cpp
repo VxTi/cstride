@@ -3,6 +3,7 @@
 #include "ast/nodes/types.h"
 #include "ast/optionals.h"
 #include "ast/symbols.h"
+#include "ast/capture_helpers.h"
 #include "formatting.h"
 
 #include <format>
@@ -82,16 +83,17 @@ std::string AstFunctionCall::format_function_name() const
         arg_types.push_back(type->get_internal_name());
     }
     if (arg_types.empty())
+    {
         arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
+    }
 
-    return std::format("{}({})",
-                       this->get_function_name(),
-                       join(arg_types, ", "));
+    return std::format("{}({})", this->get_function_name(), join(arg_types, ", "));
 }
 
 llvm::Value* AstFunctionCall::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilder<>* builder
+)
 {
     llvm::Function* callee = module->getFunction(this->get_internal_name());
 
@@ -108,11 +110,59 @@ llvm::Value* AstFunctionCall::codegen(
     {
         if (const auto* var_def = this->get_context()->lookup_variable(
             this->get_function_name(),
-            true))
+            true)
+        )
         {
-            if (const auto* fn_type = dynamic_cast<AstFunctionType*>(var_def->
-                get_type()))
+            if (const auto* fn_type = cast_type<AstFunctionType*>(var_def->get_type()))
             {
+                // Validate argument count matches lambda signature
+                const auto expected_param_count = fn_type->get_parameter_types().size();
+
+                if (const auto provided_arg_count = this->get_arguments().size();
+                    provided_arg_count != expected_param_count)
+                {
+                    throw parsing_error(
+                        ErrorType::COMPILATION_ERROR,
+                        std::format(
+                            "Incorrect number of arguments for lambda call to '{}': expected {}, got {}",
+                            this->get_function_name(),
+                            expected_param_count,
+                            provided_arg_count),
+                        this->get_source_fragment(),
+                        std::format("Lambda expects {} parameter(s)", expected_param_count));
+                }
+
+                // Validate argument types match lambda signature
+                for (size_t i = 0; i < expected_param_count; ++i)
+                {
+                    const auto arg_type = infer_expression_type(
+                        this->get_context(),
+                        this->get_arguments()[i].get()
+                    );
+
+                    if (const auto expected_type = fn_type->get_parameter_types()[i].get();
+                        arg_type->get_internal_name() != expected_type->get_internal_name())
+                    {
+                        throw parsing_error(
+                            ErrorType::TYPE_ERROR,
+                            std::format(
+                                "Type mismatch for argument {} in anonymous function call '{}': expected type '{}', got '{}'",
+                                i + 1,
+                                this->get_function_name(),
+                                expected_type->get_internal_name(),
+                                arg_type->get_internal_name()
+                            ),
+                            {
+                                ErrorSourceReference(
+                                    std::format("Expected type: {}",
+                                                expected_type->get_internal_name()),
+                                    arg_type->get_source_fragment()
+                                )
+                            }
+                        );
+                    }
+                }
+
                 // Reconstruct the concrete llvm::FunctionType from the AST type
                 std::vector<llvm::Type*> param_types;
                 for (const auto& param : fn_type->get_parameter_types())
@@ -135,33 +185,32 @@ llvm::Value* AstFunctionCall::codegen(
 
                 if (const auto block = builder->GetInsertBlock())
                 {
-                    fn_ptr_val = block->getParent()->getValueSymbolTable()->
-                                        lookup(fn_ptr);
+                    fn_ptr_val = block->getParent()->getValueSymbolTable()->lookup(fn_ptr);
                     if (fn_ptr_val)
                     {
-                        if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(
-                            fn_ptr_val))
+                        if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(fn_ptr_val))
                         {
-                            fn_ptr_val =
-                                builder->CreateLoad(
-                                    alloca->getAllocatedType(),
-                                    alloca,
-                                    fn_ptr);
+                            fn_ptr_val = builder->CreateLoad(
+                                alloca->getAllocatedType(),
+                                alloca,
+                                fn_ptr
+                            );
                         }
                     }
                 }
 
+                // Maybe it's globally defined
                 if (!fn_ptr_val)
                 {
                     fn_ptr_val = module->getNamedGlobal(fn_ptr);
                     if (fn_ptr_val)
                     {
-                        auto* global = llvm::cast<llvm::GlobalVariable>(
-                            fn_ptr_val);
+                        auto* global = llvm::cast<llvm::GlobalVariable>(fn_ptr_val);
                         fn_ptr_val = builder->CreateLoad(
                             global->getValueType(),
                             global,
-                            fn_ptr);
+                            fn_ptr
+                        );
                     }
                 }
 
@@ -169,6 +218,55 @@ llvm::Value* AstFunctionCall::codegen(
                 {
                     // Generate arguments
                     std::vector<llvm::Value*> args_v;
+
+                    // First, add captured variables if this is a lambda
+                    // We need to get the actual lambda definition to know what it captured
+                    llvm::Function* lambda_fn = nullptr;
+                    if (fn_ptr_val->getType()->isPointerTy())
+                    {
+                        // Try to find the lambda function by looking through module functions
+                        for (auto& func : *module)
+                        {
+                            if (&func == fn_ptr_val || func.getName().starts_with("#__anonymous_"))
+                            {
+                                // Check if this function has extra parameters (captures)
+                                const size_t expected_params = fn_type->get_parameter_types().size();
+                                if (func.arg_size() > expected_params)
+                                {
+                                    lambda_fn = &func;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // If we found a lambda with captures, add captured values as first arguments
+                    if (lambda_fn && lambda_fn->arg_size() > fn_type->get_parameter_types().size())
+                    {
+                        const size_t num_captures = lambda_fn->arg_size() - fn_type->get_parameter_types().size();
+
+                        // Load captured variables from current context
+                        for (size_t i = 0; i < num_captures; ++i)
+                        {
+                            auto capture_arg = lambda_fn->arg_begin();
+                            std::advance(capture_arg, i);
+
+                            // Extract the original variable name from parameter
+                            std::string capture_param_name = std::string(capture_arg->getName());
+                            if (capture_param_name.ends_with(".capture"))
+                            {
+                                capture_param_name = capture_param_name.substr(0, capture_param_name.length() - 8);
+                            }
+
+                            // Load the captured variable using helper
+                            if (llvm::Value* captured_val = helpers::load_captured_variable(builder, capture_param_name))
+                            {
+                                args_v.push_back(captured_val);
+                            }
+                        }
+                    }
+
+                    // Add regular arguments
                     const auto& arguments = this->get_arguments();
                     for (size_t i = 0; i < arguments.size(); ++i)
                     {
@@ -198,6 +296,7 @@ llvm::Value* AstFunctionCall::codegen(
         }
     }
 
+    // Welp, we can't find it
     if (!callee)
     {
         const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(
@@ -216,9 +315,7 @@ llvm::Value* AstFunctionCall::codegen(
     }
 
     // Reduce last argument if variadic
-    const auto minimum_arg_count = callee->arg_size() - (callee->isVarArg()
-        ? 1
-        : 0);
+    const auto minimum_arg_count = callee->arg_size() - (callee->isVarArg() ? 1 : 0);
 
     if (const auto provided_arg_count = this->get_arguments().size();
         provided_arg_count < minimum_arg_count)
@@ -267,10 +364,11 @@ llvm::Value* AstFunctionCall::codegen(
         args_v.push_back(final_val);
     }
 
-    const auto instruction_name = callee->getReturnType()->isVoidTy()
-        ? ""
-        : "calltmp";
-    return builder->CreateCall(callee, args_v, instruction_name);
+    return builder->CreateCall(
+        callee,
+        args_v,
+        callee->getReturnType()->isVoidTy() ? "" : "calltmp"
+    );
 }
 
 std::unique_ptr<AstExpression> stride::ast::parse_function_call(
