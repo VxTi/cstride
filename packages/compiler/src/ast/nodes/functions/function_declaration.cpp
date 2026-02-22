@@ -432,7 +432,7 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
 }
 
 void collect_free_variables(
-     IAstNode* node,
+    IAstNode* node,
     const std::shared_ptr<ParsingContext>& lambda_context,
     const std::shared_ptr<ParsingContext>& outer_context,
     std::vector<Symbol>& captures
@@ -613,43 +613,11 @@ void IAstCallable::resolve_forward_references(
     llvm::IRBuilder<>* builder
 )
 {
-    const auto& fn_name = this->get_internal_name();
+    const auto& function_name = this->get_internal_name();
 
     // Avoid re-registering if already declared (e.g. called multiple times)
-    if (module->getFunction(fn_name))
+    if (module->getFunction(function_name))
         return;
-
-    std::vector<llvm::Type*> param_types;
-
-    // Add captured variables as first parameters
-    for (const auto& capture : this->get_captured_variables())
-    {
-        if (const auto capture_def = this->get_context()->lookup_variable(capture.name, true))
-        {
-            if (llvm::Type* capture_type = internal_type_to_llvm_type(capture_def->get_type(), module))
-            {
-                param_types.push_back(capture_type);
-            }
-        }
-    }
-
-    // Add regular parameters
-    for (const auto& param : this->get_parameters())
-    {
-        llvm::Type* llvm_type = internal_type_to_llvm_type(
-            param->get_type(),
-            module
-        );
-        if (!llvm_type)
-        {
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                std::format("Failed to resolve parameter type for function '{}'", fn_name),
-                param->get_type()->get_source_fragment()
-            );
-        }
-        param_types.push_back(llvm_type);
-    }
 
     llvm::Type* return_type = internal_type_to_llvm_type(
         this->get_return_type(),
@@ -659,9 +627,40 @@ void IAstCallable::resolve_forward_references(
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
-            std::format("Failed to resolve return type for function '{}'", fn_name),
+            std::format("Failed to resolve return type for function '{}'", this->get_name()),
             this->get_return_type()->get_source_fragment()
         );
+    }
+
+    std::vector<llvm::Type*> param_types;
+
+    // Add captured variables as first parameters
+    for (const auto& capture : this->get_captured_variables())
+    {
+        if (const auto capture_def = this->get_context()->lookup_variable(capture.name, true))
+        {
+            if (llvm::Type* capture_type = internal_type_to_llvm_type(
+                capture_def->get_type(),
+                module))
+            {
+                param_types.push_back(capture_type);
+            }
+        }
+    }
+
+    // Add regular parameters
+    for (const auto& param : this->get_parameters())
+    {
+        llvm::Type* llvm_type = internal_type_to_llvm_type(param->get_type(), module);
+        if (!llvm_type)
+        {
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format("Failed to resolve parameter type for function '{}'", function_name),
+                param->get_type()->get_source_fragment()
+            );
+        }
+        param_types.push_back(llvm_type);
     }
 
     llvm::FunctionType* function_type = llvm::FunctionType::get(
@@ -670,10 +669,14 @@ void IAstCallable::resolve_forward_references(
         false
     );
 
+    const auto linkage = this->is_anonymous()
+        ? llvm::Function::PrivateLinkage
+        : llvm::Function::ExternalLinkage;
+
     llvm::Function::Create(
         function_type,
-        llvm::Function::ExternalLinkage,
-        fn_name,
+        linkage,
+        function_name,
         module
     );
 

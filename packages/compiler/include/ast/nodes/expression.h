@@ -577,7 +577,7 @@ namespace stride::ast
         llvm::Value* codegen(
             llvm::Module* module,
             llvm::IRBuilder<>* builder
-            ) override;
+        ) override;
 
         bool is_reducible() override;
 
@@ -637,7 +637,14 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilder<>* builder
+        ) override;
+
+        void resolve_forward_references(
+            const ParsingContext* context,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) override;
 
         bool is_reducible() override;
 

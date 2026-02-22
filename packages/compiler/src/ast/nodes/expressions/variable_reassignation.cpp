@@ -7,17 +7,6 @@
 
 using namespace stride::ast;
 
-bool AstVariableReassignment::is_reducible()
-{
-    if (auto* reducible = dynamic_cast<IReducible*>(this->get_value());
-        reducible != nullptr)
-    {
-        return reducible->is_reducible();
-    }
-
-    return false;
-}
-
 void AstVariableReassignment::validate()
 {
     const auto identifier_def =
@@ -49,7 +38,7 @@ void AstVariableReassignment::validate()
         this->get_context(),
         this->get_value());
 
-    if (identifier_def->get_type() != expression_type.get())
+    if (!identifier_def->get_type()->equals(*expression_type.get()))
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
@@ -64,33 +53,10 @@ void AstVariableReassignment::validate()
     }
 }
 
-IAstNode* AstVariableReassignment::reduce()
-{
-    if (auto* reducible = dynamic_cast<IReducible*>(this->get_value());
-        reducible != nullptr)
-    {
-        const auto reduced = reducible->reduce();
-
-        if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced);
-            reduced_expr != nullptr)
-        {
-            return std::make_unique<AstVariableReassignment>(
-                    this->get_source_fragment(),
-                    this->get_context(),
-                    this->get_variable_name(),
-                    this->get_internal_name(),
-                    this->get_operator(),
-                    std::unique_ptr<AstExpression>(reduced_expr))
-               .release();
-        }
-    }
-
-    return this;
-}
-
 llvm::Value* AstVariableReassignment::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilder<>* builder
+)
 {
     auto& ctx = module->getContext();
 
@@ -116,13 +82,25 @@ llvm::Value* AstVariableReassignment::codegen(
         );
     }
 
+    // Save the insertion point before codegen, as callable types (lambdas) may change it
+    llvm::BasicBlock* saved_block = builder->GetInsertBlock();
+    const auto saved_point = builder->GetInsertPoint();
+
     // Generate the RHS value
     llvm::Value* assign_val = this->get_value()->codegen(
         module,
         builder);
 
+    // Restore the insertion point after codegen
+    if (saved_block && saved_block != builder->GetInsertBlock())
+    {
+        builder->SetInsertPoint(saved_block, saved_point);
+    }
+
     if (!assign_val)
+    {
         return nullptr;
+    }
 
     const auto assign_ty = assign_val->getType();
 
@@ -249,13 +227,13 @@ llvm::Value* AstVariableReassignment::codegen(
     return finalValue;
 }
 
-std::string AstVariableReassignment::to_string()
+void AstVariableReassignment::resolve_forward_references(
+    const ParsingContext* context,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+)
 {
-    return std::format(
-        "VariableReassignment({}({}), {})",
-        this->get_variable_name(),
-        this->get_internal_name(),
-        this->get_value()->to_string());
+    this->get_value()->resolve_forward_references(context, module, builder);
 }
 
 /**
@@ -351,11 +329,61 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 
     auto expression = parse_inline_expression(context, set);
 
+    if (!expression)
+    {
+        return std::nullopt;
+    }
+
     return std::make_unique<AstVariableReassignment>(
         reference_token.get_source_fragment(),
         context,
         variable_name,
         variable_internal_name,
         operation,
-        std::move(expression));
+        std::move(expression)
+    );
+}
+
+bool AstVariableReassignment::is_reducible()
+{
+    if (auto* reducible = dynamic_cast<IReducible*>(this->get_value());
+        reducible != nullptr)
+    {
+        return reducible->is_reducible();
+    }
+
+    return false;
+}
+
+IAstNode* AstVariableReassignment::reduce()
+{
+    if (auto* reducible = dynamic_cast<IReducible*>(this->get_value());
+        reducible != nullptr)
+    {
+        const auto reduced = reducible->reduce();
+
+        if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced);
+            reduced_expr != nullptr)
+        {
+            return std::make_unique<AstVariableReassignment>(
+                    this->get_source_fragment(),
+                    this->get_context(),
+                    this->get_variable_name(),
+                    this->get_internal_name(),
+                    this->get_operator(),
+                    std::unique_ptr<AstExpression>(reduced_expr))
+               .release();
+        }
+    }
+
+    return this;
+}
+
+std::string AstVariableReassignment::to_string()
+{
+    return std::format(
+        "VariableReassignment({}({}), {})",
+        this->get_variable_name(),
+        this->get_internal_name(),
+        this->get_value()->to_string());
 }
