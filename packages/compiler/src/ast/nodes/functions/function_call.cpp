@@ -225,11 +225,39 @@ llvm::Value* AstFunctionCall::codegen(
 
                 if (fn_ptr_val)
                 {
-                    // Generate arguments - only the declared parameters, not captures
-                    // Captures are handled inside the lambda body
+                    // Generate arguments for the lambda call
                     std::vector<llvm::Value*> args_v;
 
-                    // Add only the declared arguments
+                    // Find the lambda function to determine if it has captured variables
+                    llvm::Function* lambda_fn = helpers::find_lambda_function(module, llvm_fn_type);
+
+                    // Determine the actual function type to use for the call
+                    llvm::FunctionType* call_fn_type = llvm_fn_type;
+
+                    // If we found the lambda function, add captured variable arguments first
+                    if (lambda_fn)
+                    {
+                        // Use the lambda's actual function type which includes captures
+                        call_fn_type = lambda_fn->getFunctionType();
+
+                        auto capture_args = helpers::generate_capture_arguments(
+                            module,
+                            builder,
+                            lambda_fn,
+                            fn_type->get_parameter_types().size()
+                        );
+
+                        // If capture generation failed, return error
+                        const size_t expected_captures = lambda_fn->arg_size() - fn_type->get_parameter_types().size();
+                        if (capture_args.size() != expected_captures)
+                        {
+                            return nullptr;
+                        }
+
+                        args_v.insert(args_v.end(), capture_args.begin(), capture_args.end());
+                    }
+
+                    // Add the declared arguments
                     const auto& arguments = this->get_arguments();
                     for (size_t i = 0; i < arguments.size(); ++i)
                     {
@@ -250,7 +278,7 @@ llvm::Value* AstFunctionCall::codegen(
                     const auto instruction_name = ret_type->isVoidTy()
                         ? ""
                         : "indcalltmp";
-                    return builder->CreateCall(llvm_fn_type,
+                    return builder->CreateCall(call_fn_type,
                                                fn_ptr_val,
                                                args_v,
                                                instruction_name);

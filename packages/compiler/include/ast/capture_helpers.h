@@ -1,10 +1,12 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
-#include <llvm/IR/ValueSymbolTable.h>
+
+#define ANONYMOUS_FN_PREFIX "#__anonymous_"
 
 namespace stride::ast::helpers
 {
@@ -16,28 +18,24 @@ namespace stride::ast::helpers
      * @param internal_name The internal name of the variable to look up
      * @return The LLVM value if found, nullptr otherwise
      */
-    inline llvm::Value* lookup_variable_or_capture(
+    llvm::Value* lookup_variable_or_capture(
         llvm::Function* function,
         const std::string& internal_name
-    )
-    {
-        if (!function)
-        {
-            return nullptr;
-        }
+    );
 
-        llvm::ValueSymbolTable* symbol_table = function->getValueSymbolTable();
-
-        // First try direct lookup
-        if (llvm::Value* val = symbol_table->lookup(internal_name))
-        {
-            return val;
-        }
-
-        // Try captured variable form
-        const std::string capture_name = "__capture_" + internal_name;
-        return symbol_table->lookup(capture_name);
-    }
+    /**
+     * Looks up a variable by its base name (without the numeric suffix).
+     * Searches for variables matching pattern: base_name.N or __capture_base_name.N
+     * where N is any numeric suffix added by the compiler.
+     *
+     * @param function The LLVM function to search in
+     * @param base_name The base name of the variable (e.g., "factor" for "factor.0")
+     * @return The LLVM value if found, nullptr otherwise
+     */
+    llvm::Value* lookup_variable_by_base_name(
+        llvm::Function* function,
+        const std::string& base_name
+    );
 
     /**
      * Loads a captured variable value from the current function's context.
@@ -47,29 +45,39 @@ namespace stride::ast::helpers
      * @param capture_name The name of the captured variable (without __capture_ prefix)
      * @return The loaded value if found, nullptr otherwise
      */
-    inline llvm::Value* load_captured_variable(
+    llvm::Value* load_captured_variable(
         llvm::IRBuilder<>* builder,
         const std::string& capture_name
-    )
-    {
-        if (llvm::BasicBlock* block = builder->GetInsertBlock())
-        {
-            if (llvm::Function* function = block->getParent())
-            {
-                if (llvm::Value* captured_val = function->getValueSymbolTable()->lookup(capture_name))
-                {
-                    if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
-                    {
-                        return builder->CreateLoad(
-                            alloca->getAllocatedType(),
-                            alloca,
-                            capture_name
-                        );
-                    }
-                    return captured_val;
-                }
-            }
-        }
-        return nullptr;
-    }
+    );
+
+    /**
+     * Finds the lambda function that corresponds to a function pointer variable.
+     * Matches by function type signature.
+     *
+     * @param module The LLVM module to search in
+     * @param fn_type The function type to match
+     * @return The lambda function if found, nullptr otherwise
+     */
+    llvm::Function* find_lambda_function(
+        llvm::Module* module,
+        const llvm::FunctionType* fn_type
+    );
+
+    /**
+     * Generates the captured variable arguments for a lambda function call.
+     * Extracts capture parameter names from the lambda function and looks up
+     * their values in the current scope.
+     *
+     * @param module The LLVM module
+     * @param builder The IR builder
+     * @param lambda_fn The lambda function being called
+     * @param num_declared_params The number of declared parameters (non-captured)
+     * @return Vector of captured variable values in the correct order
+     */
+    std::vector<llvm::Value*> generate_capture_arguments(
+        llvm::Module* module,
+        llvm::IRBuilder<>* builder,
+        llvm::Function* lambda_fn,
+        size_t num_declared_params
+    );
 } // namespace stride::ast::helpers

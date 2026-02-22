@@ -1,5 +1,6 @@
 #include "ast/nodes/function_declaration.h"
 
+#include "ast/capture_helpers.h"
 #include "ast/casting.h"
 #include "ast/modifiers.h"
 #include "ast/nodes/blocks.h"
@@ -21,8 +22,6 @@
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
-
-#define ANONYMOUS_FN_PREFIX "#__anonymous_"
 
 std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body)
 {
