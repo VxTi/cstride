@@ -484,7 +484,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     // Generate code for the initial value at the current insertion point
     // Save the insertion point before codegen, as callable types (lambdas) may change it
     llvm::BasicBlock* saved_block = ir_builder->GetInsertBlock();
-    llvm::BasicBlock::iterator saved_point = ir_builder->GetInsertPoint();
+    const auto saved_point = ir_builder->GetInsertPoint();
 
     llvm::Value* init_value = nullptr;
     if (const auto initial_value = this->get_initial_value().get())

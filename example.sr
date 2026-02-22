@@ -2,9 +2,13 @@ let operation: (int32, int32) -> int32 = (x: int32, y: int32): int32 -> {
             return x + y;
         };
 
-        fn main(): void {
+        fn main(): int32 {
             operation = (x: int32, y: int32): int32 -> {
                 return x - y;
             };
             const result: int32 = operation(10, 5);
+
+            printf("Res: %d\n", result);
+
+            return 0;
         }
