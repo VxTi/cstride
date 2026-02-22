@@ -104,8 +104,9 @@ void Program::validate_ast_nodes() const
     }
 }
 
-void Program::resolve_forward_references(llvm::Module* module,
-                                         llvm::IRBuilder<>* builder) const
+void Program::resolve_forward_references(
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder) const
 {
     this->_root_node->resolve_forward_references(
         this->get_global_context().get(),
@@ -114,8 +115,9 @@ void Program::resolve_forward_references(llvm::Module* module,
     );
 }
 
-void Program::generate_llvm_ir(llvm::Module* module,
-                               llvm::IRBuilder<>* builder) const
+void Program::generate_llvm_ir(
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder) const
 {
     if (!this->_root_node->codegen(
         module,

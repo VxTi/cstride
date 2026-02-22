@@ -93,7 +93,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
                 throw parsing_error(
                     ErrorType::SYNTAX_ERROR,
                     "Expected '=' after type annotation in variable declaration",
-                    variable_type->get_source_fragment());
+                    variable_type->get_source_fragment()
+                );
             }
 
             // If no expression was provided (lacking '='), initialize with nil if the initial type

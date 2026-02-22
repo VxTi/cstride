@@ -49,20 +49,19 @@ void AstVariableReassignment::validate()
         this->get_context(),
         this->get_value());
 
-    /*if (identifier_def->get_type() != expression_type.get())
+    if (identifier_def->get_type() != expression_type.get())
     {
         throw parsing_error(
-            make_ast_error(
-                *this->get_source,
-                this->source_offset,
-                std::format(
-                    "Type mismatch when reassigning variable '{}', expected type '{}', got type
-    '{}'", this->get_variable_name(), identifier_def->get_type()->to_string(),
-                    expression_type.get()->to_string()
-                )
-            )
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Type mismatch when reassigning variable '{}', expected type '{}', got type '{}'",
+                this->get_variable_name(),
+                identifier_def->get_type()->to_string(),
+                expression_type.get()->to_string()
+            ),
+            this->get_source_fragment()
         );
-    }*/
+    }
 }
 
 IAstNode* AstVariableReassignment::reduce()
@@ -289,7 +288,8 @@ bool is_variable_mutative_token(const TokenType type)
 
 MutativeAssignmentType parse_mutative_assignment_type(
     const TokenSet& set,
-    const Token& token)
+    const Token& token
+)
 {
     switch (token.get_type())
     {
@@ -319,11 +319,11 @@ MutativeAssignmentType parse_mutative_assignment_type(
     }
 }
 
-std::optional<std::unique_ptr<AstVariableReassignment>>
-stride::ast::parse_variable_reassignment(
+std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
     const std::shared_ptr<ParsingContext>& context,
     const std::string& variable_name,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     // Can be either a singular field, e.g., a regular variable,
     // or member access, e.g., <member>.<field>
@@ -333,34 +333,29 @@ stride::ast::parse_variable_reassignment(
         return std::nullopt;
     }
 
-    auto mutative_op = parse_mutative_assignment_type(set, reference_token);
+    auto operation = parse_mutative_assignment_type(set, reference_token);
     set.next();
 
-    std::string reassignment_iden_name = variable_name;
-    const auto reassign_internal_variable_name =
-        context->lookup_variable(reassignment_iden_name, true);
+    const auto variable_definition = context->lookup_variable(variable_name, true);
 
-    if (!reassign_internal_variable_name)
+    if (!variable_definition)
     {
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
-            std::format(
-                "Unable to reassign variable '{}', variable not found",
-                reassignment_iden_name),
+            std::format("Unable to reassign variable '{}', variable not found", variable_name),
             reference_token.get_source_fragment());
     }
 
-
-    std::string reassign_internal_name =
-        reassign_internal_variable_name->get_internal_symbol_name();
+    std::string variable_internal_name =
+        variable_definition->get_internal_symbol_name();
 
     auto expression = parse_inline_expression(context, set);
 
     return std::make_unique<AstVariableReassignment>(
         reference_token.get_source_fragment(),
         context,
-        reassignment_iden_name,
-        reassign_internal_name,
-        mutative_op,
+        variable_name,
+        variable_internal_name,
+        operation,
         std::move(expression));
 }

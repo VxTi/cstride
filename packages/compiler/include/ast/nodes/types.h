@@ -252,7 +252,8 @@ namespace stride::ast
         bool equals(IAstType& other) override;
     };
 
-    class AstFunctionType : public IAstType
+    class AstFunctionType
+        : public IAstType
     {
         std::vector<std::unique_ptr<IAstType>> _parameters;
         std::unique_ptr<IAstType> _return_type;
@@ -263,10 +264,9 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
-            const int flags = SRFLAG_NONE) :
-            IAstType(source,
-                     context,
-                     flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
+            const int flags = SRFLAG_NONE
+        ) :
+            IAstType(source, context, flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)) {}
 
@@ -295,7 +295,9 @@ namespace stride::ast
                 this->get_source_fragment(),
                 this->get_context(),
                 std::move(parameters_clone),
-                this->_return_type->clone());
+                this->_return_type->clone(),
+                this->get_flags()
+            );
         }
 
         std::string to_string() override
