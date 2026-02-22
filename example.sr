@@ -1,12 +1,13 @@
-
 fn main(): void {
     const factor: int32 = 10;
+    const offset: int32 = 5;
+    const multiplier: int32 = 2;
 
-    const multiply_by_factor: (int32) -> int32 = (x: int32): int32 -> {
-        return x * factor;
+    const complex_calc: (int32) -> int32 = (x: int32): int32 -> {
+        return (x * factor + offset) * multiplier;
     };
 
-    const result: int32 = multiply_by_factor(5);
+    const result: int32 = complex_calc(3);
 
     printf("Result: %d\n", result);
 }
