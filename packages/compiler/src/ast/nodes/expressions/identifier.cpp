@@ -20,12 +20,27 @@ llvm::Value* AstIdentifier::codegen(
     {
         internal_name = symbol_definition->get_internal_symbol_name();
     }
+    else
+    {
+        // Try looking up as a variable to handle captured variables
+        if (const auto var_def = this->get_context()->lookup_variable(this->get_name(), true))
+        {
+            internal_name = var_def->get_internal_symbol_name();
+        }
+    }
 
     if (const auto block = builder->GetInsertBlock())
     {
         if (llvm::Function* function = block->getParent())
         {
             val = helpers::lookup_variable_or_capture(function, internal_name);
+
+            // If not found by exact name, try base name lookup
+            // This handles cases where variables have numeric suffixes (e.g., "x.0")
+            if (!val)
+            {
+                val = helpers::lookup_variable_by_base_name(function, this->get_name());
+            }
 
             if (!val)
             {

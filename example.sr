@@ -1,14 +1,15 @@
-let operation: (int32, int32) -> int32 = (x: int32, y: int32): int32 -> {
-            return x + y;
-        };
 
-        fn main(): int32 {
-            operation = (x: int32, y: int32): int32 -> {
-                return x - y;
-            };
-            const result: int32 = operation(10, 5);
+const create_adder: (int32) -> (int32) -> int32 = (x: int32): (int32) -> int32 -> {
+    return (y: int32): int32 -> {
+        return x + y;
+    };
+};
 
-            printf("Res: %d\n", result);
+fn main(): int32 {
+    const add_five: (int32) -> int32 = create_adder(5);
+    const result: int32 = add_five(10);
 
-            return 0;
-        }
+    printf("%d\n", result); // This will print 15
+
+    return 0;
+}

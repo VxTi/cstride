@@ -32,7 +32,7 @@ namespace stride::ast
     class IAstNode
     {
         const SourceFragment _source_position;
-        const std::shared_ptr<ParsingContext> _scope;
+        const std::shared_ptr<ParsingContext> _context;
 
     public:
         explicit IAstNode(
@@ -40,7 +40,7 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context
         ) :
             _source_position(source),
-            _scope(context) {}
+            _context(context) {}
 
         virtual ~IAstNode() = default;
 
@@ -57,7 +57,7 @@ namespace stride::ast
         [[nodiscard]]
         std::shared_ptr<ParsingContext> get_context() const
         {
-            return this->_scope;
+            return this->_context;
         }
 
         [[nodiscard]]
