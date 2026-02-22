@@ -109,7 +109,7 @@ namespace stride::ast::helpers
      * @return Vector of captured values extracted from the closure
      */
     std::vector<llvm::Value*> extract_closure_captures(
-        llvm::Module* module,
+        const llvm::Module* module,
         llvm::IRBuilder<>* builder,
         llvm::Value* fn_ptr_val,
         size_t num_captures

@@ -250,7 +250,7 @@ namespace stride::ast::helpers
         // Cast to appropriate pointer type for storing function pointer
         llvm::Value* fn_ptr_slot = builder->CreatePointerCast(
             closure_ptr,
-            llvm::PointerType::getUnqual(lambda_fn->getType())
+            llvm::PointerType::getUnqual(module->getContext())
         );
 
         // Store the function pointer at offset 0
@@ -273,7 +273,7 @@ namespace stride::ast::helpers
             // Cast to appropriate type
             llvm::Value* typed_slot = builder->CreatePointerCast(
                 capture_slot,
-                llvm::PointerType::getUnqual(capture_type)
+                llvm::PointerType::getUnqual(module->getContext())
             );
 
             // Store the captured value
@@ -287,7 +287,7 @@ namespace stride::ast::helpers
     }
 
     std::vector<llvm::Value*> extract_closure_captures(
-        llvm::Module* module,
+        const llvm::Module* module,
         llvm::IRBuilder<>* builder,
         llvm::Value* fn_ptr_val,
         const size_t num_captures
@@ -324,7 +324,7 @@ namespace stride::ast::helpers
             llvm::Type* capture_type = llvm::Type::getInt32Ty(module->getContext());
             llvm::Value* typed_slot = builder->CreatePointerCast(
                 capture_slot,
-                llvm::PointerType::getUnqual(capture_type)
+                llvm::PointerType::getUnqual(module->getContext())
             );
 
             llvm::Value* loaded_val = builder->CreateLoad(capture_type, typed_slot);
