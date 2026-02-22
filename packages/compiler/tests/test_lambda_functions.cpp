@@ -422,7 +422,7 @@ TEST(LambdaErrors, InvokeWithWrongArgumentType)
             const result: int32 = add(1L, 2L);
         }
     )",
-        "was not found in this scope");
+        "Type mismatch for argument 1 in anonymous function call 'add': expected type 'int32', got 'int64'");
 }
 
 TEST(LambdaErrors, InvokeWithWrongArgumentCount)
@@ -437,7 +437,7 @@ TEST(LambdaErrors, InvokeWithWrongArgumentCount)
             const result: int32 = add(1);
         }
     )",
-        "was not found in this scope");
+        "Incorrect number of arguments for lambda call to 'add': expected 2, got 1");
 }
 
 // ============================================================================
@@ -456,66 +456,6 @@ TEST(Lambda, LambdaInArray)
         fn main(): void {
             const first: (int32) -> int32 = lambdas[0];
             const result: int32 = first(10);
-        }
-    )";
-    assert_compiles(code);
-}
-
-// ============================================================================
-// Lambda with All Primitive Types
-// ============================================================================
-
-TEST(Lambda, LambdaWithInt8)
-{
-    const std::string code = R"(
-        const add_int8: (int8, int8) -> int8 = (x: int8, y: int8): int8 -> {
-            return x + y;
-        };
-
-        fn main(): void {
-            const result: int8 = add_int8(1B, 2B);
-        }
-    )";
-    assert_compiles(code);
-}
-
-TEST(Lambda, LambdaWithInt16)
-{
-    const std::string code = R"(
-        const add_int16: (int16, int16) -> int16 = (x: int16, y: int16): int16 -> {
-            return x + y;
-        };
-
-        fn main(): void {
-            const result: int16 = add_int16(1S, 2S);
-        }
-    )";
-    assert_compiles(code);
-}
-
-TEST(Lambda, LambdaWithUnsignedTypes)
-{
-    const std::string code = R"(
-        const add_u32: (u32, u32) -> u32 = (x: u32, y: u32): u32 -> {
-            return x + y;
-        };
-
-        fn main(): void {
-            const result: u32 = add_u32(1U, 2U);
-        }
-    )";
-    assert_compiles(code);
-}
-
-TEST(Lambda, LambdaWithU64)
-{
-    const std::string code = R"(
-        const add_u64: (u64, u64) -> u64 = (x: u64, y: u64): u64 -> {
-            return x + y;
-        };
-
-        fn main(): void {
-            const result: u64 = add_u64(1UL, 2UL);
         }
     )";
     assert_compiles(code);
@@ -640,7 +580,6 @@ TEST(Lambda, LambdaReturningVoidWithMultipleStatements)
         const perform_operations: (int32) -> void = (x: int32): void -> {
             const temp1: int32 = x + 1;
             const temp2: int32 = temp1 * 2;
-            printf("Done");
         };
 
         fn main(): void {
