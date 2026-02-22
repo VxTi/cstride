@@ -7,6 +7,7 @@
 #include "formatting.h"
 
 #include <format>
+#include <iostream>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
@@ -108,6 +109,8 @@ llvm::Value* AstFunctionCall::codegen(
     // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
     if (!callee)
     {
+        // Variables are stored by their declaration name, not with function signatures
+        // So we lookup using the raw function name only
         if (const auto* var_def = this->get_context()->lookup_variable(
             this->get_function_name(),
             true)
@@ -129,7 +132,8 @@ llvm::Value* AstFunctionCall::codegen(
                             expected_param_count,
                             provided_arg_count),
                         this->get_source_fragment(),
-                        std::format("Lambda expects {} parameter(s)", expected_param_count));
+                        std::format("Lambda expects {} parameter(s)", expected_param_count)
+                    );
                 }
 
                 // Validate argument types match lambda signature
@@ -154,8 +158,10 @@ llvm::Value* AstFunctionCall::codegen(
                             ),
                             {
                                 ErrorSourceReference(
-                                    std::format("Expected type: {}",
-                                                expected_type->get_internal_name()),
+                                    std::format(
+                                        "Expected type: {}",
+                                        expected_type->get_internal_name()
+                                    ),
                                     arg_type->get_source_fragment()
                                 )
                             }
@@ -185,7 +191,10 @@ llvm::Value* AstFunctionCall::codegen(
 
                 if (const auto block = builder->GetInsertBlock())
                 {
-                    fn_ptr_val = block->getParent()->getValueSymbolTable()->lookup(fn_ptr);
+                    llvm::Function* current_fn = block->getParent();
+                    // Use helper to lookup variable or capture
+                    fn_ptr_val = helpers::lookup_variable_or_capture(current_fn, fn_ptr);
+
                     if (fn_ptr_val)
                     {
                         if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(fn_ptr_val))
@@ -216,57 +225,11 @@ llvm::Value* AstFunctionCall::codegen(
 
                 if (fn_ptr_val)
                 {
-                    // Generate arguments
+                    // Generate arguments - only the declared parameters, not captures
+                    // Captures are handled inside the lambda body
                     std::vector<llvm::Value*> args_v;
 
-                    // First, add captured variables if this is a lambda
-                    // We need to get the actual lambda definition to know what it captured
-                    llvm::Function* lambda_fn = nullptr;
-                    if (fn_ptr_val->getType()->isPointerTy())
-                    {
-                        // Try to find the lambda function by looking through module functions
-                        for (auto& func : *module)
-                        {
-                            if (&func == fn_ptr_val || func.getName().starts_with("#__anonymous_"))
-                            {
-                                // Check if this function has extra parameters (captures)
-                                const size_t expected_params = fn_type->get_parameter_types().size();
-                                if (func.arg_size() > expected_params)
-                                {
-                                    lambda_fn = &func;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    // If we found a lambda with captures, add captured values as first arguments
-                    if (lambda_fn && lambda_fn->arg_size() > fn_type->get_parameter_types().size())
-                    {
-                        const size_t num_captures = lambda_fn->arg_size() - fn_type->get_parameter_types().size();
-
-                        // Load captured variables from current context
-                        for (size_t i = 0; i < num_captures; ++i)
-                        {
-                            auto capture_arg = lambda_fn->arg_begin();
-                            std::advance(capture_arg, i);
-
-                            // Extract the original variable name from parameter
-                            std::string capture_param_name = std::string(capture_arg->getName());
-                            if (capture_param_name.ends_with(".capture"))
-                            {
-                                capture_param_name = capture_param_name.substr(0, capture_param_name.length() - 8);
-                            }
-
-                            // Load the captured variable using helper
-                            if (llvm::Value* captured_val = helpers::load_captured_variable(builder, capture_param_name))
-                            {
-                                args_v.push_back(captured_val);
-                            }
-                        }
-                    }
-
-                    // Add regular arguments
+                    // Add only the declared arguments
                     const auto& arguments = this->get_arguments();
                     for (size_t i = 0; i < arguments.size(); ++i)
                     {

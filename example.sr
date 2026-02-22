@@ -7,4 +7,6 @@ fn main(): void {
     };
 
     const result: int32 = multiply_by_factor(5);
+
+    printf("Result: %d\n", result);
 }
