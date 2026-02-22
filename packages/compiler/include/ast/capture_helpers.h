@@ -56,9 +56,7 @@ namespace stride::ast::helpers
         {
             if (llvm::Function* function = block->getParent())
             {
-                llvm::Value* captured_val = function->getValueSymbolTable()->lookup(capture_name);
-
-                if (captured_val)
+                if (llvm::Value* captured_val = function->getValueSymbolTable()->lookup(capture_name))
                 {
                     if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
                     {
