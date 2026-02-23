@@ -5,7 +5,8 @@
 
 namespace stride::ast
 {
-    class AstReturnStatement : public IAstNode, public ISynthesisable
+    class AstReturnStatement
+        : public IAstNode
     {
         const std::unique_ptr<AstExpression> _value;
 

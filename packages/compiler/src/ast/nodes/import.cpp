@@ -111,9 +111,11 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
                                     .submodules  = import_list };
 
 
-    return std::make_unique<AstImport>(reference_token.get_source_fragment(),
-                                       context,
-                                       dependency);
+    return std::make_unique<AstImport>(
+        reference_token.get_source_fragment(),
+        context,
+        dependency
+    );
 }
 
 std::string AstImport::to_string()

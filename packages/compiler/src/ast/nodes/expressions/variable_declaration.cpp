@@ -286,7 +286,6 @@ void AstVariableDeclaration::resolve_forward_references(
     llvm::IRBuilder<>* builder
 )
 {
-    // If the initial value is itself synthesisable (e.g. a lambda), pre-declare it too.
     if (const auto initial_value = this->get_initial_value().get())
     {
         initial_value->resolve_forward_references(context, module, builder);

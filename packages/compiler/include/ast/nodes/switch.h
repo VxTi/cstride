@@ -8,7 +8,8 @@
 namespace stride::ast
 {
     // TODO: Implement
-    class AstSwitchBranch : public IAstNode
+    class AstSwitchBranch
+        : public IAstNode
     {
     public:
         AstSwitchBranch(
@@ -17,7 +18,8 @@ namespace stride::ast
             IAstNode(source, context) {}
     };
 
-    class AstSwitch : public IAstNode, public ISynthesisable
+    class AstSwitch
+        : public IAstNode
     {
         std::string _name;
         std::vector<std::unique_ptr<AstSwitchBranch>> _branches;

@@ -7,8 +7,7 @@
 namespace stride::ast
 {
     class AstBlock
-        : public IAstNode,
-          public ISynthesisable
+        : public IAstNode
     {
         std::vector<std::unique_ptr<IAstNode>> _children;
 

@@ -28,7 +28,8 @@ namespace stride::ast
 #define SRFLAG_INT_UNSIGNED (0x2)
 
 
-    class AstLiteral : public AstExpression
+    class AstLiteral
+        : public AstExpression
     {
         short _bit_count;
         LiteralType _type;

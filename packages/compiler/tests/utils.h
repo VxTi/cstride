@@ -36,8 +36,7 @@ namespace stride::tests
     {
         EXPECT_NO_THROW({
             const auto block = parse_code(code);
-            EXPECT_NE(block, nullptr) << "Parsing returned null for code: " <<
-            code;
+            EXPECT_NE(block, nullptr) << "Parsing returned null for code: " << code;
             });
     }
 
@@ -64,8 +63,10 @@ namespace stride::tests
         EXPECT_ANY_THROW({ assert_compiles(code); });
     }
 
-    inline void assert_throws_message(const std::string& code,
-                                      const std::string& contains_message)
+    inline void assert_throws_message(
+        const std::string& code,
+        const std::string& contains_message
+    )
     {
         try
         {

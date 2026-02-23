@@ -15,10 +15,7 @@ void AstBlock::resolve_forward_references(
 {
     for (const auto& child : this->children())
     {
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
-        {
-            synthesisable->resolve_forward_references(context, module, builder);
-        }
+        child->resolve_forward_references(context, module, builder);
     }
 }
 
@@ -42,10 +39,7 @@ llvm::Value* AstBlock::codegen(
             }
         }
 
-        if (auto* synthesisable = dynamic_cast<ISynthesisable*>(child.get()))
-        {
-            last_value = synthesisable->codegen(module, builder);
-        }
+        last_value = child.get()->codegen(module, builder);
     }
 
     return last_value;

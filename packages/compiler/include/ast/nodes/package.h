@@ -25,6 +25,11 @@ namespace stride::ast
         void validate() override;
 
         std::string to_string() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override
+        {
+            return nullptr;
+        }
     };
 
     bool is_package_declaration(const TokenSet& set);

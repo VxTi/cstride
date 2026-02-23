@@ -50,6 +50,8 @@ namespace stride::ast
         }
 
         ~AstFunctionParameter() override = default;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
     };
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -57,7 +59,9 @@ namespace stride::ast
      *                Function declaration definitions             *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-    class IAstCallable : public IAstContainer, public AstExpression
+    class IAstCallable
+        : public IAstContainer,
+          public AstExpression
     {
         std::unique_ptr<AstBlock> _body;
         Symbol _symbol;
@@ -67,6 +71,8 @@ namespace stride::ast
         std::vector<Symbol> _captured_variables;
 
     public:
+        using AstExpression::AstExpression;
+
         explicit IAstCallable(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
@@ -74,7 +80,8 @@ namespace stride::ast
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::shared_ptr<IAstType> return_type,
-            const int flags) :
+            const int flags
+        ) :
             AstExpression(source, context),
             _body(std::move(body)),
             _symbol(std::move(symbol)),
@@ -162,9 +169,12 @@ namespace stride::ast
     };
 
     class AstFunctionDeclaration
-        : public IAstCallable
+        : public IAstCallable,
+          public IAstStatement
     {
     public:
+        using IAstStatement::IAstStatement;
+
         explicit AstFunctionDeclaration(
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
@@ -180,7 +190,8 @@ namespace stride::ast
                 std::move(parameters),
                 std::move(body),
                 std::move(return_type),
-                flags) {}
+                flags
+            ) {}
 
         std::string to_string() override;
 
