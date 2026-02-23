@@ -1,13 +1,16 @@
 
-const create_adder: (int32) -> (int32) -> int32 = (x: int32): (int32) -> int32 -> {
-    return (y: int32): int32 -> {
-        return x + y;
+const create_adder = (x: int32): (int32) -> (int32) -> int32 -> {
+    return (y: int32): (int32) -> int32 -> {
+        return (z: int32): int32 -> {
+            return x + y + z;
+        };
     };
 };
 
 fn main(): int32 {
-    const add_five: (int32) -> int32 = create_adder(5);
-    const result: int32 = add_five(10);
+    const add_five: (int32) -> (int32) -> int32 = create_adder(5);
+    const first_result: (int32) -> int32 = add_five(10);
+    const result: int32 = first_result(15);
 
     printf("%d\n", result); // This will print 15
 

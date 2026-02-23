@@ -1,6 +1,6 @@
 #include "ast/nodes/function_declaration.h"
 
-#include "ast/capture_helpers.h"
+#include "ast/closures.h"
 #include "ast/casting.h"
 #include "ast/modifiers.h"
 #include "ast/nodes/blocks.h"
@@ -334,11 +334,11 @@ llvm::Value* IAstCallable::codegen(
             if (const auto block = builder->GetInsertBlock())
             {
                 llvm::Function* current_fn = block->getParent();
-                llvm::Value* captured_val = helpers::lookup_variable_or_capture(current_fn, capture.internal_name);
+                llvm::Value* captured_val = closures::lookup_variable_or_capture(current_fn, capture.internal_name);
 
                 if (!captured_val)
                 {
-                    captured_val = helpers::lookup_variable_by_base_name(current_fn, capture.name);
+                    captured_val = closures::lookup_variable_by_base_name(current_fn, capture.name);
                 }
 
                 if (captured_val)
@@ -358,7 +358,7 @@ llvm::Value* IAstCallable::codegen(
         }
 
         // Create and return a closure instead of the raw function pointer
-        return helpers::create_closure(module, builder, function, captured_values);
+        return closures::create_closure(module, builder, function, captured_values);
     }
 
     return function;

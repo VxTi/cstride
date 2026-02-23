@@ -1,8 +1,8 @@
-#include "ast/capture_helpers.h"
+#include "ast/closures.h"
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
-namespace stride::ast::helpers
+namespace stride::ast::closures
 {
     llvm::Value* lookup_variable_or_capture(
         llvm::Function* function,
@@ -236,7 +236,7 @@ namespace stride::ast::helpers
         // Calculate total size needed: 1 pointer (function) + N values (captures)
         // Size = sizeof(ptr) + sum of sizeof(each captured value)
         uint64_t total_size = module->getDataLayout().getPointerSize();
-        for (llvm::Value* val : captured_values)
+        for (const llvm::Value* val : captured_values)
         {
             total_size += module->getDataLayout().getTypeAllocSize(val->getType());
         }
@@ -273,7 +273,7 @@ namespace stride::ast::helpers
             // Cast to appropriate type
             llvm::Value* typed_slot = builder->CreatePointerCast(
                 capture_slot,
-                llvm::PointerType::getUnqual(module->getContext())
+                llvm::PointerType::get(module->getContext(), 0)
             );
 
             // Store the captured value
@@ -324,7 +324,7 @@ namespace stride::ast::helpers
             llvm::Type* capture_type = llvm::Type::getInt32Ty(module->getContext());
             llvm::Value* typed_slot = builder->CreatePointerCast(
                 capture_slot,
-                llvm::PointerType::getUnqual(module->getContext())
+                llvm::PointerType::get(module->getContext(), 0)
             );
 
             llvm::Value* loaded_val = builder->CreateLoad(capture_type, typed_slot);
@@ -335,4 +335,4 @@ namespace stride::ast::helpers
 
         return captures;
     }
-} // namespace stride::ast::helpers
+} // namespace stride::ast::closures

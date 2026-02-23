@@ -8,7 +8,7 @@
 
 #define ANONYMOUS_FN_PREFIX "#__anonymous_"
 
-namespace stride::ast::helpers
+namespace stride::ast::closures
 {
     /**
      * Looks up a variable in the function's symbol table, checking both regular and captured forms.
@@ -114,4 +114,4 @@ namespace stride::ast::helpers
         llvm::Value* fn_ptr_val,
         size_t num_captures
     );
-} // namespace stride::ast::helpers
+} // namespace stride::ast::closures
