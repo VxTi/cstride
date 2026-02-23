@@ -179,17 +179,48 @@ namespace stride::ast::closures
             if (const auto block = builder->GetInsertBlock())
             {
                 llvm::Function* current_fn = block->getParent();
-                captured_val = lookup_variable_by_base_name(current_fn, var_name);
 
-                if (captured_val)
+                // First, check if we're in a closure function ourselves and this variable
+                // was passed to us as a capture parameter
+                const std::string capture_param_name = var_name + ".capture";
+                for (auto& arg : current_fn->args())
                 {
-                    if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
+                    const std::string arg_name = std::string(arg.getName());
+                    if (arg_name == capture_param_name ||
+                        (arg_name.starts_with(var_name + ".") && arg_name.ends_with(".capture")))
                     {
-                        captured_val = builder->CreateLoad(
-                            alloca->getAllocatedType(),
-                            alloca,
-                            var_name
-                        );
+                        // Found it as a parameter - load it from the __capture_ alloca
+                        const std::string capture_alloca_name = "__capture_" + var_name;
+                        if (llvm::Value* capture_alloca = current_fn->getValueSymbolTable()->lookup(capture_alloca_name))
+                        {
+                            if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(capture_alloca))
+                            {
+                                captured_val = builder->CreateLoad(
+                                    alloca->getAllocatedType(),
+                                    alloca,
+                                    var_name
+                                );
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // If not found as a capture parameter, look it up in the symbol table
+                if (!captured_val)
+                {
+                    captured_val = lookup_variable_by_base_name(current_fn, var_name);
+
+                    if (captured_val)
+                    {
+                        if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
+                        {
+                            captured_val = builder->CreateLoad(
+                                alloca->getAllocatedType(),
+                                alloca,
+                                var_name
+                            );
+                        }
                     }
                 }
             }
@@ -290,12 +321,34 @@ namespace stride::ast::closures
         const llvm::Module* module,
         llvm::IRBuilder<>* builder,
         llvm::Value* fn_ptr_val,
-        const size_t num_captures
+        llvm::Function* lambda_fn
     )
     {
         std::vector<llvm::Value*> captures;
 
-        if (num_captures == 0)
+        if (!lambda_fn || !fn_ptr_val)
+        {
+            return captures;
+        }
+
+        // Get the number of capture parameters from the lambda function
+        // Capture parameters are those ending with ".capture"
+        std::vector<llvm::Type*> capture_types;
+        for (auto& arg : lambda_fn->args())
+        {
+            const std::string arg_name = std::string(arg.getName());
+            if (arg_name.ends_with(".capture"))
+            {
+                capture_types.push_back(arg.getType());
+            }
+            else
+            {
+                // Once we hit a non-capture parameter, we're done with captures
+                break;
+            }
+        }
+
+        if (capture_types.empty())
         {
             return captures;
         }
@@ -309,10 +362,7 @@ namespace stride::ast::closures
         // Skip the function pointer (first slot) and extract captured values
         uint64_t offset = module->getDataLayout().getPointerSize();
 
-        // We need to know the types of the captures to extract them properly
-        // For now, we'll extract them as i32 values (this is a simplification)
-        // In a full implementation, we'd need to store type information in the closure
-        for (size_t i = 0; i < num_captures; ++i)
+        for (llvm::Type* capture_type : capture_types)
         {
             llvm::Value* capture_slot = builder->CreateConstGEP1_64(
                 llvm::Type::getInt8Ty(module->getContext()),
@@ -320,8 +370,6 @@ namespace stride::ast::closures
                 offset
             );
 
-            // For now, assume all captures are i32 (this needs to be improved)
-            llvm::Type* capture_type = llvm::Type::getInt32Ty(module->getContext());
             llvm::Value* typed_slot = builder->CreatePointerCast(
                 capture_slot,
                 llvm::PointerType::get(module->getContext(), 0)

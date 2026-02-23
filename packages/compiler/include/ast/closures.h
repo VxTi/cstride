@@ -105,13 +105,13 @@ namespace stride::ast::closures
      * @param module The LLVM module
      * @param builder The IR builder
      * @param fn_ptr_val The function pointer value (might be a closure)
-     * @param num_captures The number of captures expected
+     * @param lambda_fn The lambda function to extract types from
      * @return Vector of captured values extracted from the closure
      */
     std::vector<llvm::Value*> extract_closure_captures(
         const llvm::Module* module,
         llvm::IRBuilder<>* builder,
         llvm::Value* fn_ptr_val,
-        size_t num_captures
+        llvm::Function* lambda_fn
     );
 } // namespace stride::ast::closures
