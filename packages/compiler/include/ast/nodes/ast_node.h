@@ -13,22 +13,6 @@ namespace stride::ast
     class AstBlock;
     class ParsingContext;
 
-    class ISynthesisable
-    {
-    public:
-        virtual ~ISynthesisable() = default;
-
-        virtual llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilder<>* builder) = 0;
-
-        /// Utility function for defining symbols before they're referenced.
-        virtual void resolve_forward_references(
-            const ParsingContext* context,
-            llvm::Module* module,
-            llvm::IRBuilder<>* builder) {}
-    };
-
     class IAstNode
     {
         const SourceFragment _source_position;
@@ -65,6 +49,26 @@ namespace stride::ast
         {
             return this->_source_position;
         }
+
+        virtual llvm::Value* codegen(
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) = 0;
+
+        /// Utility function for defining symbols before they're referenced.
+        virtual void resolve_forward_references(
+            const ParsingContext* context,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) {}
+    };
+
+    class IAstStatement
+    {
+        friend class AstBlock;
+
+    public:
+        virtual ~IAstStatement() = default;
     };
 
     class IReducible

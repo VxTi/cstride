@@ -9,8 +9,9 @@
 
 namespace stride::ast
 {
-    class AstForLoop : public IAstNode, public ISynthesisable,
-                       public IAstContainer
+    class AstForLoop
+        : public IAstNode,
+          public IAstContainer
     {
         std::unique_ptr<AstBlock> _body;
         std::unique_ptr<AstExpression> _initializer;

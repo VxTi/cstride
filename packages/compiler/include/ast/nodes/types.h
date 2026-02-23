@@ -38,10 +38,10 @@ namespace stride::ast
         UNKNOWN
     };
 
-    std::string primitive_type_to_str(PrimitiveType type,
-                                      int flags = SRFLAG_NONE);
+    std::string primitive_type_to_str(PrimitiveType type, int flags = SRFLAG_NONE);
 
-    class IAstType : public IAstNode
+    class IAstType
+        : public IAstNode
     {
         int _flags;
 
@@ -49,7 +49,8 @@ namespace stride::ast
         IAstType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            const int flags) :
+            const int flags
+        ) :
             IAstNode(source, context),
             _flags(flags) {}
 
@@ -121,9 +122,12 @@ namespace stride::ast
         {
             return false;
         }
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
     };
 
-    class AstPrimitiveType : public IAstType
+    class AstPrimitiveType
+        : public IAstType
     {
         PrimitiveType _type;
         size_t _bit_count;

@@ -6,9 +6,9 @@
 namespace stride::ast
 {
     class AstIfStatement
-        : public IAstNode,
-          public ISynthesisable,
+        : public IAstStatement,
           public IReducible,
+          public IAstNode,
           public IAstContainer
     {
         std::unique_ptr<AstExpression> _condition;
@@ -21,7 +21,8 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstBlock> body,
-            std::unique_ptr<AstBlock> else_body) :
+            std::unique_ptr<AstBlock> else_body
+        ) :
             IAstNode(source, context),
             _condition(std::move(condition)),
             _body(std::move(body)),

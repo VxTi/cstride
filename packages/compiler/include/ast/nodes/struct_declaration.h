@@ -39,11 +39,15 @@ namespace stride::ast
         }
 
         void validate() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override
+        {
+            return nullptr;
+        }
     };
 
     class AstStructDeclaration
-        : public IAstNode,
-          public ISynthesisable
+        : public IAstNode
     {
         std::string _name;
         std::vector<std::unique_ptr<AstStructMember>> _members;

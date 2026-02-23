@@ -8,7 +8,8 @@
 
 namespace stride::ast
 {
-    class AstEnumerableMember : public IAstNode
+    class AstEnumerableMember
+        : public IAstNode
     {
         friend class AstEnumerable;
 
@@ -20,7 +21,8 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
-            std::unique_ptr<AstLiteral> value) :
+            std::unique_ptr<AstLiteral> value
+        ) :
             IAstNode(source, context),
             _name(std::move(name)),
             _value(std::move(value)) {}
@@ -38,6 +40,8 @@ namespace stride::ast
         }
 
         std::string to_string() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
     };
 
     class AstEnumerable : public IAstNode
@@ -50,7 +54,8 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<AstEnumerableMember>> members,
-            std::string name) :
+            std::string name
+        ) :
             IAstNode(source, context),
             _members(std::move(members)),
             _name(std::move(name)) {}
@@ -69,6 +74,8 @@ namespace stride::ast
         }
 
         std::string to_string() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
     };
 
     std::unique_ptr<AstEnumerableMember> parse_enumerable_member(

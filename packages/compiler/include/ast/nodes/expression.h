@@ -69,13 +69,13 @@ namespace stride::ast
 
     class AstExpression
         : public IAstNode,
-          public ISynthesisable,
           public IReducible
     {
     public:
         explicit AstExpression(
             const SourceFragment& source_position,
-            const std::shared_ptr<ParsingContext>& context) :
+            const std::shared_ptr<ParsingContext>& context
+        ) :
             IAstNode(source_position, context) {}
 
         ~AstExpression() override = default;
@@ -106,7 +106,8 @@ namespace stride::ast
         explicit AstArray(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::vector<std::unique_ptr<AstExpression>> elements) :
+            std::vector<std::unique_ptr<AstExpression>> elements
+        ) :
             AstExpression(source, context),
             _elements(std::move(elements)) {}
 
@@ -118,14 +119,16 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilder<>* builder
+        ) override;
 
         void validate() override;
 
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilder<>* builder
+        ) override;
 
         std::string to_string() override;
     };
@@ -136,8 +139,10 @@ namespace stride::ast
         Symbol _symbol;
 
     public:
-        explicit AstIdentifier(const std::shared_ptr<ParsingContext>& context,
-                               Symbol symbol) :
+        explicit AstIdentifier(
+            const std::shared_ptr<ParsingContext>& context,
+            Symbol symbol
+        ) :
             AstExpression(symbol.symbol_position, context),
             _symbol(std::move(symbol)) {}
 
@@ -181,7 +186,8 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> array_identifier,
-            std::unique_ptr<AstExpression> index_expr) :
+            std::unique_ptr<AstExpression> index_expr
+        ) :
             AstExpression(source, context),
             _array_identifier(std::move(array_identifier)),
             _index_accessor_expr(std::move(index_expr)) {}
@@ -385,16 +391,6 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilder<>* builder) override;
 
-        bool is_reducible() override
-        {
-            return false; /* TODO: Implement*/
-        }
-
-        IAstNode* reduce() override
-        {
-            return this; /* TODO: Implement*/
-        }
-
         void validate() override;
     };
 
@@ -479,12 +475,7 @@ namespace stride::ast
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
         ) :
-            AbstractBinaryOp(
-                source,
-                context,
-                std::move(left),
-                std::move(right)
-            ),
+            AbstractBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -513,12 +504,7 @@ namespace stride::ast
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
         ) :
-            AbstractBinaryOp(
-                source,
-                context,
-                std::move(left),
-                std::move(right)
-            ),
+            AbstractBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]

@@ -14,7 +14,8 @@ namespace stride::ast
         std::vector<Symbol> submodules;
     } Dependency;
 
-    class AstImport : public IAstNode
+    class AstImport
+        : public IAstNode
     {
         const Dependency _dependency;
 
@@ -45,6 +46,8 @@ namespace stride::ast
         }
 
         std::string to_string() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
     };
 
     std::unique_ptr<AstImport> parse_import_statement(

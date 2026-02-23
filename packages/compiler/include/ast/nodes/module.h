@@ -8,7 +8,8 @@
 
 namespace stride::ast
 {
-    class AstModule : public IAstNode, public ISynthesisable
+    class AstModule
+        : public IAstNode
     {
         std::string _name;
         std::unique_ptr<AstBlock> _body;

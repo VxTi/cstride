@@ -45,7 +45,8 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
         member_name_tok.get_source_fragment(),
         context,
         std::move(member_sym),
-        std::move(value.value()));
+        std::move(value.value())
+    );
 }
 
 std::string AstEnumerableMember::to_string()
