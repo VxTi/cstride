@@ -1,5 +1,5 @@
 #include "ast/nodes/expression.h"
-#include "ast/capture_helpers.h"
+#include "ast/closures.h"
 
 #include <iostream>
 #include <llvm/IR/Module.h>
@@ -33,13 +33,13 @@ llvm::Value* AstIdentifier::codegen(
     {
         if (llvm::Function* function = block->getParent())
         {
-            val = helpers::lookup_variable_or_capture(function, internal_name);
+            val = closures::lookup_variable_or_capture(function, internal_name);
 
             // If not found by exact name, try base name lookup
             // This handles cases where variables have numeric suffixes (e.g., "x.0")
             if (!val)
             {
-                val = helpers::lookup_variable_by_base_name(function, this->get_name());
+                val = closures::lookup_variable_by_base_name(function, this->get_name());
             }
 
             if (!val)

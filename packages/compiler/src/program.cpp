@@ -120,7 +120,8 @@ void Program::generate_llvm_ir(llvm::Module* module, llvm::IRBuilder<>* builder)
         throw std::runtime_error(
             std::format(
                 "Failed to build executable for file '{}'",
-                this->_root_node->get_source()->path)
+                this->_root_node->get_source()->path
+            )
         );
     }
 }
