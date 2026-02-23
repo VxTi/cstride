@@ -251,7 +251,7 @@ llvm::Value* AstFunctionCall::codegen(
                                 module,
                                 builder,
                                 fn_ptr_val,
-                                num_captures
+                                lambda_fn
                             );
 
                             // If closure extraction succeeded, extract the actual function pointer

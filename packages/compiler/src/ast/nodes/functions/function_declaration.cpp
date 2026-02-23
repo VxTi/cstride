@@ -325,7 +325,7 @@ llvm::Value* IAstCallable::codegen(
 
     // For anonymous lambdas with captured variables, create a closure structure
     // that bundles the function pointer with the current values of captured variables
-    if (this->is_anonymous() && !this->get_captured_variables().empty())
+    if (this->is_anonymous())
     {
         // Collect the current values of captured variables from the enclosing scope
         std::vector<llvm::Value*> captured_values;
