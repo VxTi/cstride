@@ -175,10 +175,10 @@ llvm::Value* AstFunctionCall::codegen(
 
                 for (const auto& param : fn_type->get_parameter_types())
                 {
-                    param_types.push_back(internal_type_to_llvm_type(param.get(), module));
+                    param_types.push_back(type_to_llvm_type(param.get(), module));
                 }
 
-                llvm::Type* ret_type = internal_type_to_llvm_type(
+                llvm::Type* ret_type = type_to_llvm_type(
                     fn_type->get_return_type().get(),
                     module
                 );

@@ -188,7 +188,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
             return std::make_unique<AstNamedType>(
                 named->get_source_fragment(),
                 context,
-                named->name(),
+                named->get_name(),
                 flags
             );
         }
@@ -219,7 +219,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
             return std::make_unique<AstNamedType>(
                 named->get_source_fragment(),
                 context,
-                named->name(),
+                named->get_name(),
                 flags);
         }
     }
@@ -300,7 +300,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         }
 
         // Root fields, for if the struct is a reference
-        auto struct_def = expr->get_context()->get_struct_def(
+        auto struct_def = expr->get_context()->get_type_definition(
             struct_type->get_formatted_name());
         const auto root_ref_struct_fields =
             expr->get_context()->get_struct_type_fields(
@@ -310,7 +310,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Undefined struct '{}'", struct_type->name()),
+                std::format("Undefined struct '{}'", struct_type->get_name()),
                 expr->get_source_fragment());
         }
 

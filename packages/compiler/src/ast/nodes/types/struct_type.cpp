@@ -5,10 +5,40 @@
 using namespace stride::ast;
 
 void parse_struct_member(
-    const std::shared_ptr<ParsingContext>&,
-    TokenSet&,
-    std::vector<definition::StructFieldPair>&);
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set,
+    std::vector<definition::StructFieldPair>& fields
+)
+{
+    const auto struct_member_name_tok = set.expect(
+        TokenType::IDENTIFIER,
+        "Expected struct member name"
+    );
+    const auto& struct_member_name = struct_member_name_tok.get_lexeme();
 
+    set.expect(TokenType::COLON);
+
+    auto struct_member_type = parse_type(
+        context,
+        set,
+        "Expected a struct member type"
+    );
+    const auto last_token = set.expect(
+        TokenType::SEMICOLON,
+        "Expected ';' after struct member declaration"
+    );
+
+    const auto& last_pos = last_token.get_source_fragment();
+    const auto& mem_pos = struct_member_name_tok.get_source_fragment();
+
+    const auto position = stride::SourceFragment(
+        set.get_source(),
+        mem_pos.offset,
+        last_pos.offset + last_pos.length - mem_pos.offset
+    );
+
+    fields.emplace_back(struct_member_name, std::move(struct_member_type));
+}
 
 /**
  * Optionally parses a struct definition.
@@ -39,8 +69,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
     // Ensure we have at least one member in the struct body
     if (!struct_body_set.has_value() || !struct_body_set.value().has_next())
     {
-        throw stride::parsing_error(
-            stride::ErrorType::SEMANTIC_ERROR,
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
             "A struct must have at least 1 member",
             reference_token.get_source_fragment());
     }
@@ -75,40 +105,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
         std::move(struct_fields),
         context_type_flags
     );
-}
-
-void parse_struct_member(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set,
-    std::vector<definition::StructFieldPair>& fields
-)
-{
-    const auto struct_member_name_tok =
-        set.expect(TokenType::IDENTIFIER, "Expected struct member name");
-    const auto& struct_member_name = struct_member_name_tok.get_lexeme();
-
-    set.expect(TokenType::COLON);
-
-    auto struct_member_type = parse_type(
-        context,
-        set,
-        "Expected a struct member type"
-    );
-    const auto last_token = set.expect(
-        TokenType::SEMICOLON,
-        "Expected ';' after struct member declaration"
-    );
-
-    const auto& last_pos = last_token.get_source_fragment();
-    const auto& mem_pos = struct_member_name_tok.get_source_fragment();
-
-    const auto position = stride::SourceFragment(
-        set.get_source(),
-        mem_pos.offset,
-        last_pos.offset + last_pos.length - mem_pos.offset
-    );
-
-    fields.emplace_back(struct_member_name, std::move(struct_member_type));
 }
 
 bool AstStructType::equals(IAstType& other)

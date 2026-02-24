@@ -296,7 +296,7 @@ void AstVariableDeclaration::resolve_forward_references(
         return;
     }
 
-    llvm::Type* var_type = internal_type_to_llvm_type(this->get_variable_type(), module);
+    llvm::Type* var_type = type_to_llvm_type(this->get_variable_type(), module);
     if (!var_type)
     {
         return;
@@ -418,7 +418,7 @@ llvm::Value* AstVariableDeclaration::codegen(
 )
 {
     // Get the LLVM type for the variable
-    llvm::Type* variable_ty = internal_type_to_llvm_type(
+    llvm::Type* variable_ty = type_to_llvm_type(
         this->get_variable_type(),
         module
     );

@@ -103,7 +103,7 @@ definition::TypeDef* get_super_referencing_struct_def(
     const std::string& struct_name
 )
 {
-    const auto definition = context->get_struct_def(struct_name);
+    const auto definition = context->get_type_definition(struct_name);
 
     if (!definition.has_value())
         return nullptr;
@@ -237,7 +237,7 @@ llvm::Value* AstStructInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    auto struct_def_opt = this->get_context()->get_struct_def(this->_struct_name);
+    auto struct_def_opt = this->get_context()->get_type_definition(this->_struct_name);
     std::string actual_struct_name = this->_struct_name;
 
     if (struct_def_opt.has_value())
@@ -246,7 +246,7 @@ llvm::Value* AstStructInitializer::codegen(
         while (struct_def->is_reference_struct())
         {
             actual_struct_name = struct_def->get_reference_struct().value().name;
-            struct_def_opt = this->get_context()->get_struct_def(actual_struct_name);
+            struct_def_opt = this->get_context()->get_type_definition(actual_struct_name);
             if (!struct_def_opt.has_value())
             {
                 break;

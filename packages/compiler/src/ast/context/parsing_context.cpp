@@ -341,7 +341,7 @@ const
     return nullptr;
 }
 
-std::optional<TypeDef*> ParsingContext::get_struct_def(
+std::optional<TypeDef*> ParsingContext::get_type_definition(
     const std::string& name) const
 {
     auto current = this;
@@ -382,7 +382,7 @@ void ParsingContext::define_type(
     std::vector<StructFieldPair> fields
 ) const
 {
-    if (const auto existing_def = this->get_struct_def(struct_symbol.internal_name);
+    if (const auto existing_def = this->get_type_definition(struct_symbol.internal_name);
         existing_def.has_value())
     {
         throw parsing_error(
@@ -414,7 +414,7 @@ const
 
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
 
-    if (const auto existing_def = this->get_struct_def(type_name.name);
+    if (const auto existing_def = this->get_type_definition(type_name.name);
         existing_def.has_value())
     {
         throw parsing_error(

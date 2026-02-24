@@ -215,7 +215,7 @@ namespace stride::ast
         const definition::CallableDef* get_function_def(const std::string& function_name) const;
 
         [[nodiscard]]
-        std::optional<definition::TypeDef*> get_struct_def(
+        std::optional<definition::TypeDef*> get_type_definition(
             const std::string& name
         ) const;
 

@@ -55,7 +55,7 @@ size_t ast_type_to_internal_id(IAstType* type)
     if (const auto* named = dynamic_cast<const AstNamedType*>(type); named !=
         nullptr)
     {
-        return std::hash<std::string>{}(named->name());
+        return std::hash<std::string>{}(named->get_name());
     }
 
     return 0x00;
