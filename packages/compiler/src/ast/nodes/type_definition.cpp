@@ -43,3 +43,13 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
         modifier
     );
 }
+
+llvm::Value* AstTypeDefinition::codegen(llvm::Module* module, llvm::IRBuilder<>* builder)
+{
+    return this->_type->codegen(module, builder);
+}
+
+void AstTypeDefinition::resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
+{
+    this->_type->resolve_forward_references(context, module, builder);
+}

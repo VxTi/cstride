@@ -1,11 +1,11 @@
 
+type Another = int32;
 type Test = {
-    field: int32;
+    field: Another;
 };
 
-type Another = int32;
 type Ref = Another;
-type Tuple = (int32, int64);
+// type Tuple = (int32, int64);
 
 fn test(x: int64): int64 {
     return x + 20;

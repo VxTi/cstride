@@ -66,14 +66,15 @@ namespace stride
             const ErrorType error_type,
             const std::string& error,
             const SourceFragment& source,
-            const std::string& suggestion = "") :
-            parsing_error(
-                make_source_error(error_type, error, source, suggestion)) {}
+            const std::string& suggestion = ""
+        ) :
+            parsing_error(make_source_error(error_type, error, source, suggestion)) {}
 
         explicit parsing_error(
             const ErrorType error_type,
             const std::string& error,
-            const std::vector<ErrorSourceReference>& references) :
+            const std::vector<ErrorSourceReference>& references
+        ) :
             parsing_error(make_source_error(error_type, error, references)) {}
 
         [[nodiscard]]

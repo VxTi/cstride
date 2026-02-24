@@ -264,8 +264,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMembe
     }
 
     // Look up the base variable in the symbol table/context
-    const auto variable_definition = expr->get_context()->lookup_variable(
-        base_iden->get_name());
+    const auto variable_definition = expr->get_context()->lookup_variable(base_iden->get_name(), true);
     if (!variable_definition)
     {
         throw parsing_error(
