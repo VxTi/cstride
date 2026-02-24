@@ -64,7 +64,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
     if (!set.peek_next_eq(TokenType::LBRACE))
         return std::nullopt;
 
-    const auto reference_token = set.next();
+    const auto reference_token = set.peek_next();
 
     auto struct_body_set = collect_block(set);
 

@@ -294,15 +294,10 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMembe
                 expr->get_source_fragment());
         }
 
-        // Root fields, for if the struct is a reference
+        // Get the struct type definition from the context
         auto struct_def = expr->get_context()->get_struct_type(struct_type->get_formatted_name());
 
-
-        const auto root_ref_struct_fields =
-            expr->get_context()->get_struct_type_fields(
-                struct_type->get_formatted_name());
-
-        if (!struct_def.has_value() || !root_ref_struct_fields.has_value())
+        if (!struct_def.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -320,9 +315,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMembe
                 expr->get_source_fragment());
         }
 
-        const auto field_type = TypeDef::get_struct_member_field_type(
-            segment_iden->get_name(),
-            root_ref_struct_fields.value());
+        const auto field_type = struct_def.value()->get_member_field_type(
+            segment_iden->get_name());
 
         if (!field_type.has_value())
         {

@@ -35,6 +35,12 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
         return std::move(function_type.value());
     }
 
+    if (auto struct_type = parse_struct_type_optional(context, set, type_flags);
+        struct_type.has_value())
+    {
+        return std::move(struct_type.value());
+    }
+
     set.throw_error(error);
 }
 

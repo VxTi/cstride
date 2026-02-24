@@ -295,7 +295,7 @@ std::string AstMemberAccessor::to_string()
 void AstMemberAccessor::validate()
 {
     // Since type inference also does validation, we don't really have to do anything else here
-    infer_member_accessor_type(this->get_context(), this);
+    infer_member_accessor_type(this);
 }
 
 IAstNode* AstMemberAccessor::reduce()
