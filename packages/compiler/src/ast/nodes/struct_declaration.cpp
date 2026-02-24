@@ -115,7 +115,7 @@ void AstStructMember::validate()
         // TODO: Support enums
 
         if (const auto member =
-                this->get_context()->get_struct_def(
+                this->get_context()->get_type_definition(
                     struct_type->get_formatted_name());
             !member.has_value())
         {
@@ -134,7 +134,7 @@ void AstStructDeclaration::validate()
     if (this->is_reference_type())
     {
         // Check whether we can find the other field
-        if (const auto reference = this->get_context()->get_struct_def(
+        if (const auto reference = this->get_context()->get_type_definition(
                 this->get_reference_type()->get_formatted_name());
             reference == nullptr)
         {
@@ -253,7 +253,7 @@ void AstStructDeclaration::resolve_forward_references(
         // Case: struct Name { members... }
         for (const auto& member : this->get_members())
         {
-            llvm::Type* llvm_type = internal_type_to_llvm_type(
+            llvm::Type* llvm_type = type_to_llvm_type(
                 &member->get_type(),
                 module);
 

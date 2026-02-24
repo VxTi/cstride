@@ -12,362 +12,6 @@
 
 using namespace stride::ast;
 
-
-
-std::string primitive_type_to_str_internal(const PrimitiveType type)
-{
-    switch (type)
-    {
-    case PrimitiveType::INT8:
-        return "int8";
-    case PrimitiveType::INT16:
-        return "int16";
-    case PrimitiveType::INT32:
-        return "int32";
-    case PrimitiveType::INT64:
-        return "int64";
-    case PrimitiveType::UINT8:
-        return "u8";
-    case PrimitiveType::UINT16:
-        return "u16";
-    case PrimitiveType::UINT32:
-        return "u32";
-    case PrimitiveType::UINT64:
-        return "u64";
-    case PrimitiveType::FLOAT32:
-        return "float32";
-    case PrimitiveType::FLOAT64:
-        return "float64";
-    case PrimitiveType::BOOL:
-        return "bool";
-    case PrimitiveType::CHAR:
-        return "char";
-    case PrimitiveType::STRING:
-        return "string";
-    case PrimitiveType::VOID:
-        return "void";
-    case PrimitiveType::NIL:
-        return "nil";
-    case PrimitiveType::UNKNOWN:
-    default:
-        return "unknown";
-    }
-}
-
-std::string stride::ast::primitive_type_to_str(const PrimitiveType type, const int flags)
-{
-    const auto base_str = primitive_type_to_str_internal(type);
-
-    return std::format(
-        "{}{}{}",
-        (flags & SRFLAG_TYPE_PTR) != 0 ? "*" : "",
-        base_str,
-        (flags & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
-}
-
-std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set,
-    int context_type_flags
-)
-{
-    const auto reference_token = set.peek_next();
-    const bool is_ptr = set.peek_next_eq(TokenType::STAR);
-    const bool is_reference = set.peek_next_eq(TokenType::AMPERSAND);
-
-    if (is_ptr)
-    {
-        context_type_flags |= SRFLAG_TYPE_PTR;
-    }
-    else if (is_reference)
-    {
-        context_type_flags |= SRFLAG_TYPE_REFERENCE;
-    }
-
-    // If it has flags, we'll have to offset the next token peeking by one
-    const int offset = is_ptr || is_reference ? 1 : 0;
-
-    std::optional<std::unique_ptr<IAstType>> result = std::nullopt;
-
-    switch (set.peek(offset).get_type())
-    {
-    case TokenType::PRIMITIVE_INT8:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::INT8,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_INT16:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::INT16,
-            /* bit_count = */
-            2 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_INT32:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::INT32,
-            /* bit_count = */
-            4 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_INT64:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::INT64,
-            /* bit_count = */
-            8 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_UINT8:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::UINT8,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_UINT16:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::UINT16,
-            /* bit_count = */
-            2 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_UINT32:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::UINT32,
-            /* bit_count = */
-            4 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_UINT64:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::UINT64,
-            /* bit_count = */
-            8 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_FLOAT32:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::FLOAT32,
-            /* bit_count = */
-            4 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_FLOAT64:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::FLOAT64,
-            /* bit_count = */
-            8 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_BOOL:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::BOOL,
-            /* bit_count = */
-            1,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_CHAR:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::CHAR,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_STRING:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::STRING,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    case TokenType::PRIMITIVE_VOID:
-    {
-        result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
-            PrimitiveType::VOID,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
-            context_type_flags);
-    }
-    break;
-    default:
-        break;
-    }
-
-    if (!result.has_value())
-        return std::nullopt;
-
-    set.skip(offset + 1);
-
-    return parse_type_metadata(std::move(result.value()),
-                               set,
-                               context_type_flags);
-}
-
-std::optional<std::unique_ptr<IAstType>> parse_named_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set,
-    int context_type_flags
-)
-{
-    // Custom types are identifiers in the type position.
-    const auto reference_token = set.peek_next();
-
-    if (set.peek_next_eq(TokenType::STAR))
-    {
-        set.next();
-        context_type_flags |= SRFLAG_TYPE_PTR;
-    }
-    if (set.peek_next().get_type() != TokenType::IDENTIFIER)
-    {
-        return std::nullopt;
-    }
-
-    const auto name = set.next().get_lexeme();
-
-    auto named_type = std::make_unique<AstNamedType>(
-        reference_token.get_source_fragment(),
-        context,
-        name,
-        context_type_flags);
-
-    return parse_type_metadata(std::move(named_type), set, context_type_flags);
-}
-
-std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set,
-    int context_type_flags
-)
-{
-    // Must start with '('
-    if (!set.peek_next_eq(TokenType::LPAREN))
-    {
-        return std::nullopt;
-    }
-
-    // This tries to parse `(<type>, <type>, ...) -> <return_type>`
-    // With no parameters: `() -> <return_type>`
-    // Arrays: ((<type>, ...) -> <return_type>)[]
-
-    const auto reference_token = set.next();
-    std::vector<std::unique_ptr<IAstType>> parameters;
-    bool is_expecting_closing_paren = false;
-
-    // If the previous paren is followed by another one,
-    // then we might expect an array of functions
-    // e.g., `((int32, int32) -> int32)[]
-    if (set.peek_next_eq(TokenType::LPAREN))
-    {
-        set.next();
-        is_expecting_closing_paren = true;
-    }
-
-    int recursion_depth = 0;
-
-    while (set.has_next() && !set.peek_next_eq(TokenType::RPAREN))
-    {
-        parameters.push_back(
-            parse_type(
-                context,
-                set,
-                "Expected parameter type",
-                context_type_flags
-            )
-        );
-        if (set.peek_next_eq(TokenType::RPAREN))
-        {
-            break;
-        }
-        set.expect(TokenType::COMMA, "Expected ',' between function type parameters");
-
-        if (recursion_depth++ > MAX_RECURSION_DEPTH)
-        {
-            set.throw_error("Maximum recursion depth exceeded when parsing function type");
-        }
-    }
-
-    set.expect(TokenType::RPAREN, "Expected ')' after function type notation");
-    set.expect(TokenType::DASH_RARROW, "Expected '->' between function parameters and return type");
-    auto return_type = parse_type(
-        context,
-        set,
-        "Expected return type",
-        context_type_flags
-    );
-
-    if (is_expecting_closing_paren)
-    {
-        set.expect(TokenType::RPAREN, "Expected secondary ')' after function type notation");
-    }
-
-
-    auto fn_type = std::make_unique<AstFunctionType>(
-        reference_token.get_source_fragment(),
-        context,
-        std::move(parameters),
-        std::move(return_type),
-        context_type_flags
-    );
-
-    return parse_type_metadata(std::move(fn_type), set, context_type_flags);
-}
-
 std::unique_ptr<IAstType> stride::ast::parse_type(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
@@ -402,7 +46,7 @@ std::string stride::ast::get_root_reference_struct_name(
 )
 {
     std::string actual_name = name;
-    if (auto struct_def_opt = context->get_struct_def(actual_name);
+    if (auto struct_def_opt = context->get_type_definition(actual_name);
         struct_def_opt.has_value())
     {
         auto struct_def = struct_def_opt.value();
@@ -410,7 +54,7 @@ std::string stride::ast::get_root_reference_struct_name(
         while (struct_def->is_reference_struct())
         {
             actual_name = struct_def->get_reference_struct().value().name;
-            struct_def_opt = context->get_struct_def(actual_name);
+            struct_def_opt = context->get_type_definition(actual_name);
 
             if (!struct_def_opt.has_value())
             {
@@ -423,7 +67,7 @@ std::string stride::ast::get_root_reference_struct_name(
     return actual_name;
 }
 
-llvm::Type* stride::ast::internal_type_to_llvm_type(
+llvm::Type* stride::ast::type_to_llvm_type(
     IAstType* type,
     llvm::Module* module
 )
@@ -437,7 +81,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         // Remove the optional flag, so that it doesn't recursively enter this same scope
         inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
         llvm::Type* inner_type =
-            internal_type_to_llvm_type(inner.get(), module);
+            type_to_llvm_type(inner.get(), module);
 
         return llvm::StructType::get(
             module->getContext(),
@@ -454,7 +98,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 
     if (const auto* ast_array_ty = cast_type<AstArrayType*>(type))
     {
-        llvm::Type* element_type = internal_type_to_llvm_type(
+        llvm::Type* element_type = type_to_llvm_type(
             ast_array_ty->get_element_type(),
             module
         );
@@ -514,7 +158,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         }
 
         const std::string actual_name = get_root_reference_struct_name(
-            ast_struct_ty->name(),
+            ast_struct_ty->get_name(),
             context
         );
 
@@ -526,7 +170,7 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
         {
             throw parsing_error(
                 ErrorType::REFERENCE_ERROR,
-                std::format("Struct type '{}' not found", ast_struct_ty->name()),
+                std::format("Struct type '{}' not found", ast_struct_ty->get_name()),
                 ast_struct_ty->get_source_fragment()
             );
         }
@@ -619,45 +263,5 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         "Cannot compute dominant type for incompatible primitive types",
         references);
 }
-
-bool AstNamedType::equals(IAstType& other)
-{
-    if (auto* other_named = cast_type<AstNamedType*>(&other))
-    {
-        return this->get_formatted_name() == other_named->get_formatted_name();
-    }
-
-    // The other type might be a primitive "NIL" type,
-    // then we consider the types equal if this is optional
-    if (const auto* other_primitive = cast_type<AstPrimitiveType*>(&other))
-    {
-        return other_primitive->get_type() == PrimitiveType::NIL
-            && this->is_optional();
-    }
-    return false;
-}
-
-bool AstPrimitiveType::equals(IAstType& other)
-{
-    if (const auto* other_primitive = cast_type<AstPrimitiveType*>(&other))
-    {
-        // If either types is optional, and the other is NIL, they're also "equal".
-        const auto is_one_optional =
-            (this->get_type() == PrimitiveType::NIL && other_primitive->is_optional()) ||
-            (other_primitive->get_type() == PrimitiveType::NIL && this->is_optional());
-
-        return this->get_type() == other_primitive->get_type() ||
-            is_one_optional;
-    }
-
-    if (const auto* struct_type = cast_type<AstNamedType*>(&other))
-    {
-        return this->get_type() == PrimitiveType::NIL && struct_type->is_optional();
-    }
-
-    return false;
-}
-
-
 
 

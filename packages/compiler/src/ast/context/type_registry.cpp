@@ -3,8 +3,9 @@
 #include <ranges>
 
 using namespace stride::ast;
+using namespace stride::ast::definition;
 
-std::vector<std::pair<std::string, IAstType*>> definition::TypeDef::get_struct_type_fields() const
+std::vector<std::pair<std::string, IAstType*>> TypeDef::get_struct_type_fields() const
 {
     std::vector<std::pair<std::string, IAstType*>> copy{};
     copy.reserve(this->_fields.size());
@@ -17,28 +18,11 @@ std::vector<std::pair<std::string, IAstType*>> definition::TypeDef::get_struct_t
     return std::move(copy);
 }
 
-void ParsingContext::define_struct_type_member(
-    const std::string& struct_name,
-    const std::string& member_name,
-    std::unique_ptr<IAstType> type
-) const
-{
-    const auto& struct_definition = get_struct_def(struct_name);
-    if (!struct_definition.has_value())
-    {
-        throw parsing_error(
-            std::format("Struct '{}' is not defined in this scope", struct_name)
-        );
-    }
-
-    struct_definition.value()->define_member(member_name, std::move(type));
-}
-
 std::optional<std::vector<std::pair<std::string, IAstType*>>> ParsingContext::get_struct_type_fields(
     const std::string& name
 ) const
 {
-    auto definition = get_struct_def(name);
+    auto definition = get_type_definition(name);
 
     if (!definition)
     {
@@ -47,7 +31,7 @@ std::optional<std::vector<std::pair<std::string, IAstType*>>> ParsingContext::ge
 
     while (definition.value()->is_reference_struct())
     {
-        definition = get_struct_def(definition.value()->get_reference_struct().value().name);
+        definition = get_type_definition(definition.value()->get_reference_struct().value().name);
 
         if (!definition)
         {
@@ -68,22 +52,7 @@ bool definition::TypeDef::is_reference_struct() const
     return false;
 }
 
-void definition::TypeDef::define_member(const std::string& member_name, std::unique_ptr<IAstType> type)
-{
-    for (const auto& key : this->_fields | std::views::keys)
-    {
-        if (key == member_name)
-        {
-            throw parsing_error(
-                "Struct member already defined in scope"
-            );
-        }
-    }
-
-    this->_fields.emplace_back(member_name, std::move(type));
-}
-
-std::optional<IAstType*> definition::TypeDef::get_struct_member_field_type(
+std::optional<IAstType*> TypeDef::get_struct_member_field_type(
     const std::string& field_name,
     const std::vector<std::pair<std::string, IAstType*>>& fields)
 {
@@ -98,7 +67,7 @@ std::optional<IAstType*> definition::TypeDef::get_struct_member_field_type(
 }
 
 // Note that if this struct is a reference struct, this will return nullopt
-std::optional<IAstType*> definition::TypeDef::get_struct_member_field_type(
+std::optional<IAstType*> TypeDef::get_struct_member_field_type(
     const std::string& field_name)
 {
     for (const auto& [name, type] : this->_fields)
@@ -122,6 +91,42 @@ std::optional<int> definition::TypeDef::get_struct_field_member_index(
             return static_cast<int>(i);
         }
     }
+    return std::nullopt;
+}
+
+std::optional<definition::TypeDef*> ParsingContext::get_type_definition(
+    const std::string& name) const
+{
+    auto current = this;
+
+    while (current != nullptr)
+    {
+        if (current->get_current_scope_type() != ScopeType::GLOBAL &&
+            current->get_current_scope_type() != ScopeType::MODULE)
+        {
+            current = current->_parent_registry.get();
+            continue;
+        }
+
+        for (const auto& definition : current->_symbols)
+        {
+            if (auto* struct_def = dynamic_cast<TypeDef*>(definition.get()))
+            {
+                if (struct_def->get_type_variant() != TypeDefVariant::STRUCT ||
+                    (struct_def->get_type_variant() == TypeDefVariant::TYPE_ALIAS && cast_type<>(struct_def->get_type())))
+
+                    // Here we don't check for the internal name, as we don't always know what the data
+                        // layout is initially (which is used for resolving the actual internal name)
+                            if ( struct_def->get_internal_symbol_name() == name)
+                            {
+                                return struct_def;
+                            }
+            }
+        }
+
+        current = current->_parent_registry.get();
+    }
+
     return std::nullopt;
 }
 

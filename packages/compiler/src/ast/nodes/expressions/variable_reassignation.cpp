@@ -109,7 +109,7 @@ llvm::Value* AstVariableReassignment::codegen(
         variable_def != nullptr &&
         variable_def->get_type()->is_optional())
     {
-        if (llvm::Type* optional_ty = internal_type_to_llvm_type(variable_def->get_type(), module);
+        if (llvm::Type* optional_ty = type_to_llvm_type(variable_def->get_type(), module);
             assign_ty == optional_ty)
         {
             builder->CreateStore(assign_val, variable);

@@ -485,7 +485,7 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->get_parameters())
     {
-        auto llvm_type = internal_type_to_llvm_type(param->get_type(), module);
+        auto llvm_type = type_to_llvm_type(param->get_type(), module);
         if (!llvm_type)
         {
             return std::nullopt;
@@ -864,7 +864,7 @@ void IAstCallable::resolve_forward_references(
     if (module->getFunction(function_name))
         return;
 
-    llvm::Type* return_type = internal_type_to_llvm_type(
+    llvm::Type* return_type = type_to_llvm_type(
         this->get_return_type(),
         module
     );
@@ -884,7 +884,7 @@ void IAstCallable::resolve_forward_references(
     {
         if (const auto capture_def = this->get_context()->lookup_variable(capture.name, true))
         {
-            if (llvm::Type* capture_type = internal_type_to_llvm_type(
+            if (llvm::Type* capture_type = type_to_llvm_type(
                 capture_def->get_type(),
                 module))
             {
@@ -896,7 +896,7 @@ void IAstCallable::resolve_forward_references(
     // Add regular parameters
     for (const auto& param : this->get_parameters())
     {
-        llvm::Type* llvm_type = internal_type_to_llvm_type(param->get_type(), module);
+        llvm::Type* llvm_type = type_to_llvm_type(param->get_type(), module);
         if (!llvm_type)
         {
             throw parsing_error(

@@ -167,6 +167,7 @@ namespace stride::ast
             case PrimitiveType::UINT16:
             case PrimitiveType::UINT32:
             case PrimitiveType::UINT64:
+            case PrimitiveType::BOOL: // 1 bit, still an int
                 return true;
             default:
                 return false;
@@ -231,7 +232,7 @@ namespace stride::ast
             _name(std::move(name)) {}
 
         [[nodiscard]]
-        std::string name() const
+        std::string get_name() const
         {
             return this->_name;
         }
@@ -252,7 +253,7 @@ namespace stride::ast
             return std::format(
                 "{}{}{}",
                 this->is_pointer() ? "*" : "",
-                this->name(),
+                this->get_name(),
                 this->is_optional() ? "?" : "");
         }
 
@@ -290,58 +291,11 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstType> clone() const override
-        {
-            std::vector<std::unique_ptr<IAstType>> parameters_clone = {};
-            for (const auto& p : this->_parameters)
-            {
-                parameters_clone.push_back(p->clone());
-            }
+        std::unique_ptr<IAstType> clone() const override;
 
-            return std::make_unique<AstFunctionType>(
-                this->get_source_fragment(),
-                this->get_context(),
-                std::move(parameters_clone),
-                this->_return_type->clone(),
-                this->get_flags()
-            );
-        }
+        std::string to_string() override;
 
-        std::string to_string() override
-        {
-            std::vector<std::string> param_strings;
-            for (const auto& p : this->_parameters)
-                param_strings.push_back(p->to_string());
-
-            return std::format(
-                "({}) -> {}",
-                join(param_strings, ", "),
-                this->_return_type->to_string());
-        }
-
-        bool equals(IAstType& other) override
-        {
-            if (const auto* other_func = dynamic_cast<AstFunctionType*>(&other))
-            {
-                if (!other_func->get_return_type()->equals(
-                    *this->get_return_type()))
-                    return false;
-
-                if (this->_parameters.size() != other_func->_parameters.size())
-                    return false;
-
-                for (size_t i = 0; i < this->_parameters.size(); i++)
-                {
-                    if (!this->_parameters[i]->equals(
-                        *other_func->_parameters[i]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
+        bool equals(IAstType& other) override;
 
         std::string get_formatted_name() override
         {
@@ -462,8 +416,7 @@ namespace stride::ast
         const std::string& error,
         int type_flags = SRFLAG_NONE);
 
-    llvm::Type*
-    internal_type_to_llvm_type(IAstType* type, llvm::Module* module);
+    llvm::Type* type_to_llvm_type(IAstType* type, llvm::Module* module);
 
     std::unique_ptr<IAstType> get_dominant_field_type(
         const std::shared_ptr<ParsingContext>& context,
@@ -479,12 +432,12 @@ namespace stride::ast
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags = SRFLAG_NONE);
+        int context_type_flags);
 
     std::optional<std::unique_ptr<IAstType>> parse_named_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags = SRFLAG_NONE);
+        int context_type_flags);
 
     std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
         const std::shared_ptr<ParsingContext>& context,

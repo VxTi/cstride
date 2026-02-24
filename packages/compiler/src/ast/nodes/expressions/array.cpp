@@ -44,7 +44,7 @@ llvm::Value* AstArray::codegen(
     if (const auto* array_type = dynamic_cast<AstArrayType*>(resolved_type.
         get()))
     {
-        llvm::Type* element_llvm_type = internal_type_to_llvm_type(
+        llvm::Type* element_llvm_type = type_to_llvm_type(
             array_type->get_element_type(),
             module
         );
@@ -57,7 +57,7 @@ llvm::Value* AstArray::codegen(
     {
         // Fallback: If we can't determine the type from the AST, try to verify
         // if the resolved LLVM type is already an array type.
-        if (llvm::Type* possible_type = internal_type_to_llvm_type(
+        if (llvm::Type* possible_type = type_to_llvm_type(
             resolved_type.get(),
             module); llvm::isa<llvm::ArrayType>(possible_type))
         {

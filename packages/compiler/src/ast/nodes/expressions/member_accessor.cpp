@@ -137,14 +137,14 @@ llvm::Value* AstMemberAccessor::codegen(
 
         for (const auto& accessor : this->get_members())
         {
-            auto struct_def_opt = this->get_context()->get_struct_def(current_struct_name);
+            auto struct_def_opt = this->get_context()->get_type_definition(current_struct_name);
             if (!struct_def_opt.has_value())
                 return nullptr;
 
             auto struct_def = struct_def_opt.value();
             while (struct_def->is_reference_struct())
             {
-                struct_def_opt = this->get_context()->get_struct_def(
+                struct_def_opt = this->get_context()->get_type_definition(
                     struct_def->get_reference_struct().value().name);
 
                 if (!struct_def_opt.has_value())
@@ -202,7 +202,7 @@ llvm::Value* AstMemberAccessor::codegen(
 
     for (const auto& accessor : this->get_members())
     {
-        auto struct_def_opt = this->get_context()->get_struct_def(current_struct_name);
+        auto struct_def_opt = this->get_context()->get_type_definition(current_struct_name);
         if (!struct_def_opt.has_value())
         {
             throw parsing_error(
@@ -216,7 +216,7 @@ llvm::Value* AstMemberAccessor::codegen(
         auto struct_def = struct_def_opt.value();
         while (struct_def->is_reference_struct())
         {
-            struct_def_opt = this->get_context()->get_struct_def(
+            struct_def_opt = this->get_context()->get_type_definition(
                 struct_def->get_reference_struct().value().name
             );
             if (!struct_def_opt.has_value())
@@ -284,7 +284,7 @@ llvm::Value* AstMemberAccessor::codegen(
     // if we were working with pointers, we need to load the final result
     if (is_pointer_ty)
     {
-        llvm::Type* final_llvm_type = internal_type_to_llvm_type(
+        llvm::Type* final_llvm_type = type_to_llvm_type(
             cloned_base_type.get(),
             module);
         return builder->CreateLoad(
