@@ -98,31 +98,11 @@ std::string AstStructInitializer::to_string()
     return std::format("StructInit{{...}}");
 }
 
-definition::TypeDef* get_super_referencing_struct_def(
-    const std::shared_ptr<ParsingContext>& context,
-    const std::string& struct_name
-)
-{
-    const auto definition = context->get_type_definition(struct_name);
-
-    if (!definition.has_value())
-        return nullptr;
-
-    if (definition.value()->is_reference_struct())
-    {
-        const auto ref_struct = definition.value()->get_reference_struct().value();
-        return get_super_referencing_struct_def(context, ref_struct.name);
-    }
-
-    return definition.value();
-}
-
 void AstStructInitializer::validate()
 {
-    const auto definition =
-        get_super_referencing_struct_def(this->get_context(), this->_struct_name);
+    auto definition = this->get_context()->get_struct_type(this->_struct_name);
     // Check whether the struct we're trying to assign actually exists
-    if (definition == nullptr)
+    if (!definition.has_value())
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
@@ -131,7 +111,7 @@ void AstStructInitializer::validate()
         );
     }
 
-    const auto fields = definition->get_struct_type_fields();
+    const auto fields = definition.value()->get_members();
 
     // Quick check: Ensure the number of members matches (no type comparisons required)
     if (fields.size() != this->_initializers.size())
@@ -150,21 +130,23 @@ void AstStructInitializer::validate()
 
     for (const auto& [field_name, initializer_expr] : this->_initializers)
     {
-        const auto found_member = definition->get_struct_member_field_type(field_name);
+        auto found_member = definition.value()->get_member_field_type(field_name);
 
         if (!found_member.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Struct '{}' has no member named '{}'",
-                            this->_struct_name,
-                            field_name
+                std::format(
+                    "Struct '{}' has no member named '{}'",
+                    this->_struct_name,
+                    field_name
                 ),
                 this->get_source_fragment());
         }
 
-        if (const auto member_type = infer_expression_type(this->get_context(),
-                                                           initializer_expr.get());
+        if (const auto member_type = infer_expression_type(
+                this->get_context(),
+                initializer_expr.get());
             !member_type->equals(*found_member.value()))
         {
             throw parsing_error(
@@ -175,7 +157,8 @@ void AstStructInitializer::validate()
                     field_name,
                     this->_struct_name,
                     found_member.value()->to_string(),
-                    member_type->to_string()),
+                    member_type->to_string()
+                ),
                 initializer_expr->get_source_fragment()
             );
         }
@@ -189,8 +172,8 @@ void AstStructInitializer::validate()
     size_t index = 0;
     for (const auto& member_name : this->_initializers | std::views::keys)
     {
-        if (const auto [field_name, field_type] = fields[index]; member_name !=
-            field_name)
+        if (const auto& [field_name, field_type] = fields[index];
+            member_name != field_name)
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -198,7 +181,8 @@ void AstStructInitializer::validate()
                     "Struct member order mismatch at index {}: expected '{}', got '{}'",
                     index,
                     field_name,
-                    member_name),
+                    member_name
+                ),
                 field_type->get_source_fragment()
             );
         }
@@ -237,23 +221,18 @@ llvm::Value* AstStructInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    auto struct_def_opt = this->get_context()->get_type_definition(this->_struct_name);
-    std::string actual_struct_name = this->_struct_name;
+    auto struct_def_opt = this->get_context()->get_struct_type(this->_struct_name);
 
-    if (struct_def_opt.has_value())
+    if (!struct_def_opt.has_value())
     {
-        auto struct_def = struct_def_opt.value();
-        while (struct_def->is_reference_struct())
-        {
-            actual_struct_name = struct_def->get_reference_struct().value().name;
-            struct_def_opt = this->get_context()->get_type_definition(actual_struct_name);
-            if (!struct_def_opt.has_value())
-            {
-                break;
-            }
-            struct_def = struct_def_opt.value();
-        }
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Struct type '{}' is undefined", this->_struct_name),
+            this->get_source_fragment()
+        );
     }
+
+    const auto& actual_struct_name = struct_def_opt.value()->get_internalized_name();
 
     llvm::StructType* struct_type = llvm::StructType::getTypeByName(
         module->getContext(),

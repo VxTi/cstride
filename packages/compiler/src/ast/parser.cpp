@@ -72,8 +72,8 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
     case TokenType::KEYWORD_FN:
     case TokenType::KEYWORD_EXTERN:
         return parse_fn_declaration(context, set, visibility_modifier);
-    case TokenType::KEYWORD_STRUCT:
-        return parse_struct_declaration(context, set, visibility_modifier);
+    case TokenType::KEYWORD_TYPE:
+        return parse_type_statement(context, set, visibility_modifier);
     case TokenType::KEYWORD_ENUM:
         return parse_enumerable_declaration(context, set, visibility_modifier);
     case TokenType::KEYWORD_FOR:

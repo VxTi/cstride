@@ -48,6 +48,57 @@ std::optional<TypeDef*> ParsingContext::get_type_definition(const std::string& n
     return std::nullopt;
 }
 
+/// Gets the root struct type layout for <code>name</code>.
+/// Will recursively look up the parent struct definition if <code>name</code> is a reference struct type.
+std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string& name) const
+{
+    const auto type_def = get_type_definition(name);
+
+    if (!type_def.has_value())
+    {
+        return std::nullopt;
+    }
+
+    // It's an immediate struct definition (type K = { ... }),
+    // so we're safe
+    if (const auto struct_ty = cast_type<AstStructType*>(type_def.value()->get_type()))
+    {
+        return struct_ty;
+    }
+
+    // It might be a reference struct, so we'll have to recursively extract it here.
+    // e.g.,
+    // type A = { ... };
+    // type B = A; (named type)
+    auto* named_type = cast_type<AstNamedType*>(type_def.value()->get_type());
+    int recursion_depth = 0;
+
+    while (named_type != nullptr)
+    {
+        auto reference_type_def = get_type_definition(named_type->get_name());
+
+        if (!reference_type_def.has_value())
+        {
+            return std::nullopt;
+        }
+
+        if (cast_type<AstStructType*>(reference_type_def.value()) != nullptr)
+        {
+            return cast_type<AstStructType*>(reference_type_def.value());
+        }
+
+        named_type = cast_type<AstNamedType*>(reference_type_def.value()->get_type());
+
+        if (++recursion_depth > MAX_RECURSION_DEPTH)
+        {
+            // TODO: Warning here?
+            return std::nullopt;
+        }
+    }
+
+    return cast_type<AstStructType*>(named_type);
+}
+
 void ParsingContext::define_type(const Symbol& type_name, std::unique_ptr<IAstType> type)
 {
     if (const auto existing_def = this->get_type_definition(type_name.internal_name);

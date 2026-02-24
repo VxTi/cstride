@@ -19,9 +19,7 @@ std::string AstLogicalOp::to_string()
     );
 }
 
-std::optional<LogicalOpType> stride::ast::get_logical_op_type(
-    const TokenType type
-)
+std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType type)
 {
     switch (type)
     {

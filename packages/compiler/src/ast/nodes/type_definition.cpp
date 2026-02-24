@@ -9,7 +9,9 @@ using namespace stride::ast;
 
 std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set,
+    VisibilityModifier modifier
+    )
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_TYPE);
     const auto& ref_pos = reference_token.get_source_fragment();

@@ -117,15 +117,14 @@ llvm::Value* AstMemberAccessor::codegen(
     auto cloned_base_type = this->_base_type->clone();
     std::string base_type_name = cloned_base_type->get_formatted_name();
 
+    // Global struct definitions have no insertion point, so we need to do
+    // constant folding here by looking up the global variable and its initializer.
     if (!builder->GetInsertBlock())
     {
-        llvm::Value* base_val = this->get_base()->codegen(
-            module,
-            builder);
+        llvm::Value* base_val = this->get_base()->codegen(module, builder);
 
         // We look for a GlobalVariable with an initializer
-        auto* global_var = llvm::dyn_cast_or_null<llvm::GlobalVariable>(
-            base_val);
+        auto* global_var = llvm::dyn_cast_or_null<llvm::GlobalVariable>(base_val);
         if (!global_var || !global_var->hasInitializer())
         {
             // If the base isn't a global with an initializer, we can't fold it.
@@ -137,41 +136,31 @@ llvm::Value* AstMemberAccessor::codegen(
 
         for (const auto& accessor : this->get_members())
         {
-            auto struct_def_opt = this->get_context()->get_type_definition(current_struct_name);
+            auto struct_def_opt = this->get_context()->get_struct_type(current_struct_name);
             if (!struct_def_opt.has_value())
                 return nullptr;
 
             auto struct_def = struct_def_opt.value();
-            while (struct_def->is_reference_struct())
-            {
-                struct_def_opt = this->get_context()->get_type_definition(
-                    struct_def->get_reference_struct().value().name);
 
-                if (!struct_def_opt.has_value())
-                {
-                    return nullptr;
-                }
-                struct_def = struct_def_opt.value();
-            }
-
-            const auto member_index =
-                struct_def->get_struct_field_member_index(accessor->get_name());
+            const auto member_index = struct_def->get_member_field_index(accessor->get_name());
             if (!member_index.has_value())
             {
                 return nullptr;
             }
 
             // Extract the constant field value
-            current_const = current_const->getAggregateElement(
-                member_index.value());
+            current_const = current_const->getAggregateElement(member_index.value());
             if (!current_const)
             {
                 // Index out of bounds or invalid aggregate
-                return nullptr;
+                throw parsing_error(
+                    ErrorType::COMPILATION_ERROR,
+                    std::format("Invalid member access on constant '{}'", base_type_name),
+                    this->get_source_fragment()
+                );
             }
 
-            auto member_field_type = struct_def->get_struct_member_field_type(
-                accessor->get_name());
+            auto member_field_type = struct_def->get_member_field_type(accessor->get_name());
             if (!member_field_type.has_value())
             {
                 return nullptr;
@@ -202,7 +191,7 @@ llvm::Value* AstMemberAccessor::codegen(
 
     for (const auto& accessor : this->get_members())
     {
-        auto struct_def_opt = this->get_context()->get_type_definition(current_struct_name);
+        auto struct_def_opt = this->get_context()->get_struct_type(current_struct_name);
         if (!struct_def_opt.has_value())
         {
             throw parsing_error(
@@ -214,25 +203,8 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         auto struct_def = struct_def_opt.value();
-        while (struct_def->is_reference_struct())
-        {
-            struct_def_opt = this->get_context()->get_type_definition(
-                struct_def->get_reference_struct().value().name
-            );
-            if (!struct_def_opt.has_value())
-            {
-                throw parsing_error(
-                    ErrorType::COMPILATION_ERROR,
-                    std::format(
-                        "Unknown struct type '{}' during codegen",
-                        struct_def->get_reference_struct().value().name),
-                    this->get_source_fragment());
-            }
-            struct_def = struct_def_opt.value();
-        }
 
-        const auto member_index = struct_def->get_struct_field_member_index(
-            accessor->get_name());
+        const auto member_index = struct_def->get_member_field_index(accessor->get_name());
 
         if (!member_index.has_value())
         {
@@ -272,10 +244,17 @@ llvm::Value* AstMemberAccessor::codegen(
         }
 
         // Update loop state
-        auto member_field_type = struct_def->get_struct_member_field_type(
-            accessor->get_name());
+        auto member_field_type = struct_def->get_member_field_type(accessor->get_name());
         if (!member_field_type.has_value())
-            return nullptr;
+        {
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format("Unknown member type '{}' in struct '{}'",
+                            accessor->get_name(),
+                            current_struct_name
+                ),
+                this->get_source_fragment());
+        }
 
         cloned_base_type = member_field_type.value()->clone();
         current_struct_name = cloned_base_type->get_formatted_name();

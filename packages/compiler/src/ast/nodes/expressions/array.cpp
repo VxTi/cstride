@@ -41,8 +41,7 @@ llvm::Value* AstArray::codegen(
 
     llvm::ArrayType* concrete_array_type = nullptr;
 
-    if (const auto* array_type = dynamic_cast<AstArrayType*>(resolved_type.
-        get()))
+    if (const auto* array_type = cast_type<AstArrayType*>(resolved_type.get()))
     {
         llvm::Type* element_llvm_type = type_to_llvm_type(
             array_type->get_element_type(),
@@ -57,16 +56,18 @@ llvm::Value* AstArray::codegen(
     {
         // Fallback: If we can't determine the type from the AST, try to verify
         // if the resolved LLVM type is already an array type.
-        if (llvm::Type* possible_type = type_to_llvm_type(
-            resolved_type.get(),
-            module); llvm::isa<llvm::ArrayType>(possible_type))
+        if (llvm::Type* possible_type = type_to_llvm_type(resolved_type.get(), module);
+            llvm::isa<llvm::ArrayType>(possible_type))
         {
             concrete_array_type = llvm::cast<llvm::ArrayType>(possible_type);
         }
         else
         {
-            throw std::runtime_error(
-                "Codegen failed: Array literal must have a valid array type.");
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                "Codegen failed: Array literal must have a valid array type.",
+                this->get_source_fragment()
+            );
         }
     }
 
@@ -75,9 +76,7 @@ llvm::Value* AstArray::codegen(
     // If we have no members, we'll return a nullptr.
     if (array_size == 0)
     {
-        llvm::PointerType* array_ptr_type = llvm::PointerType::get(
-            module->getContext(),
-            0);
+        llvm::PointerType* array_ptr_type = llvm::PointerType::get(module->getContext(), 0);
         return llvm::ConstantPointerNull::get(array_ptr_type);
     }
 
@@ -91,9 +90,7 @@ llvm::Value* AstArray::codegen(
 
     for (size_t i = 0; i < array_size; ++i)
     {
-        llvm::Value* v = this->get_elements()[i]->codegen(
-            module,
-            builder);
+        llvm::Value* v = this->get_elements()[i]->codegen(module, builder);
 
         // Restore insert point after each element (in case it's a lambda)
         builder->SetInsertPoint(saved_block);
@@ -111,17 +108,16 @@ llvm::Value* AstArray::codegen(
     // (This is important for arrays used in global variable initialization)
     if (all_const_initializers)
     {
-        llvm::Constant* init = llvm::ConstantArray::get(
-            concrete_array_type,
-            const_elements);
+        llvm::Constant* init = llvm::ConstantArray::get(concrete_array_type, const_elements);
 
-        llvm::GlobalVariable* global_array = new llvm::GlobalVariable(
+        const auto global_array = new llvm::GlobalVariable(
             *module,
             concrete_array_type,
-            true,  // isConstant
+            true,
+            // isConstant
             llvm::GlobalValue::PrivateLinkage,
             init,
-            ""  // anonymous
+            "" // anonymous
         );
 
         return global_array;
@@ -135,25 +131,21 @@ llvm::Value* AstArray::codegen(
     {
         // Save the current insert point before generating element code
         // (element codegen might be a lambda that redirects the builder)
-        llvm::BasicBlock* saved_block = builder->GetInsertBlock();
+        llvm::BasicBlock* saved_ib = builder->GetInsertBlock();
 
         llvm::Value* element_value = this->get_elements()[i]->codegen(
             module,
             builder);
 
         // Restore the insert point after element codegen
-        builder->SetInsertPoint(saved_block);
+        builder->SetInsertPoint(saved_ib);
 
         llvm::Value* elementPtr = builder->CreateInBoundsGEP(
             concrete_array_type,
             array_alloca,
             {
-                llvm::ConstantInt::get(
-                    llvm::Type::getInt64Ty(module->getContext()),
-                    0),
-                llvm::ConstantInt::get(
-                    llvm::Type::getInt64Ty(module->getContext()),
-                    i),
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(module->getContext()), 0),
+                llvm::ConstantInt::get(llvm::Type::getInt64Ty(module->getContext()), i),
             });
 
         builder->CreateStore(element_value, elementPtr);
