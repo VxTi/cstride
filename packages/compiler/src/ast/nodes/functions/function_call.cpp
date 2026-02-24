@@ -79,7 +79,7 @@ std::string AstFunctionCall::format_function_name() const
 
     for (const auto& arg : this->_arguments)
     {
-        const auto type = infer_expression_type(this->get_context(), arg.get());
+        const auto type = infer_expression_type(arg.get());
 
         arg_types.push_back(type->get_formatted_name());
     }
@@ -140,7 +140,6 @@ llvm::Value* AstFunctionCall::codegen(
                 for (size_t i = 0; i < expected_param_count; ++i)
                 {
                     const auto arg_type = infer_expression_type(
-                        this->get_context(),
                         this->get_arguments()[i].get()
                     );
 
@@ -428,7 +427,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
             // functions that
             //  haven't been declared yet, hence throwing an error
             auto initial_type = infer_expression_type(
-                context,
                 initial_arg.get());
 
             parameter_types.push_back(initial_type.get());
@@ -468,7 +466,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_function_call(
                     break;
                 }
 
-                auto next_type = infer_expression_type(context, next_arg.get());
+                auto next_type = infer_expression_type(next_arg.get());
                 parameter_types.push_back(next_type.get());
                 parameter_type_owners.push_back(std::move(next_type));
                 function_arg_nodes.push_back(std::move(next_arg));

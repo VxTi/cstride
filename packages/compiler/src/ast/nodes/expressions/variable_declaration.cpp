@@ -68,7 +68,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         // Note that leaving out the type requires you to initialize it.
         set.next();
         value = parse_inline_expression(context, set);
-        variable_type = infer_expression_type(context, value.get());
+        variable_type = infer_expression_type(value.get());
         variable_type->set_flags(flags);
     }
     else
@@ -176,7 +176,7 @@ void AstVariableDeclaration::validate()
     init_val->validate();
 
     const std::unique_ptr<IAstType> internal_expr_type =
-        infer_expression_type(this->get_context(), init_val);
+        infer_expression_type(init_val);
     const auto lhs_type = this->get_variable_type();
 
     if (const auto rhs_type = internal_expr_type.get(); !lhs_type->equals(

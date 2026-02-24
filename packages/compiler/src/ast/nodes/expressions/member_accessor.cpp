@@ -15,7 +15,7 @@ AstMemberAccessor::AstMemberAccessor(
     _base(std::move(base)),
     _members(std::move(members))
 {
-    this->_base_type = infer_expression_type(context, _base.get());
+    this->_base_type = infer_expression_type(_base.get());
 }
 
 std::vector<AstIdentifier*> AstMemberAccessor::get_members() const

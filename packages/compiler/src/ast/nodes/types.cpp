@@ -1,9 +1,7 @@
 #include "ast/nodes/types.h"
 
-#include "ast/nodes/literal_values.h"
 #include "ast/parsing_context.h"
-#include "ast/nodes/blocks.h"
-#include "ast/nodes/struct_declaration.h"
+#include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
 #include <llvm/IR/DerivedTypes.h>
@@ -40,32 +38,6 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     set.throw_error(error);
 }
 
-std::string stride::ast::get_root_reference_struct_name(
-    const std::string& name,
-    const std::shared_ptr<ParsingContext>& context
-)
-{
-    std::string actual_name = name;
-    if (auto struct_def_opt = context->get_type_definition(actual_name);
-        struct_def_opt.has_value())
-    {
-        auto struct_def = struct_def_opt.value();
-
-        while (struct_def->is_reference_struct())
-        {
-            actual_name = struct_def->get_reference_struct().value().name;
-            struct_def_opt = context->get_type_definition(actual_name);
-
-            if (!struct_def_opt.has_value())
-            {
-                break;
-            }
-
-            struct_def = struct_def_opt.value();
-        }
-    }
-    return actual_name;
-}
 
 llvm::Type* stride::ast::type_to_llvm_type(
     IAstType* type,
@@ -96,10 +68,10 @@ llvm::Type* stride::ast::type_to_llvm_type(
         return llvm::PointerType::get(module->getContext(), 0);
     }
 
-    if (const auto* ast_array_ty = cast_type<AstArrayType*>(type))
+    if (const auto* array_ty = cast_type<AstArrayType*>(type))
     {
         llvm::Type* element_type = type_to_llvm_type(
-            ast_array_ty->get_element_type(),
+            array_ty->get_element_type(),
             module
         );
 
@@ -108,16 +80,16 @@ llvm::Type* stride::ast::type_to_llvm_type(
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
                 "Unable to resolve internal type for array element",
-                ast_array_ty->get_source_fragment()
+                array_ty->get_source_fragment()
             );
         }
 
-        return llvm::ArrayType::get(element_type, ast_array_ty->get_initial_length());
+        return llvm::ArrayType::get(element_type, array_ty->get_initial_length());
     }
 
-    if (const auto* ast_primitive_ty = cast_type<AstPrimitiveType*>(type))
+    if (const auto* primitive_ty = cast_type<AstPrimitiveType*>(type))
     {
-        switch (ast_primitive_ty->get_type())
+        switch (primitive_ty->get_type())
         {
         case PrimitiveType::INT8:
         case PrimitiveType::UINT8:
@@ -147,31 +119,42 @@ llvm::Type* stride::ast::type_to_llvm_type(
         }
     }
 
-    if (const auto* ast_struct_ty = cast_type<AstNamedType*>(type))
+    if (const auto* named_ty = cast_type<AstNamedType*>(type))
     {
         // If it's a pointer, we don't even need to look up the struct name
         // to return the LLVM type, because all pointers are the same.
         // However, usually you want to validate the type exists first.
-        if (ast_struct_ty->is_pointer())
+        if (named_ty->is_pointer())
         {
             return llvm::PointerType::get(module->getContext(), 0);
         }
 
-        const std::string actual_name = get_root_reference_struct_name(
-            ast_struct_ty->get_name(),
-            context
-        );
+        const auto ref_type = named_ty->get_reference_type();
+        if (!ref_type.has_value())
+        {
+            throw parsing_error(
+                ErrorType::REFERENCE_ERROR,
+                std::format("Reference type '{}' not found", named_ty->get_name()),
+                named_ty->get_source_fragment()
+            );
+        }
 
+        return type_to_llvm_type(ref_type.value().get(), module);
+    }
+
+    if (const auto* $struct_ty = cast_type<AstStructType*>(type))
+    {
+        const auto& struct_name = $struct_ty->get_internalized_name();
         llvm::StructType* struct_ty = llvm::StructType::getTypeByName(
             module->getContext(),
-            actual_name
+            struct_name
         );
         if (!struct_ty)
         {
             throw parsing_error(
                 ErrorType::REFERENCE_ERROR,
-                std::format("Struct type '{}' not found", ast_struct_ty->get_name()),
-                ast_struct_ty->get_source_fragment()
+                "Struct type not found",
+                $struct_ty->get_source_fragment()
             );
         }
 
@@ -187,11 +170,11 @@ llvm::Type* stride::ast::type_to_llvm_type(
 }
 
 std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
-    const std::shared_ptr<ParsingContext>& context,
     IAstType* lhs,
     IAstType* rhs
 )
 {
+    const auto& context = lhs->get_context();
     const auto* lhs_primitive = dynamic_cast<AstPrimitiveType*>(lhs);
     const auto* rhs_primitive = dynamic_cast<AstPrimitiveType*>(rhs);
     const auto* lhs_named = dynamic_cast<AstNamedType*>(lhs);
@@ -263,5 +246,3 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         "Cannot compute dominant type for incompatible primitive types",
         references);
 }
-
-

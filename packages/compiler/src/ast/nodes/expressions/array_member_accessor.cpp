@@ -38,7 +38,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
 void AstArrayMemberAccessor::validate()
 {
     const auto index_accessor_type = infer_expression_type(
-        this->get_context(),
         this->_index_accessor_expr.get()
     );
 
@@ -73,7 +72,6 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 )
 {
     const auto array_iden_type = infer_expression_type(
-        this->get_context(),
         this->_array_identifier.get()
     );
 

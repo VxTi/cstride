@@ -9,10 +9,9 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
-    const std::shared_ptr<ParsingContext>& context,
-    AstLiteral* literal)
+std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(AstLiteral* literal)
 {
+    const auto& context = literal->get_context();
     if (const auto* str = cast_expr<AstStringLiteral*>(literal))
     {
         return std::make_unique<AstPrimitiveType>(
@@ -90,9 +89,9 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
-    const std::shared_ptr<ParsingContext>& context,
     const AstFunctionCall* fn_call)
 {
+    const auto& context = fn_call->get_context();
     // First steps, if the function call references a "normal" function, e.g., "fn <some name>",
     // then we can simply use
     if (const auto fn_def = context->get_function_def(
@@ -140,11 +139,11 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_binary_arithmetic_op_type(
-    const std::shared_ptr<ParsingContext>& context,
     const AstBinaryArithmeticOp* operation)
 {
-    auto lhs = infer_expression_type(context, operation->get_left());
-    auto rhs = infer_expression_type(context, operation->get_right());
+
+    auto lhs = infer_expression_type(operation->get_left());
+    auto rhs = infer_expression_type(operation->get_right());
 
     if (lhs->equals(*rhs))
     {
@@ -161,14 +160,13 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_arithmetic_op_type(
         return std::move(rhs);
     }
 
-    return get_dominant_field_type(context, lhs.get(), rhs.get());
+    return get_dominant_field_type(lhs.get(), rhs.get());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
-    const std::shared_ptr<ParsingContext>& context,
-    const AstUnaryOp* operation)
+std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(const AstUnaryOp* operation)
 {
-    auto type = infer_expression_type(context, &operation->get_operand());
+    const auto& context = operation->get_context();
+    auto type = infer_expression_type(&operation->get_operand());
 
     if (const auto op_type = operation->get_op_type(); op_type ==
         UnaryOpType::ADDRESS_OF)
@@ -235,9 +233,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
     return type;
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_array_member_type(
-    const std::shared_ptr<ParsingContext>& context,
-    const AstArray* array)
+std::unique_ptr<IAstType> stride::ast::infer_array_member_type(const AstArray* array)
 {
     if (array->get_elements().empty())
     {
@@ -245,19 +241,17 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(
         // Therefore, we have an UNKNOWN type.
         return std::make_unique<AstPrimitiveType>(
             array->get_source_fragment(),
-            context,
+            array->get_context(),
             PrimitiveType::UNKNOWN,
             8,
             // Always a pointer
             0);
     }
 
-    return infer_expression_type(context, array->get_elements().front().get());
+    return infer_expression_type(array->get_elements().front().get());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
-    [[maybe_unused]] const std::shared_ptr<ParsingContext>& context,
-    const AstMemberAccessor* expr)
+std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMemberAccessor* expr)
 {
     // Resolve the Base Identifier (e.g., 'a' in 'a.b.c')
     const auto base_iden = cast_expr<AstIdentifier*>(expr->get_base());
@@ -285,7 +279,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     auto current_type = variable_definition->get_type();
 
     // Iterate through all member segments (e.g., .b, .c)
-    for (const auto& members = expr->get_members(); const auto member : members)
+    for (const auto& members = expr->get_members();
+         const auto member : members)
     {
         // Ensure the current 'node' we are looking inside is actually a struct
         const auto struct_type = cast_type<AstNamedType*>(current_type);
@@ -300,8 +295,9 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
         }
 
         // Root fields, for if the struct is a reference
-        auto struct_def = expr->get_context()->get_type_definition(
-            struct_type->get_formatted_name());
+        auto struct_def = expr->get_context()->get_struct_type(struct_type->get_formatted_name());
+
+
         const auto root_ref_struct_fields =
             expr->get_context()->get_struct_type_fields(
                 struct_type->get_formatted_name());
@@ -333,9 +329,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Variable '{}' of type '{}' has no member named '{}'",
+                    "Variable '{}' has no member named '{}'",
                     base_iden->get_name(),
-                    struct_def.value()->get_internal_symbol_name(),
                     segment_iden->get_name()),
                 expr->get_source_fragment());
         }
@@ -349,28 +344,26 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
-    const std::shared_ptr<ParsingContext>& context,
     const AstStructInitializer* initializer)
 {
     return std::make_unique<AstNamedType>(
 
         initializer->get_source_fragment(),
-        context,
+        initializer->get_context(),
         initializer->get_struct_name());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_expression_type(
-    const std::shared_ptr<ParsingContext>& context,
-    AstExpression* expr
-)
+std::unique_ptr<IAstType> stride::ast::infer_expression_type(AstExpression* expr)
 {
     if (!expr)
     {
         throw parsing_error("Expression cannot be null");
     }
+
+
     if (auto* literal = cast_expr<AstLiteral*>(expr))
     {
-        return infer_expression_literal_type(context, literal);
+        return infer_expression_literal_type(literal);
     }
 
     if (const auto* identifier = cast_expr<AstIdentifier*>(expr))
@@ -378,7 +371,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         // TODO: Add generic support.
         // Right now we just do a lookup for `identifier`'s name, though we might want to extend
         // the lookup for generics.
-        const auto reference_sym = context->lookup_symbol(
+        const auto reference_sym = identifier->get_context()->lookup_symbol(
             identifier->get_name());
         if (!reference_sym)
         {
@@ -393,18 +386,18 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         if (const auto callable = dynamic_cast<CallableDef*>(reference_sym))
         {
             std::vector<std::unique_ptr<IAstType>> param_types;
-            for (const auto& param : callable->get_type()->
-                                               get_parameter_types())
+            for (const auto& param :
+                 callable->get_type()->get_parameter_types())
             {
                 param_types.push_back(param->clone());
             }
 
             return std::make_unique<AstFunctionType>(
-
                 identifier->get_source_fragment(),
-                context,
+                identifier->get_context(),
                 std::move(param_types),
-                callable->get_type()->get_return_type()->clone());
+                callable->get_type()->get_return_type()->clone()
+            );
         }
 
         if (const auto field = dynamic_cast<FieldDef*>(reference_sym))
@@ -423,21 +416,20 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     if (const auto* operation = cast_expr<AstBinaryArithmeticOp*>(expr))
     {
-        return infer_binary_arithmetic_op_type(context, operation);
+        return infer_binary_arithmetic_op_type(operation);
     }
 
     if (const auto* operation = cast_expr<AstUnaryOp*>(expr))
     {
-        return infer_unary_op_type(context, operation);
+        return infer_unary_op_type(operation);
     }
 
     if (cast_expr<AstLogicalOp*>(expr) || cast_expr<AstComparisonOp*>(expr))
     {
         // TODO: Do some validation on lhs and rhs; cannot compare strings with one another (yet)
         return std::make_unique<AstPrimitiveType>(
-
             expr->get_source_fragment(),
-            context,
+            expr->get_context(),
             PrimitiveType::BOOL,
             1,
             0);
@@ -445,14 +437,13 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     if (const auto* operation = cast_expr<AstVariableReassignment*>(expr))
     {
-        return infer_expression_type(context, operation->get_value());
+        return infer_expression_type(operation->get_value());
     }
 
     if (const auto* operation = cast_expr<AstVariableDeclaration*>(expr))
     {
         const auto lhs_variable_type = operation->get_variable_type();
         const auto value = infer_expression_type(
-            context,
             operation->get_initial_value().get());
 
         // Both the expression type and the declared type are the same (e.g., let var: int32 = 10)
@@ -462,21 +453,21 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
             return lhs_variable_type->clone();
         }
 
-        return get_dominant_field_type(context, lhs_variable_type, value.get());
+        return get_dominant_field_type(lhs_variable_type, value.get());
     }
 
     if (const auto* fn_call = cast_expr<AstFunctionCall*>(expr))
     {
-        return infer_function_call_return_type(context, fn_call);
+        return infer_function_call_return_type(fn_call);
     }
 
     if (const auto* array_expr = cast_expr<AstArray*>(expr))
     {
-        auto member_type = infer_array_member_type(context, array_expr);
+        auto member_type = infer_array_member_type(array_expr);
 
         return std::make_unique<AstArrayType>(
             array_expr->get_source_fragment(),
-            context,
+            array_expr->get_context(),
             std::move(member_type),
             array_expr->get_elements().size());
     }
@@ -484,8 +475,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
     if (const auto* array_accessor = cast_expr<AstArrayMemberAccessor*>(expr))
     {
         const auto array_type =
-            infer_expression_type(context,
-                                  array_accessor->get_array_identifier());
+            infer_expression_type(array_accessor->get_array_identifier());
 
         if (const auto array = cast_type<AstArrayType*>(array_type.get()); array
             != nullptr)
@@ -496,16 +486,15 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     if (const auto* struct_init = cast_expr<AstStructInitializer*>(expr))
     {
-        return infer_struct_initializer_type(context, struct_init);
+        return infer_struct_initializer_type(struct_init);
     }
 
     if (const auto* member_accessor = cast_expr<AstMemberAccessor*>(expr))
     {
-        return infer_member_accessor_type(context, member_accessor);
+        return infer_member_accessor_type(member_accessor);
     }
 
-    if (const auto* function_definition = cast_expr<AstLambdaFunctionExpression
-        *>(expr))
+    if (const auto* function_definition = cast_expr<AstLambdaFunctionExpression*>(expr))
     {
         std::vector<std::unique_ptr<IAstType>> param_types;
 
@@ -515,8 +504,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         }
 
         return std::make_unique<AstFunctionType>(
-            static_cast<const AstExpression*>(function_definition)->get_source_fragment(),
-            context,
+            function_definition->get_source_fragment(),
+            function_definition->get_context(),
             std::move(param_types),
             function_definition->get_return_type()->clone()
         );
@@ -528,7 +517,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         // We return a pointer type (i8*) to represent the va_list pointer
         return std::make_unique<AstPrimitiveType>(
             expr->get_source_fragment(),
-            context,
+            expr->get_context(),
             PrimitiveType::INT8,
             8,
             SRFLAG_TYPE_PTR
