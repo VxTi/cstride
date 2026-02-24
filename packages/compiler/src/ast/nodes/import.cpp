@@ -2,6 +2,7 @@
 
 #include "errors.h"
 #include "formatting.h"
+#include "ast/parsing_context.h"
 
 #include <sstream>
 

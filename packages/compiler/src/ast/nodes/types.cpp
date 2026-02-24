@@ -2,6 +2,8 @@
 
 #include "ast/nodes/literal_values.h"
 #include "ast/parsing_context.h"
+#include "ast/nodes/blocks.h"
+#include "ast/nodes/struct_declaration.h"
 #include "ast/tokens/token_set.h"
 
 #include <llvm/IR/DerivedTypes.h>
@@ -10,12 +12,7 @@
 
 using namespace stride::ast;
 
-bool is_array_notation(const TokenSet& set)
-{
-    return set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(
-        TokenType::RSQUARE_BRACKET,
-        1);
-}
+
 
 std::string primitive_type_to_str_internal(const PrimitiveType type)
 {
@@ -68,46 +65,11 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type, const i
         (flags & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
 }
 
-std::unique_ptr<IAstType> parse_type_metadata(
-    std::unique_ptr<IAstType> base_type,
-    TokenSet& set,
-    int context_type_flags)
-{
-    const auto src_pos = set.peek_next().get_source_fragment();
-    int offset = 0;
-
-    while (is_array_notation(set))
-    {
-        offset += 2;
-        set.skip(2);
-        base_type = std::make_unique<AstArrayType>(
-            stride::SourceFragment(
-                base_type->get_source(),
-                src_pos.offset,
-                src_pos.length + offset),
-            base_type->get_context(),
-            std::move(base_type),
-            0);
-    }
-
-    // If the preceding token is a question mark, the type is determined
-    // to be optional.
-    // An example of this would be `int32?` or `int32[]?`
-    if (set.peek_next_eq(TokenType::QUESTION))
-    {
-        set.skip(1);
-        context_type_flags |= SRFLAG_TYPE_OPTIONAL;
-    }
-
-    base_type->set_flags(base_type->get_flags() | context_type_flags);
-
-    return std::move(base_type);
-}
-
-std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
+std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    int context_type_flags)
+    int context_type_flags
+)
 {
     const auto reference_token = set.peek_next();
     const bool is_ptr = set.peek_next_eq(TokenType::STAR);
@@ -297,10 +259,11 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
                                context_type_flags);
 }
 
-std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
+std::optional<std::unique_ptr<IAstType>> parse_named_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    int context_type_flags)
+    int context_type_flags
+)
 {
     // Custom types are identifiers in the type position.
     const auto reference_token = set.peek_next();
@@ -326,37 +289,11 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     return parse_type_metadata(std::move(named_type), set, context_type_flags);
 }
 
-std::unique_ptr<IAstType> stride::ast::parse_type(
+std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    const std::string& error,
-    const int type_flags)
-{
-    if (auto primitive = parse_primitive_type_optional(context, set, type_flags);
-        primitive.has_value())
-    {
-        return std::move(primitive.value());
-    }
-
-    if (auto named_type = parse_named_type_optional(context, set, type_flags);
-        named_type.has_value())
-    {
-        return std::move(named_type.value());
-    }
-
-    if (auto function_type = parse_function_type_optional(context, set, type_flags);
-        function_type.has_value())
-    {
-        return std::move(function_type.value());
-    }
-
-    set.throw_error(error);
-}
-
-std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set,
-    int context_type_flags)
+    int context_type_flags
+)
 {
     // Must start with '('
     if (!set.peek_next_eq(TokenType::LPAREN))
@@ -431,9 +368,38 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     return parse_type_metadata(std::move(fn_type), set, context_type_flags);
 }
 
+std::unique_ptr<IAstType> stride::ast::parse_type(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set,
+    const std::string& error,
+    const int type_flags
+)
+{
+    if (auto primitive = parse_primitive_type_optional(context, set, type_flags);
+        primitive.has_value())
+    {
+        return std::move(primitive.value());
+    }
+
+    if (auto named_type = parse_named_type_optional(context, set, type_flags);
+        named_type.has_value())
+    {
+        return std::move(named_type.value());
+    }
+
+    if (auto function_type = parse_function_type_optional(context, set, type_flags);
+        function_type.has_value())
+    {
+        return std::move(function_type.value());
+    }
+
+    set.throw_error(error);
+}
+
 std::string stride::ast::get_root_reference_struct_name(
     const std::string& name,
-    const std::shared_ptr<ParsingContext>& context)
+    const std::shared_ptr<ParsingContext>& context
+)
 {
     std::string actual_name = name;
     if (auto struct_def_opt = context->get_struct_def(actual_name);
@@ -459,7 +425,8 @@ std::string stride::ast::get_root_reference_struct_name(
 
 llvm::Type* stride::ast::internal_type_to_llvm_type(
     IAstType* type,
-    llvm::Module* module)
+    llvm::Module* module
+)
 {
     const auto context = type->get_context();
 
@@ -578,7 +545,8 @@ llvm::Type* stride::ast::internal_type_to_llvm_type(
 std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     const std::shared_ptr<ParsingContext>& context,
     IAstType* lhs,
-    IAstType* rhs)
+    IAstType* rhs
+)
 {
     const auto* lhs_primitive = dynamic_cast<AstPrimitiveType*>(lhs);
     const auto* rhs_primitive = dynamic_cast<AstPrimitiveType*>(rhs);
@@ -643,7 +611,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
     const std::vector references = {
         ErrorSourceReference(lhs->to_string(), lhs->get_source_fragment()),
-        ErrorSourceReference(rhs->get_internal_name(), rhs->get_source_fragment())
+        ErrorSourceReference(rhs->get_formatted_name(), rhs->get_source_fragment())
     };
 
     throw parsing_error(
@@ -654,16 +622,17 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
 bool AstNamedType::equals(IAstType& other)
 {
-    if (const auto* other_primitive = cast_type<AstPrimitiveType*>(&other))
-    {
-        // The other type might be a primitive "NIL" type,
-        // then we consider the types equal if this is optional
-        return other_primitive->get_type() == PrimitiveType::NIL && this->
-            is_optional();
-    }
     if (auto* other_named = cast_type<AstNamedType*>(&other))
     {
-        return this->get_internal_name() == other_named->get_internal_name();
+        return this->get_formatted_name() == other_named->get_formatted_name();
+    }
+
+    // The other type might be a primitive "NIL" type,
+    // then we consider the types equal if this is optional
+    if (const auto* other_primitive = cast_type<AstPrimitiveType*>(&other))
+    {
+        return other_primitive->get_type() == PrimitiveType::NIL
+            && this->is_optional();
     }
     return false;
 }
@@ -689,12 +658,6 @@ bool AstPrimitiveType::equals(IAstType& other)
     return false;
 }
 
-bool AstArrayType::equals(IAstType& other)
-{
-    if (const auto* other_array = cast_type<AstArrayType*>(&other))
-    {
-        // Length here doesn't matter; merely the types should be the same.
-        return this->_element_type->equals(*other_array->_element_type);
-    }
-    return false;
-}
+
+
+

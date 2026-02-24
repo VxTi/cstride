@@ -8,60 +8,12 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::unique_ptr<AstStructMember> parse_struct_member(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set,
-    const std::string& struct_name
-)
-{
-    const auto struct_member_name_tok =
-        set.expect(TokenType::IDENTIFIER, "Expected struct member name");
-    const auto& struct_member_name = struct_member_name_tok.get_lexeme();
-
-    set.expect(TokenType::COLON);
-
-    auto struct_member_type = parse_type(
-        context,
-        set,
-        "Expected a struct member type"
-    );
-    const auto last_token = set.expect(
-        TokenType::SEMICOLON,
-        "Expected ';' after struct member declaration"
-    );
-
-    const auto& last_pos = last_token.get_source_fragment();
-    const auto& mem_pos = struct_member_name_tok.get_source_fragment();
-
-    const auto position = stride::SourceFragment(
-        set.get_source(),
-        mem_pos.offset,
-        last_pos.offset + last_pos.length - mem_pos.offset
-    );
-    auto struct_member_symbol = Symbol(position, struct_member_name);
-
-    context->define_struct_member(struct_name, struct_member_name, struct_member_type->clone());
-
-    return std::make_unique<AstStructMember>(
-        context,
-        struct_member_symbol,
-        std::move(struct_member_type)
-    );
-}
-
 std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& tokens,
     [[maybe_unused]] VisibilityModifier modifier
 )
 {
-    if (context->get_current_scope_type() != ScopeType::GLOBAL &&
-        context->get_current_scope_type() != ScopeType::MODULE)
-    {
-        tokens.throw_error(
-            "Struct declarations are only allowed in global or module scope");
-    }
-
     const auto reference_token = tokens.expect(TokenType::KEYWORD_STRUCT);
     const auto struct_name_tok = tokens.expect(TokenType::IDENTIFIER, "Expected struct name");
     const auto& struct_name = struct_name_tok.get_lexeme();
@@ -83,12 +35,12 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
         tokens.expect(TokenType::SEMICOLON);
 
         // We define it as a reference to `reference_sym`. Validation happens later
-        context->define_struct(
+        context->define_type(
             /* Base struct sym */
             Symbol(struct_name_tok.get_source_fragment(), struct_name),
             /* Reference struct sym */
             Symbol(reference_sym->get_source_fragment(),
-                   reference_sym->get_internal_name()));
+                   reference_sym->get_formatted_name()));
 
         return std::make_unique<AstStructDeclaration>(
             reference_token.get_source_fragment(),
@@ -118,10 +70,6 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
     std::vector<std::unique_ptr<AstStructMember>> members = {};
     std::vector<StructFieldPair> struct_fields = {};
 
-    context->define_struct(
-        Symbol(struct_name_tok.get_source_fragment(), struct_name),
-        std::move(struct_fields)
-    );
 
     if (struct_body_set.has_value())
     {
@@ -146,6 +94,10 @@ std::unique_ptr<AstStructDeclaration> stride::ast::parse_struct_declaration(
     {
         tokens.throw_error("Struct must have at least one member");
     }
+    context->define_type(
+        Symbol(struct_name_tok.get_source_fragment(), struct_name),
+        std::move(struct_fields)
+    );
 
     return std::make_unique<AstStructDeclaration>(
         reference_token.get_source_fragment(),
@@ -164,7 +116,7 @@ void AstStructMember::validate()
 
         if (const auto member =
                 this->get_context()->get_struct_def(
-                    struct_type->get_internal_name());
+                    struct_type->get_formatted_name());
             !member.has_value())
         {
             throw parsing_error(
@@ -183,7 +135,7 @@ void AstStructDeclaration::validate()
     {
         // Check whether we can find the other field
         if (const auto reference = this->get_context()->get_struct_def(
-                this->get_reference_type()->get_internal_name());
+                this->get_reference_type()->get_formatted_name());
             reference == nullptr)
         {
             throw parsing_error(
@@ -192,7 +144,7 @@ void AstStructDeclaration::validate()
                     "Unable to determine type of struct '{}': referenced struct type '{}' is "
                     "undefined",
                     this->get_name(),
-                    this->_reference.value()->get_internal_name()),
+                    this->_reference.value()->get_formatted_name()),
                 this->_reference.value()->get_source_fragment());
         }
         return;
@@ -270,7 +222,7 @@ void AstStructDeclaration::resolve_forward_references(
         // Case: struct Alias = Original;
         // We look up the original struct and copy its layout.
         // TODO: Mangle ref name
-        std::string ref_name = this->get_reference_type()->get_internal_name();
+        std::string ref_name = this->get_reference_type()->get_formatted_name();
         const llvm::StructType* ref_struct =
             llvm::StructType::getTypeByName(module->getContext(), ref_name);
 
@@ -313,7 +265,7 @@ void AstStructDeclaration::resolve_forward_references(
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Unknown internal type '{}' for struct member '{}'",
-                        member->get_type().get_internal_name(),
+                        member->get_type().get_formatted_name(),
                         member->get_name()
                     ),
                     member->get_source_fragment());

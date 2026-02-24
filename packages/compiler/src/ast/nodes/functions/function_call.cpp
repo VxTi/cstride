@@ -58,7 +58,7 @@ std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
 
         for (const auto& arg : fn_call->get_type()->get_parameter_types())
         {
-            arg_types.push_back(arg->get_internal_name());
+            arg_types.push_back(arg->get_formatted_name());
         }
 
         if (arg_types.empty())
@@ -81,7 +81,7 @@ std::string AstFunctionCall::format_function_name() const
     {
         const auto type = infer_expression_type(this->get_context(), arg.get());
 
-        arg_types.push_back(type->get_internal_name());
+        arg_types.push_back(type->get_formatted_name());
     }
     if (arg_types.empty())
     {
@@ -112,8 +112,8 @@ llvm::Value* AstFunctionCall::codegen(
         // Variables are stored by their declaration name, not with function signatures
         // So we lookup using the raw function name only
         if (const auto* var_def = this->get_context()->lookup_variable(
-            this->get_function_name(),
-            true)
+        this->get_function_name(),
+        true)
         )
         {
             if (const auto* fn_type = cast_type<AstFunctionType*>(var_def->get_type()))
@@ -145,7 +145,7 @@ llvm::Value* AstFunctionCall::codegen(
                     );
 
                     if (const auto expected_type = fn_type->get_parameter_types()[i].get();
-                        arg_type->get_internal_name() != expected_type->get_internal_name())
+                        arg_type->get_formatted_name() != expected_type->get_formatted_name())
                     {
                         throw parsing_error(
                             ErrorType::TYPE_ERROR,
@@ -153,14 +153,14 @@ llvm::Value* AstFunctionCall::codegen(
                                 "Type mismatch for argument {} in anonymous function call '{}': expected type '{}', got '{}'",
                                 i + 1,
                                 this->get_function_name(),
-                                expected_type->get_internal_name(),
-                                arg_type->get_internal_name()
+                                expected_type->get_formatted_name(),
+                                arg_type->get_formatted_name()
                             ),
                             {
                                 ErrorSourceReference(
                                     std::format(
                                         "Expected type: {}",
-                                        expected_type->get_internal_name()
+                                        expected_type->get_formatted_name()
                                     ),
                                     arg_type->get_source_fragment()
                                 )
@@ -171,10 +171,13 @@ llvm::Value* AstFunctionCall::codegen(
 
                 // Reconstruct the concrete llvm::FunctionType from the AST type
                 std::vector<llvm::Type*> param_types;
+                param_types.reserve(fn_type->get_parameter_types().size());
+
                 for (const auto& param : fn_type->get_parameter_types())
                 {
                     param_types.push_back(internal_type_to_llvm_type(param.get(), module));
                 }
+
                 llvm::Type* ret_type = internal_type_to_llvm_type(
                     fn_type->get_return_type().get(),
                     module

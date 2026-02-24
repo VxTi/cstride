@@ -43,6 +43,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "fn"               { return StrideTypes.FN; }
   "struct"           { return StrideTypes.STRUCT; }
   "const"            { return StrideTypes.CONST; }
+  "type"             { return StrideTypes.KW_TYPE; }
   "let"              { return StrideTypes.LET; }
   "extern"           { return StrideTypes.EXTERN; }
   "as"               { return StrideTypes.AS; }

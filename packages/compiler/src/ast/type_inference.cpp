@@ -189,7 +189,8 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(
                 named->get_source_fragment(),
                 context,
                 named->name(),
-                flags);
+                flags
+            );
         }
     }
     else if (op_type == UnaryOpType::DEREFERENCE)
@@ -294,16 +295,16 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Cannot access member of non-struct type '{}'",
-                    current_type->get_internal_name()),
+                    current_type->get_formatted_name()),
                 expr->get_source_fragment());
         }
 
         // Root fields, for if the struct is a reference
         auto struct_def = expr->get_context()->get_struct_def(
-            struct_type->get_internal_name());
+            struct_type->get_formatted_name());
         const auto root_ref_struct_fields =
-            expr->get_context()->get_struct_fields(
-                struct_type->get_internal_name());
+            expr->get_context()->get_struct_type_fields(
+                struct_type->get_formatted_name());
 
         if (!struct_def.has_value() || !root_ref_struct_fields.has_value())
         {
@@ -323,7 +324,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
                 expr->get_source_fragment());
         }
 
-        const auto field_type = StructDef::get_struct_member_field_type(
+        const auto field_type = TypeDef::get_struct_member_field_type(
             segment_iden->get_name(),
             root_ref_struct_fields.value());
 

@@ -115,7 +115,7 @@ llvm::Value* AstMemberAccessor::codegen(
     // and returns the GlobalVariable* (pointer) rather than loading it.
 
     auto cloned_base_type = this->_base_type->clone();
-    std::string base_type_name = cloned_base_type->get_internal_name();
+    std::string base_type_name = cloned_base_type->get_formatted_name();
 
     if (!builder->GetInsertBlock())
     {
@@ -178,7 +178,7 @@ llvm::Value* AstMemberAccessor::codegen(
             }
 
             cloned_base_type = member_field_type.value()->clone();
-            current_struct_name = cloned_base_type->get_internal_name();
+            current_struct_name = cloned_base_type->get_formatted_name();
         }
 
         return current_const;
@@ -194,7 +194,7 @@ llvm::Value* AstMemberAccessor::codegen(
         return nullptr;
     }
 
-    std::string current_struct_name = cloned_base_type->get_internal_name();
+    std::string current_struct_name = cloned_base_type->get_formatted_name();
 
     // With opaque pointers, we need to know if we are operating on an address (L-value)
     // or a loaded struct value (R-value). Pointers allow GEP, values require ExtractValue.
@@ -278,7 +278,7 @@ llvm::Value* AstMemberAccessor::codegen(
             return nullptr;
 
         cloned_base_type = member_field_type.value()->clone();
-        current_struct_name = cloned_base_type->get_internal_name();
+        current_struct_name = cloned_base_type->get_formatted_name();
     }
 
     // if we were working with pointers, we need to load the final result

@@ -1,7 +1,7 @@
 #include "ast/parsing_context.h"
 
-#include "ast/symbols.h"
 #include "errors.h"
+#include "ast/symbols.h"
 
 #include <algorithm>
 #include <ranges>
@@ -341,7 +341,7 @@ const
     return nullptr;
 }
 
-std::optional<StructDef*> ParsingContext::get_struct_def(
+std::optional<TypeDef*> ParsingContext::get_struct_def(
     const std::string& name) const
 {
     auto current = this;
@@ -357,11 +357,14 @@ std::optional<StructDef*> ParsingContext::get_struct_def(
 
         for (const auto& definition : current->_symbols)
         {
-            if (auto* struct_def = dynamic_cast<StructDef*>(definition.get()))
+            if (auto* struct_def = dynamic_cast<TypeDef*>(definition.get()))
             {
+                if (struct_def->get_type_variant() != TypeDefVariant::STRUCT ||
+                    (struct_def->get_type_variant() == TypeDefVariant::TYPE_ALIAS && cast_type<>(struct_def->get_type())))
+
                 // Here we don't check for the internal name, as we don't always know what the data
                 // layout is initially (which is used for resolving the actual internal name)
-                if (struct_def->get_internal_symbol_name() == name)
+                if ( struct_def->get_internal_symbol_name() == name)
                 {
                     return struct_def;
                 }
@@ -374,32 +377,7 @@ std::optional<StructDef*> ParsingContext::get_struct_def(
     return std::nullopt;
 }
 
-std::optional<std::vector<std::pair<std::string, IAstType*>>> ParsingContext::get_struct_fields(
-    const std::string& name
-) const
-{
-    auto definition = get_struct_def(name);
-
-    if (!definition)
-    {
-        return std::nullopt;
-    }
-
-    while (definition.value()->is_reference_struct())
-    {
-        definition = get_struct_def(
-            definition.value()->get_reference_struct().value().name);
-
-        if (!definition)
-        {
-            return std::nullopt;
-        }
-    }
-
-    return definition.value()->get_struct_fields();
-}
-
-void ParsingContext::define_struct(
+void ParsingContext::define_type(
     const Symbol& struct_symbol,
     std::vector<StructFieldPair> fields
 ) const
@@ -416,14 +394,14 @@ void ParsingContext::define_struct(
 
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
 
-    auto def = std::make_unique<StructDef>(struct_symbol, std::move(fields));
+    auto def = std::make_unique<TypeDef>(struct_symbol, std::move(fields));
 
     root._symbols.push_back(std::move(def));
 }
 
-void ParsingContext::define_struct(
-    const Symbol& struct_name,
-    const Symbol& reference_struct_name
+void ParsingContext::define_type(
+    const Symbol& type_name,
+    const Symbol& reference_type_name
 )
 const
 {
@@ -431,110 +409,19 @@ const
         ScopeType::MODULE)
     {
         throw parsing_error(
-            "Reference structs can only be defined in the global or module scope");
+            "Reference types can only be defined in the global or module scope");
     }
 
     auto& root = const_cast<ParsingContext&>(this->traverse_to_root());
 
-    if (const auto existing_def = this->get_struct_def(struct_name.name);
+    if (const auto existing_def = this->get_struct_def(type_name.name);
         existing_def.has_value())
     {
         throw parsing_error(
-            std::format("Struct '{}' is already defined in this scope",
-                        struct_name.name));
+            std::format("Type '{}' is already defined in this scope",
+                        type_name.name));
     }
 
     root._symbols.push_back(
-        std::make_unique<StructDef>(struct_name, reference_struct_name));
-}
-
-void ParsingContext::define_struct_member(
-    const std::string& struct_name,
-    const std::string& member_name,
-    std::unique_ptr<IAstType> type
-) const
-{
-    const auto& struct_definition = get_struct_def(struct_name);
-    if (!struct_definition.has_value())
-    {
-        throw parsing_error(
-            std::format("Struct '{}' is not defined in this scope", struct_name)
-        );
-    }
-
-    struct_definition.value()->define_member(member_name, std::move(type));
-}
-
-void StructDef::define_member(const std::string& member_name, std::unique_ptr<IAstType> type)
-{
-    for (const auto& key : this->_fields | std::views::keys)
-    {
-        if (key == member_name)
-        {
-            throw parsing_error(
-                "Struct member already defined in scope"
-            );
-        }
-    }
-
-    this->_fields.emplace_back(member_name, std::move(type));
-}
-
-std::vector<std::pair<std::string, IAstType*>> StructDef::get_struct_fields() const
-{
-    std::vector<std::pair<std::string, IAstType*>> copy{};
-    copy.reserve(this->_fields.size());
-
-    for (const auto& [name, type] : this->_fields)
-    {
-        copy.emplace_back(name, type.get());
-    }
-
-    return std::move(copy);
-}
-
-std::optional<IAstType*> StructDef::get_struct_member_field_type(
-    const std::string& field_name,
-    const std::vector<std::pair<std::string, IAstType*>>& fields)
-{
-    for (const auto& [name, type] : fields)
-    {
-        if (name == field_name)
-        {
-            return type;
-        }
-    }
-    return std::nullopt;
-}
-
-// Note that if this struct is a reference struct, this will return nullopt
-std::optional<IAstType*> StructDef::get_struct_member_field_type(
-    const std::string& field_name)
-{
-    for (const auto& [name, type] : this->_fields)
-    {
-        if (name == field_name)
-        {
-            return type.get();
-        }
-    }
-    return std::nullopt;
-}
-
-bool StructDef::is_reference_struct() const
-{
-    return this->_reference_struct_sym.has_value();
-}
-
-std::optional<int> StructDef::get_struct_field_member_index(
-    const std::string& member_name) const
-{
-    for (size_t i = 0; i < this->_fields.size(); i++)
-    {
-        if (this->_fields[i].first == member_name)
-        {
-            return static_cast<int>(i);
-        }
-    }
-    return std::nullopt;
+        std::make_unique<TypeDef>(type_name, reference_type_name));
 }
