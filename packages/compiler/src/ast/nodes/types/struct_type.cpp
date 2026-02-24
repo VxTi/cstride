@@ -165,7 +165,7 @@ std::string AstStructType::get_internalized_name() const
             internalized_name += "_" + type->get_formatted_name();
         }
     }
-    return std::format("{:x}", std::hash<std::string>{}(internalized_name));
+    return std::format("struct${:x}", std::hash<std::string>{}(internalized_name));
 }
 
 void AstStructType::resolve_forward_references(
