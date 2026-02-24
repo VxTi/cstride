@@ -661,8 +661,7 @@ namespace stride::ast
             _initializers(std::move(initializers)) {}
 
         [[nodiscard]]
-        const std::vector<
-            std::pair<std::string, std::unique_ptr<AstExpression>>>&
+        const std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>>&
         get_initializers() const
         {
             return _initializers;

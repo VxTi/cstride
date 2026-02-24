@@ -194,6 +194,8 @@ namespace stride::ast
             const std::string& name
         ) const;
 
+        std::optional<AstStructType*> get_struct_type(const std::string& name) const;
+
         [[nodiscard]]
         const definition::IdentifiableSymbolDef* get_symbol_def(
             const std::string& symbol_name

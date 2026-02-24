@@ -7,6 +7,7 @@
 
 namespace stride:: ast
 {
+    enum class VisibilityModifier;
     class TokenSet;
 
     class AstTypeDefinition
@@ -40,11 +41,12 @@ namespace stride:: ast
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
 
-        std::string to_string() override { return std::format("Type {}<{}>", this->_name, this->_reference_name); }
+        std::string to_string() override { return std::format("Type<{}>", this->get_name()); }
     };
 
     std::unique_ptr<AstTypeDefinition> parse_type_statement(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
+        TokenSet& set,
+        VisibilityModifier modifier
     );
 }

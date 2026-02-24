@@ -390,15 +390,12 @@ namespace stride::ast
             _members(std::move(members)) {}
 
         [[nodiscard]]
-        const std::vector<std::pair<std::string, std::unique_ptr<IAstType>>>& get_members() const
-        {
-            return this->_members;
-        }
+        std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> get_members() const;
 
-        std::optional<const IAstType*> get_member_field_type(const std::string& field_name) const;
+        std::optional<IAstType*> get_member_field_type(const std::string& field_name) const;
 
         std::optional<int> get_member_field_index(const std::string& field_name) const;
-
+        
         [[nodiscard]]
         std::string get_formatted_name() override
         {
@@ -413,6 +410,14 @@ namespace stride::ast
         bool equals(IAstType& other) override;
 
         std::unique_ptr<IAstType> clone() const override;
+        
+        // Struct registration is done in the `resolve_forward_references` pass
+        // so that one can reference structs before they're semantically defined.
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
+        
+        void resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder) override;
+
+        std::string get_internalized_name() const;
     };
 
     std::unique_ptr<IAstType> parse_type(

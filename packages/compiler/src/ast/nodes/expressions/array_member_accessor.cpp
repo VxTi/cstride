@@ -32,14 +32,6 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
         std::move(array_identifier),
         std::move(index_expression));
 
-    /*if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
-    {
-        set.next();
-        set.expect(TokenType::RSQUARE_BRACKET);
-        base_expr = parse_array_member_accessor(context, set, std::move(base_expr));
-    }
-    */
-
     return std::move(base_expr);
 }
 
