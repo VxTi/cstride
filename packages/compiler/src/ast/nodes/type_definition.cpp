@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ast/nodes/type_definition.h"
 
 #include "ast/nodes/expression.h"
