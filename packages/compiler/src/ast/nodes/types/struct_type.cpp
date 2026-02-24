@@ -107,6 +107,30 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
     );
 }
 
+std::optional<const IAstType*> AstStructType::get_member_field_type(const std::string& field_name) const
+{
+    for (const auto& [name, type] : this->_members)
+    {
+        if (name == field_name)
+        {
+            return type.get();
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<int> AstStructType::get_member_field_index(const std::string& field_name) const
+{
+    for (size_t i = 0; i < this->_members.size(); i++)
+    {
+        if (this->_members[i].first == field_name)
+        {
+            return static_cast<int>(i);
+        }
+    }
+    return std::nullopt;
+}
+
 bool AstStructType::equals(IAstType& other)
 {
     if (const auto other_struct_ty = cast_type<AstStructType*>(&other))

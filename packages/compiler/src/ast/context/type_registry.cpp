@@ -5,97 +5,20 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::vector<std::pair<std::string, IAstType*>> TypeDef::get_struct_type_fields() const
+bool ParsingContext::is_type_defined(const std::string& type_name) const
 {
-    std::vector<std::pair<std::string, IAstType*>> copy{};
-    copy.reserve(this->_fields.size());
-
-    for (const auto& [name, type] : this->_fields)
-    {
-        copy.emplace_back(name, type.get());
-    }
-
-    return std::move(copy);
+    return get_type_definition(type_name).has_value();
 }
 
-std::optional<std::vector<std::pair<std::string, IAstType*>>> ParsingContext::get_struct_type_fields(
-    const std::string& name
-) const
+bool ParsingContext::is_struct_type_defined(const std::string& struct_name) const
 {
-    auto definition = get_type_definition(name);
+    const auto type_def = get_type_definition(struct_name);
 
-    if (!definition)
-    {
-        return std::nullopt;
-    }
-
-    while (definition.value()->is_reference_struct())
-    {
-        definition = get_type_definition(definition.value()->get_reference_struct().value().name);
-
-        if (!definition)
-        {
-            return std::nullopt;
-        }
-    }
-
-    return definition.value()->get_struct_type_fields();
+    return type_def.has_value() &&
+        cast_type<AstStructType*>(type_def.value()->get_type()) != nullptr;
 }
 
-// It's a reference struct, if the type is a named type
-bool definition::TypeDef::is_reference_struct() const
-{
-    if (cast_type<AstNamedType *>(this->_type.get()))
-    {
-        return true;
-    }
-    return false;
-}
-
-std::optional<IAstType*> TypeDef::get_struct_member_field_type(
-    const std::string& field_name,
-    const std::vector<std::pair<std::string, IAstType*>>& fields)
-{
-    for (const auto& [name, type] : fields)
-    {
-        if (name == field_name)
-        {
-            return type;
-        }
-    }
-    return std::nullopt;
-}
-
-// Note that if this struct is a reference struct, this will return nullopt
-std::optional<IAstType*> TypeDef::get_struct_member_field_type(
-    const std::string& field_name)
-{
-    for (const auto& [name, type] : this->_fields)
-    {
-        if (name == field_name)
-        {
-            return type.get();
-        }
-    }
-    return std::nullopt;
-}
-
-
-std::optional<int> definition::TypeDef::get_struct_field_member_index(
-    const std::string& member_name) const
-{
-    for (size_t i = 0; i < this->_fields.size(); i++)
-    {
-        if (this->_fields[i].first == member_name)
-        {
-            return static_cast<int>(i);
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<definition::TypeDef*> ParsingContext::get_type_definition(
-    const std::string& name) const
+std::optional<TypeDef*> ParsingContext::get_type_definition(const std::string& name) const
 {
     auto current = this;
 
@@ -108,19 +31,14 @@ std::optional<definition::TypeDef*> ParsingContext::get_type_definition(
             continue;
         }
 
-        for (const auto& definition : current->_symbols)
+        for (const auto& symbol_definition : current->_symbols)
         {
-            if (auto* struct_def = dynamic_cast<TypeDef*>(definition.get()))
+            if (auto* type_definition = dynamic_cast<TypeDef*>(symbol_definition.get()))
             {
-                if (struct_def->get_type_variant() != TypeDefVariant::STRUCT ||
-                    (struct_def->get_type_variant() == TypeDefVariant::TYPE_ALIAS && cast_type<>(struct_def->get_type())))
-
-                    // Here we don't check for the internal name, as we don't always know what the data
-                        // layout is initially (which is used for resolving the actual internal name)
-                            if ( struct_def->get_internal_symbol_name() == name)
-                            {
-                                return struct_def;
-                            }
+                if (type_definition->get_internal_symbol_name() == name)
+                {
+                    return type_definition;
+                }
             }
         }
 
@@ -130,4 +48,22 @@ std::optional<definition::TypeDef*> ParsingContext::get_type_definition(
     return std::nullopt;
 }
 
-void ParsingContext::define_type(const Symbol& type_name, std::unique_ptr<IAstType> type) {}
+void ParsingContext::define_type(const Symbol& type_name, std::unique_ptr<IAstType> type)
+{
+    if (const auto existing_def = this->get_type_definition(type_name.internal_name);
+        existing_def.has_value())
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Type '{}' is already defined in this scope", type_name.name),
+            {
+                ErrorSourceReference(
+                    "Previous definition here",
+                    existing_def.value()->get_type()->get_source_fragment()
+                )
+            }
+        );
+    }
+
+    this->_symbols.push_back(std::make_unique<TypeDef>(type_name, std::move(type)));
+}

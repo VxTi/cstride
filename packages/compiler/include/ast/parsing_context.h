@@ -86,34 +86,9 @@ namespace stride::ast
                 _type(std::move(type)) {}
 
             [[nodiscard]]
-            std::vector<std::pair<std::string, IAstType*>> get_struct_type_fields() const;
-
-            [[nodiscard]]
-            std::optional<IAstType*> get_struct_member_field_type(
-                const std::string& field_name);
-
-            static std::optional<IAstType*> get_struct_member_field_type(
-                const std::string& field_name,
-                const std::vector<std::pair<std::string, IAstType*>>& fields
-            );
-
-            [[nodiscard]]
-            bool is_reference_struct() const;
-
-            [[nodiscard]]
-            std::optional<Symbol> get_reference_struct() const
+            IAstType* get_type() const
             {
-                if (const auto ref_struct_ty = cast_type<AstNamedType *>(this->_type.get()))
-                {
-                    return ref_struct_ty->get();
-                }
-                return std::nullopt;
-            }
-
-            [[nodiscard]]
-            bool has_member(const std::string& member_name)
-            {
-                return get_struct_member_field_type(member_name).has_value();
+                return this->_type.get();
             }
         };
 
@@ -224,12 +199,6 @@ namespace stride::ast
             const std::string& symbol_name
         ) const;
 
-
-        [[nodiscard]]
-        std::optional<std::vector<std::pair<std::string, IAstType*>>> get_struct_type_fields(
-            const std::string& name
-        ) const;
-
         [[nodiscard]]
         ParsingContext* get_parent_registry() const
         {
@@ -252,22 +221,6 @@ namespace stride::ast
         ) const;
 
         void define_type(
-            const Symbol& struct_symbol,
-            std::vector<definition::StructFieldPair> fields
-        ) const;
-
-        void define_struct_type_member(
-            const std::string& struct_name,
-            const std::string& member_name,
-            std::unique_ptr<IAstType> type
-        ) const;
-
-        void define_type(
-            const Symbol& type_name,
-            const Symbol& reference_type_name
-        ) const;
-
-        void define_type(
             const Symbol& type_name,
             std::unique_ptr<IAstType> type
         );
@@ -285,6 +238,11 @@ namespace stride::ast
         [[nodiscard]]
         definition::IDefinition* fuzzy_find(const std::string& symbol_name) const;
 
+        [[nodiscard]]
+        bool is_struct_type_defined(const std::string& struct_name) const;
+
+        bool is_type_defined(const std::string& type_name) const;
+
         void define_symbol(const Symbol& symbol_name, definition::SymbolType type);
 
         /// Checks whether the provided variable name is defined in the current context.
@@ -299,8 +257,7 @@ namespace stride::ast
         /// Do note that the internal name is not the name that you would use in
         /// source code, but rather the mangled name used for code generation.
         [[nodiscard]]
-        bool is_function_defined_globally(
-            const std::string& internal_function_name) const;
+        bool is_function_defined_globally(const std::string& internal_function_name) const;
 
         [[nodiscard]]
         std::string get_name() const

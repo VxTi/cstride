@@ -374,7 +374,8 @@ namespace stride::ast
         bool equals(IAstType& other) override;
     };
 
-    class AstStructType : public IAstType
+    class AstStructType
+        : public IAstType
     {
         std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> _members;
 
@@ -393,6 +394,10 @@ namespace stride::ast
         {
             return this->_members;
         }
+
+        std::optional<const IAstType*> get_member_field_type(const std::string& field_name) const;
+
+        std::optional<int> get_member_field_index(const std::string& field_name) const;
 
         [[nodiscard]]
         std::string get_formatted_name() override
