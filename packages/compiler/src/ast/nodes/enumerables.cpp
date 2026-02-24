@@ -1,5 +1,6 @@
 #include "ast/nodes/enumerables.h"
 
+#include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
 
 #include <format>

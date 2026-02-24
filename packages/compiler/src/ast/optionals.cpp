@@ -1,6 +1,9 @@
 #include "ast/optionals.h"
 
+#include "ast/parsing_context.h"
+
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Value.h>
 
 using namespace stride::ast;
 
@@ -12,12 +15,10 @@ bool stride::ast::is_optional_wrapped_type(const llvm::Type* type)
         if (struct_type->getNumElements() != OPT_ELEMENT_COUNT)
             return false;
 
-        const auto has_value_ty = struct_type->
-            getElementType(OPT_IDX_HAS_VALUE);
-        const auto element_ty =
-            struct_type->getElementType(OPT_IDX_ELEMENT_TYPE);
-        // Type "T"; can be ptr or primitive.
+        const auto has_value_ty = struct_type->getElementType(OPT_IDX_HAS_VALUE);
+        const auto element_ty = struct_type->getElementType(OPT_IDX_ELEMENT_TYPE);
 
+        // Type "T"; can be ptr or primitive.
         return has_value_ty != nullptr && element_ty != nullptr &&
             has_value_ty->isIntegerTy(OPT_HAS_VALUE_BIT_COUNT);
     }
@@ -41,9 +42,8 @@ llvm::Value* stride::ast::wrap_optional_value(
         return nullptr;
     }
 
-    llvm::Type* inner_ty =
-        llvm::cast<llvm::StructType>(optional_ty)->getElementType(
-            OPT_IDX_ELEMENT_TYPE);
+    llvm::Type* inner_ty = llvm::cast<llvm::StructType>(optional_ty)->getElementType(
+        OPT_IDX_ELEMENT_TYPE);
 
     // nil -> { i1 false, undef inner }
     if (llvm::isa<llvm::ConstantPointerNull>(value))
@@ -76,13 +76,14 @@ llvm::Value* stride::ast::wrap_optional_value(
 
     // value -> { i1 true, value }
     llvm::Value* wrapped = llvm::UndefValue::get(optional_ty);
-    wrapped =
-        builder->CreateInsertValue(wrapped,
-                                   builder->getInt1(OPT_HAS_VALUE),
-                                   { OPT_IDX_HAS_VALUE });
-    wrapped = builder->CreateInsertValue(wrapped,
-                                         value,
-                                         { OPT_IDX_ELEMENT_TYPE });
+    wrapped = builder->CreateInsertValue(
+        wrapped,
+        builder->getInt1(OPT_HAS_VALUE),
+        { OPT_IDX_HAS_VALUE });
+    wrapped = builder->CreateInsertValue(
+        wrapped,
+        value,
+        { OPT_IDX_ELEMENT_TYPE });
     return wrapped;
 }
 
@@ -131,8 +132,7 @@ llvm::Value* stride::ast::wrap_optional_value_gep(
         return value;
     }
 
-    llvm::AllocaInst* alloca = builder->
-        CreateAlloca(optional_ty, nullptr, name);
+    llvm::AllocaInst* alloca = builder->CreateAlloca(optional_ty, nullptr, name);
 
     // If both types are the same, we can store directly.
     if (value_ty == optional_ty)
@@ -153,28 +153,30 @@ llvm::Value* stride::ast::wrap_optional_value_gep(
 
     if (llvm::isa<llvm::ConstantPointerNull>(value))
     {
-        opt_has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx),
-                                               OPT_NO_VALUE);
+        opt_has_value = llvm::ConstantInt::get(
+            llvm::Type::getInt1Ty(ctx),
+            OPT_NO_VALUE);
         opt_value = llvm::UndefValue::get(optional_ty);
     }
     else
     {
-        opt_has_value = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx),
-                                               OPT_HAS_VALUE);
+        opt_has_value = llvm::ConstantInt::get(
+            llvm::Type::getInt1Ty(ctx),
+            OPT_HAS_VALUE);
         opt_value = optionally_upcast_type(value, optional_value_ty, builder);
     }
 
-    llvm::Value* has_value_ptr =
-        builder->CreateStructGEP(alloca->getAllocatedType(),
-                                 alloca,
-                                 OPT_IDX_HAS_VALUE);
+    llvm::Value* has_value_ptr = builder->CreateStructGEP(
+        alloca->getAllocatedType(),
+        alloca,
+        OPT_IDX_HAS_VALUE);
     builder->CreateStore(opt_has_value, has_value_ptr);
 
     // Store value
-    llvm::Value* value_ptr =
-        builder->CreateStructGEP(alloca->getAllocatedType(),
-                                 alloca,
-                                 OPT_IDX_ELEMENT_TYPE);
+    llvm::Value* value_ptr = builder->CreateStructGEP(
+        alloca->getAllocatedType(),
+        alloca,
+        OPT_IDX_ELEMENT_TYPE);
     builder->CreateStore(opt_value, value_ptr);
 
     return alloca;
@@ -182,8 +184,9 @@ llvm::Value* stride::ast::wrap_optional_value_gep(
 
 /// Extracts the second element from the wrapped type
 /// If it's not wrapped, we just return the value as-is.
-llvm::Value* stride::ast::unwrap_optional_value(llvm::Value* value,
-                                                llvm::IRBuilder<>* builder)
+llvm::Value* stride::ast::unwrap_optional_value(
+    llvm::Value* value,
+    llvm::IRBuilder<>* builder)
 {
     // If it's not an optional, we don't have to upwrap it.
     if (!is_optional_wrapped_type(value->getType()))
@@ -191,9 +194,10 @@ llvm::Value* stride::ast::unwrap_optional_value(llvm::Value* value,
         return value;
     }
 
-    return builder->CreateExtractValue(value,
-                                       { OPT_IDX_ELEMENT_TYPE },
-                                       "unwrap_optional_val");
+    return builder->CreateExtractValue(
+        value,
+        { OPT_IDX_ELEMENT_TYPE },
+        "unwrap_optional_val");
 }
 
 std::optional<bool> stride::ast::extract_has_value_from_optional(
@@ -205,10 +209,10 @@ std::optional<bool> stride::ast::extract_has_value_from_optional(
         return std::nullopt;
     }
 
-
-    return builder->CreateExtractValue(optional,
-                                       { OPT_IDX_HAS_VALUE },
-                                       "unwrap_optional_state");
+    return builder->CreateExtractValue(
+        optional,
+        { OPT_IDX_HAS_VALUE },
+        "unwrap_optional_state");
 }
 
 llvm::Value* stride::ast::set_has_value_in_optional_gep(
@@ -219,7 +223,8 @@ llvm::Value* stride::ast::set_has_value_in_optional_gep(
     if (!is_optional_wrapped_type(optional->getType()))
         return optional;
 
-    return builder->CreateInsertValue(optional,
-                                      builder->getInt1(has_value),
-                                      { OPT_IDX_HAS_VALUE });
+    return builder->CreateInsertValue(
+        optional,
+        builder->getInt1(has_value),
+        { OPT_IDX_HAS_VALUE });
 }

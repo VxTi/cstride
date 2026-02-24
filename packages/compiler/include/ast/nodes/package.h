@@ -1,10 +1,13 @@
 #pragma once
-#include "ast/tokens/token_set.h"
+
 #include "ast_node.h"
 
 namespace stride::ast
 {
-    class AstPackage : public IAstNode
+    class TokenSet;
+
+    class AstPackage
+        : public IAstNode
     {
         std::string _name;
 
@@ -12,7 +15,8 @@ namespace stride::ast
         explicit AstPackage(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::string package_name) :
+            std::string package_name
+        ) :
             IAstNode(source, context),
             _name(std::move(package_name)) {};
 

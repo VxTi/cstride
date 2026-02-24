@@ -4,11 +4,11 @@
 #include <string>
 #include <utility>
 
-namespace stride::ast
-{
 #define MAIN_FN_NAME ("main")
 #define DELIMITER ("__")
 
+namespace stride::ast
+{
     struct Symbol
     {
         /// Human-readable name of this symbol
@@ -24,7 +24,8 @@ namespace stride::ast
             const SourceFragment& position,
             const std::string& context_name,
             std::string name,
-            const std::string& internal_name) :
+            const std::string& internal_name
+        ) :
             name(std::move(name)),
             internal_name(
                 context_name.empty()
@@ -38,8 +39,10 @@ namespace stride::ast
             const std::string& name) :
             Symbol(position, context_name, name, name) {}
 
-        explicit Symbol(const SourceFragment& position,
-                        const std::string& name) :
+        explicit Symbol(
+            const SourceFragment& position,
+            const std::string& name
+        ) :
             Symbol(position, "", name) {}
 
         bool operator==(const Symbol& other) const

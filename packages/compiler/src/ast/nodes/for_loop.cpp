@@ -1,5 +1,8 @@
 #include "ast/nodes/for_loop.h"
 
+#include "ast/modifiers.h"
+#include "ast/parsing_context.h"
+
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
@@ -16,9 +19,7 @@ std::unique_ptr<AstExpression> collect_initiator(
         return nullptr;
     }
 
-    return parse_variable_declaration_inline(context,
-                                             initiator.value(),
-                                             VisibilityModifier::NONE);
+    return parse_variable_declaration_inline(context, initiator.value(), VisibilityModifier::NONE);
 }
 
 std::unique_ptr<AstExpression> collect_condition(
@@ -61,9 +62,7 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     }
 
     auto header_body = header_body_opt.value();
-    const auto for_scope = std::make_shared<ParsingContext>(
-        context,
-        ScopeType::BLOCK);
+    const auto for_scope = std::make_shared<ParsingContext>(context, ScopeType::BLOCK);
 
     // We can potentially parse a for (<identifier> .. <identifier> { ... }
 

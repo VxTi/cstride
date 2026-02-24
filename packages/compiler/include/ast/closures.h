@@ -2,9 +2,7 @@
 
 #include <string>
 #include <vector>
-#include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Value.h>
 
 #define ANONYMOUS_FN_PREFIX "#__anonymous_"
 

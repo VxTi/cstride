@@ -2,6 +2,7 @@
 
 #include "ast/flags.h"
 #include "ast/parser.h"
+#include "ast/parsing_context.h"
 
 #include <llvm/IR/Module.h>
 #include <memory>
@@ -43,17 +44,14 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IF);
 
-    auto if_header_scope = std::make_shared<ParsingContext>(
-        context,
-        ScopeType::BLOCK);
+    auto if_header_scope = std::make_shared<ParsingContext>(context, ScopeType::BLOCK);
     auto if_header_body = collect_parenthesized_block(set);
 
     if (!if_header_body.has_value())
     {
         set.throw_error("Expected condition block after 'if' keyword");
     }
-    auto condition = parse_inline_expression(if_header_scope,
-                                             if_header_body.value());
+    auto condition = parse_inline_expression(if_header_scope, if_header_body.value());
 
     // Thus far, we've collected `if (...)
 

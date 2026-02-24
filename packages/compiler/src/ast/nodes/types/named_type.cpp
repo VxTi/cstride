@@ -1,5 +1,7 @@
 #include "ast/parsing_context.h"
 #include "ast/nodes/types.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 using namespace stride::ast;
 
@@ -17,6 +19,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         set.next();
         context_type_flags |= SRFLAG_TYPE_PTR;
     }
+
     if (set.peek_next().get_type() != TokenType::IDENTIFIER)
     {
         return std::nullopt;

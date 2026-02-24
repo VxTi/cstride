@@ -1,7 +1,22 @@
 #pragma once
-#include "parsing_context.h"
 
-#include <llvm/IR/Value.h>
+#include <optional>
+#include <llvm/IR/IRBuilder.h>
+
+#define OPT_NO_VALUE (0)
+#define OPT_HAS_VALUE (1)
+
+#define OPT_HAS_VALUE_BIT_COUNT (1)
+
+#define OPT_IDX_HAS_VALUE (0)
+#define OPT_IDX_ELEMENT_TYPE (1)
+
+#define OPT_ELEMENT_COUNT (2)
+
+namespace llvm
+{
+    class Value;
+}
 
 /**
  * Optional type handling
@@ -15,15 +30,6 @@
  */
 namespace stride::ast
 {
-#define OPT_NO_VALUE (0)
-#define OPT_HAS_VALUE (1)
-
-#define OPT_HAS_VALUE_BIT_COUNT (1)
-
-#define OPT_IDX_HAS_VALUE (0)
-#define OPT_IDX_ELEMENT_TYPE (1)
-
-#define OPT_ELEMENT_COUNT (2)
 
     /**
      * Extracts the "has_value" part from the provided value type and returns
@@ -68,8 +74,9 @@ namespace stride::ast
      * Unwraps (extracts) an optional LLVM value, returning the inner value if present, or nullptr
      * if not.
      */
-    llvm::Value* unwrap_optional_value(llvm::Value* value,
-                                       llvm::IRBuilder<>* builder);
+    llvm::Value* unwrap_optional_value(
+        llvm::Value* value,
+        llvm::IRBuilder<>* builder);
 
     llvm::Value* optionally_upcast_type(
         llvm::Value* value,

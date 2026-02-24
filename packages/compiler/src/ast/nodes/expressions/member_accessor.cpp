@@ -1,5 +1,6 @@
 #include "ast/nodes/expression.h"
 #include "formatting.h"
+#include "ast/parsing_context.h"
 
 #include <llvm/IR/Module.h>
 

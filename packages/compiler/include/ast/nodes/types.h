@@ -1,17 +1,18 @@
 #pragma once
 
-#include "ast/casting.h"
-#include "ast/flags.h"
-#include "ast/tokens/token_set.h"
 #include "ast_node.h"
 #include "formatting.h"
+#include "ast/casting.h"
+#include "ast/flags.h"
 
-#include <llvm/IR/InlineAsm.h>
+#include <format>
 #include <memory>
 #include <optional>
 
 namespace stride::ast
 {
+    class TokenSet;
+
     enum class PrimitiveType
     {
         INT8,
@@ -259,6 +260,7 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
+        [[nodiscard]]
         std::optional<std::unique_ptr<IAstType>> get_reference_type() const;
     };
 

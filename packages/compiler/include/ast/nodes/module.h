@@ -1,6 +1,5 @@
 #pragma once
-#include "ast/parsing_context.h"
-#include "ast/tokens/token_set.h"
+
 #include "ast_node.h"
 #include "blocks.h"
 
@@ -21,7 +20,8 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
-            std::unique_ptr<AstBlock> body) :
+            std::unique_ptr<AstBlock> body
+        ) :
             IAstNode(source, context),
             _name(std::move(name)),
             _body(std::move(body)) {}

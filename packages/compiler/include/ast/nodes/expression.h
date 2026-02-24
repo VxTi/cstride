@@ -1,18 +1,23 @@
 #pragma once
 
-#include "ast/modifiers.h"
-#include "ast/parsing_context.h"
-#include "ast/tokens/token_set.h"
-#include "ast_node.h"
 #include "types.h"
+#include "ast/symbols.h"
+#include "ast/tokens/token_set.h"
 
 #include <set>
 #include <utility>
 
 namespace stride::ast
 {
+    enum class VisibilityModifier;
     class AstLiteral;
     class AstFunctionParameter;
+    class ParsingContext;
+
+    namespace definition {
+        class IDefinition;
+    }
+
 
     enum class BinaryOpType
     {

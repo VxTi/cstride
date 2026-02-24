@@ -1,10 +1,25 @@
 #pragma once
-
 #include "ast_node.h"
 #include "expression.h"
 
+#include <memory>
+#include <llvm/IR/IRBuilder.h>
+
+namespace llvm
+{
+    class Module;
+    class Value;
+}
+
+namespace stride
+{
+    struct SourceFragment;
+}
+
 namespace stride::ast
 {
+    class ParsingContext;
+
     class AstReturnStatement
         : public IAstNode
     {
@@ -14,7 +29,8 @@ namespace stride::ast
         explicit AstReturnStatement(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstExpression> value) :
+            std::unique_ptr<AstExpression> value
+        ) :
             IAstNode(source, context),
             _value(std::move(value)) {}
 

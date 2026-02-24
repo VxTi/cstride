@@ -1,9 +1,5 @@
 #pragma once
 
-#include "ast/modifiers.h"
-#include "ast/parsing_context.h"
-#include "ast/tokens/token_set.h"
-#include "ast_node.h"
 #include "blocks.h"
 #include "expression.h"
 
@@ -25,7 +21,8 @@ namespace stride::ast
             std::unique_ptr<AstExpression> initiator,
             std::unique_ptr<AstExpression> condition,
             std::unique_ptr<AstExpression> increment,
-            std::unique_ptr<AstBlock> body) :
+            std::unique_ptr<AstBlock> body
+        ) :
             IAstNode(source, context),
             _body(std::move(body)),
             _initializer(std::move(initiator)),

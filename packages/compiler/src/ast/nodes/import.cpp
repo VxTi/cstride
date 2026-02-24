@@ -3,6 +3,7 @@
 #include "errors.h"
 #include "formatting.h"
 #include "ast/parsing_context.h"
+#include "ast/tokens/token_set.h"
 
 #include <sstream>
 

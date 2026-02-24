@@ -139,3 +139,8 @@ std::unique_ptr<AstBlock> stride::ast::parse_block(
 
     return parse_sequential(context, collected_subset.value());
 }
+
+std::optional<TokenSet> stride::ast::collect_parenthesized_block(TokenSet& set)
+{
+    return collect_block_variant(set, TokenType::LPAREN, TokenType::RPAREN);
+}
