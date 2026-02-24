@@ -35,7 +35,7 @@ class StrideEnterHandlerDelegate : EnterHandlerDelegate {
         val project = editor.project ?: return Result.Continue
         val document = editor.document
 
-        // Commit document to ensure PSI is up to date, although we are using Document mainly
+        // Commit document to ensure PSI is up to date
         PsiDocumentManager.getInstance(project).commitDocument(document)
 
         val caretOffset = editor.caretModel.offset
@@ -46,18 +46,38 @@ class StrideEnterHandlerDelegate : EnterHandlerDelegate {
         // Get previous line
         val prevLineNumber = lineNumber - 1
         val prevLineStart = document.getLineStartOffset(prevLineNumber)
-        val prevLineEnd = document.getLineEndOffset(prevLineNumber) // Excludes separator
+        val prevLineEnd = document.getLineEndOffset(prevLineNumber)
         val prevLineText = document.getText(TextRange(prevLineStart, prevLineEnd))
 
-        // Calculate base indentation
-        val baseIndent = prevLineText.takeWhile { it == ' ' || it == '\t' }
+        // Get current line
+        val currentLineStart = document.getLineStartOffset(lineNumber)
+        val currentLineEnd = document.getLineEndOffset(lineNumber)
+        val currentLineText = document.getText(TextRange(currentLineStart, currentLineEnd))
 
-        if (baseIndent.isNotEmpty()) {
-            val currentLineStart = document.getLineStartOffset(lineNumber)
-            // Insert indentation at the start of the current line
-            document.insertString(currentLineStart, baseIndent)
-            // Move caret to end of indentation
-            editor.caretModel.moveToOffset(currentLineStart + baseIndent.length)
+        // Calculate base indentation from previous line
+        val baseIndent = prevLineText.takeWhile { it == ' ' || it == '\t' }
+        val prevLineTrimmed = prevLineText.trimEnd()
+
+        // Check if previous line ends with opening brace
+        val shouldIndent = prevLineTrimmed.endsWith("{")
+
+        // Calculate target indentation
+        val targetIndent = if (shouldIndent) {
+            baseIndent + "    " // Add 4 spaces for one indent level
+        } else {
+            baseIndent
+        }
+
+        // Remove any existing whitespace at the start of the current line
+        val currentWhitespace = currentLineText.takeWhile { it == ' ' || it == '\t' }
+        if (currentWhitespace.isNotEmpty()) {
+            document.deleteString(currentLineStart, currentLineStart + currentWhitespace.length)
+        }
+
+        // Insert correct indentation
+        if (targetIndent.isNotEmpty()) {
+            document.insertString(currentLineStart, targetIndent)
+            editor.caretModel.moveToOffset(currentLineStart + targetIndent.length)
         }
 
         return Result.Continue

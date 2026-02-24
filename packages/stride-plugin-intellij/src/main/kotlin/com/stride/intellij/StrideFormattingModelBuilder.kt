@@ -49,20 +49,23 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             .before(StrideTypes.COMMA).spaceIf(false)
             .before(StrideTypes.SEMICOLON).spaceIf(false)
 
-            .afterInside(StrideTypes.LBRACE, StrideTypes.STRUCT_DEFINITION).lineBreakInCode()
-            .beforeInside(StrideTypes.RBRACE, StrideTypes.STRUCT_DEFINITION).lineBreakInCode()
+            .afterInside(StrideTypes.LBRACE, StrideTypes.TYPE).lineBreakInCode()
+            .beforeInside(StrideTypes.RBRACE, StrideTypes.TYPE).lineBreakInCode()
             .afterInside(StrideTypes.LBRACE, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
             .beforeInside(StrideTypes.RBRACE, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
             .afterInside(StrideTypes.LBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
             .beforeInside(StrideTypes.RBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
 
+            // Statements should be on separate lines - use STATEMENT wrapper
+            .afterInside(StrideTypes.STATEMENT, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
+
             .around(StrideTypes.STRUCT_INIT_FIELD).spaceIf(true)
             .between(StrideTypes.LBRACE, StrideTypes.STRUCT_INIT_FIELDS).spaceIf(true)
             .between(StrideTypes.STRUCT_INIT_FIELDS, StrideTypes.RBRACE).spaceIf(true)
 
-            .between(StrideTypes.STRUCT_DEFINITION, StrideTypes.STRUCT_DEFINITION).blankLines(1)
+            .between(StrideTypes.TYPE_DEFINITION, StrideTypes.TYPE_DEFINITION).blankLines(1)
             .between(StrideTypes.FUNCTION_DECLARATION, StrideTypes.FUNCTION_DECLARATION).blankLines(1)
-            .between(StrideTypes.STRUCT_DEFINITION, StrideTypes.FUNCTION_DECLARATION).blankLines(1)
-            .between(StrideTypes.FUNCTION_DECLARATION, StrideTypes.STRUCT_DEFINITION).blankLines(1)
+            .between(StrideTypes.TYPE_DEFINITION, StrideTypes.FUNCTION_DECLARATION).blankLines(1)
+            .between(StrideTypes.FUNCTION_DECLARATION, StrideTypes.TYPE_DEFINITION).blankLines(1)
     }
 }
