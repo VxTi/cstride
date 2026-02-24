@@ -23,6 +23,8 @@ class StrideColorSettingsPage : ColorSettingsPage {
             // Stride example
             extern fn <func>print</func>(msg: string): void;
 
+            type <usertype>CustomInt</usertype> = int32;
+
             struct Point {
                 x: float32,
                 y: float32
@@ -30,6 +32,7 @@ class StrideColorSettingsPage : ColorSettingsPage {
 
             fn <func>main</func>(): int32 {
                 const p: Point = Point::{ x: 1.0, y: 2.0 };
+                const num: <usertype>CustomInt</usertype> = 42;
                 let msg: string = "Hello, Stride!";
                 if (p.x > 0.0 && true) {
                     <func>print</func>(msg);
@@ -39,7 +42,8 @@ class StrideColorSettingsPage : ColorSettingsPage {
         """.trimIndent()
 
     override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? = mapOf(
-            "func" to StrideSyntaxHighlighter.FUNCTION_CALL
+            "func" to StrideSyntaxHighlighter.FUNCTION_CALL,
+            "usertype" to StrideSyntaxHighlighter.USER_TYPE
         )
 
     companion object {
@@ -54,8 +58,9 @@ class StrideColorSettingsPage : ColorSettingsPage {
             AttributesDescriptor("Semicolon", StrideSyntaxHighlighter.SEMICOLON),
             AttributesDescriptor("Comma", StrideSyntaxHighlighter.COMMA),
             AttributesDescriptor("Dot", StrideSyntaxHighlighter.DOT),
-            AttributesDescriptor("Type", StrideSyntaxHighlighter.TYPE),
-            AttributesDescriptor("Function call", StrideSyntaxHighlighter.FUNCTION_CALL)
+            AttributesDescriptor("Primitive types", StrideSyntaxHighlighter.TYPE),
+            AttributesDescriptor("Function call", StrideSyntaxHighlighter.FUNCTION_CALL),
+            AttributesDescriptor("Custom types", StrideSyntaxHighlighter.USER_TYPE)
 
         )
     }

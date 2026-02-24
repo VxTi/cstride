@@ -4,18 +4,6 @@ type Test = {
     field: Another;
 };
 
-type Test = {
-    field: Another;
-};
-
-type Test = {
-    field: Another;
-};
-
-type Test = {
-    field: Another;
-};
-
 type Ref = Another;
 
 fn test(x: int64): int64 {
@@ -23,7 +11,7 @@ fn test(x: int64): int64 {
 }
 
 fn main(): int32 {
-    const result = Test::{ field: 123 };
+    const result: Another = Test::{ field: 123 };
     printf("%d\n", result.field);
     return 0;
 }

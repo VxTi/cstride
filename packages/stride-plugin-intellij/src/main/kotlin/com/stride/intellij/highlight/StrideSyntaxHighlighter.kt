@@ -27,6 +27,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         val SCOPED_IDENTIFIER_REFERENCE = createTextAttributesKey("SCOPED_IDENTIFIER_REFERENCE", DefaultLanguageHighlighterColors.CLASS_REFERENCE)
         val IDENTIFIER = createTextAttributesKey("STRIDE_IDENTIFIER", DefaultLanguageHighlighterColors.IDENTIFIER)
         val FIELD_IDENTIFIER = createTextAttributesKey("STRIDE_FIELD_IDENTIFIER", DefaultLanguageHighlighterColors.INSTANCE_FIELD)
+        val USER_TYPE = createTextAttributesKey("STRIDE_USER_TYPE", DefaultLanguageHighlighterColors.STATIC_FIELD)
 
 
         private val KEYWORD_KEYS = arrayOf(KEYWORD)
