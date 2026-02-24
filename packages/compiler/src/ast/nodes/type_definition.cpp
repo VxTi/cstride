@@ -11,7 +11,7 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     VisibilityModifier modifier
-    )
+)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_TYPE);
     const auto& ref_pos = reference_token.get_source_fragment();
@@ -21,20 +21,27 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
     set.expect(TokenType::EQUALS);
 
     auto type = parse_type(context, set, "Expected type definition");
-
-    context->define_type(type_name, type->clone());
-
     const auto& last_token = set.expect(TokenType::SEMICOLON, "Expected ';' after type definition");
     const auto& last_pos = last_token.get_source_fragment();
 
+    const auto source_fragment = SourceFragment(
+        set.get_source(),
+        ref_pos.offset,
+        last_pos.offset + last_pos.length - ref_pos.offset
+    );
+    const auto type_name_symbol = resolve_internal_name(
+        context->get_name(),
+        source_fragment,
+        { type_name });
+
+    context->define_type(type_name_symbol, type->clone());
+
+
     return std::make_unique<AstTypeDefinition>(
-        SourceFragment(
-            set.get_source(),
-            ref_pos.offset,
-            last_pos.offset + last_pos.length - ref_pos.offset
-        ),
+        source_fragment,
         context,
         type_name,
-        std::move(type)
+        std::move(type),
+        modifier
     );
 }

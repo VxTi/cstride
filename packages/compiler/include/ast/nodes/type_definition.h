@@ -15,17 +15,20 @@ namespace stride:: ast
     {
         std::string _name;
         std::unique_ptr<IAstType> _type;
+        VisibilityModifier _visibility;
 
     public:
         explicit AstTypeDefinition(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const std::string& name,
-            std::unique_ptr<IAstType> type
+            std::unique_ptr<IAstType> type,
+            const VisibilityModifier visibility
         ) :
             IAstNode(source, context),
             _name(name),
-            _type(std::move(type)) {}
+            _type(std::move(type)),
+            _visibility(visibility) {}
 
         [[nodiscard]]
         const std::string& get_name() const
@@ -37,6 +40,12 @@ namespace stride:: ast
         const IAstType* get_type() const
         {
             return this->_type.get();
+        }
+
+        [[nodiscard]]
+        const VisibilityModifier& get_visibility() const
+        {
+            return this->_visibility;
         }
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }

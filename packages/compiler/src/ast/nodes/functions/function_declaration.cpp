@@ -137,7 +137,7 @@ void IAstCallable::validate()
         }
 
         if (const auto return_stmt_type =
-                infer_expression_type(return_stmt->get_context(), ret_expr);
+                infer_expression_type(ret_expr);
             !return_stmt_type->equals(*this->get_return_type()))
         {
             const auto error_fragment = ErrorSourceReference(

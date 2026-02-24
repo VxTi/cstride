@@ -1,5 +1,4 @@
 #include "ast/nodes/blocks.h"
-#include "ast/nodes/struct_declaration.h"
 #include "ast/nodes/types.h"
 
 #include <ranges>

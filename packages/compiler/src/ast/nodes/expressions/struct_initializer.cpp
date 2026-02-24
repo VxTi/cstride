@@ -145,7 +145,6 @@ void AstStructInitializer::validate()
         }
 
         if (const auto member_type = infer_expression_type(
-                this->get_context(),
                 initializer_expr.get());
             !member_type->equals(*found_member.value()))
         {

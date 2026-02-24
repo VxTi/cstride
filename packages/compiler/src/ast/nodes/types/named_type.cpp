@@ -1,3 +1,4 @@
+#include "ast/parsing_context.h"
 #include "ast/nodes/types.h"
 
 using namespace stride::ast;
@@ -30,6 +31,16 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         context_type_flags);
 
     return parse_type_metadata(std::move(named_type), set, context_type_flags);
+}
+
+std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() const
+{
+    if (const auto ref_def = this->get_context()->get_type_definition(this->get_name());
+        ref_def.has_value())
+    {
+        return ref_def.value()->get_type()->clone();
+    }
+    return std::nullopt;
 }
 
 bool AstNamedType::equals(IAstType& other)

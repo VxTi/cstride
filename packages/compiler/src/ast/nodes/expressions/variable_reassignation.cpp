@@ -35,7 +35,6 @@ void AstVariableReassignment::validate()
     }
 
     const auto expression_type = infer_expression_type(
-        this->get_context(),
         this->get_value());
 
     if (!identifier_def->get_type()->equals(*expression_type.get()))
