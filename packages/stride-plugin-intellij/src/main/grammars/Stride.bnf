@@ -125,6 +125,7 @@ Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody)
 // <module>::<type> or <type>
 PrimitiveType ::= (VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING) [ArrayNotion*]
 UserType ::= ScopedIdentifier [GenericTypeArguments] [ArrayNotion*] {
+  mixin="com.stride.intellij.psi.StrideUserTypeMixin"
   methods=[
     getScopedIdentifier
   ]

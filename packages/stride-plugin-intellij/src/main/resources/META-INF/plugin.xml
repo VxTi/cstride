@@ -20,6 +20,9 @@
 
         <colorSettingsPage implementationClass="com.stride.intellij.highlight.StrideColorSettingsPage"/>
 
+        <additionalTextAttributes scheme="Default" file="colorSchemes/StrideDefault.xml"/>
+        <additionalTextAttributes scheme="Darcula" file="colorSchemes/StrideDefault.xml"/>
+
         <annotator language="Stride" implementationClass="com.stride.intellij.annotator.StrideAnnotator"/>
 
         <enterHandlerDelegate implementation="com.stride.intellij.editor.StrideEnterHandlerDelegate"/>

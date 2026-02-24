@@ -37,7 +37,7 @@ class StrideAnnotator : Annotator {
     private fun annotateUserType(userType: StrideUserType, holder: AnnotationHolder) {
         // Highlight type references (e.g., in variable declarations)
         val scopedId = userType.scopedIdentifier ?: return
-        highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.SCOPED_IDENTIFIER_REFERENCE)
+        highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.USER_TYPE)
     }
 
     private fun annotateStructInitField(field: StrideStructInitField, holder: AnnotationHolder) {
