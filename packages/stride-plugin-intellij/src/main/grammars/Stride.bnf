@@ -97,7 +97,6 @@ StrideFile ::= [PackageStatement] StandaloneItem*
 private StandaloneItem ::= (
     FunctionDeclaration
     | ModuleStatement
-    | StructDefinition
     | TypeDefinition
     | VariableDeclarationStatement
     | ExternFunctionDeclaration
@@ -111,16 +110,10 @@ private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterLis
 FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)*
 FunctionParameter ::= IDENTIFIER COLON Type
 
-StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] StructDefinitionBody
-
 TypeDefinition ::= KW_TYPE IDENTIFIER EQ Type SEMICOLON
 
-private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 StructDefinitionFields ::= StructField (SEMICOLON StructField)* [SEMICOLON]
 StructField ::= IDENTIFIER COLON Type
-
-GenericParameterList ::= LT GenericParameter (COMMA GenericParameter)* GT
-GenericParameter ::= IDENTIFIER
 
 VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
 VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
@@ -128,7 +121,7 @@ VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
 VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
-Type ::= (PrimitiveType | UserType | FunctionType)
+Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody)
 // <module>::<type> or <type>
 PrimitiveType ::= (VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING) [ArrayNotion*]
 UserType ::= ScopedIdentifier [GenericTypeArguments] [ArrayNotion*] {
@@ -136,6 +129,9 @@ UserType ::= ScopedIdentifier [GenericTypeArguments] [ArrayNotion*] {
     getScopedIdentifier
   ]
 }
+
+private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
+
 GenericTypeArguments ::= LT Type (COMMA Type)* GT
 FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN [ArrayNotion*])
 SingularFunctionType ::= LPAREN [Type (COMMA Type)*] RPAREN ARROW Type

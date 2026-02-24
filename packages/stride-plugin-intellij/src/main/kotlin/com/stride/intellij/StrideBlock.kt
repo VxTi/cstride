@@ -33,6 +33,7 @@ class StrideBlock(
         val parentType = parent.elementType
 
         return when {
+            // Block statements (function bodies, control flow blocks)
             parentType == StrideTypes.BLOCK_STATEMENT ||
             parentType == StrideTypes.MODULE_STATEMENT -> {
                 if (elementType != StrideTypes.LBRACE && elementType != StrideTypes.RBRACE) {
@@ -41,10 +42,31 @@ class StrideBlock(
                     Indent.getNoneIndent()
                 }
             }
-            parentType == StrideTypes.STRUCT_DEFINITION && elementType == StrideTypes.STRUCT_DEFINITION_FIELDS -> Indent.getNormalIndent()
-            parentType == StrideTypes.STRUCT_DEFINITION_FIELDS -> Indent.getNoneIndent()
-            parentType == StrideTypes.STRUCT_INITIALIZATION && elementType == StrideTypes.STRUCT_INIT_FIELDS -> Indent.getNormalIndent()
-            parentType == StrideTypes.STRUCT_INIT_FIELDS -> Indent.getNoneIndent()
+            // Struct definition fields (within TYPE that contains a struct body)
+            parentType == StrideTypes.TYPE -> {
+                if (elementType == StrideTypes.STRUCT_DEFINITION_FIELDS) {
+                    Indent.getNormalIndent()
+                } else if (elementType != StrideTypes.LBRACE && elementType != StrideTypes.RBRACE) {
+                    Indent.getNoneIndent()
+                } else {
+                    Indent.getNoneIndent()
+                }
+            }
+            // Individual struct fields
+            parentType == StrideTypes.STRUCT_DEFINITION_FIELDS -> {
+                Indent.getNoneIndent()
+            }
+            // Struct initialization fields
+            parentType == StrideTypes.STRUCT_INITIALIZATION -> {
+                if (elementType == StrideTypes.STRUCT_INIT_FIELDS) {
+                    Indent.getNoneIndent()
+                } else {
+                    Indent.getNoneIndent()
+                }
+            }
+            parentType == StrideTypes.STRUCT_INIT_FIELDS -> {
+                Indent.getNoneIndent()
+            }
             else -> Indent.getNoneIndent()
         }
     }
