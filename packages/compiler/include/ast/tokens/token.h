@@ -110,6 +110,7 @@ namespace stride::ast
         KEYWORD_CLASS,    // class
         KEYWORD_THIS,     // this
         KEYWORD_STRUCT,   // struct
+        KEYWORD_TYPE,     // type
         KEYWORD_IMPORT,   // import
         KEYWORD_PUBLIC,   // public
         KEYWORD_PRIVATE,  // private
@@ -339,6 +340,8 @@ namespace stride::ast
             return "this";
         case TokenType::KEYWORD_STRUCT:
             return "struct";
+        case TokenType::KEYWORD_TYPE:
+            return "type";
         case TokenType::KEYWORD_IMPORT:
             return "import";
         case TokenType::KEYWORD_PUBLIC:

@@ -19,6 +19,7 @@
     LET='let'
     EXTERN='extern'
     AS='as'
+    KW_TYPE='type'
     RETURN='return'
     IMPORT='import'
     FOR='for'
@@ -97,6 +98,7 @@ private StandaloneItem ::= (
     FunctionDeclaration
     | ModuleStatement
     | StructDefinition
+    | TypeDefinition
     | VariableDeclarationStatement
     | ExternFunctionDeclaration
     | SEMICOLON
@@ -109,9 +111,11 @@ private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterLis
 FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)*
 FunctionParameter ::= IDENTIFIER COLON Type
 
-StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] (StructDefinitionBody | StructDefinitionAlias)
+StructDefinition ::= [AccessModifier] STRUCT IDENTIFIER [GenericParameterList] StructDefinitionBody
+
+TypeDefinition ::= KW_TYPE IDENTIFIER EQ Type SEMICOLON
+
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
-private StructDefinitionAlias ::= EQ Type SEMICOLON
 StructDefinitionFields ::= StructField (SEMICOLON StructField)* [SEMICOLON]
 StructField ::= IDENTIFIER COLON Type
 

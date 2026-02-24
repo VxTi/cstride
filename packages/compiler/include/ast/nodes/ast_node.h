@@ -4,7 +4,6 @@
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
-#include <utility>
 
 namespace stride::ast
 {

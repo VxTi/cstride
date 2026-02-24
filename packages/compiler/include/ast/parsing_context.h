@@ -72,30 +72,21 @@ namespace stride::ast
             }
         };
 
-        class StructDef
+        class TypeDef
             : public IDefinition
         {
-            std::optional<Symbol> _reference_struct_sym;
-            std::vector<StructFieldPair> _fields;
+            std::unique_ptr<IAstType> _type;
 
         public:
-            explicit StructDef(
-                Symbol struct_symbol,
-                std::vector<StructFieldPair>
-                fields // We wish to preserve order.
+            explicit TypeDef(
+                Symbol type_name_symbol,
+                std::unique_ptr<IAstType> type
             ) :
-                IDefinition(std::move(struct_symbol)),
-                _fields(std::move(fields)) {}
-
-            explicit StructDef(
-                const Symbol& struct_name,
-                const Symbol& reference_struct_name
-            ) :
-                IDefinition(struct_name),
-                _reference_struct_sym(reference_struct_name) {}
+                IDefinition(std::move(type_name_symbol)),
+                _type(std::move(type)) {}
 
             [[nodiscard]]
-            std::vector<std::pair<std::string, IAstType*>> get_struct_fields() const;
+            std::vector<std::pair<std::string, IAstType*>> get_struct_type_fields() const;
 
             [[nodiscard]]
             std::optional<IAstType*> get_struct_member_field_type(
@@ -103,7 +94,8 @@ namespace stride::ast
 
             static std::optional<IAstType*> get_struct_member_field_type(
                 const std::string& field_name,
-                const std::vector<std::pair<std::string, IAstType*>>& fields);
+                const std::vector<std::pair<std::string, IAstType*>>& fields
+            );
 
             [[nodiscard]]
             bool is_reference_struct() const;
@@ -111,7 +103,11 @@ namespace stride::ast
             [[nodiscard]]
             std::optional<Symbol> get_reference_struct() const
             {
-                return this->_reference_struct_sym;
+                if (const auto ref_struct_ty = cast_type<AstNamedType *>(this->_type.get()))
+                {
+                    return ref_struct_ty->get();
+                }
+                return std::nullopt;
             }
 
             [[nodiscard]]
@@ -119,13 +115,6 @@ namespace stride::ast
             {
                 return get_struct_member_field_type(member_name).has_value();
             }
-
-            [[nodiscard]]
-            std::optional<int> get_struct_field_member_index(
-                const std::string& member_name
-            ) const;
-
-            void define_member(const std::string& member_name, std::unique_ptr<IAstType> type);
         };
 
         class FieldDef : public IDefinition
@@ -191,12 +180,10 @@ namespace stride::ast
         /// Non-specific scope context definitions, e.g., for/while-loop blocks
         explicit ParsingContext(
             std::shared_ptr<ParsingContext> parent,
-            const definition::ScopeType type) :
-            ParsingContext(
-                parent->_context_name,
-                type,
-                std::move(parent)) // Context gets the same name as the parent
-        {}
+            const definition::ScopeType type
+        ) :
+            // Context gets the same name as the parent
+            ParsingContext(parent->_context_name, type, std::move(parent)) {}
 
         /// Root node initialization
         explicit ParsingContext() :
@@ -214,8 +201,8 @@ namespace stride::ast
         bool is_global_scope() const
         {
             // We deem module scope as global as well
-            return this->_scope_type == definition::ScopeType::GLOBAL ||
-                this->_scope_type == definition::ScopeType::MODULE;
+            return this->_scope_type == definition::ScopeType::GLOBAL
+                || this->_scope_type == definition::ScopeType::MODULE;
         }
 
         [[nodiscard]]
@@ -228,7 +215,7 @@ namespace stride::ast
         const definition::CallableDef* get_function_def(const std::string& function_name) const;
 
         [[nodiscard]]
-        std::optional<definition::StructDef*> get_struct_def(
+        std::optional<definition::TypeDef*> get_struct_def(
             const std::string& name
         ) const;
 
@@ -239,7 +226,7 @@ namespace stride::ast
 
 
         [[nodiscard]]
-        std::optional<std::vector<std::pair<std::string, IAstType*>>> get_struct_fields(
+        std::optional<std::vector<std::pair<std::string, IAstType*>>> get_struct_type_fields(
             const std::string& name
         ) const;
 
@@ -255,8 +242,8 @@ namespace stride::ast
             bool use_raw_name = false
         ) const;
 
-        definition::IDefinition* lookup_symbol(
-            const std::string& symbol_name) const;
+        [[nodiscard]]
+        definition::IDefinition* lookup_symbol(const std::string& symbol_name) const;
 
         /// Will attempt to define the function in the global context.
         void define_function(
@@ -264,21 +251,26 @@ namespace stride::ast
             std::unique_ptr<AstFunctionType> function_type
         ) const;
 
-        void define_struct(
+        void define_type(
             const Symbol& struct_symbol,
             std::vector<definition::StructFieldPair> fields
         ) const;
 
-        void define_struct_member(
+        void define_struct_type_member(
             const std::string& struct_name,
             const std::string& member_name,
             std::unique_ptr<IAstType> type
         ) const;
 
-        void define_struct(
-            const Symbol& struct_name,
-            const Symbol& reference_struct_name
+        void define_type(
+            const Symbol& type_name,
+            const Symbol& reference_type_name
         ) const;
+
+        void define_type(
+            const Symbol& type_name,
+            std::unique_ptr<IAstType> type
+        );
 
         void define_variable(
             Symbol variable_sym,
@@ -294,7 +286,6 @@ namespace stride::ast
         definition::IDefinition* fuzzy_find(const std::string& symbol_name) const;
 
         void define_symbol(const Symbol& symbol_name, definition::SymbolType type);
-
 
         /// Checks whether the provided variable name is defined in the current context.
         [[nodiscard]]

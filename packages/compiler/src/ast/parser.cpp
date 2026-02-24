@@ -11,6 +11,7 @@
 #include "ast/nodes/package.h"
 #include "ast/nodes/return_statement.h"
 #include "ast/nodes/struct_declaration.h"
+#include "ast/nodes/type_definition.h"
 #include "ast/nodes/while_loop.h"
 #include "ast/tokens/tokenizer.h"
 
@@ -47,6 +48,8 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
         return parse_package_declaration(context, set);
     case TokenType::KEYWORD_IMPORT:
         return parse_import_statement(context, set);
+    case TokenType::KEYWORD_TYPE:
+        return parse_type_statement(context, set);
 
     // Modifiers. These are used in the next phase of parsing.
     case TokenType::KEYWORD_PUBLIC:

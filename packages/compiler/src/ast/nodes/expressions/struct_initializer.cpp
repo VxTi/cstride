@@ -98,7 +98,7 @@ std::string AstStructInitializer::to_string()
     return std::format("StructInit{{...}}");
 }
 
-definition::StructDef* get_super_referencing_struct_def(
+definition::TypeDef* get_super_referencing_struct_def(
     const std::shared_ptr<ParsingContext>& context,
     const std::string& struct_name
 )
@@ -131,7 +131,7 @@ void AstStructInitializer::validate()
         );
     }
 
-    const auto fields = definition->get_struct_fields();
+    const auto fields = definition->get_struct_type_fields();
 
     // Quick check: Ensure the number of members matches (no type comparisons required)
     if (fields.size() != this->_initializers.size())

@@ -113,7 +113,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        virtual std::string get_internal_name() = 0;
+        virtual std::string get_formatted_name() = 0;
 
         virtual bool equals(IAstType& other) = 0;
 
@@ -123,7 +123,10 @@ namespace stride::ast
             return false;
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override
+        {
+            return nullptr;
+        }
     };
 
     class AstPrimitiveType
@@ -195,14 +198,14 @@ namespace stride::ast
             return std::make_unique<AstPrimitiveType>(*this);
         }
 
-        std::string get_internal_name() override
+        std::string get_formatted_name() override
         {
             return primitive_type_to_str(this->get_type(), this->get_flags());
         }
 
         std::string to_string() override
         {
-            return this->get_internal_name();
+            return this->get_formatted_name();
         }
 
         bool equals(IAstType& other) override;
@@ -239,7 +242,7 @@ namespace stride::ast
             return std::make_unique<AstNamedType>(*this);
         }
 
-        std::string get_internal_name() override
+        std::string get_formatted_name() override
         {
             return this->_name;
         }
@@ -340,7 +343,7 @@ namespace stride::ast
             return false;
         }
 
-        std::string get_internal_name() override
+        std::string get_formatted_name() override
         {
             return "Function";
         }
@@ -408,13 +411,49 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::string get_internal_name() override
+        std::string get_formatted_name() override
         {
             return std::format("[{}]",
-                               this->_element_type->get_internal_name());
+                               this->_element_type->get_formatted_name());
         }
 
         bool equals(IAstType& other) override;
+    };
+
+    class AstStructType : public IAstType
+    {
+        std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> _members;
+
+    public:
+        explicit AstStructType(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context,
+            std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> members,
+            const int flags = SRFLAG_NONE
+        ) :
+            IAstType(source, context, flags),
+            _members(std::move(members)) {}
+
+        [[nodiscard]]
+        const std::vector<std::pair<std::string, std::unique_ptr<IAstType>>>& get_members() const
+        {
+            return this->_members;
+        }
+
+        [[nodiscard]]
+        std::string get_formatted_name() override
+        {
+            return "Struct<{...}>";
+        }
+
+        std::string to_string() override
+        {
+            return this->get_formatted_name();
+        }
+
+        bool equals(IAstType& other) override;
+
+        std::unique_ptr<IAstType> clone() const override;
     };
 
     std::unique_ptr<IAstType> parse_type(
@@ -431,6 +470,12 @@ namespace stride::ast
         IAstType* lhs,
         IAstType* rhs);
 
+    std::unique_ptr<IAstType> parse_type_metadata(
+        std::unique_ptr<IAstType> base_type,
+        TokenSet& set,
+        int context_type_flags
+    );
+
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
@@ -442,6 +487,11 @@ namespace stride::ast
         int context_type_flags = SRFLAG_NONE);
 
     std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        int context_type_flags);
+
+    std::optional<std::unique_ptr<IAstType>> parse_struct_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         int context_type_flags);

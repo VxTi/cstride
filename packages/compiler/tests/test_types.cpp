@@ -200,11 +200,11 @@ TEST(TypeReferences, StructTypeReference)
     )");
 
     const auto symbol = context->lookup_symbol("Vec");
-    const auto field = dynamic_cast<stride::ast::definition::StructDef*>(symbol);
+    const auto field = dynamic_cast<stride::ast::definition::TypeDef*>(symbol);
 
     EXPECT_NE(symbol, nullptr) << "Expected 'Vec' to be found in the symbol table";
     EXPECT_NE(field, nullptr) <<
- "Expected 'Vec' to be a StructDef, but it was not found or was of a different type";
+ "Expected 'Vec' to be a TypeDef, but it was not found or was of a different type";
     EXPECT_EQ(field->get_reference_struct()->name, "Point")
     << std::format("Expected 'Vec' to have type 'Point', but got '{}'",
                    field->get_reference_struct()->name

@@ -1,13 +1,15 @@
 #pragma once
 
+#include "ast/symbols.h"
 #include "ast/nodes/ast_node.h"
-#include "ast/parsing_context.h"
-#include "ast/tokens/token_set.h"
 
 #include <utility>
 
 namespace stride::ast
 {
+    class TokenSet;
+    class ParsingContext;
+
     typedef struct Dependency
     {
         Symbol module_base;
@@ -47,10 +49,14 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override
+        {
+            return nullptr;
+        }
     };
 
     std::unique_ptr<AstImport> parse_import_statement(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+        TokenSet& set
+    );
 } // namespace stride::ast
