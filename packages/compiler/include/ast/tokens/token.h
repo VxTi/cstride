@@ -443,9 +443,10 @@ namespace stride::ast
         TokenType _type;
 
     public:
-        explicit Token(const TokenType type,
-                       const SourceFragment& position,
-                       std::string lexeme) :
+        explicit Token(
+            const TokenType type,
+            const SourceFragment& position,
+            std::string lexeme) :
             _position(position),
             _lexeme(std::move(lexeme)),
             _type(type) {}

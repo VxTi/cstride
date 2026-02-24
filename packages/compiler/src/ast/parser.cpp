@@ -4,7 +4,9 @@
 #include "program.h"
 #include "ast/modifiers.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/enumerables.h"
 #include "ast/nodes/for_loop.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/if_statement.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/module.h"
@@ -18,10 +20,10 @@ using namespace stride::ast;
 
 std::unique_ptr<AstBlock> parser::parse_file(
     const Program& program,
-    const std::string& source_path
+    const std::string& path
 )
 {
-    const auto source_file = read_file(source_path);
+    const auto source_file = read_file(path);
     auto tokens = tokenizer::tokenize(source_file);
 
     return std::move(parse_sequential(program.get_global_context(), tokens));
@@ -91,7 +93,8 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
 
 std::unique_ptr<AstBlock> stride::ast::parse_sequential(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 

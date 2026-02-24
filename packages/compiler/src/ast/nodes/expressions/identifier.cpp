@@ -1,5 +1,6 @@
 #include "ast/nodes/expression.h"
 #include "ast/closures.h"
+#include "ast/parsing_context.h"
 
 #include <iostream>
 #include <llvm/IR/Module.h>

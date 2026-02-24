@@ -1,5 +1,6 @@
 #include "ast/nodes/type_definition.h"
 
+#include "ast/parsing_context.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
@@ -49,7 +50,10 @@ llvm::Value* AstTypeDefinition::codegen(llvm::Module* module, llvm::IRBuilder<>*
     return this->_type->codegen(module, builder);
 }
 
-void AstTypeDefinition::resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
+void AstTypeDefinition::resolve_forward_references(
+    const ParsingContext* context,
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder)
 {
     this->_type->resolve_forward_references(context, module, builder);
 }

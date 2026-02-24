@@ -3,6 +3,7 @@
 #include "ast/closures.h"
 #include "ast/casting.h"
 #include "ast/modifiers.h"
+#include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/for_loop.h"

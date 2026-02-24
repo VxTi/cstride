@@ -2,10 +2,16 @@
 
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/expression.h"
-#include "ast/parsing_context.h"
-#include "ast/tokens/token_set.h"
 
 #include <utility>
+
+#define BITS_PER_BYTE (8)
+#define INFER_INT_BIT_COUNT(x) (((x) > 0xFFFFFFFF) ? ((short)64) : ((short)32))
+
+#define INFER_FLOAT_BYTE_COUNT(x)                                                                  \
+    (((x) >> 23) & 0xFF) ? 4 : (((x) >> 12) & 0xFF) ? 2 : (((x) >> 6) & 0xFF) ? 1 : 0
+
+#define SRFLAG_INT_UNSIGNED (0x2)
 
 namespace stride::ast
 {
@@ -18,15 +24,6 @@ namespace stride::ast
         CHAR,
         NIL
     };
-
-#define BITS_PER_BYTE (8)
-#define INFER_INT_BIT_COUNT(x) (((x) > 0xFFFFFFFF) ? ((short)64) : ((short)32))
-
-#define INFER_FLOAT_BYTE_COUNT(x)                                                                  \
-    (((x) >> 23) & 0xFF) ? 4 : (((x) >> 12) & 0xFF) ? 2 : (((x) >> 6) & 0xFF) ? 1 : 0
-
-#define SRFLAG_INT_UNSIGNED (0x2)
-
 
     class AstLiteral
         : public AstExpression

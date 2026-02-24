@@ -1,11 +1,12 @@
 #pragma once
 
 #include "ast/nodes/ast_node.h"
-#include "ast/parsing_context.h"
-#include "ast/tokens/token_set.h"
 
 namespace stride::ast
 {
+    enum class TokenType;
+    class TokenSet;
+
     class AstBlock
         : public IAstNode
     {
@@ -79,8 +80,5 @@ namespace stride::ast
 
     std::optional<TokenSet> collect_until_token(TokenSet& set, TokenType token);
 
-    inline std::optional<TokenSet> collect_parenthesized_block(TokenSet& set)
-    {
-        return collect_block_variant(set, TokenType::LPAREN, TokenType::RPAREN);
-    }
+    std::optional<TokenSet> collect_parenthesized_block(TokenSet& set);
 } // namespace stride::ast

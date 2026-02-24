@@ -1,5 +1,8 @@
+#include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/types.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <ranges>
 #include <llvm/IR/Module.h>
@@ -152,7 +155,7 @@ std::optional<int> AstStructType::get_member_field_index(const std::string& fiel
 /// resulting in no LLVM duplication
 std::string AstStructType::get_internalized_name() const
 {
-    std::string internalized_name = "";
+    std::string internalized_name;
     for (const auto& type : this->_members | std::views::values)
     {
         if (const auto struct_ty = cast_type<AstStructType*>(type.get()))

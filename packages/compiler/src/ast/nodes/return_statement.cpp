@@ -1,6 +1,7 @@
 #include "ast/nodes/return_statement.h"
 
 #include "ast/optionals.h"
+#include "ast/parsing_context.h"
 
 #include <format>
 #include <llvm/IR/IRBuilder.h>

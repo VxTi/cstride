@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "ast/parsing_context.h"
 
 #include <ranges>

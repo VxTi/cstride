@@ -1,3 +1,4 @@
+#include "ast/parsing_context.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 

@@ -1,14 +1,15 @@
 #pragma once
 
-#include "ast/modifiers.h"
-#include "ast/parsing_context.h"
-#include "ast/tokens/token_set.h"
-#include "ast_node.h"
 #include "blocks.h"
 #include "expression.h"
 
 namespace stride::ast
 {
+    class IAstNode;
+    class ParsingContext;
+    class TokenSet;
+    enum class VisibilityModifier;
+
     class AstWhileLoop
         : public IAstNode,
           public IAstContainer
@@ -17,11 +18,12 @@ namespace stride::ast
         std::unique_ptr<AstExpression> _condition;
 
     public:
-        AstWhileLoop(
+        explicit AstWhileLoop(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> condition,
-            std::unique_ptr<AstBlock> body) :
+            std::unique_ptr<AstBlock> body
+        ) :
             IAstNode(source, context),
             _body(std::move(body)),
             _condition(std::move(condition)) {}

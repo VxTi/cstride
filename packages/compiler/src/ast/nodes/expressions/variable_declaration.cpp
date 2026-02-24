@@ -4,6 +4,7 @@
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/optionals.h"
+#include "ast/parsing_context.h"
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>

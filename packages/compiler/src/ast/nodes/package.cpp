@@ -1,5 +1,7 @@
 #include "ast/nodes/package.h"
 
+#include "ast/tokens/token_set.h"
+
 #include <format>
 
 using namespace stride::ast;

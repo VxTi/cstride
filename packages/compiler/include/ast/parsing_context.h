@@ -1,6 +1,6 @@
 #pragma once
-#include "ast/nodes/types.h"
 #include "symbols.h"
+#include "ast/nodes/types.h"
 
 #include <memory>
 #include <string>
@@ -60,8 +60,10 @@ namespace stride::ast
             SymbolType _type;
 
         public:
-            explicit IdentifiableSymbolDef(const SymbolType type,
-                                           const Symbol& symbol) :
+            explicit IdentifiableSymbolDef(
+                const SymbolType type,
+                const Symbol& symbol
+            ) :
                 IDefinition(symbol),
                 _type(type) {}
 

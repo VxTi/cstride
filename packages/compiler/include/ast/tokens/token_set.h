@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ast/tokens/token.h"
 #include "errors.h"
+#include "ast/tokens/token.h"
 
 #include <algorithm>
 #include <utility>
@@ -19,8 +19,10 @@ namespace stride::ast
         std::vector<Token> _tokens;
 
     public:
-        explicit TokenSet(std::shared_ptr<SourceFile> source,
-                          std::vector<Token>& tokens) :
+        explicit TokenSet(
+            std::shared_ptr<SourceFile> source,
+            std::vector<Token>& tokens
+        ) :
             _source(std::move(source)),
             _cursor(0),
             _size(tokens.size()),
