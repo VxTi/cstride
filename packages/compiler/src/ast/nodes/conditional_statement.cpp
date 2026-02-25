@@ -76,7 +76,8 @@ std::unique_ptr<AstConditionalStatement> stride::ast::parse_if_statement(
             throw parsing_error(
                 ErrorType::SYNTAX_ERROR,
                 "Expected condition after 'if' keyword",
-                reference_token.get_source_fragment());
+                reference_token.get_source_fragment()
+            );
         }
 
         std::vector<std::unique_ptr<IAstNode>> nodes;
@@ -85,7 +86,8 @@ std::unique_ptr<AstConditionalStatement> stride::ast::parse_if_statement(
         auto if_body = std::make_unique<AstBlock>(
             reference_token.get_source_fragment(),
             conditional_context,
-            std::move(nodes));
+            std::move(nodes)
+        );
 
         // dangling `else`, still possible.
         // This would allow one to write statements like:
@@ -97,10 +99,11 @@ std::unique_ptr<AstConditionalStatement> stride::ast::parse_if_statement(
 
         return std::make_unique<AstConditionalStatement>(
             reference_token.get_source_fragment(),
-            context,
+            conditional_context,
             std::move(condition),
             std::move(if_body),
-            std::move(else_statement));
+            std::move(else_statement)
+        );
     }
 
     // Now we're parsing an `if (...) { ... }` statement
@@ -113,7 +116,8 @@ std::unique_ptr<AstConditionalStatement> stride::ast::parse_if_statement(
         context,
         std::move(condition),
         std::move(body),
-        std::move(else_statement));
+        std::move(else_statement)
+    );
 }
 
 IAstNode* AstConditionalStatement::reduce()
@@ -185,11 +189,7 @@ llvm::Value* AstConditionalStatement::codegen(
         else_body_bb != nullptr ? else_body_bb : merge_bb);
     builder->SetInsertPoint(then_body_bb);
 
-    this->get_context()->push_control_flow_block(
-        then_body_bb,
-        else_body_bb != nullptr ? else_body_bb : merge_bb);
     this->get_body()->codegen(module, builder);
-    this->get_context()->pop_control_flow_block();
 
     // Only create a branch to the merge block if the current block
     // does not already have a terminator (like a 'ret' or 'break').
@@ -202,9 +202,7 @@ llvm::Value* AstConditionalStatement::codegen(
     {
         builder->SetInsertPoint(else_body_bb);
 
-        this->get_context()->push_control_flow_block(else_body_bb, merge_bb);
-        this->get_else_body()->codegen(module, builder);
-        this->get_context()->pop_control_flow_block();
+        this->_else_body->codegen(module, builder);
 
         // Same check for the else block
         if (builder->GetInsertBlock()->getTerminator() == nullptr)

@@ -149,6 +149,7 @@ namespace stride::ast
 
         // Stack of loop blocks for break and continue: pair<continue_block, break_block>
         // This isn't used during parsing, hence it not needing to be moved when creating a new ParsingContext.
+        static inline
         std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> control_flow_loop_blocks;
 
     public:
@@ -181,28 +182,34 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        // pair<continue_block, break_block>
-        std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>>& get_control_flow_blocks()
-        {
-            return this->control_flow_loop_blocks;
-        }
-
-        void push_control_flow_block(llvm::BasicBlock* continue_block, llvm::BasicBlock* break_block)
-        {
-            this->control_flow_loop_blocks.emplace_back(continue_block, break_block);
-        }
-
-        void pop_control_flow_block()
-        {
-            this->control_flow_loop_blocks.pop_back();
-        }
-
-        [[nodiscard]]
         bool is_global_scope() const
         {
             // We deem module scope as global as well
             return this->_context_type == definition::ContextType::GLOBAL
                 || this->_context_type == definition::ContextType::MODULE;
+        }
+
+        static void push_control_flow_block(
+            llvm::BasicBlock* continue_block,
+            llvm::BasicBlock* break_block)
+        {
+            control_flow_loop_blocks.emplace_back(continue_block, break_block);
+        }
+
+        static void pop_control_flow_block()
+        {
+            control_flow_loop_blocks.pop_back();
+        }
+
+        static std::pair<llvm::BasicBlock*, llvm::BasicBlock*> get_current_control_flow_block()
+        {
+            return control_flow_loop_blocks.back();
+        }
+
+        static std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>>
+        get_control_flow_blocks()
+        {
+            return control_flow_loop_blocks;
         }
 
         [[nodiscard]]
@@ -219,6 +226,7 @@ namespace stride::ast
             const std::string& name
         ) const;
 
+        [[nodiscard]]
         std::optional<AstStructType*> get_struct_type(const std::string& name) const;
 
         [[nodiscard]]
@@ -268,6 +276,7 @@ namespace stride::ast
         [[nodiscard]]
         bool is_struct_type_defined(const std::string& struct_name) const;
 
+        [[nodiscard]]
         bool is_type_defined(const std::string& type_name) const;
 
         void define_symbol(const Symbol& symbol_name, definition::SymbolType type);
