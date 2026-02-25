@@ -81,17 +81,17 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
     }
 
     std::vector<definition::StructFieldPair> struct_fields = {};
+    const auto struct_type_context = std::make_shared<ParsingContext>(
+        context,
+        context->get_context_type());
 
     // Parse fields
     if (struct_body_set.has_value())
     {
-        const auto nested_scope = std::make_shared<ParsingContext>(
-            context,
-            definition::ScopeType::BLOCK);
         while (struct_body_set.value().has_next())
         {
             parse_struct_member(
-                nested_scope,
+                struct_type_context,
                 struct_body_set.value(),
                 struct_fields
             );
@@ -106,7 +106,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
 
     return std::make_unique<AstStructType>(
         reference_token.get_source_fragment(),
-        context,
+        struct_type_context,
         std::move(struct_fields),
         context_type_flags
     );

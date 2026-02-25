@@ -1,5 +1,6 @@
 #include "ast/nodes/for_loop.h"
 
+#include "ast/conditionals.h"
 #include "ast/modifiers.h"
 #include "ast/parsing_context.h"
 
@@ -51,7 +52,8 @@ std::unique_ptr<AstExpression> collect_incrementor(
 std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    VisibilityModifier modifier)
+    [[maybe_unused]] VisibilityModifier modifier
+)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_FOR);
     const auto header_body_opt = collect_parenthesized_block(set);
@@ -62,23 +64,26 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     }
 
     auto header_body = header_body_opt.value();
-    const auto for_scope = std::make_shared<ParsingContext>(context, ScopeType::CONTROL_FLOW);
+    const auto for_body_context = std::make_shared<ParsingContext>(
+        context,
+        ContextType::CONTROL_FLOW);
 
     // We can potentially parse a for (<identifier> .. <identifier> { ... }
 
-    auto initiator = collect_initiator(for_scope, header_body);
-    auto condition = collect_condition(for_scope, header_body);
-    auto increment = collect_incrementor(for_scope, header_body);
+    auto initiator = collect_initiator(for_body_context, header_body);
+    auto condition = collect_condition(for_body_context, header_body);
+    auto increment = collect_incrementor(for_body_context, header_body);
 
-    auto body = parse_block(for_scope, set);
+    auto body = parse_block(for_body_context, set);
 
     return std::make_unique<AstForLoop>(
         reference_token.get_source_fragment(),
-        for_scope,
+        for_body_context,
         std::move(initiator),
         std::move(condition),
         std::move(increment),
-        std::move(body));
+        std::move(body)
+    );
 }
 
 llvm::Value* AstForLoop::codegen(
@@ -91,7 +96,7 @@ llvm::Value* AstForLoop::codegen(
         llvm::BasicBlock::Create(module->getContext(), "loop.cond", function);
     llvm::BasicBlock* loop_body_bb =
         llvm::BasicBlock::Create(module->getContext(), "loop.body", function);
-    llvm::BasicBlock* loop_incr_bb =
+    llvm::BasicBlock* loop_continue_bb =
         llvm::BasicBlock::Create(module->getContext(), "loop.incr", function);
     llvm::BasicBlock* loop_end_bb =
         llvm::BasicBlock::Create(module->getContext(), "loop.end", function);
@@ -104,43 +109,36 @@ llvm::Value* AstForLoop::codegen(
     builder->CreateBr(loop_cond_bb);
     builder->SetInsertPoint(loop_cond_bb);
 
-    llvm::Value* condValue = nullptr;
-    if (const auto cond = this->get_condition(); cond != nullptr)
-    {
-        condValue = this->get_condition()->codegen(module, builder);
-
-        if (condValue == nullptr)
-        {
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                "Failed to codegen loop condition",
-                this->get_source_fragment());
-        }
-    }
-    else
-    {
-        // If no condition is provided, default to true (infinite loop)
-        condValue = llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 1));
-    }
+    llvm::Value* condValue = codegen_conditional_value(module, builder, this->get_condition());
 
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
-
-    this->get_context()->get_control_flow_blocks().emplace_back(loop_cond_bb, loop_end_bb);
-
     builder->SetInsertPoint(loop_body_bb);
+
+
     if (this->get_body())
     {
+        this->get_context()->push_control_flow_block(loop_continue_bb, loop_end_bb);
         this->get_body()->codegen(module, builder);
+        this->get_context()->pop_control_flow_block();
     }
-    builder->CreateBr(loop_incr_bb);
 
-    builder->SetInsertPoint(loop_incr_bb);
+
+    // If we already have a terminator (e.g., from a break or continue),
+    // we don't want to add another branch instruction.
+    if (!builder->GetInsertBlock()->getTerminator())
+    {
+        builder->CreateBr(loop_continue_bb);
+    }
+
+    builder->SetInsertPoint(loop_continue_bb);
+
     if (get_incrementor())
     {
         this->get_incrementor()->codegen(module, builder);
     }
-    builder->CreateBr(loop_cond_bb);
 
+
+    builder->CreateBr(loop_cond_bb);
     builder->SetInsertPoint(loop_end_bb);
 
     return nullptr;

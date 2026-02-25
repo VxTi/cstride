@@ -5,7 +5,7 @@
 
 namespace stride::ast
 {
-    class AstIfStatement
+    class AstConditionalStatement
         : public IAstStatement,
           public IReducible,
           public IAstNode,
@@ -16,7 +16,7 @@ namespace stride::ast
         std::unique_ptr<AstBlock> _else_body;
 
     public:
-        explicit AstIfStatement(
+        explicit AstConditionalStatement(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> condition,
@@ -47,7 +47,7 @@ namespace stride::ast
             return this->_else_body.get();
         }
 
-        ~AstIfStatement() override = default;
+        ~AstConditionalStatement() override = default;
 
         bool is_reducible() override;
 
@@ -62,7 +62,7 @@ namespace stride::ast
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstIfStatement> parse_if_statement(
+    std::unique_ptr<AstConditionalStatement> parse_if_statement(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 } // namespace stride::ast

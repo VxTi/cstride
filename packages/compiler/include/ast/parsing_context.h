@@ -15,13 +15,12 @@ namespace stride::ast
     {
         using StructFieldPair = std::pair<std::string, std::unique_ptr<IAstType>>;
 
-        enum class ScopeType
+        enum class ContextType
         {
             GLOBAL,
             MODULE,
             FUNCTION,
             CLASS,
-            BLOCK,
             CONTROL_FLOW
         };
 
@@ -143,55 +142,67 @@ namespace stride::ast
          * e.g., in the context of modules.
          */
         std::string _context_name;
-        definition::ScopeType _scope_type;
+        definition::ContextType _context_type;
         std::shared_ptr<ParsingContext> _parent_registry;
 
         std::vector<std::unique_ptr<definition::IDefinition>> _symbols;
 
         // Stack of loop blocks for break and continue: pair<continue_block, break_block>
-        std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> _loop_blocks;
+        // This isn't used during parsing, hence it not needing to be moved when creating a new ParsingContext.
+        std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> control_flow_loop_blocks;
 
     public:
         explicit ParsingContext(
             std::string context_name,
-            const definition::ScopeType type,
+            const definition::ContextType type,
             std::shared_ptr<ParsingContext> parent) :
             _context_name(std::move(context_name)),
-            _scope_type(type),
+            _context_type(type),
             _parent_registry(std::move(parent)) {}
 
         /// Non-specific scope context definitions, e.g., for/while-loop blocks
         explicit ParsingContext(
             std::shared_ptr<ParsingContext> parent,
-            const definition::ScopeType type
+            const definition::ContextType type
         ) :
             // Context gets the same name as the parent
             ParsingContext(parent->_context_name, type, std::move(parent)) {}
 
         /// Root node initialization
         explicit ParsingContext() :
-            ParsingContext("", definition::ScopeType::GLOBAL, nullptr) {}
+            ParsingContext("", definition::ContextType::GLOBAL, nullptr) {}
 
         ParsingContext& operator=(const ParsingContext&) = delete;
 
         [[nodiscard]]
-        definition::ScopeType get_current_scope_type() const
+        definition::ContextType get_context_type() const
         {
-            return this->_scope_type;
+            return this->_context_type;
         }
 
-        std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> get_control_flow_blocks() const
+        [[nodiscard]]
+        // pair<continue_block, break_block>
+        std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>>& get_control_flow_blocks()
         {
-            return this->_loop_blocks;
+            return this->control_flow_loop_blocks;
         }
 
+        void push_control_flow_block(llvm::BasicBlock* continue_block, llvm::BasicBlock* break_block)
+        {
+            this->control_flow_loop_blocks.emplace_back(continue_block, break_block);
+        }
+
+        void pop_control_flow_block()
+        {
+            this->control_flow_loop_blocks.pop_back();
+        }
 
         [[nodiscard]]
         bool is_global_scope() const
         {
             // We deem module scope as global as well
-            return this->_scope_type == definition::ScopeType::GLOBAL
-                || this->_scope_type == definition::ScopeType::MODULE;
+            return this->_context_type == definition::ContextType::GLOBAL
+                || this->_context_type == definition::ContextType::MODULE;
         }
 
         [[nodiscard]]
@@ -286,5 +297,5 @@ namespace stride::ast
         const ParsingContext& traverse_to_root() const;
     };
 
-    std::string scope_type_to_str(const definition::ScopeType& scope_type);
+    std::string scope_type_to_str(const definition::ContextType& scope_type);
 } // namespace stride::ast

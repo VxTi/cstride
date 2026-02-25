@@ -25,8 +25,8 @@ std::optional<TypeDef*> ParsingContext::get_type_definition(const std::string& n
 
     while (current != nullptr)
     {
-        if (current->get_current_scope_type() != ScopeType::GLOBAL &&
-            current->get_current_scope_type() != ScopeType::MODULE)
+        if (current->get_context_type() != ContextType::GLOBAL &&
+            current->get_context_type() != ContextType::MODULE)
         {
             current = current->_parent_registry.get();
             continue;

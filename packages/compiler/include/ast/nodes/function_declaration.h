@@ -56,7 +56,7 @@ namespace stride::ast
      *                Function declaration definitions             *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-    class IAstCallable
+    class IAstFunction
         : public IAstContainer,
           public AstExpression
     {
@@ -70,7 +70,7 @@ namespace stride::ast
     public:
         using AstExpression::AstExpression;
 
-        explicit IAstCallable(
+        explicit IAstFunction(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
@@ -166,7 +166,7 @@ namespace stride::ast
     };
 
     class AstFunctionDeclaration
-        : public IAstCallable,
+        : public IAstFunction,
           public IAstStatement
     {
     public:
@@ -180,7 +180,7 @@ namespace stride::ast
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) :
-            IAstCallable(
+            IAstFunction(
                 symbol.symbol_position,
                 context,
                 std::move(symbol),
@@ -199,7 +199,7 @@ namespace stride::ast
     };
 
     class AstLambdaFunctionExpression
-        : public IAstCallable
+        : public IAstFunction
     {
     public:
         explicit AstLambdaFunctionExpression(
@@ -210,7 +210,7 @@ namespace stride::ast
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) :
-            IAstCallable(
+            IAstFunction(
                 symbol.symbol_position,
                 context,
                 std::move(symbol),

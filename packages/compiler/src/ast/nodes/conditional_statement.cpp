@@ -1,6 +1,5 @@
-#include "ast/nodes/if_statement.h"
+#include "ast/nodes/conditional_statement.h"
 
-#include "ast/flags.h"
 #include "ast/parser.h"
 #include "ast/parsing_context.h"
 
@@ -12,7 +11,8 @@ using namespace stride::ast::definition;
 
 std::unique_ptr<AstBlock> parse_else_optional(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     if (!set.peek_next_eq(TokenType::KEYWORD_ELSE))
     {
@@ -20,45 +20,56 @@ std::unique_ptr<AstBlock> parse_else_optional(
     }
 
     const auto reference_token = set.next();
+    const auto else_block_context = std::make_shared<ParsingContext>(
+        context,
+        context->get_context_type()
+    );
 
     // In case we encounter a `{` after an `if ... else {`, we'll
     // have to parse_file the block separately
     if (set.peek_next_eq(TokenType::LBRACE))
     {
-        return parse_block(context, set);
+        const auto else_context = std::make_shared<ParsingContext>(
+            context,
+            context->get_context_type());
+        return parse_block(else_context, set);
     }
 
     std::vector<std::unique_ptr<IAstNode>> nodes;
-    nodes.push_back(parse_next_statement(context, set));
+    nodes.push_back(parse_next_statement(else_block_context, set));
 
     // Otherwise, we can just parse_file it as a next statement.
     return std::make_unique<AstBlock>(
         reference_token.get_source_fragment(),
-        context,
-        std::move(nodes));
+        else_block_context,
+        std::move(nodes)
+    );
 }
 
-std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
+std::unique_ptr<AstConditionalStatement> stride::ast::parse_if_statement(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IF);
 
-    auto if_header_scope = std::make_shared<ParsingContext>(context, ScopeType::BLOCK);
+    auto conditional_context = std::make_shared<ParsingContext>(
+        context,
+        context->get_context_type());
     auto if_header_body = collect_parenthesized_block(set);
 
     if (!if_header_body.has_value())
     {
         set.throw_error("Expected condition block after 'if' keyword");
     }
-    auto condition = parse_inline_expression(if_header_scope, if_header_body.value());
+    auto condition = parse_inline_expression(conditional_context, if_header_body.value());
 
     // Thus far, we've collected `if (...)
 
     if (!set.peek_next_eq(TokenType::LBRACE))
     {
         // Here we might have an `if (...) ...` statement.
-        auto if_body_expr = parse_next_statement(if_header_scope, set);
+        auto if_body_expr = parse_next_statement(conditional_context, set);
 
         if (if_body_expr == nullptr)
         {
@@ -73,7 +84,7 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
 
         auto if_body = std::make_unique<AstBlock>(
             reference_token.get_source_fragment(),
-            if_header_scope,
+            conditional_context,
             std::move(nodes));
 
         // dangling `else`, still possible.
@@ -82,9 +93,9 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
         //   <some expression>
         // else
         //   <some other expression>
-        auto else_statement = parse_else_optional(if_header_scope, set);
+        auto else_statement = parse_else_optional(conditional_context, set);
 
-        return std::make_unique<AstIfStatement>(
+        return std::make_unique<AstConditionalStatement>(
             reference_token.get_source_fragment(),
             context,
             std::move(condition),
@@ -93,11 +104,11 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
     }
 
     // Now we're parsing an `if (...) { ... }` statement
-    auto body = parse_block(if_header_scope, set);
+    auto body = parse_block(conditional_context, set);
 
-    auto else_statement = parse_else_optional(context, set);
+    auto else_statement = parse_else_optional(conditional_context, set);
 
-    return std::make_unique<AstIfStatement>(
+    return std::make_unique<AstConditionalStatement>(
         reference_token.get_source_fragment(),
         context,
         std::move(condition),
@@ -105,19 +116,20 @@ std::unique_ptr<AstIfStatement> stride::ast::parse_if_statement(
         std::move(else_statement));
 }
 
-IAstNode* AstIfStatement::reduce()
+IAstNode* AstConditionalStatement::reduce()
 {
     return this;
 }
 
-bool AstIfStatement::is_reducible()
+bool AstConditionalStatement::is_reducible()
 {
     return this->get_condition()->is_reducible();
 }
 
-llvm::Value* AstIfStatement::codegen(
+llvm::Value* AstConditionalStatement::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilder<>* builder
+)
 {
     if (this->get_condition() == nullptr)
     {
@@ -150,19 +162,22 @@ llvm::Value* AstIfStatement::codegen(
 
     llvm::Function* parent_function = builder->GetInsertBlock()->getParent();
 
-    llvm::BasicBlock* then_body_bb =
-        llvm::BasicBlock::Create(module->getContext(),
-                                 "then_body",
-                                 parent_function);
+    llvm::BasicBlock* then_body_bb = llvm::BasicBlock::Create(
+        module->getContext(),
+        "then_body",
+        parent_function
+    );
     llvm::BasicBlock* else_body_bb = this->get_else_body() != nullptr
-        ? llvm::BasicBlock::Create(module->getContext(),
-                                   "else_body",
-                                   parent_function)
+        ? llvm::BasicBlock::Create(
+            module->getContext(),
+            "else_body",
+            parent_function
+        )
         : nullptr;
-    llvm::BasicBlock* merge_bb =
-        llvm::BasicBlock::Create(module->getContext(),
-                                 "if_merge",
-                                 parent_function);
+    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
+        module->getContext(),
+        "if_merge",
+        parent_function);
 
     builder->CreateCondBr(
         cond_value,
@@ -170,7 +185,11 @@ llvm::Value* AstIfStatement::codegen(
         else_body_bb != nullptr ? else_body_bb : merge_bb);
     builder->SetInsertPoint(then_body_bb);
 
+    this->get_context()->push_control_flow_block(
+        then_body_bb,
+        else_body_bb != nullptr ? else_body_bb : merge_bb);
     this->get_body()->codegen(module, builder);
+    this->get_context()->pop_control_flow_block();
 
     // Only create a branch to the merge block if the current block
     // does not already have a terminator (like a 'ret' or 'break').
@@ -182,7 +201,10 @@ llvm::Value* AstIfStatement::codegen(
     if (else_body_bb != nullptr)
     {
         builder->SetInsertPoint(else_body_bb);
+
+        this->get_context()->push_control_flow_block(else_body_bb, merge_bb);
         this->get_else_body()->codegen(module, builder);
+        this->get_context()->pop_control_flow_block();
 
         // Same check for the else block
         if (builder->GetInsertBlock()->getTerminator() == nullptr)
@@ -196,7 +218,7 @@ llvm::Value* AstIfStatement::codegen(
     return nullptr;
 }
 
-void AstIfStatement::validate()
+void AstConditionalStatement::validate()
 {
     this->get_condition()->validate();
 
@@ -208,7 +230,7 @@ void AstIfStatement::validate()
     }
 }
 
-std::string AstIfStatement::to_string()
+std::string AstConditionalStatement::to_string()
 {
     return std::format(
         "IfStatement({}) {} {}",

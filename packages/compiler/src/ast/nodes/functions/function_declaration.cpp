@@ -7,7 +7,7 @@
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/for_loop.h"
-#include "ast/nodes/if_statement.h"
+#include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/while_loop.h"
 #include "ast/nodes/return_statement.h"
 #include "ast/symbols.h"
@@ -54,7 +54,7 @@ std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body)
         // Edge case: if statements hold the `else` block too, though this doesn't fall under the
         // `IAstContainer` abstraction. The `get_body` part is added in the previous case, though we
         // still need to add the else body
-        if (const auto if_statement = dynamic_cast<AstIfStatement*>(child.
+        if (const auto if_statement = dynamic_cast<AstConditionalStatement*>(child.
             get()))
         {
             const auto aggregated = collect_return_statements(
@@ -69,7 +69,7 @@ std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body)
     return return_statements;
 }
 
-void IAstCallable::validate()
+void IAstFunction::validate()
 {
     // Extern functions don't require return statements and have no function body, so no validation
     // needed.
@@ -172,7 +172,7 @@ void IAstCallable::validate()
     // 3. All code paths return a value (if not void)
 }
 
-llvm::Value* IAstCallable::codegen(
+llvm::Value* IAstFunction::codegen(
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
@@ -394,7 +394,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
                                         "Expected function name after 'fn'");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
-    auto function_context = std::make_shared<ParsingContext>(context, ScopeType::FUNCTION);
+    auto function_context = std::make_shared<ParsingContext>(context, ContextType::FUNCTION);
 
     set.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -550,7 +550,7 @@ void collect_free_variables(
     }
 
     // Handle nested callables (lambdas) - recursively collect their free variables
-    if (auto* callable = dynamic_cast<IAstCallable*>(node))
+    if (auto* callable = dynamic_cast<IAstFunction*>(node))
     {
         // For nested lambdas, we need to:
         // 1. First collect what the nested lambda needs from its body (if not already done)
@@ -575,7 +575,7 @@ void collect_free_variables(
             // Now register the nested lambda's captures
             for (const auto& nested_capture : nested_captures)
             {
-                const_cast<IAstCallable*>(callable)->add_captured_variable(nested_capture);
+                const_cast<IAstFunction*>(callable)->add_captured_variable(nested_capture);
 
                 // Define the capture in the nested lambda's context so identifier lookup works
                 if (const auto var_def = lambda_context->lookup_variable(nested_capture.name, true))
@@ -654,7 +654,7 @@ void collect_free_variables(
     }
 
     // Handle if statements
-    if (auto* if_stmt = dynamic_cast<AstIfStatement*>(node))
+    if (auto* if_stmt = dynamic_cast<AstConditionalStatement*>(node))
     {
         collect_free_variables(if_stmt->get_condition(), lambda_context, outer_context, captures);
         collect_free_variables(if_stmt->get_body(), lambda_context, outer_context, captures);
@@ -764,7 +764,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
     int function_flags = SRFLAG_FN_DEF_ANONYMOUS;
     auto function_context = std::make_shared<ParsingContext>(
         context,
-        ScopeType::FUNCTION
+        ContextType::FUNCTION
     );
 
     // Parses expressions like:
@@ -853,7 +853,7 @@ bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
         && set.peek_eq(TokenType::COLON, 2);
 }
 
-void IAstCallable::resolve_forward_references(
+void IAstFunction::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilder<>* builder

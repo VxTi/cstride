@@ -1,5 +1,6 @@
 #include "ast/nodes/while_loop.h"
 
+#include "ast/conditionals.h"
 #include "ast/nodes/blocks.h"
 #include "ast/parser.h"
 #include "ast/parsing_context.h"
@@ -31,14 +32,15 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
         set.throw_error("Expected while loop condition");
     }
 
+    const auto while_body_context = std::make_shared<ParsingContext>(context, definition::ContextType::CONTROL_FLOW);
     auto header_condition = header_condition_opt.value();
 
-    auto condition = parse_inline_expression(context, header_condition);
-    auto body = parse_block(context, set);
+    auto condition = parse_inline_expression(while_body_context, header_condition);
+    auto body = parse_block(while_body_context, set);
 
     return std::make_unique<AstWhileLoop>(
         reference_token.get_source_fragment(),
-        context,
+        while_body_context,
         std::move(condition),
         std::move(body)
     );
@@ -60,39 +62,19 @@ llvm::Value* AstWhileLoop::codegen(
     builder->CreateBr(loop_cond_bb);
     builder->SetInsertPoint(loop_cond_bb);
 
-    llvm::Value* condValue = nullptr;
-    if (const auto cond = this->get_condition(); cond != nullptr)
-    {
-        condValue = this->get_condition()->codegen(module, builder);
-
-        if (condValue == nullptr)
-        {
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                "Failed to codegen loop condition",
-                this->get_source_fragment()
-            );
-        }
-    }
-    else
-    {
-        // If no condition is provided, default to true (infinite loop)
-        condValue = llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 1));
-    }
+    llvm::Value* condValue = codegen_conditional_value(module, builder, this->get_condition());
 
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
-
     builder->SetInsertPoint(loop_body_bb);
-    // Push loop blocks
-    this->get_context()->get_control_flow_blocks().emplace_back(loop_cond_bb, loop_end_bb);
+
     if (this->get_body())
     {
+        this->get_context()->push_control_flow_block(loop_cond_bb, loop_end_bb);
         this->get_body()->codegen(module, builder);
+        this->get_context()->pop_control_flow_block();
     }
-    // Pop loop blocks
-    this->get_context()->get_control_flow_blocks().pop_back();
-    builder->CreateBr(loop_cond_bb);
 
+    builder->CreateBr(loop_cond_bb);
     builder->SetInsertPoint(loop_end_bb);
 
     return nullptr;

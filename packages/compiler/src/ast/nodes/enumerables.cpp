@@ -80,7 +80,8 @@ std::string AstEnumerable::to_string()
 std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    VisibilityModifier modifier)
+    [[maybe_unused]] VisibilityModifier modifier
+)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_ENUM);
     const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
@@ -90,7 +91,8 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
         Symbol(reference_token.get_source_fragment(),
                context->get_name(),
                enumerable_name),
-        definition::SymbolType::ENUM);
+        SymbolType::ENUM
+    );
 
     const auto opt_enum_body_subset = collect_block(set);
 
@@ -101,20 +103,20 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
 
     std::vector<std::unique_ptr<AstEnumerableMember>> members = {};
 
-    auto nested_scope = std::make_shared<ParsingContext>(
+    auto enum_definition_context = std::make_shared<ParsingContext>(
         context,
-        ScopeType::BLOCK);
+        context->get_context_type());
     auto enum_body_subset = opt_enum_body_subset.value();
 
     while (enum_body_subset.has_next())
     {
-        members.push_back(
-            parse_enumerable_member(nested_scope, enum_body_subset));
+        members.push_back(parse_enumerable_member(enum_definition_context, enum_body_subset));
     }
 
     return std::make_unique<AstEnumerable>(
         reference_token.get_source_fragment(),
-        context,
+        enum_definition_context,
         std::move(members),
-        enumerable_name);
+        enumerable_name
+    );
 }
