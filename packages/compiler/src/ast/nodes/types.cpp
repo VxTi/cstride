@@ -50,6 +50,10 @@ llvm::Type* stride::ast::type_to_llvm_type(
     llvm::Module* module
 )
 {
+    if (!type)
+    {
+        return nullptr;
+    }
     const auto context = type->get_context();
 
     // Wrapping T -> Optional<T>
@@ -244,7 +248,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
     const std::vector references = {
         ErrorSourceReference(lhs->to_string(), lhs->get_source_fragment()),
-        ErrorSourceReference(rhs->get_formatted_name(), rhs->get_source_fragment())
+        ErrorSourceReference(rhs->get_type_name(), rhs->get_source_fragment())
     };
 
     throw parsing_error(

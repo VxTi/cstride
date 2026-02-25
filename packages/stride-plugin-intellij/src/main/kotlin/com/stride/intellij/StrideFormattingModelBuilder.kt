@@ -59,9 +59,10 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             // Statements should be on separate lines - use STATEMENT wrapper
             .afterInside(StrideTypes.STATEMENT, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
 
-            .around(StrideTypes.STRUCT_INIT_FIELD).spaceIf(true)
-            .between(StrideTypes.LBRACE, StrideTypes.STRUCT_INIT_FIELDS).spaceIf(true)
-            .between(StrideTypes.STRUCT_INIT_FIELDS, StrideTypes.RBRACE).spaceIf(true)
+            .afterInside(StrideTypes.LBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
+            .beforeInside(StrideTypes.RBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
+            .beforeInside(StrideTypes.STRUCT_INIT_FIELD, StrideTypes.STRUCT_INIT_FIELDS).lineBreakInCode()
+            .afterInside(StrideTypes.COMMA, StrideTypes.STRUCT_INIT_FIELDS).lineBreakInCode()
 
             .between(StrideTypes.TYPE_DEFINITION, StrideTypes.TYPE_DEFINITION).blankLines(1)
             .between(StrideTypes.FUNCTION_DECLARATION, StrideTypes.FUNCTION_DECLARATION).blankLines(1)

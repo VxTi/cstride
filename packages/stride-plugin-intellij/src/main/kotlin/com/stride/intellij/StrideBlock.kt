@@ -59,7 +59,7 @@ class StrideBlock(
             // Struct initialization fields
             parentType == StrideTypes.STRUCT_INITIALIZATION -> {
                 if (elementType == StrideTypes.STRUCT_INIT_FIELDS) {
-                    Indent.getNoneIndent()
+                    Indent.getNormalIndent()
                 } else {
                     Indent.getNoneIndent()
                 }

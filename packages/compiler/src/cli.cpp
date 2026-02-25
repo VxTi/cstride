@@ -19,16 +19,9 @@ std::string format_message(std::string text)
 int stride::cli::resolve_cli_command(const int argc, char** argv)
 {
     // The first argument is always the command itself,
-    if (argc < 2)
-    {
-        std::cout << format_message(
-            "No command provided. Usage: cstride <command> [options]");
-        return 1;
-    }
+    const auto& command = argc > 1 ? std::string(argv[1]) : "";
 
-    const auto& command = std::string(argv[1]);
-
-    if (command == "-h" || command == "--help")
+    if (argc < 2 || command == "-h" || command == "--help" || command == "help")
     {
         std::cout << format_message("Usage: cstride <command> [options]\n");
         std::cout << "Available commands:" << std::endl;

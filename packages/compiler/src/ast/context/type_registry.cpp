@@ -71,7 +71,7 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
     // e.g.,
     // type A = { ... };
     // type B = A; (named type)
-    auto* named_type = cast_type<AstNamedType*>(type_def.value()->get_type());
+    const auto* named_type = cast_type<AstNamedType*>(type_def.value()->get_type());
     int recursion_depth = 0;
 
     while (named_type != nullptr)
@@ -83,9 +83,9 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
             return std::nullopt;
         }
 
-        if (cast_type<AstStructType*>(reference_type_def.value()) != nullptr)
+        if (const auto struct_ty = cast_type<AstStructType*>(reference_type_def.value()->get_type()))
         {
-            return cast_type<AstStructType*>(reference_type_def.value());
+            return struct_ty;
         }
 
         named_type = cast_type<AstNamedType*>(reference_type_def.value()->get_type());
@@ -97,7 +97,7 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
         }
     }
 
-    return cast_type<AstStructType*>(named_type);
+    return std::nullopt;
 }
 
 void ParsingContext::define_type(const Symbol& type_name, std::unique_ptr<IAstType> type)

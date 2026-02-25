@@ -65,19 +65,15 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 
     while (set.peek_next_eq(TokenType::DOT))
     {
-        set.expect(TokenType::DOT,
-                   "Expected '.' after identifier in member access");
+        set.expect(TokenType::DOT, "Expected '.' after identifier in member access");
 
-        const auto accessor_iden_tok =
-            set.expect(TokenType::IDENTIFIER,
-                       "Expected identifier after '.' in member access");
+        const auto accessor_iden_tok = set.expect(TokenType::IDENTIFIER,
+                                                  "Expected identifier after '.' in member access");
 
-        auto symbol =
-            Symbol(accessor_iden_tok.get_source_fragment(),
-                   accessor_iden_tok.get_lexeme());
+        auto symbol = Symbol(accessor_iden_tok.get_source_fragment(),
+                             accessor_iden_tok.get_lexeme());
 
-        chained_accessors.push_back(
-            std::make_unique<AstIdentifier>(context, symbol));
+        chained_accessors.push_back(std::make_unique<AstIdentifier>(context, symbol));
     }
 
     const auto lhs_source_pos = lhs->get_source_fragment();
@@ -105,117 +101,155 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
         std::move(chained_accessors));
 }
 
+llvm::Value* AstMemberAccessor::codegen_global_accessor(
+    llvm::Module* module,
+    llvm::IRBuilder<>* builder
+) const
+{
+    llvm::Value* base_val = this->get_base()->codegen(module, builder);
+    auto cloned_base_type = this->_base_type->clone();
+    std::string base_type_name = cloned_base_type->get_type_name();
+
+    // We look for a GlobalVariable with an initializer
+    auto* global_var = llvm::dyn_cast_or_null<llvm::GlobalVariable>(base_val);
+    if (!global_var || !global_var->hasInitializer())
+    {
+        // If the base isn't a global with an initializer, we can't fold it.
+        return nullptr;
+    }
+
+    llvm::Constant* current_const = global_var->getInitializer();
+    std::string current_struct_name = base_type_name;
+
+    for (const auto& accessor : this->_members)
+    {
+        auto struct_def_opt = this->get_context()->get_struct_type(current_struct_name);
+        if (!struct_def_opt.has_value())
+            return nullptr;
+
+        auto struct_def = struct_def_opt.value();
+
+        const auto member_index = struct_def->get_member_field_index(accessor->get_name());
+        if (!member_index.has_value())
+        {
+            return nullptr;
+        }
+
+        // Extract the constant field value
+        current_const = current_const->getAggregateElement(member_index.value());
+        if (!current_const)
+        {
+            // Index out of bounds or invalid aggregate
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format("Invalid member access on constant '{}'", base_type_name),
+                this->get_source_fragment()
+            );
+        }
+
+        auto member_field_type = struct_def->get_member_field_type(accessor->get_name());
+        if (!member_field_type.has_value())
+        {
+            return nullptr;
+        }
+
+        cloned_base_type = member_field_type.value()->clone();
+        current_struct_name = cloned_base_type->get_type_name();
+    }
+
+    return current_const;
+}
+
 llvm::Value* AstMemberAccessor::codegen(
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 )
 {
-    // Special handling for Global context (no active block)
-    // We must evaluate to a constant (Constant Folding) as we cannot generate instructions.
-    // Note: This assumes the base identifier's codegen handles null blocks gracefully
-    // and returns the GlobalVariable* (pointer) rather than loading it.
-
-    auto cloned_base_type = this->_base_type->clone();
-    std::string base_type_name = cloned_base_type->get_formatted_name();
-
     // Global struct definitions have no insertion point, so we need to do
     // constant folding here by looking up the global variable and its initializer.
     if (!builder->GetInsertBlock())
     {
-        llvm::Value* base_val = this->get_base()->codegen(module, builder);
-
-        // We look for a GlobalVariable with an initializer
-        auto* global_var = llvm::dyn_cast_or_null<llvm::GlobalVariable>(base_val);
-        if (!global_var || !global_var->hasInitializer())
-        {
-            // If the base isn't a global with an initializer, we can't fold it.
-            return nullptr;
-        }
-
-        llvm::Constant* current_const = global_var->getInitializer();
-        std::string current_struct_name = base_type_name;
-
-        for (const auto& accessor : this->get_members())
-        {
-            auto struct_def_opt = this->get_context()->get_struct_type(current_struct_name);
-            if (!struct_def_opt.has_value())
-                return nullptr;
-
-            auto struct_def = struct_def_opt.value();
-
-            const auto member_index = struct_def->get_member_field_index(accessor->get_name());
-            if (!member_index.has_value())
-            {
-                return nullptr;
-            }
-
-            // Extract the constant field value
-            current_const = current_const->getAggregateElement(member_index.value());
-            if (!current_const)
-            {
-                // Index out of bounds or invalid aggregate
-                throw parsing_error(
-                    ErrorType::COMPILATION_ERROR,
-                    std::format("Invalid member access on constant '{}'", base_type_name),
-                    this->get_source_fragment()
-                );
-            }
-
-            auto member_field_type = struct_def->get_member_field_type(accessor->get_name());
-            if (!member_field_type.has_value())
-            {
-                return nullptr;
-            }
-
-            cloned_base_type = member_field_type.value()->clone();
-            current_struct_name = cloned_base_type->get_formatted_name();
-        }
-
-        return current_const;
+        return codegen_global_accessor(module, builder);
     }
 
     // Standard Code Generation (Function context)
-    llvm::Value* current_val = this->get_base()->codegen(
-        module,
-        builder
-    );
+
+    // Will codegen identifier - reference to variable (getptr)
+    llvm::Value* current_val = this->get_base()->codegen(module, builder);
     if (!current_val)
     {
         return nullptr;
     }
 
-    std::string current_struct_name = cloned_base_type->get_formatted_name();
+    auto base_struct_type = cast_type<AstStructType*>(this->_base_type.get());
+
+    // It might be a named type
+    if (!base_struct_type)
+    {
+        base_struct_type = get_context()->get_struct_type(this->_base_type->get_type_name())
+                                         .value_or(nullptr);
+    }
+
+    // Base must be a struct for member access to be valid.
+    // This would be okay if there were on members, however, this should never happen
+    if (!base_struct_type)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Member access base must be a struct",
+            this->get_source_fragment()
+        );
+    }
+
+    IAstType* parent_type = base_struct_type;
+    std::string parent_struct_internalized_name = base_struct_type->get_internalized_name();
+    std::string current_accessor_name = this->_base->get_name();
 
     // With opaque pointers, we need to know if we are operating on an address (L-value)
     // or a loaded struct value (R-value). Pointers allow GEP, values require ExtractValue.
     const bool is_pointer_ty = current_val->getType()->isPointerTy();
 
-    for (const auto& accessor : this->get_members())
+    for (const auto& accessor : this->_members)
     {
-        auto struct_def_opt = this->get_context()->get_struct_type(current_struct_name);
-        if (!struct_def_opt.has_value())
+        auto parent_struct_type = cast_type<AstStructType*>(parent_type);
+
+        if (!parent_struct_type)
+        {
+            parent_struct_type = get_context()->get_struct_type(parent_type->get_type_name())
+                                         .value_or(nullptr);
+        }
+
+        // In next iteration, it's possible that the previous member produced a non-struct type,
+        // hence yielding a nullptr.
+        if (!parent_struct_type)
         {
             throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                std::format("Unknown struct type '{}' during codegen",
-                            current_struct_name),
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Cannot access member '{}' of non-struct type '{}'",
+                    accessor->get_name(),
+                    current_accessor_name
+                ),
                 this->get_source_fragment()
             );
         }
 
-        auto struct_def = struct_def_opt.value();
+        parent_struct_internalized_name = parent_struct_type->get_internalized_name();
 
-        const auto member_index = struct_def->get_member_field_index(accessor->get_name());
+        const auto member_index = parent_struct_type->get_member_field_index(accessor->get_name());
 
+        // Validate whether the previous struct contains the "member" field
         if (!member_index.has_value())
         {
             throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
+                ErrorType::TYPE_ERROR,
                 std::format(
-                    "Unknown member '{}' in struct '{}'",
+                    "Cannot access member '{}' of struct '{}': member does not exist",
                     accessor->get_name(),
-                    current_struct_name),
-                this->get_source_fragment());
+                    parent_struct_type->get_type_name()
+                ),
+                this->get_source_fragment()
+            );
         }
 
         if (is_pointer_ty)
@@ -223,8 +257,17 @@ llvm::Value* AstMemberAccessor::codegen(
             // Get the LLVM type for the current struct to generate the GEP
             llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(
                 module->getContext(),
-                current_struct_name
+                parent_struct_internalized_name
             );
+            if (!struct_llvm_type)
+            {
+                throw parsing_error(
+                    ErrorType::COMPILATION_ERROR,
+                    std::format(
+                        "Struct '{}' not registered internally",
+                        parent_struct_type->get_type_name()),
+                    this->get_source_fragment());
+            }
 
             // Create the GEP (GetElementPtr) instruction: &current_ptr->member
             current_val = builder->CreateStructGEP(
@@ -244,29 +287,38 @@ llvm::Value* AstMemberAccessor::codegen(
             );
         }
 
-        // Update loop state
-        auto member_field_type = struct_def->get_member_field_type(accessor->get_name());
+        auto member_field_type = parent_struct_type->get_member_field_type(accessor->get_name());
         if (!member_field_type.has_value())
         {
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format("Unknown member type '{}' in struct '{}'",
-                            accessor->get_name(),
-                            current_struct_name
+                std::format(
+                    "Unknown member type '{}' in struct '{}'",
+                    accessor->get_name(),
+                    parent_struct_type->get_type_name()
                 ),
                 this->get_source_fragment());
         }
 
-        cloned_base_type = member_field_type.value()->clone();
-        current_struct_name = cloned_base_type->get_formatted_name();
+        parent_type = member_field_type.value();
+    }
+
+    if (!parent_type)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format(
+                "Invalid member access on non-struct type '{}'",
+                this->_base_type->get_type_name()
+            ),
+            this->get_source_fragment());
     }
 
     // if we were working with pointers, we need to load the final result
     if (is_pointer_ty)
     {
-        llvm::Type* final_llvm_type = type_to_llvm_type(
-            cloned_base_type.get(),
-            module);
+        llvm::Type* final_llvm_type = type_to_llvm_type(parent_type, module);
+
         return builder->CreateLoad(
             final_llvm_type,
             current_val,
@@ -282,7 +334,7 @@ std::string AstMemberAccessor::to_string()
 {
     std::vector<std::string> member_names;
 
-    for (const auto& member : this->get_members())
+    for (const auto& member : this->_members)
     {
         member_names.push_back(member->get_name());
     }

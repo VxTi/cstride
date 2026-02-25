@@ -114,7 +114,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        virtual std::string get_formatted_name() = 0;
+        virtual std::string get_type_name() = 0;
 
         virtual bool equals(IAstType& other) = 0;
 
@@ -200,14 +200,14 @@ namespace stride::ast
             return std::make_unique<AstPrimitiveType>(*this);
         }
 
-        std::string get_formatted_name() override
+        std::string get_type_name() override
         {
             return primitive_type_to_str(this->get_type(), this->get_flags());
         }
 
         std::string to_string() override
         {
-            return this->get_formatted_name();
+            return this->get_type_name();
         }
 
         bool equals(IAstType& other) override;
@@ -244,7 +244,7 @@ namespace stride::ast
             return std::make_unique<AstNamedType>(*this);
         }
 
-        std::string get_formatted_name() override
+        std::string get_type_name() override
         {
             return this->_name;
         }
@@ -301,7 +301,7 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
-        std::string get_formatted_name() override
+        std::string get_type_name() override
         {
             return "Function";
         }
@@ -369,10 +369,10 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::string get_formatted_name() override
+        std::string get_type_name() override
         {
             return std::format("[{}]",
-                               this->_element_type->get_formatted_name());
+                               this->_element_type->get_type_name());
         }
 
         bool equals(IAstType& other) override;
@@ -396,19 +396,21 @@ namespace stride::ast
         [[nodiscard]]
         std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> get_members() const;
 
+        [[nodiscard]]
         std::optional<IAstType*> get_member_field_type(const std::string& field_name) const;
 
+        [[nodiscard]]
         std::optional<int> get_member_field_index(const std::string& field_name) const;
 
         [[nodiscard]]
-        std::string get_formatted_name() override
+        std::string get_type_name() override
         {
             return "Struct<{...}>";
         }
 
         std::string to_string() override
         {
-            return this->get_formatted_name();
+            return this->get_type_name();
         }
 
         bool equals(IAstType& other) override;

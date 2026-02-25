@@ -261,6 +261,7 @@ namespace stride::ast
             llvm::IRBuilder<>* builder
         ) override;
 
+
         std::string to_string() override;
 
         bool is_reducible() override;
@@ -268,6 +269,12 @@ namespace stride::ast
         IAstNode* reduce() override;
 
         void validate() override;
+
+    private:
+        llvm::Value* codegen_global_accessor(
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder
+        ) const;
     };
 
     class AstFunctionCall
@@ -866,5 +873,5 @@ namespace stride::ast
     std::unique_ptr<IAstType> infer_struct_initializer_type(const AstStructInitializer* initializer);
 
     /// Infers the type of the field accessed via a member accessor expression
-    std::unique_ptr<IAstType> infer_member_accessor_type(const AstMemberAccessor* expr);
+    std::unique_ptr<IAstType> infer_member_accessor_type(const AstMemberAccessor* member_accessor_expr);
 } // namespace stride::ast

@@ -4,6 +4,7 @@
 #include "ast/parsing_context.h"
 #include "ast/tokens/tokenizer.h"
 #include "files.h"
+#include "ast/nodes/blocks.h"
 #include "stl/stl_functions.h"
 
 #include <gtest/gtest.h>

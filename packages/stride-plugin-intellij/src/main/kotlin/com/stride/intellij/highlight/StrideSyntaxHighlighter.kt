@@ -24,10 +24,10 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         val TYPE = createTextAttributesKey("STRIDE_TYPE", DefaultLanguageHighlighterColors.KEYWORD)
         val FUNCTION_CALL = createTextAttributesKey("STRIDE_FUNCTION_CALL", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
         val FUNCTION_DECLARATION = createTextAttributesKey("STRIDE_FUNCTION_DECLARATION", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
-        val SCOPED_IDENTIFIER_REFERENCE = createTextAttributesKey("SCOPED_IDENTIFIER_REFERENCE", DefaultLanguageHighlighterColors.CLASS_REFERENCE)
+        val STRUCT_TYPE = createTextAttributesKey("STRIDE_STRUCT_TYPE", DefaultLanguageHighlighterColors.STATIC_FIELD)
+        val USER_TYPE = createTextAttributesKey("STRIDE_USER_TYPE", DefaultLanguageHighlighterColors.STATIC_FIELD)
         val IDENTIFIER = createTextAttributesKey("STRIDE_IDENTIFIER", DefaultLanguageHighlighterColors.IDENTIFIER)
         val FIELD_IDENTIFIER = createTextAttributesKey("STRIDE_FIELD_IDENTIFIER", DefaultLanguageHighlighterColors.INSTANCE_FIELD)
-        val USER_TYPE = createTextAttributesKey("STRIDE_USER_TYPE", DefaultLanguageHighlighterColors.STATIC_FIELD)
 
 
         private val KEYWORD_KEYS = arrayOf(KEYWORD)
@@ -41,6 +41,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         private val COMMA_KEYS = arrayOf(COMMA)
         private val DOT_KEYS = arrayOf(DOT)
         private val TYPE_KEYS = arrayOf(TYPE)
+        private val IDENTIFIER_KEYS = arrayOf(IDENTIFIER)
         private val EMPTY_KEYS = emptyArray<TextAttributesKey>()
     }
 
@@ -75,6 +76,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.SEMICOLON -> SEMICOLON_KEYS
             StrideTypes.COMMA -> COMMA_KEYS
             StrideTypes.DOT, StrideTypes.COLON_COLON -> DOT_KEYS
+            StrideTypes.IDENTIFIER -> IDENTIFIER_KEYS
             else -> EMPTY_KEYS
         }
     }
