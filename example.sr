@@ -4,12 +4,12 @@ type Point = {
     z: int32;
 };
 
-enum Test {
+/* enum Test {
     LEFT: 123,
     RIGHT: 456,
     BOTTOM: 246,
     TOP: 6543,
-}
+}*/
 
 type Vec3 = Point;
 

@@ -114,14 +114,14 @@ llvm::Value* AstForLoop::codegen(
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
     builder->SetInsertPoint(loop_body_bb);
 
-
     if (this->get_body())
     {
-        this->get_context()->push_control_flow_block(loop_continue_bb, loop_end_bb);
-        this->get_body()->codegen(module, builder);
-        this->get_context()->pop_control_flow_block();
-    }
+        ParsingContext::push_control_flow_block(loop_continue_bb, loop_end_bb);
 
+        this->get_body()->codegen(module, builder);
+
+        ParsingContext::pop_control_flow_block();
+    }
 
     // If we already have a terminator (e.g., from a break or continue),
     // we don't want to add another branch instruction.
@@ -137,7 +137,6 @@ llvm::Value* AstForLoop::codegen(
         this->get_incrementor()->codegen(module, builder);
     }
 
-
     builder->CreateBr(loop_cond_bb);
     builder->SetInsertPoint(loop_end_bb);
 
@@ -146,19 +145,18 @@ llvm::Value* AstForLoop::codegen(
 
 void AstForLoop::validate()
 {
-    if (this->_initializer != nullptr)
+    if (this->_initializer)
         this->_initializer->validate();
 
-    if (this->_condition != nullptr)
+    if (this->_condition)
         this->_condition->validate();
 
-    if (this->_incrementor != nullptr)
+    if (this->_incrementor)
         this->_incrementor->validate();
 
-    if (this->get_body() != nullptr)
-        this->get_body()->validate();
+    if (this->_body)
+        this->_body->validate();
 }
-
 
 std::string AstForLoop::to_string()
 {

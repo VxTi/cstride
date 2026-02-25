@@ -32,7 +32,9 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
         set.throw_error("Expected while loop condition");
     }
 
-    const auto while_body_context = std::make_shared<ParsingContext>(context, definition::ContextType::CONTROL_FLOW);
+    const auto while_body_context = std::make_shared<ParsingContext>(
+        context,
+        definition::ContextType::CONTROL_FLOW);
     auto header_condition = header_condition_opt.value();
 
     auto condition = parse_inline_expression(while_body_context, header_condition);
@@ -69,9 +71,11 @@ llvm::Value* AstWhileLoop::codegen(
 
     if (this->get_body())
     {
-        this->get_context()->push_control_flow_block(loop_cond_bb, loop_end_bb);
+        ParsingContext::push_control_flow_block(loop_cond_bb, loop_end_bb);
+
         this->get_body()->codegen(module, builder);
-        this->get_context()->pop_control_flow_block();
+
+        ParsingContext::pop_control_flow_block();
     }
 
     builder->CreateBr(loop_cond_bb);

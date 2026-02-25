@@ -16,7 +16,7 @@ std::unique_ptr<AstContinueStatement> stride::ast::parse_continue_statement(
 
 llvm::Value* AstContinueStatement::codegen(llvm::Module* module, llvm::IRBuilder<>* builder)
 {
-    if (this->get_context()->get_control_flow_blocks().empty())
+    if (ParsingContext::get_control_flow_blocks().empty())
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
@@ -25,7 +25,7 @@ llvm::Value* AstContinueStatement::codegen(llvm::Module* module, llvm::IRBuilder
         );
     }
 
-    const auto continue_block = this->get_context()->get_control_flow_blocks().back().first;
+    const auto continue_block = ParsingContext::get_control_flow_blocks().back().first;
     builder->CreateBr(continue_block);
 
     // Since we branched, create a new block for unreachable code, but since it's a statement, return nullptr

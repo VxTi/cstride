@@ -19,7 +19,7 @@ std::unique_ptr<AstBreakStatement> stride::ast::parse_break_statement(
 
 llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilder<>* builder)
 {
-    if (this->get_context()->get_control_flow_blocks().empty())
+    if (ParsingContext::get_control_flow_blocks().empty())
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
