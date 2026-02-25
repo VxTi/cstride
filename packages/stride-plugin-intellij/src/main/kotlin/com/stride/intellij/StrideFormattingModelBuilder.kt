@@ -45,7 +45,7 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
 
             .after(StrideTypes.COLON).spaceIf(true)
             .before(StrideTypes.COLON).spaceIf(false)
-            .after(StrideTypes.COMMA).spaceIf(true)
+            .after(StrideTypes.COMMA).lineBreakInCode()
             .before(StrideTypes.COMMA).spaceIf(false)
             .before(StrideTypes.SEMICOLON).spaceIf(false)
 
