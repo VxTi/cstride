@@ -437,7 +437,7 @@ namespace stride::ast
         const std::string& error,
         int type_flags = SRFLAG_NONE);
 
-    llvm::Type* type_to_llvm_type(IAstType* type, llvm::Module* module);
+    llvm::Type* type_to_llvm_type(IAstType* type, llvm::Module* module, size_t recursion_guard = 0);
 
     std::unique_ptr<IAstType> get_dominant_field_type(IAstType* lhs, IAstType* rhs);
 
@@ -470,6 +470,6 @@ namespace stride::ast
     /// Will extract the struct type from a named type if possible, otherwise,
     /// will attempt to cast the type directly into a struct type.
     /// This function will never return nullptrs.
-    std::optional<AstStructType*> get_struct_type(IAstType* type);
+    std::optional<AstStructType*> get_struct_type_from_type(IAstType* type);
 
 } // namespace stride::ast

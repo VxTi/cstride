@@ -46,7 +46,8 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
 
 llvm::Type* stride::ast::type_to_llvm_type(
     IAstType* type,
-    llvm::Module* module
+    llvm::Module* module,
+    size_t recursion_guard
 )
 {
     if (!type)
@@ -148,7 +149,16 @@ llvm::Type* stride::ast::type_to_llvm_type(
             );
         }
 
-        return type_to_llvm_type(ref_type.value().get(), module);
+        if (++recursion_guard > MAX_RECURSION_DEPTH)
+        {
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                "Maximum recursion depth exceeded when resolving type",
+                named_ty->get_source_fragment()
+            );
+        }
+
+        return type_to_llvm_type(ref_type.value().get(), module, recursion_guard);
     }
 
     if (const auto* struct_type = cast_type<AstStructType*>(type))
@@ -256,7 +266,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         references);
 }
 
-std::optional<AstStructType*> stride::ast::get_struct_type(IAstType* type)
+std::optional<AstStructType*> stride::ast::get_struct_type_from_type(IAstType* type)
 {
     auto base_struct_type = cast_type<AstStructType*>(type);
 
