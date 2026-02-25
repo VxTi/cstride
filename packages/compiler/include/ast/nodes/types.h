@@ -467,4 +467,9 @@ namespace stride::ast
         TokenSet& set,
         int context_type_flags);
 
+    /// Will extract the struct type from a named type if possible, otherwise,
+    /// will attempt to cast the type directly into a struct type.
+    /// This function will never return nullptrs.
+    std::optional<AstStructType*> get_struct_type(IAstType* type);
+
 } // namespace stride::ast

@@ -308,17 +308,10 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     for (const auto& members = member_accessor_expr->get_members();
          const auto member : members)
     {
-        auto struct_type = cast_type<AstStructType*>(parent_type);
-
-        if (!struct_type)
-        {
-            struct_type = member_accessor_expr->get_context()->get_struct_type(
-                                                    parent_type->get_type_name())
-                                               .value_or(nullptr);
-        }
+        auto struct_type = get_struct_type(parent_type);
 
         // It's possible that the previous iteration yielded a non-struct type, and thus being nullptr.
-        if (!struct_type)
+        if (!struct_type.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -328,25 +321,11 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
                 member_accessor_expr->get_source_fragment());
         }
 
-        // Resolve member in parent struct
-        // For now, members are identifiers.
-        const auto member_type = struct_type->get_member_field_type(member->get_name());
-
-        if (!member_type.has_value())
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Field '{}' not found in struct",
-                    member->get_name()),
-                member_accessor_expr->get_source_fragment());
-        }
-
         // Resolve the member identifier (e.g., 'b')
         // For now, members are already identifiers, though this might change in the future.
 
-        const auto segment_iden = cast_expr<AstIdentifier*>(member);
-        if (!segment_iden)
+        const auto member_identifier = cast_expr<AstIdentifier*>(member);
+        if (!member_identifier)
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -354,7 +333,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
                 member_accessor_expr->get_source_fragment());
         }
 
-        const auto field_type = struct_type->get_member_field_type(segment_iden->get_name());
+        const auto field_type = struct_type.value()->get_member_field_type(
+            member_identifier->get_name());
 
         if (!field_type.has_value())
         {
@@ -362,7 +342,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Field '{}' not found in struct",
-                    segment_iden->get_name()),
+                    member_identifier->get_name()),
                 member_accessor_expr->get_source_fragment());
         }
 
@@ -378,7 +358,6 @@ std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
     const AstStructInitializer* initializer)
 {
     return std::make_unique<AstNamedType>(
-
         initializer->get_source_fragment(),
         initializer->get_context(),
         initializer->get_struct_name());
