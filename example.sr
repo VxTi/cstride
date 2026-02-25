@@ -31,7 +31,16 @@ const player = Entity::{
     },
 };
 
+type BinaryOp = (int32, int32) -> int32;
+fn add(a: int32, b: int32): int32 { return a + b; }
+
+let op: BinaryOp = add;
+
+
 fn main(): int32 {
+
+    op(1, 2);
+
     printf("Player ID: %d\n", player.id);
     printf("Player Name: %s\n", player.name);
     printf("Player Position: (%d, %d, %d)\n", player.position.x, player.position.y, player.position.z);

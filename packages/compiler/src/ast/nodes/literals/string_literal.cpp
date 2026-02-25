@@ -2,7 +2,6 @@
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include <sstream>
 
 using namespace stride::ast;
 

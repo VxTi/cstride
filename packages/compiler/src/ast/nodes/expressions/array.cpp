@@ -1,6 +1,5 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
-#include "ast/optionals.h"
 
 #include <llvm/IR/Module.h>
 

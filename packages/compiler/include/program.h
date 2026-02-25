@@ -1,10 +1,9 @@
 #pragma once
+#include "cli.h"
+#include "ast/parsing_context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
-#include "ast/parsing_context.h"
-#include "cli.h"
 
-#include <llvm/Support/FileSystem.h>
 #include <llvm/Target/TargetMachine.h>
 
 namespace stride

@@ -19,7 +19,7 @@ namespace stride::ast
             std::vector<std::unique_ptr<IAstNode>> children
         ) :
             IAstNode(source, context),
-            _children(std::move(children)) {};
+            _children(std::move(children)) {}
 
         std::string to_string() override;
 

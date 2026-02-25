@@ -4,6 +4,7 @@
 #include "types.h"
 
 #include <format>
+#include <utility>
 
 namespace stride:: ast
 {
@@ -21,12 +22,12 @@ namespace stride:: ast
         explicit AstTypeDefinition(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            const std::string& name,
+            std::string  name,
             std::unique_ptr<IAstType> type,
             const VisibilityModifier visibility
         ) :
             IAstNode(source, context),
-            _name(name),
+            _name(std::move(name)),
             _type(std::move(type)),
             _visibility(visibility) {}
 

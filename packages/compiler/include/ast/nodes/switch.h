@@ -1,7 +1,8 @@
 #pragma once
+
+#include "ast_node.h"
 #include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
-#include "ast_node.h"
 
 #include <utility>
 

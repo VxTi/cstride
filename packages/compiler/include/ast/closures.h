@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <string>
 #include <vector>
 #include <llvm/IR/IRBuilder.h>
@@ -66,14 +67,12 @@ namespace stride::ast::closures
      * Extracts capture parameter names from the lambda function and looks up
      * their values in the current scope.
      *
-     * @param module The LLVM module
      * @param builder The IR builder
      * @param lambda_fn The lambda function being called
      * @param num_declared_params The number of declared parameters (non-captured)
      * @return Vector of captured variable values in the correct order
      */
     std::vector<llvm::Value*> generate_capture_arguments(
-        llvm::Module* module,
         llvm::IRBuilder<>* builder,
         llvm::Function* lambda_fn,
         size_t num_declared_params
@@ -112,4 +111,14 @@ namespace stride::ast::closures
         llvm::Value* fn_ptr_val,
         llvm::Function* lambda_fn
     );
+
+    inline std::string format_captured_variable_name_internal(const std::string& var_name)
+    {
+        return std::format("@__capture_{}", var_name);
+    }
+
+    inline std::string format_captured_variable_name(const std::string& var_name)
+    {
+        return std::format("@{}.capture", var_name);
+    }
 } // namespace stride::ast::closures

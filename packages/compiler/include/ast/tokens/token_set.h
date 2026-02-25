@@ -25,7 +25,7 @@ namespace stride::ast
         ) :
             _source(std::move(source)),
             _cursor(0),
-            _size(tokens.size()),
+            _size(static_cast<int64_t>(tokens.size())),
             _tokens(std::move(tokens)) {}
 
         [[nodiscard]]
@@ -76,10 +76,9 @@ namespace stride::ast
         std::shared_ptr<SourceFile> get_source() const;
 
         [[noreturn]]
-        void throw_error(const Token& token,
+        static void throw_error(const Token& token,
                          ErrorType error_type,
-                         const std::string& message)
-        const;
+                         const std::string& message);
 
         [[noreturn]]
         void throw_error(ErrorType error_type,

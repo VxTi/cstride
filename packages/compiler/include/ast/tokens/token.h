@@ -482,5 +482,5 @@ namespace stride::ast
     static auto END_OF_FILE =
         Token(TokenType::END_OF_FILE,
               { nullptr, static_cast<size_t>(-1), 0 },
-              "\0");
+              "");
 } // namespace stride::ast

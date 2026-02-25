@@ -18,7 +18,7 @@ namespace stride::ast
             std::string package_name
         ) :
             IAstNode(source, context),
-            _name(std::move(package_name)) {};
+            _name(std::move(package_name)) {}
 
         [[nodiscard]]
         const std::string& get_name() const

@@ -1,9 +1,9 @@
 #include "ast/nodes/while_loop.h"
 
 #include "ast/conditionals.h"
-#include "ast/nodes/blocks.h"
 #include "ast/parser.h"
 #include "ast/parsing_context.h"
+#include "ast/nodes/blocks.h"
 
 #include <llvm/IR/Module.h>
 

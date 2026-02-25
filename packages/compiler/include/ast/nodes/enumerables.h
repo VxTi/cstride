@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ast/nodes/literal_values.h"
 #include "ast_node.h"
+#include "ast/nodes/literal_values.h"
 
 #include <utility>
 

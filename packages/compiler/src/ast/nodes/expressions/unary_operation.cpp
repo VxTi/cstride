@@ -99,7 +99,7 @@ std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op
         TokenType::DOUBLE_MINUS))
     {
         const auto op_tok = set.next();
-        UnaryOpType type = (op_tok.get_type() == TokenType::DOUBLE_PLUS)
+        UnaryOpType type = op_tok.get_type() == TokenType::DOUBLE_PLUS
             ? UnaryOpType::INCREMENT
             : UnaryOpType::DECREMENT;
 

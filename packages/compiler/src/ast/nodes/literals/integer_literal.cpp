@@ -41,7 +41,7 @@ stride::ast::parse_integer_literal_optional(
     case TokenType::LONG_INTEGER_LITERAL:
     case TokenType::HEX_LITERAL:
     {
-        const std::string input = reference_token.get_lexeme();
+        const std::string& input = reference_token.get_lexeme();
         set.skip(1);
 
         try
