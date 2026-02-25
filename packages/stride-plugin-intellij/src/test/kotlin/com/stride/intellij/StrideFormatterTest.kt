@@ -17,7 +17,9 @@ class StrideFormatterTest : BasePlatformTestCase() {
             type Second = First;
 
             fn main(): void {
-                const s: Second = First::{ member: 123 };
+                const s: Second = First::{
+                    member: 123
+                };
             }
         """.trimIndent()
         myFixture.configureByText("test.sr", before)
@@ -41,4 +43,3 @@ class StrideFormatterTest : BasePlatformTestCase() {
         myFixture.checkResult(after)
     }
 }
-
