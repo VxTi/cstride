@@ -35,7 +35,6 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
 
     context->define_type(type_name_symbol, type->clone());
 
-
     return std::make_unique<AstTypeDefinition>(
         source_fragment,
         context,

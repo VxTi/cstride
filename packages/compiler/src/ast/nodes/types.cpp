@@ -44,7 +44,6 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     set.throw_error(error);
 }
 
-
 llvm::Type* stride::ast::type_to_llvm_type(
     IAstType* type,
     llvm::Module* module
@@ -152,9 +151,9 @@ llvm::Type* stride::ast::type_to_llvm_type(
         return type_to_llvm_type(ref_type.value().get(), module);
     }
 
-    if (const auto* $struct_ty = cast_type<AstStructType*>(type))
+    if (const auto* struct_type = cast_type<AstStructType*>(type))
     {
-        const auto& struct_name = $struct_ty->get_internalized_name();
+        const auto& struct_name = struct_type->get_internalized_name();
         llvm::StructType* struct_ty = llvm::StructType::getTypeByName(
             module->getContext(),
             struct_name
@@ -164,7 +163,7 @@ llvm::Type* stride::ast::type_to_llvm_type(
             throw parsing_error(
                 ErrorType::REFERENCE_ERROR,
                 "Struct type not found",
-                $struct_ty->get_source_fragment()
+                struct_type->get_source_fragment()
             );
         }
 

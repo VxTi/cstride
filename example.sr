@@ -1,8 +1,10 @@
-type Point = {
-    x: int32;
-    y: int32;
-    z: int32;
-};
+module SomeLibrary {
+    type Point = {
+        x: int32;
+        y: int32;
+        z: int32;
+    };
+}
 
 /* enum Test {
     LEFT: 123,
@@ -11,7 +13,7 @@ type Point = {
     TOP: 6543,
 }*/
 
-type Vec3 = Point;
+type Vec3 = SomeLibrary::Point;
 
 type Entity = {
     id: int32;

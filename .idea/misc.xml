@@ -7,8 +7,13 @@
     <contentRoot DIR="$PROJECT_DIR$" />
   </component>
   <component name="CidrRootsConfiguration">
+    <sourceRoots>
+      <file path="$PROJECT_DIR$/packages/compiler/include" />
+      <file path="$PROJECT_DIR$/packages/compiler/src" />
+    </sourceRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/build" />
+      <file path="$PROJECT_DIR$/dist" />
     </excludeRoots>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
