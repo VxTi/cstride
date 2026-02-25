@@ -20,8 +20,8 @@
 
         <colorSettingsPage implementationClass="com.stride.intellij.highlight.StrideColorSettingsPage"/>
 
-        <additionalTextAttributes scheme="Default" file="colorSchemes/StrideDefault.xml"/>
-        <additionalTextAttributes scheme="Darcula" file="colorSchemes/StrideDefault.xml"/>
+        <additionalTextAttributes scheme="Default" file="colorSchemes/StrideOneDark.xml"/>
+        <additionalTextAttributes scheme="Darcula" file="colorSchemes/StrideOneDark.xml"/>
 
         <annotator language="Stride" implementationClass="com.stride.intellij.annotator.StrideAnnotator"/>
 

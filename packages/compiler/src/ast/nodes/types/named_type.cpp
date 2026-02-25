@@ -1,4 +1,5 @@
 #include "ast/parsing_context.h"
+#include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
@@ -14,18 +15,14 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     // Custom types are identifiers in the type position.
     const auto reference_token = set.peek_next();
 
-    if (set.peek_next_eq(TokenType::STAR))
-    {
-        set.next();
-        context_type_flags |= SRFLAG_TYPE_PTR;
-    }
-
     if (set.peek_next().get_type() != TokenType::IDENTIFIER)
     {
         return std::nullopt;
     }
 
-    const auto name = set.next().get_lexeme();
+    const auto segments = parse_segmented_identifier(set);
+
+    const auto name = resolve_internal_name(segments);
 
     auto named_type = std::make_unique<AstNamedType>(
         reference_token.get_source_fragment(),

@@ -274,25 +274,13 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     {
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
-            std::format("Variable '{}' not found in scope",
-                        base_iden->get_name()),
-            member_accessor_expr->get_source_fragment());
+            std::format("Variable '{}' not found in scope", base_iden->get_name()),
+            member_accessor_expr->get_source_fragment()
+        );
     }
 
     // ---- Ensure parent (base) is a struct type
-    IAstType* parent_type = nullptr;
-
-    if (const auto struct_ty = cast_type<AstStructType*>(variable_definition->get_type()))
-    {
-        parent_type = struct_ty;
-    }
-    else if (const auto named_ty = cast_type<AstNamedType*>(variable_definition->get_type()))
-    {
-        // Lookup struct type definition for named type reference
-        const auto struct_def =
-            member_accessor_expr->get_context()->get_struct_type(named_ty->get_name());
-        parent_type = cast_type<AstStructType*>(struct_def.value_or(nullptr));
-    }
+    IAstType* parent_type = get_struct_type(variable_definition->get_type()).value_or(nullptr);
 
     if (!parent_type)
     {
@@ -303,6 +291,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
                 variable_definition->get_type()->get_type_name()),
             member_accessor_expr->get_source_fragment());
     }
+
+    std::string parent_name = variable_definition->get_symbol().name;
 
     // Iterate through all member segments (e.g., .b, .c)
     for (const auto& members = member_accessor_expr->get_members();
@@ -316,8 +306,10 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Struct type '{}' not found in this scope",
-                    parent_type->get_type_name()),
+                    "Struct type '{}' in member '{}' not found in this scope",
+                    parent_type->get_type_name(),
+                    parent_name
+                ),
                 member_accessor_expr->get_source_fragment());
         }
 
@@ -348,6 +340,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
 
         // Update current_type for the next iteration (or for the final return)
         parent_type = field_type.value();
+        parent_name = member->get_name();
     }
 
     // Return the final inferred type
