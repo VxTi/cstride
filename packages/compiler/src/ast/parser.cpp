@@ -4,6 +4,7 @@
 #include "program.h"
 #include "ast/modifiers.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/control_flow_statements.h"
 #include "ast/nodes/enumerables.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/function_declaration.h"
@@ -51,6 +52,10 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
         return parse_import_statement(context, set);
     case TokenType::KEYWORD_TYPE:
         return parse_type_statement(context, set, visibility_modifier);
+    case TokenType::KEYWORD_CONTINUE:
+        return parse_continue_statement(context, set);
+    case TokenType::KEYWORD_BREAK:
+        return parse_break_statement(context, set);
 
     // Modifiers. These are used in the next phase of parsing.
     case TokenType::KEYWORD_PUBLIC:

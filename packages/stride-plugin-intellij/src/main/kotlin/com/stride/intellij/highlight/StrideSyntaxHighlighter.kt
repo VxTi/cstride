@@ -51,6 +51,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         return when (tokenType) {
             StrideTypes.MODULE, StrideTypes.PACKAGE, StrideTypes.PUBLIC,
             StrideTypes.FN, StrideTypes.STRUCT, StrideTypes.CONST,
+            StrideTypes.BREAK, StrideTypes.CONTINUE,
             StrideTypes.LET, StrideTypes.EXTERN, StrideTypes.AS,
             StrideTypes.RETURN, StrideTypes.FOR, StrideTypes.WHILE,
             StrideTypes.IF, StrideTypes.ELSE, StrideTypes.KW_TYPE -> KEYWORD_KEYS
