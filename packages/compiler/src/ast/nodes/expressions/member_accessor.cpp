@@ -181,18 +181,11 @@ llvm::Value* AstMemberAccessor::codegen(
         return nullptr;
     }
 
-    auto base_struct_type = cast_type<AstStructType*>(this->_base_type.get());
-
-    // It might be a named type
-    if (!base_struct_type)
-    {
-        base_struct_type = get_context()->get_struct_type(this->_base_type->get_type_name())
-                                         .value_or(nullptr);
-    }
+    auto base_struct_type = get_struct_type(this->_base_type.get());
 
     // Base must be a struct for member access to be valid.
     // This would be okay if there were on members, however, this should never happen
-    if (!base_struct_type)
+    if (!base_struct_type.has_value())
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
@@ -201,8 +194,8 @@ llvm::Value* AstMemberAccessor::codegen(
         );
     }
 
-    IAstType* parent_type = base_struct_type;
-    std::string parent_struct_internalized_name = base_struct_type->get_internalized_name();
+    IAstType* parent_type = base_struct_type.value();
+    std::string parent_struct_internalized_name = base_struct_type.value()->get_internalized_name();
     std::string current_accessor_name = this->_base->get_name();
 
     // With opaque pointers, we need to know if we are operating on an address (L-value)
@@ -211,17 +204,11 @@ llvm::Value* AstMemberAccessor::codegen(
 
     for (const auto& accessor : this->_members)
     {
-        auto parent_struct_type = cast_type<AstStructType*>(parent_type);
-
-        if (!parent_struct_type)
-        {
-            parent_struct_type = get_context()->get_struct_type(parent_type->get_type_name())
-                                         .value_or(nullptr);
-        }
+        auto parent_struct_type_opt = get_struct_type(parent_type);
 
         // In next iteration, it's possible that the previous member produced a non-struct type,
         // hence yielding a nullptr.
-        if (!parent_struct_type)
+        if (!parent_struct_type_opt.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -233,6 +220,8 @@ llvm::Value* AstMemberAccessor::codegen(
                 this->get_source_fragment()
             );
         }
+
+        const auto parent_struct_type = parent_struct_type_opt.value();
 
         parent_struct_internalized_name = parent_struct_type->get_internalized_name();
 

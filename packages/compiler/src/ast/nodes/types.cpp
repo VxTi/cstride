@@ -256,3 +256,24 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         "Cannot compute dominant type for incompatible primitive types",
         references);
 }
+
+std::optional<AstStructType*> stride::ast::get_struct_type(IAstType* type)
+{
+    auto base_struct_type = cast_type<AstStructType*>(type);
+
+    if (base_struct_type)
+    {
+        return base_struct_type;
+    }
+
+    // It might be a named type
+    base_struct_type = type->get_context()->get_struct_type(type->get_type_name())
+                            .value_or(nullptr);
+
+    if (!base_struct_type)
+    {
+        return std::nullopt;
+    }
+
+    return base_struct_type;
+}
