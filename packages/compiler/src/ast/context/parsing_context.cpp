@@ -23,6 +23,8 @@ std::string stride::ast::scope_type_to_str(const ScopeType& scope_type)
         return "block";
     case ScopeType::MODULE:
         return "module";
+    case ScopeType::CONTROL_FLOW:
+        return "control_flow";
     }
     return "unknown";
 }

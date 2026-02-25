@@ -2,6 +2,7 @@
 
 #include "ast/nodes/blocks.h"
 #include "ast/parser.h"
+#include "ast/parsing_context.h"
 
 #include <llvm/IR/Module.h>
 
@@ -19,7 +20,8 @@ void AstWhileLoop::validate()
 std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    VisibilityModifier modifier)
+    [[maybe_unused]] VisibilityModifier modifier
+)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_WHILE);
     const auto header_condition_opt = collect_parenthesized_block(set);
@@ -38,7 +40,8 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
         reference_token.get_source_fragment(),
         context,
         std::move(condition),
-        std::move(body));
+        std::move(body)
+    );
 }
 
 llvm::Value* AstWhileLoop::codegen(
@@ -67,23 +70,27 @@ llvm::Value* AstWhileLoop::codegen(
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
                 "Failed to codegen loop condition",
-                this->get_source_fragment());
+                this->get_source_fragment()
+            );
         }
     }
     else
     {
         // If no condition is provided, default to true (infinite loop)
-        condValue = llvm::ConstantInt::get(module->getContext(),
-                                           llvm::APInt(1, 1));
+        condValue = llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 1));
     }
 
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
 
     builder->SetInsertPoint(loop_body_bb);
+    // Push loop blocks
+    this->get_context()->get_control_flow_blocks().emplace_back(loop_cond_bb, loop_end_bb);
     if (this->get_body())
     {
         this->get_body()->codegen(module, builder);
     }
+    // Pop loop blocks
+    this->get_context()->get_control_flow_blocks().pop_back();
     builder->CreateBr(loop_cond_bb);
 
     builder->SetInsertPoint(loop_end_bb);
@@ -96,5 +103,6 @@ std::string AstWhileLoop::to_string()
     return std::format(
         "WhileLoop(cond: {}, body: {})",
         get_condition() ? get_condition()->to_string() : "<empty>",
-        get_body() ? get_body()->to_string() : "<empty>");
+        get_body() ? get_body()->to_string() : "<empty>"
+    );
 }

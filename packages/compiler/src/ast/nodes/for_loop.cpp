@@ -62,7 +62,7 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     }
 
     auto header_body = header_body_opt.value();
-    const auto for_scope = std::make_shared<ParsingContext>(context, ScopeType::BLOCK);
+    const auto for_scope = std::make_shared<ParsingContext>(context, ScopeType::CONTROL_FLOW);
 
     // We can potentially parse a for (<identifier> .. <identifier> { ... }
 
@@ -120,11 +120,12 @@ llvm::Value* AstForLoop::codegen(
     else
     {
         // If no condition is provided, default to true (infinite loop)
-        condValue = llvm::ConstantInt::get(module->getContext(),
-                                           llvm::APInt(1, 1));
+        condValue = llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 1));
     }
 
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
+
+    this->get_context()->get_control_flow_blocks().emplace_back(loop_cond_bb, loop_end_bb);
 
     builder->SetInsertPoint(loop_body_bb);
     if (this->get_body())

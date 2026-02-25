@@ -32,14 +32,14 @@ llvm::Value* AstBlock::codegen(
         if (auto* block = builder->GetInsertBlock(); block && block->
             getTerminator())
         {
-            if (dynamic_cast<AstFunctionDeclaration*>(child.get()) == nullptr &&
-                dynamic_cast<AstVariableDeclaration*>(child.get()) == nullptr)
+            if (!cast_expr<AstFunctionDeclaration*>(child.get()) &&
+                !cast_expr<AstVariableDeclaration*>(child.get()))
             {
                 continue;
             }
         }
 
-        last_value = child.get()->codegen(module, builder);
+        last_value = child->codegen(module, builder);
     }
 
     return last_value;
@@ -134,7 +134,7 @@ std::unique_ptr<AstBlock> stride::ast::parse_block(
 
     if (!collected_subset.has_value())
     {
-        return nullptr;
+        return AstBlock::create_empty(context, set.peek_next().get_source_fragment());
     }
 
     return parse_sequential(context, collected_subset.value());

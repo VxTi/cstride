@@ -26,6 +26,16 @@ fn main(): int32 {
     printf("Player ID: %d\n", player.id);
     printf("Player Name: %s\n", player.name);
     printf("Player Position: (%d, %d, %d)\n", player.position.x, player.position.y, player.position.z);
+
+    for (let i: int32 = 0; i < 50; i++) {
+        if (i % 2 == 0) {
+            printf("%d is even\n",
+            i);
+        } else {
+            continue;
+        }
+    }
+
     return 0;
 }
  

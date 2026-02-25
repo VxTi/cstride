@@ -17,6 +17,8 @@
     STRUCT='struct'
     CONST='const'
     LET='let'
+    CONTINUE='continue'
+    BREAK='break'
     EXTERN='extern'
     AS='as'
     KW_TYPE='type'
@@ -150,7 +152,12 @@ Statement ::= VariableDeclarationStatement
             | IfStatement
             | ExpressionStatement
             | BlockStatement
+            | ControlFlowStatement
             | SEMICOLON
+
+ControlFlowStatement ::= BreakStatement | ContinueStatement
+BreakStatement ::= BREAK SEMICOLON
+ContinueStatement ::= CONTINUE SEMICOLON
 
 InlineAssignment ::= IDENTIFIER (EQ | PLUS_EQ | MINUS_EQ | ASTERISK_EQ | SLASH_EQ) Expression
 AssignmentStatement ::= InlineAssignment SEMICOLON

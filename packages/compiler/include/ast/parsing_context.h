@@ -2,6 +2,8 @@
 #include "symbols.h"
 #include "ast/nodes/types.h"
 
+#include <llvm/IR/BasicBlock.h>
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -19,7 +21,8 @@ namespace stride::ast
             MODULE,
             FUNCTION,
             CLASS,
-            BLOCK
+            BLOCK,
+            CONTROL_FLOW
         };
 
         enum class SymbolType
@@ -145,6 +148,9 @@ namespace stride::ast
 
         std::vector<std::unique_ptr<definition::IDefinition>> _symbols;
 
+        // Stack of loop blocks for break and continue: pair<continue_block, break_block>
+        std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> _loop_blocks;
+
     public:
         explicit ParsingContext(
             std::string context_name,
@@ -173,6 +179,12 @@ namespace stride::ast
         {
             return this->_scope_type;
         }
+
+        std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> get_control_flow_blocks() const
+        {
+            return this->_loop_blocks;
+        }
+
 
         [[nodiscard]]
         bool is_global_scope() const
