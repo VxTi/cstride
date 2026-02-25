@@ -87,7 +87,7 @@ TEST(UnaryErrors, InvalidTypeNegate)
     // Assuming we can't negate a struct or something non-numeric
     assert_throws_message(
         R"(
-        struct Point { x: int32; y: int32; }
+        type Point = { x: int32; y: int32; };
         const p = Point::{ x: 1, y: 2 };
         const a = -p;
     )",

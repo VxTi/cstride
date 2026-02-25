@@ -59,7 +59,7 @@ std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
 
         for (const auto& arg : fn_call->get_type()->get_parameter_types())
         {
-            arg_types.push_back(arg->get_formatted_name());
+            arg_types.push_back(arg->get_type_name());
         }
 
         if (arg_types.empty())
@@ -82,7 +82,7 @@ std::string AstFunctionCall::format_function_name() const
     {
         const auto type = infer_expression_type(arg.get());
 
-        arg_types.push_back(type->get_formatted_name());
+        arg_types.push_back(type->get_type_name());
     }
     if (arg_types.empty())
     {
@@ -145,7 +145,7 @@ llvm::Value* AstFunctionCall::codegen(
                     );
 
                     if (const auto expected_type = fn_type->get_parameter_types()[i].get();
-                        arg_type->get_formatted_name() != expected_type->get_formatted_name())
+                        arg_type->get_type_name() != expected_type->get_type_name())
                     {
                         throw parsing_error(
                             ErrorType::TYPE_ERROR,
@@ -153,14 +153,14 @@ llvm::Value* AstFunctionCall::codegen(
                                 "Type mismatch for argument {} in anonymous function call '{}': expected type '{}', got '{}'",
                                 i + 1,
                                 this->get_function_name(),
-                                expected_type->get_formatted_name(),
-                                arg_type->get_formatted_name()
+                                expected_type->get_type_name(),
+                                arg_type->get_type_name()
                             ),
                             {
                                 ErrorSourceReference(
                                     std::format(
                                         "Expected type: {}",
-                                        expected_type->get_formatted_name()
+                                        expected_type->get_type_name()
                                     ),
                                     arg_type->get_source_fragment()
                                 )

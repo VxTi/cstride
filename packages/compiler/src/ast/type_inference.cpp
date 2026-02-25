@@ -252,89 +252,126 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(const AstArray* a
     return infer_expression_type(array->get_elements().front().get());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMemberAccessor* expr)
+std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
+    const AstMemberAccessor* member_accessor_expr)
 {
-    // Resolve the Base Identifier (e.g., 'a' in 'a.b.c')
-    const auto base_iden = cast_expr<AstIdentifier*>(expr->get_base());
+    // Base must be an identifier, e.g., <identifier>.<member1>...
+    const auto base_iden = cast_expr<AstIdentifier*>(member_accessor_expr->get_base());
     if (!base_iden)
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Member access base must be an identifier",
-            expr->get_source_fragment());
+            member_accessor_expr->get_source_fragment());
     }
 
-    // Look up the base variable in the symbol table/context
-    const auto variable_definition = expr->get_context()->lookup_variable(base_iden->get_name(), true);
+    // ---- Look up the base variable in the symbol table/context
+    const auto variable_definition = member_accessor_expr->get_context()->lookup_variable(
+        base_iden->get_name(),
+        true);
+
     if (!variable_definition)
     {
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
             std::format("Variable '{}' not found in scope",
                         base_iden->get_name()),
-            expr->get_source_fragment());
+            member_accessor_expr->get_source_fragment());
     }
 
-    // Start with the type of the base identifier - This will be a struct type
-    auto current_type = variable_definition->get_type();
+    // ---- Ensure parent (base) is a struct type
+    IAstType* parent_type = nullptr;
+
+    if (const auto struct_ty = cast_type<AstStructType*>(variable_definition->get_type()))
+    {
+        parent_type = struct_ty;
+    }
+    else if (const auto named_ty = cast_type<AstNamedType*>(variable_definition->get_type()))
+    {
+        // Lookup struct type definition for named type reference
+        const auto struct_def =
+            member_accessor_expr->get_context()->get_struct_type(named_ty->get_name());
+        parent_type = cast_type<AstStructType*>(struct_def.value_or(nullptr));
+    }
+
+    if (!parent_type)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Struct type '{}' not found in this scope",
+                variable_definition->get_type()->get_type_name()),
+            member_accessor_expr->get_source_fragment());
+    }
 
     // Iterate through all member segments (e.g., .b, .c)
-    for (const auto& members = expr->get_members();
+    for (const auto& members = member_accessor_expr->get_members();
          const auto member : members)
     {
-        // Ensure the current 'node' we are looking inside is actually a struct
-        const auto struct_type = cast_type<AstNamedType*>(current_type);
+        auto struct_type = cast_type<AstStructType*>(parent_type);
+
+        if (!struct_type)
+        {
+            struct_type = member_accessor_expr->get_context()->get_struct_type(
+                                                    parent_type->get_type_name())
+                                               .value_or(nullptr);
+        }
+
+        // It's possible that the previous iteration yielded a non-struct type, and thus being nullptr.
         if (!struct_type)
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Cannot access member of non-struct type '{}'",
-                    current_type->get_formatted_name()),
-                expr->get_source_fragment());
+                    "Struct type '{}' not found in this scope",
+                    parent_type->get_type_name()),
+                member_accessor_expr->get_source_fragment());
         }
 
-        // Get the struct type definition from the context
-        auto struct_def = expr->get_context()->get_struct_type(struct_type->get_formatted_name());
+        // Resolve member in parent struct
+        // For now, members are identifiers.
+        const auto member_type = struct_type->get_member_field_type(member->get_name());
 
-        if (!struct_def.has_value())
+        if (!member_type.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
-                std::format("Undefined struct '{}'", struct_type->get_name()),
-                expr->get_source_fragment());
+                std::format(
+                    "Field '{}' not found in struct",
+                    member->get_name()),
+                member_accessor_expr->get_source_fragment());
         }
 
         // Resolve the member identifier (e.g., 'b')
+        // For now, members are already identifiers, though this might change in the future.
+
         const auto segment_iden = cast_expr<AstIdentifier*>(member);
         if (!segment_iden)
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 "Member accessor must be an identifier",
-                expr->get_source_fragment());
+                member_accessor_expr->get_source_fragment());
         }
 
-        const auto field_type = struct_def.value()->get_member_field_type(
-            segment_iden->get_name());
+        const auto field_type = struct_type->get_member_field_type(segment_iden->get_name());
 
         if (!field_type.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Variable '{}' has no member named '{}'",
-                    base_iden->get_name(),
+                    "Field '{}' not found in struct",
                     segment_iden->get_name()),
-                expr->get_source_fragment());
+                member_accessor_expr->get_source_fragment());
         }
 
         // Update current_type for the next iteration (or for the final return)
-        current_type = field_type.value();
+        parent_type = field_type.value();
     }
 
     // Return the final inferred type
-    return std::unique_ptr(current_type->clone());
+    return std::unique_ptr(parent_type->clone());
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(

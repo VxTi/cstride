@@ -112,8 +112,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
     );
 }
 
-std::optional<IAstType*> AstStructType::get_member_field_type(
-    const std::string& field_name) const
+std::optional<IAstType*> AstStructType::get_member_field_type(const std::string& field_name) const
 {
     for (const auto& [name, type] : this->_members)
     {
@@ -165,7 +164,7 @@ std::string AstStructType::get_internalized_name() const
         }
         else
         {
-            internalized_name += "_" + type->get_formatted_name();
+            internalized_name += "_" + type->get_type_name();
         }
     }
     return std::format("struct${:x}", std::hash<std::string>{}(internalized_name));
@@ -211,7 +210,7 @@ void AstStructType::resolve_forward_references(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Unknown internal type '{}' for struct member '{}'",
-                    member_type->get_formatted_name(),
+                    member_type->get_type_name(),
                     member_name
                 ),
                 member_type->get_source_fragment()

@@ -33,7 +33,6 @@ class StrideRunConfigurationProducer : LazyRunConfigurationProducer<StrideRunCon
         val basePath = context.project.basePath ?: return false
 
         configuration.scriptPath = file.path
-        configuration.compilerPath = "$basePath/packages/compiler/cmake-build-debug/cstride"
         configuration.name = "Run ${file.name}"
 
         return true

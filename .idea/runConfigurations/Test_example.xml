@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Test example" type="StrideRunConfiguration" factoryName="StrideConfigurationFactory" scriptPath="$PROJECT_DIR$/example.sr">
+    <method v="2" />
+  </configuration>
+</component>

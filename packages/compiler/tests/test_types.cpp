@@ -18,10 +18,10 @@ TEST(TypeErrors, StructTypeMismatch)
 {
     assert_throws_message(
         R"(
-        struct Point {
+        type Point = {
             x: int32;
             y: int32;
-        }
+        };
 
         const a: Point = Point::{ x: 1.0D, y: 1 };
     )",
@@ -32,10 +32,10 @@ TEST(TypeErrors, StructTypeMemberCountMismatch)
 {
     assert_throws_message(
         R"(
-        struct Point {
+        type Point = {
             x: int32;
             y: int32;
-        }
+        };
 
         const a: Point = Point::{ x: 1, y: 1, z: 2 };
     )",
@@ -43,10 +43,10 @@ TEST(TypeErrors, StructTypeMemberCountMismatch)
 
     assert_throws_message(
         R"(
-        struct Point {
+        type Point = {
             x: int32;
             y: int32;
-        }
+        };
 
         const a: Point = Point::{ x: 1 };
     )",
@@ -57,16 +57,16 @@ TEST(TypeErrors, StructMemberTypeMismatch)
 {
     assert_throws_message(
         R"(
-        struct Point {
+        type Point = {
             x: int32;
             y: int32;
-        }
+        };
 
-        struct Color {
+        type Color = {
             r: int32;
             g: int32;
             b: int32;
-        }
+        };
 
         const a: Point = Color::{ r: 1, g: 2, b: 3 };
     )",
@@ -77,12 +77,12 @@ TEST(TypeErrors, StructReferenceTypeMismatch)
 {
     assert_throws_message(
         R"(
-        struct Point {
+        type Point = {
             x: int32;
             y: int32;
-        }
+        };
 
-        struct Vec = Point;
+        type Vec = Point;
 
         const a: Point = Vec::{ x: 1, y: 2 };
     )",
@@ -93,10 +93,10 @@ TEST(TypeErrors, StructMemberOrderMismatch)
 {
     assert_throws_message(
         R"(
-        struct Point {
+        type Point = {
             x: int32;
             y: int32;
-        }
+        };
 
         const a: Point = Point::{ y: 1, x: 1 };
     )",
@@ -107,10 +107,10 @@ TEST(TypeErrors, StructMemberUnknownField)
 {
     assert_throws_message(
         R"(
-        struct Point {
+        type Point = {
             x: int32;
             y: int32;
-        }
+        };
 
         const a: Point = Point::{ x: 1, unknown: 123 };
     )",
@@ -194,9 +194,9 @@ TEST(TypeReferences, DeepFunctionReferential)
 TEST(TypeReferences, StructTypeReference)
 {
     auto [block, context] = parse_code_with_context(R"(
-    struct Point { x: int32; y: int32; }
+    type Point = { x: int32; y: int32; };
 
-    struct Vec = Point;
+    type Vec = Point;
     )");
 
     const auto symbol = context->lookup_symbol("Vec");
@@ -205,9 +205,9 @@ TEST(TypeReferences, StructTypeReference)
     EXPECT_NE(symbol, nullptr) << "Expected 'Vec' to be found in the symbol table";
     EXPECT_NE(field, nullptr) <<
  "Expected 'Vec' to be a TypeDef, but it was not found or was of a different type";
-    EXPECT_EQ(field->get_reference_struct()->name, "Point")
+    EXPECT_EQ(field->get_type()->get_type_name(), "Point")
     << std::format("Expected 'Vec' to have type 'Point', but got '{}'",
-                   field->get_reference_struct()->name
+    field->get_type()->get_type_name()
         );
 }
 

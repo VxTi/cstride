@@ -50,7 +50,7 @@ bool AstNamedType::equals(IAstType& other)
 {
     if (auto* other_named = cast_type<AstNamedType*>(&other))
     {
-        return this->get_formatted_name() == other_named->get_formatted_name();
+        return this->get_type_name() == other_named->get_type_name();
     }
 
     // The other type might be a primitive "NIL" type,
