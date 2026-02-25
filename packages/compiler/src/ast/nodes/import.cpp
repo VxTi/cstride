@@ -96,12 +96,12 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set)
 {
-    if (context->get_current_scope_type() != definition::ScopeType::GLOBAL)
+    if (context->get_context_type() != definition::ContextType::GLOBAL)
     {
         set.throw_error(
             std::format(
                 "Import statements are only allowed in global scope, but was found in {} scope",
-                scope_type_to_str(context->get_current_scope_type())));
+                scope_type_to_str(context->get_context_type())));
     }
     const auto reference_token = set.expect(TokenType::KEYWORD_IMPORT);
     // With the guard clause, this will always be the case.

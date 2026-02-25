@@ -9,21 +9,19 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::string stride::ast::scope_type_to_str(const ScopeType& scope_type)
+std::string stride::ast::scope_type_to_str(const ContextType& scope_type)
 {
     switch (scope_type)
     {
-    case ScopeType::GLOBAL:
+    case ContextType::GLOBAL:
         return "global";
-    case ScopeType::FUNCTION:
+    case ContextType::FUNCTION:
         return "function";
-    case ScopeType::CLASS:
+    case ContextType::CLASS:
         return "class";
-    case ScopeType::BLOCK:
-        return "block";
-    case ScopeType::MODULE:
+    case ContextType::MODULE:
         return "module";
-    case ScopeType::CONTROL_FLOW:
+    case ContextType::CONTROL_FLOW:
         return "control_flow";
     }
     return "unknown";

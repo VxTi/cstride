@@ -15,8 +15,8 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
 )
 {
     // We can just do a quick check here, as we don't know yet whether in what context it's used.
-    if (context->get_current_scope_type() == ScopeType::GLOBAL ||
-        context->get_current_scope_type() == ScopeType::MODULE)
+    if (context->get_context_type() == ContextType::GLOBAL ||
+        context->get_context_type() == ContextType::MODULE)
     {
         set.throw_error(
             "Return statements are not allowed outside of functions");
@@ -57,12 +57,12 @@ void AstReturnStatement::validate()
 {
     auto context = this->get_context().get();
 
-    while (context->get_current_scope_type() != ScopeType::FUNCTION &&
+    while (context->get_context_type() != ContextType::FUNCTION &&
         context->get_parent_registry() != nullptr)
     {
         context = context->get_parent_registry();
     }
-    if (context->get_current_scope_type() != ScopeType::FUNCTION)
+    if (context->get_context_type() != ContextType::FUNCTION)
     {
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,

@@ -4,6 +4,13 @@ type Point = {
     z: int32;
 };
 
+enum Test {
+    LEFT: 123,
+    RIGHT: 456,
+    BOTTOM: 246,
+    TOP: 6543,
+}
+
 type Vec3 = Point;
 
 type Entity = {
@@ -29,10 +36,13 @@ fn main(): int32 {
 
     for (let i: int32 = 0; i < 50; i++) {
         if (i % 2 == 0) {
-            printf("%d is even\n",
-            i);
+            printf("%d is even\n", i);
         } else {
             continue;
+        }
+
+        if (i == 20) {
+            break;
         }
     }
 

@@ -8,7 +8,7 @@
 #include "ast/nodes/enumerables.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/function_declaration.h"
-#include "ast/nodes/if_statement.h"
+#include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/module.h"
 #include "ast/nodes/package.h"

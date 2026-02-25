@@ -29,8 +29,8 @@ llvm::Value* AstBlock::codegen(
     {
         // Don't generate unreachable code, unless it's a function declaration
         // (which defines a new code block / function) or a global variable declaration.
-        if (auto* block = builder->GetInsertBlock(); block && block->
-            getTerminator())
+        if (auto* block = builder->GetInsertBlock();
+            block && block->getTerminator())
         {
             if (!cast_expr<AstFunctionDeclaration*>(child.get()) &&
                 !cast_expr<AstVariableDeclaration*>(child.get()))
@@ -128,7 +128,8 @@ std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
 
 std::unique_ptr<AstBlock> stride::ast::parse_block(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     auto collected_subset = collect_block(set);
 
