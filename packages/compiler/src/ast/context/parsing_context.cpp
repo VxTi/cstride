@@ -90,9 +90,8 @@ const FieldDef* ParsingContext::get_variable_def(
         if (const auto* field_definition = dynamic_cast<const FieldDef*>(
             symbol_def.get()))
         {
-            if (field_definition->get_internal_symbol_name() == variable_name ||
-                (use_raw_name && field_definition->get_symbol().name ==
-                    variable_name))
+            if (field_definition->get_internal_symbol_name() == variable_name
+                || (use_raw_name && field_definition->get_symbol().name == variable_name))
             {
                 return field_definition;
             }
@@ -199,7 +198,7 @@ IDefinition* ParsingContext::fuzzy_find(const std::string& symbol_name) const
             // Heuristic: If the edit distance is EXACTLY the length difference,
             // it implies one string is a substring of the other (no internal typos).
             // Example: "factorial_recursive" vs "factorial" -> dist 10, len_diff 10.
-            const bool is_substring = (dist == len_diff);
+            const bool is_substring = dist == len_diff;
 
             // If it is a substring, we treat the distance as 0 (or very low)
             // to ensure it passes the threshold.

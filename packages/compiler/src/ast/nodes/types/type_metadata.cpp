@@ -24,7 +24,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
         offset += 2;
         set.skip(2);
         base_type = std::make_unique<AstArrayType>(
-            stride::SourceFragment(
+            SourceFragment(
                 base_type->get_source(),
                 src_pos.offset,
                 src_pos.length + offset),

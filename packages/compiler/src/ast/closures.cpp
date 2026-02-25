@@ -23,7 +23,7 @@ namespace stride::ast::closures
         }
 
         // Try captured variable form
-        const std::string capture_name = "__capture_" + internal_name;
+        const std::string capture_name = format_captured_variable_name_internal(internal_name);
         return symbol_table->lookup(capture_name);
     }
 
@@ -37,13 +37,12 @@ namespace stride::ast::closures
             return nullptr;
         }
 
-        const llvm::ValueSymbolTable* symbol_table = function->getValueSymbolTable();
-
         // Search for a variable matching the pattern: base_name + "." + digit(s)
         // e.g., "factor.0", "factor.1", "factor.2", etc.
-        for (const auto& entry : *symbol_table)
+        for (const llvm::ValueSymbolTable* symbol_table = function->getValueSymbolTable();
+             const auto& entry : *symbol_table)
         {
-            const std::string name = std::string(entry.first());
+            const auto name = std::string(entry.first());
 
             // Check if name starts with base_name followed by a dot
             if (name.starts_with(base_name + "."))
@@ -52,7 +51,7 @@ namespace stride::ast::closures
             }
 
             // Also check for captured variable form: __capture_base_name.N
-            if (name.starts_with("__capture_" + base_name + "."))
+            if (name.starts_with(format_captured_variable_name_internal(base_name)))
             {
                 return entry.second;
             }
@@ -70,7 +69,8 @@ namespace stride::ast::closures
         {
             if (llvm::Function* function = block->getParent())
             {
-                if (llvm::Value* captured_val = function->getValueSymbolTable()->lookup(capture_name))
+                if (llvm::Value* captured_val = function->getValueSymbolTable()->lookup(
+                    capture_name))
                 {
                     if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
                     {
@@ -146,7 +146,6 @@ namespace stride::ast::closures
     }
 
     std::vector<llvm::Value*> generate_capture_arguments(
-        llvm::Module* module,
         llvm::IRBuilder<>* builder,
         llvm::Function* lambda_fn,
         const size_t num_declared_params
@@ -167,9 +166,9 @@ namespace stride::ast::closures
         {
             // Extract the original variable name from the parameter name
             // Parameter is named like "factor.0.capture"
-            std::string param_name = std::string(arg_it->getName());
+            auto param_name = std::string(arg_it->getName());
             size_t dot_pos = param_name.find('.');
-            std::string var_name = (dot_pos != std::string::npos)
+            std::string var_name = dot_pos != std::string::npos
                 ? param_name.substr(0, dot_pos)
                 : param_name;
 
@@ -182,16 +181,17 @@ namespace stride::ast::closures
 
                 // First, check if we're in a closure function ourselves and this variable
                 // was passed to us as a capture parameter
-                const std::string capture_param_name = var_name + ".capture";
+                const std::string capture_param_name = format_captured_variable_name(var_name);;
                 for (auto& arg : current_fn->args())
                 {
-                    const std::string arg_name = std::string(arg.getName());
-                    if (arg_name == capture_param_name ||
-                        (arg_name.starts_with(var_name + ".") && arg_name.ends_with(".capture")))
+                    if (const auto arg_name = std::string(arg.getName());
+                        arg_name == capture_param_name || arg_name.starts_with(capture_param_name))
                     {
                         // Found it as a parameter - load it from the __capture_ alloca
-                        const std::string capture_alloca_name = "__capture_" + var_name;
-                        if (llvm::Value* capture_alloca = current_fn->getValueSymbolTable()->lookup(capture_alloca_name))
+                        const std::string capture_alloca_name =
+                            format_captured_variable_name_internal(var_name);
+                        if (llvm::Value* capture_alloca = current_fn->getValueSymbolTable()->lookup(
+                            capture_alloca_name))
                         {
                             if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(capture_alloca))
                             {
@@ -252,8 +252,10 @@ namespace stride::ast::closures
         if (!malloc_fn)
         {
             llvm::FunctionType* malloc_type = llvm::FunctionType::get(
-                llvm::PointerType::getUnqual(module->getContext()),  // returns void*
-                {llvm::Type::getInt64Ty(module->getContext())},       // takes size_t
+                llvm::PointerType::getUnqual(module->getContext()),
+                // returns void*
+                { llvm::Type::getInt64Ty(module->getContext()) },
+                // takes size_t
                 false
             );
             malloc_fn = llvm::Function::Create(
@@ -275,7 +277,7 @@ namespace stride::ast::closures
         // Allocate closure structure on heap
         llvm::Value* closure_ptr = builder->CreateCall(
             malloc_fn,
-            {llvm::ConstantInt::get(llvm::Type::getInt64Ty(module->getContext()), total_size)}
+            { llvm::ConstantInt::get(llvm::Type::getInt64Ty(module->getContext()), total_size) }
         );
 
         // Cast to appropriate pointer type for storing function pointer
@@ -289,9 +291,8 @@ namespace stride::ast::closures
 
         // Store each captured value after the function pointer
         uint64_t offset = module->getDataLayout().getPointerSize();
-        for (size_t i = 0; i < captured_values.size(); ++i)
+        for (const auto capture_val : captured_values)
         {
-            llvm::Value* capture_val = captured_values[i];
             llvm::Type* capture_type = capture_val->getType();
 
             // Calculate pointer to this capture slot
@@ -332,12 +333,11 @@ namespace stride::ast::closures
         }
 
         // Get the number of capture parameters from the lambda function
-        // Capture parameters are those ending with ".capture"
         std::vector<llvm::Type*> capture_types;
         for (auto& arg : lambda_fn->args())
         {
-            const std::string arg_name = std::string(arg.getName());
-            if (arg_name.ends_with(".capture"))
+            if (const auto arg_name = std::string(arg.getName());
+                arg_name == format_captured_variable_name(arg_name))
             {
                 capture_types.push_back(arg.getType());
             }

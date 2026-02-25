@@ -1,21 +1,19 @@
+#include "formatting.h"
+#include "ast/closures.h"
+#include "ast/optionals.h"
+#include "ast/parsing_context.h"
+#include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
-#include "ast/optionals.h"
-#include "ast/symbols.h"
-#include "ast/closures.h"
-#include "formatting.h"
-#include "ast/parsing_context.h"
 
 #include <format>
-#include <iostream>
+#include <sstream>
+#include <vector>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
-#include <llvm/IR/ValueSymbolTable.h>
-#include <sstream>
-#include <vector>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -279,7 +277,6 @@ llvm::Value* AstFunctionCall::codegen(
                             {
                                 // Try the old method: look up captures in the current scope
                                 auto capture_args_old = closures::generate_capture_arguments(
-                                    module,
                                     builder,
                                     lambda_fn,
                                     fn_type->get_parameter_types().size()

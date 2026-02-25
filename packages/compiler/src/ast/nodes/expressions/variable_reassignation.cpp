@@ -1,8 +1,7 @@
-#include "ast/nodes/expression.h"
 #include "ast/optionals.h"
 #include "ast/parsing_context.h"
+#include "ast/nodes/expression.h"
 
-#include <iostream>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 
@@ -38,7 +37,7 @@ void AstVariableReassignment::validate()
     const auto expression_type = infer_expression_type(
         this->get_value());
 
-    if (!identifier_def->get_type()->equals(*expression_type.get()))
+    if (!identifier_def->get_type()->equals(*expression_type))
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
@@ -46,7 +45,7 @@ void AstVariableReassignment::validate()
                 "Type mismatch when reassigning variable '{}', expected type '{}', got type '{}'",
                 this->get_variable_name(),
                 identifier_def->get_type()->to_string(),
-                expression_type.get()->to_string()
+                expression_type->to_string()
             ),
             this->get_source_fragment()
         );

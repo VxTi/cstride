@@ -3,8 +3,8 @@
 #include "ast/nodes/expression.h"
 
 #include <iostream>
-#include <llvm/IR/Module.h>
 #include <ranges>
+#include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 
@@ -101,7 +101,7 @@ std::string AstStructInitializer::to_string()
 
 void AstStructInitializer::validate()
 {
-    auto definition = this->get_context()->get_struct_type(this->_struct_name);
+    const auto definition = this->get_context()->get_struct_type(this->_struct_name);
     // Check whether the struct we're trying to assign actually exists
     if (!definition.has_value())
     {
@@ -221,7 +221,7 @@ llvm::Value* AstStructInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    auto struct_def_opt = this->get_context()->get_struct_type(this->_struct_name);
+    const auto struct_def_opt = this->get_context()->get_struct_type(this->_struct_name);
 
     if (!struct_def_opt.has_value())
     {

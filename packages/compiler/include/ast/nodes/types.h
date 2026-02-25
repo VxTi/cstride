@@ -219,7 +219,8 @@ namespace stride::ast
         }
     };
 
-    class AstNamedType : public IAstType
+    class AstNamedType
+        : public IAstType
     {
         std::string _name;
 
@@ -415,6 +416,7 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
+        [[nodiscard]]
         std::unique_ptr<IAstType> clone() const override;
 
         // Struct registration is done in the `resolve_forward_references` pass
@@ -424,10 +426,12 @@ namespace stride::ast
             return nullptr;
         }
 
-        void resolve_forward_references(const ParsingContext* context,
-                                        llvm::Module* module,
-                                        llvm::IRBuilder<>* builder) override;
+        void resolve_forward_references(
+            const ParsingContext* context,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder) override;
 
+        [[nodiscard]]
         std::string get_internalized_name() const;
     };
 

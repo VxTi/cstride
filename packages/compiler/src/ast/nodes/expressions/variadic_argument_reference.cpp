@@ -1,5 +1,5 @@
 #include "ast/nodes/expression.h"
-#include <llvm/IR/Intrinsics.h>
+
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;

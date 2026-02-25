@@ -1,6 +1,6 @@
 #include "ast/casting.h"
-#include "ast/nodes/expression.h"
 #include "ast/optionals.h"
+#include "ast/nodes/expression.h"
 
 #include <llvm/IR/Module.h>
 

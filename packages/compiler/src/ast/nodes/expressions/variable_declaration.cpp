@@ -1,13 +1,13 @@
 #include "ast/flags.h"
 #include "ast/modifiers.h"
+#include "ast/optionals.h"
+#include "ast/parsing_context.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
-#include "ast/optionals.h"
-#include "ast/parsing_context.h"
 
-#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
@@ -347,7 +347,7 @@ void global_var_declaration_codegen(
     );
 
     // Create a temporary builder for the constructor to avoid state pollution
-    llvm::IRBuilder<> tempBuilder(module->getContext());
+    llvm::IRBuilder tempBuilder(module->getContext());
     tempBuilder.SetInsertPoint(entry);
 
     // Re-generate the initial value inside the constructor function
@@ -473,7 +473,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     // Create the Alloca in the Entry block to ensure it dominates all uses
     // and name it so Identifier lookups can find it.
     llvm::Function* function = ir_builder->GetInsertBlock()->getParent();
-    llvm::IRBuilder<> entry_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
+    llvm::IRBuilder entry_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
 
     llvm::AllocaInst* alloca = entry_builder.CreateAlloca(
         variable_ty,

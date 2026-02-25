@@ -84,7 +84,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
 
 std::unique_ptr<IAstType> AstFunctionType::clone() const
 {
-    std::vector<std::unique_ptr<IAstType>> parameters_clone = {};
+    std::vector<std::unique_ptr<IAstType>> parameters_clone;
+    parameters_clone.reserve(this->_parameters.size());
     for (const auto& p : this->_parameters)
     {
         parameters_clone.push_back(p->clone());
@@ -126,6 +127,8 @@ bool AstFunctionType::equals(IAstType& other)
 std::string AstFunctionType::to_string()
 {
     std::vector<std::string> param_strings;
+    param_strings.reserve(this->_parameters.size());
+
     for (const auto& p : this->_parameters)
         param_strings.push_back(p->to_string());
 

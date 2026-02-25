@@ -1,6 +1,6 @@
-#include "ast/nodes/expression.h"
 #include "formatting.h"
 #include "ast/parsing_context.h"
+#include "ast/nodes/expression.h"
 
 #include <llvm/IR/Module.h>
 
@@ -127,7 +127,7 @@ llvm::Value* AstMemberAccessor::codegen_global_accessor(
         if (!struct_def_opt.has_value())
             return nullptr;
 
-        auto struct_def = struct_def_opt.value();
+        const auto struct_def = struct_def_opt.value();
 
         const auto member_index = struct_def->get_member_field_index(accessor->get_name());
         if (!member_index.has_value())
@@ -181,7 +181,7 @@ llvm::Value* AstMemberAccessor::codegen(
         return nullptr;
     }
 
-    auto base_struct_type = get_struct_type_from_type(this->_base_type.get());
+    const auto base_struct_type = get_struct_type_from_type(this->_base_type.get());
 
     // Base must be a struct for member access to be valid.
     // This would be okay if there were on members, however, this should never happen
@@ -322,6 +322,7 @@ llvm::Value* AstMemberAccessor::codegen(
 std::string AstMemberAccessor::to_string()
 {
     std::vector<std::string> member_names;
+    member_names.reserve(this->_members.size());
 
     for (const auto& member : this->_members)
     {

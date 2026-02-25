@@ -3,8 +3,8 @@
 #include "ast/parser.h"
 #include "stl/stl_functions.h"
 
-#include <ast/symbols.h>
 #include <iostream>
+#include <ast/symbols.h>
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
@@ -16,8 +16,8 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Passes/OptimizationLevel.h>
 #include <llvm/Passes/PassBuilder.h>
-#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/TargetSelect.h>
 
 using namespace stride;
 
@@ -201,11 +201,11 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     module->setDataLayout(jit->getDataLayout());
     module->setTargetTriple(triple);
 
-    llvm::IRBuilder<> builder(*context);
+    llvm::IRBuilder builder(*context);
 
     // Predefine internal functions (printf, system time, ...)
-    stride::stl::llvm_jit_define_functions(jit.get());
-    stride::stl::llvm_insert_function_definitions(module.get());
+    stl::llvm_jit_define_functions(jit.get());
+    stl::llvm_insert_function_definitions(module.get());
 
     this->resolve_forward_references(module.get(), &builder);
     this->validate_ast_nodes();

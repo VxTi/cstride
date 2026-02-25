@@ -60,7 +60,7 @@ llvm::Type* stride::ast::type_to_llvm_type(
     if (type->is_optional())
     {
         const auto inner = type->clone();
-        // Remove the optional flag, so that it doesn't recursively enter this same scope
+        // Remove the optional flag so that it doesn't recursively enter this same scope
         inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
         llvm::Type* inner_type =
             type_to_llvm_type(inner.get(), module);

@@ -1,18 +1,19 @@
 #include "ast/nodes/function_declaration.h"
 
-#include "ast/closures.h"
 #include "ast/casting.h"
+#include "ast/closures.h"
 #include "ast/modifiers.h"
 #include "ast/parsing_context.h"
+#include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/for_loop.h"
-#include "ast/nodes/conditional_statement.h"
-#include "ast/nodes/while_loop.h"
 #include "ast/nodes/return_statement.h"
-#include "ast/symbols.h"
+#include "ast/nodes/while_loop.h"
 
 #include <iostream>
+#include <ranges>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
@@ -229,13 +230,13 @@ llvm::Value* IAstFunction::codegen(
     {
         if (arg_it != function->arg_end())
         {
-            arg_it->setName(capture.internal_name + ".capture");
+            arg_it->setName(closures::format_captured_variable_name(capture.internal_name));
 
             // Create alloca with __capture_ prefix so identifier lookup can find it
             llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
                 arg_it->getType(),
                 nullptr,
-                "__capture_" + capture.internal_name
+                closures::format_captured_variable_name_internal(capture.internal_name)
             );
 
             builder->CreateStore(arg_it, alloca);
@@ -335,7 +336,9 @@ llvm::Value* IAstFunction::codegen(
             if (const auto block = builder->GetInsertBlock())
             {
                 llvm::Function* current_fn = block->getParent();
-                llvm::Value* captured_val = closures::lookup_variable_or_capture(current_fn, capture.internal_name);
+                llvm::Value* captured_val = closures::lookup_variable_or_capture(
+                    current_fn,
+                    capture.internal_name);
 
                 if (!captured_val)
                 {
@@ -510,12 +513,9 @@ void collect_free_variables(
 
     auto capture_variable = [&](const std::string& name)
     {
-        // First check if it's a local variable or parameter in the lambda itself
-        // Use get_variable_def instead of lookup_variable to avoid checking parent contexts
-        const auto local_symbol = lambda_context->get_variable_def(name, true);
-
-        if (local_symbol)
+        if (lambda_context->get_variable_def(name, true))
         {
+            // No need to collect any variables; they're readily available
             return;
         }
 
@@ -558,24 +558,25 @@ void collect_free_variables(
 
         // Check if this nested lambda already has captures collected
         // If it does, we just need to propagate them upward
-        const auto& existing_captures = callable->get_captured_variables();
 
-        if (existing_captures.empty() && callable->get_body())
+        if (const auto& existing_captures = callable->get_captured_variables();
+            existing_captures.empty() && callable->get_body())
         {
             // Captures haven't been collected yet, so do it now
             std::vector<Symbol> nested_captures;
 
             // Recursively collect free variables in the nested lambda's body
             // The nested lambda's context is its own context, and its outer context is our lambda_context
-            collect_free_variables(callable->get_body(),
-                                   callable->get_context(),
-                                   lambda_context,
-                                   nested_captures);
+            collect_free_variables(
+                callable->get_body(),
+                callable->get_context(),
+                lambda_context,
+                nested_captures);
 
             // Now register the nested lambda's captures
             for (const auto& nested_capture : nested_captures)
             {
-                const_cast<IAstFunction*>(callable)->add_captured_variable(nested_capture);
+                callable->add_captured_variable(nested_capture);
 
                 // Define the capture in the nested lambda's context so identifier lookup works
                 if (const auto var_def = lambda_context->lookup_variable(nested_capture.name, true))
@@ -715,9 +716,9 @@ void collect_free_variables(
     // Handle struct initializers
     if (const auto* struct_init = dynamic_cast<AstStructInitializer*>(node))
     {
-        for (const auto& pair : struct_init->get_initializers())
+        for (const auto& val : struct_init->get_initializers() | std::views::values)
         {
-            collect_free_variables(pair.second.get(), lambda_context, outer_context, captures);
+            collect_free_variables(val.get(), lambda_context, outer_context, captures);
         }
         return;
     }
@@ -730,7 +731,7 @@ void collect_free_variables(
     }
 
     // Handle blocks (lambda bodies, function bodies, etc.)
-    if (auto* block = dynamic_cast<AstBlock*>(node))
+    if (const auto* block = dynamic_cast<AstBlock*>(node))
     {
         for (const auto& child : block->children())
         {
@@ -742,14 +743,13 @@ void collect_free_variables(
     // Generic container handling (if statements, loops, etc.) - this should be last
     if (auto* container = dynamic_cast<IAstContainer*>(node))
     {
-        if (auto* body = container->get_body())
+        if (const auto* body = container->get_body())
         {
             for (const auto& child : body->children())
             {
                 collect_free_variables(child.get(), lambda_context, outer_context, captures);
             }
         }
-        return;
     }
 }
 
@@ -1018,7 +1018,7 @@ void stride::ast::parse_standalone_fn_param(
             return p->get_name() == param_name;
         }) != parameters.end())
     {
-        set.throw_error(
+        TokenSet::throw_error(
             reference_token,
             ErrorType::SEMANTIC_ERROR,
             std::format(

@@ -1,7 +1,7 @@
 #include "ast/nodes/blocks.h"
 
-#include "ast/nodes/function_declaration.h"
 #include "ast/parser.h"
+#include "ast/nodes/function_declaration.h"
 
 #include <iostream>
 #include <sstream>
@@ -73,7 +73,7 @@ std::optional<TokenSet> stride::ast::collect_until_token(
                 return std::nullopt;
             }
 
-            return set.create_subset(initial_offset, relative_offset);
+            return set.create_subset(static_cast<int64_t>(initial_offset), relative_offset);
         }
     }
     return std::nullopt;

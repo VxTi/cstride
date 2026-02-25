@@ -3,8 +3,8 @@
 #include "ast/parser.h"
 #include "ast/parsing_context.h"
 
-#include <llvm/IR/Module.h>
 #include <memory>
+#include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;

@@ -3,8 +3,8 @@
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
 
-#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
 

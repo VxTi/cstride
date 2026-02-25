@@ -41,7 +41,7 @@ llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilder<>*
         return nullptr;
     }
 
-    llvm::BasicBlock* break_target = this->get_context()->get_control_flow_blocks().back().second;
+    llvm::BasicBlock* break_target = ParsingContext::get_control_flow_blocks().back().second;
     if (!break_target)
     {
         return nullptr;

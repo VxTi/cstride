@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ast/nodes/types.h"
 #include "ast/parsing_context.h"
+#include "ast/nodes/types.h"
 
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
 

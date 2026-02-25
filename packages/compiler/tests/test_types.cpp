@@ -291,6 +291,8 @@ TEST(TypeAliases, ComplexAliases)
         fn add(a: int32, b: int32): int32 { return a + b; }
 
         let op: BinaryOp = add;
+
+        op(1, 2);
     )",
         "Type mismatch in variable declaration; expected type 'BinaryOp', got '(int32, int32) -> int32'");
 }

@@ -5,8 +5,6 @@
 #include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
 
-#include <sstream>
-
 using namespace stride::ast;
 
 /**
@@ -40,9 +38,10 @@ Symbol consume_import_module_base(
     // TODO: Fix source position. This is currently only the base, which means the rest of the
     // statement
     //  won't be used in error message logging.
-    return resolve_internal_name(context->get_name(),
-                                 base.get_source_fragment(),
-                                 parts);
+    return resolve_internal_name(
+        context->get_name(),
+        base.get_source_fragment(),
+        parts);
 }
 
 /**
@@ -61,7 +60,7 @@ std::vector<Symbol> consume_import_submodules(TokenSet& tokens)
     const auto first = tokens.expect(TokenType::IDENTIFIER,
                                      "Expected module name in import list");
 
-    std::vector<Symbol> submodules = {
+    std::vector submodules = {
         Symbol(first.get_source_fragment(), first.get_lexeme()) };
 
     while (tokens.peek(0) == TokenType::COMMA && tokens.peek(1) ==

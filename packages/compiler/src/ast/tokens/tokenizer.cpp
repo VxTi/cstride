@@ -8,7 +8,7 @@
 
 using namespace stride::ast;
 
-bool should_ignore_token_type(TokenType type)
+bool should_ignore_token_type(const TokenType type)
 {
     switch (type)
     {

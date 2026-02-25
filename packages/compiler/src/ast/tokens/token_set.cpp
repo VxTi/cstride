@@ -168,16 +168,18 @@ std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
 [[noreturn]] void TokenSet::throw_error(
     const Token& token,
     const ErrorType error_type,
-    const std::string& message) const
+    const std::string& message)
 {
     throw parsing_error(error_type, message, token.get_source_fragment());
 }
 
-[[noreturn]] void TokenSet::throw_error(const ErrorType error_type,
-                                        const std::string& message)
+[[noreturn]] void TokenSet::throw_error(
+    const ErrorType error_type,
+    const std::string& message
+)
 const
 {
-    this->throw_error(this->at(this->position()), error_type, message);
+    throw_error(this->at(this->position()), error_type, message);
 }
 
 [[noreturn]] void TokenSet::throw_error(const std::string& message) const
