@@ -207,14 +207,105 @@ TEST(TypeReferences, StructTypeReference)
  "Expected 'Vec' to be a TypeDef, but it was not found or was of a different type";
     EXPECT_EQ(field->get_type()->get_type_name(), "Point")
     << std::format("Expected 'Vec' to have type 'Point', but got '{}'",
-    field->get_type()->get_type_name()
+                   field->get_type()->get_type_name()
         );
 }
 
-/*
-TEST(ArrayType, PartialTypeMismatch)
+TEST(TypeDefinition, RecursionLimit)
 {
-    assert_throws_message(R"(
-        const b: int32[] = [1, 2L, 3];
-    )", "expected type '[int32; 3]', got '[int32; 4]'");
-}*/
+    assert_throws_message(
+        R"(
+        type A = B;
+        type B = A;
+
+        const K: B?;
+    )",
+        "Maximum recursion depth exceeded when resolving type"
+    );
+}
+
+TEST(OptionalTypes, OptionalMismatch)
+{
+    assert_throws_message(
+        R"(
+        let a: int32? = 10.0;
+    )",
+        "Type mismatch in variable declaration; expected type 'int32?', got 'float32'");
+
+    assert_compiles(R"(
+        let a: int32? = nil;
+    )");
+
+    assert_throws_message(
+        R"(
+        let a: int32 = nil;
+    )",
+        "Cannot assign nil to variable of non-optional type 'int32'");
+}
+
+TEST(PrimitiveTypes, DominantType)
+{
+    assert_compiles(R"(
+        const a: int64 = 10 + 20L;
+        const b: float32 = 10.0 + 20;
+    )");
+
+    assert_throws_message(
+        R"(
+        type Point = { x: int32; y: int32; };
+        const p: Point = Point::{ x: 1, y: 1 };
+        const a: int32 = 10 + p; 
+    )",
+        "Cannot mix primitive type with named type");
+
+    assert_throws_message(
+        R"(
+        type Point = { x: int32; y: int32; };
+        type Color = { r: int32; g: int32; b: int32; };
+        const p: Point = Point::{ x: 1, y: 1 };
+        const c: Color = Color::{ r: 1, g: 1, b: 1 };
+        const a = p + c;
+    )",
+        "Cannot compute dominant type for non-primitive types");
+}
+
+TEST(ArrayTypes, MultiDimensional)
+{
+    assert_compiles(R"(
+        let a: int32[][] = [[1, 2], [3, 4]];
+    )");
+}
+
+TEST(TypeAliases, ComplexAliases)
+{
+    assert_compiles(R"(
+        type IntArray = int32[];
+        fn test(a: IntArray): void {}
+
+        test([1, 2, 3]);
+    )");
+
+    assert_throws_message(
+        R"(
+        type BinaryOp = (int32, int32) -> int32;
+        fn add(a: int32, b: int32): int32 { return a + b; }
+
+        let op: BinaryOp = add;
+    )",
+        "Type mismatch in variable declaration; expected type 'BinaryOp', got '(int32, int32) -> int32'");
+}
+
+TEST(PrimitiveTypes, CharAndString)
+{
+    assert_compiles(
+        R"(
+        const c: char = 'a';
+        const s: string = "hello";
+    )");
+
+    assert_throws_message(
+        R"(
+        const c: char = "string";
+    )",
+        "Type mismatch in variable declaration; expected type 'char', got 'string'");
+}

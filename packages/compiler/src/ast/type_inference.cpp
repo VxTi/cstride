@@ -280,7 +280,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     }
 
     // ---- Ensure parent (base) is a struct type
-    IAstType* parent_type = get_struct_type(variable_definition->get_type()).value_or(nullptr);
+    IAstType* parent_type = get_struct_type_from_type(variable_definition->get_type()).value_or(nullptr);
 
     if (!parent_type)
     {
@@ -298,7 +298,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     for (const auto& members = member_accessor_expr->get_members();
          const auto member : members)
     {
-        auto struct_type = get_struct_type(parent_type);
+        auto struct_type = get_struct_type_from_type(parent_type);
 
         // It's possible that the previous iteration yielded a non-struct type, and thus being nullptr.
         if (!struct_type.has_value())
