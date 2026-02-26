@@ -4,6 +4,8 @@
 
 #include "ast/tokens/token_set.h"
 
+#include <format>
+
 using namespace stride::ast;
 
 TokenSet TokenSet::create_subset(const int64_t offset,

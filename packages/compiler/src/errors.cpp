@@ -1,5 +1,7 @@
 #include "errors.h"
 
+#include <format>
+
 using namespace stride;
 
 std::string stride::error_type_to_string(const ErrorType error_type)

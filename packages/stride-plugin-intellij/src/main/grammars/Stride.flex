@@ -93,6 +93,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "/"                { return StrideTypes.DIV; }
   "%"                { return StrideTypes.MOD; }
   "!"                { return StrideTypes.EXCL; }
+  "~"                { return StrideTypes.TILDE; }
   "<"                { return StrideTypes.LT; }
   ">"                { return StrideTypes.GT; }
   "["                { return StrideTypes.LSQUARE_BRACKET; }

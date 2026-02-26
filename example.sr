@@ -1,49 +1,27 @@
-
-
-module Example {
-    type Point = {
-        x: int32;
-        y: int32;
-        z: int32;
+/*const xyz = (x: int32): (int32) -> (int32) -> int32 -> {
+    return (y: int32): (int32) -> int32 -> {
+        return (z: int32):  int32 -> {
+            return x + y + z;
+        };
     };
-}
-
-type Vec3 = Example::Point;
-
-type Entity = {
-    id: int32;
-    name: string;
-    position: Vec3;
-};
-
-const player = Entity::{
-    id: 1,
-    name: "Player1",
-    position: Vec3::{
-        x: 10,
-        y: 20,
-        z: 30
-    },
 };
 
 fn main(): int32 {
 
-    printf("Player ID: %d\n", player.id);
-    printf("Player Name: %s\n", player.name);
-    printf("Player Position: (%d, %d, %d)\n", player.position.x, player.position.y, player.position.z);
+    const x = xyz(10);
 
-    for (let i: int32 = 0; i < 50; i++) {
-        if (i % 2 == 0) {
-            printf("%d is even\n", i);
-        } else {
-            continue;
-        }
+    const y = x(20);
 
-        if (i == 20) {
-            break;
-        }
-    }
+    const a = y(30);
+
+    printf("A: %d\n", a);
 
     return 0;
 }
- 
+ */
+
+type Tuple = [ int32, int64 ];
+
+fn main(): int32 {
+    const tuple: Tuple = [42, 100000000000];
+}

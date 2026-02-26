@@ -65,6 +65,7 @@
     ASTERISK='*'
     AMPERSAND='&'
     DIV='/'
+    TILDE='~'
     MOD='%'
     EXCL='!'
     LT='<'
@@ -117,7 +118,9 @@ FunctionParameter ::= IDENTIFIER COLON Type
 
 TypeDefinition ::= KW_TYPE IDENTIFIER EQ Type SEMICOLON
 
+// Ensure structs have at least 1 field
 StructDefinitionFields ::= StructField (SEMICOLON StructField)* [SEMICOLON]
+// field: int32
 StructField ::= IDENTIFIER COLON Type
 
 VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
@@ -126,15 +129,17 @@ VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
 VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
-Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody)
+Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*]
 // <module>::<type> or <type>
-PrimitiveType ::= (VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING) [ArrayNotion*]
-UserType ::= ScopedIdentifier [GenericTypeArguments] [ArrayNotion*] {
+PrimitiveType ::= (VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING)
+UserType ::= ScopedIdentifier [GenericTypeArguments] {
   mixin="com.stride.intellij.psi.StrideUserTypeMixin"
   methods=[
     getScopedIdentifier
   ]
 }
+
+TupleType ::= LPAREN Type (COMMA Type)* RPAREN
 
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 
@@ -142,7 +147,7 @@ GenericTypeArguments ::= LT Type (COMMA Type)* GT
 FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN [ArrayNotion*])
 SingularFunctionType ::= LPAREN [Type (COMMA Type)*] RPAREN ARROW Type
 
-ArrayNotion ::= LSQUARE_BRACKET RSQUARE_BRACKET;
+private ArrayNotion ::= LSQUARE_BRACKET RSQUARE_BRACKET;
 
 // --- Statements ---
 BlockStatement ::= LBRACE Statement* RBRACE
@@ -252,5 +257,5 @@ private LogicalOp ::= '&&' | '||'
 private ComparisonOp ::= EQ_EQ | EXCL_EQ | LT | GT | LT_EQ | GT_EQ
 private AdditiveOp ::= PLUS | MINUS
 private MultiplicativeOp ::= ASTERISK | DIV | MOD
-private LhsUnaryOp ::= PLUS | MINUS | EXCL
+private LhsUnaryOp ::= PLUS | MINUS | EXCL | TILDE
 private IncrDecrOp ::= PLUS_PLUS | MINUS_MINUS

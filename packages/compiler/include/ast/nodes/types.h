@@ -130,6 +130,7 @@ namespace stride::ast
         }
     };
 
+    /// Types like int, float, char, etc.
     class AstPrimitiveType
         : public IAstType
     {
@@ -219,6 +220,7 @@ namespace stride::ast
         }
     };
 
+    /// References to other types
     class AstNamedType
         : public IAstType
     {
@@ -308,7 +310,8 @@ namespace stride::ast
         }
     };
 
-    class AstArrayType : public IAstType
+    class AstArrayType
+        : public IAstType
     {
         std::unique_ptr<IAstType> _element_type;
         size_t _initial_length;
@@ -318,12 +321,14 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<IAstType> element_type,
-            const size_t initial_length) :
+            const size_t initial_length
+        ) :
             IAstType(
                 source,
                 context,
                 (element_type ? element_type->get_flags() : 0) |
-                SRFLAG_TYPE_PTR),
+                SRFLAG_TYPE_PTR
+            ),
             // Arrays are always ptrs
             _element_type(std::move(element_type)),
             _initial_length(initial_length) {}
@@ -435,6 +440,47 @@ namespace stride::ast
         std::string get_internalized_name() const;
     };
 
+    class AstTupleType
+        : public IAstType
+    {
+        std::vector<std::unique_ptr<IAstType>> _members;
+
+    public:
+        explicit AstTupleType(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context,
+            std::vector<std::unique_ptr<IAstType>> members,
+            const int flags = SRFLAG_NONE
+        ) :
+            IAstType(source, context, flags),
+            _members(std::move(members)) {}
+
+        [[nodiscard]]
+        std::unique_ptr<IAstType> clone() const override;
+
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<IAstType>>& get_members() const
+        {
+            return _members;
+        }
+
+        std::string get_type_name() override
+        {
+            return "tuple";
+        }
+
+        std::string to_string() override;
+
+        bool equals(IAstType& other) override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override;
+
+        void resolve_forward_references(
+            const ParsingContext* context,
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder) override;
+    };
+
     std::unique_ptr<IAstType> parse_type(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
@@ -467,6 +513,11 @@ namespace stride::ast
         int context_type_flags);
 
     std::optional<std::unique_ptr<IAstType>> parse_struct_type_optional(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        int context_type_flags);
+
+    std::optional<std::unique_ptr<IAstType>> parse_tuple_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         int context_type_flags);

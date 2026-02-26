@@ -72,6 +72,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.EQ, StrideTypes.PLUS, StrideTypes.MINUS,
             StrideTypes.AMPERSAND, StrideTypes.ASTERISK, StrideTypes.DIV,
             StrideTypes.MOD, StrideTypes.EXCL, StrideTypes.LT,
+            StrideTypes.TILDE,
             StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ,
             StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR,
             StrideTypes.ARROW, StrideTypes.PLUS_PLUS, StrideTypes.MINUS_MINUS,
