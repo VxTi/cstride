@@ -271,7 +271,7 @@ namespace stride::ast
         void validate() override;
 
     private:
-        llvm::Value* codegen_global_accessor(
+        llvm::Value* codegen_global_member_accessor(
             llvm::Module* module,
             llvm::IRBuilder<>* builder
         ) const;
