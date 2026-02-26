@@ -94,10 +94,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: cd docs; npm install
+        run: | 
+          cd docs;
+          npm i -g pnpm
+          pnpm i
 
       - name: Build documentation
-        run: cd docs; npm run docs:build; touch .vitepress/dist/.nojekyll
+        run: cd docs; pnpm run docs:build; touch .vitepress/dist/.nojekyll
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
