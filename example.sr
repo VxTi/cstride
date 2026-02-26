@@ -1,3 +1,5 @@
+import test::{ hello };
+
 module SomeLibrary {
     type Point = {
         x: int32;

@@ -94,7 +94,7 @@
   ]
 }
 
-StrideFile ::= [PackageStatement] StandaloneItem*
+StrideFile ::= [PackageStatement] [ImportStatement] StandaloneItem*
 
 private StandaloneItem ::= (
     FunctionDeclaration
@@ -104,6 +104,9 @@ private StandaloneItem ::= (
     | ExternFunctionDeclaration
     | SEMICOLON
 )
+
+// import some::package::{ module::TypeA, TypeB, function_c};
+ImportStatement ::= IMPORT ScopedIdentifier COLON_COLON LBRACE ScopedIdentifier (COMMA ScopedIdentifier)* RBRACE SEMICOLON
 
 // --- Declarations ---
 ExternFunctionDeclaration ::= [AccessModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
