@@ -56,12 +56,14 @@ class StrideAnnotator : Annotator, DumbAware {
         while (child != null) {
             if (child.elementType == StrideTypes.FN) {
                 foundFn = true
-            } else if (foundFn && child.elementType == StrideTypes.IDENTIFIER) {
-                holder.newSilentAnnotation(HighlightSeverity.INFORMATION)
-                    .range(child.textRange)
-                    .textAttributes(StrideSyntaxHighlighter.FUNCTION_DECLARATION)
-                    .create()
-                break
+            } else if (child.elementType == StrideTypes.IDENTIFIER) {
+                if (foundFn) {
+                    holder.newSilentAnnotation(HighlightSeverity.INFORMATION)
+                        .range(child.textRange)
+                        .textAttributes(StrideSyntaxHighlighter.FUNCTION_DECLARATION)
+                        .create()
+                    break
+                }
             }
             child = child.treeNext
         }

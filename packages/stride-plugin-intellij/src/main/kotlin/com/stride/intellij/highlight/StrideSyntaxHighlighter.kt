@@ -54,7 +54,8 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.BREAK, StrideTypes.CONTINUE, StrideTypes.IMPORT,
             StrideTypes.LET, StrideTypes.EXTERN, StrideTypes.AS,
             StrideTypes.RETURN, StrideTypes.FOR, StrideTypes.WHILE,
-            StrideTypes.IF, StrideTypes.ELSE, StrideTypes.KW_TYPE -> KEYWORD_KEYS
+            StrideTypes.IF, StrideTypes.ELSE, StrideTypes.KW_TYPE,
+            StrideTypes.ASYNC -> KEYWORD_KEYS
 
             StrideTypes.VOID, StrideTypes.INT8, StrideTypes.INT16,
             StrideTypes.INT32, StrideTypes.INT64, StrideTypes.UINT8,
