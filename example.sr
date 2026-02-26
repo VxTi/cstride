@@ -1,6 +1,4 @@
-import test::{ hello };
-
-module SomeLibrary {
+module Example {
     type Point = {
         x: int32;
         y: int32;
@@ -8,14 +6,7 @@ module SomeLibrary {
     };
 }
 
-/* enum Test {
-    LEFT: 123,
-    RIGHT: 456,
-    BOTTOM: 246,
-    TOP: 6543,
-}*/
-
-type Vec3 = SomeLibrary::Point;
+type Vec3 = Example::Point;
 
 type Entity = {
     id: int32;
@@ -33,15 +24,7 @@ const player = Entity::{
     },
 };
 
-type BinaryOp = (int32, int32) -> int32;
-fn add(a: int32, b: int32): int32 { return a + b; }
-
-let op: BinaryOp = add;
-
-
 fn main(): int32 {
-
-    op(1, 2);
 
     printf("Player ID: %d\n", player.id);
     printf("Player Name: %s\n", player.name);

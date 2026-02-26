@@ -1,6 +1,7 @@
 #pragma once
 
 #include <format>
+#include <regex>
 #include <string>
 #include <vector>
 #include <llvm/IR/IRBuilder.h>
@@ -120,5 +121,18 @@ namespace stride::ast::closures
     inline std::string format_captured_variable_name(const std::string& var_name)
     {
         return std::format("@{}.capture", var_name);
+    }
+
+    inline bool is_captured_variable_name(const std::string& var_name)
+    {
+        // Matches variables formatted like "@var_name.capture" and "@var_name.1.capture"
+        static const std::regex pattern(R"(^@\w+(\.\d+)?\.capture$)");
+        return std::regex_match(var_name.begin(), var_name.end(), pattern);
+    }
+
+    inline bool is_captured_internal_variable_name(const std::string& var_name)
+    {
+        static const std::regex pattern(R"(^@__capture_\w+(\.\d+)?$)");
+        return std::regex_match(var_name.begin(), var_name.end(), pattern);
     }
 } // namespace stride::ast::closures

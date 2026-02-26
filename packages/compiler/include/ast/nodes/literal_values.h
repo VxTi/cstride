@@ -59,12 +59,13 @@ namespace stride::ast
     };
 
     template <typename T>
-    class AbstractAstLiteralBase : public AstLiteral
+    class IAstLiteralBase
+        : public AstLiteral
     {
         T _value;
 
     public:
-        explicit AbstractAstLiteralBase(
+        explicit IAstLiteralBase(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
@@ -80,7 +81,7 @@ namespace stride::ast
         }
     };
 
-    class AstStringLiteral : public AbstractAstLiteralBase<std::string>
+    class AstStringLiteral : public IAstLiteralBase<std::string>
     {
     public:
         explicit AstStringLiteral(
@@ -89,11 +90,11 @@ namespace stride::ast
             std::string val) :
             // Strings are only considered to be a single byte,
             // as they're pointing to a memory location
-            AbstractAstLiteralBase(source,
-                                   context,
-                                   LiteralType::STRING,
-                                   std::move(val),
-                                   1) {}
+            IAstLiteralBase(source,
+                            context,
+                            LiteralType::STRING,
+                            std::move(val),
+                            1) {}
 
         ~AstStringLiteral() override = default;
 
@@ -104,7 +105,7 @@ namespace stride::ast
             llvm::IRBuilder<>* builder) override;
     };
 
-    class AstIntLiteral : public AbstractAstLiteralBase<int64_t>
+    class AstIntLiteral : public IAstLiteralBase<int64_t>
     {
         const int _flags;
 
@@ -115,11 +116,11 @@ namespace stride::ast
             const int64_t value,
             const short bit_count,
             const int flags = SRFLAG_TYPE_INT_SIGNED) :
-            AbstractAstLiteralBase(source,
-                                   context,
-                                   LiteralType::INTEGER,
-                                   value,
-                                   bit_count),
+            IAstLiteralBase(source,
+                            context,
+                            LiteralType::INTEGER,
+                            value,
+                            bit_count),
             _flags(flags) {}
 
         [[nodiscard]]
@@ -141,7 +142,7 @@ namespace stride::ast
             llvm::IRBuilder<>* builder) override;
     };
 
-    class AstFpLiteral : public AbstractAstLiteralBase<long double>
+    class AstFpLiteral : public IAstLiteralBase<long double>
     {
     public:
         explicit AstFpLiteral(
@@ -149,11 +150,11 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             const long double value,
             const short bit_count) :
-            AbstractAstLiteralBase(source,
-                                   context,
-                                   LiteralType::FLOAT,
-                                   value,
-                                   bit_count) {}
+            IAstLiteralBase(source,
+                            context,
+                            LiteralType::FLOAT,
+                            value,
+                            bit_count) {}
 
         std::string to_string() override;
 
@@ -162,14 +163,14 @@ namespace stride::ast
             llvm::IRBuilder<>* builder) override;
     };
 
-    class AstBooleanLiteral : public AbstractAstLiteralBase<bool>
+    class AstBooleanLiteral : public IAstLiteralBase<bool>
     {
     public:
         explicit AstBooleanLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const bool value) :
-            AbstractAstLiteralBase(
+            IAstLiteralBase(
                 source,
                 context,
                 LiteralType::BOOLEAN,
@@ -184,18 +185,18 @@ namespace stride::ast
             llvm::IRBuilder<>* builder) override;
     };
 
-    class AstCharLiteral : public AbstractAstLiteralBase<char>
+    class AstCharLiteral : public IAstLiteralBase<char>
     {
     public:
         explicit AstCharLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const char value) :
-            AbstractAstLiteralBase(source,
-                                   context,
-                                   LiteralType::CHAR,
-                                   value,
-                                   8) {}
+            IAstLiteralBase(source,
+                            context,
+                            LiteralType::CHAR,
+                            value,
+                            8) {}
 
         std::string to_string() override;
 

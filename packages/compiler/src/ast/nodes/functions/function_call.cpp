@@ -111,8 +111,8 @@ llvm::Value* AstFunctionCall::codegen(
         // Variables are stored by their declaration name, not with function signatures
         // So we lookup using the raw function name only
         if (const auto* var_def = this->get_context()->lookup_variable(
-        this->get_function_name(),
-        true)
+            this->get_function_name(),
+            true)
         )
         {
             if (const auto* fn_type = cast_type<AstFunctionType*>(var_def->get_type()))
@@ -230,7 +230,8 @@ llvm::Value* AstFunctionCall::codegen(
                     std::vector<llvm::Value*> args_v;
 
                     // Find the lambda function to determine if it has captured variables
-                    llvm::Function* lambda_fn = closures::find_lambda_function(module, llvm_fn_type);
+                    llvm::Function* lambda_fn =
+                        closures::find_lambda_function(module, llvm_fn_type);
 
                     // Determine the actual function type to use for the call
                     llvm::FunctionType* call_fn_type = llvm_fn_type;
@@ -242,8 +243,8 @@ llvm::Value* AstFunctionCall::codegen(
                         // Use the lambda's actual function type which includes captures
                         call_fn_type = lambda_fn->getFunctionType();
 
-                        const size_t num_captures = lambda_fn->arg_size() - fn_type->
-                            get_parameter_types().size();
+                        const size_t num_captures = lambda_fn->arg_size()
+                            - fn_type->get_parameter_types().size();
 
                         if (num_captures > 0)
                         {
@@ -269,9 +270,10 @@ llvm::Value* AstFunctionCall::codegen(
                                     "closure_fn_ptr"
                                 );
 
-                                args_v.insert(args_v.end(),
-                                              capture_args.begin(),
-                                              capture_args.end());
+                                args_v.insert(
+                                    args_v.end(),
+                                    capture_args.begin(),
+                                    capture_args.end());
                             }
                             else
                             {
@@ -284,9 +286,10 @@ llvm::Value* AstFunctionCall::codegen(
 
                                 if (capture_args_old.size() == num_captures)
                                 {
-                                    args_v.insert(args_v.end(),
-                                                  capture_args_old.begin(),
-                                                  capture_args_old.end());
+                                    args_v.insert(
+                                        args_v.end(),
+                                        capture_args_old.begin(),
+                                        capture_args_old.end());
                                 }
                             }
                         }
