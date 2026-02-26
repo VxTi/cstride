@@ -21,7 +21,7 @@ class StrideColorSettingsPage : ColorSettingsPage {
 
     override fun getDemoText(): String = """
             // Stride example
-            extern fn <func>print</func>(msg: string): void;
+            extern async fn <func>fetch_data</func>(url: string): string;
 
             type <usertype>CustomInt</usertype> = int32;
 
@@ -30,12 +30,12 @@ class StrideColorSettingsPage : ColorSettingsPage {
                 y: float32
             }
 
-            fn <func>main</func>(): int32 {
+            async fn <func>main</func>(): int32 {
                 const p: Point = Point::{ x: 1.0, y: 2.0 };
                 const num: <usertype>CustomInt</usertype> = 42;
                 let msg: string = "Hello, Stride!";
                 if (p.x > 0.0 && true) {
-                    <func>print</func>(msg);
+                    <func>fetch_data</func>("https://example.com");
                 }
                 return 0;
             }
