@@ -14,6 +14,8 @@ editor/.c-cache
 dist
 .gradle
 
+example.sr
+
 cache
 caches
 gradle/wrapper

@@ -597,20 +597,21 @@ void collect_free_variables(
     }
 
     // Handle return statements
-    if (const auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
+    if (const auto* return_stmt = cast_ast<AstReturnStatement*>(node))
     {
         if (return_stmt->get_return_expr())
         {
-            collect_free_variables(return_stmt->get_return_expr(),
-                                   lambda_context,
-                                   outer_context,
-                                   captures);
+            collect_free_variables(
+                return_stmt->get_return_expr(),
+                lambda_context,
+                outer_context,
+                captures);
         }
         return;
     }
 
     // Handle function calls
-    if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(node))
+    if (const auto* fn_call = cast_expr<AstFunctionCall*>(node))
     {
         for (const auto& arg : fn_call->get_arguments())
         {
@@ -620,27 +621,28 @@ void collect_free_variables(
     }
 
     // Handle variable declarations (initializer)
-    if (const auto* var_decl = dynamic_cast<AstVariableDeclaration*>(node))
+    if (const auto* var_decl = cast_expr<AstVariableDeclaration*>(node))
     {
         if (var_decl->get_initial_value())
         {
-            collect_free_variables(var_decl->get_initial_value().get(),
-                                   lambda_context,
-                                   outer_context,
-                                   captures);
+            collect_free_variables(
+                var_decl->get_initial_value().get(),
+                lambda_context,
+                outer_context,
+                captures);
         }
         return;
     }
 
     // Handle variable reassignment
-    if (const auto* assignment = dynamic_cast<AstVariableReassignment*>(node))
+    if (const auto* assignment = cast_expr<AstVariableReassignment*>(node))
     {
         collect_free_variables(assignment->get_value(), lambda_context, outer_context, captures);
         return;
     }
 
     // Handle binary ops
-    if (const auto* bin_op = dynamic_cast<AbstractBinaryOp*>(node))
+    if (const auto* bin_op = cast_expr<IBinaryOp*>(node))
     {
         collect_free_variables(bin_op->get_left(), lambda_context, outer_context, captures);
         collect_free_variables(bin_op->get_right(), lambda_context, outer_context, captures);
@@ -648,63 +650,74 @@ void collect_free_variables(
     }
 
     // Handle unary ops
-    if (const auto* unary_op = dynamic_cast<AstUnaryOp*>(node))
+    if (const auto* unary_op = cast_expr<AstUnaryOp*>(node))
     {
         collect_free_variables(&unary_op->get_operand(), lambda_context, outer_context, captures);
         return;
     }
 
     // Handle if statements
-    if (auto* if_stmt = dynamic_cast<AstConditionalStatement*>(node))
+    if (auto* if_stmt = cast_ast<AstConditionalStatement*>(node))
     {
         collect_free_variables(if_stmt->get_condition(), lambda_context, outer_context, captures);
         collect_free_variables(if_stmt->get_body(), lambda_context, outer_context, captures);
         if (if_stmt->get_else_body())
         {
-            collect_free_variables(if_stmt->get_else_body(),
-                                   lambda_context,
-                                   outer_context,
-                                   captures);
+            collect_free_variables(
+                if_stmt->get_else_body(),
+                lambda_context,
+                outer_context,
+                captures);
         }
         return;
     }
 
     // Handle while loops
-    if (auto* while_loop = dynamic_cast<AstWhileLoop*>(node))
+    if (auto* while_loop = cast_ast<AstWhileLoop*>(node))
     {
-        collect_free_variables(while_loop->get_condition(),
-                               lambda_context,
-                               outer_context,
-                               captures);
+        collect_free_variables(
+            while_loop->get_condition(),
+            lambda_context,
+            outer_context,
+            captures);
         collect_free_variables(while_loop->get_body(), lambda_context, outer_context, captures);
         return;
     }
 
     // Handle for loops
-    if (auto* for_loop = dynamic_cast<AstForLoop*>(node))
+    if (auto* for_loop = cast_ast<AstForLoop*>(node))
     {
         if (for_loop->get_initializer())
-            collect_free_variables(for_loop->get_initializer(),
-                                   lambda_context,
-                                   outer_context,
-                                   captures);
+        {
+            collect_free_variables(
+                for_loop->get_initializer(),
+                lambda_context,
+                outer_context,
+                captures);
+        }
         if (for_loop->get_condition())
-            collect_free_variables(for_loop->get_condition(),
-                                   lambda_context,
-                                   outer_context,
-                                   captures);
+        {
+            collect_free_variables(
+                for_loop->get_condition(),
+                lambda_context,
+                outer_context,
+                captures);
+        }
         if (for_loop->get_incrementor())
-            collect_free_variables(for_loop->get_incrementor(),
-                                   lambda_context,
-                                   outer_context,
-                                   captures);
+        {
+            collect_free_variables(
+                for_loop->get_incrementor(),
+                lambda_context,
+                outer_context,
+                captures);
+        }
 
         collect_free_variables(for_loop->get_body(), lambda_context, outer_context, captures);
         return;
     }
 
     // Handle array literals
-    if (const auto* array = dynamic_cast<AstArray*>(node))
+    if (const auto* array = cast_expr<AstArray*>(node))
     {
         for (const auto& elem : array->get_elements())
         {
@@ -714,7 +727,7 @@ void collect_free_variables(
     }
 
     // Handle struct initializers
-    if (const auto* struct_init = dynamic_cast<AstStructInitializer*>(node))
+    if (const auto* struct_init = cast_expr<AstStructInitializer*>(node))
     {
         for (const auto& val : struct_init->get_initializers() | std::views::values)
         {
@@ -724,14 +737,14 @@ void collect_free_variables(
     }
 
     // Handle member access
-    if (const auto* member = dynamic_cast<AstMemberAccessor*>(node))
+    if (const auto* member = cast_expr<AstMemberAccessor*>(node))
     {
         collect_free_variables(member->get_base(), lambda_context, outer_context, captures);
         return;
     }
 
     // Handle blocks (lambda bodies, function bodies, etc.)
-    if (const auto* block = dynamic_cast<AstBlock*>(node))
+    if (const auto* block = cast_ast<AstBlock*>(node))
     {
         for (const auto& child : block->children())
         {
@@ -879,9 +892,10 @@ void IAstFunction::resolve_forward_references(
     }
 
     std::vector<llvm::Type*> param_types;
+    param_types.reserve(_captured_variables.size() + _parameters.size());
 
     // Add captured variables as first parameters
-    for (const auto& capture : this->get_captured_variables())
+    for (const auto& capture : this->_captured_variables)
     {
         if (const auto capture_def = this->get_context()->lookup_variable(capture.name, true))
         {
@@ -895,7 +909,7 @@ void IAstFunction::resolve_forward_references(
     }
 
     // Add regular parameters
-    for (const auto& param : this->get_parameters())
+    for (const auto& param : this->_parameters)
     {
         llvm::Type* llvm_type = type_to_llvm_type(param->get_type(), module);
         if (!llvm_type)
@@ -906,6 +920,7 @@ void IAstFunction::resolve_forward_references(
                 param->get_type()->get_source_fragment()
             );
         }
+
         param_types.push_back(llvm_type);
     }
 

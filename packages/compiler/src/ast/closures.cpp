@@ -337,7 +337,7 @@ namespace stride::ast::closures
         for (auto& arg : lambda_fn->args())
         {
             if (const auto arg_name = std::string(arg.getName());
-                arg_name == format_captured_variable_name(arg_name))
+                is_captured_variable_name(arg_name))
             {
                 capture_types.push_back(arg.getType());
             }

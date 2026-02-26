@@ -406,14 +406,14 @@ namespace stride::ast
         void validate() override;
     };
 
-    class AbstractBinaryOp
+    class IBinaryOp
         : public AstExpression
     {
         std::unique_ptr<AstExpression> _lsh;
         std::unique_ptr<AstExpression> _rsh;
 
     public:
-        explicit AbstractBinaryOp(
+        explicit IBinaryOp(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstExpression> lsh,
@@ -437,7 +437,7 @@ namespace stride::ast
     };
 
     class AstBinaryArithmeticOp
-        : public AbstractBinaryOp
+        : public IBinaryOp
     {
         const BinaryOpType _op_type;
 
@@ -449,7 +449,7 @@ namespace stride::ast
             const BinaryOpType op,
             std::unique_ptr<AstExpression> right
         ) :
-            AbstractBinaryOp(
+            IBinaryOp(
                 source,
                 context,
                 std::move(left),
@@ -475,7 +475,7 @@ namespace stride::ast
     };
 
     class AstLogicalOp
-        : public AbstractBinaryOp
+        : public IBinaryOp
     {
         LogicalOpType _op_type;
 
@@ -487,7 +487,7 @@ namespace stride::ast
             const LogicalOpType op,
             std::unique_ptr<AstExpression> right
         ) :
-            AbstractBinaryOp(source, context, std::move(left), std::move(right)),
+            IBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -504,7 +504,7 @@ namespace stride::ast
     };
 
     class AstComparisonOp
-        : public AbstractBinaryOp
+        : public IBinaryOp
     {
         ComparisonOpType _op_type;
 
@@ -516,7 +516,7 @@ namespace stride::ast
             const ComparisonOpType op,
             std::unique_ptr<AstExpression> right
         ) :
-            AbstractBinaryOp(source, context, std::move(left), std::move(right)),
+            IBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
