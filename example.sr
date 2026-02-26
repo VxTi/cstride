@@ -1,3 +1,5 @@
+
+
 module Example {
     type Point = {
         x: int32;

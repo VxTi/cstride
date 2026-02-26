@@ -406,7 +406,7 @@ namespace stride::ast
         [[nodiscard]]
         std::string get_type_name() override
         {
-            return "Struct<{...}>";
+            return "struct";
         }
 
         std::string to_string() override

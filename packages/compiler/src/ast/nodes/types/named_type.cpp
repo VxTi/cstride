@@ -45,6 +45,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() cons
 
 bool AstNamedType::equals(IAstType& other)
 {
+    // Simple naming checks, e.g., "Vec3 == Vec3"
     if (auto* other_named = cast_type<AstNamedType*>(&other))
     {
         return this->get_type_name() == other_named->get_type_name();

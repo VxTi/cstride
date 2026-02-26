@@ -852,7 +852,7 @@ namespace stride::ast
      * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
-    std::unique_ptr<IAstType> infer_expression_type(AstExpression* expr);
+    std::unique_ptr<IAstType> infer_expression_type(AstExpression* expr, int recursion_guard = 0);
 
     /// Infers the element type of an array expression
     std::unique_ptr<IAstType> infer_array_member_type(const AstArray* array);

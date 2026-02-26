@@ -151,6 +151,7 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_arithmetic_op_type(
         return std::move(lhs);
     }
 
+    // --- Pointers have priority
     if (lhs->is_pointer() && !rhs->is_pointer())
     {
         return std::move(lhs);
@@ -280,7 +281,8 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     }
 
     // ---- Ensure parent (base) is a struct type
-    IAstType* parent_type = get_struct_type_from_type(variable_definition->get_type()).value_or(nullptr);
+    IAstType* parent_type = get_struct_type_from_type(variable_definition->get_type()).
+        value_or(nullptr);
 
     if (!parent_type)
     {
@@ -353,16 +355,28 @@ std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
     return std::make_unique<AstNamedType>(
         initializer->get_source_fragment(),
         initializer->get_context(),
-        initializer->get_struct_name());
+        initializer->get_struct_name()
+    );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_expression_type(AstExpression* expr)
+std::unique_ptr<IAstType> stride::ast::infer_expression_type(
+    AstExpression* expr,
+    int recursion_guard
+)
 {
     if (!expr)
     {
         throw parsing_error("Expression cannot be null");
     }
 
+    if (++recursion_guard > MAX_RECURSION_DEPTH)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Maximum recursion depth reached while inferring type",
+            expr->get_source_fragment()
+        );
+    }
 
     if (auto* literal = cast_expr<AstLiteral*>(expr))
     {
@@ -429,25 +443,27 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(AstExpression* expr
 
     if (cast_expr<AstLogicalOp*>(expr) || cast_expr<AstComparisonOp*>(expr))
     {
-        // TODO: Do some validation on lhs and rhs; cannot compare strings with one another (yet)
         return std::make_unique<AstPrimitiveType>(
             expr->get_source_fragment(),
             expr->get_context(),
             PrimitiveType::BOOL,
             1,
-            0);
+            0
+        );
     }
 
     if (const auto* operation = cast_expr<AstVariableReassignment*>(expr))
     {
-        return infer_expression_type(operation->get_value());
+        return infer_expression_type(operation->get_value(), recursion_guard);
     }
 
     if (const auto* operation = cast_expr<AstVariableDeclaration*>(expr))
     {
         const auto lhs_variable_type = operation->get_variable_type();
         const auto value = infer_expression_type(
-            operation->get_initial_value().get());
+            operation->get_initial_value().get(),
+            recursion_guard
+        );
 
         // Both the expression type and the declared type are the same (e.g., let var: int32 = 10)
         // so we can just return the declared type.
@@ -472,13 +488,15 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(AstExpression* expr
             array_expr->get_source_fragment(),
             array_expr->get_context(),
             std::move(member_type),
-            array_expr->get_elements().size());
+            array_expr->get_elements().size()
+        );
     }
 
     if (const auto* array_accessor = cast_expr<AstArrayMemberAccessor*>(expr))
     {
-        const auto array_type =
-            infer_expression_type(array_accessor->get_array_identifier());
+        const auto array_type = infer_expression_type(
+            array_accessor->get_array_identifier(),
+            recursion_guard);
 
         if (const auto array = cast_type<AstArrayType*>(array_type.get()); array
             != nullptr)
