@@ -39,6 +39,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
 
   "pub"              { return StrideTypes.PUBLIC; }
   "package"          { return StrideTypes.PACKAGE; }
+  "import"           { return StrideTypes.IMPORT; }
   "module"           { return StrideTypes.MODULE; }
   "fn"               { return StrideTypes.FN; }
   "break"            { return StrideTypes.BREAK; }

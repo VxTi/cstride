@@ -1,43 +1,34 @@
-## Stride Language Compiler and Editor
+## Stride Language Compiler
 
-This project implements a compiler for the Stride programming language,
-along with a web-based code editor featuring syntax highlighting.
-
-Stride is a statically typed, JIT-compiled language using the LLVM compiler toolchain.
-Currently, it only supports primitive types, though support for structs, classes, and generics is planned.
-
-Structs are already partially implemented, though member access is not yet implemented.
+Stride is a statically typed, JIT-compiled language built on top of the LLVM compiler toolchain. This project contains the Stride compiler, standard library, and IDE support for IntelliJ and VSCode.
 
 ### Project Structure
 
 ```
 cstride/
 └── packages/
-    ├── compiler/
-    │   └── ... (compiler source files)
-    ├── standard-library/
-    │   └── ... (standard library files)
-    └── stride-editor/
-        └── ... (web-based editor files)  
+    ├── compiler/                   # Stride compiler (C++, LLVM)
+    ├── standard-library/           # Stride standard library (.sr)
+    ├── stride-plugin-intellij/     # IntelliJ IDEA plugin (Kotlin)
+    └── stride-plugin-vscode/       # Visual Studio Code extension (TypeScript)
 ```
 
 ### Prerequisites
 
-1. CMake >= 3.1
-2. Node.js >= 20.0 (LTS)
-3. LLVM (tested with 17, 18)
-4. GoogleTest
-
-You can install these packages using the following commands:
+1. **LLVM** (21+ - developed with 21.1.8)
+2. **CMake** >= 3.1
+3. **GoogleTest** (for compiler tests)
+4. **Java JDK** >= 17 (for IntelliJ plugin development)
+5. **Node.js** (for VSCode extension development)
 
 **macOS (using Homebrew):**
 ```shell
-brew install cmake node@22 llvm@21 googletest
+brew install cmake llvm@21 googletest openjdk@17 node
 ```
 
 **Ubuntu/Debian:**
 ```shell
-sudo apt install cmake nodejs llvm-21 googletest
+sudo apt install cmake llvm-21-dev libgtest-dev openjdk-17-jdk nodejs
 ```
 
 ### Getting started
@@ -113,16 +104,16 @@ The editor is a web-based IDE for Stride, built with Monaco Editor.
 
 ```stride
 // Creating a mutable 32 bit int variable
-let x: int32 = 10
+let x: int32 = 10;
 
 // Creating a constant variable
-const y: float64 = 3.0D
+const y: float64 = 3.0D;
 
 // There are a few different kinds of integer literals, like so:
-let hex: int32 = 0x12345
+let hex: int32 = 0x12345;
 
 // 64-bit integer literal, suffixed with an 'L'
-let large_int: int64 = 12345678901234567890L
+let large_int: int64 = 12345678901234567890L;
 ```
 
 ### Integer Literals
@@ -140,23 +131,23 @@ For example, `3.14F` is a single precision float, and `2.71828D` is a double pre
 The language uses the traditional arithmetic operators, as well as comparison operators.
 An example of these operators is shown below:
 ```stride
-let x: int32 = 10
-let y: float64 = 3.0D
+let x: int32 = 10;
+let y: float64 = 3.0D;
 
 // Arithmetic operators
-let sum: float64 = x + y
-let difference: float64 = x - y
-let product: float64 = x * y
-let quotient: float64 = x / y
-let remainder: float64 = x % y
+let sum: float64 = x + y;
+let difference: float64 = x - y;
+let product: float64 = x * y;
+let quotient: float64 = x / y;
+let remainder: float64 = x % y;
 
 // Comparison operators
-let is_equal: bool = x == y
-let is_not_equal: bool = x != y
-let is_less_than: bool = x < y
-let is_greater_than: bool = x > y
-let is_less_than_or_equal: bool = x <= y
-let is_greater_than_or_equal: bool = x >= y
+let is_equal: bool = x == y;
+let is_not_equal: bool = x != y;
+let is_less_than: bool = x < y;
+let is_greater_than: bool = x > y;
+let is_less_than_or_equal: bool = x <= y;
+let is_greater_than_or_equal: bool = x >= y;
 ```
 
 ### Creating and invoking functions 
@@ -165,16 +156,15 @@ Functions are declared using the `fn` keyword, followed by the function name,
 a list of parameters (optionally), and the return type. For example:
 ```stride
 fn add(a: int32, b: int32): int32 {
-    return a + b
+    return a + b;
 }
 
 // You can also create externally linked functions,
 // if they are defined in another library.
 extern fn some_c_function(x: int32): int32;
-
-
+        
 // You can invoke functions using the following syntax:
-const result: int32 = add(10, 5)
+const result: int32 = add(10, 5);
 ```
 
 ### Local Documentation Preview
@@ -201,20 +191,20 @@ This is a multi-line comment
 Structs are still in development, but they are similar to classes in other languages.
 The current syntax is as follows:
 ```stride
-struct Point {
-    x: int32,
-    y: int32,
-}
+type Point = {
+    x: int32;
+    y: int32;
+};
 
-const p = Point::{ x: 10, y: 20 }
+const p = Point::{ x: 10, y: 20 };
 
 // You can also create structs that reference other structs.
 // These still function as separate types, and will cause a type error if they are used inappropriately.
-struct Vector2d = Point
+type Vector2d = Point;
 
-const p2: Vector2d = Vector2d::{ x: 5, y: 15 } // This is valid
+const p2: Vector2d = Vector2d::{ x: 5, y: 15 }; // This is valid
 
-const p3: Point = p2 // This is invalid,
+const p3: Point = p2; // This is invalid,
 ```
 
 ### Imports
