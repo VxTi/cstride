@@ -101,7 +101,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
         std::move(chained_accessors));
 }
 
-llvm::Value* AstMemberAccessor::codegen_global_accessor(
+llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
     llvm::Module* module,
     llvm::IRBuilder<>* builder
 ) const
@@ -169,7 +169,7 @@ llvm::Value* AstMemberAccessor::codegen(
     // constant folding here by looking up the global variable and its initializer.
     if (!builder->GetInsertBlock())
     {
-        return codegen_global_accessor(module, builder);
+        return codegen_global_member_accessor(module, builder);
     }
 
     // Standard Code Generation (Function context)
