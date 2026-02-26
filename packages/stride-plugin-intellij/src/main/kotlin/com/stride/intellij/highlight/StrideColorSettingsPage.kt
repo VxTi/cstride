@@ -55,6 +55,7 @@ class StrideColorSettingsPage : ColorSettingsPage {
             AttributesDescriptor("Operator", StrideSyntaxHighlighter.OPERATOR),
             AttributesDescriptor("Parentheses", StrideSyntaxHighlighter.PARENTHESES),
             AttributesDescriptor("Braces", StrideSyntaxHighlighter.BRACES),
+            AttributesDescriptor("Brackets", StrideSyntaxHighlighter.BRACKETS),
             AttributesDescriptor("Semicolon", StrideSyntaxHighlighter.SEMICOLON),
             AttributesDescriptor("Comma", StrideSyntaxHighlighter.COMMA),
             AttributesDescriptor("Dot", StrideSyntaxHighlighter.DOT),

@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: Stride Language
-  text: Stride is a statically typed, JIT-compiled language built on the LLVM compiler toolchain.
-  tagline: Combine the performance and control of low-level languages with the simplicity and safety of modern syntax.
+  text: A High-Performance, Statically Typed Systems Language.
+  tagline: Stride is a multi-paradigm, JIT-compiled systems programming language built on the LLVM compiler toolchain, combining low-level control with modern syntax.
   actions:
     - theme: brand
       text: Getting Started
@@ -30,17 +30,19 @@ features:
 ## A Taste of Stride
 
 ```stride
+type Point = { x: int32; y: int32; };
+
 fn main(): void {
-    let limit: int32 = 10
-    printf("Counting to %d:\n", limit)
-    
-    for (let i: int32 = 1; i <= limit; i++) {
-        if (i % 2 == 0) {
-            printf("%d is even\n", i)
-        } else {
-            printf("%d is odd\n", i)
-        }
+    const p: Point = Point::{ x: 10, y: 20 };
+    let list: int32[] = [1, 2, 3];
+    let maybe_val: int32? = nil;
+
+    if (p.x > 5) {
+        maybe_val = p.x + list[0];
     }
+
+    const op: (int32, int32) -> int32 = (a: int32, b: int32): int32 -> { return a + b; };
+    printf("Result: %d\n", op(p.x, p.y));
 }
 ```
 

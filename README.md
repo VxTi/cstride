@@ -1,6 +1,8 @@
 ## Stride Language Compiler
 
-Stride is a statically typed, JIT-compiled language built on top of the LLVM compiler toolchain. This project contains the Stride compiler, standard library, and IDE support for IntelliJ and VSCode.
+Stride is a statically typed, multi-paradigm, JIT-compiled systems programming language designed for high performance, safety, and developer productivity. Built on the LLVM compiler toolchain, Stride combines the efficiency of low-level languages like C++ with the modern, expressive syntax found in languages like TypeScript and Rust.
+
+Stride is tailored for performance-critical applications, systems programming, and high-performance computing, providing robust type safety, predictable memory management, and seamless integration with existing libraries.
 
 ### Project Structure
 
@@ -98,73 +100,87 @@ The editor is a web-based IDE for Stride, built with Monaco Editor.
 
 ## Language Reference
 
-### Syntax
+### Types and Variables
 
-### Creating variables
+Stride is statically typed and supports various primitive and complex types.
 
 ```stride
-// Creating a mutable 32 bit int variable
-let x: int32 = 10;
+// Primitive types
+let a: int32 = 10;
+let b: int64 = 100L;
+let c: float32 = 3.14F;
+let d: float64 = 2.718D;
+let e: bool = true;
+let f: char = 'A';
+let g: string = "Hello, Stride!";
 
-// Creating a constant variable
-const y: float64 = 3.0D;
+// Optional types (can be nil)
+let h: int32? = nil;
+h = 42;
 
-// There are a few different kinds of integer literals, like so:
-let hex: int32 = 0x12345;
+// Arrays (fixed-size or dynamic-size)
+let i: int32[] = [1, 2, 3, 4, 5];
+let j: float64[][] = [[1.0, 2.0], [3.0, 4.0]];
 
-// 64-bit integer literal, suffixed with an 'L'
-let large_int: int64 = 12345678901234567890L;
+// Type Aliases
+type IntList = int32[];
+let k: IntList = [10, 20, 30];
 ```
 
-### Integer Literals
+### Structs
 
-Stride supports various integer literal formats, including decimal, hexadecimal, and binary.
-For example, `0x12345` is a hexadecimal integer literal, and `0b101010` is a binary integer literal.
+Structs allow grouping related data. They use nominal typing, meaning each type definition is unique.
 
-### Floating Point Literals
-
-Floating point literals can be suffixed with 'F' for single precision or 'D' for double precision.
-For example, `3.14F` is a single precision float, and `2.71828D` is a double precision float.
-
-### Operators
-
-The language uses the traditional arithmetic operators, as well as comparison operators.
-An example of these operators is shown below:
 ```stride
-let x: int32 = 10;
-let y: float64 = 3.0D;
+type Point = {
+    x: int32;
+    y: int32;
+};
 
-// Arithmetic operators
-let sum: float64 = x + y;
-let difference: float64 = x - y;
-let product: float64 = x * y;
-let quotient: float64 = x / y;
-let remainder: float64 = x % y;
+// Initialization using the ::{ } syntax
+const p: Point = Point::{ x: 10, y: 20 };
 
-// Comparison operators
-let is_equal: bool = x == y;
-let is_not_equal: bool = x != y;
-let is_less_than: bool = x < y;
-let is_greater_than: bool = x > y;
-let is_less_than_or_equal: bool = x <= y;
-let is_greater_than_or_equal: bool = x >= y;
+// Composition
+type Rect = {
+    origin: Point;
+    width: int32;
+    height: int32;
+};
+
+const r = Rect::{
+    origin: Point::{ x: 0, y: 0 },
+    width: 100,
+    height: 100
+};
 ```
 
-### Creating and invoking functions 
+### Functions and Lambdas
 
-Functions are declared using the `fn` keyword, followed by the function name,
-a list of parameters (optionally), and the return type. For example:
+Functions are first-class citizens in Stride.
+
 ```stride
+// Standard function declaration
 fn add(a: int32, b: int32): int32 {
     return a + b;
 }
 
-// You can also create externally linked functions,
-// if they are defined in another library.
-extern fn some_c_function(x: int32): int32;
-        
-// You can invoke functions using the following syntax:
-const result: int32 = add(10, 5);
+// Function types and references
+const op: (int32, int32) -> int32 = add;
+let result = op(10, 20);
+
+// Extern functions (linking to C)
+extern fn printf(format: string, ...): int32;
+```
+
+### Operators
+
+Stride supports standard arithmetic and comparison operators with dominant type promotion.
+
+```stride
+let x = 10 + 20L; // x is int64
+let y = 10.0 + 5; // y is float64
+
+let is_equal = (x == 30L);
 ```
 
 ### Local Documentation Preview
@@ -186,26 +202,6 @@ This is a multi-line comment
 */
 ```
 
-### Structs
-
-Structs are still in development, but they are similar to classes in other languages.
-The current syntax is as follows:
-```stride
-type Point = {
-    x: int32;
-    y: int32;
-};
-
-const p = Point::{ x: 10, y: 20 };
-
-// You can also create structs that reference other structs.
-// These still function as separate types, and will cause a type error if they are used inappropriately.
-type Vector2d = Point;
-
-const p2: Vector2d = Vector2d::{ x: 5, y: 15 }; // This is valid
-
-const p3: Point = p2; // This is invalid,
-```
 
 ### Imports
 
