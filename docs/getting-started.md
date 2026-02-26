@@ -2,26 +2,6 @@
 
 Follow these instructions to build and run the Stride compiler and editor.
 
-## Prerequisites
-
-1. CMake >= 3.1
-2. Node.js >= 24.0
-3. LLVM 21.1.8
-
-### Installation
-
-You can install these packages using the following commands:
-
-```shell
-# MacOS 
-brew install cmake node@24 llvm@21
-```
-
-```shell
-# Ubuntu/Debian
-sudo apt install cmake nodejs llvm-21
-```
-
 ## Installation
 
 1. Clone the repository:
@@ -57,10 +37,6 @@ cstride <file_path>
 ## Running the Editor
 
 The web-based editor provides a convenient way to write Stride code with syntax highlighting and integrated terminal.
-
-### Prerequisites for Editor
-- `node` (>= 24.0)
-- `pnpm` (Performant Node Package Manager)
 
 ### Local Setup and Running
 

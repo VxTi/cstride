@@ -9,20 +9,20 @@ A function declaration consists of the `fn` keyword, followed by the function na
 ```stride
 // Function declaration
 fn add(a: int32, b: int32): int32 {
-    return a + b
+    return a + b;
 }
 
 // Function with no return value (void)
 fn greet(name: string): void {
-    printf("Hello, %s!\n", name)
+    printf("Hello, %s!\n", name);
 }
 
 fn main(): void {
     // Invoking functions
-    const result: int32 = add(10, 5)
-    printf("10 + 5 = %d\n", result)
+    const result: int32 = add(10, 5);
+    printf("10 + 5 = %d\n", result);
     
-    greet("Stride")
+    greet("Stride");
 }
 ```
 
@@ -33,6 +33,48 @@ Parameters are passed by value by default. Each parameter must have a name and a
 ## Return Values
 
 Functions return values using the `return` keyword. If a function is declared with a `void` return type, it does not need a `return` statement, or it can use `return` without a value.
+
+## Function Types
+
+Functions in Stride are first-class citizens and have types. A function type is denoted by its parameter types and its return type: `(param1_type, param2_type) -> return_type`.
+
+```stride
+fn add(a: int32, b: int32): int32 {
+    return a + b;
+}
+
+fn main(): void {
+    const op: (int32, int32) -> int32 = add;
+    const result: int32 = op(10, 20);
+}
+```
+
+## Lambdas (Anonymous Functions)
+
+Lambdas allow you to define functions inline. They follow the syntax `(params): return_type -> { body }`.
+
+```stride
+fn main(): void {
+    const multiply: (int32, int32) -> int32 = (x: int32, y: int32): int32 -> {
+        return x * y;
+    };
+    
+    const result: int32 = multiply(5, 10);
+}
+```
+
+Lambdas can also capture variables from their outer scope:
+
+```stride
+fn main(): void {
+    const factor: int32 = 10;
+    const multiply_by_factor: (int32) -> int32 = (x: int32): int32 -> {
+        return x * factor;
+    };
+    
+    printf("Result: %d\n", multiply_by_factor(5)); // Outputs 50
+}
+```
 
 ## The `main` Function
 
@@ -57,6 +99,6 @@ extern fn system_time_ns(): u64;
 extern fn exit(code: int32): void;
 
 fn main(): void {
-    printf("System time: %llu ns\n", system_time_ns())
+    printf("System time: %llu ns\n", system_time_ns());
 }
 ```

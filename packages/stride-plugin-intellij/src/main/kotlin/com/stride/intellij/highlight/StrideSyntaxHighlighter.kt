@@ -18,6 +18,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         val OPERATOR = createTextAttributesKey("STRIDE_OPERATOR", DefaultLanguageHighlighterColors.OPERATION_SIGN)
         val PARENTHESES = createTextAttributesKey("STRIDE_PARENTHESES", DefaultLanguageHighlighterColors.PARENTHESES)
         val BRACES = createTextAttributesKey("STRIDE_BRACES", DefaultLanguageHighlighterColors.BRACES)
+        val BRACKETS = createTextAttributesKey("STRIDE_BRACKETS", DefaultLanguageHighlighterColors.BRACKETS)
         val SEMICOLON = createTextAttributesKey("STRIDE_SEMICOLON", DefaultLanguageHighlighterColors.SEMICOLON)
         val COMMA = createTextAttributesKey("STRIDE_COMMA", DefaultLanguageHighlighterColors.COMMA)
         val DOT = createTextAttributesKey("STRIDE_DOT", DefaultLanguageHighlighterColors.DOT)
@@ -37,6 +38,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         private val OPERATOR_KEYS = arrayOf(OPERATOR)
         private val PARENTHESES_KEYS = arrayOf(PARENTHESES)
         private val BRACES_KEYS = arrayOf(BRACES)
+        private val BRACKETS_KEYS = arrayOf(BRACKETS)
         private val SEMICOLON_KEYS = arrayOf(SEMICOLON)
         private val COMMA_KEYS = arrayOf(COMMA)
         private val DOT_KEYS = arrayOf(DOT)
@@ -72,9 +74,12 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.MOD, StrideTypes.EXCL, StrideTypes.LT,
             StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ,
             StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR,
-            StrideTypes.ARROW -> OPERATOR_KEYS
+            StrideTypes.ARROW, StrideTypes.PLUS_PLUS, StrideTypes.MINUS_MINUS,
+            StrideTypes.PLUS_EQ, StrideTypes.MINUS_EQ, StrideTypes.ASTERISK_EQ,
+            StrideTypes.SLASH_EQ, StrideTypes.MOD_EQ, StrideTypes.COLON -> OPERATOR_KEYS
             StrideTypes.LPAREN, StrideTypes.RPAREN -> PARENTHESES_KEYS
             StrideTypes.LBRACE, StrideTypes.RBRACE -> BRACES_KEYS
+            StrideTypes.LSQUARE_BRACKET, StrideTypes.RSQUARE_BRACKET -> BRACKETS_KEYS
             StrideTypes.SEMICOLON -> SEMICOLON_KEYS
             StrideTypes.COMMA -> COMMA_KEYS
             StrideTypes.DOT, StrideTypes.COLON_COLON -> DOT_KEYS
