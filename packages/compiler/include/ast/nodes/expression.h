@@ -728,7 +728,10 @@ namespace stride::ast
             _members(std::move(members)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<AstExpression>>& get_members() const;
+        const std::vector<std::unique_ptr<AstExpression>>& get_members() const
+        {
+            return this->_members;
+        }
 
         llvm::Value* codegen(
             llvm::Module* module,
