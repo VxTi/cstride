@@ -55,6 +55,9 @@ namespace stride
         [[nodiscard]]
         int compile_jit(const cli::CompilationOptions& options) const;
 
+        [[nodiscard]]
+        int compile(const cli::CompilationOptions& options) const;
+
     private:
         void print_ast_nodes() const;
 
@@ -67,5 +70,10 @@ namespace stride
 
         void generate_llvm_ir(llvm::Module* module,
                               llvm::IRBuilderBase* builder) const;
+
+        std::unique_ptr<llvm::Module> prepare_module(
+            llvm::LLVMContext& context,
+            const cli::CompilationOptions& options,
+            llvm::TargetMachine* target_machine) const;
     };
 } // namespace stride

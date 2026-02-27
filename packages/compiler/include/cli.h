@@ -17,20 +17,19 @@ namespace stride::cli
     enum class CompilationMode
     {
         INTERPRET,
-        COMPILE_JIT
+        COMPILE_JIT,
+        COMPILE
     };
 
     typedef struct CompilationOptions
     {
         /**
-         * @brief Stores the list of include paths for the compilation process.
+         * @brief Stores the list of source files for the compilation process.
          *
-         * The include_paths variable contains a collection of directory paths
-         * that are searched during the compilation process to locate header files
-         * and other required resources. Each string in the vector represents a single
-         * directory path to be added to the include search paths.
+         * The source_files variable contains a collection of file paths
+         * that are to be compiled.
          */
-        std::vector<std::string> include_paths;
+        std::vector<std::string> source_files;
 
         /**
          * @brief Represents the mode of compilation to be used.
@@ -50,7 +49,25 @@ namespace stride::cli
          * intermediate steps are included in the compilation output, which can
          * be useful for troubleshooting and understanding the compilation process.
          */
-        bool debug_mode;
+         bool debug_mode;
+
+        /**
+        * @brief Specifies the output path for the compilation artifacts.
+        *
+        * This path determines where the resulting binary or object files will be
+        * placed. If not specified, the compiler defaults to the current working
+        * directory.
+        */
+        std::string output_path;
+
+        /**
+         * @brief Specifies the name of the output program.
+         *
+         * This name is used for the generated binary file. If not specified,
+         * the compiler may use a default name (e.g., "a.out" or the name
+         * of the input file).
+         */
+        std::string program_name;
     } CompilationOptions;
 
     /**
@@ -65,6 +82,9 @@ namespace stride::cli
 
     // `cstride -c <...>` or `cstride --compile <...>`
     int resolve_compile_command(int argc, char** argv);
+
+    // `cstride -r <...>` or `cstride --run <...>`
+    int resolve_run_command(int argc, char** argv);
 
     // `cstride install` or `cstride i`
     int resolve_install_command(int argc, char** argv);
