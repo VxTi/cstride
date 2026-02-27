@@ -15,7 +15,7 @@ llvm::Value* AstTupleInitializer::codegen(llvm::Module* module, llvm::IRBuilder<
         member_values.push_back(member->codegen(module, builder));
     }
 
-
+    return nullptr;
 }
 
 std::string AstTupleInitializer::to_string()
