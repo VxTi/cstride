@@ -1,6 +1,9 @@
+#include "errors.h"
 #include "formatting.h"
+#include "ast/casting.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/expression.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Module.h>
 
@@ -79,7 +82,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
     const auto lhs_source_pos = lhs->get_source_fragment();
 
     // TODO: Allow function calls to be the last element as well.
-    auto lhs_identifier = dynamic_cast<AstIdentifier*>(lhs.get());
+    auto lhs_identifier = cast_expr<AstIdentifier*>(lhs.get());
     if (!lhs_identifier)
     {
         throw parsing_error(
@@ -103,10 +106,10 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
 
 llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 ) const
 {
-    llvm::Value* base_val = this->get_base()->codegen(module, builder);
+    llvm::Value* base_val = this->_base->codegen(module, builder);
     auto cloned_base_type = this->_base_type->clone();
     std::string base_type_name = cloned_base_type->get_type_name();
 
@@ -162,7 +165,7 @@ llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
 
 llvm::Value* AstMemberAccessor::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     // Global struct definitions have no insertion point, so we need to do
@@ -175,7 +178,7 @@ llvm::Value* AstMemberAccessor::codegen(
     // Standard Code Generation (Function context)
 
     // Will codegen identifier - reference to variable (getptr)
-    llvm::Value* current_val = this->get_base()->codegen(module, builder);
+    llvm::Value* current_val = this->_base->codegen(module, builder);
     if (!current_val)
     {
         return nullptr;

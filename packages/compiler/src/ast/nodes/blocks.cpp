@@ -1,7 +1,9 @@
 #include "ast/nodes/blocks.h"
 
+#include "ast/casting.h"
 #include "ast/parser.h"
 #include "ast/nodes/function_declaration.h"
+#include "ast/tokens/token_set.h"
 
 #include <iostream>
 #include <sstream>
@@ -11,7 +13,7 @@ using namespace stride::ast;
 void AstBlock::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     for (const auto& child : this->children())
     {
@@ -21,7 +23,7 @@ void AstBlock::resolve_forward_references(
 
 llvm::Value* AstBlock::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     llvm::Value* last_value = nullptr;
 

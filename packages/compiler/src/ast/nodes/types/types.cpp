@@ -1,5 +1,7 @@
 #include "ast/nodes/types.h"
 
+#include "errors.h"
+#include "ast/casting.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"

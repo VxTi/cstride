@@ -1,14 +1,20 @@
 #pragma once
 
-#include "errors.h"
 #include "ast/tokens/token.h"
 
 #include <algorithm>
 #include <utility>
 #include <vector>
 
+namespace stride
+{
+    enum class ErrorType;
+    class Token;
+}
+
 namespace stride::ast
 {
+
     class TokenSet
     {
         std::shared_ptr<SourceFile> _source;

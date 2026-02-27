@@ -1,5 +1,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <format>
 #include <llvm/IR/IRBuilder.h>
@@ -173,7 +175,7 @@ stride::ast::parse_arithmetic_binary_operation_optional(
 
 llvm::Value* AstBinaryArithmeticOp::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     llvm::Value* lhs = this->get_left()->codegen(module, builder);

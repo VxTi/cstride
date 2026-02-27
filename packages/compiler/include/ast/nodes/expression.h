@@ -1,15 +1,11 @@
 #pragma once
 
-#include "types.h"
 #include "ast/symbols.h"
-#include "ast/tokens/token_set.h"
-
-#include <set>
-#include <utility>
 
 namespace stride::ast
 {
     enum class VisibilityModifier;
+    enum class TokenType;
     class AstLiteral;
     class AstFunctionParameter;
     class ParsingContext;
@@ -88,7 +84,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
@@ -125,7 +121,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
         void validate() override;
@@ -133,7 +129,7 @@ namespace stride::ast
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
         std::string to_string() override;
@@ -166,7 +162,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
@@ -212,7 +208,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
@@ -259,7 +255,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
 
@@ -274,7 +270,7 @@ namespace stride::ast
     private:
         llvm::Value* codegen_global_member_accessor(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) const;
     };
 
@@ -319,7 +315,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
         bool is_reducible() override;
@@ -398,11 +394,11 @@ namespace stride::ast
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         void validate() override;
     };
@@ -466,7 +462,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
@@ -499,7 +495,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
     };
@@ -528,7 +524,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
@@ -575,7 +571,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
         bool is_reducible() override;
@@ -636,13 +632,13 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
         bool is_reducible() override;
@@ -688,7 +684,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
@@ -706,7 +702,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
@@ -735,7 +731,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 

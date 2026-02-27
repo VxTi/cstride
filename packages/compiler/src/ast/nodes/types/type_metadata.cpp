@@ -1,3 +1,4 @@
+#include "ast/casting.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
@@ -45,6 +46,21 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
     base_type->set_flags(base_type->get_flags() | context_type_flags);
 
     return std::move(base_type);
+}
+
+std::string AstArrayType::to_string()
+{
+    if (cast_type<AstFunctionType*>(this->get_element_type()))
+    {
+        return std::format(
+            "({}{})[]",
+            this->_element_type->to_string(),
+            (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
+    }
+    return std::format(
+        "{}{}[]",
+        this->_element_type->to_string(),
+        (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
 }
 
 bool AstArrayType::equals(IAstType& other)

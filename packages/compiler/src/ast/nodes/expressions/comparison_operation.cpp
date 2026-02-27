@@ -1,6 +1,8 @@
+#include "errors.h"
 #include "ast/casting.h"
 #include "ast/optionals.h"
 #include "ast/nodes/expression.h"
+#include "ast/tokens/token.h"
 
 #include <llvm/IR/Module.h>
 
@@ -60,7 +62,7 @@ std::string AstComparisonOp::to_string()
 
 llvm::Value* AstComparisonOp::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     llvm::Value* left = this->get_left()->codegen(module, builder);
     llvm::Value* right = this->get_right()->codegen(module, builder);

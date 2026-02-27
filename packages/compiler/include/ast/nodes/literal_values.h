@@ -102,7 +102,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     class AstIntLiteral : public IAstLiteralBase<int64_t>
@@ -139,7 +139,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     class AstFpLiteral : public IAstLiteralBase<long double>
@@ -160,7 +160,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     class AstBooleanLiteral : public IAstLiteralBase<bool>
@@ -182,7 +182,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     class AstCharLiteral : public IAstLiteralBase<char>
@@ -202,7 +202,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     class AstNilLiteral : public AstLiteral
@@ -216,12 +216,12 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& tokens);
+        TokenSet& set);
 
     std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
         const std::shared_ptr<ParsingContext>& context,

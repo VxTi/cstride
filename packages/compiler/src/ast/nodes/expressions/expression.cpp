@@ -1,7 +1,10 @@
 #include "ast/nodes/expression.h"
 
+#include "errors.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
@@ -12,7 +15,7 @@ using namespace stride::ast;
 
 llvm::Value* AstExpression::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* ir_builder)
+    llvm::IRBuilderBase* ir_builder)
 {
     throw parsing_error(
         "Expression codegen not implemented, this must be implemented by subclasses");

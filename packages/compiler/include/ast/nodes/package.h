@@ -30,7 +30,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
         }

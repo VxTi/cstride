@@ -1,4 +1,5 @@
 #include "ast/nodes/literal_values.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
@@ -30,7 +31,7 @@ std::string AstStringLiteral::to_string()
 
 llvm::Value* AstStringLiteral::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* ir_builder)
+    llvm::IRBuilderBase* ir_builder)
 {
     // Check if a global variable already exists with the same value
     // If it does, we'll return a pointer to the existing global string

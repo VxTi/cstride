@@ -1,5 +1,7 @@
+#include "ast/casting.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
+#include "ast/tokens/token_set.h"
 
 using namespace stride::ast;
 

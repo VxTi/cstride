@@ -1,4 +1,5 @@
 #include "ast/nodes/expression.h"
+#include "ast/tokens/token.h"
 
 #include <format>
 #include <llvm/IR/IRBuilder.h>
@@ -34,7 +35,7 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
 
 llvm::Value* AstLogicalOp::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* ir_builder
+    llvm::IRBuilderBase* ir_builder
 )
 {
     // Implementation following short-circuiting logic

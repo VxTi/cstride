@@ -1,3 +1,4 @@
+#include "ast/casting.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
@@ -59,12 +60,15 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
     );
 }
 
-llvm::Value* AstTupleType::codegen(llvm::Module* module, llvm::IRBuilder<>* builder) {}
+llvm::Value* AstTupleType::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+{
+    return nullptr;
+}
 
 void AstTupleType::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder) {}
+    llvm::IRBuilderBase* builder) {}
 
 std::unique_ptr<IAstType> AstTupleType::clone() const
 {

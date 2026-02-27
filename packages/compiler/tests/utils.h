@@ -51,7 +51,7 @@ namespace stride::tests
 
         llvm::LLVMContext llvm_context;
         llvm::Module module("test_module", llvm_context);
-        llvm::IRBuilder<> builder(llvm_context);
+        llvm::IRBuilderBase builder(llvm_context);
 
         block->resolve_forward_references(context.get(), &module, &builder);
         block->validate();

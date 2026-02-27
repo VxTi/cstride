@@ -40,7 +40,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override { return nullptr; }
     };
 
     class AstEnumerable : public IAstNode
@@ -74,12 +74,12 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override { return nullptr; }
     };
 
     std::unique_ptr<AstEnumerableMember> parse_enumerable_member(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& tokens);
+        TokenSet& set);
 
     std::unique_ptr<AstEnumerable> parse_enumerable_declaration(
         const std::shared_ptr<ParsingContext>& context,

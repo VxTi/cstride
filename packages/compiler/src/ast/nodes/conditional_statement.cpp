@@ -1,7 +1,10 @@
 #include "ast/nodes/conditional_statement.h"
 
+#include "errors.h"
+#include "ast/conditionals.h"
 #include "ast/parser.h"
 #include "ast/parsing_context.h"
+#include "ast/tokens/token_set.h"
 
 #include <memory>
 #include <llvm/IR/Module.h>
@@ -132,10 +135,10 @@ bool AstConditionalStatement::is_reducible()
 
 llvm::Value* AstConditionalStatement::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
-    if (this->get_condition() == nullptr)
+    if (!this->_condition)
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
@@ -143,7 +146,7 @@ llvm::Value* AstConditionalStatement::codegen(
             this->get_source_fragment());
     }
 
-    if (this->get_body() == nullptr)
+    if (!this->_body)
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
@@ -152,17 +155,7 @@ llvm::Value* AstConditionalStatement::codegen(
     }
 
     // Generate Condition
-    llvm::Value* cond_value = this->get_condition()->codegen(
-        module,
-        builder);
-
-    if (cond_value == nullptr)
-    {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            "Unable to generate condition value",
-            this->get_source_fragment());
-    }
+    llvm::Value* cond_value = codegen_conditional_value(module, builder, this->_condition.get());
 
     llvm::Function* parent_function = builder->GetInsertBlock()->getParent();
 

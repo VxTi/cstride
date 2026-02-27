@@ -48,7 +48,7 @@ namespace stride::ast
 
         ~AstFunctionParameter() override = default;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override { return nullptr; }
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override { return nullptr; }
     };
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -155,14 +155,14 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         void validate() override;
 
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     class AstFunctionDeclaration

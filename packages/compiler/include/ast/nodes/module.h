@@ -40,12 +40,12 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     std::unique_ptr<AstModule> parse_module_statement(

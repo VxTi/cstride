@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "ast/nodes/expression.h"
 
 #include <llvm/IR/Module.h>
@@ -79,7 +80,7 @@ namespace
     }
 }
 
-llvm::Value* AstVariadicArgReference::codegen(llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstVariadicArgReference::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     // Verify we're inside a variadic function
     if (const llvm::Function* current_function = builder->GetInsertBlock()->getParent();

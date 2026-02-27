@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "ast/closures.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/expression.h"
@@ -9,7 +10,7 @@ using namespace stride::ast;
 
 llvm::Value* AstIdentifier::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     llvm::Value* val = nullptr;

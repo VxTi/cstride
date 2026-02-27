@@ -33,13 +33,13 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
 
         void aggregate_block(AstBlock* other)

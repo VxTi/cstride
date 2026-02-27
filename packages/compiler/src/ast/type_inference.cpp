@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "ast/casting.h"
 #include "ast/flags.h"
 #include "ast/parsing_context.h"

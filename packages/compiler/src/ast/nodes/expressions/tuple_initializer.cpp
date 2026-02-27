@@ -3,7 +3,7 @@
 using namespace stride::ast;
 
 
-llvm::Value* AstTupleInitializer::codegen(llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstTupleInitializer::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     const auto insertion_block = builder->GetInsertBlock();
 

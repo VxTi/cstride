@@ -1,6 +1,8 @@
+#include "errors.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
+#include "ast/tokens/token_set.h"
 
 #include <iostream>
 #include <ranges>
@@ -193,7 +195,7 @@ void AstStructInitializer::validate()
 
 llvm::Value* AstStructInitializer::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     // Resolve member values

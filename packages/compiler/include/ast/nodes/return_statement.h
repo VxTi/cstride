@@ -38,7 +38,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
 
         [[nodiscard]]
@@ -52,7 +52,7 @@ namespace stride::ast
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) override;
     };
 

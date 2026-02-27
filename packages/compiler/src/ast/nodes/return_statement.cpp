@@ -1,7 +1,9 @@
 #include "ast/nodes/return_statement.h"
 
+#include "errors.h"
 #include "ast/optionals.h"
 #include "ast/parsing_context.h"
+#include "ast/tokens/token_set.h"
 
 #include <format>
 #include <llvm/IR/IRBuilder.h>
@@ -80,7 +82,7 @@ std::string AstReturnStatement::to_string()
                        _value ? _value->to_string() : "nullptr");
 }
 
-void AstReturnStatement::resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
+void AstReturnStatement::resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     if (this->get_return_expr())
     {
@@ -90,7 +92,7 @@ void AstReturnStatement::resolve_forward_references(const ParsingContext* contex
 
 llvm::Value* AstReturnStatement::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     if (!this->get_return_expr())
     {

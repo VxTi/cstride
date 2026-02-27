@@ -58,7 +58,7 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
 
 llvm::Value* AstModule::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     if (!this->_body)
     {
@@ -71,7 +71,7 @@ llvm::Value* AstModule::codegen(
 void AstModule::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     if (!this->_body)
     {

@@ -49,9 +49,9 @@ namespace stride:: ast
             return this->_visibility;
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        void resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilder<>* builder) override;
+        void resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override { return std::format("Type<{}>", this->get_name()); }
     };

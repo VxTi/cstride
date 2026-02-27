@@ -2,7 +2,6 @@
 
 #include "ast_node.h"
 #include "formatting.h"
-#include "ast/casting.h"
 #include "ast/flags.h"
 
 #include <format>
@@ -124,7 +123,7 @@ namespace stride::ast
             return false;
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
         }
@@ -359,20 +358,7 @@ namespace stride::ast
             return this->_initial_length;
         }
 
-        std::string to_string() override
-        {
-            if (cast_type<AstFunctionType*>(this->get_element_type()))
-            {
-                return std::format(
-                    "({}{})[]",
-                    this->_element_type->to_string(),
-                    (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
-            }
-            return std::format(
-                "{}{}[]",
-                this->_element_type->to_string(),
-                (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
-        }
+        std::string to_string() override;
 
         [[nodiscard]]
         std::string get_type_name() override
@@ -426,7 +412,7 @@ namespace stride::ast
 
         // Struct registration is done in the `resolve_forward_references` pass
         // so that one can reference structs before they're semantically defined.
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
         }
@@ -434,7 +420,7 @@ namespace stride::ast
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         [[nodiscard]]
         std::string get_internalized_name() const;
@@ -473,12 +459,12 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
     };
 
     std::unique_ptr<IAstType> parse_type(

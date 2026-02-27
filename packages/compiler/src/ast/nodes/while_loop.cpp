@@ -4,6 +4,7 @@
 #include "ast/parser.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Module.h>
 
@@ -50,7 +51,7 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
 
 llvm::Value* AstWhileLoop::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
 

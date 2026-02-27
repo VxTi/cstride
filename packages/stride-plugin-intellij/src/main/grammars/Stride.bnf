@@ -131,7 +131,7 @@ VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInfer
 // --- Types ---
 Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*]
 // <module>::<type> or <type>
-PrimitiveType ::= (VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING)
+PrimitiveType ::= VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING
 UserType ::= ScopedIdentifier [GenericTypeArguments] {
   mixin="com.stride.intellij.psi.StrideUserTypeMixin"
   methods=[
@@ -214,7 +214,11 @@ PrimaryExpression ::= LiteralExpression
                      | ParenthesizedExpression
                      | FunctionCallExpression
                      | ScopedIdentifier
-                     | (LSQUARE_BRACKET PrimaryExpression RSQUARE_BRACKET)
+                     | ArrayDeclarationExpression
+                     | TupleInitializationExpression
+
+ArrayDeclarationExpression ::= LSQUARE_BRACKET PrimaryExpression RSQUARE_BRACKET
+TupleInitializationExpression ::= LPAREN Expression (COMMA Expression)* RPAREN
 
 FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {
   methods=[
@@ -224,6 +228,7 @@ FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {
 }
 
 LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL
+// some::Struct { field1: value1, field2: value2 }
 StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] RBRACE {
   methods=[
     getScopedIdentifier

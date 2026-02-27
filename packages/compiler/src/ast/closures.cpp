@@ -61,7 +61,7 @@ namespace stride::ast::closures
     }
 
     llvm::Value* load_captured_variable(
-        llvm::IRBuilder<>* builder,
+        llvm::IRBuilderBase* builder,
         const std::string& capture_name
     )
     {
@@ -146,7 +146,7 @@ namespace stride::ast::closures
     }
 
     std::vector<llvm::Value*> generate_capture_arguments(
-        llvm::IRBuilder<>* builder,
+        llvm::IRBuilderBase* builder,
         llvm::Function* lambda_fn,
         const size_t num_declared_params
     )
@@ -236,7 +236,7 @@ namespace stride::ast::closures
 
     llvm::Value* create_closure(
         llvm::Module* module,
-        llvm::IRBuilder<>* builder,
+        llvm::IRBuilderBase* builder,
         llvm::Function* lambda_fn,
         const std::vector<llvm::Value*>& captured_values
     )
@@ -320,7 +320,7 @@ namespace stride::ast::closures
 
     std::vector<llvm::Value*> extract_closure_captures(
         const llvm::Module* module,
-        llvm::IRBuilder<>* builder,
+        llvm::IRBuilderBase* builder,
         llvm::Value* fn_ptr_val,
         llvm::Function* lambda_fn
     )

@@ -51,14 +51,14 @@ namespace stride::ast
 
         virtual llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) = 0;
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
             const ParsingContext* context,
             llvm::Module* module,
-            llvm::IRBuilder<>* builder
+            llvm::IRBuilderBase* builder
         ) {}
     };
 

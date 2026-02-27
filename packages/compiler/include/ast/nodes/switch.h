@@ -37,7 +37,7 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilder<>* builder) override;
+            llvm::IRBuilderBase* builder) override;
 
         static bool can_parse(const TokenSet& tokens);
 

@@ -1,4 +1,5 @@
 #include "ast/nodes/literal_values.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Constants.h>
 
@@ -46,7 +47,7 @@ std::string AstFpLiteral::to_string()
 
 llvm::Value* AstFpLiteral::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     if (this->bit_count() > 32)
     {

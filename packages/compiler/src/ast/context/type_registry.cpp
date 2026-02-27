@@ -1,4 +1,5 @@
 #include "errors.h"
+#include "ast/casting.h"
 #include "ast/parsing_context.h"
 
 #include <ranges>

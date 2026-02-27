@@ -28,7 +28,7 @@ bool stride::ast::is_optional_wrapped_type(const llvm::Type* type)
 llvm::Value* stride::ast::wrap_optional_value(
     llvm::Value* value,
     llvm::Type* optional_ty,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     // If it's already wrapped, just return it.
     if (is_optional_wrapped_type(value->getType()))
@@ -90,7 +90,7 @@ llvm::Value* stride::ast::wrap_optional_value(
 llvm::Value* stride::ast::optionally_upcast_type(
     llvm::Value* value,
     llvm::Type* target_ty,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     const auto value_ty = value->getType();
 
@@ -122,7 +122,7 @@ llvm::Value* stride::ast::wrap_optional_value_gep(
     llvm::Value* value,
     llvm::Type* optional_ty,
     const llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     const auto value_ty = value->getType();
 
@@ -186,7 +186,7 @@ llvm::Value* stride::ast::wrap_optional_value_gep(
 /// If it's not wrapped, we just return the value as-is.
 llvm::Value* stride::ast::unwrap_optional_value(
     llvm::Value* value,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     // If it's not an optional, we don't have to upwrap it.
     if (!is_optional_wrapped_type(value->getType()))
@@ -202,7 +202,7 @@ llvm::Value* stride::ast::unwrap_optional_value(
 
 std::optional<bool> stride::ast::extract_has_value_from_optional(
     llvm::Value* optional,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     if (!optional || !is_optional_wrapped_type(optional->getType()))
     {
@@ -217,7 +217,7 @@ std::optional<bool> stride::ast::extract_has_value_from_optional(
 
 llvm::Value* stride::ast::set_has_value_in_optional_gep(
     llvm::Value* optional,
-    llvm::IRBuilder<>* builder,
+    llvm::IRBuilderBase* builder,
     const bool has_value)
 {
     if (!is_optional_wrapped_type(optional->getType()))

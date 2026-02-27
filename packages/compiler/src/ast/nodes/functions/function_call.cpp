@@ -1,4 +1,6 @@
+#include "errors.h"
 #include "formatting.h"
+#include "ast/casting.h"
 #include "ast/closures.h"
 #include "ast/optionals.h"
 #include "ast/parsing_context.h"
@@ -6,6 +8,7 @@
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
+#include "ast/tokens/token_set.h"
 
 #include <format>
 #include <sstream>
@@ -92,7 +95,7 @@ std::string AstFunctionCall::format_function_name() const
 
 llvm::Value* AstFunctionCall::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     llvm::Function* callee = module->getFunction(this->get_internal_name());

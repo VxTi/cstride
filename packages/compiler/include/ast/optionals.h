@@ -38,7 +38,7 @@ namespace stride::ast
      */
     std::optional<bool> extract_has_value_from_optional(
         llvm::Value* optional,
-        llvm::IRBuilder<>* builder);
+        llvm::IRBuilderBase* builder);
 
     /**
      * Will set the "has_value" part to the provided state in <code>optional</code>.
@@ -47,7 +47,7 @@ namespace stride::ast
      */
     llvm::Value* set_has_value_in_optional_gep(
         llvm::Value* optional,
-        llvm::IRBuilder<>* builder,
+        llvm::IRBuilderBase* builder,
         bool has_value);
 
     /**
@@ -61,14 +61,14 @@ namespace stride::ast
     llvm::Value* wrap_optional_value(
         llvm::Value* value,
         llvm::Type* optional_ty,
-        llvm::IRBuilder<>* builder);
+        llvm::IRBuilderBase* builder);
 
     llvm::Value* wrap_optional_value_gep(
         const std::string& name,
         llvm::Value* value,
         llvm::Type* optional_ty,
         const llvm::Module* module,
-        llvm::IRBuilder<>* builder);
+        llvm::IRBuilderBase* builder);
 
     /**
      * Unwraps (extracts) an optional LLVM value, returning the inner value if present, or nullptr
@@ -76,10 +76,10 @@ namespace stride::ast
      */
     llvm::Value* unwrap_optional_value(
         llvm::Value* value,
-        llvm::IRBuilder<>* builder);
+        llvm::IRBuilderBase* builder);
 
     llvm::Value* optionally_upcast_type(
         llvm::Value* value,
         llvm::Type* target_ty,
-        llvm::IRBuilder<>* builder);
+        llvm::IRBuilderBase* builder);
 } // namespace stride::ast

@@ -1,3 +1,5 @@
+#include "errors.h"
+#include "ast/casting.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
 
@@ -17,7 +19,7 @@ void AstArray::validate()
 void AstArray::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     for (const auto& element : this->get_elements())
@@ -33,7 +35,7 @@ std::string AstArray::to_string()
 
 llvm::Value* AstArray::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     const auto resolved_type = infer_expression_type(this);

@@ -1,4 +1,7 @@
+#include "errors.h"
 #include "ast/nodes/literal_values.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <iostream>
 #include <llvm/IR/Constants.h>
@@ -83,7 +86,7 @@ std::string AstIntLiteral::to_string()
 
 llvm::Value* AstIntLiteral::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     return llvm::ConstantInt::get(
         module->getContext(),

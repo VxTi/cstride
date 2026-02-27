@@ -3,6 +3,8 @@
 #include "ast/conditionals.h"
 #include "ast/modifiers.h"
 #include "ast/parsing_context.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Module.h>
 
@@ -88,7 +90,7 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
 
 llvm::Value* AstForLoop::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
 

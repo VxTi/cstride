@@ -1,13 +1,19 @@
 #pragma once
-#include <llvm/IR/IRBuilder.h>
+
+namespace llvm {
+    class IRBuilderBase;
+    class Module;
+    class Value;
+}
 
 namespace stride::ast
 {
     class AstExpression;
 
+
     llvm::Value* codegen_conditional_value(
         llvm::Module* module,
-        llvm::IRBuilder<>* builder,
+        llvm::IRBuilderBase* builder,
         AstExpression* condition
     );
 }

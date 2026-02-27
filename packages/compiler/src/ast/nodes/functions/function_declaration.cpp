@@ -1,5 +1,6 @@
 #include "ast/nodes/function_declaration.h"
 
+#include "errors.h"
 #include "ast/casting.h"
 #include "ast/closures.h"
 #include "ast/modifiers.h"
@@ -11,6 +12,8 @@
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/return_statement.h"
 #include "ast/nodes/while_loop.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <iostream>
 #include <ranges>
@@ -175,7 +178,7 @@ void IAstFunction::validate()
 
 llvm::Value* IAstFunction::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     llvm::Function* function = module->getFunction(this->get_internal_name());
@@ -869,7 +872,7 @@ bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
 void IAstFunction::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     const auto& function_name = this->get_internal_name();

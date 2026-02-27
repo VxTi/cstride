@@ -1,5 +1,6 @@
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
+#include "ast/tokens/token_set.h"
 
 using namespace stride::ast;
 

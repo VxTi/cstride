@@ -17,7 +17,7 @@ std::unique_ptr<AstBreakStatement> stride::ast::parse_break_statement(
     return std::make_unique<AstBreakStatement>(reference_token.get_source_fragment(), context);
 }
 
-llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     if (ParsingContext::get_control_flow_blocks().empty())
     {

@@ -19,6 +19,7 @@ fn main(): int32 {
     return 0;
 }
  */
+type Fn = (int32, int64) -> int32;
 
 type Tuple = (int32, int64);
 

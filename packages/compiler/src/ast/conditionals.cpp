@@ -1,5 +1,6 @@
 #include "ast/conditionals.h"
 
+#include "errors.h"
 #include "ast/nodes/expression.h"
 
 #include <llvm/IR/Module.h>
@@ -8,10 +9,11 @@ using namespace stride::ast;
 
 llvm::Value* stride::ast::codegen_conditional_value(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder,
-    AstExpression* condition)
+    llvm::IRBuilderBase* builder,
+    AstExpression* condition
+)
 {
-    if (!condition) // Fall back to 1 (infinite loop)
+    if (!condition) // Fall back to 1 if no condition is provided, e.g., in `if { ... }`
     {
         return llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 1));
     }
@@ -24,7 +26,7 @@ llvm::Value* stride::ast::codegen_conditional_value(
             ErrorType::COMPILATION_ERROR,
             "Could not generate conditional value",
             condition->get_source_fragment()
-            );
+        );
     }
 
     // Ensure condValue is of type i1

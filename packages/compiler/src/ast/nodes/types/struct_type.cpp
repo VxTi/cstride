@@ -1,3 +1,5 @@
+#include "errors.h"
+#include "ast/casting.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/types.h"
@@ -173,7 +175,7 @@ std::string AstStructType::get_internalized_name() const
 void AstStructType::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     // Retrieve or Create the named struct type (Opaque)

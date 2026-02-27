@@ -1,6 +1,9 @@
+#include "errors.h"
+#include "ast/casting.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
@@ -250,7 +253,7 @@ void AstUnaryOp::validate()
 
 llvm::Value* AstUnaryOp::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     if (requires_identifier_operand(this->get_op_type()))

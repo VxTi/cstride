@@ -25,7 +25,7 @@ namespace stride::ast
         ) :
             IControlFlowStatement(source, context) {}
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void validate() override;
 
@@ -42,7 +42,7 @@ namespace stride::ast
         ) :
             IControlFlowStatement(source, context) {}
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilder<>* builder) override;
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void validate() override;
 

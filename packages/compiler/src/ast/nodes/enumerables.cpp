@@ -2,6 +2,7 @@
 
 #include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
+#include "ast/tokens/token_set.h"
 
 #include <format>
 #include <sstream>
@@ -17,9 +18,9 @@ using namespace stride::ast::definition;
  */
 std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& tokens)
+    TokenSet& set)
 {
-    const auto member_name_tok = tokens.expect(TokenType::IDENTIFIER);
+    const auto member_name_tok = set.expect(TokenType::IDENTIFIER);
     auto member_sym = member_name_tok.get_lexeme();
 
     context->define_symbol(
@@ -31,16 +32,16 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
             member_sym),
         SymbolType::ENUM_MEMBER);
 
-    tokens.expect(TokenType::COLON, "Expected a colon after enum member name");
+    set.expect(TokenType::COLON, "Expected a colon after enum member name");
 
-    auto value = parse_literal_optional(context, tokens);
+    auto value = parse_literal_optional(context, set);
 
     if (!value.has_value())
     {
-        tokens.throw_error("Expected a literal value for enum member");
+        set.throw_error("Expected a literal value for enum member");
     }
 
-    tokens.expect(TokenType::COMMA, "Expected a comma after enum member value");
+    set.expect(TokenType::COMMA, "Expected a comma after enum member value");
 
     return std::make_unique<AstEnumerableMember>(
         member_name_tok.get_source_fragment(),

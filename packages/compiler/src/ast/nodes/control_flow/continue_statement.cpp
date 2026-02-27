@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/control_flow_statements.h"
 
@@ -14,7 +15,7 @@ std::unique_ptr<AstContinueStatement> stride::ast::parse_continue_statement(
     return std::make_unique<AstContinueStatement>(reference_token.get_source_fragment(), context);
 }
 
-llvm::Value* AstContinueStatement::codegen(llvm::Module* module, llvm::IRBuilder<>* builder)
+llvm::Value* AstContinueStatement::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     if (ParsingContext::get_control_flow_blocks().empty())
     {

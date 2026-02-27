@@ -1,3 +1,5 @@
+#include "errors.h"
+#include "ast/casting.h"
 #include "ast/flags.h"
 #include "ast/modifiers.h"
 #include "ast/optionals.h"
@@ -5,6 +7,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
@@ -230,7 +233,7 @@ void AstVariableDeclaration::validate()
 // This way, we can assign function return values to variables
 void append_to_global_ctors(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder,
+    llvm::IRBuilderBase* builder,
     llvm::Function* init_func,
     const int priority
 )
@@ -284,7 +287,7 @@ void append_to_global_ctors(
 void AstVariableDeclaration::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     if (const auto initial_value = this->get_initial_value().get())
@@ -326,7 +329,7 @@ void global_var_declaration_codegen(
     const AstVariableDeclaration* self,
     llvm::GlobalVariable* global_var,
     llvm::Module* module,
-    llvm::IRBuilder<>* ir_builder)
+    llvm::IRBuilderBase* ir_builder)
 {
     // Dynamic Initialization ("Global Constructor" Pattern)
     // Create a function: void __init_variable_name()
@@ -415,7 +418,7 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
 
 llvm::Value* AstVariableDeclaration::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* ir_builder
+    llvm::IRBuilderBase* ir_builder
 )
 {
     // Get the LLVM type for the variable

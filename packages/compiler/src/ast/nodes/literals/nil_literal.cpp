@@ -9,7 +9,7 @@ std::string AstNilLiteral::to_string()
 
 llvm::Value* AstNilLiteral::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder)
+    llvm::IRBuilderBase* builder)
 {
     return llvm::Constant::getNullValue(builder->getPtrTy());
 }

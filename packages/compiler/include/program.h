@@ -59,13 +59,13 @@ namespace stride
         void print_ast_nodes() const;
 
         void resolve_forward_references(llvm::Module* module,
-                                        llvm::IRBuilder<>* builder) const;
+                                        llvm::IRBuilderBase* builder) const;
 
         void validate_ast_nodes() const;
 
         void optimize_ast_nodes();
 
         void generate_llvm_ir(llvm::Module* module,
-                              llvm::IRBuilder<>* builder) const;
+                              llvm::IRBuilderBase* builder) const;
     };
 } // namespace stride

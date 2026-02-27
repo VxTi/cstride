@@ -1,6 +1,10 @@
+#include "errors.h"
+#include "ast/casting.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Module.h>
 
@@ -68,7 +72,7 @@ void AstArrayMemberAccessor::validate()
 
 llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     const auto array_iden_type = infer_expression_type(

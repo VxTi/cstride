@@ -1,6 +1,9 @@
+#include "errors.h"
 #include "ast/optionals.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/expression.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
@@ -54,7 +57,7 @@ void AstVariableReassignment::validate()
 
 llvm::Value* AstVariableReassignment::codegen(
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     auto& ctx = module->getContext();
@@ -229,7 +232,7 @@ llvm::Value* AstVariableReassignment::codegen(
 void AstVariableReassignment::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
-    llvm::IRBuilder<>* builder
+    llvm::IRBuilderBase* builder
 )
 {
     this->get_value()->resolve_forward_references(context, module, builder);

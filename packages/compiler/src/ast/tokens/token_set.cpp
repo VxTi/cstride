@@ -4,6 +4,8 @@
 
 #include "ast/tokens/token_set.h"
 
+#include "errors.h"
+
 #include <format>
 
 using namespace stride::ast;
