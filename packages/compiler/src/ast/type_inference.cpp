@@ -532,6 +532,23 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         );
     }
 
+    if (const auto* tuple_init = cast_expr<AstTupleInitializer *>(expr))
+    {
+        std::vector<std::unique_ptr<IAstType>> param_types;
+        param_types.reserve(tuple_init->get_members().size());
+
+        for (const auto& member : tuple_init->get_members())
+        {
+            param_types.emplace_back(infer_expression_type(member.get(), recursion_guard));
+        }
+
+        return std::make_unique<AstTupleType>(
+            tuple_init->get_source_fragment(),
+            tuple_init->get_context(),
+            std::move(param_types)
+        );
+    }
+
     if (cast_expr<AstVariadicArgReference*>(expr))
     {
         // Variadic argument reference (...) represents a va_list in LLVM

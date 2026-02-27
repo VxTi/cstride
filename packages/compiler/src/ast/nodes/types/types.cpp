@@ -29,6 +29,12 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
         return std::move(named_type.value());
     }
 
+    if (auto tuple_type = parse_tuple_type_optional(context, set, type_flags);
+        tuple_type.has_value())
+    {
+        return std::move(tuple_type.value());
+    }
+
     if (auto function_type = parse_function_type_optional(context, set, type_flags);
         function_type.has_value())
     {
@@ -39,12 +45,6 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
         struct_type.has_value())
     {
         return std::move(struct_type.value());
-    }
-
-    if (auto tuple_type = parse_tuple_type_optional(context, set, type_flags);
-        tuple_type.has_value())
-    {
-        return std::move(tuple_type.value());
     }
 
     set.throw_error(error);

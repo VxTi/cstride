@@ -16,7 +16,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
         return std::nullopt;
 
     const auto& reference_token = set.peek_next();
-    const auto type_set = collect_parenthesized_block(set);
+    auto type_set = collect_parenthesized_block(set);
 
     std::vector<std::unique_ptr<IAstType>> members;
 
@@ -25,12 +25,20 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
         set.throw_error("Expected a sequence of types in tuple declaration");
     }
 
-    members.push_back(parse_type(context, set, "Expected types in tuple type declaration"));
+    members.push_back(
+        parse_type(
+            context,
+            type_set.value(),
+            "Expected types in tuple type declaration"));
 
     while (set.peek_next_eq(TokenType::COMMA))
     {
         set.next();
-        members.push_back(parse_type(context, set, "Expected types in tuple type declaration"));
+        members.push_back(
+            parse_type(context,
+                       type_set.value(),
+                       "Expected types in tuple type declaration")
+        );
     }
 
     const auto last_pos = type_set.has_value()

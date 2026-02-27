@@ -14,7 +14,8 @@ namespace stride::ast
     class AstFunctionParameter;
     class ParsingContext;
 
-    namespace definition {
+    namespace definition
+    {
         class IDefinition;
     }
 
@@ -712,6 +713,32 @@ namespace stride::ast
         void validate() override;
     };
 
+    class AstTupleInitializer
+        : public AstExpression
+    {
+        std::vector<std::unique_ptr<AstExpression>> _members;
+
+    public:
+        explicit AstTupleInitializer(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context,
+            std::vector<std::unique_ptr<AstExpression>> members
+        ) :
+            AstExpression(source, context),
+            _members(std::move(members)) {}
+
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<AstExpression>>& get_members() const;
+
+        llvm::Value* codegen(
+            llvm::Module* module,
+            llvm::IRBuilder<>* builder) override;
+
+        std::string to_string() override;
+
+        void validate() override;
+    };
+
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
      #                                                           #
      *                    PARSER FUNCTIONS                       *
@@ -861,7 +888,8 @@ namespace stride::ast
     std::unique_ptr<IAstType> infer_unary_op_type(const AstUnaryOp* operation);
 
     /// Infers the result type of a binary arithmetic operation
-    std::unique_ptr<IAstType> infer_binary_arithmetic_op_type(const AstBinaryArithmeticOp* operation);
+    std::unique_ptr<IAstType> infer_binary_arithmetic_op_type(
+        const AstBinaryArithmeticOp* operation);
 
     /// Infers the type of a literal expression
     std::unique_ptr<IAstType> infer_expression_literal_type(AstLiteral* literal);
@@ -870,8 +898,10 @@ namespace stride::ast
     std::unique_ptr<IAstType> infer_function_call_return_type(const AstFunctionCall* fn_call);
 
     /// Infers the type produced by a struct initializer expression
-    std::unique_ptr<IAstType> infer_struct_initializer_type(const AstStructInitializer* initializer);
+    std::unique_ptr<IAstType>
+    infer_struct_initializer_type(const AstStructInitializer* initializer);
 
     /// Infers the type of the field accessed via a member accessor expression
-    std::unique_ptr<IAstType> infer_member_accessor_type(const AstMemberAccessor* member_accessor_expr);
+    std::unique_ptr<IAstType> infer_member_accessor_type(
+        const AstMemberAccessor* member_accessor_expr);
 } // namespace stride::ast

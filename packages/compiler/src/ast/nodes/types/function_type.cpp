@@ -32,8 +32,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
         is_expecting_closing_paren = true;
     }
 
-    int recursion_depth = 0;
-
     while (set.has_next() && !set.peek_next_eq(TokenType::RPAREN))
     {
         parameters.push_back(
@@ -49,11 +47,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
             break;
         }
         set.expect(TokenType::COMMA, "Expected ',' between function type parameters");
-
-        if (recursion_depth++ > MAX_RECURSION_DEPTH)
-        {
-            set.throw_error("Maximum recursion depth exceeded when parsing function type");
-        }
     }
 
     set.expect(TokenType::RPAREN, "Expected ')' after function type notation");
@@ -69,7 +62,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     {
         set.expect(TokenType::RPAREN, "Expected secondary ')' after function type notation");
     }
-
 
     auto fn_type = std::make_unique<AstFunctionType>(
         reference_token.get_source_fragment(),
