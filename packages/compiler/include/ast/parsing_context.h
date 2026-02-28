@@ -219,7 +219,10 @@ namespace stride::ast
         ) const;
 
         [[nodiscard]]
-        const definition::CallableDef* get_function_def(const std::string& function_name) const;
+        std::optional<definition::CallableDef*> get_function_definition_internalized(const std::string& mangled_name) const;
+
+        [[nodiscard]]
+        std::optional<definition::CallableDef*> get_function_definition(const std::string& function_name) const;
 
         [[nodiscard]]
         std::optional<definition::TypeDef*> get_type_definition(

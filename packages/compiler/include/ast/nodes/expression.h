@@ -326,8 +326,10 @@ namespace stride::ast
         [[nodiscard]]
         std::string format_function_name() const;
 
-        static std::string format_suggestion(
-            const definition::IDefinition* suggestion);
+        static std::string format_suggestion(const definition::IDefinition* suggestion);
+
+        llvm::Value* codegen_anonymous_function_call(llvm::Module* module, llvm::IRBuilderBase* builder) const;
+
     };
 
     class AstVariableDeclaration

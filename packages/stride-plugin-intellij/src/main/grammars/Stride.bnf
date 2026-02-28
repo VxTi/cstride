@@ -114,7 +114,8 @@ ImportStatement ::= IMPORT ScopedIdentifier COLON_COLON LBRACE ScopedIdentifier 
 ExternFunctionDeclaration ::= [AccessModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
 FunctionDeclaration ::= [AccessModifier] [ASYNC] FunctionDeclarationHeader BlockStatement
 private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN FunctionParameterList RPAREN COLON Type
-FunctionParameterList ::= [FunctionParameter (COMMA FunctionParameter)*] [COMMA ELLIPSIS]
+
+FunctionParameterList ::= (FunctionParameter (COMMA FunctionParameter)* [COMMA ELLIPSIS]) | [ELLIPSIS]
 FunctionParameter ::= IDENTIFIER COLON Type
 
 TypeDefinition ::= KW_TYPE IDENTIFIER EQ Type SEMICOLON

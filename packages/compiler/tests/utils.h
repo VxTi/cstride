@@ -5,13 +5,13 @@
 #include "ast/tokens/tokenizer.h"
 #include "files.h"
 #include "ast/nodes/blocks.h"
-#include "stl/stl_functions.h"
 
 #include <gtest/gtest.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/Support/TargetSelect.h>
 #include <memory>
 #include <string>
+#include <llvm/IR/Module.h>
 
 namespace stride::tests
 {
@@ -22,8 +22,6 @@ namespace stride::tests
         const auto source = std::make_shared<SourceFile>("test.sr", code);
         auto tokens = ast::tokenizer::tokenize(source);
         const auto context = std::make_shared<ast::ParsingContext>();
-
-        stl::register_internal_symbols(context);
 
         return { ast::parse_sequential(context, tokens), context };
     }

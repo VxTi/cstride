@@ -96,17 +96,18 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     const auto& context = fn_call->get_context();
     // First steps, if the function call references a "normal" function, e.g., "fn <some name>",
     // then we can simply use
-    if (const auto fn_def = context->get_function_def(
-        fn_call->get_internal_name()))
+    if (const auto fn_def = context->get_function_definition_internalized(
+        fn_call->get_internal_name()); fn_def.has_value())
     {
-        return fn_def->get_type()->get_return_type()->clone();
+        return fn_def.value()->get_type()->get_return_type()->clone();
     }
 
     // It could be an extern function, in which case the function name is just as-is
-    if (const auto fn_def = context->get_function_def(
-        fn_call->get_function_name()))
+    if (const auto fn_def = context->get_function_definition_internalized(
+            fn_call->get_function_name());
+        fn_def.has_value())
     {
-        return fn_def->get_type()->get_return_type()->clone();
+        return fn_def.value()->get_type()->get_return_type()->clone();
     }
     std::vector candidates = { fn_call->get_internal_name(),
                                fn_call->get_function_name() };
@@ -533,7 +534,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         );
     }
 
-    if (const auto* tuple_init = cast_expr<AstTupleInitializer *>(expr))
+    if (const auto* tuple_init = cast_expr<AstTupleInitializer*>(expr))
     {
         std::vector<std::unique_ptr<IAstType>> param_types;
         param_types.reserve(tuple_init->get_members().size());

@@ -117,22 +117,38 @@ const IdentifiableSymbolDef* ParsingContext::get_symbol_def(
     return nullptr;
 }
 
-const CallableDef* ParsingContext::get_function_def(
+std::optional<CallableDef*> ParsingContext::get_function_definition(
     const std::string& function_name) const
 {
     for (const auto& global_scope = this->traverse_to_root();
          const auto& symbol_def : global_scope._symbols)
     {
-        if (const auto* fn_def = dynamic_cast<const CallableDef*>(symbol_def.
-            get()))
+        if (auto* fn_def = dynamic_cast<CallableDef*>(symbol_def.get()))
         {
-            if (fn_def->get_internal_symbol_name() == function_name)
+            if (fn_def->get_symbol().name == function_name)
             {
                 return fn_def;
             }
         }
     }
-    return nullptr;
+    return std::nullopt;
+}
+
+std::optional<CallableDef*> ParsingContext::get_function_definition_internalized(
+    const std::string& mangled_name) const
+{
+    for (const auto& global_scope = this->traverse_to_root();
+         const auto& symbol_def : global_scope._symbols)
+    {
+        if (auto* fn_def = dynamic_cast<CallableDef*>(symbol_def.get()))
+        {
+            if (fn_def->get_internal_symbol_name() == mangled_name)
+            {
+                return fn_def;
+            }
+        }
+    }
+    return std::nullopt;
 }
 
 static size_t levenshtein_distance(const std::string& a, const std::string& b)

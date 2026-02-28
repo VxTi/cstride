@@ -1,5 +1,4 @@
 #include "program.h"
-#include "stl/stl_functions.h"
 
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
@@ -75,7 +74,6 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
        .setJITTargetMachineBuilder(std::move(jtmb))
        .create()
     );
-    stl::register_runtime_symbols(jit.get());
     auto module = prepare_module(*context, options, target_machine.get());
 
     jit->getMainJITDylib().addGenerator(

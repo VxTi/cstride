@@ -1,7 +1,6 @@
 #include "program.h"
 
 #include "ast/parser.h"
-#include "stl/stl_functions.h"
 
 #include <iostream>
 #include <llvm/Analysis/LoopAnalysisManager.h>
@@ -22,8 +21,6 @@ void Program::parse_files(std::vector<std::string> files)
 {
     this->_global_scope = std::make_shared<ast::ParsingContext>();
     this->_files = std::move(files);
-
-    stl::register_internal_symbols(this->get_global_context());
 
     std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
 
@@ -138,6 +135,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     this->resolve_forward_references(module.get(), &builder);
     this->validate_ast_nodes();
 
+    // LLVM Codegeneration step
     this->codegen(module.get(), &builder);
 
     if (llvm::verifyModule(*module, &llvm::errs()))
