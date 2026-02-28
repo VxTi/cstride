@@ -53,6 +53,8 @@ namespace stride::ast
         {
             return nullptr;
         }
+
+        void validate() override;
     };
 
     std::unique_ptr<AstImport> parse_import_statement(

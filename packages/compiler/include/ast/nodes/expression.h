@@ -822,7 +822,7 @@ namespace stride::ast
         TokenSet& set);
 
     /// Parses a dot-separated identifier into its individual name segments, e.g., `foo::bar::baz`
-    SymbolNameSegments parse_segmented_identifier(TokenSet& set);
+    SymbolNameSegments parse_segmented_identifier(TokenSet& set, const std::string& error_message);
 
     /// Parses a lambda function literal into an expression node
     std::unique_ptr<AstExpression> parse_lambda_fn_expression(

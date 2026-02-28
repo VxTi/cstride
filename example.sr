@@ -1,12 +1,6 @@
+import io::{ println };
+
 extern fn powl(base: float64, exp: float64): float64;
-
-extern fn system_time_ns(): uint64;
-
-extern fn printf(input: string, ...): int32;
-
-fn println(input: string, ...): void {
-    printf("%s\n", input, ...);
-}
 
 /**
  * In this example, we'll try to calculate an approximation of e^x using a taylor series.
@@ -28,9 +22,9 @@ fn main(): void {
 
     const elapsed: uint64 = (end - start) / iterations;
 
-    println("calculating e^x in %d iterations in %d nanoseconds: %f", iterations, elapsed, k);
+    io::println("calculating e^x in %d iterations in %d nanoseconds: %f", iterations, elapsed, k);
 
-    println("Hello world");
+    io::println("Hello world");
 }
 
 

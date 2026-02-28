@@ -1,7 +1,5 @@
 package system;
 
-extern fn printf(input: string, ...): int32;
-
 module io {
 
     fn println(input: string, ...): void {

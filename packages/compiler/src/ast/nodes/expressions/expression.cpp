@@ -54,8 +54,9 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
         /// Regular identifier parsing; can be variable reference
         const auto reference_token = set.peek_next();
         // Mangled name including module, e.g., `Math__PI`
-        const SymbolNameSegments name_segments =
-            parse_segmented_identifier(set);
+        const SymbolNameSegments name_segments = parse_segmented_identifier(
+            set,
+            "Expected identifier in expression");
         const auto internal_name = resolve_internal_name(name_segments);
 
         auto identifier = std::make_unique<AstIdentifier>(
@@ -100,7 +101,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
     if (set.peek_next_eq(TokenType::LPAREN))
     {
         if ((set.peek_eq(TokenType::IDENTIFIER, 1) // Checks for "(<identifier>: ..."
-            && set.peek_eq(TokenType::COLON, 2))
+                && set.peek_eq(TokenType::COLON, 2))
             || (set.peek_eq(TokenType::RPAREN, 1) && // Checks for "():"
                 set.peek_eq(TokenType::COLON, 2)))
         {
@@ -296,18 +297,21 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(
     return parse_expression_internal(context, set);
 }
 
-SymbolNameSegments stride::ast::parse_segmented_identifier(TokenSet& set)
+SymbolNameSegments stride::ast::parse_segmented_identifier(
+    TokenSet& set,
+    const std::string& error_message)
 {
     std::vector<std::string> segments = {};
 
-    segments.push_back(set.expect(TokenType::IDENTIFIER).get_lexeme());
+    segments.push_back(set.expect(TokenType::IDENTIFIER, error_message).get_lexeme());
 
-    while (set.peek_next_eq(TokenType::DOUBLE_COLON))
+    while (set.peek_eq(TokenType::DOUBLE_COLON, 0)
+        && set.peek_eq(TokenType::IDENTIFIER, 1))
     {
         set.next();
         const auto subseq_iden = set.expect(
             TokenType::IDENTIFIER,
-            "Expected identifier in module accessor"
+            error_message
         );
         segments.push_back(subseq_iden.get_lexeme());
     }
