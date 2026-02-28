@@ -10,6 +10,9 @@
 
 using namespace stride;
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 int Program::compile(const cli::CompilationOptions& options) const
 {
     // Initialize LLVM targets
@@ -73,17 +76,20 @@ int Program::compile(const cli::CompilationOptions& options) const
     // This is a simplified linking step. In a real-world scenario, you might want to identify the correct linker or use clang/gcc to link.
     // Assuming clang is available for linking.
 
-    std::string output_binary = options.program_name.empty() ? "a.out" : options.program_name;
+    std::string output_binary = options.program_name.empty() ? "executable" : options.program_name;
     if (!options.output_path.empty())
     {
         output_binary = std::format("{}/{}", options.output_path, output_binary);
     }
 
+    std::string runtime_path = TOSTRING(STRIDE_RUNTIME_LIB_PATH);
+    std::vector<std::string> files = { runtime_path, filename};
+
     // Construct the linker command
     // We are linking the object file we just created.
     // Ensure you link against standard libraries if needed (like C++ runtime if used by runtime.cpp/stl).
     // Using `clang++` or `g++` is often the easiest way to link object files properly on most systems.
-    std::string linker_command = std::format("clang++ {} -o {}", filename, output_binary);
+    std::string linker_command = std::format("clang++ {} -o {}", join(files, " "), output_binary);
 
     if (options.debug_mode)
     {

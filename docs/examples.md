@@ -38,8 +38,6 @@ This example calculates an approximation of $e^x$ using a Taylor series. It demo
 
 ```stride
 extern fn powl(base: float64, exp: float64): float64;
-extern fn system_time_ns(): u64;
-extern fn printf(format: string, ...): int32;
 
 /**
  * In this example, we'll try to calculate an approximation of e^x using a taylor series.
@@ -49,39 +47,40 @@ extern fn printf(format: string, ...): int32;
  * - The significant speed : )
  */
 fn main(): void {
-    const pow: float64 = 3.5D
-    
-    const start: u64 = system_time_ns()
-    const approx: float64 = e_to_the_x(pow)
-    const end: u64 = system_time_ns()
-    
-    const elapsed: u64 = end - start
+    const pow: float64 = 3.5D;
 
-    printf("Elapsed time: %llu ns; e^%.2f: %.15f\n", elapsed, pow, approx)
+    const start: u64 = system_time_ns();
+    const approx: float64 = e_to_the_x(pow);
+    const end: u64 = system_time_ns();
+
+    const elapsed: u64 = end - start;
+
+    printf("Elapsed time: %llu ns; e^%.2f: %.15f\n", elapsed, pow, approx);
 }
 
 
 // Here we try to calculate e^x by using a taylor series
 // In this case, we get an accuracy of 7 digits with 20 iterations.
 fn e_to_the_x(x: float64): float64 {
-    let approximation: float64 = 0.0D
-    const iterations: int32 = 20
+    let approximation: float64 = 0.0D;
+    const iterations: int32 = 20;
 
     for (let n: float64 = 0.0D; n < iterations; n++) {
-        approximation += powl(x, n) / factorial(n)
+        approximation += powl(x,
+        n) / factorial(n);
     }
 
-    return approximation
+    return approximation;
 }
 
 // A basic recursive factorial function
 fn factorial(n: float64): float64 {
     if (n <= 1.0D) {
-        return 1.0D
+        return 1.0D;
     }
 
     // Recursive step: n * factorial of (n-1)
-    return n * factorial(n - 1.0D)
+    return n * factorial(n - 1.0D);
 }
 ```
 

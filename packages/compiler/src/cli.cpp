@@ -31,11 +31,6 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
         std::cout <<
             "  -r, --run <file1> <file2> ...        Run stride files using JIT" <<
             std::endl;
-        std::cout <<
-            "  install, i <dependency>@<version>    Install the stride compiler"
-            << std::endl;
-        std::cout << "  -tc, --typecheck <file1> <file2> ... Typecheck a file"
-            << std::endl;
         return 0;
     }
 
@@ -46,50 +41,15 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
 
     if (command == "-r" || command == "--run")
     {
-        // Reuse compile command resolver but with different default mode handling if needed
-        // Since resolve_compile_command defaults to JIT if no mode specified? No, wait.
-        // We need to tell it which mode to use.
-        // Let's modify resolve_compile_command to take a default mode or better:
-        // Pass the mode explicitly.
-        // But resolve_compile_command matches the signature in header.
-        // I will change implementation of resolve_compile_command to look at the command name
-        // that invoked it? No, argv starts after the command.
-
-        // So I'll modify resolve_compile_command to accept a mode hint or similar,
-        // but signature is fixed in header.
-        // I can change the header.
-
-        // Actually, let's look at how resolve_compile_command works.
-        // It calls resolve_compilation_options.
-
-        // I will make resolve_compile_command capable of discerning mode or just change the API.
-        // The easiest is to update the resolve_compile_command to take an optional mode.
-        // But since it's called from main via resolve_cli_command, I control call site.
-
-        // However, I can just use a static helper.
-        return resolve_compile_command(argc - 1, argv + 1);
-    }
-
-    if (command == "install" || command == "i")
-    {
-        return resolve_install_command(argc - 1, argv + 1);
-    }
-    if (command == "-c" || command == "--compile")
-    {
-        return resolve_compile_command(argc - 1, argv + 1);
-    }
-
-    if (command == "-r" || command == "--run")
-    {
         return resolve_run_command(argc - 1, argv + 1);
     }
 
-    if (command == "install" || command == "i")
+    std::cout << format_message(std::format("Unknown command '{}'", command));
 
     return 1;
 }
 
-CompilationOptions resolve_compilation_options(const int argc, char** argv)
+CompilationOptions stride::cli::resolve_compilation_options_from_args(const int argc, char** argv)
 {
     CompilationOptions options = { .mode       = CompilationMode::COMPILE_JIT,
                                    .debug_mode = false };
@@ -99,8 +59,26 @@ CompilationOptions resolve_compilation_options(const int argc, char** argv)
         const auto argument = std::string(argv[i]);
         if (!argument.starts_with("-"))
         {
-            options.include_paths.emplace_back(argv[i]);
+            options.source_files.emplace_back(argv[i]);
 
+            continue;
+        }
+
+        if (argument == "--output" || argument == "-o")
+        {
+            if (i + 1 < argc)
+            {
+                options.program_name = std::string(argv[++i]);
+            }
+            continue;
+        }
+
+        if (argument == "--dir" || argument == "-d")
+        {
+            if (i + 1 < argc)
+            {
+                options.output_path = std::string(argv[++i]);
+            }
             continue;
         }
 
@@ -129,25 +107,25 @@ CompilationOptions resolve_compilation_options(const int argc, char** argv)
 // `cstride -c <...>` or `cstride --compile <...>`
 int stride::cli::resolve_compile_command(const int argc, char** argv)
 {
-    const auto options = resolve_compilation_options(argc, argv);
+    auto options = resolve_compilation_options_from_args(argc, argv);
+    options.mode = CompilationMode::COMPILE;
 
     Program program;
 
-    program.parse_files(options.include_paths);
+    program.parse_files(options.source_files);
+
+    return program.compile(options);
+}
+
+// `cstride -r <...>` or `cstride --run <...>`
+int stride::cli::resolve_run_command(const int argc, char** argv)
+{
+    auto options = resolve_compilation_options_from_args(argc, argv);
+    options.mode = CompilationMode::COMPILE_JIT;
+
+    Program program;
+
+    program.parse_files(options.source_files);
 
     return program.compile_jit(options);
-}
-
-// `cstride install` or `cstride i`
-int stride::cli::resolve_install_command(int argc, char** argv)
-{
-    // TODO: implemente
-    return 0;
-}
-
-/// `cstride --typecheck` or `cstride -tc`
-int stride::cli::resolve_typecheck_command(int argc, char** argv)
-{
-    // TODO: implement
-    return 0;
 }

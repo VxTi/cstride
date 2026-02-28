@@ -1,28 +1,48 @@
-/*const xyz = (x: int32): (int32) -> (int32) -> int32 -> {
-    return (y: int32): (int32) -> int32 -> {
-        return (z: int32):  int32 -> {
-            return x + y + z;
-        };
-    };
-};
+extern fn powl(base: float64, exp: float64): float64;
 
-fn main(): int32 {
-
-    const x = xyz(10);
-
-    const y = x(20);
-
-    const a = y(30);
-
-    printf("A: %d\n", a);
-
-    return 0;
-}
+/**
+ * In this example, we'll try to calculate an approximation of e^x using a taylor series.
+ * This shows parts of the language;
+ * - Function invocation
+ * - External function calls
+ * - The significant speed : )
  */
-type Fn = (int32, int64) -> int32;
+fn main(): void {
+    const pow: float64 = 3.5D;
 
-type Tuple = (int32, int64);
+    const start: uint64 = system_time_ns();
+    const iterations = 100;
+    for (let i: int32 = 0; i < iterations; i++) {
+        e_to_the_x(pow);
+    }
+    const end: uint64 = system_time_ns();
 
-fn main(): int32 {
-    const tuple: Tuple = (42, 100000000000L);
+    const elapsed: uint64 = (end - start) / iterations;
+
+    printf("calculating e^x in %d iterations in %d nanoseconds\n", iterations, elapsed);
+}
+
+
+// Here we try to calculate e^x by using a taylor series
+// In this case, we get an accuracy of 7 digits with 20 iterations.
+fn e_to_the_x(x: float64): float64 {
+    let approximation: float64 = 0.0D;
+    const iterations: int32 = 20;
+
+    for (let n: float64 = 0.0D; n < iterations; n++) {
+        approximation += powl(x,
+        n) / factorial(n);
+    }
+
+    return approximation;
+}
+
+// A basic recursive factorial function
+fn factorial(n: float64): float64 {
+    if (n <= 1.0D) {
+        return 1.0D;
+    }
+
+    // Recursive step: n * factorial of (n-1)
+    return n * factorial(n - 1.0D);
 }

@@ -86,9 +86,4 @@ namespace stride::cli
     // `cstride -r <...>` or `cstride --run <...>`
     int resolve_run_command(int argc, char** argv);
 
-    // `cstride install` or `cstride i`
-    int resolve_install_command(int argc, char** argv);
-
-    /// `cstride --typecheck` or `cstride -tc`
-    int resolve_typecheck_command(int argc, char** argv);
 } // namespace stride::cli

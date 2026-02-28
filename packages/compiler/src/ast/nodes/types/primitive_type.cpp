@@ -18,13 +18,13 @@ std::string primitive_type_to_str_internal(const PrimitiveType type)
     case PrimitiveType::INT64:
         return "int64";
     case PrimitiveType::UINT8:
-        return "u8";
+        return "uint8";
     case PrimitiveType::UINT16:
-        return "u16";
+        return "uint16";
     case PrimitiveType::UINT32:
-        return "u32";
+        return "uint32";
     case PrimitiveType::UINT64:
-        return "u64";
+        return "uint64";
     case PrimitiveType::FLOAT32:
         return "float32";
     case PrimitiveType::FLOAT64:

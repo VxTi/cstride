@@ -30,6 +30,24 @@ add_library(cstride_lib STATIC
         ${HEADER_FILES}
 )
 
+# --- Runtime Library ---
+add_library(stride_runtime STATIC src/stl/stride_runtime.cpp)
+
+# --- Installation ---
+include(GNUInstallDirs)
+target_compile_definitions(cstride_lib PRIVATE
+    CSTRIDE_INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}"
+    CSTRIDE_LIB_DIR="${CMAKE_INSTALL_FULL_LIBDIR}/cstride"
+    STRIDE_RUNTIME_LIB_PATH="$<TARGET_FILE:stride_runtime>"
+)
+
+# --- Executables & Testing ---
+add_executable(${PROJECT_NAME} src/main.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE cstride_lib)
+
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS stride_runtime ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/cstride)
+
 # --- Include Management ---
 # Automatically find all header directories within _deps
 file(GLOB_RECURSE DEPS_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/_deps/*")
@@ -69,8 +87,5 @@ target_link_libraries(cstride_lib
 )
 
 # --- Executables & Testing ---
-add_executable(${PROJECT_NAME} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE cstride_lib)
-
 enable_testing()
 add_subdirectory(tests)
