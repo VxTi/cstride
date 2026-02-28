@@ -150,19 +150,17 @@ llvm::Value* AstFunctionCall::codegen(
             suggested_alternative);
     }
 
-    // Reduce last argument if variadic
-    const auto minimum_arg_count = callee->arg_size() - (callee->isVarArg() ? 1 : 0);
+    const auto minimum_arg_count = callee->arg_size(); // - (callee->isVarArg() ? 1 : 0);
 
     if (const auto provided_arg_count = this->get_arguments().size();
         provided_arg_count < minimum_arg_count)
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
-            std::format("Incorrect arguments passed for function '{}'",
-                        this->get_function_name()),
-            this->get_source_fragment(),
-            std::format("Incorrect arguments passed for function '{}'",
-                        this->get_function_name()));
+            std::format("Incorrect arguments passed for function '{}', expected {}, got {}",
+                        this->get_function_name(), minimum_arg_count, provided_arg_count),
+            this->get_source_fragment()
+        );
     }
 
     std::vector<llvm::Value*> args_v;
@@ -199,6 +197,7 @@ llvm::Value* AstFunctionCall::codegen(
         args_v.push_back(final_val);
     }
 
+    if (callee->isVarArg()) {}
     return builder->CreateCall(
         callee,
         args_v,

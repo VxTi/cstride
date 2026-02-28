@@ -2,10 +2,10 @@ extern fn powl(base: float64, exp: float64): float64;
 
 extern fn system_time_ns(): uint64;
 
-extern fn printf(...): int32;
+extern fn printf(input: string, ...): int32;
 
-fn println(...): void {
-    printf("%s\n", ...);
+fn println(input: string, ...): void {
+    printf("%s\n", input, ...);
 }
 
 /**
@@ -28,7 +28,9 @@ fn main(): void {
 
     const elapsed: uint64 = (end - start) / iterations;
 
-    println("calculating e^x in %d iterations in %d nanoseconds: %f\n", iterations, elapsed, k);
+    println("calculating e^x in %d iterations in %d nanoseconds: %f", iterations, elapsed, k);
+
+    println("Hello world");
 }
 
 

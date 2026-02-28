@@ -930,7 +930,7 @@ void IAstFunction::resolve_forward_references(
     llvm::FunctionType* function_type = llvm::FunctionType::get(
         return_type,
         param_types,
-        false
+        this->is_variadic()
     );
 
     const auto linkage = this->is_anonymous()
