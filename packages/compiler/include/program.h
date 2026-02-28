@@ -68,7 +68,7 @@ namespace stride
 
         void optimize_ast_nodes();
 
-        void generate_llvm_ir(llvm::Module* module,
+        void codegen(llvm::Module* module,
                               llvm::IRBuilderBase* builder) const;
 
         std::unique_ptr<llvm::Module> prepare_module(

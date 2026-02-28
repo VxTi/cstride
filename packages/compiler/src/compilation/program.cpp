@@ -110,7 +110,7 @@ void Program::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBa
     );
 }
 
-void Program::generate_llvm_ir(llvm::Module* module, llvm::IRBuilderBase* builder) const
+void Program::codegen(llvm::Module* module, llvm::IRBuilderBase* builder) const
 {
     if (this->_root_node->codegen(module, builder) == nullptr)
     {
@@ -138,7 +138,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     this->resolve_forward_references(module.get(), &builder);
     this->validate_ast_nodes();
 
-    this->generate_llvm_ir(module.get(), &builder);
+    this->codegen(module.get(), &builder);
 
     if (llvm::verifyModule(*module, &llvm::errs()))
     {

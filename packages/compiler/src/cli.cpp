@@ -51,8 +51,10 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
 
 CompilationOptions stride::cli::resolve_compilation_options_from_args(const int argc, char** argv)
 {
-    CompilationOptions options = { .mode       = CompilationMode::COMPILE_JIT,
-                                   .debug_mode = false };
+    CompilationOptions options = {
+        .mode       = CompilationMode::COMPILE_JIT,
+        .debug_mode = false
+    };
 
     for (int i = 0; i < argc; ++i)
     {

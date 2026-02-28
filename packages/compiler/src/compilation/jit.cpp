@@ -68,12 +68,15 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     // We explicitly create the TargetMachine to use it for both the JIT and the Optimizer
     const auto target_machine = llvm::cantFail(jtmb.createTargetMachine());
 
-    auto module = prepare_module(*context, options, target_machine.get());
-
+    // Register our runtime symbols manually to ensure they are available
     // Build the JIT using the existing TargetMachineBuilder
     const auto jit = llvm::cantFail(
-        llvm::orc::LLJITBuilder().setJITTargetMachineBuilder(std::move(jtmb)).
-                                  create());
+        llvm::orc::LLJITBuilder()
+       .setJITTargetMachineBuilder(std::move(jtmb))
+       .create()
+    );
+    stl::register_runtime_symbols(jit.get());
+    auto module = prepare_module(*context, options, target_machine.get());
 
     jit->getMainJITDylib().addGenerator(
         llvm::cantFail(
