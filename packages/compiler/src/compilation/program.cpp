@@ -13,6 +13,7 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Passes/OptimizationLevel.h>
 #include <llvm/Passes/PassBuilder.h>
+#include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/raw_ostream.h>
 
 using namespace stride;
@@ -22,7 +23,7 @@ void Program::parse_files(std::vector<std::string> files)
     this->_global_scope = std::make_shared<ast::ParsingContext>();
     this->_files = std::move(files);
 
-    stl::predefine_internal_functions(this->get_global_context());
+    stl::register_internal_symbols(this->get_global_context());
 
     std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
 
@@ -127,14 +128,12 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     const cli::CompilationOptions& options,
     llvm::TargetMachine* target_machine) const
 {
+    llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
     auto module = std::make_unique<llvm::Module>("stride_module", context);
     module->setDataLayout(target_machine->createDataLayout());
     module->setTargetTriple(target_machine->getTargetTriple());
 
     llvm::IRBuilder builder(context);
-
-    // Predefine internal functions (printf, system time, ...)
-    stl::llvm_insert_function_definitions(module.get());
 
     this->resolve_forward_references(module.get(), &builder);
     this->validate_ast_nodes();

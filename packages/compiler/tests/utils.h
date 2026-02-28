@@ -23,7 +23,7 @@ namespace stride::tests
         auto tokens = ast::tokenizer::tokenize(source);
         const auto context = std::make_shared<ast::ParsingContext>();
 
-        stl::predefine_internal_functions(context);
+        stl::register_internal_symbols(context);
 
         return { ast::parse_sequential(context, tokens), context };
     }
@@ -51,7 +51,7 @@ namespace stride::tests
 
         llvm::LLVMContext llvm_context;
         llvm::Module module("test_module", llvm_context);
-        llvm::IRBuilderBase builder(llvm_context);
+        llvm::IRBuilder<> builder(llvm_context);
 
         block->resolve_forward_references(context.get(), &module, &builder);
         block->validate();

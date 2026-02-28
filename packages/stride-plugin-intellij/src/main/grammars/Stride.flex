@@ -76,6 +76,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   ";"                { return StrideTypes.SEMICOLON; }
   ":"                { return StrideTypes.COLON; }
   ","                { return StrideTypes.COMMA; }
+  "..."              { return StrideTypes.ELLIPSIS; }
   "."                { return StrideTypes.DOT; }
   "="                { return StrideTypes.EQ; }
   "++"               { return StrideTypes.PLUS_PLUS; }

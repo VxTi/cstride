@@ -50,6 +50,7 @@
     SEMICOLON=';'
     COLON=':'
     COMMA=','
+    ELLIPSIS='...'
     DOT='.'
     EQ='='
     PLUS_PLUS='++'
@@ -112,8 +113,8 @@ ImportStatement ::= IMPORT ScopedIdentifier COLON_COLON LBRACE ScopedIdentifier 
 // --- Declarations ---
 ExternFunctionDeclaration ::= [AccessModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
 FunctionDeclaration ::= [AccessModifier] [ASYNC] FunctionDeclarationHeader BlockStatement
-private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN [FunctionParameterList] RPAREN COLON Type
-FunctionParameterList ::= FunctionParameter (COMMA FunctionParameter)*
+private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN FunctionParameterList RPAREN COLON Type
+FunctionParameterList ::= [FunctionParameter (COMMA FunctionParameter)*] [COMMA ELLIPSIS]
 FunctionParameter ::= IDENTIFIER COLON Type
 
 TypeDefinition ::= KW_TYPE IDENTIFIER EQ Type SEMICOLON
@@ -216,6 +217,7 @@ PrimaryExpression ::= LiteralExpression
                      | ScopedIdentifier
                      | ArrayDeclarationExpression
                      | TupleInitializationExpression
+                     | ELLIPSIS // variadic parameter pack expansion
 
 ArrayDeclarationExpression ::= LSQUARE_BRACKET PrimaryExpression RSQUARE_BRACKET
 TupleInitializationExpression ::= LPAREN Expression (COMMA Expression)* RPAREN
@@ -244,7 +246,7 @@ ArgumentList ::= Expression (COMMA Expression)*
 ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
 
 // (p: int32) -> int32 { ... }
-LambdaExpression ::= LPAREN [FunctionParameterList] RPAREN COLON Type ARROW BlockStatement
+LambdaExpression ::= LPAREN FunctionParameterList RPAREN COLON Type ARROW BlockStatement
 
 // some::field
 ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)* {

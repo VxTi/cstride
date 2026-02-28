@@ -81,10 +81,6 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
                 jit->getDataLayout().getGlobalPrefix()))
     );
 
-    // Predefine internal functions (printf, system time, ...)
-    stl::llvm_jit_define_functions(jit.get());
-    // stl::llvm_insert_function_definitions(module.get()); -- This is now done in prepare_module
-
     llvm::orc::ThreadSafeModule thread_safe_module(
         std::move(module),
         std::move(tsc));

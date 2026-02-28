@@ -1,0 +1,7 @@
+package system;
+
+module io {
+    fn println(str: string, ...): void {
+        printf("%s\n", str, ...);
+    }
+}

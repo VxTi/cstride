@@ -12,14 +12,18 @@ fn main(): void {
 
     const start: uint64 = system_time_ns();
     const iterations = 100;
+    let k: float64 = 0.0D;
     for (let i: int32 = 0; i < iterations; i++) {
-        e_to_the_x(pow);
+        k = e_to_the_x(pow);
     }
     const end: uint64 = system_time_ns();
 
     const elapsed: uint64 = (end - start) / iterations;
 
-    printf("calculating e^x in %d iterations in %d nanoseconds\n", iterations, elapsed);
+    printf("calculating e^x in %d iterations in %d nanoseconds: %f\n",
+    iterations,
+    elapsed,
+    k);
 }
 
 
