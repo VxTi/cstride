@@ -2,6 +2,7 @@
 #include "formatting.h"
 #include "ast/casting.h"
 #include "ast/parsing_context.h"
+#include "ast/nodes/enumerables.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
@@ -328,6 +329,14 @@ std::unique_ptr<IAstNode> AstMemberAccessor::clone()
         this->_base->clone_as<AstIdentifier>(),
         std::move(members_clone)
     );
+}
+
+void AstMemberAccessor::validate_expr()
+{
+    for (const auto& member : this->_members)
+    {
+        member->validate();
+    }
 }
 
 std::string AstMemberAccessor::to_string()

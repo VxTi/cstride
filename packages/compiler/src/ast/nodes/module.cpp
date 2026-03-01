@@ -68,6 +68,14 @@ llvm::Value* AstModule::codegen(
     return this->_body->codegen(module, builder);
 }
 
+void AstModule::validate()
+{
+    if (this->_body != nullptr)
+    {
+        this->_body->validate();
+    }
+}
+
 void AstModule::resolve_forward_references(
     ParsingContext* context,
     llvm::Module* module,

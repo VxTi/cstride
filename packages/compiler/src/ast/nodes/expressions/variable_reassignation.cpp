@@ -116,6 +116,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 
 void AstVariableReassignment::validate_expr()
 {
+    this->_value->validate();
     const auto identifier_def =
         this->get_context()->lookup_variable(this->get_variable_name(), true);
     if (!identifier_def)

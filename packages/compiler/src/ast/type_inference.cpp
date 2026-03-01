@@ -112,8 +112,6 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();
     }
-    std::vector candidates = { fn_call->get_internal_name(),
-                               fn_call->get_function_name() };
 
     // It might also be a field that's assigned a function
     if (const auto definition = context->lookup_symbol(
@@ -410,8 +408,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         // TODO: Add generic support.
         // Right now we just do a lookup for `identifier`'s name, though we might want to extend
         // the lookup for generics.
-        const auto reference_sym = identifier->get_context()->lookup_symbol(
-            identifier->get_name());
+        const auto reference_sym = identifier->get_context()->lookup_symbol(identifier->get_name());
+
         if (!reference_sym)
         {
             throw parsing_error(

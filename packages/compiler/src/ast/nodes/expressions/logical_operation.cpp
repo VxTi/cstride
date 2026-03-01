@@ -33,7 +33,11 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
     }
 }
 
-void AstLogicalOp::validate_expr() {}
+void AstLogicalOp::validate_expr()
+{
+    this->_lhs->validate();
+    this->_rhs->validate();
+}
 
 llvm::Value* AstLogicalOp::codegen(
     llvm::Module* module,
@@ -41,13 +45,12 @@ llvm::Value* AstLogicalOp::codegen(
 )
 {
     // Implementation following short-circuiting logic
-    llvm::Value* lhs_value = this->get_left()->codegen(
-        module,
-        builder
-    );
+    llvm::Value* lhs_value = this->get_left()->codegen(module, builder);
 
     if (!lhs_value)
+    {
         return nullptr;
+    }
 
     // We need to ensure we are operating on booleans (i1).
     // If language supports truthy values, we should convert here.

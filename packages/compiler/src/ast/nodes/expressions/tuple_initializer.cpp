@@ -37,6 +37,14 @@ std::unique_ptr<IAstNode> AstTupleInitializer::clone()
     );
 }
 
+void AstTupleInitializer::validate_expr()
+{
+    for (const auto& member : this->_members)
+    {
+        member->validate();
+    }
+}
+
 std::string AstTupleInitializer::to_string()
 {
     return "tuple(...)";

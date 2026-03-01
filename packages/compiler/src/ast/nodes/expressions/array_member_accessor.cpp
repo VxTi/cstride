@@ -42,6 +42,9 @@ std::unique_ptr<IAstExpression> stride::ast::parse_array_member_accessor(
 
 void AstArrayMemberAccessor::validate_expr()
 {
+    this->_array_identifier->validate();
+    this->_index_accessor_expr->validate();
+
     const auto index_accessor_type = this->_index_accessor_expr->get_type();
 
     if (const auto primitive_type = cast_type<AstPrimitiveType*>(index_accessor_type))

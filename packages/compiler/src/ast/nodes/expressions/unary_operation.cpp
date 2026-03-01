@@ -158,6 +158,7 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
 
 void AstUnaryOp::validate_expr()
 {
+    this->_operand->validate();
     const auto operand_type = this->_operand->get_type();
 
     const auto op = this->get_op_type();

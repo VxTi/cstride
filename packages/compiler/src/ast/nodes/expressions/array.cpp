@@ -11,7 +11,7 @@ using namespace stride::ast;
 
 void AstArray::validate_expr()
 {
-    for (const auto& element : this->get_elements())
+    for (const auto& element : this->_elements)
     {
         element->validate();
     }

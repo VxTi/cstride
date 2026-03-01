@@ -102,6 +102,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
 void AstStructInitializer::validate_expr()
 {
     const auto definition = this->get_context()->get_struct_type(this->_struct_name);
+
     // Check whether the struct we're trying to assign actually exists
     if (!definition.has_value())
     {
@@ -131,6 +132,7 @@ void AstStructInitializer::validate_expr()
 
     for (const auto& [field_name, initializer_expr] : this->_initializers)
     {
+        initializer_expr->validate();
         auto found_member = definition.value()->get_member_field_type(field_name);
 
         if (!found_member.has_value())

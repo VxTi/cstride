@@ -48,6 +48,8 @@ namespace stride::ast
             llvm::IRBuilderBase* builder) override;
 
         std::unique_ptr<IAstNode> clone() override;
+
+        void validate() override;
     };
 
     std::unique_ptr<AstModule> parse_module_statement(

@@ -482,7 +482,13 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     return nullptr;
 }
 
-void AstFunctionCall::validate_expr() {}
+void AstFunctionCall::validate_expr()
+{
+    for (const auto& arg : this->_arguments)
+    {
+        arg->validate();
+    }
+}
 
 std::unique_ptr<IAstNode> AstFunctionCall::clone()
 {

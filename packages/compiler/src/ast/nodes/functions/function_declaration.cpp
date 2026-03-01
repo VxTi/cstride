@@ -116,7 +116,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     }
 
     return std::make_unique<AstFunctionDeclaration>(
-        context,
+        function_context,
         function_name_symbol,
         std::move(parameters),
         std::move(body),

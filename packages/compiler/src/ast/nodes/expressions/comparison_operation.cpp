@@ -53,6 +53,9 @@ std::string comparison_op_to_str(const ComparisonOpType op)
 
 void AstComparisonOp::validate_expr()
 {
+    this->_lhs->validate();
+    this->_rhs->validate();
+
     const auto lhs_type = this->get_left()->get_type();
     const auto rhs_type = this->get_right()->get_type();
 

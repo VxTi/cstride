@@ -291,6 +291,8 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
+        void validate_expr() override;
+
     private:
         llvm::Value* codegen_global_member_accessor(
             llvm::Module* module,
@@ -371,19 +373,23 @@ namespace stride::ast
 
         const Symbol _symbol;
 
+        const int _flags;
+
     public:
         explicit AstVariableDeclaration(
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::unique_ptr<IAstType> variable_type,
             std::unique_ptr<IAstExpression> initial_value,
-            VisibilityModifier visibility
+            VisibilityModifier visibility,
+            const int flags = SRFLAG_NONE
         ) :
             IAstExpression(symbol.symbol_position, context),
             _variable_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)),
             _visibility(visibility),
-            _symbol(std::move(symbol)) {}
+            _symbol(std::move(symbol)),
+            _flags(flags) {}
 
         [[nodiscard]]
         const std::string& get_variable_name() const
@@ -435,15 +441,26 @@ namespace stride::ast
         void validate_expr() override;
 
         std::unique_ptr<IAstNode> clone() override;
+
+        [[nodiscard]]
+        int get_flags() const
+        {
+            return this->_flags;
+        }
+
     };
 
     class IBinaryOp
         : public IAstExpression
     {
-        std::unique_ptr<IAstExpression> _lsh;
-        std::unique_ptr<IAstExpression> _rsh;
+        std::unique_ptr<IAstExpression> _lhs;
+        std::unique_ptr<IAstExpression> _rhs;
 
     public:
+        friend class AstBinaryArithmeticOp;
+        friend class AstLogicalOp;
+        friend class AstComparisonOp;
+
         explicit IBinaryOp(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
@@ -451,19 +468,19 @@ namespace stride::ast
             std::unique_ptr<IAstExpression> rsh
         ) :
             IAstExpression(source, context),
-            _lsh(std::move(lsh)),
-            _rsh(std::move(rsh)) {}
+            _lhs(std::move(lsh)),
+            _rhs(std::move(rsh)) {}
 
         [[nodiscard]]
         IAstExpression* get_left() const
         {
-            return this->_lsh.get();
+            return this->_lhs.get();
         }
 
         [[nodiscard]]
         IAstExpression* get_right() const
         {
-            return this->_rsh.get();
+            return this->_rhs.get();
         }
     };
 
@@ -505,6 +522,8 @@ namespace stride::ast
         std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         std::unique_ptr<IAstNode> clone() override;
+
+        void validate_expr() override;
     };
 
     class AstLogicalOp
@@ -776,6 +795,8 @@ namespace stride::ast
         std::string to_string() override;
 
         std::unique_ptr<IAstNode> clone() override;
+
+        void validate_expr() override;
     };
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *

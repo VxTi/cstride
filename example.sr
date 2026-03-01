@@ -2,12 +2,36 @@ import io::{ println };
 
 extern fn powl(base: float64, exp: float64): float64;
 extern fn system_time_ns(): uint64;
+extern fn printf(format: string, ...): void;
 
 module io {
     fn println(input: string, ...): void {
         printf("%s\n", input, ...);
     }
+}
 
+// A basic recursive factorial function
+fn factorial(n: float64): float64 {
+    if (n <= 1.0D) {
+        return 1.0D;
+    }
+
+    // Recursive step: n * factorial of (n-1)
+    return n * factorial(n - 1.0D);
+}
+
+// Here we try to calculate e^x by using a taylor series
+// In this case, we get an accuracy of 7 digits with 20 iterations.
+fn e_to_the_x(x: float64): float64 {
+    let approximation: float64 = 0.0D;
+    const iterations: int32 = 20;
+
+    for (let n: float64 = 0.0D; n < iterations; n++) {
+        approximation += powl(x,
+        n) / factorial(n);
+    }
+
+    return approximation;
 }
 
 /**
@@ -34,29 +58,4 @@ fn main(): void {
     io::println("calculating e^x in %d iterations in %d nanoseconds: %f", iterations, elapsed, k);
 
     io::println("Hello world");
-}
-
-
-// Here we try to calculate e^x by using a taylor series
-// In this case, we get an accuracy of 7 digits with 20 iterations.
-fn e_to_the_x(x: float64): float64 {
-    let approximation: float64 = 0.0D;
-    const iterations: int32 = 20;
-
-    for (let n: float64 = 0.0D; n < iterations; n++) {
-        approximation += powl(x,
-        n) / factorial(n);
-    }
-
-    return approximation;
-}
-
-// A basic recursive factorial function
-fn factorial(n: float64): float64 {
-    if (n <= 1.0D) {
-        return 1.0D;
-    }
-
-    // Recursive step: n * factorial of (n-1)
-    return n * factorial(n - 1.0D);
 }

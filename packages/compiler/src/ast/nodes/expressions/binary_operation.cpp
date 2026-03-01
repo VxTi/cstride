@@ -270,6 +270,13 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     }
 }
 
+void AstBinaryArithmeticOp::validate_expr()
+{
+    this->_lhs->validate();
+    this->_rhs->validate();
+    // TODO: Further validation
+}
+
 std::unique_ptr<IAstNode> AstBinaryArithmeticOp::clone()
 {
     return std::make_unique<AstBinaryArithmeticOp>(

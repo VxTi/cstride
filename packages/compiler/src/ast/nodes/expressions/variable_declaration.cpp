@@ -142,7 +142,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         symbol,
         std::move(variable_type),
         std::move(value),
-        modifier
+        modifier,
+        flags
     );
 }
 
@@ -167,8 +168,10 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 
 void AstVariableDeclaration::validate_expr()
 {
-    this->get_initial_value()->validate();
-    this->get_context()->define_variable(this->_symbol, this->_initial_value->get_type()->clone_ty());
+    this->_initial_value->validate();
+    auto variable_type = this->_initial_value->get_type()->clone_ty();
+    variable_type->set_flags(this->_flags);
+    this->get_context()->define_variable(this->_symbol, std::move(variable_type));
 
 
     // If the variable type is inferred, we don't need to do any validation
