@@ -66,7 +66,7 @@ llvm::Value* AstTupleType::codegen(llvm::Module* module, llvm::IRBuilderBase* bu
 }
 
 void AstTupleType::resolve_forward_references(
-    const ParsingContext* context,
+    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder) {}
 

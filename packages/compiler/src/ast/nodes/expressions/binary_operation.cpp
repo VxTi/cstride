@@ -290,7 +290,7 @@ bool AstBinaryArithmeticOp::is_reducible()
         || this->get_right()->is_reducible();
 }
 
-IAstNode* AstBinaryArithmeticOp::reduce()
+std::optional<std::unique_ptr<IAstNode>> AstBinaryArithmeticOp::reduce()
 {
-    return this;
+    return std::nullopt;
 }

@@ -48,7 +48,10 @@ namespace stride::ast
 
         ~AstFunctionParameter() override = default;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override { return nullptr; }
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
+        {
+            return nullptr;
+        }
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -68,6 +71,9 @@ namespace stride::ast
         std::unique_ptr<IAstType> _return_type;
         std::vector<Symbol> _captured_variables;
         int _flags;
+
+        friend class AstFunctionDeclaration;
+        friend class AstFunctionParameter;
 
     public:
         explicit IAstFunction(
@@ -106,9 +112,15 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<AstFunctionParameter>>& get_parameters() const
+        std::vector<std::unique_ptr<AstFunctionParameter>> get_parameters() const
         {
-            return this->_parameters;
+            std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
+            for (const auto& param : this->_parameters)
+            {
+                cloned_params.push_back(param->clone_as<AstFunctionParameter>());
+            }
+
+            return cloned_params;
         }
 
         [[nodiscard]]
@@ -159,7 +171,7 @@ namespace stride::ast
         void validate() override;
 
         void resolve_forward_references(
-            const ParsingContext* context,
+            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 

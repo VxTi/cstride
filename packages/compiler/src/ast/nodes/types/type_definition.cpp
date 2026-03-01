@@ -45,7 +45,7 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
 }
 
 void AstTypeDefinition::resolve_forward_references(
-    const ParsingContext* context,
+    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {

@@ -109,7 +109,7 @@ void AstBlock::aggregate_block(AstBlock* other)
 }
 
 void AstBlock::resolve_forward_references(
-    const ParsingContext* context,
+    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {

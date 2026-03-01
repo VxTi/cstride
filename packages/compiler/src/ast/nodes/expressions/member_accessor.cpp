@@ -346,9 +346,9 @@ std::string AstMemberAccessor::to_string()
         join(member_names, ","));
 }
 
-IAstNode* AstMemberAccessor::reduce()
+std::optional<std::unique_ptr<IAstNode>> AstMemberAccessor::reduce()
 {
-    return this; // Not yet reducible
+    return std::nullopt; // Not yet reducible
 }
 
 bool AstMemberAccessor::is_reducible()

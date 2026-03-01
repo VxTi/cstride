@@ -108,9 +108,9 @@ namespace stride::ast
             return false;
         }
 
-        IAstNode* reduce() override
+        std::optional<std::unique_ptr<IAstNode>> reduce() override
         {
-            return this;
+            return std::nullopt;
         }
     };
 
@@ -142,7 +142,7 @@ namespace stride::ast
         void validate_expr() override;
 
         void resolve_forward_references(
-            const ParsingContext* context,
+            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
@@ -189,9 +189,9 @@ namespace stride::ast
             return false;
         }
 
-        IAstNode* reduce() override
+        std::optional<std::unique_ptr<IAstNode>> reduce() override
         {
-            return this;
+            return std::nullopt;
         }
 
         std::unique_ptr<IAstNode> clone() override;
@@ -234,7 +234,7 @@ namespace stride::ast
 
         bool is_reducible() override;
 
-        IAstNode* reduce() override;
+        std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         void validate_expr() override;
 
@@ -287,7 +287,7 @@ namespace stride::ast
 
         bool is_reducible() override;
 
-        IAstNode* reduce() override;
+        std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -344,7 +344,7 @@ namespace stride::ast
 
         bool is_reducible() override;
 
-        IAstNode* reduce() override;
+        std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -424,7 +424,7 @@ namespace stride::ast
         std::string to_string() override;
 
         void resolve_forward_references(
-            const ParsingContext* context,
+            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
@@ -502,7 +502,7 @@ namespace stride::ast
 
         bool is_reducible() override;
 
-        IAstNode* reduce() override;
+        std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -618,7 +618,7 @@ namespace stride::ast
 
         bool is_reducible() override;
 
-        IAstNode* reduce() override;
+        std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         std::string to_string() override;
 
@@ -631,22 +631,21 @@ namespace stride::ast
         : public IAstExpression
     {
         const std::string _variable_name;
-        const std::string _internal_name;
         std::unique_ptr<IAstExpression> _value;
         MutativeAssignmentType _operator;
+
+        std::optional<std::string> _internal_name;
 
     public:
         explicit AstVariableReassignment(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string variable_name,
-            std::string internal_name,
             const MutativeAssignmentType op,
             std::unique_ptr<IAstExpression> value
         ) :
             IAstExpression(source, context),
             _variable_name(std::move(variable_name)),
-            _internal_name(std::move(internal_name)),
             _value(std::move(value)),
             _operator(op) {}
 
@@ -663,12 +662,6 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::string& get_internal_name() const
-        {
-            return this->_internal_name;
-        }
-
-        [[nodiscard]]
         MutativeAssignmentType get_operator() const
         {
             return this->_operator;
@@ -680,14 +673,14 @@ namespace stride::ast
         ) override;
 
         void resolve_forward_references(
-            const ParsingContext* context,
+            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
 
         bool is_reducible() override;
 
-        IAstNode* reduce() override;
+        std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         std::string to_string() override;
 

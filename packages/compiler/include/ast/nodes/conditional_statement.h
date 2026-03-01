@@ -53,7 +53,7 @@ namespace stride::ast
 
         bool is_reducible() override;
 
-        IAstNode* reduce() override;
+        std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 

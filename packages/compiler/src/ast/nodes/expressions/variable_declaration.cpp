@@ -72,8 +72,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         // Note that leaving out the type requires you to initialize it.
         set.next();
         value = parse_inline_expression(context, set);
-        variable_type = make_unknown_type(context, set);
         // We don't know the type yet, as this is inferred in the validation step.
+        variable_type = make_unknown_type(context, set);
     }
     else
     {
@@ -137,8 +137,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         internal_name
     );
 
-    context->define_variable(symbol, variable_type->clone_ty());
-
     return std::make_unique<AstVariableDeclaration>(
         context,
         symbol,
@@ -170,9 +168,12 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 void AstVariableDeclaration::validate_expr()
 {
     this->get_initial_value()->validate();
+    this->get_context()->define_variable(this->_symbol, this->_initial_value->get_type()->clone_ty());
+
 
     // If the variable type is inferred, we don't need to do any validation
-    if (!this->_variable_type.get())
+    if (const auto unknown_ty = cast_type<AstPrimitiveType*>(this->_variable_type.get());
+        unknown_ty->get_type() == PrimitiveType::UNKNOWN)
     {
         return;
     }
@@ -282,15 +283,12 @@ void append_to_global_ctors(
 }
 
 void AstVariableDeclaration::resolve_forward_references(
-    const ParsingContext* context,
+    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
-    if (const auto initial_value = this->get_initial_value().get())
-    {
-        initial_value->resolve_forward_references(context, module, builder);
-    }
+    this->_initial_value->resolve_forward_references(context, module, builder);
 
     if (!this->get_variable_type()->is_global())
     {

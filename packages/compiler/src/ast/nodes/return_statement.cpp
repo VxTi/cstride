@@ -57,12 +57,12 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
 
 void AstReturnStatement::validate()
 {
-    auto context = this->get_context().get();
+    auto context = this->get_context();
 
     while (context->get_context_type() != ContextType::FUNCTION &&
-        context->get_parent_registry() != nullptr)
+        context->get_parent_context() != nullptr)
     {
-        context = context->get_parent_registry();
+        context = context->get_parent_context();
     }
     if (context->get_context_type() != ContextType::FUNCTION)
     {
@@ -82,7 +82,7 @@ std::string AstReturnStatement::to_string()
                        _value ? _value->to_string() : "nullptr");
 }
 
-void AstReturnStatement::resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilderBase* builder)
+void AstReturnStatement::resolve_forward_references(ParsingContext* context, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     if (this->get_return_expr())
     {

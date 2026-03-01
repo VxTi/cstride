@@ -241,9 +241,9 @@ namespace stride::ast
         ) const;
 
         [[nodiscard]]
-        ParsingContext* get_parent_registry() const
+        std::shared_ptr<ParsingContext> get_parent_context() const
         {
-            return this->_parent_registry.get();
+            return this->_parent_registry;
         }
 
         [[nodiscard]]

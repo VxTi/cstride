@@ -1,7 +1,6 @@
 package system;
 
 module io {
-
     fn println(input: string, ...): void {
         printf("%s\n", input, ...);
     }

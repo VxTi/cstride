@@ -2,6 +2,8 @@
 
 #include "files.h"
 
+#include <optional>
+
 namespace llvm
 {
     class Module;
@@ -61,7 +63,7 @@ namespace stride::ast
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
-            const ParsingContext* context,
+            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) {}
@@ -104,7 +106,7 @@ namespace stride::ast
          * to make further analysis or code generation easier.
          * @return The reduced node.
          */
-        virtual IAstNode* reduce() = 0;
+        virtual std::optional<std::unique_ptr<IAstNode>> reduce() = 0;
 
         /**
          * Checks if the node can be reduced.

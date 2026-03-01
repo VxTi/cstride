@@ -14,7 +14,7 @@ using namespace stride::ast;
 
 void IAstExpression::validate()
 {
-    if (!this->_type)
+    if (this->_type == nullptr)
     {
         this->_type = infer_expression_type(this);
     }

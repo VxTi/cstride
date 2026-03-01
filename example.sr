@@ -1,6 +1,14 @@
 import io::{ println };
 
 extern fn powl(base: float64, exp: float64): float64;
+extern fn system_time_ns(): uint64;
+
+module io {
+    fn println(input: string, ...): void {
+        printf("%s\n", input, ...);
+    }
+
+}
 
 /**
  * In this example, we'll try to calculate an approximation of e^x using a taylor series.
@@ -15,6 +23,7 @@ fn main(): void {
     const start: uint64 = system_time_ns();
     const iterations = 100;
     let k: float64 = 0.0D;
+
     for (let i: int32 = 0; i < iterations; i++) {
         k = e_to_the_x(pow);
     }

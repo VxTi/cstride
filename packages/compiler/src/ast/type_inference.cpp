@@ -99,7 +99,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     // First steps, if the function call references a "normal" function, e.g., "fn <some name>",
     // then we can simply use
     if (const auto fn_def = context->get_function_definition_internalized(
-        fn_call->get_internal_name());
+            fn_call->get_internal_name());
         fn_def.has_value())
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();
@@ -481,20 +481,26 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     if (const auto* operation = cast_expr<AstVariableDeclaration*>(expr))
     {
-        const auto lhs_variable_type = operation->get_variable_type();
-        const auto value = infer_expression_type(
+        const auto variable_explicit_type = operation->get_variable_type();
+        const auto value_type = infer_expression_type(
             operation->get_initial_value().get(),
             recursion_guard
         );
 
         // Both the expression type and the declared type are the same (e.g., let var: int32 = 10)
         // so we can just return the declared type.
-        if (lhs_variable_type->equals(*value))
+        if (variable_explicit_type->equals(*value_type))
         {
-            return lhs_variable_type->clone_ty();
+            return variable_explicit_type->clone_ty();
         }
 
-        return get_dominant_field_type(lhs_variable_type, value.get());
+        if (const auto unknown_type = cast_type<AstPrimitiveType*>(variable_explicit_type);
+            unknown_type->get_type() == PrimitiveType::UNKNOWN)
+        {
+            return value_type->clone_ty();
+        }
+
+        return get_dominant_field_type(variable_explicit_type, value_type.get());
     }
 
     if (const auto* fn_call = cast_expr<AstFunctionCall*>(expr))

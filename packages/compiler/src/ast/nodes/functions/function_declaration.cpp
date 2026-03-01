@@ -81,13 +81,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // Return type doesn't have the same flags as the function, hence NONE
     auto return_type = parse_type(context, set, "Expected return type in function header");
 
-    std::vector<std::unique_ptr<IAstType>> parameter_types_cloned;
-    parameter_types_cloned.reserve(parameters.size());
-
-    for (const auto& param : parameters)
-    {
-        parameter_types_cloned.push_back(param->get_type()->clone_ty());
-    }
     const auto& position = reference_token.get_source_fragment();
     auto function_name_symbol = Symbol(position, context->get_name(), fn_name);
 
@@ -109,16 +102,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
             parameter_types
         );
     }
-
-    context->define_function(
-        function_name_symbol,
-        std::make_unique<AstFunctionType>(
-            function_name_symbol.symbol_position,
-            context,
-            std::move(parameter_types_cloned),
-            return_type->clone_ty()
-        )
-    );
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -235,11 +218,6 @@ void stride::ast::parse_standalone_fn_param(
         );
     }
 
-    const auto fn_param_symbol = Symbol(reference_token.get_source_fragment(), param_name);
-
-    // Define it without a context name to properly resolve it
-    context->define_variable(fn_param_symbol, fn_param_type->clone_ty());
-
     parameters.push_back(std::make_unique<AstFunctionParameter>(
         reference_token.get_source_fragment(),
         context,
@@ -290,350 +268,6 @@ std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body)
         }
     }
     return return_statements;
-}
-
-void IAstFunction::validate()
-{
-    // Extern functions don't require return statements and have no function body, so no validation
-    // needed.
-    if (this->is_extern())
-    {
-        return;
-    }
-
-    if (this->get_body() != nullptr)
-    {
-        this->get_body()->validate();
-    }
-
-
-    const auto return_statements = collect_return_statements(this->get_body());
-
-    // For void types, we only disallow returning expressions, as this is redundant.
-    if (const auto void_ret = cast_type<AstPrimitiveType*>(
-            this->get_return_type());
-        void_ret != nullptr && void_ret->get_type() == PrimitiveType::VOID)
-    {
-        for (const auto& return_stmt : return_statements)
-        {
-            if (return_stmt->get_return_expr() != nullptr)
-            {
-                throw parsing_error(
-                    ErrorType::TYPE_ERROR,
-                    std::format(
-                        "Function '{}' has return type 'void' and cannot return a value.",
-                        this->get_name()),
-                    return_stmt->get_source_fragment());
-            }
-        }
-        return;
-    }
-
-    if (return_statements.empty())
-    {
-        if (cast_type<AstNamedType*>(this->get_return_type()))
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Function '{}' returns a struct type, but no return statement is present.",
-                    this->get_name()),
-                this->get_source_fragment());
-        }
-
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            std::format(
-                "Function '{}' is missing a return statement.",
-                this->is_anonymous()
-                ? "<anonymous function>"
-                : this->get_name()),
-            this->get_source_fragment());
-    }
-
-    for (const auto& return_stmt : return_statements)
-    {
-        const auto ret_expr = return_stmt->get_return_expr();
-
-        if (ret_expr == nullptr)
-        {
-            continue;
-        }
-
-        if (!ret_expr->get_type()->equals(*this->get_return_type()))
-        {
-            const auto error_fragment = ErrorSourceReference(
-                std::format(
-                    "expected {}{}",
-                    this->get_return_type()->is_primitive()
-                    ? ""
-                    : this->get_return_type()->is_function()
-                    ? "function-type "
-                    : "struct-type ",
-                    this->get_return_type()->to_string()),
-                return_stmt->get_return_expr()->get_source_fragment()
-            );
-
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Function '{}' expected a return type of '{}', but received '{}'.",
-                    this->is_anonymous() ? "<anonymous function>" : this->get_name(),
-                    this->get_return_type()->to_string(),
-                    ret_expr->get_type()->to_string()),
-                { error_fragment }
-            );
-        }
-    }
-
-    // We'll have to validate whether it:
-    // 1. Requires a return AST node - This can be the case when the return type is not a primitive,
-    // e.g., a struct
-    // 2. The return type doesn't match the function signature
-    // 3. All code paths return a value (if not void)
-}
-
-llvm::Value* IAstFunction::codegen(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
-)
-{
-    llvm::Function* function = module->getFunction(this->get_internal_name());
-    if (!function)
-    {
-        module->print(llvm::errs(), nullptr);
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            "Function symbol missing: " + this->get_internal_name(),
-            this->get_source_fragment()
-        );
-    }
-
-    if (this->is_extern())
-    {
-        return function;
-    }
-
-    // If the function body has already been generated (has basic blocks), just return the function pointer
-    if (!function->empty())
-    {
-        return function;
-    }
-
-    // Save the current insert point to restore it later
-    // This is important when generating nested lambdas
-    llvm::BasicBlock* saved_insert_block = builder->GetInsertBlock();
-    llvm::BasicBlock::iterator saved_insert_point;
-    bool has_insert_point = false;
-    if (saved_insert_block)
-    {
-        saved_insert_point = builder->GetInsertPoint();
-        has_insert_point = true;
-    }
-
-    llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(
-        module->getContext(),
-        "entry",
-        function
-    );
-    builder->SetInsertPoint(entry_bb);
-
-    // We create a new builder for the prologue to ensure allocas are at the very top
-    llvm::IRBuilder prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
-
-    //
-    // Captured variable handling
-    // Map captured variables to function arguments with __capture_ prefix
-    //
-    auto arg_it = function->arg_begin();
-    for (const auto& capture : this->get_captured_variables())
-    {
-        if (arg_it != function->arg_end())
-        {
-            arg_it->setName(closures::format_captured_variable_name(capture.internal_name));
-
-            // Create alloca with __capture_ prefix so identifier lookup can find it
-            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
-                arg_it->getType(),
-                nullptr,
-                closures::format_captured_variable_name_internal(capture.internal_name)
-            );
-
-            builder->CreateStore(arg_it, alloca);
-            ++arg_it;
-        }
-    }
-
-    //
-    // Function parameter handling
-    // Here we define the parameters on the stack as memory slots for the function
-    //
-    for (const auto& param : this->get_parameters())
-    {
-        if (arg_it != function->arg_end())
-        {
-            arg_it->setName(param->get_name() + ".arg");
-
-            // Create a memory slot on the stack for the parameter
-            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
-                arg_it->getType(),
-                nullptr,
-                param->get_name()
-            );
-
-            // Store the initial argument value into the alloca
-            builder->CreateStore(arg_it, alloca);
-
-            ++arg_it;
-        }
-    }
-
-    // Generate Body
-    llvm::Value* last_val = nullptr;
-    if (this->get_body())
-    {
-        last_val = this->get_body()->codegen(module, builder);
-    }
-
-    // Final Safety: Implicit Return
-    // If the get_body didn't explicitly return (no terminator found), add one.
-    if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();
-        current_bb && !current_bb->getTerminator())
-    {
-        if (llvm::Type* ret_type = function->getReturnType(); ret_type->
-            isVoidTy())
-        {
-            builder->CreateRetVoid();
-        }
-        else if (last_val && last_val->getType() == ret_type)
-        {
-            builder->CreateRet(last_val);
-        }
-        else
-        {
-            // Default return to keep IR valid (useful for main or incomplete functions)
-            if (ret_type->isFloatingPointTy())
-            {
-                builder->CreateRet(llvm::ConstantFP::get(ret_type, 0.0));
-            }
-            else if (ret_type->isIntegerTy())
-            {
-                builder->CreateRet(llvm::ConstantInt::get(ret_type, 0));
-            }
-            else
-            {
-                throw parsing_error(
-                    ErrorType::COMPILATION_ERROR,
-                    "Function " + this->get_name() + " missing return path.",
-                    this->get_source_fragment()
-                );
-            }
-        }
-    }
-
-    if (llvm::verifyFunction(*function, &llvm::errs()))
-    {
-        function->print(llvm::errs(), nullptr);
-        // Print IR to console to see what's wrong
-        throw std::runtime_error(
-            "LLVM Function Verification Failed for: " + this->get_name());
-    }
-
-    // Restore the previous insert point for nested lambda generation
-    if (has_insert_point && saved_insert_block)
-    {
-        builder->SetInsertPoint(saved_insert_block, saved_insert_point);
-    }
-
-    // For anonymous lambdas with captured variables, create a closure structure
-    // that bundles the function pointer with the current values of captured variables
-    if (this->is_anonymous())
-    {
-        // Collect the current values of captured variables from the enclosing scope
-        std::vector<llvm::Value*> captured_values;
-        for (const auto& capture : this->get_captured_variables())
-        {
-            if (const auto block = builder->GetInsertBlock())
-            {
-                llvm::Function* current_fn = block->getParent();
-                llvm::Value* captured_val = closures::lookup_variable_or_capture(
-                    current_fn,
-                    capture.internal_name);
-
-                if (!captured_val)
-                {
-                    captured_val = closures::lookup_variable_by_base_name(current_fn, capture.name);
-                }
-
-                if (captured_val)
-                {
-                    // Load the value if it's an alloca
-                    if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
-                    {
-                        captured_val = builder->CreateLoad(
-                            alloca->getAllocatedType(),
-                            alloca,
-                            capture.internal_name
-                        );
-                    }
-                    captured_values.push_back(captured_val);
-                }
-            }
-        }
-
-        // Create and return a closure instead of the raw function pointer
-        return closures::create_closure(module, builder, function, captured_values);
-    }
-
-    return function;
-}
-
-std::unique_ptr<IAstNode> AstFunctionParameter::clone()
-{
-    return std::make_unique<AstFunctionParameter>(
-        this->get_source_fragment(),
-        this->get_context(),
-        this->get_name(),
-        this->get_type()->clone_ty()
-    );
-}
-
-std::unique_ptr<IAstNode> IAstFunction::clone()
-{
-    std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
-    cloned_params.reserve(this->_parameters.size());
-
-    for (const auto& param : this->_parameters)
-    {
-        cloned_params.push_back(param->clone_as<AstFunctionParameter>());
-    }
-
-    return std::make_unique<IAstFunction>(
-        this->get_source_fragment(),
-        this->get_context(),
-        this->_symbol,
-        std::move(cloned_params),
-        this->_body->clone_as<AstBlock>(),
-        this->_return_type->clone_ty(),
-        this->_flags
-    );
-}
-
-std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(
-    llvm::Module* module
-) const
-{
-    std::vector<llvm::Type*> param_types;
-    for (const auto& param : this->get_parameters())
-    {
-        auto llvm_type = type_to_llvm_type(param->get_type(), module);
-        if (!llvm_type)
-        {
-            return std::nullopt;
-        }
-        param_types.push_back(llvm_type);
-    }
-    return param_types;
 }
 
 void collect_free_variables(
@@ -903,6 +537,392 @@ void collect_free_variables(
     }
 }
 
+void IAstFunction::validate()
+{
+    std::vector<std::unique_ptr<IAstType>> parameter_types;
+    parameter_types.reserve(this->_parameters.size());
+
+    for (const auto& param : this->_parameters)
+    {
+        parameter_types.push_back(param->get_type()->clone_ty());
+
+        const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
+        this->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
+    }
+    this->get_context()->define_function(
+        this->_symbol,
+        std::make_unique<AstFunctionType>(
+            this->_symbol.symbol_position,
+            this->get_context(),
+            std::move(parameter_types),
+            this->_return_type->clone_ty()
+        )
+    );
+
+    if (this->is_anonymous())
+    {
+        std::vector<Symbol> captures;
+        const auto outer_context = this->get_context()->get_parent_context() != nullptr
+            ? this->get_context()->get_parent_context()
+            : this->get_context();
+
+        collect_free_variables(this->get_body(), this->get_context(), outer_context, captures);
+
+        // Register captured variables in the lambda's context so they can be referenced
+        for (const auto& capture : captures)
+        {
+            this->add_captured_variable(capture);
+
+            // Also define the capture in the lambda's context so identifier lookup works
+            if (const auto outer_var = this->get_context()->lookup_variable(capture.name, true))
+            {
+                this->get_context()->define_variable(capture, outer_var->get_type()->clone_ty());
+            }
+        }
+    }
+
+    // Extern functions don't require return statements and have no function body, so no validation
+    // needed.
+    if (this->is_extern())
+    {
+        return;
+    }
+
+    if (this->get_body() != nullptr)
+    {
+        this->get_body()->validate();
+    }
+
+
+    const auto return_statements = collect_return_statements(this->get_body());
+
+    // For void types, we only disallow returning expressions, as this is redundant.
+    if (const auto void_ret = cast_type<AstPrimitiveType*>(
+            this->get_return_type());
+        void_ret != nullptr && void_ret->get_type() == PrimitiveType::VOID)
+    {
+        for (const auto& return_stmt : return_statements)
+        {
+            if (return_stmt->get_return_expr() != nullptr)
+            {
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
+                    std::format(
+                        "Function '{}' has return type 'void' and cannot return a value.",
+                        this->get_name()),
+                    return_stmt->get_source_fragment());
+            }
+        }
+        return;
+    }
+
+    if (return_statements.empty())
+    {
+        if (cast_type<AstNamedType*>(this->get_return_type()))
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Function '{}' returns a struct type, but no return statement is present.",
+                    this->get_name()),
+                this->get_source_fragment());
+        }
+
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format(
+                "Function '{}' is missing a return statement.",
+                this->is_anonymous()
+                ? "<anonymous function>"
+                : this->get_name()),
+            this->get_source_fragment());
+    }
+
+    for (const auto& return_stmt : return_statements)
+    {
+        const auto ret_expr = return_stmt->get_return_expr();
+
+        if (ret_expr == nullptr)
+        {
+            continue;
+        }
+
+        if (!ret_expr->get_type()->equals(*this->get_return_type()))
+        {
+            const auto error_fragment = ErrorSourceReference(
+                std::format(
+                    "expected {}{}",
+                    this->get_return_type()->is_primitive()
+                    ? ""
+                    : this->get_return_type()->is_function()
+                    ? "function-type "
+                    : "struct-type ",
+                    this->get_return_type()->to_string()),
+                return_stmt->get_return_expr()->get_source_fragment()
+            );
+
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Function '{}' expected a return type of '{}', but received '{}'.",
+                    this->is_anonymous() ? "<anonymous function>" : this->get_name(),
+                    this->get_return_type()->to_string(),
+                    ret_expr->get_type()->to_string()),
+                { error_fragment }
+            );
+        }
+    }
+
+    // We'll have to validate whether it:
+    // 1. Requires a return AST node - This can be the case when the return type is not a primitive,
+    // e.g., a struct
+    // 2. The return type doesn't match the function signature
+    // 3. All code paths return a value (if not void)
+}
+
+llvm::Value* IAstFunction::codegen(
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder
+)
+{
+    llvm::Function* function = module->getFunction(this->get_internal_name());
+    if (!function)
+    {
+        module->print(llvm::errs(), nullptr);
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Function symbol missing: " + this->get_internal_name(),
+            this->get_source_fragment()
+        );
+    }
+
+    if (this->is_extern())
+    {
+        return function;
+    }
+
+    // If the function body has already been generated (has basic blocks), just return the function pointer
+    if (!function->empty())
+    {
+        return function;
+    }
+
+    // Save the current insert point to restore it later
+    // This is important when generating nested lambdas
+    llvm::BasicBlock* saved_insert_block = builder->GetInsertBlock();
+    llvm::BasicBlock::iterator saved_insert_point;
+    bool has_insert_point = false;
+    if (saved_insert_block)
+    {
+        saved_insert_point = builder->GetInsertPoint();
+        has_insert_point = true;
+    }
+
+    llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(
+        module->getContext(),
+        "entry",
+        function
+    );
+    builder->SetInsertPoint(entry_bb);
+
+    // We create a new builder for the prologue to ensure allocas are at the very top
+    llvm::IRBuilder prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
+
+    //
+    // Captured variable handling
+    // Map captured variables to function arguments with __capture_ prefix
+    //
+    auto arg_it = function->arg_begin();
+    for (const auto& capture : this->get_captured_variables())
+    {
+        if (arg_it != function->arg_end())
+        {
+            arg_it->setName(closures::format_captured_variable_name(capture.internal_name));
+
+            // Create alloca with __capture_ prefix so identifier lookup can find it
+            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
+                arg_it->getType(),
+                nullptr,
+                closures::format_captured_variable_name_internal(capture.internal_name)
+            );
+
+            builder->CreateStore(arg_it, alloca);
+            ++arg_it;
+        }
+    }
+
+    //
+    // Function parameter handling
+    // Here we define the parameters on the stack as memory slots for the function
+    //
+    for (const auto& param : this->_parameters)
+    {
+        if (arg_it != function->arg_end())
+        {
+            arg_it->setName(param->get_name() + ".arg");
+
+            // Create a memory slot on the stack for the parameter
+            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
+                arg_it->getType(),
+                nullptr,
+                param->get_name()
+            );
+
+            // Store the initial argument value into the alloca
+            builder->CreateStore(arg_it, alloca);
+
+            ++arg_it;
+        }
+    }
+
+    // Generate Body
+    llvm::Value* last_val = nullptr;
+    if (this->get_body())
+    {
+        last_val = this->get_body()->codegen(module, builder);
+    }
+
+    // Final Safety: Implicit Return
+    // If the get_body didn't explicitly return (no terminator found), add one.
+    if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();
+        current_bb && !current_bb->getTerminator())
+    {
+        if (llvm::Type* ret_type = function->getReturnType(); ret_type->
+            isVoidTy())
+        {
+            builder->CreateRetVoid();
+        }
+        else if (last_val && last_val->getType() == ret_type)
+        {
+            builder->CreateRet(last_val);
+        }
+        else
+        {
+            // Default return to keep IR valid (useful for main or incomplete functions)
+            if (ret_type->isFloatingPointTy())
+            {
+                builder->CreateRet(llvm::ConstantFP::get(ret_type, 0.0));
+            }
+            else if (ret_type->isIntegerTy())
+            {
+                builder->CreateRet(llvm::ConstantInt::get(ret_type, 0));
+            }
+            else
+            {
+                throw parsing_error(
+                    ErrorType::COMPILATION_ERROR,
+                    "Function " + this->get_name() + " missing return path.",
+                    this->get_source_fragment()
+                );
+            }
+        }
+    }
+
+    if (llvm::verifyFunction(*function, &llvm::errs()))
+    {
+        function->print(llvm::errs(), nullptr);
+        // Print IR to console to see what's wrong
+        throw std::runtime_error(
+            "LLVM Function Verification Failed for: " + this->get_name());
+    }
+
+    // Restore the previous insert point for nested lambda generation
+    if (has_insert_point && saved_insert_block)
+    {
+        builder->SetInsertPoint(saved_insert_block, saved_insert_point);
+    }
+
+    // For anonymous lambdas with captured variables, create a closure structure
+    // that bundles the function pointer with the current values of captured variables
+    if (this->is_anonymous())
+    {
+        // Collect the current values of captured variables from the enclosing scope
+        std::vector<llvm::Value*> captured_values;
+        for (const auto& capture : this->get_captured_variables())
+        {
+            if (const auto block = builder->GetInsertBlock())
+            {
+                llvm::Function* current_fn = block->getParent();
+                llvm::Value* captured_val = closures::lookup_variable_or_capture(
+                    current_fn,
+                    capture.internal_name);
+
+                if (!captured_val)
+                {
+                    captured_val = closures::lookup_variable_by_base_name(current_fn, capture.name);
+                }
+
+                if (captured_val)
+                {
+                    // Load the value if it's an alloca
+                    if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
+                    {
+                        captured_val = builder->CreateLoad(
+                            alloca->getAllocatedType(),
+                            alloca,
+                            capture.internal_name
+                        );
+                    }
+                    captured_values.push_back(captured_val);
+                }
+            }
+        }
+
+        // Create and return a closure instead of the raw function pointer
+        return closures::create_closure(module, builder, function, captured_values);
+    }
+
+    return function;
+}
+
+std::unique_ptr<IAstNode> AstFunctionParameter::clone()
+{
+    return std::make_unique<AstFunctionParameter>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_name(),
+        this->get_type()->clone_ty()
+    );
+}
+
+std::unique_ptr<IAstNode> IAstFunction::clone()
+{
+    std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
+    cloned_params.reserve(this->_parameters.size());
+
+    for (const auto& param : this->_parameters)
+    {
+        cloned_params.push_back(param->clone_as<AstFunctionParameter>());
+    }
+
+    return std::make_unique<IAstFunction>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_symbol,
+        std::move(cloned_params),
+        this->_body->clone_as<AstBlock>(),
+        this->_return_type->clone_ty(),
+        this->_flags
+    );
+}
+
+std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(
+    llvm::Module* module
+) const
+{
+    std::vector<llvm::Type*> param_types;
+    for (const auto& param : this->get_parameters())
+    {
+        auto llvm_type = type_to_llvm_type(param->get_type(), module);
+        if (!llvm_type)
+        {
+            return std::nullopt;
+        }
+        param_types.push_back(llvm_type);
+    }
+    return param_types;
+}
+
 std::unique_ptr<IAstExpression> stride::ast::parse_lambda_fn_expression(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
@@ -959,16 +979,9 @@ std::unique_ptr<IAstExpression> stride::ast::parse_lambda_fn_expression(
     {
         cloned_params.push_back(param->get_type()->clone_ty());
     }
-    context->define_function(
-        symbol_name,
-        std::make_unique<AstFunctionType>(
-            symbol_name.symbol_position,
-            context,
-            std::move(cloned_params),
-            return_type->clone_ty())
-    );
 
-    auto lambda = std::make_unique<AstLambdaFunctionExpression>(
+
+    return std::make_unique<AstLambdaFunctionExpression>(
         context,
         symbol_name,
         std::move(parameters),
@@ -976,24 +989,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_lambda_fn_expression(
         std::move(return_type),
         function_flags
     );
-
-    // Collect captured variables from the lambda body
-    std::vector<Symbol> captures;
-    collect_free_variables(lambda->get_body(), function_context, context, captures);
-
-    // Register captured variables in the lambda's context so they can be referenced
-    for (const auto& capture : captures)
-    {
-        lambda->add_captured_variable(capture);
-
-        // Also define the capture in the lambda's context so identifier lookup works
-        if (const auto outer_var = context->lookup_variable(capture.name, true))
-        {
-            function_context->define_variable(capture, outer_var->get_type()->clone_ty());
-        }
-    }
-
-    return lambda;
 }
 
 bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
@@ -1004,7 +999,7 @@ bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
 }
 
 void IAstFunction::resolve_forward_references(
-    const ParsingContext* context,
+    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -1090,7 +1085,7 @@ void IAstFunction::resolve_forward_references(
 std::string AstFunctionDeclaration::to_string()
 {
     std::string params;
-    for (const auto& param : this->get_parameters())
+    for (const auto& param : this->_parameters)
     {
         if (!params.empty())
             params += ", ";

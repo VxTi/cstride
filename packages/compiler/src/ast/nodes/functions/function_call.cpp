@@ -509,9 +509,9 @@ bool AstFunctionCall::is_reducible()
     return false;
 }
 
-IAstNode* AstFunctionCall::reduce()
+std::optional<std::unique_ptr<IAstNode>> AstFunctionCall::reduce()
 {
-    return this;
+    return std::nullopt;
 }
 
 std::string AstFunctionCall::to_string()

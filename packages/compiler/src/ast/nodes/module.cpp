@@ -69,7 +69,7 @@ llvm::Value* AstModule::codegen(
 }
 
 void AstModule::resolve_forward_references(
-    const ParsingContext* context,
+    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {

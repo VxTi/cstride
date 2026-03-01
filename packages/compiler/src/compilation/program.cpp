@@ -70,11 +70,11 @@ void Program::optimize_ast_nodes()
 
         if (auto* reducible = dynamic_cast<ast::IReducible*>(child))
         {
-            if (auto* reduced = reducible->reduce())
+            if (std::unique_ptr<ast::IAstNode> reduced = reducible->reduce().value())
             {
                 // Note: Assuming reduce() returns a new raw pointer or
                 // you manage ownership correctly in your AST implementation.
-                new_children.push_back(std::unique_ptr<ast::IAstNode>(reduced));
+                new_children.push_back(std::move(reduced));
                 std::cout << "Optimized node: " << child->to_string() << " to "
                     << reduced->to_string() << std::endl;
                 continue;

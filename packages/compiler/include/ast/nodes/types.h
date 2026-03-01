@@ -414,7 +414,7 @@ namespace stride::ast
         }
 
         void resolve_forward_references(
-            const ParsingContext* context,
+            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
@@ -458,7 +458,7 @@ namespace stride::ast
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void resolve_forward_references(
-            const ParsingContext* context,
+            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
     };

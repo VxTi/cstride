@@ -124,9 +124,9 @@ std::unique_ptr<AstConditionalStatement> stride::ast::parse_if_statement(
     );
 }
 
-IAstNode* AstConditionalStatement::reduce()
+std::optional<std::unique_ptr<IAstNode>> AstConditionalStatement::reduce()
 {
-    return this;
+    return std::nullopt;
 }
 
 bool AstConditionalStatement::is_reducible()

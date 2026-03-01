@@ -426,7 +426,7 @@ bool AstUnaryOp::is_reducible()
     return this->get_operand().is_reducible();
 }
 
-IAstNode* AstUnaryOp::reduce()
+std::optional<std::unique_ptr<IAstNode>> AstUnaryOp::reduce()
 {
     return this->get_operand().reduce();
 }

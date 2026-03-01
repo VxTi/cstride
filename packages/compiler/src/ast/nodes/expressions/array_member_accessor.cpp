@@ -148,7 +148,7 @@ bool AstArrayMemberAccessor::is_reducible()
     return this->_index_accessor_expr->is_reducible();
 }
 
-IAstNode* AstArrayMemberAccessor::reduce()
+std::optional<std::unique_ptr<IAstNode>> AstArrayMemberAccessor::reduce()
 {
-    return this;
+    return std::nullopt;
 }
