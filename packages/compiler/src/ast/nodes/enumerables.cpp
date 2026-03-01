@@ -51,33 +51,6 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     );
 }
 
-std::string AstEnumerableMember::to_string()
-{
-    auto member_value_str = this->value().to_string();
-    return std::format("{}: {}", this->get_name(), member_value_str);
-}
-
-std::string AstEnumerable::to_string()
-{
-    std::ostringstream imploded;
-
-    if (this->get_members().empty())
-    {
-        return std::format("Enumerable {} (empty)", this->get_name());
-    }
-
-    imploded << this->get_members()[0]->to_string();
-    for (size_t i = 1; i < this->get_members().size(); ++i)
-    {
-        imploded << "\n  " << this->get_members()[i]->to_string();
-    }
-
-    return std::format("Enumerable {} (\n  {}\n)",
-                       this->get_name(),
-                       imploded.str());
-}
-
-
 std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
@@ -120,4 +93,58 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
         std::move(members),
         enumerable_name
     );
+}
+
+std::unique_ptr<IAstNode> AstEnumerable::clone()
+{
+    std::vector<std::unique_ptr<AstEnumerableMember>> cloned_members;
+    cloned_members.reserve(this->get_members().size());
+
+    for (const auto& member : this->get_members())
+    {
+        cloned_members.push_back(member->clone_as<AstEnumerableMember>());
+    }
+
+    return std::make_unique<AstEnumerable>(
+        this->get_source_fragment(),
+        this->get_context(),
+        std::move(cloned_members),
+        this->get_name()
+    );
+}
+
+std::unique_ptr<IAstNode> AstEnumerableMember::clone()
+{
+    return std::make_unique<AstEnumerableMember>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_name(),
+        this->value().clone_as<AstLiteral>()
+    );
+}
+
+std::string AstEnumerableMember::to_string()
+{
+    auto member_value_str = this->value().to_string();
+    return std::format("{}: {}", this->get_name(), member_value_str);
+}
+
+std::string AstEnumerable::to_string()
+{
+    std::ostringstream imploded;
+
+    if (this->get_members().empty())
+    {
+        return std::format("Enumerable {} (empty)", this->get_name());
+    }
+
+    imploded << this->get_members()[0]->to_string();
+    for (size_t i = 1; i < this->get_members().size(); ++i)
+    {
+        imploded << "\n  " << this->get_members()[i]->to_string();
+    }
+
+    return std::format("Enumerable {} (\n  {}\n)",
+                       this->get_name(),
+                       imploded.str());
 }

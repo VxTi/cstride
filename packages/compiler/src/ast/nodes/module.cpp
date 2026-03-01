@@ -80,3 +80,13 @@ void AstModule::resolve_forward_references(
 
     this->_body->resolve_forward_references(context, module, builder);
 }
+
+std::unique_ptr<IAstNode> AstModule::clone()
+{
+    return std::make_unique<AstModule>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_name,
+        this->_body->clone_as<AstBlock>()
+    );
+}

@@ -109,7 +109,7 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstIntLiteral
@@ -150,7 +150,7 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstFpLiteral
@@ -177,7 +177,7 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstBooleanLiteral
@@ -204,7 +204,7 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstCharLiteral : public IAstLiteralBase<char>
@@ -228,7 +228,7 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstNilLiteral
@@ -248,7 +248,7 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(

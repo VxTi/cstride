@@ -46,3 +46,8 @@ void AstContinueStatement::validate()
         );
     }
 }
+
+std::unique_ptr<IAstNode> AstContinueStatement::clone()
+{
+    return std::make_unique<AstContinueStatement>(*this);
+}

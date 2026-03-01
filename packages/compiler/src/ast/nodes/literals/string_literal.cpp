@@ -56,7 +56,7 @@ llvm::Value* AstStringLiteral::codegen(
     return builder->CreateGlobalString(this->value(), "", 0, module);
 }
 
-std::unique_ptr<IAstExpression> AstStringLiteral::clone()
+std::unique_ptr<IAstNode> AstStringLiteral::clone()
 {
     return std::make_unique<AstStringLiteral>(
         this->get_source_fragment(),

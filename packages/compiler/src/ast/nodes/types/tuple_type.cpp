@@ -70,13 +70,13 @@ void AstTupleType::resolve_forward_references(
     llvm::Module* module,
     llvm::IRBuilderBase* builder) {}
 
-std::unique_ptr<IAstType> AstTupleType::clone() const
+std::unique_ptr<IAstNode> AstTupleType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> members;
     members.reserve(this->_members.size());
     for (const auto& member : this->_members)
     {
-        members.push_back(member->clone());
+        members.push_back(member->clone_ty());
     }
 
     return std::make_unique<AstTupleType>(

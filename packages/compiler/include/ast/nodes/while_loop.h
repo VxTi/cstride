@@ -47,6 +47,8 @@ namespace stride::ast
         }
 
         void validate() override;
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     std::unique_ptr<AstWhileLoop> parse_while_loop_statement(

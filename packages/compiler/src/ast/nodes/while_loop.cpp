@@ -93,3 +93,13 @@ std::string AstWhileLoop::to_string()
         get_body() ? get_body()->to_string() : "<empty>"
     );
 }
+
+std::unique_ptr<IAstNode> AstWhileLoop::clone()
+{
+    return std::make_unique<AstWhileLoop>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_condition->clone_as<IAstExpression>(),
+        this->_body->clone_as<AstBlock>()
+    );
+}

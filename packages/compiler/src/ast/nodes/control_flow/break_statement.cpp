@@ -71,3 +71,8 @@ void AstBreakStatement::validate()
         );
     }
 }
+
+std::unique_ptr<IAstNode> AstBreakStatement::clone()
+{
+    return std::make_unique<AstBreakStatement>(*this);
+}

@@ -100,7 +100,7 @@ llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
 ) const
 {
     llvm::Value* base_val = this->_base->codegen(module, builder);
-    auto cloned_base_type = this->_base->get_type();
+    IAstType* cloned_base_type = this->_base->get_type();
     std::string base_type_name = cloned_base_type->get_type_name();
 
     // We look for a GlobalVariable with an initializer
@@ -146,7 +146,7 @@ llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
             return nullptr;
         }
 
-        cloned_base_type = member_field_type.value()->clone().get();
+        cloned_base_type = member_field_type.value();
         current_struct_name = cloned_base_type->get_type_name();
     }
 
@@ -312,7 +312,7 @@ llvm::Value* AstMemberAccessor::codegen(
     return current_val;
 }
 
-std::unique_ptr<IAstExpression> AstMemberAccessor::clone()
+std::unique_ptr<IAstNode> AstMemberAccessor::clone()
 {
     std::vector<std::unique_ptr<AstIdentifier>> members_clone;
     members_clone.reserve(this->_members.size());

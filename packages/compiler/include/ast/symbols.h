@@ -37,7 +37,8 @@ namespace stride::ast
         explicit Symbol(
             const SourceFragment& position,
             const std::string& context_name,
-            const std::string& name) :
+            const std::string& name
+        ) :
             Symbol(position, context_name, name, name) {}
 
         explicit Symbol(

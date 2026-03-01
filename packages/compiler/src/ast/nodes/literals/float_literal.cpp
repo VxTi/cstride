@@ -50,7 +50,7 @@ llvm::Value* AstFpLiteral::codegen(
     return llvm::ConstantFP::get(builder->getFloatTy(), this->value());
 }
 
-std::unique_ptr<IAstExpression> AstFpLiteral::clone()
+std::unique_ptr<IAstNode> AstFpLiteral::clone()
 {
     return std::make_unique<AstFpLiteral>(
         this->get_source_fragment(),

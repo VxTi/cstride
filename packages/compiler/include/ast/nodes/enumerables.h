@@ -41,9 +41,12 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override { return nullptr; }
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
-    class AstEnumerable : public IAstNode
+    class AstEnumerable
+        : public IAstNode
     {
         const std::vector<std::unique_ptr<AstEnumerableMember>> _members;
         std::string _name;
@@ -75,6 +78,8 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override { return nullptr; }
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     std::unique_ptr<AstEnumerableMember> parse_enumerable_member(

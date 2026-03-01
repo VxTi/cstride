@@ -133,7 +133,7 @@ std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> AstStructType::ge
 
     for (const auto& [name, type] : this->_members)
     {
-        members.emplace_back(name, type->clone());
+        members.emplace_back(name, type->clone_ty());
     }
 
     return std::move(members);
@@ -232,12 +232,12 @@ bool AstStructType::equals(IAstType& other)
 {
     if (const auto other_struct_ty = cast_type<AstStructType*>(&other))
     {
-        if (this->get_members().size() != other_struct_ty->get_members().size())
+        if (this->_members.size() != other_struct_ty->_members.size())
         {
             return false;
         }
 
-        for (size_t i = 0; i < this->get_members().size(); i++)
+        for (size_t i = 0; i < this->_members.size(); i++)
         {
             const auto& [first_field_name, first_type] = this->_members[i];
             const auto& [second_field_name, second_type] = other_struct_ty->_members[i];
@@ -255,13 +255,13 @@ bool AstStructType::equals(IAstType& other)
     return false;
 }
 
-std::unique_ptr<IAstType> AstStructType::clone() const
+std::unique_ptr<IAstNode> AstStructType::clone()
 {
     std::vector<definition::StructFieldPair> cloned_members = {};
 
-    for (const auto& [name, type] : this->get_members())
+    for (const auto& [name, type] : this->_members)
     {
-        cloned_members.emplace_back(name, type->clone());
+        cloned_members.emplace_back(name, type->clone_ty());
     }
 
     return std::make_unique<AstStructType>(

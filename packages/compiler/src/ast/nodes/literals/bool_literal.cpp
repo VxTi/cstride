@@ -35,7 +35,7 @@ llvm::Value* AstBooleanLiteral::codegen(
         llvm::APInt(this->bit_count(), this->value(), true));
 }
 
-std::unique_ptr<IAstExpression> AstBooleanLiteral::clone()
+std::unique_ptr<IAstNode> AstBooleanLiteral::clone()
 {
     return std::make_unique<AstBooleanLiteral>(
         this->get_source_fragment(),

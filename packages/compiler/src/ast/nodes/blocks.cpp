@@ -11,52 +11,19 @@
 
 using namespace stride::ast;
 
-void AstBlock::resolve_forward_references(
-    const ParsingContext* context,
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder)
+std::unique_ptr<AstBlock> stride::ast::parse_block(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set
+)
 {
-    for (const auto& child : this->children())
+    auto collected_subset = collect_block(set);
+
+    if (!collected_subset.has_value())
     {
-        child->resolve_forward_references(context, module, builder);
-    }
-}
-
-llvm::Value* AstBlock::codegen(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder)
-{
-    llvm::Value* last_value = nullptr;
-
-    for (const auto& child : this->children())
-    {
-        // Don't generate unreachable code, unless it's a function declaration
-        // (which defines a new code block / function) or a global variable declaration.
-        if (auto* block = builder->GetInsertBlock();
-            block && block->getTerminator())
-        {
-            if (!cast_expr<AstFunctionDeclaration*>(child.get()) &&
-                !cast_expr<AstVariableDeclaration*>(child.get()))
-            {
-                continue;
-            }
-        }
-
-        last_value = child->codegen(module, builder);
+        return AstBlock::create_empty(context, set.peek_next().get_source_fragment());
     }
 
-    return last_value;
-}
-
-std::string AstBlock::to_string()
-{
-    std::ostringstream result;
-    result << "AstBlock";
-    for (const auto& child : this->children())
-    {
-        result << "\n  " << child->to_string();
-    }
-    return result.str();
+    return parse_sequential(context, collected_subset.value());
 }
 
 std::optional<TokenSet> stride::ast::collect_until_token(
@@ -128,24 +95,54 @@ std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
     return collect_block_variant(set, TokenType::LBRACE, TokenType::RBRACE);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_block(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
-{
-    auto collected_subset = collect_block(set);
-
-    if (!collected_subset.has_value())
-    {
-        return AstBlock::create_empty(context, set.peek_next().get_source_fragment());
-    }
-
-    return parse_sequential(context, collected_subset.value());
-}
-
 std::optional<TokenSet> stride::ast::collect_parenthesized_block(TokenSet& set)
 {
     return collect_block_variant(set, TokenType::LPAREN, TokenType::RPAREN);
+}
+
+void AstBlock::aggregate_block(AstBlock* other)
+{
+    for (auto& child : other->_children)
+    {
+        this->_children.push_back(std::move(child));
+    }
+}
+
+void AstBlock::resolve_forward_references(
+    const ParsingContext* context,
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder)
+{
+    for (const auto& child : this->children())
+    {
+        child->resolve_forward_references(context, module, builder);
+    }
+}
+
+llvm::Value* AstBlock::codegen(
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder)
+{
+    llvm::Value* last_value = nullptr;
+
+    for (const auto& child : this->children())
+    {
+        // Don't generate unreachable code, unless it's a function declaration
+        // (which defines a new code block / function) or a global variable declaration.
+        if (auto* block = builder->GetInsertBlock();
+            block && block->getTerminator())
+        {
+            if (!cast_expr<AstFunctionDeclaration*>(child.get()) &&
+                !cast_expr<AstVariableDeclaration*>(child.get()))
+            {
+                continue;
+            }
+        }
+
+        last_value = child->codegen(module, builder);
+    }
+
+    return last_value;
 }
 
 void AstBlock::validate()
@@ -154,4 +151,32 @@ void AstBlock::validate()
     {
         child->validate();
     }
+}
+
+std::unique_ptr<IAstNode> AstBlock::clone()
+{
+    std::vector<std::unique_ptr<IAstNode>> cloned_children;
+    cloned_children.reserve(this->children().size());
+
+    for (const auto& child : this->children())
+    {
+        cloned_children.push_back(child->clone());
+    }
+
+    return std::make_unique<AstBlock>(
+        this->get_source_fragment(),
+        this->get_context(),
+        std::move(cloned_children)
+    );
+}
+
+std::string AstBlock::to_string()
+{
+    std::ostringstream result;
+    result << "AstBlock";
+    for (const auto& child : this->children())
+    {
+        result << "\n  " << child->to_string();
+    }
+    return result.str();
 }

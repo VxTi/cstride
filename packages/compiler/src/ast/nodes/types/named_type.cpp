@@ -39,7 +39,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() cons
     if (const auto ref_def = this->get_context()->get_type_definition(this->get_name());
         ref_def.has_value())
     {
-        return ref_def.value()->get_type()->clone();
+        return ref_def.value()->get_type()->clone_ty();
     }
     return std::nullopt;
 }

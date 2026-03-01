@@ -116,13 +116,13 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     return builder->CreateLoad(elem_llvm_ty, element_ptr, "array_load");
 }
 
-std::unique_ptr<IAstExpression> AstArrayMemberAccessor::clone()
+std::unique_ptr<IAstNode> AstArrayMemberAccessor::clone()
 {
     return std::make_unique<AstArrayMemberAccessor>(
         this->get_source_fragment(),
         this->get_context(),
         this->_array_identifier->clone_as<AstIdentifier>(),
-        this->_index_accessor_expr->clone()
+        this->_index_accessor_expr->clone_as<IAstExpression>()
     );
 }
 

@@ -6,6 +6,7 @@
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/PassManager.h>
@@ -130,7 +131,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     module->setDataLayout(target_machine->createDataLayout());
     module->setTargetTriple(target_machine->getTargetTriple());
 
-    llvm::IRBuilder builder(context);
+    llvm::IRBuilder<> builder(context);
 
     this->resolve_forward_references(module.get(), &builder);
     this->validate_ast_nodes();

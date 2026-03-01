@@ -60,6 +60,8 @@ namespace stride::ast
         }
 
         void validate() override;
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     std::unique_ptr<AstForLoop> parse_for_loop_statement(

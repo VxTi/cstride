@@ -33,7 +33,7 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
         source_fragment,
         { type_name });
 
-    context->define_type(type_name_symbol, type->clone());
+    context->define_type(type_name_symbol, type->clone_ty());
 
     return std::make_unique<AstTypeDefinition>(
         source_fragment,
@@ -44,15 +44,26 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
     );
 }
 
-llvm::Value* AstTypeDefinition::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    return this->_type->codegen(module, builder);
-}
-
 void AstTypeDefinition::resolve_forward_references(
     const ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
     this->_type->resolve_forward_references(context, module, builder);
+}
+
+llvm::Value* AstTypeDefinition::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+{
+    return this->_type->codegen(module, builder);
+}
+
+std::unique_ptr<IAstNode> AstTypeDefinition::clone()
+{
+    return std::make_unique<AstTypeDefinition>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_name,
+        this->_type->clone_ty(),
+        this->_visibility
+    );
 }

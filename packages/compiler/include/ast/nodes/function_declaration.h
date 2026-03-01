@@ -49,6 +49,8 @@ namespace stride::ast
         ~AstFunctionParameter() override = default;
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override { return nullptr; }
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -63,20 +65,18 @@ namespace stride::ast
         std::unique_ptr<AstBlock> _body;
         Symbol _symbol;
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
-        std::shared_ptr<IAstType> _return_type;
-        int _flags;
+        std::unique_ptr<IAstType> _return_type;
         std::vector<Symbol> _captured_variables;
+        int _flags;
 
     public:
-        using IAstExpression::IAstExpression;
-
         explicit IAstFunction(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
-            std::shared_ptr<IAstType> return_type,
+            std::unique_ptr<IAstType> return_type,
             const int flags
         ) :
             IAstExpression(source, context),
@@ -106,8 +106,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<AstFunctionParameter>>&
-        get_parameters() const
+        const std::vector<std::unique_ptr<AstFunctionParameter>>& get_parameters() const
         {
             return this->_parameters;
         }
@@ -163,6 +162,8 @@ namespace stride::ast
             const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstFunctionDeclaration
@@ -177,7 +178,7 @@ namespace stride::ast
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
-            std::shared_ptr<IAstType> return_type,
+            std::unique_ptr<IAstType> return_type,
             const int flags
         ) :
             IAstFunction(
@@ -207,7 +208,7 @@ namespace stride::ast
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
-            std::shared_ptr<IAstType> return_type,
+            std::unique_ptr<IAstType> return_type,
             const int flags
         ) :
             IAstFunction(

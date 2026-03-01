@@ -74,20 +74,20 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     return parse_type_metadata(std::move(fn_type), set, context_type_flags);
 }
 
-std::unique_ptr<IAstType> AstFunctionType::clone() const
+std::unique_ptr<IAstNode> AstFunctionType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> parameters_clone;
     parameters_clone.reserve(this->_parameters.size());
     for (const auto& p : this->_parameters)
     {
-        parameters_clone.push_back(p->clone());
+        parameters_clone.push_back(p->clone_ty());
     }
 
     return std::make_unique<AstFunctionType>(
         this->get_source_fragment(),
         this->get_context(),
         std::move(parameters_clone),
-        this->_return_type->clone(),
+        this->_return_type->clone_ty(),
         this->get_flags()
     );
 }

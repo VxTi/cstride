@@ -68,11 +68,10 @@ llvm::Type* stride::ast::type_to_llvm_type(
     // Wrapping T -> Optional<T>
     if (type->is_optional())
     {
-        const auto inner = type->clone();
+        const auto inner = type->clone_ty();
         // Remove the optional flag so that it doesn't recursively enter this same scope
         inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
-        llvm::Type* inner_type =
-            type_to_llvm_type(inner.get(), module);
+        llvm::Type* inner_type = type_to_llvm_type(inner.get(), module);
 
         return llvm::StructType::get(
             module->getContext(),
@@ -203,10 +202,12 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 )
 {
     const auto& context = lhs->get_context();
-    const auto* lhs_primitive = dynamic_cast<AstPrimitiveType*>(lhs);
-    const auto* rhs_primitive = dynamic_cast<AstPrimitiveType*>(rhs);
-    const auto* lhs_named = dynamic_cast<AstNamedType*>(lhs);
-    const auto* rhs_named = dynamic_cast<AstNamedType*>(rhs);
+
+    auto* lhs_primitive = cast_type<AstPrimitiveType*>(lhs);
+    auto* rhs_primitive = cast_type<AstPrimitiveType*>(rhs);
+
+    const auto* lhs_named = cast_type<AstNamedType*>(lhs);
+    const auto* rhs_named = cast_type<AstNamedType*>(rhs);
 
     // Error if one is named and the other is primitive
     if ((lhs_named && rhs_primitive) || (lhs_primitive && rhs_named))
@@ -238,8 +239,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     if (are_both_sides_floats || are_both_sides_integers)
     {
         return lhs_primitive->bit_count() >= rhs_primitive->bit_count()
-            ? lhs_primitive->clone()
-            : rhs_primitive->clone();
+            ? lhs_primitive->clone_ty()
+            : rhs_primitive->clone_ty();
     }
 
     // If LHS is a float, but the RHS is not, we'll have to convert the resulting
@@ -252,16 +253,19 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         // and return the highest byte size
         if (rhs_primitive->bit_count() > lhs_primitive->bit_count())
         {
+            // RHS is dominant
             return std::make_unique<AstPrimitiveType>(
-                lhs_primitive->get_source_fragment(),
+                rhs_primitive->get_source_fragment(),
                 context,
                 PrimitiveType::FLOAT64,
                 rhs_primitive->bit_count(),
-                rhs_primitive->get_flags());
+                rhs_primitive->get_flags()
+            );
         }
 
         // Otherwise, just return the LHS as the dominant type (float32 / float64)
-        return lhs_primitive->clone();
+        // LHS is dominant
+        return lhs_primitive->clone_ty();
     }
 
     const std::vector references = {
@@ -294,4 +298,17 @@ std::optional<AstStructType*> stride::ast::get_struct_type_from_type(IAstType* t
     }
 
     return base_struct_type;
+}
+
+std::unique_ptr<IAstType> stride::ast::make_unknown_type(
+    const std::shared_ptr<ParsingContext>& context,
+    const TokenSet& set
+)
+{
+    return std::make_unique<AstPrimitiveType>(
+        set.peek_next().get_source_fragment(),
+        context,
+        PrimitiveType::UNKNOWN,
+        64
+    );
 }

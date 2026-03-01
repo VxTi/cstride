@@ -157,8 +157,19 @@ void AstForLoop::validate()
     if (this->_incrementor)
         this->_incrementor->validate();
 
-    if (this->_body)
-        this->_body->validate();
+    this->_body->validate();
+}
+
+std::unique_ptr<IAstNode> AstForLoop::clone()
+{
+    return std::make_unique<AstForLoop>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_initializer ? this->_initializer->clone_as<IAstExpression>() : nullptr,
+        this->_condition ? this->_condition->clone_as<IAstExpression>() : nullptr,
+        this->_incrementor ? this->_incrementor->clone_as<IAstExpression>() : nullptr,
+        this->_body->clone_as<AstBlock>()
+    );
 }
 
 std::string AstForLoop::to_string()

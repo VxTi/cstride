@@ -31,8 +31,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     auto function_parameter_set = collect_parenthesized_block(set);
 
     std::vector<std::unique_ptr<IAstExpression>> function_arg_nodes = {};
-    std::vector<IAstType*> parameter_types = {};
-    std::vector<std::unique_ptr<IAstType>> parameter_type_owners = {};
 
     int function_call_flags = SRFLAG_NONE;
 
@@ -40,18 +38,9 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     if (function_parameter_set.has_value())
     {
         auto subset = function_parameter_set.value();
-        auto initial_arg = parse_inline_expression(context, subset);
 
-        if (initial_arg)
+        if (auto initial_arg = parse_inline_expression(context, subset))
         {
-            // TODO: Evaluate this. One might not be able to infer expression types if they invoke
-            // functions that
-            //  haven't been declared yet, hence throwing an error
-            auto initial_type = infer_expression_type(
-                initial_arg.get());
-
-            parameter_types.push_back(initial_type.get());
-            parameter_type_owners.push_back(std::move(initial_type));
             function_arg_nodes.push_back(std::move(initial_arg));
 
             // Consume next parameters
@@ -62,9 +51,9 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
                     "Expected ',' between function arguments"
                 );
 
-                auto next_arg = parse_inline_expression(context, subset);
+                auto function_argument = parse_inline_expression(context, subset);
 
-                if (!next_arg)
+                if (!function_argument)
                 {
                     // Since the RParen is already consumed, we have to manually extract its
                     // position with the following assumption It's possible this yields END_OF_FILE
@@ -81,16 +70,13 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
                     );
                 }
 
-                if (cast_expr<AstVariadicArgReference*>(next_arg.get()))
+                // If the next argument is a variadic argument reference, we stop parsing more arguments and mark this function call as variadic
+                if (cast_expr<AstVariadicArgReference*>(function_argument.get()))
                 {
-
                     break;
                 }
 
-                auto next_type = infer_expression_type(next_arg.get());
-                parameter_types.push_back(next_type.get());
-                parameter_type_owners.push_back(std::move(next_type));
-                function_arg_nodes.push_back(std::move(next_arg));
+                function_arg_nodes.push_back(std::move(function_argument));
             }
         }
     }
@@ -106,16 +92,13 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
         ? ref_pos.length
         : last_pos.offset + last_pos.length - ref_pos.offset);*/
 
-    Symbol function_name = resolve_internal_function_name(
-        context,
-        ref_pos,
-        function_name_segments,
-        parameter_types
-    );
-
     return std::make_unique<AstFunctionCall>(
         context,
-        function_name,
+        resolve_internal_name(
+            /* context_name = */"",
+                                ref_pos,
+                                function_name_segments
+        ),
         std::move(function_arg_nodes),
         function_call_flags
     );
@@ -151,10 +134,9 @@ std::string AstFunctionCall::format_function_name() const
 
     for (const auto& arg : this->_arguments)
     {
-        const auto type = infer_expression_type(arg.get());
-
-        arg_types.push_back(type->get_type_name());
+        arg_types.push_back(arg->get_type()->get_type_name());
     }
+
     if (arg_types.empty())
     {
         arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
@@ -193,6 +175,7 @@ llvm::Value* AstFunctionCall::codegen(
     // rather than the internalized one.
     if (!callee)
     {
+        // TODO: FIX This - high importance, function lookup might not use correct signature
         if (const auto definition = this->get_context()->get_function_definition(
                 this->get_function_name());
             definition.has_value())
@@ -227,7 +210,9 @@ llvm::Value* AstFunctionCall::codegen(
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Incorrect arguments passed for function '{}', expected {}, got {}",
-                        this->get_function_name(), minimum_arg_count, provided_arg_count),
+                        this->get_function_name(),
+                        minimum_arg_count,
+                        provided_arg_count),
             this->get_source_fragment()
         );
     }
@@ -308,9 +293,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
             // Validate argument types match lambda signature
             for (size_t i = 0; i < expected_param_count; ++i)
             {
-                const auto arg_type = infer_expression_type(
-                    this->get_arguments()[i].get()
-                );
+                const auto arg_type = this->get_arguments()[i]->get_type();
 
                 if (const auto expected_type = fn_type->get_parameter_types()[i].get();
                     arg_type->get_type_name() != expected_type->get_type_name())
@@ -499,13 +482,15 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     return nullptr;
 }
 
-std::unique_ptr<IAstExpression> AstFunctionCall::clone()
+void AstFunctionCall::validate_expr() {}
+
+std::unique_ptr<IAstNode> AstFunctionCall::clone()
 {
     std::vector<std::unique_ptr<IAstExpression>> cloned_args;
     cloned_args.reserve(this->get_arguments().size());
     for (const auto& arg : this->get_arguments())
     {
-        cloned_args.push_back(arg->clone());
+        cloned_args.push_back(arg->clone_as<IAstExpression>());
     }
 
     return std::make_unique<AstFunctionCall>(

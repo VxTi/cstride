@@ -49,15 +49,15 @@ namespace stride::ast
 
         ~AstConditionalStatement() override = default;
 
+        void validate() override;
+
         bool is_reducible() override;
 
         IAstNode* reduce() override;
 
-        void validate() override;
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+        std::unique_ptr<IAstNode> clone() override;
 
         std::string to_string() override;
     };

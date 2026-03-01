@@ -40,3 +40,13 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
         context,
         package_name);
 }
+
+
+std::unique_ptr<IAstNode> AstPackage::clone()
+{
+    return std::make_unique<AstPackage>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_name()
+    );
+}

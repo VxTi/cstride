@@ -46,6 +46,8 @@ namespace stride::ast
             const ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     std::unique_ptr<AstModule> parse_module_statement(

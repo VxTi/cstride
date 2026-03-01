@@ -53,6 +53,8 @@ namespace stride:: ast
 
         void resolve_forward_references(const ParsingContext* context, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
+        std::unique_ptr<IAstNode> clone() override;
+
         std::string to_string() override { return std::format("Type<{}>", this->get_name()); }
     };
 

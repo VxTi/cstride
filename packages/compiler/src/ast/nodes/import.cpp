@@ -111,6 +111,11 @@ void AstImport::validate()
     }
 }
 
+std::unique_ptr<IAstNode> AstImport::clone()
+{
+    return std::make_unique<AstImport>(*this);
+}
+
 std::string AstImport::to_string()
 {
     std::vector<std::string> modules;

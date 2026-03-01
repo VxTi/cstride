@@ -88,7 +88,7 @@ llvm::Value* AstIntLiteral::codegen(
         llvm::APInt(this->bit_count(), this->value(), this->is_signed()));
 }
 
-std::unique_ptr<IAstExpression> AstIntLiteral::clone()
+std::unique_ptr<IAstNode> AstIntLiteral::clone()
 {
     return std::make_unique<AstIntLiteral>(
         this->get_source_fragment(),

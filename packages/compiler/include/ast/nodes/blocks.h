@@ -39,13 +39,7 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        void aggregate_block(AstBlock* other)
-        {
-            for (auto& child : other->_children)
-            {
-                this->_children.push_back(std::move(child));
-            }
-        }
+        void aggregate_block(AstBlock* other);
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& children() const
@@ -62,6 +56,8 @@ namespace stride::ast
         {
             return std::make_unique<AstBlock>(source, context, std::vector<std::unique_ptr<IAstNode>>{});
         }
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     std::unique_ptr<AstBlock> parse_block(

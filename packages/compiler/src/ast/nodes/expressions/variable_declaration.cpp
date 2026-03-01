@@ -72,8 +72,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         // Note that leaving out the type requires you to initialize it.
         set.next();
         value = parse_inline_expression(context, set);
-        variable_type = infer_expression_type(value.get());
-        variable_type->set_flags(flags);
+        variable_type = make_unknown_type(context, set);
+        // We don't know the type yet, as this is inferred in the validation step.
     }
     else
     {
@@ -137,7 +137,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         internal_name
     );
 
-    context->define_variable(symbol, variable_type->clone());
+    context->define_variable(symbol, variable_type->clone_ty());
 
     return std::make_unique<AstVariableDeclaration>(
         context,
@@ -169,22 +169,18 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
 
 void AstVariableDeclaration::validate_expr()
 {
-    IAstExpression* init_val = this->get_initial_value().get();
-    if (!init_val)
+    this->get_initial_value()->validate();
+
+    // If the variable type is inferred, we don't need to do any validation
+    if (!this->_variable_type.get())
     {
-        // It's possible that there's no initializer value.
-        // No need to further validate then
         return;
     }
 
-    init_val->validate();
-
-    const std::unique_ptr<IAstType> internal_expr_type =
-        infer_expression_type(init_val);
     const auto lhs_type = this->get_variable_type();
 
-    if (const auto rhs_type = internal_expr_type.get(); !lhs_type->equals(
-        *rhs_type))
+    if (const auto rhs_type = this->get_initial_value()->get_type();
+        !lhs_type->equals(*rhs_type))
     {
         if (const auto primitive_type = cast_type<AstPrimitiveType*>(rhs_type);
             primitive_type != nullptr &&
@@ -197,7 +193,8 @@ void AstVariableDeclaration::validate_expr()
 
             const std::vector references = {
                 ErrorSourceReference(lhs_type->to_string(), this->get_source_fragment()),
-                ErrorSourceReference(rhs_type->to_string(), init_val->get_source_fragment())
+                ErrorSourceReference(rhs_type->to_string(),
+                                     this->get_initial_value()->get_source_fragment())
             };
 
             throw parsing_error(
@@ -215,7 +212,7 @@ void AstVariableDeclaration::validate_expr()
 
         const std::vector references = {
             ErrorSourceReference(lhs_type_str, this->get_source_fragment()),
-            ErrorSourceReference(rhs_type_str, init_val->get_source_fragment())
+            ErrorSourceReference(rhs_type_str, this->get_initial_value()->get_source_fragment())
         };
 
         throw parsing_error(
@@ -418,7 +415,7 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
 
 llvm::Value* AstVariableDeclaration::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* ir_builder
+    llvm::IRBuilderBase* builder
 )
 {
     // Get the LLVM type for the variable
@@ -450,7 +447,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         {
             init_value = initial_value->codegen(
                 module,
-                ir_builder
+                builder
             );
         }
 
@@ -467,7 +464,7 @@ llvm::Value* AstVariableDeclaration::codegen(
                 this,
                 global_var.value(),
                 module,
-                ir_builder
+                builder
             );
         }
         return global_var.value();
@@ -475,7 +472,7 @@ llvm::Value* AstVariableDeclaration::codegen(
 
     // Create the Alloca in the Entry block to ensure it dominates all uses
     // and name it so Identifier lookups can find it.
-    llvm::Function* function = ir_builder->GetInsertBlock()->getParent();
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
     llvm::IRBuilder entry_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
 
     llvm::AllocaInst* alloca = entry_builder.CreateAlloca(
@@ -486,22 +483,22 @@ llvm::Value* AstVariableDeclaration::codegen(
 
     // Generate code for the initial value at the current insertion point
     // Save the insertion point before codegen, as callable types (lambdas) may change it
-    llvm::BasicBlock* saved_block = ir_builder->GetInsertBlock();
-    const auto saved_point = ir_builder->GetInsertPoint();
+    llvm::BasicBlock* saved_block = builder->GetInsertBlock();
+    const auto saved_point = builder->GetInsertPoint();
 
     llvm::Value* init_value = nullptr;
     if (const auto initial_value = this->get_initial_value().get())
     {
         init_value = initial_value->codegen(
             module,
-            ir_builder
+            builder
         );
     }
 
     // Restore the insertion point after codegen
-    if (saved_block && saved_block != ir_builder->GetInsertBlock())
+    if (saved_block && saved_block != builder->GetInsertBlock())
     {
-        ir_builder->SetInsertPoint(saved_block, saved_point);
+        builder->SetInsertPoint(saved_block, saved_point);
     }
 
     if (init_value)
@@ -514,7 +511,7 @@ llvm::Value* AstVariableDeclaration::codegen(
             value_to_store = wrap_optional_value(
                 init_value,
                 variable_ty,
-                ir_builder);
+                builder);
         }
         else
         {
@@ -522,22 +519,22 @@ llvm::Value* AstVariableDeclaration::codegen(
             value_to_store = optionally_upcast_type(
                 init_value,
                 variable_ty,
-                ir_builder);
+                builder);
         }
 
-        ir_builder->CreateStore(value_to_store, alloca);
+        builder->CreateStore(value_to_store, alloca);
     }
 
     return alloca;
 }
 
-std::unique_ptr<IAstExpression> AstVariableDeclaration::clone()
+std::unique_ptr<IAstNode> AstVariableDeclaration::clone()
 {
     return std::make_unique<AstVariableDeclaration>(
         this->get_context(),
         this->_symbol,
-        this->_variable_type->clone(),
-        this->_initial_value ? this->_initial_value->clone() : nullptr,
+        this->_variable_type ? this->_variable_type->clone_ty() : nullptr,
+        this->_initial_value ? this->_initial_value->clone_as<IAstExpression>() : nullptr,
         this->_visibility
     );
 }

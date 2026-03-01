@@ -145,19 +145,16 @@ void AstStructInitializer::validate_expr()
                 this->get_source_fragment());
         }
 
-        if (const auto member_type = infer_expression_type(
-                initializer_expr.get());
-            !member_type->equals(*found_member.value()))
+        if (!initializer_expr->get_type()->equals(*found_member.value()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got "
-                    "'{}'",
+                    "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got '{}'",
                     field_name,
                     this->_struct_name,
                     found_member.value()->to_string(),
-                    member_type->to_string()
+                    initializer_expr->get_type()->to_string()
                 ),
                 initializer_expr->get_source_fragment()
             );
@@ -275,14 +272,14 @@ llvm::Value* AstStructInitializer::codegen(
     return current_struct_val;
 }
 
-std::unique_ptr<IAstExpression> AstStructInitializer::clone()
+std::unique_ptr<IAstNode> AstStructInitializer::clone()
 {
     std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> cloned_initializers;
     cloned_initializers.reserve(this->_initializers.size());
 
     for (const auto& [name, expr] : this->_initializers)
     {
-        cloned_initializers.emplace_back(name, expr->clone());
+        cloned_initializers.emplace_back(name, expr->clone_as<IAstExpression>());
     }
 
     return std::make_unique<AstStructInitializer>(

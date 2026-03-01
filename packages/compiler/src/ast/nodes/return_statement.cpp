@@ -92,7 +92,8 @@ void AstReturnStatement::resolve_forward_references(const ParsingContext* contex
 
 llvm::Value* AstReturnStatement::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* builder)
+    llvm::IRBuilderBase* builder
+    )
 {
     if (!this->get_return_expr())
     {
@@ -159,4 +160,13 @@ llvm::Value* AstReturnStatement::codegen(
 
     // Create the return instruction
     return builder->CreateRet(expr_return_val);
+}
+
+std::unique_ptr<IAstNode> AstReturnStatement::clone()
+{
+    return std::make_unique<AstReturnStatement>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_return_expr()->clone_as<IAstExpression>()
+    );
 }

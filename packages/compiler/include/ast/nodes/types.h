@@ -8,7 +8,8 @@
 #include <memory>
 #include <optional>
 
-namespace llvm {
+namespace llvm
+{
     class Type;
 }
 
@@ -60,8 +61,10 @@ namespace stride::ast
 
         ~IAstType() override = default;
 
-        [[nodiscard]]
-        virtual std::unique_ptr<IAstType> clone() const = 0;
+        std::unique_ptr<IAstType> clone_ty()
+        {
+            return this->clone_as<IAstType>();
+        }
 
         [[nodiscard]]
         bool is_pointer() const
@@ -199,7 +202,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstType> clone() const override
+        std::unique_ptr<IAstNode> clone() override
         {
             return std::make_unique<AstPrimitiveType>(*this);
         }
@@ -245,7 +248,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstType> clone() const override
+        std::unique_ptr<IAstNode> clone() override
         {
             return std::make_unique<AstNamedType>(*this);
         }
@@ -301,7 +304,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstType> clone() const override;
+        std::unique_ptr<IAstNode> clone() override;
 
         std::string to_string() override;
 
@@ -337,18 +340,7 @@ namespace stride::ast
             _initial_length(initial_length) {}
 
         [[nodiscard]]
-        std::unique_ptr<IAstType> clone() const override
-        {
-            auto element_clone = this->_element_type
-                ? this->_element_type->clone()
-                : nullptr;
-
-            return std::make_unique<AstArrayType>(
-                this->get_source_fragment(),
-                this->get_context(),
-                std::move(element_clone),
-                this->_initial_length);
-        }
+        std::unique_ptr<IAstNode> clone() override;
 
         [[nodiscard]]
         IAstType* get_element_type() const
@@ -412,7 +404,7 @@ namespace stride::ast
         bool equals(IAstType& other) override;
 
         [[nodiscard]]
-        std::unique_ptr<IAstType> clone() const override;
+        std::unique_ptr<IAstNode> clone() override;
 
         // Struct registration is done in the `resolve_forward_references` pass
         // so that one can reference structs before they're semantically defined.
@@ -446,7 +438,7 @@ namespace stride::ast
             _members(std::move(members)) {}
 
         [[nodiscard]]
-        std::unique_ptr<IAstType> clone() const override;
+        std::unique_ptr<IAstNode> clone() override;
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstType>>& get_members() const
@@ -516,5 +508,10 @@ namespace stride::ast
     /// will attempt to cast the type directly into a struct type.
     /// This function will never return nullptrs.
     std::optional<AstStructType*> get_struct_type_from_type(IAstType* type);
+
+    std::unique_ptr<IAstType> make_unknown_type(
+        const std::shared_ptr<ParsingContext>& context,
+        const TokenSet& set
+    );
 
 } // namespace stride::ast

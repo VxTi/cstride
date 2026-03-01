@@ -10,7 +10,7 @@ std::string AstNilLiteral::to_string()
     return "nil";
 }
 
-std::unique_ptr<IAstExpression> AstNilLiteral::clone()
+std::unique_ptr<IAstNode> AstNilLiteral::clone()
 {
     return std::make_unique<AstNilLiteral>(
         this->get_source_fragment(),

@@ -270,14 +270,14 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     }
 }
 
-std::unique_ptr<IAstExpression> AstBinaryArithmeticOp::clone()
+std::unique_ptr<IAstNode> AstBinaryArithmeticOp::clone()
 {
     return std::make_unique<AstBinaryArithmeticOp>(
         this->get_source_fragment(),
         this->get_context(),
-        this->get_left()->clone(),
+        this->get_left()->clone_as<IAstExpression>(),
         this->get_op_type(),
-        this->get_right()->clone()
+        this->get_right()->clone_as<IAstExpression>()
     );
 }
 

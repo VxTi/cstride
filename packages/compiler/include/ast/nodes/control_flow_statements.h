@@ -4,11 +4,11 @@
 
 namespace stride::ast
 {
-    class IControlFlowStatement
+    class IAstControlFlowStatement
         : public IAstNode
     {
     public:
-        explicit IControlFlowStatement(
+        explicit IAstControlFlowStatement(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context
         ) :
@@ -16,37 +16,47 @@ namespace stride::ast
     };
 
     class AstContinueStatement
-        : public IControlFlowStatement
+        : public IAstControlFlowStatement
     {
     public:
         explicit AstContinueStatement(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context
         ) :
-            IControlFlowStatement(source, context) {}
+            IAstControlFlowStatement(source, context) {}
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void validate() override;
 
-        std::string to_string() override { return "continue"; }
+        std::unique_ptr<IAstNode> clone() override;
+
+        std::string to_string() override
+        {
+            return "continue";
+        }
     };
 
     class AstBreakStatement
-        : public IControlFlowStatement
+        : public IAstControlFlowStatement
     {
     public:
         explicit AstBreakStatement(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context
         ) :
-            IControlFlowStatement(source, context) {}
+            IAstControlFlowStatement(source, context) {}
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void validate() override;
 
-        std::string to_string() override { return "break"; }
+        std::unique_ptr<IAstNode> clone() override;
+
+        std::string to_string() override
+        {
+            return "break";
+        }
     };
 
     std::unique_ptr<AstContinueStatement> parse_continue_statement(

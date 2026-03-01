@@ -48,6 +48,18 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
     return std::move(base_type);
 }
 
+std::unique_ptr<IAstNode> AstArrayType::clone()
+{
+    return std::make_unique<AstArrayType>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_element_type
+        ? this->_element_type->clone_ty()
+        : nullptr,
+        this->_initial_length
+    );
+}
+
 std::string AstArrayType::to_string()
 {
     if (cast_type<AstFunctionType*>(this->get_element_type()))

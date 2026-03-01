@@ -153,13 +153,13 @@ llvm::Value* AstLogicalOp::codegen(
     return phi;
 }
 
-std::unique_ptr<IAstExpression> AstLogicalOp::clone()
+std::unique_ptr<IAstNode> AstLogicalOp::clone()
 {
     return std::make_unique<AstLogicalOp>(
         this->get_source_fragment(),
         this->get_context(),
-        this->get_left()->clone(),
+        this->get_left()->clone_as<IAstExpression>(),
         this->get_op_type(),
-        this->get_right()->clone()
+        this->get_right()->clone_as<IAstExpression>()
     );
 }

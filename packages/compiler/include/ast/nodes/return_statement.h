@@ -54,6 +54,8 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     std::unique_ptr<AstReturnStatement> parse_return_statement(

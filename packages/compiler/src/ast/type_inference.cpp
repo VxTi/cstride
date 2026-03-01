@@ -1,3 +1,5 @@
+#include "ast/type_inference.h"
+
 #include "errors.h"
 #include "ast/casting.h"
 #include "ast/flags.h"
@@ -97,9 +99,10 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     // First steps, if the function call references a "normal" function, e.g., "fn <some name>",
     // then we can simply use
     if (const auto fn_def = context->get_function_definition_internalized(
-        fn_call->get_internal_name()); fn_def.has_value())
+        fn_call->get_internal_name());
+        fn_def.has_value())
     {
-        return fn_def.value()->get_type()->get_return_type()->clone();
+        return fn_def.value()->get_type()->get_return_type()->clone_ty();
     }
 
     // It could be an extern function, in which case the function name is just as-is
@@ -107,7 +110,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
             fn_call->get_function_name());
         fn_def.has_value())
     {
-        return fn_def.value()->get_type()->get_return_type()->clone();
+        return fn_def.value()->get_type()->get_return_type()->clone_ty();
     }
     std::vector candidates = { fn_call->get_internal_name(),
                                fn_call->get_function_name() };
@@ -119,7 +122,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
         // Simple extraction. it's already referencing a 'real' function.
         if (const auto callable = dynamic_cast<CallableDef*>(definition))
         {
-            return callable->get_type()->get_return_type()->clone();
+            return callable->get_type()->get_return_type()->clone_ty();
         }
         // In case the symbol has a lambda function as value, we'll need to extract it here
         if (const auto field_fn_like_def = dynamic_cast<FieldDef*>(definition))
@@ -127,9 +130,9 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
             if (const auto field_fn_type =
                 cast_type<AstFunctionType*>(field_fn_like_def->get_type()))
             {
-                return field_fn_type->get_return_type()->clone();
+                return field_fn_type->get_return_type()->clone_ty();
             }
-            return field_fn_like_def->get_type()->clone();
+            return field_fn_like_def->get_type()->clone_ty();
         }
     }
 
@@ -141,8 +144,8 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
         fn_call->get_source_fragment());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_binary_arithmetic_op_type(
-    const AstBinaryArithmeticOp* operation)
+std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(
+    const IBinaryOp* operation)
 {
     auto lhs = infer_expression_type(operation->get_left());
     auto rhs = infer_expression_type(operation->get_right());
@@ -347,7 +350,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     }
 
     // Return the final inferred type
-    return std::unique_ptr(parent_type->clone());
+    return parent_type->clone_ty();
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
@@ -357,6 +360,24 @@ std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
         initializer->get_source_fragment(),
         initializer->get_context(),
         initializer->get_struct_name()
+    );
+}
+
+std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* expression)
+{
+    std::vector<std::unique_ptr<IAstType>> param_types;
+    param_types.reserve(expression->get_parameters().size());
+
+    for (const auto& param : expression->get_parameters())
+    {
+        param_types.emplace_back(param->get_type()->clone_ty());
+    }
+
+    return std::make_unique<AstFunctionType>(
+        expression->get_source_fragment(),
+        expression->get_context(),
+        std::move(param_types),
+        expression->get_return_type()->clone_ty()
     );
 }
 
@@ -407,20 +428,20 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
             for (const auto& param :
                  callable->get_type()->get_parameter_types())
             {
-                param_types.push_back(param->clone());
+                param_types.push_back(param->clone_ty());
             }
 
             return std::make_unique<AstFunctionType>(
                 identifier->get_source_fragment(),
                 identifier->get_context(),
                 std::move(param_types),
-                callable->get_type()->get_return_type()->clone()
+                callable->get_type()->get_return_type()->clone_ty()
             );
         }
 
         if (const auto field = dynamic_cast<FieldDef*>(reference_sym))
         {
-            return field->get_type()->clone();
+            return field->get_type()->clone_ty();
         }
 
         throw parsing_error(
@@ -432,9 +453,9 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
             identifier->get_source_fragment());
     }
 
-    if (const auto* operation = cast_expr<AstBinaryArithmeticOp*>(expr))
+    if (const auto* operation = cast_expr<IBinaryOp*>(expr))
     {
-        return infer_binary_arithmetic_op_type(operation);
+        return infer_binary_op_type(operation);
     }
 
     if (const auto* operation = cast_expr<AstUnaryOp*>(expr))
@@ -470,7 +491,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         // so we can just return the declared type.
         if (lhs_variable_type->equals(*value))
         {
-            return lhs_variable_type->clone();
+            return lhs_variable_type->clone_ty();
         }
 
         return get_dominant_field_type(lhs_variable_type, value.get());
@@ -499,10 +520,9 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
             array_accessor->get_array_identifier(),
             recursion_guard);
 
-        if (const auto array = cast_type<AstArrayType*>(array_type.get()); array
-            != nullptr)
+        if (const auto array = cast_type<AstArrayType*>(array_type.get()))
         {
-            return array->get_element_type()->clone();
+            return array->get_element_type()->clone_ty();
         }
     }
 
@@ -516,21 +536,9 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
         return infer_member_accessor_type(member_accessor);
     }
 
-    if (const auto* function_definition = cast_expr<AstLambdaFunctionExpression*>(expr))
+    if (const auto* function_definition = cast_expr<IAstFunction*>(expr))
     {
-        std::vector<std::unique_ptr<IAstType>> param_types;
-
-        for (const auto& param : function_definition->get_parameters())
-        {
-            param_types.emplace_back(param->get_type()->clone());
-        }
-
-        return std::make_unique<AstFunctionType>(
-            function_definition->get_source_fragment(),
-            function_definition->get_context(),
-            std::move(param_types),
-            function_definition->get_return_type()->clone()
-        );
+        return infer_function_type(function_definition);
     }
 
     if (const auto* tuple_init = cast_expr<AstTupleInitializer*>(expr))

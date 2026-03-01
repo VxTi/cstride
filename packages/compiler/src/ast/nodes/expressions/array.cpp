@@ -29,14 +29,14 @@ void AstArray::resolve_forward_references(
     }
 }
 
-std::unique_ptr<IAstExpression> AstArray::clone()
+std::unique_ptr<IAstNode> AstArray::clone()
 {
     std::vector<std::unique_ptr<IAstExpression>> elements_clone;
     elements_clone.reserve(this->get_elements().size());
 
     for (const auto& element : this->get_elements())
     {
-        elements_clone.push_back(element->clone());
+        elements_clone.push_back(element->clone_as<IAstExpression>());
     }
 
     return std::make_unique<AstArray>(

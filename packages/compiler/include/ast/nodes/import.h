@@ -47,14 +47,16 @@ namespace stride::ast
             return this->_dependency.submodules;
         }
 
-        std::string to_string() override;
+        void validate() override;
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
         }
 
-        void validate() override;
+        std::unique_ptr<IAstNode> clone() override;
+
+        std::string to_string() override;
     };
 
     std::unique_ptr<AstImport> parse_import_statement(

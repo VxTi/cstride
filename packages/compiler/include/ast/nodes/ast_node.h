@@ -65,6 +65,24 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) {}
+
+        virtual std::unique_ptr<IAstNode> clone() = 0;
+
+        template <typename T>
+        std::unique_ptr<T> clone_as()
+        {
+            static_assert(std::is_base_of_v<IAstNode, T>,
+                          "T must be a subclass of IAstNode");
+
+            auto base = this->clone();
+            if (const auto ptr = dynamic_cast<T*>(base.get()))
+            {
+                base.release();
+                return std::unique_ptr<T>(ptr);
+            }
+
+            throw std::bad_cast{};
+        }
     };
 
     class IAstStatement

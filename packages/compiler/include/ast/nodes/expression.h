@@ -100,24 +100,6 @@ namespace stride::ast
             return this->_type.get();
         }
 
-        virtual std::unique_ptr<IAstExpression> clone() = 0;
-
-        template <typename T>
-        std::unique_ptr<T> clone_as()
-        {
-            static_assert(std::is_base_of_v<IAstExpression, T>,
-                          "T must be a subclass of IAstExpression");
-
-            auto base = this->clone();
-            if (const auto ptr = dynamic_cast<T*>(base.get()))
-            {
-                base.release();
-                return std::unique_ptr<T>(ptr);
-            }
-
-            throw std::bad_cast{};
-        }
-
         virtual void validate_expr() {}
 
         // Must be implemented by children
@@ -167,7 +149,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstIdentifier
@@ -212,7 +194,7 @@ namespace stride::ast
             return this;
         }
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstArrayMemberAccessor
@@ -256,7 +238,7 @@ namespace stride::ast
 
         void validate_expr() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstMemberAccessor
@@ -307,7 +289,7 @@ namespace stride::ast
 
         IAstNode* reduce() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
 
     private:
         llvm::Value* codegen_global_member_accessor(
@@ -364,7 +346,9 @@ namespace stride::ast
 
         IAstNode* reduce() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
+
+        void validate_expr() override;
 
     private:
         [[nodiscard]]
@@ -450,7 +434,7 @@ namespace stride::ast
 
         void validate_expr() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class IBinaryOp
@@ -520,7 +504,7 @@ namespace stride::ast
 
         IAstNode* reduce() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstLogicalOp
@@ -553,7 +537,7 @@ namespace stride::ast
 
         void validate_expr() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstComparisonOp
@@ -586,7 +570,7 @@ namespace stride::ast
 
         void validate_expr() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstUnaryOp
@@ -640,7 +624,7 @@ namespace stride::ast
 
         void validate_expr() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstVariableReassignment
@@ -709,7 +693,7 @@ namespace stride::ast
 
         void validate_expr() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstStructInitializer
@@ -751,7 +735,7 @@ namespace stride::ast
 
         void validate_expr() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstVariadicArgReference
@@ -769,7 +753,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstTupleInitializer
@@ -798,7 +782,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        std::unique_ptr<IAstExpression> clone() override;
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *

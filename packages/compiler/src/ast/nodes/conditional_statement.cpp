@@ -39,10 +39,10 @@ std::unique_ptr<AstBlock> parse_else_optional(
         return parse_block(else_context, set);
     }
 
+    // Otherwise, we can just parse the next statement, as it will only allow a single one.
     std::vector<std::unique_ptr<IAstNode>> nodes;
     nodes.push_back(parse_next_statement(else_block_context, set));
 
-    // Otherwise, we can just parse_file it as a next statement.
     return std::make_unique<AstBlock>(
         reference_token.get_source_fragment(),
         else_block_context,
@@ -220,6 +220,17 @@ void AstConditionalStatement::validate()
     {
         this->get_else_body()->validate();
     }
+}
+
+std::unique_ptr<IAstNode> AstConditionalStatement::clone()
+{
+    return std::make_unique<AstConditionalStatement>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_condition->clone_as<IAstExpression>(),
+        this->_body->clone_as<AstBlock>(),
+        this->_else_body != nullptr ? this->_else_body->clone_as<AstBlock>() : nullptr
+    );
 }
 
 std::string AstConditionalStatement::to_string()

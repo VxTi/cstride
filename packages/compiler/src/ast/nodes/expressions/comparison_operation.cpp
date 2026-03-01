@@ -246,14 +246,14 @@ llvm::Value* AstComparisonOp::codegen(
     }
 }
 
-std::unique_ptr<IAstExpression> AstComparisonOp::clone()
+std::unique_ptr<IAstNode> AstComparisonOp::clone()
 {
     return std::make_unique<AstComparisonOp>(
         this->get_source_fragment(),
         this->get_context(),
-        this->get_left()->clone(),
+        this->get_left()->clone_as<IAstExpression>(),
         this->_op_type,
-        this->get_right()->clone()
+        this->get_right()->clone_as<IAstExpression>()
     );
 }
 

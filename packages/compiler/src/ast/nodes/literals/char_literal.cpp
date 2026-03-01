@@ -33,7 +33,7 @@ llvm::Value* AstCharLiteral::codegen(
         llvm::APInt(this->bit_count() * BITS_PER_BYTE, this->value(), true));
 }
 
-std::unique_ptr<IAstExpression> AstCharLiteral::clone()
+std::unique_ptr<IAstNode> AstCharLiteral::clone()
 {
     return std::make_unique<AstCharLiteral>(
         this->get_source_fragment(),

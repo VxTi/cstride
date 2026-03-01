@@ -20,14 +20,14 @@ llvm::Value* AstTupleInitializer::codegen(llvm::Module* module, llvm::IRBuilderB
     return nullptr;
 }
 
-std::unique_ptr<IAstExpression> AstTupleInitializer::clone()
+std::unique_ptr<IAstNode> AstTupleInitializer::clone()
 {
     std::vector<std::unique_ptr<IAstExpression>> cloned_members;
     cloned_members.reserve(this->_members.size());
 
     for (const auto& member : this->_members)
     {
-        cloned_members.push_back(member->clone());
+        cloned_members.push_back(member->clone_as<IAstExpression>());
     }
 
     return std::make_unique<AstTupleInitializer>(

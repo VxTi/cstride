@@ -148,7 +148,7 @@ llvm::Value* AstVariadicArgReference::codegen(llvm::Module* module, llvm::IRBuil
     return va_list_copy_ptr;
 }
 
-std::unique_ptr<IAstExpression> AstVariadicArgReference::clone()
+std::unique_ptr<IAstNode> AstVariadicArgReference::clone()
 {
     return std::make_unique<AstVariadicArgReference>(
         this->get_source_fragment(),

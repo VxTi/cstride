@@ -158,17 +158,7 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
 
 void AstUnaryOp::validate_expr()
 {
-    const auto operand_type = infer_expression_type(
-        this->_operand.get());
-
-    if (!operand_type)
-    {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            "Cannot infer type of operand",
-            this->get_source_fragment()
-        );
-    }
+    const auto operand_type = this->_operand->get_type();
 
     const auto op = this->get_op_type();
 
@@ -187,7 +177,7 @@ void AstUnaryOp::validate_expr()
     // For negation / plus, we require the identifier to be of type float or int
     if (op == UnaryOpType::NEGATE || op == UnaryOpType::PLUS)
     {
-        if (const auto prim = cast_type<AstPrimitiveType*>(operand_type.get());
+        if (const auto prim = cast_type<AstPrimitiveType*>(operand_type);
             !prim || (!prim->is_integer_ty() && !prim->is_fp()))
         {
             throw parsing_error(
@@ -203,7 +193,7 @@ void AstUnaryOp::validate_expr()
 
     if (operand_type->is_primitive())
     {
-        const auto* prim = cast_type<AstPrimitiveType*>(operand_type.get());
+        const auto* prim = cast_type<AstPrimitiveType*>(operand_type);
         const bool is_int = prim->is_integer_ty();
         const bool is_fp = prim->is_fp();
 
@@ -420,13 +410,13 @@ llvm::Value* AstUnaryOp::codegen(
     }
 }
 
-std::unique_ptr<IAstExpression> AstUnaryOp::clone()
+std::unique_ptr<IAstNode> AstUnaryOp::clone()
 {
     return std::make_unique<AstUnaryOp>(
         this->get_source_fragment(),
         this->get_context(),
         this->get_op_type(),
-        this->_operand->clone(),
+        this->_operand->clone_as<IAstExpression>(),
         this->is_lsh()
     );
 }

@@ -154,10 +154,7 @@ void AstVariableReassignment::validate_expr()
             this->get_source_fragment());
     }
 
-    const auto expression_type = infer_expression_type(
-        this->get_value());
-
-    if (!identifier_def->get_type()->equals(*expression_type))
+    if (!identifier_def->get_type()->equals(*this->get_value()->get_type()))
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
@@ -165,7 +162,7 @@ void AstVariableReassignment::validate_expr()
                 "Type mismatch when reassigning variable '{}', expected type '{}', got type '{}'",
                 this->get_variable_name(),
                 identifier_def->get_type()->to_string(),
-                expression_type->to_string()
+                this->get_value()->get_type()->to_string()
             ),
             this->get_source_fragment()
         );
@@ -346,7 +343,7 @@ llvm::Value* AstVariableReassignment::codegen(
     return finalValue;
 }
 
-std::unique_ptr<IAstExpression> AstVariableReassignment::clone()
+std::unique_ptr<IAstNode> AstVariableReassignment::clone()
 {
     return std::make_unique<AstVariableReassignment>(
         this->get_source_fragment(),
@@ -354,7 +351,7 @@ std::unique_ptr<IAstExpression> AstVariableReassignment::clone()
         this->get_variable_name(),
         this->get_internal_name(),
         this->get_operator(),
-        this->get_value()->clone()
+        this->get_value()->clone_as<IAstExpression>()
     );
 }
 

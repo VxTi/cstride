@@ -4,7 +4,7 @@
 namespace stride::ast
 {
     class AstArray;
-    class AstBinaryArithmeticOp;
+    class IBinaryOp;
     class IAstExpression;
     class AstFunctionCall;
     class AstLiteral;
@@ -12,6 +12,7 @@ namespace stride::ast
     class AstStructInitializer;
     class AstUnaryOp;
     class IAstType;
+    class IAstFunction;
 
     /// Will attempt to resolve the provided expression into an IAstInternalFieldType
     std::unique_ptr<IAstType> infer_expression_type(IAstExpression* expr, int recursion_guard = 0);
@@ -22,9 +23,8 @@ namespace stride::ast
     /// Infers the result type of a unary operation
     std::unique_ptr<IAstType> infer_unary_op_type(const AstUnaryOp* operation);
 
-    /// Infers the result type of a binary arithmetic operation
-    std::unique_ptr<IAstType> infer_binary_arithmetic_op_type(
-        const AstBinaryArithmeticOp* operation);
+    /// Infers the result type of a binary operation
+    std::unique_ptr<IAstType> infer_binary_op_type(const IBinaryOp* operation);
 
     /// Infers the type of a literal expression
     std::unique_ptr<IAstType> infer_expression_literal_type(AstLiteral* literal);
@@ -38,4 +38,7 @@ namespace stride::ast
     /// Infers the type of the field accessed via a member accessor expression
     std::unique_ptr<IAstType> infer_member_accessor_type(
         const AstMemberAccessor* member_accessor_expr);
+
+    std::unique_ptr<IAstType> infer_function_type(
+        const IAstFunction* expression);
 }
