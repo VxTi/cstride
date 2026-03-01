@@ -22,7 +22,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
         TokenType::RSQUARE_BRACKET
     );
 
-    std::vector<std::unique_ptr<AstExpression>> elements;
+    std::vector<std::unique_ptr<IAstExpression>> elements;
 
     if (expression_block.has_value())
     {

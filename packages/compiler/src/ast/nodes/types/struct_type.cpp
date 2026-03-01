@@ -128,7 +128,7 @@ std::optional<IAstType*> AstStructType::get_member_field_type(const std::string&
 
 std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> AstStructType::get_members() const
 {
-    std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> members = {};
+    std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> members;
     members.reserve(this->_members.size());
 
     for (const auto& [name, type] : this->_members)

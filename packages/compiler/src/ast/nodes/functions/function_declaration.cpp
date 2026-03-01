@@ -769,7 +769,7 @@ void collect_free_variables(
     }
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_lambda_fn_expression(
+std::unique_ptr<IAstExpression> stride::ast::parse_lambda_fn_expression(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )

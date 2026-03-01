@@ -4,7 +4,7 @@
 
 namespace stride::ast
 {
-    class AstExpression;
+    class IAstExpression;
     class IAstType;
     class IAstNode;
 
@@ -12,8 +12,8 @@ namespace stride::ast
     [[nodiscard]] decltype(auto) cast_expr(From&& expr)
     {
         static_assert(
-            std::is_base_of_v<AstExpression, std::remove_pointer_t<To>>,
-            "Template parameter From must be derived from AstExpression");
+            std::is_base_of_v<IAstExpression, std::remove_pointer_t<To>>,
+            "Template parameter From must be derived from IAstExpression");
         return dynamic_cast<To>(expr);
     }
 

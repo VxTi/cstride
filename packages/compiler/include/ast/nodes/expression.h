@@ -15,7 +15,6 @@ namespace stride::ast
         class IDefinition;
     }
 
-
     enum class BinaryOpType
     {
         ADD,
@@ -67,20 +66,20 @@ namespace stride::ast
         BITWISE_XOR
     };
 
-    /// Base class for all expression AST nodes.
-
-    class AstExpression
+    class IAstExpression
         : public IAstNode,
           public IReducible
     {
+        std::unique_ptr<IAstType> _type;
+
     public:
-        explicit AstExpression(
+        explicit IAstExpression(
             const SourceFragment& source_position,
             const std::shared_ptr<ParsingContext>& context
         ) :
             IAstNode(source_position, context) {}
 
-        ~AstExpression() override = default;
+        ~IAstExpression() override = default;
 
         llvm::Value* codegen(
             llvm::Module* module,
@@ -88,6 +87,40 @@ namespace stride::ast
 
         std::string to_string() override;
 
+        void validate() override;
+
+        [[nodiscard]]
+        IAstType* get_type() const
+        {
+            if (!this->_type)
+            {
+                throw std::runtime_error(
+                    "Cannot infer type for expression before validation stage");
+            }
+            return this->_type.get();
+        }
+
+        virtual std::unique_ptr<IAstExpression> clone() = 0;
+
+        template <typename T>
+        std::unique_ptr<T> clone_as()
+        {
+            static_assert(std::is_base_of_v<IAstExpression, T>,
+                          "T must be a subclass of IAstExpression");
+
+            auto base = this->clone();
+            if (const auto ptr = dynamic_cast<T*>(base.get()))
+            {
+                base.release();
+                return std::unique_ptr<T>(ptr);
+            }
+
+            throw std::bad_cast{};
+        }
+
+        virtual void validate_expr() {}
+
+        // Must be implemented by children
         bool is_reducible() override
         {
             return false;
@@ -100,21 +133,21 @@ namespace stride::ast
     };
 
     class AstArray
-        : public AstExpression
+        : public IAstExpression
     {
-        std::vector<std::unique_ptr<AstExpression>> _elements;
+        std::vector<std::unique_ptr<IAstExpression>> _elements;
 
     public:
         explicit AstArray(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::vector<std::unique_ptr<AstExpression>> elements
+            std::vector<std::unique_ptr<IAstExpression>> elements
         ) :
-            AstExpression(source, context),
+            IAstExpression(source, context),
             _elements(std::move(elements)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<AstExpression>>& get_elements() const
+        const std::vector<std::unique_ptr<IAstExpression>>& get_elements() const
         {
             return this->_elements;
         }
@@ -124,7 +157,7 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        void validate() override;
+        void validate_expr() override;
 
         void resolve_forward_references(
             const ParsingContext* context,
@@ -133,10 +166,12 @@ namespace stride::ast
         ) override;
 
         std::string to_string() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstIdentifier
-        : public AstExpression
+        : public IAstExpression
     {
         Symbol _symbol;
 
@@ -145,7 +180,7 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol
         ) :
-            AstExpression(symbol.symbol_position, context),
+            IAstExpression(symbol.symbol_position, context),
             _symbol(std::move(symbol)) {}
 
         [[nodiscard]]
@@ -162,7 +197,8 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            llvm::IRBuilderBase* builder
+        ) override;
 
         std::string to_string() override;
 
@@ -175,22 +211,24 @@ namespace stride::ast
         {
             return this;
         }
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstArrayMemberAccessor
-        : public AstExpression
+        : public IAstExpression
     {
         std::unique_ptr<AstIdentifier> _array_identifier;
-        std::unique_ptr<AstExpression> _index_accessor_expr;
+        std::unique_ptr<IAstExpression> _index_accessor_expr;
 
     public:
         explicit AstArrayMemberAccessor(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> array_identifier,
-            std::unique_ptr<AstExpression> index_expr
+            std::unique_ptr<IAstExpression> index_expr
         ) :
-            AstExpression(source, context),
+            IAstExpression(source, context),
             _array_identifier(std::move(array_identifier)),
             _index_accessor_expr(std::move(index_expr)) {}
 
@@ -201,7 +239,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const AstExpression* get_index() const
+        const IAstExpression* get_index() const
         {
             return this->_index_accessor_expr.get();
         }
@@ -216,17 +254,18 @@ namespace stride::ast
 
         IAstNode* reduce() override;
 
-        void validate() override;
+        void validate_expr() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstMemberAccessor
-        : public AstExpression
+        : public IAstExpression
     {
         // When adding function chaining support,
-        // these types will have to be changed to AstExpression
+        // these types will have to be changed to IAstExpression
         std::unique_ptr<AstIdentifier> _base;
         std::vector<std::unique_ptr<AstIdentifier>> _members;
-        std::unique_ptr<IAstType> _base_type;
 
     public:
         explicit AstMemberAccessor(
@@ -234,7 +273,10 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> base,
             std::vector<std::unique_ptr<AstIdentifier>> members
-        );
+        ) :
+            IAstExpression(source, context),
+            _base(std::move(base)),
+            _members(std::move(members)) {}
 
         [[nodiscard]]
         AstIdentifier* get_base() const
@@ -265,7 +307,7 @@ namespace stride::ast
 
         IAstNode* reduce() override;
 
-        void validate() override;
+        std::unique_ptr<IAstExpression> clone() override;
 
     private:
         llvm::Value* codegen_global_member_accessor(
@@ -275,9 +317,9 @@ namespace stride::ast
     };
 
     class AstFunctionCall
-        : public AstExpression
+        : public IAstExpression
     {
-        std::vector<std::unique_ptr<AstExpression>> _arguments;
+        std::vector<std::unique_ptr<IAstExpression>> _arguments;
         const Symbol _symbol;
         int _flags;
 
@@ -285,16 +327,16 @@ namespace stride::ast
         explicit AstFunctionCall(
             const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym,
-            std::vector<std::unique_ptr<AstExpression>> arguments,
-            int function_call_flags = SRFLAG_NONE
+            std::vector<std::unique_ptr<IAstExpression>> arguments,
+            const int flags = SRFLAG_NONE
         ) :
-            AstExpression(function_call_sym.symbol_position, context),
+            IAstExpression(function_call_sym.symbol_position, context),
             _arguments(std::move(arguments)),
             _symbol(std::move(function_call_sym)),
-            _flags(function_call_flags) {}
+            _flags(flags) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<AstExpression>>& get_arguments() const
+        const std::vector<std::unique_ptr<IAstExpression>>& get_arguments() const
         {
             return this->_arguments;
         }
@@ -322,21 +364,25 @@ namespace stride::ast
 
         IAstNode* reduce() override;
 
+        std::unique_ptr<IAstExpression> clone() override;
+
     private:
         [[nodiscard]]
         std::string format_function_name() const;
 
         static std::string format_suggestion(const definition::IDefinition* suggestion);
 
-        llvm::Value* codegen_anonymous_function_call(llvm::Module* module, llvm::IRBuilderBase* builder) const;
-
+        llvm::Value* codegen_anonymous_function_call(
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder
+        ) const;
     };
 
     class AstVariableDeclaration
-        : public AstExpression
+        : public IAstExpression
     {
         const std::unique_ptr<IAstType> _variable_type;
-        const std::unique_ptr<AstExpression> _initial_value;
+        const std::unique_ptr<IAstExpression> _initial_value;
         const VisibilityModifier _visibility;
 
         const Symbol _symbol;
@@ -346,10 +392,10 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
             std::unique_ptr<IAstType> variable_type,
-            std::unique_ptr<AstExpression> initial_value,
+            std::unique_ptr<IAstExpression> initial_value,
             VisibilityModifier visibility
         ) :
-            AstExpression(symbol.symbol_position, context),
+            IAstExpression(symbol.symbol_position, context),
             _variable_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)),
             _visibility(visibility),
@@ -386,7 +432,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::unique_ptr<AstExpression>& get_initial_value() const
+        const std::unique_ptr<IAstExpression>& get_initial_value() const
         {
             return this->_initial_value;
         }
@@ -402,34 +448,36 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
-        void validate() override;
+        void validate_expr() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class IBinaryOp
-        : public AstExpression
+        : public IAstExpression
     {
-        std::unique_ptr<AstExpression> _lsh;
-        std::unique_ptr<AstExpression> _rsh;
+        std::unique_ptr<IAstExpression> _lsh;
+        std::unique_ptr<IAstExpression> _rsh;
 
     public:
         explicit IBinaryOp(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstExpression> lsh,
-            std::unique_ptr<AstExpression> rsh
+            std::unique_ptr<IAstExpression> lsh,
+            std::unique_ptr<IAstExpression> rsh
         ) :
-            AstExpression(source, context),
+            IAstExpression(source, context),
             _lsh(std::move(lsh)),
             _rsh(std::move(rsh)) {}
 
         [[nodiscard]]
-        AstExpression* get_left() const
+        IAstExpression* get_left() const
         {
             return this->_lsh.get();
         }
 
         [[nodiscard]]
-        AstExpression* get_right() const
+        IAstExpression* get_right() const
         {
             return this->_rsh.get();
         }
@@ -444,9 +492,9 @@ namespace stride::ast
         explicit AstBinaryArithmeticOp(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstExpression> left,
+            std::unique_ptr<IAstExpression> left,
             const BinaryOpType op,
-            std::unique_ptr<AstExpression> right
+            std::unique_ptr<IAstExpression> right
         ) :
             IBinaryOp(
                 source,
@@ -471,6 +519,8 @@ namespace stride::ast
         bool is_reducible() override;
 
         IAstNode* reduce() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstLogicalOp
@@ -482,9 +532,9 @@ namespace stride::ast
         explicit AstLogicalOp(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstExpression> left,
+            std::unique_ptr<IAstExpression> left,
             const LogicalOpType op,
-            std::unique_ptr<AstExpression> right
+            std::unique_ptr<IAstExpression> right
         ) :
             IBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
@@ -500,6 +550,10 @@ namespace stride::ast
             llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
+
+        void validate_expr() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstComparisonOp
@@ -511,9 +565,9 @@ namespace stride::ast
         explicit AstComparisonOp(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstExpression> left,
+            std::unique_ptr<IAstExpression> left,
             const ComparisonOpType op,
-            std::unique_ptr<AstExpression> right
+            std::unique_ptr<IAstExpression> right
         ) :
             IBinaryOp(source, context, std::move(left), std::move(right)),
             _op_type(op) {}
@@ -530,14 +584,16 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate_expr() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstUnaryOp
-        : public AstExpression
+        : public IAstExpression
     {
         const UnaryOpType _op_type;
-        std::unique_ptr<AstExpression> _operand;
+        std::unique_ptr<IAstExpression> _operand;
         const bool _is_lsh;
 
     public:
@@ -545,10 +601,10 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const UnaryOpType op,
-            std::unique_ptr<AstExpression> operand,
+            std::unique_ptr<IAstExpression> operand,
             const bool is_lsh = false
         ) :
-            AstExpression(source, context),
+            IAstExpression(source, context),
             _op_type(op),
             _operand(std::move(operand)),
             _is_lsh(is_lsh) {}
@@ -566,7 +622,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        AstExpression& get_operand() const
+        IAstExpression& get_operand() const
         {
             return *this->_operand;
         }
@@ -582,15 +638,17 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate_expr() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstVariableReassignment
-        : public AstExpression
+        : public IAstExpression
     {
         const std::string _variable_name;
         const std::string _internal_name;
-        std::unique_ptr<AstExpression> _value;
+        std::unique_ptr<IAstExpression> _value;
         MutativeAssignmentType _operator;
 
     public:
@@ -600,9 +658,9 @@ namespace stride::ast
             std::string variable_name,
             std::string internal_name,
             const MutativeAssignmentType op,
-            std::unique_ptr<AstExpression> value
+            std::unique_ptr<IAstExpression> value
         ) :
-            AstExpression(source, context),
+            IAstExpression(source, context),
             _variable_name(std::move(variable_name)),
             _internal_name(std::move(internal_name)),
             _value(std::move(value)),
@@ -615,7 +673,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        AstExpression* get_value() const
+        IAstExpression* get_value() const
         {
             return this->_value.get();
         }
@@ -649,14 +707,16 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate_expr() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstStructInitializer
-        : public AstExpression
+        : public IAstExpression
     {
         std::string _struct_name;
-        std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>>
+        std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>>
         _initializers;
 
     public:
@@ -664,15 +724,14 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string struct_name,
-            std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>>
-            initializers
+            std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> initializers
         ) :
-            AstExpression(source, context),
+            IAstExpression(source, context),
             _struct_name(std::move(struct_name)),
             _initializers(std::move(initializers)) {}
 
         [[nodiscard]]
-        const std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>>&
+        const std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>>&
         get_initializers() const
         {
             return _initializers;
@@ -690,17 +749,19 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate_expr() override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstVariadicArgReference
-        : public AstExpression
+        : public IAstExpression
     {
     public:
         explicit AstVariadicArgReference(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context) :
-            AstExpression(source, context) {}
+            IAstExpression(source, context) {}
 
         llvm::Value* codegen(
             llvm::Module* module,
@@ -708,25 +769,25 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstTupleInitializer
-        : public AstExpression
+        : public IAstExpression
     {
-        std::vector<std::unique_ptr<AstExpression>> _members;
+        std::vector<std::unique_ptr<IAstExpression>> _members;
 
     public:
         explicit AstTupleInitializer(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::vector<std::unique_ptr<AstExpression>> members
+            std::vector<std::unique_ptr<IAstExpression>> members
         ) :
-            AstExpression(source, context),
+            IAstExpression(source, context),
             _members(std::move(members)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<AstExpression>>& get_members() const
+        const std::vector<std::unique_ptr<IAstExpression>>& get_members() const
         {
             return this->_members;
         }
@@ -737,7 +798,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
@@ -747,17 +808,17 @@ namespace stride::ast
      * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
 
     /// Parses a complete standalone expression from tokens
-    std::unique_ptr<AstExpression> parse_standalone_expression(
+    std::unique_ptr<IAstExpression> parse_standalone_expression(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 
     /// Parses an expression that appears inline, e.g., within a statement or as a sub-expression
-    std::unique_ptr<AstExpression> parse_inline_expression(
+    std::unique_ptr<IAstExpression> parse_inline_expression(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<AstExpression> parse_inline_expression_part(
+    std::unique_ptr<IAstExpression> parse_inline_expression_part(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 
@@ -774,7 +835,7 @@ namespace stride::ast
         VisibilityModifier modifier);
 
     /// Parses a function invocation into an AstFunctionCall expression node
-    std::unique_ptr<AstExpression> parse_function_call(
+    std::unique_ptr<IAstExpression> parse_function_call(
         const std::shared_ptr<ParsingContext>& context,
         const SymbolNameSegments& function_name_segments,
         TokenSet& set);
@@ -787,21 +848,21 @@ namespace stride::ast
         TokenSet& set);
 
     /// Parses a binary arithmetic operation using precedence climbing
-    std::optional<std::unique_ptr<AstExpression>>
+    std::optional<std::unique_ptr<IAstExpression>>
     parse_arithmetic_binary_operation_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        std::unique_ptr<AstExpression> lhs,
+        std::unique_ptr<IAstExpression> lhs,
         int min_precedence);
 
     /// This parses both function call chaining, and struct member access
-    std::unique_ptr<AstExpression> parse_chained_member_access(
+    std::unique_ptr<IAstExpression> parse_chained_member_access(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        const std::unique_ptr<AstExpression>& lhs);
+        const std::unique_ptr<IAstExpression>& lhs);
 
     /// Parses a unary operator expression
-    std::optional<std::unique_ptr<AstExpression>> parse_binary_unary_op(
+    std::optional<std::unique_ptr<IAstExpression>> parse_binary_unary_op(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 
@@ -811,7 +872,7 @@ namespace stride::ast
         TokenSet& set);
 
     /// Parses an array member accessor expression, e.g., <array_identifier>[<index_expression>]
-    std::unique_ptr<AstExpression> parse_array_member_accessor(
+    std::unique_ptr<IAstExpression> parse_array_member_accessor(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<AstIdentifier> array_identifier);
@@ -825,7 +886,7 @@ namespace stride::ast
     SymbolNameSegments parse_segmented_identifier(TokenSet& set, const std::string& error_message);
 
     /// Parses a lambda function literal into an expression node
-    std::unique_ptr<AstExpression> parse_lambda_fn_expression(
+    std::unique_ptr<IAstExpression> parse_lambda_fn_expression(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 
@@ -868,41 +929,8 @@ namespace stride::ast
 
     /// Checks whether the subsequent tokens might be member accessors
     /// e.g., <identifier>.<accessor>
-    bool is_member_accessor(AstExpression* lhs, const TokenSet& set);
+    bool is_member_accessor(IAstExpression* lhs, const TokenSet& set);
 
     /// Checks if the token set represents a lambda function expression
     bool is_lambda_fn_expression(const TokenSet& set);
-
-    /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
-     #                                                           #
-     *           EXPRESSION TYPE INFERENCE FUNCTIONS             *
-     #                                                           #
-     * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
-
-    /// Will attempt to resolve the provided expression into an IAstInternalFieldType
-    std::unique_ptr<IAstType> infer_expression_type(AstExpression* expr, int recursion_guard = 0);
-
-    /// Infers the element type of an array expression
-    std::unique_ptr<IAstType> infer_array_member_type(const AstArray* array);
-
-    /// Infers the result type of a unary operation
-    std::unique_ptr<IAstType> infer_unary_op_type(const AstUnaryOp* operation);
-
-    /// Infers the result type of a binary arithmetic operation
-    std::unique_ptr<IAstType> infer_binary_arithmetic_op_type(
-        const AstBinaryArithmeticOp* operation);
-
-    /// Infers the type of a literal expression
-    std::unique_ptr<IAstType> infer_expression_literal_type(AstLiteral* literal);
-
-    /// Infers the return type of a function call expression
-    std::unique_ptr<IAstType> infer_function_call_return_type(const AstFunctionCall* fn_call);
-
-    /// Infers the type produced by a struct initializer expression
-    std::unique_ptr<IAstType>
-    infer_struct_initializer_type(const AstStructInitializer* initializer);
-
-    /// Infers the type of the field accessed via a member accessor expression
-    std::unique_ptr<IAstType> infer_member_accessor_type(
-        const AstMemberAccessor* member_accessor_expr);
 } // namespace stride::ast

@@ -2,6 +2,7 @@
 #include "ast/parsing_context.h"
 #include "ast/nodes/control_flow_statements.h"
 
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;

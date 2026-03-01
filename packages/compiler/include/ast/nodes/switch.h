@@ -38,11 +38,5 @@ namespace stride::ast
         llvm::Value* codegen(
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
-
-        static bool can_parse(const TokenSet& tokens);
-
-        static std::unique_ptr<AstSwitch> try_parse(
-            const ParsingContext& context,
-            TokenSet& set);
     };
 } // namespace stride::ast

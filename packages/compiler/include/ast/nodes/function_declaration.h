@@ -58,7 +58,7 @@ namespace stride::ast
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
     class IAstFunction
         : public IAstContainer,
-          public AstExpression
+          public IAstExpression
     {
         std::unique_ptr<AstBlock> _body;
         Symbol _symbol;
@@ -68,7 +68,7 @@ namespace stride::ast
         std::vector<Symbol> _captured_variables;
 
     public:
-        using AstExpression::AstExpression;
+        using IAstExpression::IAstExpression;
 
         explicit IAstFunction(
             const SourceFragment& source,
@@ -79,7 +79,7 @@ namespace stride::ast
             std::shared_ptr<IAstType> return_type,
             const int flags
         ) :
-            AstExpression(source, context),
+            IAstExpression(source, context),
             _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),

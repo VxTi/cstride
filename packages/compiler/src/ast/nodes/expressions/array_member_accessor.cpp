@@ -6,11 +6,12 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 
-std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
+std::unique_ptr<IAstExpression> stride::ast::parse_array_member_accessor(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::unique_ptr<AstIdentifier> array_identifier)
@@ -39,14 +40,11 @@ std::unique_ptr<AstExpression> stride::ast::parse_array_member_accessor(
     return std::move(base_expr);
 }
 
-void AstArrayMemberAccessor::validate()
+void AstArrayMemberAccessor::validate_expr()
 {
-    const auto index_accessor_type = infer_expression_type(
-        this->_index_accessor_expr.get()
-    );
+    const auto index_accessor_type = this->_index_accessor_expr->get_type();
 
-    if (const auto primitive_type = cast_type<AstPrimitiveType*>(
-        index_accessor_type.get()))
+    if (const auto primitive_type = cast_type<AstPrimitiveType*>(index_accessor_type))
     {
         if (!primitive_type->is_integer_ty())
         {
@@ -75,9 +73,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    const auto array_iden_type = infer_expression_type(
-        this->_array_identifier.get()
-    );
+    const auto array_iden_type = this->_array_identifier->get_type();
 
     llvm::Value* base_ptr = this->_array_identifier->codegen(
         module,
@@ -90,7 +86,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 
     // Element type, not the array type.
     // Assumes `array_iden_type` is something like "T[]" and has an element type you can extract.
-    const auto* array_ty = dynamic_cast<AstArrayType*>(array_iden_type.get());
+    const auto* array_ty = cast_type<AstArrayType*>(array_iden_type);
     if (!array_ty)
     {
         throw parsing_error(
@@ -118,6 +114,16 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     );
 
     return builder->CreateLoad(elem_llvm_ty, element_ptr, "array_load");
+}
+
+std::unique_ptr<IAstExpression> AstArrayMemberAccessor::clone()
+{
+    return std::make_unique<AstArrayMemberAccessor>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_array_identifier->clone_as<AstIdentifier>(),
+        this->_index_accessor_expr->clone()
+    );
 }
 
 std::string AstArrayMemberAccessor::to_string()

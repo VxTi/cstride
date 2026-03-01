@@ -2,12 +2,17 @@
 
 #include "files.h"
 
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Value.h>
+namespace llvm
+{
+    class Module;
+    class Value;
+    class IRBuilderBase;
+}
+
+#define MAX_RECURSION_DEPTH 100
 
 namespace stride::ast
 {
-#define MAX_RECURSION_DEPTH 100
 
     class AstBlock;
     class ParsingContext;

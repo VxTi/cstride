@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <llvm/IR/IRBuilder.h>
 
 using namespace stride::ast;
 
@@ -145,4 +146,12 @@ std::unique_ptr<AstBlock> stride::ast::parse_block(
 std::optional<TokenSet> stride::ast::collect_parenthesized_block(TokenSet& set)
 {
     return collect_block_variant(set, TokenType::LPAREN, TokenType::RPAREN);
+}
+
+void AstBlock::validate()
+{
+    for (const auto& child : this->_children)
+    {
+        child->validate();
+    }
 }

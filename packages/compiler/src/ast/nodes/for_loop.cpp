@@ -6,12 +6,13 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::unique_ptr<AstExpression> collect_initiator(
+std::unique_ptr<IAstExpression> collect_initiator(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set)
 {
@@ -25,7 +26,7 @@ std::unique_ptr<AstExpression> collect_initiator(
     return parse_variable_declaration_inline(context, initiator.value(), VisibilityModifier::NONE);
 }
 
-std::unique_ptr<AstExpression> collect_condition(
+std::unique_ptr<IAstExpression> collect_condition(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set)
 {
@@ -40,7 +41,7 @@ std::unique_ptr<AstExpression> collect_condition(
     return parse_inline_expression(context, condition.value());
 }
 
-std::unique_ptr<AstExpression> collect_incrementor(
+std::unique_ptr<IAstExpression> collect_incrementor(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set)
 {

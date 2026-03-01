@@ -22,34 +22,103 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-bool AstFunctionCall::is_reducible()
+std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
+    const std::shared_ptr<ParsingContext>& context,
+    const SymbolNameSegments& function_name_segments,
+    TokenSet& set)
 {
-    // TODO: implement
-    // Function calls can be reducible if the function returns
-    // a constant value or if all arguments are reducible.
-    return false;
-}
+    const auto reference_token = set.peek(-1);
+    auto function_parameter_set = collect_parenthesized_block(set);
 
-IAstNode* AstFunctionCall::reduce()
-{
-    return this;
-}
+    std::vector<std::unique_ptr<IAstExpression>> function_arg_nodes = {};
+    std::vector<IAstType*> parameter_types = {};
+    std::vector<std::unique_ptr<IAstType>> parameter_type_owners = {};
 
-std::string AstFunctionCall::to_string()
-{
-    std::ostringstream oss;
+    int function_call_flags = SRFLAG_NONE;
 
-    std::vector<std::string> arg_types;
-    for (const auto& arg : this->get_arguments())
+    // Parsing function parameter values
+    if (function_parameter_set.has_value())
     {
-        arg_types.push_back(arg->to_string());
+        auto subset = function_parameter_set.value();
+        auto initial_arg = parse_inline_expression(context, subset);
+
+        if (initial_arg)
+        {
+            // TODO: Evaluate this. One might not be able to infer expression types if they invoke
+            // functions that
+            //  haven't been declared yet, hence throwing an error
+            auto initial_type = infer_expression_type(
+                initial_arg.get());
+
+            parameter_types.push_back(initial_type.get());
+            parameter_type_owners.push_back(std::move(initial_type));
+            function_arg_nodes.push_back(std::move(initial_arg));
+
+            // Consume next parameters
+            while (subset.has_next())
+            {
+                const auto preceding = subset.expect(
+                    TokenType::COMMA,
+                    "Expected ',' between function arguments"
+                );
+
+                auto next_arg = parse_inline_expression(context, subset);
+
+                if (!next_arg)
+                {
+                    // Since the RParen is already consumed, we have to manually extract its
+                    // position with the following assumption It's possible this yields END_OF_FILE
+                    const auto len =
+                        set.at(set.position() - 1).get_source_fragment().offset - 1 -
+                        preceding.get_source_fragment().offset;
+                    throw parsing_error(
+                        ErrorType::SYNTAX_ERROR,
+                        "Expected expression for function argument",
+                        SourceFragment(
+                            subset.get_source(),
+                            preceding.get_source_fragment().offset + 1,
+                            len)
+                    );
+                }
+
+                if (cast_expr<AstVariadicArgReference*>(next_arg.get()))
+                {
+
+                    break;
+                }
+
+                auto next_type = infer_expression_type(next_arg.get());
+                parameter_types.push_back(next_type.get());
+                parameter_type_owners.push_back(std::move(next_type));
+                function_arg_nodes.push_back(std::move(next_arg));
+            }
+        }
     }
 
-    return std::format(
-        "FunctionCall({} ({}) [{}])",
-        this->get_function_name(),
-        this->get_internal_name(),
-        join(arg_types, ", "));
+    const auto& ref_pos = reference_token.get_source_fragment();
+
+    /* TODO: Fix this. Functions might not have parameters, in which case `back` returns a nullptr and segfaults here.
+     const auto& last_pos = parameter_types.back()->get_source_fragment();
+    auto position = SourceFragment(
+        set.get_source(),
+        ref_pos.offset,
+        parameter_types.empty()
+        ? ref_pos.length
+        : last_pos.offset + last_pos.length - ref_pos.offset);*/
+
+    Symbol function_name = resolve_internal_function_name(
+        context,
+        ref_pos,
+        function_name_segments,
+        parameter_types
+    );
+
+    return std::make_unique<AstFunctionCall>(
+        context,
+        function_name,
+        std::move(function_arg_nodes),
+        function_call_flags
+    );
 }
 
 std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
@@ -430,101 +499,49 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     return nullptr;
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_function_call(
-    const std::shared_ptr<ParsingContext>& context,
-    const SymbolNameSegments& function_name_segments,
-    TokenSet& set)
+std::unique_ptr<IAstExpression> AstFunctionCall::clone()
 {
-    const auto reference_token = set.peek(-1);
-    auto function_parameter_set = collect_parenthesized_block(set);
-
-    std::vector<std::unique_ptr<AstExpression>> function_arg_nodes = {};
-    std::vector<IAstType*> parameter_types = {};
-    std::vector<std::unique_ptr<IAstType>> parameter_type_owners = {};
-
-    int function_call_flags = SRFLAG_NONE;
-
-    // Parsing function parameter values
-    if (function_parameter_set.has_value())
+    std::vector<std::unique_ptr<IAstExpression>> cloned_args;
+    cloned_args.reserve(this->get_arguments().size());
+    for (const auto& arg : this->get_arguments())
     {
-        auto subset = function_parameter_set.value();
-        auto initial_arg = parse_inline_expression(context, subset);
-
-        if (initial_arg)
-        {
-            // TODO: Evaluate this. One might not be able to infer expression types if they invoke
-            // functions that
-            //  haven't been declared yet, hence throwing an error
-            auto initial_type = infer_expression_type(
-                initial_arg.get());
-
-            parameter_types.push_back(initial_type.get());
-            parameter_type_owners.push_back(std::move(initial_type));
-            function_arg_nodes.push_back(std::move(initial_arg));
-
-            // Consume next parameters
-            while (subset.has_next())
-            {
-                const auto preceding = subset.expect(
-                    TokenType::COMMA,
-                    "Expected ',' between function arguments"
-                );
-
-                auto next_arg = parse_inline_expression(context, subset);
-
-                if (!next_arg)
-                {
-                    // Since the RParen is already consumed, we have to manually extract its
-                    // position with the following assumption It's possible this yields END_OF_FILE
-                    const auto len =
-                        set.at(set.position() - 1).get_source_fragment().offset - 1 -
-                        preceding.get_source_fragment().offset;
-                    throw parsing_error(
-                        ErrorType::SYNTAX_ERROR,
-                        "Expected expression for function argument",
-                        SourceFragment(
-                            subset.get_source(),
-                            preceding.get_source_fragment().offset + 1,
-                            len)
-                    );
-                }
-
-                if (cast_expr<AstVariadicArgReference*>(next_arg.get()))
-                {
-
-                    break;
-                }
-
-                auto next_type = infer_expression_type(next_arg.get());
-                parameter_types.push_back(next_type.get());
-                parameter_type_owners.push_back(std::move(next_type));
-                function_arg_nodes.push_back(std::move(next_arg));
-            }
-        }
+        cloned_args.push_back(arg->clone());
     }
 
-    const auto& ref_pos = reference_token.get_source_fragment();
-
-    /* TODO: Fix this. Functions might not have parameters, in which case `back` returns a nullptr and segfaults here.
-     const auto& last_pos = parameter_types.back()->get_source_fragment();
-    auto position = SourceFragment(
-        set.get_source(),
-        ref_pos.offset,
-        parameter_types.empty()
-        ? ref_pos.length
-        : last_pos.offset + last_pos.length - ref_pos.offset);*/
-
-    Symbol function_name = resolve_internal_function_name(
-        context,
-        ref_pos,
-        function_name_segments,
-        parameter_types
-    );
-
     return std::make_unique<AstFunctionCall>(
-        context,
-        function_name,
-        std::move(function_arg_nodes),
-        function_call_flags
+        this->get_context(),
+        this->_symbol,
+        std::move(cloned_args),
+        this->_flags
     );
+}
+
+bool AstFunctionCall::is_reducible()
+{
+    // TODO: implement
+    // Function calls can be reducible if the function returns
+    // a constant value or if all arguments are reducible.
+    return false;
+}
+
+IAstNode* AstFunctionCall::reduce()
+{
+    return this;
+}
+
+std::string AstFunctionCall::to_string()
+{
+    std::ostringstream oss;
+
+    std::vector<std::string> arg_types;
+    for (const auto& arg : this->get_arguments())
+    {
+        arg_types.push_back(arg->to_string());
+    }
+
+    return std::format(
+        "FunctionCall({} ({}) [{}])",
+        this->get_function_name(),
+        this->get_internal_name(),
+        join(arg_types, ", "));
 }

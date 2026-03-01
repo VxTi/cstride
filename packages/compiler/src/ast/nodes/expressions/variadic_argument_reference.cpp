@@ -1,6 +1,7 @@
 #include "errors.h"
 #include "ast/nodes/expression.h"
 
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
@@ -147,9 +148,12 @@ llvm::Value* AstVariadicArgReference::codegen(llvm::Module* module, llvm::IRBuil
     return va_list_copy_ptr;
 }
 
-void AstVariadicArgReference::validate()
+std::unique_ptr<IAstExpression> AstVariadicArgReference::clone()
 {
-    // Validation is performed during codegen to ensure we're in a variadic function context
+    return std::make_unique<AstVariadicArgReference>(
+        this->get_source_fragment(),
+        this->get_context()
+    );
 }
 
 std::string AstVariadicArgReference::to_string()

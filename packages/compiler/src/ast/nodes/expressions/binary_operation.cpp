@@ -78,11 +78,11 @@ std::string AstBinaryArithmeticOp::to_string()
  * This parses expressions that requires precedence, such as binary expressions.
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
-std::optional<std::unique_ptr<AstExpression>>
+std::optional<std::unique_ptr<IAstExpression>>
 stride::ast::parse_arithmetic_binary_operation_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    std::unique_ptr<AstExpression> lhs,
+    std::unique_ptr<IAstExpression> lhs,
     const int min_precedence
 )
 {
@@ -268,6 +268,17 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     default:
         return nullptr;
     }
+}
+
+std::unique_ptr<IAstExpression> AstBinaryArithmeticOp::clone()
+{
+    return std::make_unique<AstBinaryArithmeticOp>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_left()->clone(),
+        this->get_op_type(),
+        this->get_right()->clone()
+    );
 }
 
 bool AstBinaryArithmeticOp::is_reducible()

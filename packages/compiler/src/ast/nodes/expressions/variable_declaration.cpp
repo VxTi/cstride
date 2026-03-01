@@ -59,7 +59,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
        .get_lexeme();
 
     std::unique_ptr<IAstType> variable_type = nullptr;
-    std::unique_ptr<AstExpression> value = nullptr;
+    std::unique_ptr<IAstExpression> value = nullptr;
 
     if (set.peek_next_eq(TokenType::EQUALS))
     {
@@ -167,9 +167,9 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
     );
 }
 
-void AstVariableDeclaration::validate()
+void AstVariableDeclaration::validate_expr()
 {
-    AstExpression* init_val = this->get_initial_value().get();
+    IAstExpression* init_val = this->get_initial_value().get();
     if (!init_val)
     {
         // It's possible that there's no initializer value.
@@ -529,6 +529,17 @@ llvm::Value* AstVariableDeclaration::codegen(
     }
 
     return alloca;
+}
+
+std::unique_ptr<IAstExpression> AstVariableDeclaration::clone()
+{
+    return std::make_unique<AstVariableDeclaration>(
+        this->get_context(),
+        this->_symbol,
+        this->_variable_type->clone(),
+        this->_initial_value ? this->_initial_value->clone() : nullptr,
+        this->_visibility
+    );
 }
 
 std::string AstVariableDeclaration::to_string()

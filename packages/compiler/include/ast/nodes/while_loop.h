@@ -15,13 +15,13 @@ namespace stride::ast
           public IAstContainer
     {
         std::unique_ptr<AstBlock> _body;
-        std::unique_ptr<AstExpression> _condition;
+        std::unique_ptr<IAstExpression> _condition;
 
     public:
         explicit AstWhileLoop(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstExpression> condition,
+            std::unique_ptr<IAstExpression> condition,
             std::unique_ptr<AstBlock> body
         ) :
             IAstNode(source, context),
@@ -41,7 +41,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        AstExpression* get_condition() const
+        IAstExpression* get_condition() const
         {
             return _condition.get();
         }

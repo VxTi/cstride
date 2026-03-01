@@ -111,6 +111,14 @@ llvm::Value* AstIdentifier::codegen(
     );
 }
 
+std::unique_ptr<IAstExpression> AstIdentifier::clone()
+{
+    return std::make_unique<AstIdentifier>(
+        this->get_context(),
+        this->_symbol
+    );
+}
+
 std::string AstIdentifier::to_string()
 {
     return std::format(

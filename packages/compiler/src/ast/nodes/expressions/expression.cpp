@@ -1,6 +1,7 @@
 #include "ast/nodes/expression.h"
 
 #include "errors.h"
+#include "ast/type_inference.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token.h"
@@ -8,25 +9,33 @@
 
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/ValueSymbolTable.h>
 
 using namespace stride::ast;
 
-llvm::Value* AstExpression::codegen(
+void IAstExpression::validate()
+{
+    if (!this->_type)
+    {
+        this->_type = infer_expression_type(this);
+    }
+
+    validate_expr();
+}
+
+llvm::Value* IAstExpression::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* ir_builder)
+    llvm::IRBuilderBase* builder)
 {
     throw parsing_error(
         "Expression codegen not implemented, this must be implemented by subclasses");
 }
 
-std::string AstExpression::to_string()
+std::string IAstExpression::to_string()
 {
     return "AnonymousExpression";
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
+std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -134,7 +143,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_inline_expression_part(
  * Hierarchy: Logical > Comparison > Arithmetic > Unary > Atom
  */
 
-std::unique_ptr<AstExpression> parse_arithmetic_tier(
+std::unique_ptr<IAstExpression> parse_arithmetic_tier(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -160,7 +169,7 @@ std::unique_ptr<AstExpression> parse_arithmetic_tier(
     return lhs;
 }
 
-std::unique_ptr<AstExpression> parse_comparison_tier(
+std::unique_ptr<IAstExpression> parse_comparison_tier(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -182,7 +191,7 @@ std::unique_ptr<AstExpression> parse_comparison_tier(
     return lhs;
 }
 
-std::unique_ptr<AstExpression> parse_logical_tier(
+std::unique_ptr<IAstExpression> parse_logical_tier(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -206,10 +215,10 @@ std::unique_ptr<AstExpression> parse_logical_tier(
 
 // Kept for backward compatibility / external usage if any, but now updated to use correct tiers for
 // RHS
-std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
+std::optional<std::unique_ptr<IAstExpression>> parse_logical_operation_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    std::unique_ptr<AstExpression> lhs)
+    std::unique_ptr<IAstExpression> lhs)
 {
     const auto reference_token = set.peek_next();
 
@@ -233,10 +242,10 @@ std::optional<std::unique_ptr<AstExpression>> parse_logical_operation_optional(
 }
 
 // Kept for backward compatibility / external usage if any
-std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_optional(
+std::optional<std::unique_ptr<IAstExpression>> parse_comparative_operation_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    std::unique_ptr<AstExpression> lhs)
+    std::unique_ptr<IAstExpression> lhs)
 {
     const auto reference_token = set.peek_next();
 
@@ -260,7 +269,7 @@ std::optional<std::unique_ptr<AstExpression>> parse_comparative_operation_option
     return lhs;
 }
 
-std::unique_ptr<AstExpression> parse_expression_internal(
+std::unique_ptr<IAstExpression> parse_expression_internal(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -277,7 +286,7 @@ std::unique_ptr<AstExpression> parse_expression_internal(
 /**
  * General expression parsing. These can occur in global / function scopes
  */
-std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
+std::unique_ptr<IAstExpression> stride::ast::parse_standalone_expression(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -289,7 +298,7 @@ std::unique_ptr<AstExpression> stride::ast::parse_standalone_expression(
     return expr;
 }
 
-std::unique_ptr<AstExpression> stride::ast::parse_inline_expression(
+std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )

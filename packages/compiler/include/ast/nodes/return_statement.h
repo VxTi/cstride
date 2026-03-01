@@ -23,13 +23,13 @@ namespace stride::ast
     class AstReturnStatement
         : public IAstNode
     {
-        const std::unique_ptr<AstExpression> _value;
+        const std::unique_ptr<IAstExpression> _value;
 
     public:
         explicit AstReturnStatement(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstExpression> value
+            std::unique_ptr<IAstExpression> value
         ) :
             IAstNode(source, context),
             _value(std::move(value)) {}
@@ -42,7 +42,7 @@ namespace stride::ast
 
 
         [[nodiscard]]
-        AstExpression* get_return_expr() const
+        IAstExpression* get_return_expr() const
         {
             return _value.get();
         }

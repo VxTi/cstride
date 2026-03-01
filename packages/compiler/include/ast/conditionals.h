@@ -8,12 +8,12 @@ namespace llvm {
 
 namespace stride::ast
 {
-    class AstExpression;
+    class IAstExpression;
 
 
     llvm::Value* codegen_conditional_value(
         llvm::Module* module,
         llvm::IRBuilderBase* builder,
-        AstExpression* condition
+        IAstExpression* condition
     );
 }

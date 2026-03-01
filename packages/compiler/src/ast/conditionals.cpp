@@ -3,6 +3,8 @@
 #include "errors.h"
 #include "ast/nodes/expression.h"
 
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
@@ -10,7 +12,7 @@ using namespace stride::ast;
 llvm::Value* stride::ast::codegen_conditional_value(
     llvm::Module* module,
     llvm::IRBuilderBase* builder,
-    AstExpression* condition
+    IAstExpression* condition
 )
 {
     if (!condition) // Fall back to 1 if no condition is provided, e.g., in `if { ... }`

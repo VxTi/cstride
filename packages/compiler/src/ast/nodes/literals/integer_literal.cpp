@@ -9,8 +9,9 @@
 
 using namespace stride::ast;
 
-std::string format_int_conversion_error(const std::string& error,
-                                        const TokenType type)
+std::string format_int_conversion_error(
+    const std::string& error,
+    const TokenType type)
 {
     if (error == "stoll: out of range")
     {
@@ -31,8 +32,7 @@ std::string format_int_conversion_error(const std::string& error,
     return error; // "Unknown error";
 }
 
-std::optional<std::unique_ptr<AstLiteral>>
-stride::ast::parse_integer_literal_optional(
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set)
 {
@@ -79,11 +79,6 @@ stride::ast::parse_integer_literal_optional(
     }
 }
 
-std::string AstIntLiteral::to_string()
-{
-    return std::format("IntLiteral({})", value());
-}
-
 llvm::Value* AstIntLiteral::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
@@ -91,4 +86,20 @@ llvm::Value* AstIntLiteral::codegen(
     return llvm::ConstantInt::get(
         module->getContext(),
         llvm::APInt(this->bit_count(), this->value(), this->is_signed()));
+}
+
+std::unique_ptr<IAstExpression> AstIntLiteral::clone()
+{
+    return std::make_unique<AstIntLiteral>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->value(),
+        this->bit_count(),
+        this->_flags
+    );
+}
+
+std::string AstIntLiteral::to_string()
+{
+    return std::format("IntLiteral({})", value());
 }

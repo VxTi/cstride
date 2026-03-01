@@ -33,15 +33,17 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
     }
 }
 
+void AstLogicalOp::validate_expr() {}
+
 llvm::Value* AstLogicalOp::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* ir_builder
+    llvm::IRBuilderBase* builder
 )
 {
     // Implementation following short-circuiting logic
     llvm::Value* lhs_value = this->get_left()->codegen(
         module,
-        ir_builder
+        builder
     );
 
     if (!lhs_value)
@@ -65,7 +67,7 @@ llvm::Value* AstLogicalOp::codegen(
 
         if (val->getType()->isIntegerTy())
         {
-            return ir_builder->CreateICmpNE(
+            return builder->CreateICmpNE(
                 val,
                 llvm::ConstantInt::get(
                     val->getType(),
@@ -76,7 +78,7 @@ llvm::Value* AstLogicalOp::codegen(
 
         if (val->getType()->isFloatingPointTy())
         {
-            return ir_builder->CreateFCmpUNE(
+            return builder->CreateFCmpUNE(
                 val,
                 llvm::ConstantFP::get(val->getType(), 0.0),
                 "to_bool");
@@ -87,9 +89,9 @@ llvm::Value* AstLogicalOp::codegen(
 
     lhs_value = to_bool(lhs_value);
 
-    llvm::Function* function = ir_builder->GetInsertBlock()->getParent();
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
 
-    llvm::BasicBlock* start_bb = ir_builder->GetInsertBlock();
+    llvm::BasicBlock* start_bb = builder->GetInsertBlock();
     llvm::BasicBlock* eval_right_bb =
         llvm::BasicBlock::Create(module->getContext(), "eval_right", function);
     llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(
@@ -101,18 +103,18 @@ llvm::Value* AstLogicalOp::codegen(
     {
     case LogicalOpType::AND:
         // AND: If l is true, eval right. If l is false, jump to merge (result false).
-        ir_builder->CreateCondBr(lhs_value, eval_right_bb, merge_bb);
+        builder->CreateCondBr(lhs_value, eval_right_bb, merge_bb);
         break;
     case LogicalOpType::OR:
-        ir_builder->CreateCondBr(lhs_value, merge_bb, eval_right_bb);
+        builder->CreateCondBr(lhs_value, merge_bb, eval_right_bb);
         break;
     default:
         return nullptr;
     }
 
     // Emit Right block
-    ir_builder->SetInsertPoint(eval_right_bb);
-    llvm::Value* r = this->get_right()->codegen(module, ir_builder);
+    builder->SetInsertPoint(eval_right_bb);
+    llvm::Value* r = this->get_right()->codegen(module, builder);
     if (!r)
     {
         return nullptr;
@@ -120,14 +122,14 @@ llvm::Value* AstLogicalOp::codegen(
 
     r = to_bool(r);
 
-    ir_builder->CreateBr(merge_bb);
+    builder->CreateBr(merge_bb);
     // Refresh eval_right_bb as codegen might have changed the current block
-    eval_right_bb = ir_builder->GetInsertBlock();
+    eval_right_bb = builder->GetInsertBlock();
 
     // Emit Merge block
     function->insert(function->end(), merge_bb);
-    ir_builder->SetInsertPoint(merge_bb);
-    llvm::PHINode* phi = ir_builder->CreatePHI(
+    builder->SetInsertPoint(merge_bb);
+    llvm::PHINode* phi = builder->CreatePHI(
         llvm::Type::getInt1Ty(module->getContext()),
         2,
         "logical_result"
@@ -149,4 +151,15 @@ llvm::Value* AstLogicalOp::codegen(
     }
 
     return phi;
+}
+
+std::unique_ptr<IAstExpression> AstLogicalOp::clone()
+{
+    return std::make_unique<AstLogicalOp>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_left()->clone(),
+        this->get_op_type(),
+        this->get_right()->clone()
+    );
 }

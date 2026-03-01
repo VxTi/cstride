@@ -1,11 +1,11 @@
 #include "ast/nodes/while_loop.h"
 
 #include "ast/conditionals.h"
-#include "ast/parser.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
 #include "ast/tokens/token_set.h"
 
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;

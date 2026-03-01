@@ -2,6 +2,8 @@
 #include "ast/parsing_context.h"
 #include "ast/nodes/control_flow_statements.h"
 
+#include <llvm/IR/IRBuilder.h>
+
 using namespace stride::ast;
 
 std::unique_ptr<AstContinueStatement> stride::ast::parse_continue_statement(

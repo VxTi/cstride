@@ -5,22 +5,10 @@
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
-
-AstMemberAccessor::AstMemberAccessor(
-    const SourceFragment& source,
-    const std::shared_ptr<ParsingContext>& context,
-    std::unique_ptr<AstIdentifier> base,
-    std::vector<std::unique_ptr<AstIdentifier>> members
-) :
-    AstExpression(source, context),
-    _base(std::move(base)),
-    _members(std::move(members))
-{
-    this->_base_type = infer_expression_type(_base.get());
-}
 
 std::vector<AstIdentifier*> AstMemberAccessor::get_members() const
 {
@@ -37,7 +25,7 @@ std::vector<AstIdentifier*> AstMemberAccessor::get_members() const
     return result;
 }
 
-bool stride::ast::is_member_accessor(AstExpression* lhs, const TokenSet& set)
+bool stride::ast::is_member_accessor(IAstExpression* lhs, const TokenSet& set)
 {
     // We assume the expression and subsequent tokens are "member accessors"
     // if the LHS is an identifier, and it's followed by `.<identifier>`
@@ -56,10 +44,11 @@ bool stride::ast::is_member_accessor(AstExpression* lhs, const TokenSet& set)
 /// foo().bar.baz()
 /// or
 /// struct_var.member.member2 ...
-std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
+std::unique_ptr<IAstExpression> stride::ast::parse_chained_member_access(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    const std::unique_ptr<AstExpression>& lhs)
+    const std::unique_ptr<IAstExpression>& lhs
+    )
 {
     std::vector<std::unique_ptr<AstIdentifier>> chained_accessors = {};
 
@@ -100,8 +89,9 @@ std::unique_ptr<AstExpression> stride::ast::parse_chained_member_access(
             last_source_pos.offset + last_source_pos.length - lhs_source_pos.
             offset),
         context,
-        std::make_unique<AstIdentifier>(*lhs_identifier),
-        std::move(chained_accessors));
+        lhs_identifier->clone_as<AstIdentifier>(),
+        std::move(chained_accessors)
+    );
 }
 
 llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
@@ -110,7 +100,7 @@ llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
 ) const
 {
     llvm::Value* base_val = this->_base->codegen(module, builder);
-    auto cloned_base_type = this->_base_type->clone();
+    auto cloned_base_type = this->_base->get_type();
     std::string base_type_name = cloned_base_type->get_type_name();
 
     // We look for a GlobalVariable with an initializer
@@ -156,7 +146,7 @@ llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
             return nullptr;
         }
 
-        cloned_base_type = member_field_type.value()->clone();
+        cloned_base_type = member_field_type.value()->clone().get();
         current_struct_name = cloned_base_type->get_type_name();
     }
 
@@ -184,7 +174,7 @@ llvm::Value* AstMemberAccessor::codegen(
         return nullptr;
     }
 
-    const auto base_struct_type = get_struct_type_from_type(this->_base_type.get());
+    const auto base_struct_type = get_struct_type_from_type(this->_base->get_type());
 
     // Base must be a struct for member access to be valid.
     // This would be okay if there were on members, however, this should never happen
@@ -301,7 +291,7 @@ llvm::Value* AstMemberAccessor::codegen(
             ErrorType::COMPILATION_ERROR,
             std::format(
                 "Invalid member access on non-struct type '{}'",
-                this->_base_type->get_type_name()
+                this->_base->get_type()->get_type_name()
             ),
             this->get_source_fragment());
     }
@@ -322,6 +312,24 @@ llvm::Value* AstMemberAccessor::codegen(
     return current_val;
 }
 
+std::unique_ptr<IAstExpression> AstMemberAccessor::clone()
+{
+    std::vector<std::unique_ptr<AstIdentifier>> members_clone;
+    members_clone.reserve(this->_members.size());
+
+    for (const auto& member : this->_members)
+    {
+        members_clone.push_back(member->clone_as<AstIdentifier>());
+    }
+
+    return std::make_unique<AstMemberAccessor>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_base->clone_as<AstIdentifier>(),
+        std::move(members_clone)
+    );
+}
+
 std::string AstMemberAccessor::to_string()
 {
     std::vector<std::string> member_names;
@@ -336,12 +344,6 @@ std::string AstMemberAccessor::to_string()
         "MemberAccessor(base: {}, member: {})",
         this->get_base()->to_string(),
         join(member_names, ","));
-}
-
-void AstMemberAccessor::validate()
-{
-    // Since type inference also does validation, we don't really have to do anything else here
-    infer_member_accessor_type(this);
 }
 
 IAstNode* AstMemberAccessor::reduce()

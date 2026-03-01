@@ -2,11 +2,11 @@
 #include "ast/tokens/token_set.h"
 
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/IRBuilder.h>
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstLiteral>>
-stride::ast::parse_float_literal_optional(
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set)
 {
@@ -38,20 +38,31 @@ stride::ast::parse_float_literal_optional(
     return std::nullopt;
 }
 
-std::string AstFpLiteral::to_string()
-{
-    return std::format("FpLiteral({} ({} bit))",
-                       this->value(),
-                       this->bit_count());
-}
-
 llvm::Value* AstFpLiteral::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* builder)
+    llvm::IRBuilderBase* builder
+)
 {
     if (this->bit_count() > 32)
     {
         return llvm::ConstantFP::get(builder->getDoubleTy(), this->value());
     }
     return llvm::ConstantFP::get(builder->getFloatTy(), this->value());
+}
+
+std::unique_ptr<IAstExpression> AstFpLiteral::clone()
+{
+    return std::make_unique<AstFpLiteral>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->value(),
+        this->bit_count()
+    );
+}
+
+std::string AstFpLiteral::to_string()
+{
+    return std::format("FpLiteral({} ({} bit))",
+                       this->value(),
+                       this->bit_count());
 }

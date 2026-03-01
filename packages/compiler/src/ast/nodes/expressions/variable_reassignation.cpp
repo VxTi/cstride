@@ -10,7 +10,124 @@
 
 using namespace stride::ast;
 
-void AstVariableReassignment::validate()
+void AstVariableReassignment::resolve_forward_references(
+    const ParsingContext* context,
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder
+)
+{
+    this->get_value()->resolve_forward_references(context, module, builder);
+}
+
+/**
+ * @brief Checks if a given token type represents a mutative operation on a variable.
+ *
+ * This function determines whether the provided token type corresponds to an
+ * assignment or compound assignment operation that modifies a variable.
+ *
+ * @param type The token type to check.
+ * @return Returns true if the token type modifies a variable, otherwise false.
+ */
+bool is_variable_mutative_token(const TokenType type)
+{
+    switch (type)
+    {
+    case TokenType::EQUALS:
+    case TokenType::PLUS_EQUALS:
+    case TokenType::MINUS_EQUALS:
+    case TokenType::STAR_EQUALS:
+    case TokenType::SLASH_EQUALS:
+    case TokenType::PERCENT_EQUALS:
+    case TokenType::AMPERSAND_EQUALS:
+    case TokenType::PIPE_EQUALS:
+    case TokenType::CARET_EQUALS:
+        return true;
+    default:
+        return false;
+    }
+}
+
+MutativeAssignmentType parse_mutative_assignment_type(
+    const TokenSet& set,
+    const Token& token
+)
+{
+    switch (token.get_type())
+    {
+    case TokenType::EQUALS:
+        return MutativeAssignmentType::ASSIGN;
+    case TokenType::PLUS_EQUALS:
+        return MutativeAssignmentType::ADD;
+    case TokenType::MINUS_EQUALS:
+        return MutativeAssignmentType::SUBTRACT;
+    case TokenType::STAR_EQUALS:
+        return MutativeAssignmentType::MULTIPLY;
+    case TokenType::SLASH_EQUALS:
+        return MutativeAssignmentType::DIVIDE;
+    case TokenType::PERCENT_EQUALS:
+        return MutativeAssignmentType::MODULO;
+    case TokenType::AMPERSAND_EQUALS:
+        return MutativeAssignmentType::BITWISE_AND;
+    case TokenType::PIPE_EQUALS:
+        return MutativeAssignmentType::BITWISE_OR;
+    case TokenType::CARET_EQUALS:
+        return MutativeAssignmentType::BITWISE_XOR;
+    default:
+        TokenSet::throw_error(
+            token,
+            stride::ErrorType::SYNTAX_ERROR,
+            "Expected mutative assignment operator");
+    }
+}
+
+std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
+    const std::shared_ptr<ParsingContext>& context,
+    const std::string& variable_name,
+    TokenSet& set
+)
+{
+    // Can be either a singular field, e.g., a regular variable,
+    // or member access, e.g., <member>.<field>
+    const auto reference_token = set.peek_next();
+    if (!is_variable_mutative_token(reference_token.get_type()))
+    {
+        return std::nullopt;
+    }
+
+    auto operation = parse_mutative_assignment_type(set, reference_token);
+    set.next();
+
+    const auto variable_definition = context->lookup_variable(variable_name, true);
+
+    if (!variable_definition)
+    {
+        throw parsing_error(
+            ErrorType::REFERENCE_ERROR,
+            std::format("Unable to reassign variable '{}', variable not found", variable_name),
+            reference_token.get_source_fragment());
+    }
+
+    std::string variable_internal_name =
+        variable_definition->get_internal_symbol_name();
+
+    auto expression = parse_inline_expression(context, set);
+
+    if (!expression)
+    {
+        return std::nullopt;
+    }
+
+    return std::make_unique<AstVariableReassignment>(
+        reference_token.get_source_fragment(),
+        context,
+        variable_name,
+        variable_internal_name,
+        operation,
+        std::move(expression)
+    );
+}
+
+void AstVariableReassignment::validate_expr()
 {
     const auto identifier_def =
         this->get_context()->lookup_variable(this->get_variable_name(), true);
@@ -229,120 +346,15 @@ llvm::Value* AstVariableReassignment::codegen(
     return finalValue;
 }
 
-void AstVariableReassignment::resolve_forward_references(
-    const ParsingContext* context,
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
-)
+std::unique_ptr<IAstExpression> AstVariableReassignment::clone()
 {
-    this->get_value()->resolve_forward_references(context, module, builder);
-}
-
-/**
- * @brief Checks if a given token type represents a mutative operation on a variable.
- *
- * This function determines whether the provided token type corresponds to an
- * assignment or compound assignment operation that modifies a variable.
- *
- * @param type The token type to check.
- * @return Returns true if the token type modifies a variable, otherwise false.
- */
-bool is_variable_mutative_token(const TokenType type)
-{
-    switch (type)
-    {
-    case TokenType::EQUALS:
-    case TokenType::PLUS_EQUALS:
-    case TokenType::MINUS_EQUALS:
-    case TokenType::STAR_EQUALS:
-    case TokenType::SLASH_EQUALS:
-    case TokenType::PERCENT_EQUALS:
-    case TokenType::AMPERSAND_EQUALS:
-    case TokenType::PIPE_EQUALS:
-    case TokenType::CARET_EQUALS:
-        return true;
-    default:
-        return false;
-    }
-}
-
-MutativeAssignmentType parse_mutative_assignment_type(
-    const TokenSet& set,
-    const Token& token
-)
-{
-    switch (token.get_type())
-    {
-    case TokenType::EQUALS:
-        return MutativeAssignmentType::ASSIGN;
-    case TokenType::PLUS_EQUALS:
-        return MutativeAssignmentType::ADD;
-    case TokenType::MINUS_EQUALS:
-        return MutativeAssignmentType::SUBTRACT;
-    case TokenType::STAR_EQUALS:
-        return MutativeAssignmentType::MULTIPLY;
-    case TokenType::SLASH_EQUALS:
-        return MutativeAssignmentType::DIVIDE;
-    case TokenType::PERCENT_EQUALS:
-        return MutativeAssignmentType::MODULO;
-    case TokenType::AMPERSAND_EQUALS:
-        return MutativeAssignmentType::BITWISE_AND;
-    case TokenType::PIPE_EQUALS:
-        return MutativeAssignmentType::BITWISE_OR;
-    case TokenType::CARET_EQUALS:
-        return MutativeAssignmentType::BITWISE_XOR;
-    default:
-        set.throw_error(
-            token,
-            stride::ErrorType::SYNTAX_ERROR,
-            "Expected mutative assignment operator");
-    }
-}
-
-std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
-    const std::shared_ptr<ParsingContext>& context,
-    const std::string& variable_name,
-    TokenSet& set
-)
-{
-    // Can be either a singular field, e.g., a regular variable,
-    // or member access, e.g., <member>.<field>
-    const auto reference_token = set.peek_next();
-    if (!is_variable_mutative_token(reference_token.get_type()))
-    {
-        return std::nullopt;
-    }
-
-    auto operation = parse_mutative_assignment_type(set, reference_token);
-    set.next();
-
-    const auto variable_definition = context->lookup_variable(variable_name, true);
-
-    if (!variable_definition)
-    {
-        throw parsing_error(
-            ErrorType::REFERENCE_ERROR,
-            std::format("Unable to reassign variable '{}', variable not found", variable_name),
-            reference_token.get_source_fragment());
-    }
-
-    std::string variable_internal_name =
-        variable_definition->get_internal_symbol_name();
-
-    auto expression = parse_inline_expression(context, set);
-
-    if (!expression)
-    {
-        return std::nullopt;
-    }
-
     return std::make_unique<AstVariableReassignment>(
-        reference_token.get_source_fragment(),
-        context,
-        variable_name,
-        variable_internal_name,
-        operation,
-        std::move(expression)
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_variable_name(),
+        this->get_internal_name(),
+        this->get_operator(),
+        this->get_value()->clone()
     );
 }
 
@@ -364,7 +376,7 @@ IAstNode* AstVariableReassignment::reduce()
     {
         const auto reduced = reducible->reduce();
 
-        if (auto* reduced_expr = dynamic_cast<AstExpression*>(reduced);
+        if (auto* reduced_expr = dynamic_cast<IAstExpression*>(reduced);
             reduced_expr != nullptr)
         {
             return std::make_unique<AstVariableReassignment>(
@@ -373,7 +385,7 @@ IAstNode* AstVariableReassignment::reduce()
                     this->get_variable_name(),
                     this->get_internal_name(),
                     this->get_operator(),
-                    std::unique_ptr<AstExpression>(reduced_expr))
+                    std::unique_ptr<IAstExpression>(reduced_expr))
                .release();
         }
     }

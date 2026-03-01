@@ -8,6 +8,10 @@
 #include <memory>
 #include <optional>
 
+namespace llvm {
+    class Type;
+}
+
 namespace stride::ast
 {
     class TokenSet;

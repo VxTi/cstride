@@ -24,14 +24,9 @@ stride::ast::parse_string_literal_optional(
     return std::nullopt;
 }
 
-std::string AstStringLiteral::to_string()
-{
-    return std::format("StringLiteral(\"{}\")", value());
-}
-
 llvm::Value* AstStringLiteral::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* ir_builder)
+    llvm::IRBuilderBase* builder)
 {
     // Check if a global variable already exists with the same value
     // If it does, we'll return a pointer to the existing global string
@@ -50,13 +45,27 @@ llvm::Value* AstStringLiteral::codegen(
                 drop_back() == this->value())
             {
                 // Return a pointer to the existing global string
-                return ir_builder->CreateInBoundsGEP(
+                return builder->CreateInBoundsGEP(
                     global.getValueType(),
                     &global,
-                    { ir_builder->getInt32(0), ir_builder->getInt32(0) });
+                    { builder->getInt32(0), builder->getInt32(0) });
             }
         }
     }
 
-    return ir_builder->CreateGlobalString(this->value(), "", 0, module);
+    return builder->CreateGlobalString(this->value(), "", 0, module);
+}
+
+std::unique_ptr<IAstExpression> AstStringLiteral::clone()
+{
+    return std::make_unique<AstStringLiteral>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->value()
+    );
+}
+
+std::string AstStringLiteral::to_string()
+{
+    return std::format("StringLiteral(\"{}\")", value());
 }

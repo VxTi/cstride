@@ -6,8 +6,7 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstLiteral>>
-stride::ast::parse_char_literal_optional(
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set)
 {
@@ -25,11 +24,6 @@ stride::ast::parse_char_literal_optional(
     return std::nullopt;
 }
 
-std::string AstCharLiteral::to_string()
-{
-    return std::format("CharLiteral({})", value());
-}
-
 llvm::Value* AstCharLiteral::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
@@ -37,4 +31,18 @@ llvm::Value* AstCharLiteral::codegen(
     return llvm::ConstantInt::get(
         module->getContext(),
         llvm::APInt(this->bit_count() * BITS_PER_BYTE, this->value(), true));
+}
+
+std::unique_ptr<IAstExpression> AstCharLiteral::clone()
+{
+    return std::make_unique<AstCharLiteral>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->value()
+    );
+}
+
+std::string AstCharLiteral::to_string()
+{
+    return std::format("CharLiteral({})", value());
 }

@@ -25,16 +25,26 @@ stride::ast::parse_boolean_literal_optional(
     return std::nullopt;
 }
 
-std::string AstBooleanLiteral::to_string()
-{
-    return std::format("BooleanLiteral({})", value());
-}
-
 llvm::Value* AstBooleanLiteral::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* builder)
+    llvm::IRBuilderBase* builder
+)
 {
     return llvm::ConstantInt::get(
         module->getContext(),
         llvm::APInt(this->bit_count(), this->value(), true));
+}
+
+std::unique_ptr<IAstExpression> AstBooleanLiteral::clone()
+{
+    return std::make_unique<AstBooleanLiteral>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->value()
+    );
+}
+
+std::string AstBooleanLiteral::to_string()
+{
+    return std::format("BooleanLiteral({})", value());
 }

@@ -26,20 +26,21 @@ namespace stride::ast
     };
 
     class AstLiteral
-        : public AstExpression
+        : public IAstExpression
     {
         short _bit_count;
-        LiteralType _type;
+        LiteralType _literal_type;
 
     public:
         AstLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
-            const short bit_count) :
-            AstExpression(source, context),
+            const short bit_count
+        ) :
+            IAstExpression(source, context),
             _bit_count(bit_count),
-            _type(type) {}
+            _literal_type(type) {}
 
         ~AstLiteral() override = default;
 
@@ -52,9 +53,9 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        LiteralType get_type() const
+        LiteralType get_literal_type() const
         {
-            return this->_type;
+            return this->_literal_type;
         }
     };
 
@@ -70,7 +71,8 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             const LiteralType type,
             T value,
-            const short bit_count) :
+            const short bit_count
+        ) :
             AstLiteral(source, context, type, bit_count),
             _value(std::move(value)) {}
 
@@ -81,20 +83,23 @@ namespace stride::ast
         }
     };
 
-    class AstStringLiteral : public IAstLiteralBase<std::string>
+    class AstStringLiteral
+        : public IAstLiteralBase<std::string>
     {
     public:
         explicit AstStringLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::string val) :
+            std::string val
+        ) :
             // Strings are only considered to be a single byte,
             // as they're pointing to a memory location
-            IAstLiteralBase(source,
-                            context,
-                            LiteralType::STRING,
-                            std::move(val),
-                            1) {}
+            IAstLiteralBase(
+                source,
+                context,
+                LiteralType::STRING,
+                std::move(val),
+                8) {}
 
         ~AstStringLiteral() override = default;
 
@@ -103,9 +108,12 @@ namespace stride::ast
         llvm::Value* codegen(
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
-    class AstIntLiteral : public IAstLiteralBase<int64_t>
+    class AstIntLiteral
+        : public IAstLiteralBase<int64_t>
     {
         const int _flags;
 
@@ -115,7 +123,8 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             const int64_t value,
             const short bit_count,
-            const int flags = SRFLAG_TYPE_INT_SIGNED) :
+            const int flags = SRFLAG_TYPE_INT_SIGNED
+        ) :
             IAstLiteralBase(source,
                             context,
                             LiteralType::INTEGER,
@@ -140,36 +149,46 @@ namespace stride::ast
         llvm::Value* codegen(
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
-    class AstFpLiteral : public IAstLiteralBase<long double>
+    class AstFpLiteral
+        : public IAstLiteralBase<long double>
     {
     public:
         explicit AstFpLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const long double value,
-            const short bit_count) :
-            IAstLiteralBase(source,
-                            context,
-                            LiteralType::FLOAT,
-                            value,
-                            bit_count) {}
+            const short bit_count
+        ) :
+            IAstLiteralBase(
+                source,
+                context,
+                LiteralType::FLOAT,
+                value,
+                bit_count) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            llvm::IRBuilderBase* builder
+        ) override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
-    class AstBooleanLiteral : public IAstLiteralBase<bool>
+    class AstBooleanLiteral
+        : public IAstLiteralBase<bool>
     {
     public:
         explicit AstBooleanLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            const bool value) :
+            const bool value
+        ) :
             IAstLiteralBase(
                 source,
                 context,
@@ -182,7 +201,10 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            llvm::IRBuilderBase* builder
+        ) override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     class AstCharLiteral : public IAstLiteralBase<char>
@@ -191,7 +213,8 @@ namespace stride::ast
         explicit AstCharLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            const char value) :
+            const char value
+        ) :
             IAstLiteralBase(source,
                             context,
                             LiteralType::CHAR,
@@ -202,21 +225,30 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            llvm::IRBuilderBase* builder
+        ) override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
-    class AstNilLiteral : public AstLiteral
+    class AstNilLiteral
+        : public AstLiteral
     {
     public:
-        AstNilLiteral(const SourceFragment& source,
-                      const std::shared_ptr<ParsingContext>& context) :
+        AstNilLiteral(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context
+        ) :
             AstLiteral(source, context, LiteralType::NIL, 8) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            llvm::IRBuilderBase* builder
+        ) override;
+
+        std::unique_ptr<IAstExpression> clone() override;
     };
 
     std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(

@@ -51,18 +51,54 @@ std::string comparison_op_to_str(const ComparisonOpType op)
     }
 }
 
-std::string AstComparisonOp::to_string()
+void AstComparisonOp::validate_expr()
 {
-    return std::format(
-        "ComparisonOp({}, {}, {})",
-        this->get_left()->to_string(),
-        comparison_op_to_str(this->_op_type),
-        this->get_right()->to_string());
+    const auto lhs_type = this->get_left()->get_type();
+    const auto rhs_type = this->get_right()->get_type();
+
+    // Both sides are primitives
+    if (lhs_type->is_primitive() && rhs_type->is_primitive())
+        return;
+
+    const auto lhs_primitive = cast_type<AstPrimitiveType*>(lhs_type);
+    const auto rhs_primitive = cast_type<AstPrimitiveType*>(rhs_type);
+
+
+    // If LHS is NIL and RHS is valid, allow the comparison (nil checks)
+    if (lhs_primitive && rhs_primitive
+        && lhs_primitive->get_type() == PrimitiveType::NIL
+        && rhs_primitive->get_type() != PrimitiveType::NIL)
+        return;
+
+    // visa versa; LHS is primitive and RHS is nil
+    if (rhs_primitive && lhs_primitive
+        && rhs_primitive->get_type() == PrimitiveType::NIL
+        && lhs_primitive->get_type() != PrimitiveType::NIL)
+        return;
+
+    const auto lhs_struct = cast_type<AstNamedType*>(lhs_type);
+    const auto rhs_struct = cast_type<AstNamedType*>(rhs_type);
+
+    // LHS is optional struct and RHS is primitive and RHS is not nil
+    if (lhs_struct && rhs_primitive && lhs_struct->is_optional() &&
+        rhs_primitive->get_type() == PrimitiveType::NIL)
+        return;
+
+    if (lhs_primitive && rhs_struct && rhs_struct->is_optional() &&
+        lhs_primitive->get_type() == PrimitiveType::NIL)
+        return;
+
+    throw parsing_error(
+        ErrorType::SEMANTIC_ERROR,
+        "Comparison operation operands must be used on primitive or optional types",
+        this->get_source_fragment()
+    );
 }
 
 llvm::Value* AstComparisonOp::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* builder)
+    llvm::IRBuilderBase* builder
+)
 {
     llvm::Value* left = this->get_left()->codegen(module, builder);
     llvm::Value* right = this->get_right()->codegen(module, builder);
@@ -210,55 +246,22 @@ llvm::Value* AstComparisonOp::codegen(
     }
 }
 
-void AstComparisonOp::validate()
+std::unique_ptr<IAstExpression> AstComparisonOp::clone()
 {
-    const auto lhs_type = infer_expression_type(this->get_left());
-    const auto rhs_type = infer_expression_type(this->get_right());
-
-    if (!lhs_type || !rhs_type)
-    {
-        throw parsing_error(
-            ErrorType::SEMANTIC_ERROR,
-            "Unable to infer types for comparison operation",
-            this->get_source_fragment()
-        );
-    }
-
-    // Both sides are primitives
-    if (lhs_type->is_primitive() && rhs_type->is_primitive())
-        return;
-
-    const auto lhs_primitive = cast_type<AstPrimitiveType*>(lhs_type.get());
-    const auto rhs_primitive = cast_type<AstPrimitiveType*>(rhs_type.get());
-
-
-    // If LHS is NIL and RHS is valid, allow the comparison (nil checks)
-    if (lhs_primitive && rhs_primitive
-        && lhs_primitive->get_type() == PrimitiveType::NIL
-        && rhs_primitive->get_type() != PrimitiveType::NIL)
-        return;
-
-    // visa versa; LHS is primitive and RHS is nil
-    if (rhs_primitive && lhs_primitive
-        && rhs_primitive->get_type() == PrimitiveType::NIL
-        && lhs_primitive->get_type() != PrimitiveType::NIL)
-        return;
-
-    const auto lhs_struct = cast_type<AstNamedType*>(lhs_type.get());
-    const auto rhs_struct = cast_type<AstNamedType*>(rhs_type.get());
-
-    // LHS is optional struct and RHS is primitive and RHS is not nil
-    if (lhs_struct && rhs_primitive && lhs_struct->is_optional() &&
-        rhs_primitive->get_type() == PrimitiveType::NIL)
-        return;
-
-    if (lhs_primitive && rhs_struct && rhs_struct->is_optional() &&
-        lhs_primitive->get_type() == PrimitiveType::NIL)
-        return;
-
-    throw parsing_error(
-        ErrorType::SEMANTIC_ERROR,
-        "Comparison operation operands must be used on primitive or optional types",
-        this->get_source_fragment()
+    return std::make_unique<AstComparisonOp>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_left()->clone(),
+        this->_op_type,
+        this->get_right()->clone()
     );
+}
+
+std::string AstComparisonOp::to_string()
+{
+    return std::format(
+        "ComparisonOp({}, {}, {})",
+        this->get_left()->to_string(),
+        comparison_op_to_str(this->_op_type),
+        this->get_right()->to_string());
 }

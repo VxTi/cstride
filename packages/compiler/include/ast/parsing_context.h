@@ -1,13 +1,16 @@
 #pragma once
+
 #include "symbols.h"
 #include "ast/nodes/types.h"
-
-#include <llvm/IR/BasicBlock.h>
 
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+namespace llvm {
+    class BasicBlock;
+}
 
 namespace stride::ast
 {

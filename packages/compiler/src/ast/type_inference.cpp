@@ -144,7 +144,6 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
 std::unique_ptr<IAstType> stride::ast::infer_binary_arithmetic_op_type(
     const AstBinaryArithmeticOp* operation)
 {
-
     auto lhs = infer_expression_type(operation->get_left());
     auto rhs = infer_expression_type(operation->get_right());
 
@@ -362,7 +361,7 @@ std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_expression_type(
-    AstExpression* expr,
+    IAstExpression* expr,
     int recursion_guard
 )
 {

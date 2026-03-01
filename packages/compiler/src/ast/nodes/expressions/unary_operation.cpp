@@ -50,7 +50,7 @@ bool requires_identifier_operand(const UnaryOpType op)
     }
 }
 
-std::optional<std::unique_ptr<AstExpression>> stride::ast::parse_binary_unary_op(
+std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_op(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -156,7 +156,7 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
     return std::nullopt;
 }
 
-void AstUnaryOp::validate()
+void AstUnaryOp::validate_expr()
 {
     const auto operand_type = infer_expression_type(
         this->_operand.get());
@@ -420,6 +420,17 @@ llvm::Value* AstUnaryOp::codegen(
     }
 }
 
+std::unique_ptr<IAstExpression> AstUnaryOp::clone()
+{
+    return std::make_unique<AstUnaryOp>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_op_type(),
+        this->_operand->clone(),
+        this->is_lsh()
+    );
+}
+
 bool AstUnaryOp::is_reducible()
 {
     return this->get_operand().is_reducible();
@@ -439,5 +450,6 @@ std::string AstUnaryOp::to_string()
         : this->get_operand().to_string(),
         this->is_lsh()
         ? this->get_operand().to_string()
-        : unary_op_type_to_str(this->get_op_type()));
+        : unary_op_type_to_str(this->get_op_type())
+    );
 }

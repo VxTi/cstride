@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include <ranges>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
@@ -20,7 +22,7 @@ bool stride::ast::is_struct_initializer(const TokenSet& set)
         set.peek_eq(TokenType::LBRACE, 2);
 }
 
-std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initializer(
+std::pair<std::string, std::unique_ptr<IAstExpression>> parse_struct_member_initializer(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -38,7 +40,8 @@ std::pair<std::string, std::unique_ptr<AstExpression>> parse_struct_member_initi
 
 std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     const auto reference_token = set.expect(
         TokenType::IDENTIFIER,
@@ -49,7 +52,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         "Expected '::' after struct name in struct initializer"
     );
 
-    std::vector<std::pair<std::string, std::unique_ptr<AstExpression>>> member_map = {};
+    std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> member_map = {};
     auto member_set = collect_block(set);
 
     if (!member_set.has_value())
@@ -96,12 +99,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         std::move(member_map));
 }
 
-std::string AstStructInitializer::to_string()
-{
-    return std::format("StructInit{{...}}");
-}
-
-void AstStructInitializer::validate()
+void AstStructInitializer::validate_expr()
 {
     const auto definition = this->get_context()->get_struct_type(this->_struct_name);
     // Check whether the struct we're trying to assign actually exists
@@ -275,4 +273,27 @@ llvm::Value* AstStructInitializer::codegen(
     }
 
     return current_struct_val;
+}
+
+std::unique_ptr<IAstExpression> AstStructInitializer::clone()
+{
+    std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> cloned_initializers;
+    cloned_initializers.reserve(this->_initializers.size());
+
+    for (const auto& [name, expr] : this->_initializers)
+    {
+        cloned_initializers.emplace_back(name, expr->clone());
+    }
+
+    return std::make_unique<AstStructInitializer>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_struct_name,
+        std::move(cloned_initializers)
+    );
+}
+
+std::string AstStructInitializer::to_string()
+{
+    return std::format("StructInit{{...}}");
 }

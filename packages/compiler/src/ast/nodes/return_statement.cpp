@@ -26,7 +26,7 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
     const auto reference_token = set.next();
     const auto& ref_pos = reference_token.get_source_fragment();
 
-    std::unique_ptr<AstExpression> return_value = nullptr;
+    std::unique_ptr<IAstExpression> return_value = nullptr;
 
     // If we don't see a semicolon immediately after, we expect a return expression.
     if (!set.peek_next_eq(TokenType::SEMICOLON))

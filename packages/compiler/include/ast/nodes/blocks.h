@@ -2,6 +2,9 @@
 
 #include "ast/nodes/ast_node.h"
 
+#include <optional>
+#include <vector>
+
 namespace stride::ast
 {
     enum class TokenType;
@@ -23,13 +26,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override
-        {
-            for (const auto& child : this->_children)
-            {
-                child->validate();
-            }
-        }
+        void validate() override;
 
         llvm::Value* codegen(
             llvm::Module* module,

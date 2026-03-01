@@ -3,12 +3,13 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
 
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 
-
-void AstArray::validate()
+void AstArray::validate_expr()
 {
     for (const auto& element : this->get_elements())
     {
@@ -28,6 +29,23 @@ void AstArray::resolve_forward_references(
     }
 }
 
+std::unique_ptr<IAstExpression> AstArray::clone()
+{
+    std::vector<std::unique_ptr<IAstExpression>> elements_clone;
+    elements_clone.reserve(this->get_elements().size());
+
+    for (const auto& element : this->get_elements())
+    {
+        elements_clone.push_back(element->clone());
+    }
+
+    return std::make_unique<AstArray>(
+        this->get_source_fragment(),
+        this->get_context(),
+        std::move(elements_clone)
+    );
+}
+
 std::string AstArray::to_string()
 {
     return "Array";
@@ -38,11 +56,11 @@ llvm::Value* AstArray::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    const auto resolved_type = infer_expression_type(this);
+    const auto resolved_type = this->get_type();
 
     llvm::ArrayType* concrete_array_type = nullptr;
 
-    if (const auto* array_type = cast_type<AstArrayType*>(resolved_type.get()))
+    if (const auto* array_type = cast_type<AstArrayType*>(resolved_type))
     {
         llvm::Type* element_llvm_type = type_to_llvm_type(
             array_type->get_element_type(),
@@ -57,7 +75,7 @@ llvm::Value* AstArray::codegen(
     {
         // Fallback: If we can't determine the type from the AST, try to verify
         // if the resolved LLVM type is already an array type.
-        if (llvm::Type* possible_type = type_to_llvm_type(resolved_type.get(), module);
+        if (llvm::Type* possible_type = type_to_llvm_type(resolved_type, module);
             llvm::isa<llvm::ArrayType>(possible_type))
         {
             concrete_array_type = llvm::cast<llvm::ArrayType>(possible_type);
