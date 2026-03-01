@@ -181,11 +181,11 @@ TEST(TypeReferences, DeepFunctionReferential)
     )");
 
     const auto symbol = context->lookup_symbol("second_ref");
-    const auto field = dynamic_cast<stride::ast::definition::FieldDef*>(symbol);
+    const auto field = dynamic_cast<stride::ast::definition::FieldDefinition*>(symbol);
 
     EXPECT_NE(symbol, nullptr) << "Expected 'second_ref' to be found in the symbol table";
     EXPECT_NE(field, nullptr)
-        << "Expected 'second_ref' to be a FieldDef, but it was not found or was of a different type";
+        << "Expected 'second_ref' to be a FieldDefinition, but it was not found or was of a different type";
     EXPECT_EQ(field->get_type()->to_string(), "(int32) -> int32")
     << "Expected 'second_ref' to have type '(int32) -> int32', but got '"
     << field->get_type()->to_string() << "'";
@@ -200,11 +200,11 @@ TEST(TypeReferences, StructTypeReference)
     )");
 
     const auto symbol = context->lookup_symbol("Vec");
-    const auto field = dynamic_cast<stride::ast::definition::TypeDef*>(symbol);
+    const auto field = dynamic_cast<stride::ast::definition::TypeDefinition*>(symbol);
 
     EXPECT_NE(symbol, nullptr) << "Expected 'Vec' to be found in the symbol table";
     EXPECT_NE(field, nullptr) <<
- "Expected 'Vec' to be a TypeDef, but it was not found or was of a different type";
+ "Expected 'Vec' to be a TypeDefinition, but it was not found or was of a different type";
     EXPECT_EQ(field->get_type()->get_type_name(), "Point")
     << std::format("Expected 'Vec' to have type 'Point', but got '{}'",
                    field->get_type()->get_type_name()

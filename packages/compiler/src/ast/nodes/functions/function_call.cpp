@@ -11,7 +11,6 @@
 #include "ast/tokens/token_set.h"
 
 #include <format>
-#include <iostream>
 #include <sstream>
 #include <vector>
 #include <llvm/IR/Function.h>
@@ -106,7 +105,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
 
 std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
 {
-    if (const auto fn_call = dynamic_cast<const CallableDef*>(suggestion))
+    if (const auto fn_call = dynamic_cast<const FunctionDefinition*>(suggestion))
     {
         // We'll format the arguments
         std::vector<std::string> arg_types;
@@ -150,14 +149,14 @@ llvm::Value* AstFunctionCall::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Function* callee = module->getFunction(this->get_internal_name());
+    llvm::Function* callee = nullptr;
 
-    // For non-extern functions,
-    if (!callee)
+    if (const auto definition = this->get_context()->get_function_definition(
+            this->get_function_name(),
+            this->get_type());
+        definition.has_value())
     {
-        // It's possible that the function is internally registered with its normal name
-        // This always happens for extern functions.
-        callee = module->getFunction(this->get_function_name());
+        callee = module->getFunction(definition.value()->get_internal_symbol_name());
     }
 
     // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
@@ -173,16 +172,6 @@ llvm::Value* AstFunctionCall::codegen(
     // e.g., variadic function calls might be internalized with more parameters than how they're defined,
     // causing a mismatch in function symbol lookup. Therefore, we look up the function definition by the regular name,
     // rather than the internalized one.
-    if (!callee)
-    {
-        // TODO: FIX This - high importance, function lookup might not use correct signature
-        if (const auto definition = this->get_context()->get_function_definition(
-                this->get_function_name());
-            definition.has_value())
-        {
-            callee = module->getFunction(definition.value()->get_internal_symbol_name());
-        }
-    }
 
     // No way to find it :(
     if (!callee)
@@ -531,8 +520,8 @@ std::string AstFunctionCall::to_string()
     }
 
     return std::format(
-        "FunctionCall({} ({}) [{}])",
+        "FunctionCall({} [{}])",
         this->get_function_name(),
-        this->get_internal_name(),
-        join(arg_types, ", "));
+        join(arg_types, ", ")
+    );
 }

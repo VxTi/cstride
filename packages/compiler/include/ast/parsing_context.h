@@ -8,7 +8,8 @@
 #include <utility>
 #include <vector>
 
-namespace llvm {
+namespace llvm
+{
     class BasicBlock;
 }
 
@@ -79,13 +80,13 @@ namespace stride::ast
             }
         };
 
-        class TypeDef
+        class TypeDefinition
             : public IDefinition
         {
             std::unique_ptr<IAstType> _type;
 
         public:
-            explicit TypeDef(
+            explicit TypeDefinition(
                 Symbol type_name_symbol,
                 std::unique_ptr<IAstType> type
             ) :
@@ -99,13 +100,13 @@ namespace stride::ast
             }
         };
 
-        class FieldDef : public IDefinition
+        class FieldDefinition : public IDefinition
         {
             std::unique_ptr<IAstType> _type;
 
             /// Can be either a variable or a field in a struct/class
         public:
-            explicit FieldDef(const Symbol& symbol,
+            explicit FieldDefinition(const Symbol& symbol,
                               std::unique_ptr<IAstType> type) :
                 IDefinition(symbol),
                 _type(std::move(type)) {}
@@ -117,12 +118,13 @@ namespace stride::ast
             }
         };
 
-        class CallableDef : public IDefinition
+        class FunctionDefinition
+            : public IDefinition
         {
             std::unique_ptr<AstFunctionType> _function_type;
 
         public:
-            explicit CallableDef(
+            explicit FunctionDefinition(
                 std::unique_ptr<AstFunctionType> function_type,
                 const Symbol& symbol) :
                 IDefinition(symbol),
@@ -134,7 +136,9 @@ namespace stride::ast
                 return this->_function_type.get();
             }
 
-            ~CallableDef() override = default;
+            ~FunctionDefinition() override = default;
+
+            bool equals(const std::string& name, const AstFunctionType* signature) const;
         };
     } // namespace definition
 
@@ -216,19 +220,18 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const definition::FieldDef* get_variable_def(
+        const definition::FieldDefinition* get_variable_def(
             const std::string& variable_name,
             bool use_raw_name = false
         ) const;
 
-        [[nodiscard]]
-        std::optional<definition::CallableDef*> get_function_definition_internalized(const std::string& mangled_name) const;
+        std::optional<definition::FunctionDefinition*> get_function_definition(
+            const std::string& function_name,
+            IAstType* function_type
+        ) const;
 
         [[nodiscard]]
-        std::optional<definition::CallableDef*> get_function_definition(const std::string& function_name) const;
-
-        [[nodiscard]]
-        std::optional<definition::TypeDef*> get_type_definition(
+        std::optional<definition::TypeDefinition*> get_type_definition(
             const std::string& name
         ) const;
 
@@ -247,7 +250,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const definition::FieldDef* lookup_variable(
+        const definition::FieldDefinition* lookup_variable(
             const std::string& name,
             bool use_raw_name = false
         ) const;

@@ -44,7 +44,7 @@ bool ParsingContext::is_function_defined_globally(
         this->traverse_to_root()._symbols,
         [&](const auto& symbol)
         {
-            if (const auto* fn_def = dynamic_cast<const CallableDef*>(symbol.
+            if (const auto* fn_def = dynamic_cast<const FunctionDefinition*>(symbol.
                 get()))
             {
                 if (fn_def->get_internal_symbol_name() ==
@@ -71,7 +71,7 @@ void ParsingContext::define_function(
     }
 
     global_scope._symbols.push_back(
-        std::make_unique<CallableDef>(std::move(function_type), function_name));
+        std::make_unique<FunctionDefinition>(std::move(function_type), function_name));
 }
 
 void ParsingContext::define_symbol(const Symbol& symbol_name,
@@ -81,13 +81,13 @@ void ParsingContext::define_symbol(const Symbol& symbol_name,
         std::make_unique<IdentifiableSymbolDef>(type, symbol_name));
 }
 
-const FieldDef* ParsingContext::get_variable_def(
+const FieldDefinition* ParsingContext::get_variable_def(
     const std::string& variable_name,
     const bool use_raw_name) const
 {
     for (const auto& symbol_def : this->_symbols)
     {
-        if (const auto* field_definition = dynamic_cast<const FieldDef*>(
+        if (const auto* field_definition = dynamic_cast<const FieldDefinition*>(
             symbol_def.get()))
         {
             if (field_definition->get_internal_symbol_name() == variable_name
@@ -115,40 +115,6 @@ const IdentifiableSymbolDef* ParsingContext::get_symbol_def(
         }
     }
     return nullptr;
-}
-
-std::optional<CallableDef*> ParsingContext::get_function_definition(
-    const std::string& function_name) const
-{
-    for (const auto& global_scope = this->traverse_to_root();
-         const auto& symbol_def : global_scope._symbols)
-    {
-        if (auto* fn_def = dynamic_cast<CallableDef*>(symbol_def.get()))
-        {
-            if (fn_def->get_symbol().name == function_name)
-            {
-                return fn_def;
-            }
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<CallableDef*> ParsingContext::get_function_definition_internalized(
-    const std::string& mangled_name) const
-{
-    for (const auto& global_scope = this->traverse_to_root();
-         const auto& symbol_def : global_scope._symbols)
-    {
-        if (auto* fn_def = dynamic_cast<CallableDef*>(symbol_def.get()))
-        {
-            if (fn_def->get_internal_symbol_name() == mangled_name)
-            {
-                return fn_def;
-            }
-        }
-    }
-    return std::nullopt;
 }
 
 static size_t levenshtein_distance(const std::string& a, const std::string& b)
@@ -193,10 +159,10 @@ IDefinition* ParsingContext::fuzzy_find(const std::string& symbol_name) const
         {
             std::string candidate_name;
             // (Your casting logic remains the same)
-            if (const auto* field_def = dynamic_cast<const FieldDef*>(symbol_def
+            if (const auto* field_def = dynamic_cast<const FieldDefinition*>(symbol_def
                .get()))
                 candidate_name = field_def->get_internal_symbol_name();
-            else if (const auto* fn_def = dynamic_cast<const CallableDef*>(
+            else if (const auto* fn_def = dynamic_cast<const FunctionDefinition*>(
                 symbol_def.get()))
                 candidate_name = fn_def->get_internal_symbol_name();
             else
@@ -252,7 +218,7 @@ bool ParsingContext::is_field_defined_in_scope(
         this->_symbols,
         [&](const auto& symbol_def)
         {
-            if (const auto* var_def = dynamic_cast<const FieldDef*>(symbol_def.
+            if (const auto* var_def = dynamic_cast<const FieldDefinition*>(symbol_def.
                 get()))
             {
                 return var_def->get_internal_symbol_name() == variable_name;
@@ -292,7 +258,7 @@ void ParsingContext::define_variable_globally(
 
     auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
     global_scope._symbols.push_back(
-        std::make_unique<FieldDef>(
+        std::make_unique<FieldDefinition>(
             std::move(variable_symbol),
             std::move(type)
         )
@@ -318,7 +284,7 @@ void ParsingContext::define_variable(
             type->get_source_fragment());
     }
 
-    this->_symbols.push_back(std::make_unique<FieldDef>(std::move(variable_sym), std::move(type)));
+    this->_symbols.push_back(std::make_unique<FieldDefinition>(std::move(variable_sym), std::move(type)));
 }
 
 IDefinition* ParsingContext::lookup_symbol(const std::string& symbol_name) const
@@ -338,7 +304,7 @@ IDefinition* ParsingContext::lookup_symbol(const std::string& symbol_name) const
     return nullptr;
 }
 
-const FieldDef* ParsingContext::lookup_variable(
+const FieldDefinition* ParsingContext::lookup_variable(
     const std::string& name,
     const bool use_raw_name
 )
@@ -355,3 +321,4 @@ const
     }
     return nullptr;
 }
+

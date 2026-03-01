@@ -38,6 +38,8 @@ namespace stride::ast
 
         virtual void validate() {}
 
+        virtual void resolve_types() = 0;
+
         [[nodiscard]]
         std::shared_ptr<SourceFile> get_source() const
         {

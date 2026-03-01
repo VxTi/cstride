@@ -50,6 +50,7 @@ namespace stride::ast
     {
         int _flags;
 
+
     public:
         IAstType(
             const SourceFragment& source,

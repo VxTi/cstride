@@ -331,12 +331,6 @@ namespace stride::ast
             return this->_symbol.name;
         }
 
-        [[nodiscard]]
-        const std::string& get_internal_name() const
-        {
-            return this->_symbol.internal_name;
-        }
-
         std::string to_string() override;
 
         llvm::Value* codegen(

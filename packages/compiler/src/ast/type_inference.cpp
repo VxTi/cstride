@@ -96,18 +96,9 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     const AstFunctionCall* fn_call)
 {
     const auto& context = fn_call->get_context();
-    // First steps, if the function call references a "normal" function, e.g., "fn <some name>",
-    // then we can simply use
-    if (const auto fn_def = context->get_function_definition_internalized(
-            fn_call->get_internal_name());
-        fn_def.has_value())
-    {
-        return fn_def.value()->get_type()->get_return_type()->clone_ty();
-    }
-
-    // It could be an extern function, in which case the function name is just as-is
-    if (const auto fn_def = context->get_function_definition_internalized(
-            fn_call->get_function_name());
+    if (const auto fn_def = context->get_function_definition(
+            fn_call->get_function_name(),
+            fn_call->get_type());
         fn_def.has_value())
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();
@@ -118,12 +109,12 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
         fn_call->get_function_name()))
     {
         // Simple extraction. it's already referencing a 'real' function.
-        if (const auto callable = dynamic_cast<CallableDef*>(definition))
+        if (const auto callable = dynamic_cast<FunctionDefinition*>(definition))
         {
             return callable->get_type()->get_return_type()->clone_ty();
         }
         // In case the symbol has a lambda function as value, we'll need to extract it here
-        if (const auto field_fn_like_def = dynamic_cast<FieldDef*>(definition))
+        if (const auto field_fn_like_def = dynamic_cast<FieldDefinition*>(definition))
         {
             if (const auto field_fn_type =
                 cast_type<AstFunctionType*>(field_fn_like_def->get_type()))
@@ -420,7 +411,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
                 identifier->get_source_fragment());
         }
 
-        if (const auto callable = dynamic_cast<CallableDef*>(reference_sym))
+        if (const auto callable = dynamic_cast<FunctionDefinition*>(reference_sym))
         {
             std::vector<std::unique_ptr<IAstType>> param_types;
             for (const auto& param :
@@ -437,7 +428,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
             );
         }
 
-        if (const auto field = dynamic_cast<FieldDef*>(reference_sym))
+        if (const auto field = dynamic_cast<FieldDefinition*>(reference_sym))
         {
             return field->get_type()->clone_ty();
         }

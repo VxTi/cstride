@@ -60,20 +60,12 @@ llvm::Value* AstModule::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
-    if (!this->_body)
-    {
-        return nullptr;
-    }
-
     return this->_body->codegen(module, builder);
 }
 
 void AstModule::validate()
 {
-    if (this->_body != nullptr)
-    {
-        this->_body->validate();
-    }
+    this->_body->validate();
 }
 
 void AstModule::resolve_forward_references(
@@ -81,7 +73,7 @@ void AstModule::resolve_forward_references(
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
-    if (!this->_body)
+    if (this->_body != nullptr)
     {
         return;
     }

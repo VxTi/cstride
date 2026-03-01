@@ -20,7 +20,7 @@ bool ParsingContext::is_struct_type_defined(const std::string& struct_name) cons
         cast_type<AstStructType*>(type_def.value()->get_type()) != nullptr;
 }
 
-std::optional<TypeDef*> ParsingContext::get_type_definition(const std::string& name) const
+std::optional<TypeDefinition*> ParsingContext::get_type_definition(const std::string& name) const
 {
     auto current = this;
 
@@ -35,7 +35,7 @@ std::optional<TypeDef*> ParsingContext::get_type_definition(const std::string& n
 
         for (const auto& symbol_definition : current->_symbols)
         {
-            if (auto* type_definition = dynamic_cast<TypeDef*>(symbol_definition.get()))
+            if (auto* type_definition = dynamic_cast<TypeDefinition*>(symbol_definition.get()))
             {
                 if (type_definition->get_internal_symbol_name() == name)
                 {
@@ -129,5 +129,5 @@ void ParsingContext::define_type(const Symbol& type_name, std::unique_ptr<IAstTy
         );
     }
 
-    root_context._symbols.push_back(std::make_unique<TypeDef>(type_name, std::move(type)));
+    root_context._symbols.push_back(std::make_unique<TypeDefinition>(type_name, std::move(type)));
 }
