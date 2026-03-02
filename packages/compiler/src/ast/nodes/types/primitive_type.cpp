@@ -90,7 +90,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::INT8,
             /* bit_count = */
             1 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_INT16:
@@ -101,7 +102,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::INT16,
             /* bit_count = */
             2 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_INT32:
@@ -112,7 +114,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::INT32,
             /* bit_count = */
             4 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_INT64:
@@ -145,7 +148,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::UINT16,
             /* bit_count = */
             2 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_UINT32:
@@ -178,7 +182,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::FLOAT32,
             /* bit_count = */
             4 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_FLOAT64:
@@ -189,7 +194,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::FLOAT64,
             /* bit_count = */
             8 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_BOOL:
@@ -200,7 +206,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::BOOL,
             /* bit_count = */
             1,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_CHAR:
@@ -211,7 +218,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::CHAR,
             /* bit_count = */
             1 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_STRING:
@@ -222,7 +230,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::STRING,
             /* bit_count = */
             1 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_VOID:
@@ -233,7 +242,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             PrimitiveType::VOID,
             /* bit_count = */
             1 * BITS_PER_BYTE,
-            context_type_flags);
+            context_type_flags
+        );
     }
     break;
     default:
@@ -245,9 +255,11 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
 
     set.skip(offset + 1);
 
-    return parse_type_metadata(std::move(result.value()),
-                               set,
-                               context_type_flags);
+    return parse_type_metadata(
+        std::move(result.value()),
+        set,
+        context_type_flags
+    );
 }
 
 bool AstPrimitiveType::equals(IAstType& other)

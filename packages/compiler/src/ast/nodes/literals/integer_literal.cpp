@@ -81,11 +81,13 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
 
 llvm::Value* AstIntLiteral::codegen(
     llvm::Module* module,
-    llvm::IRBuilderBase* builder)
+    llvm::IRBuilderBase* builder
+)
 {
     return llvm::ConstantInt::get(
         module->getContext(),
-        llvm::APInt(this->bit_count(), this->value(), this->is_signed()));
+        llvm::APInt(this->bit_count(), this->value(), this->is_signed())
+    );
 }
 
 std::unique_ptr<IAstNode> AstIntLiteral::clone()
@@ -95,11 +97,11 @@ std::unique_ptr<IAstNode> AstIntLiteral::clone()
         this->get_context(),
         this->value(),
         this->bit_count(),
-        this->_flags
+        this->get_flags()
     );
 }
 
 std::string AstIntLiteral::to_string()
 {
-    return std::format("IntLiteral({})", value());
+    return std::format("IntLiteral({} ({} bit))", value(), bit_count());
 }

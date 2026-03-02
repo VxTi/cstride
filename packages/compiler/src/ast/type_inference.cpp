@@ -35,7 +35,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(AstLiteral*
             fp_lit->get_source_fragment(),
             context,
             type,
-            fp_lit->bit_count());
+            fp_lit->bit_count()
+        );
     }
 
     if (const auto* int_lit = cast_expr<AstIntLiteral*>(literal))
@@ -54,7 +55,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(AstLiteral*
             context,
             type,
             int_lit->bit_count(),
-            int_lit->get_flags());
+            int_lit->get_flags()
+        );
     }
 
     if (const auto* char_lit = cast_expr<AstCharLiteral*>(literal))
@@ -159,8 +161,8 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(const AstUnaryOp* ope
     const auto& context = operation->get_context();
     auto type = infer_expression_type(&operation->get_operand());
 
-    if (const auto op_type = operation->get_op_type(); op_type ==
-        UnaryOpType::ADDRESS_OF)
+    if (const auto op_type = operation->get_op_type();
+        op_type == UnaryOpType::ADDRESS_OF)
     {
         const auto flags = type->get_flags() | SRFLAG_TYPE_PTR;
         if (const auto* prim = cast_type<AstPrimitiveType*>(type.get()))
@@ -170,7 +172,8 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(const AstUnaryOp* ope
                 context,
                 prim->get_type(),
                 prim->bit_count(),
-                flags);
+                flags
+            );
         }
         if (const auto* named = cast_type<AstNamedType*>(type.get()))
         {
@@ -189,28 +192,11 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(const AstUnaryOp* ope
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 "Cannot dereference non-pointer type",
-                operation->get_source_fragment());
+                operation->get_source_fragment()
+            );
         }
 
-        const auto flags = type->get_flags() & ~SRFLAG_TYPE_PTR;
-
-        if (const auto* prim = cast_type<AstPrimitiveType*>(type.get()))
-        {
-            return std::make_unique<AstPrimitiveType>(
-                prim->get_source_fragment(),
-                context,
-                prim->get_type(),
-                prim->bit_count(),
-                flags);
-        }
-        if (const auto* named = cast_type<AstNamedType*>(type.get()))
-        {
-            return std::make_unique<AstNamedType>(
-                named->get_source_fragment(),
-                context,
-                named->get_name(),
-                flags);
-        }
+        return type->clone_ty();
     }
     else if (op_type == UnaryOpType::LOGICAL_NOT)
     {
@@ -461,7 +447,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
 
     if (const auto* operation = cast_expr<AstVariableDeclaration*>(expr))
     {
-        const auto variable_explicit_type = operation->get_variable_type();
+        const auto annotated_type = operation->get_annotated_type();
         const auto value_type = infer_expression_type(
             operation->get_initial_value().get(),
             recursion_guard
@@ -469,18 +455,30 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
 
         // Both the expression type and the declared type are the same (e.g., let var: int32 = 10)
         // so we can just return the declared type.
-        if (variable_explicit_type->equals(*value_type))
+        if (annotated_type->equals(*value_type))
         {
-            return variable_explicit_type->clone_ty();
+            return annotated_type->clone_ty();
         }
 
-        if (const auto unknown_type = cast_type<AstPrimitiveType*>(variable_explicit_type);
+        if (const auto unknown_type = cast_type<AstPrimitiveType*>(annotated_type);
             unknown_type && unknown_type->get_type() == PrimitiveType::UNKNOWN)
         {
             return value_type->clone_ty();
         }
 
-        return get_dominant_field_type(variable_explicit_type, value_type.get());
+        if (!annotated_type->is_assignable_to(value_type.get()))
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Type mismatch in variable declaration: cannot assign value of type '{}' to variable of type '{}'",
+                    value_type->get_type_name(),
+                    annotated_type->get_type_name()
+                ),
+                operation->get_source_fragment()
+            );
+        }
+        return get_dominant_field_type(annotated_type, value_type.get());
     }
 
     if (const auto* fn_call = cast_expr<AstFunctionCall*>(expr))

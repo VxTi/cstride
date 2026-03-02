@@ -302,15 +302,13 @@ std::optional<AstStructType*> stride::ast::get_struct_type_from_type(IAstType* t
 
 std::unique_ptr<IAstType> stride::ast::make_unknown_type(
     const std::shared_ptr<ParsingContext>& context,
-    const TokenSet& set,
-    int flags
+    const TokenSet& set
 )
 {
     return std::make_unique<AstPrimitiveType>(
         set.peek_next().get_source_fragment(),
         context,
         PrimitiveType::UNKNOWN,
-        64,
-        flags
+        64
     );
 }

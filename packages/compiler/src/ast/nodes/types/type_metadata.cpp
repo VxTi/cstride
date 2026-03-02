@@ -31,7 +31,8 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
                 src_pos.length + offset),
             base_type->get_context(),
             std::move(base_type),
-            0);
+            0
+        );
     }
 
     // If the preceding token is a question mark, the type is determined

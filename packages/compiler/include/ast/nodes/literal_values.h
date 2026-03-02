@@ -125,11 +125,12 @@ namespace stride::ast
             const short bit_count,
             const int flags = SRFLAG_TYPE_INT_SIGNED
         ) :
-            IAstLiteralBase(source,
-                            context,
-                            LiteralType::INTEGER,
-                            value,
-                            bit_count),
+            IAstLiteralBase(
+                source,
+                context,
+                LiteralType::INTEGER,
+                value,
+                bit_count),
             _flags(flags) {}
 
         [[nodiscard]]
