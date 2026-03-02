@@ -339,7 +339,10 @@ namespace stride::ast
         /// Do note that the internal name is not the name that you would use in
         /// source code, but rather the mangled name used for code generation.
         [[nodiscard]]
-        bool is_function_defined_globally(const std::string& internal_function_name) const;
+        bool is_function_defined_globally(
+            const std::string& function_name,
+            const AstFunctionType* function_type
+        ) const;
 
         [[nodiscard]]
         std::string get_name() const

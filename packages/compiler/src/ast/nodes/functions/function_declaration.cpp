@@ -86,7 +86,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
-    if ((function_flags & SRFLAG_FN_DEF_EXTERN) == 0)
+    /*if ((function_flags & SRFLAG_FN_DEF_EXTERN) == 0)
     {
         std::vector<IAstType*> parameter_types;
         parameter_types.reserve(parameters.size());
@@ -101,7 +101,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
             { fn_name },
             parameter_types
         );
-    }
+    }*/
 
     std::unique_ptr<AstBlock> body = nullptr;
 
@@ -588,7 +588,7 @@ void IAstFunction::validate()
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Function '{}' has return type 'void' and cannot return a value.",
-                        this->get_name()),
+                        this->get_function_name()),
                     return_stmt->get_source_fragment());
             }
         }
@@ -603,7 +603,7 @@ void IAstFunction::validate()
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' returns a struct type, but no return statement is present.",
-                    this->get_name()),
+                    this->get_function_name()),
                 this->get_source_fragment());
         }
 
@@ -613,7 +613,7 @@ void IAstFunction::validate()
                 "Function '{}' is missing a return statement.",
                 this->is_anonymous()
                 ? "<anonymous function>"
-                : this->get_name()),
+                : this->get_function_name()),
             this->get_source_fragment());
     }
 
@@ -644,7 +644,7 @@ void IAstFunction::validate()
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' expected a return type of '{}', but received '{}'.",
-                    this->is_anonymous() ? "<anonymous function>" : this->get_name(),
+                    this->is_anonymous() ? "<anonymous function>" : this->get_function_name(),
                     this->get_return_type()->to_string(),
                     ret_expr->get_type()->to_string()),
                 { error_fragment }
@@ -791,7 +791,7 @@ llvm::Value* IAstFunction::codegen(
             {
                 throw parsing_error(
                     ErrorType::COMPILATION_ERROR,
-                    "Function " + this->get_name() + " missing return path.",
+                    "Function " + this->get_function_name() + " missing return path.",
                     this->get_source_fragment()
                 );
             }
@@ -803,7 +803,7 @@ llvm::Value* IAstFunction::codegen(
         function->print(llvm::errs(), nullptr);
         // Print IR to console to see what's wrong
         throw std::runtime_error(
-            "LLVM Function Verification Failed for: " + this->get_name());
+            "LLVM Function Verification Failed for: " + this->get_function_name());
     }
 
     // Restore the previous insert point for nested lambda generation
@@ -998,7 +998,7 @@ void IAstFunction::resolve_forward_references(
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
-            std::format("Failed to resolve return type for function '{}'", this->get_name()),
+            std::format("Failed to resolve return type for function '{}'", this->get_function_name()),
             this->get_return_type()->get_source_fragment()
         );
     }
@@ -1077,7 +1077,7 @@ std::string AstFunctionDeclaration::to_string()
 
     return std::format(
         "FunctionDeclaration(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
-        this->get_name(),
+        this->get_function_name(),
         this->get_internal_name(),
         params,
         body_str,

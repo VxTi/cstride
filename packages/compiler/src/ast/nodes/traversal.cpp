@@ -99,12 +99,13 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstFunction* node)
         node->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
     }
 
-    // Traverse the function body
-    visit(visitor, node->get_body());
 
     // Visit the function expression itself last (post-order), so its type can be inferred
     // after all body expressions have been visited.
     visitor->accept(node);
+
+    // Traverse the function body
+    visit(visitor, node->get_body());
 }
 
 void AstNodeTraverser::visit(IVisitor* visitor, AstConditionalStatement* node)

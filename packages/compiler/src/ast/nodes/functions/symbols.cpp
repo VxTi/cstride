@@ -18,8 +18,8 @@ Symbol stride::ast::resolve_internal_function_name(
     const SymbolNameSegments& function_name_segments,
     const std::vector<IAstType*>& parameter_types)
 {
-    if (function_name_segments.size() == 1 && function_name_segments.at(0) ==
-        MAIN_FN_NAME)
+    if (function_name_segments.size() == 1 &&
+        function_name_segments.at(0) == MAIN_FN_NAME)
     {
         return Symbol(position, MAIN_FN_NAME);
     }
@@ -40,7 +40,8 @@ Symbol stride::ast::resolve_internal_function_name(
         function_name,
         std::format("{}${:x}",
                     function_name,
-                    std::hash<std::string>{}(params))
+                    std::hash<std::string>{}(params)
+        )
     );
 }
 

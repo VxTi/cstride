@@ -94,7 +94,7 @@ namespace stride::ast
 
 
         [[nodiscard]]
-        const std::string& get_name() const
+        const std::string& get_function_name() const
         {
             return this->_symbol.name;
         }
