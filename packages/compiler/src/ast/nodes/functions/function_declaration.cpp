@@ -664,13 +664,13 @@ llvm::Value* IAstFunction::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Function* function = module->getFunction(this->get_internal_name());
+    llvm::Function* function = module->getFunction(this->get_scoped_function_name());
     if (!function)
     {
         module->print(llvm::errs(), nullptr);
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
-            "Function symbol missing: " + this->get_internal_name(),
+            "Function symbol missing: " + this->get_scoped_function_name(),
             this->get_source_fragment()
         );
     }
@@ -982,7 +982,7 @@ void IAstFunction::resolve_forward_references(
     llvm::IRBuilderBase* builder
 )
 {
-    const auto& function_name = this->get_internal_name();
+    const auto& function_name = this->get_scoped_function_name();
 
     // Avoid re-registering if already declared (e.g. called multiple times)
     if (module->getFunction(function_name))
@@ -1076,7 +1076,7 @@ std::string AstFunctionDeclaration::to_string()
     return std::format(
         "FunctionDeclaration(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
         this->get_function_name(),
-        this->get_internal_name(),
+        this->get_scoped_function_name(),
         params,
         body_str,
         this->is_extern() ? " (extern)" : "",

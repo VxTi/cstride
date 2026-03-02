@@ -152,10 +152,10 @@ llvm::Value* AstFunctionCall::codegen(
     llvm::Function* callee = nullptr;
 
     if (const auto definition =
-            this->get_context()->get_function_definition(this->get_internal_name(), this->get_argument_types());
+            this->get_context()->get_function_definition(this->get_scoped_function_name(), this->get_argument_types());
         definition.has_value())
     {
-        callee = module->getFunction(this->get_internal_name());
+        callee = module->getFunction(this->get_scoped_function_name());
     }
 
     // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
@@ -247,9 +247,8 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
 {
     // Variables are stored by their declaration name, not with function signatures
     // So we lookup using the raw function name only
-    if (const auto* var_def = this->get_context()->lookup_variable(
-        this->get_function_name(),
-        true))
+    if (const auto* var_def =
+        this->get_context()->lookup_variable(this->get_scoped_function_name(), true))
     {
         if (const auto* fn_type = cast_type<AstFunctionType*>(var_def->get_type()))
         {

@@ -12,6 +12,8 @@
 #include "ast/nodes/while_loop.h"
 #include "ast/symbols.h"
 
+#include <ranges>
+
 using namespace stride::ast;
 
 void AstNodeTraverser::visit(IVisitor* visitor, const AstBlock* node)
@@ -62,11 +64,11 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstExpression* node)
     else if (const auto* array_accessor = dynamic_cast<AstArrayMemberAccessor*>(node))
     {
         visit(visitor, array_accessor->get_array_identifier());
-        visit(visitor, const_cast<IAstExpression*>(array_accessor->get_index()));
+        visit(visitor, array_accessor->get_index());
     }
     else if (const auto* struct_init = dynamic_cast<AstStructInitializer*>(node))
     {
-        for (const auto& [name, val] : struct_init->get_initializers())
+        for (const auto& val : struct_init->get_initializers() | std::views::values)
             visit(visitor, val.get());
     }
     else if (const auto* tuple_init = dynamic_cast<AstTupleInitializer*>(node))
@@ -100,11 +102,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstFunction* node)
     }
 
 
-    // Visit the function expression itself last (post-order), so its type can be inferred
-    // after all body expressions have been visited.
     visitor->accept(node);
-
-    // Traverse the function body
     visit(visitor, node->get_body());
 }
 

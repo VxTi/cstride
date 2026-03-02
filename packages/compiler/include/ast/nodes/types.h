@@ -512,7 +512,8 @@ namespace stride::ast
 
     std::unique_ptr<IAstType> make_unknown_type(
         const std::shared_ptr<ParsingContext>& context,
-        const TokenSet& set
+        const TokenSet& set,
+        int flags
     );
 
 } // namespace stride::ast

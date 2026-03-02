@@ -99,7 +99,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const Ast
     const auto& context = fn_call->get_context();
 
     if (const auto fn_def =
-            context->get_function_definition(fn_call->get_internal_name(), fn_call->get_argument_types());
+            context->get_function_definition(fn_call->get_scoped_function_name(), fn_call->get_argument_types());
         fn_def.has_value())
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();
@@ -475,7 +475,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         }
 
         if (const auto unknown_type = cast_type<AstPrimitiveType*>(variable_explicit_type);
-            unknown_type->get_type() == PrimitiveType::UNKNOWN)
+            unknown_type && unknown_type->get_type() == PrimitiveType::UNKNOWN)
         {
             return value_type->clone_ty();
         }

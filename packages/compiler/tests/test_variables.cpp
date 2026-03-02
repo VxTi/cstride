@@ -8,7 +8,7 @@ TEST(Variables, BasicDeclarations)
 {
     const std::string code = R"(
         fn main(): void {
-            const pi: float64 = 3.14159;
+            const pi: float64 = 3.14159D;
             let x: int32 = 10;
             x = 20;
         }
@@ -19,6 +19,8 @@ TEST(Variables, BasicDeclarations)
 TEST(Variables, LoopsAndMut)
 {
     const std::string code = R"(
+        extern fn printf(in: string, ...): void;
+
         fn main(): void {
             // Using let in a loop
             for (let i: int32 = 0; i < 10; i++) {
@@ -37,10 +39,10 @@ TEST(Variables, IntegerTypes)
             let b: int16 = 0;
             let c: int32 = 0;
             let d: int64 = 0;
-            let e: u8 = 0;
-            let f: u16 = 0;
-            let g: u32 = 0;
-            let h: u64 = 0;
+            let e: uint8 = 0;
+            let f: uint16 = 0;
+            let g: uint32 = 0;
+            let h: uint64 = 0;
         }
     )";
     assert_parses(code);
