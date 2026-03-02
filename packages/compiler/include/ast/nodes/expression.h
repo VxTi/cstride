@@ -329,6 +329,21 @@ namespace stride::ast
         }
 
         [[nodiscard]]
+        std::vector<std::unique_ptr<IAstType>> get_argument_types() const
+        {
+            if (this->_arguments.empty())
+                return {};
+
+            std::vector<std::unique_ptr<IAstType>> param_types;
+            param_types.reserve(this->_arguments.size());
+            for (const auto& arg : this->_arguments)
+            {
+                param_types.push_back(arg->get_type()->clone_ty());
+            }
+            return param_types;
+        }
+
+        [[nodiscard]]
         const std::string& get_function_name() const
         {
             return this->_symbol.name;

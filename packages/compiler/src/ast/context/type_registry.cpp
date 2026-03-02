@@ -84,8 +84,7 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
             return std::nullopt;
         }
 
-        if (const auto struct_ty = cast_type<AstStructType
-            *>(reference_type_def.value()->get_type()))
+        if (const auto struct_ty = cast_type<AstStructType*>(reference_type_def.value()->get_type()))
         {
             return struct_ty;
         }

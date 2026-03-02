@@ -97,14 +97,9 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const Ast
 {
     /// --- Basic function lookup, find based on parameter signature (ignoring return type)
     const auto& context = fn_call->get_context();
-    std::vector<std::unique_ptr<IAstType>> param_types;
-    param_types.reserve(fn_call->get_arguments().size());
-    for (const auto& arg : fn_call->get_arguments())
-    {
-        param_types.push_back(arg->get_type()->clone_ty());
-    }
 
-    if (const auto fn_def = context->get_function_definition(fn_call->get_internal_name(), param_types);
+    if (const auto fn_def =
+            context->get_function_definition(fn_call->get_internal_name(), fn_call->get_argument_types());
         fn_def.has_value())
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();

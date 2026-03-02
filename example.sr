@@ -41,6 +41,7 @@ fn e_to_the_x(x: float64): float64 {
  * - The significant speed : )
  */
 fn main(): void {
+    printf("Hello???");
     const pow: float64 = 3.5D;
 
     const start: uint64 = system_time_ns();

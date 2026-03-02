@@ -959,7 +959,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_lambda_fn_expression(
         cloned_params.push_back(param->get_type()->clone_ty());
     }
 
-
     return std::make_unique<AstLambdaFunctionExpression>(
         context,
         symbol_name,
