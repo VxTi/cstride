@@ -51,8 +51,6 @@ namespace stride::ast
 
         void validate() override;
 
-        void visit(IVisitor* visitor) override;
-
         bool is_reducible() override;
 
         std::optional<std::unique_ptr<IAstNode>> reduce() override;

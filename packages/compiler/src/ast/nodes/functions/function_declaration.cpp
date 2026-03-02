@@ -115,7 +115,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         body = parse_block(function_context, set);
     }
 
-    return std::make_unique<AstFunctionDeclaration>(
+    auto decl = std::make_unique<AstFunctionDeclaration>(
         function_context,
         sym_function_name,
         std::move(parameters),
@@ -123,6 +123,25 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         std::move(return_type),
         function_flags
     );
+
+    // Register the function's type in the context immediately after parsing so that
+    // forward references and out-of-order calls are resolvable during type inference.
+    std::vector<std::unique_ptr<IAstType>> param_types;
+    param_types.reserve(decl->get_parameters_ref().size());
+    for (const auto& param : decl->get_parameters_ref())
+        param_types.push_back(param->get_type()->clone_ty());
+
+    context->define_function(
+        sym_function_name,
+        std::make_unique<AstFunctionType>(
+            sym_function_name.symbol_position,
+            context,
+            std::move(param_types),
+            decl->get_return_type()->clone_ty()
+        )
+    );
+
+    return decl;
 }
 
 void stride::ast::parse_function_parameters(
@@ -660,23 +679,6 @@ void IAstFunction::validate()
     // 3. All code paths return a value (if not void)
 }
 
-void IAstFunction::resolve_types()
-{
-    this->_body->resolve_types();
-    this->_type = infer_expression_type(this);
-
-    for (const auto& param : this->_parameters)
-    {
-        const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
-        this->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
-    }
-
-    this->get_context()->define_function(
-        this->_symbol,
-        // Type is now known
-        this->_type->clone_as<AstFunctionType>()
-    );
-}
 
 llvm::Value* IAstFunction::codegen(
     llvm::Module* module,

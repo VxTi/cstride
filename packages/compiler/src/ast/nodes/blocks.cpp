@@ -153,14 +153,6 @@ void AstBlock::validate()
     }
 }
 
-void AstBlock::resolve_types()
-{
-    for (const auto& child : this->_children)
-    {
-        child->resolve_types();
-    }
-}
-
 std::unique_ptr<IAstNode> AstBlock::clone()
 {
     std::vector<std::unique_ptr<IAstNode>> cloned_children;

@@ -160,20 +160,6 @@ void AstForLoop::validate()
     this->_body->validate();
 }
 
-void AstForLoop::resolve_types()
-{
-    if (this->_initializer)
-        this->_initializer->resolve_types();
-
-    if (this->_condition)
-        this->_condition->resolve_types();
-
-    if (this->_incrementor)
-        this->_incrementor->resolve_types();
-
-    this->_body->resolve_types();
-}
-
 std::unique_ptr<IAstNode> AstForLoop::clone()
 {
     return std::make_unique<AstForLoop>(

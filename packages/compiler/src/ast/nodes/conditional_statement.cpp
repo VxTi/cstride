@@ -220,16 +220,6 @@ void AstConditionalStatement::validate()
         this->_else_body->validate();
 }
 
-void AstConditionalStatement::visit(IVisitor* visitor)
-{
-    this->_condition->resolve_types();
-
-    this->_body->resolve_types();
-
-    if (this->_else_body != nullptr)
-        this->_else_body->resolve_types();
-}
-
 
 std::unique_ptr<IAstNode> AstConditionalStatement::clone()
 {

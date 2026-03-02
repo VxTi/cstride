@@ -281,11 +281,6 @@ void append_to_global_ctors(
     );
 }
 
-void AstVariableDeclaration::resolve_types()
-{
-    this->_initial_value->resolve_types();
-    this->get_context()->define_variable(this->_symbol, this->_initial_value->get_type()->clone_ty());
-}
 
 void AstVariableDeclaration::resolve_forward_references(
     ParsingContext* context,

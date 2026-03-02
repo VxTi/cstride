@@ -76,12 +76,6 @@ void AstReturnStatement::validate()
         this->get_return_expr()->validate();
 }
 
-void AstReturnStatement::resolve_types()
-{
-    if (this->_value)
-        this->_value->resolve_types();
-}
-
 std::string AstReturnStatement::to_string()
 {
     return std::format("Return(value: {})",
