@@ -73,8 +73,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         // Note that leaving out the type requires you to initialize it.
         set.next();
         value = parse_inline_expression(context, set);
-        // We don't know the type yet, as this is inferred in the validation step.
-        variable_type = make_unknown_type(context, set);
     }
     else
     {
@@ -119,7 +117,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
     }
 
     const auto& ref_tok_pos = reference_token.get_source_fragment();
-    const auto& var_type_pos = variable_type->get_source_fragment();
+    const auto& var_type_pos = variable_type ? variable_type->get_source_fragment() : value->get_source_fragment();
     const auto symbol_position = SourceFragment(
         ref_tok_pos.source,
         ref_tok_pos.offset,
@@ -137,8 +135,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         variable_name,
         internal_name
     );
-
-    variable_type->set_flags(flags);
 
     return std::make_unique<AstVariableDeclaration>(
         context,
@@ -173,16 +169,10 @@ void AstVariableDeclaration::validate()
 {
     this->_initial_value->validate();
 
-    if (this->_variable_type->is_unknown() && !this->_initial_value)
-    {
-        throw parsing_error(
-            ErrorType::SYNTAX_ERROR,
-            "Variable declaration must have a type or an initializer",
-            this->get_source_fragment()
-        );
-    }
+    if (!this->_annotated_type.has_value())
+        return; // No more validation needed; initial value is already validated.
 
-    const auto annotated_type = this->get_annotated_type();
+    const auto annotated_type = this->get_annotated_type().value();
 
     if (const auto value_type = this->get_initial_value()->get_type();
         !annotated_type->equals(*value_type))
@@ -197,8 +187,7 @@ void AstVariableDeclaration::validate()
 
             const std::vector references = {
                 ErrorSourceReference(annotated_type->to_string(), this->get_source_fragment()),
-                ErrorSourceReference(value_type->to_string(),
-                                     this->get_initial_value()->get_source_fragment())
+                ErrorSourceReference(value_type->to_string(), this->get_initial_value()->get_source_fragment())
             };
 
             throw parsing_error(
@@ -293,12 +282,16 @@ void AstVariableDeclaration::resolve_forward_references(
 {
     this->_initial_value->resolve_forward_references(context, module, builder);
 
-    if (!this->get_annotated_type()->is_global())
+    if (this->has_annotated_type() && !this->get_annotated_type().value()->is_global())
     {
         return;
     }
 
-    llvm::Type* var_type = type_to_llvm_type(this->get_annotated_type(), module);
+    IAstType* type = this->has_annotated_type()
+        ? this->get_annotated_type().value()
+        : this->get_initial_value()->get_type();
+
+    llvm::Type* var_type = type_to_llvm_type(type, module);
     if (!var_type)
     {
         return;
@@ -316,7 +309,7 @@ void AstVariableDeclaration::resolve_forward_references(
     new llvm::GlobalVariable(
         *module,
         var_type,
-        !this->get_annotated_type()->is_mutable(),
+        !type->is_mutable(),
         llvm::GlobalValue::ExternalLinkage,
         default_init,
         this->get_internal_name()
@@ -355,14 +348,10 @@ void global_var_declaration_codegen(
     // Re-generate the initial value inside the constructor function
     // Note: we MUST NOT call codegen on something that might have already been generated
     // if it's not designed to be called multiple times.
-    llvm::Value* dynamic_init_value = nullptr;
-    if (const auto initial_value = self->get_initial_value().get())
-    {
-        dynamic_init_value = initial_value->codegen(
-            module,
-            &tempBuilder
-        );
-    }
+    llvm::Value* dynamic_init_value = self->get_initial_value()->codegen(
+        module,
+        &tempBuilder
+    );
 
     // IAstFunction::codegen (e.g. a lambda) redirects the builder's insert point into its
     // own function body. Restore it to the init function's entry block before emitting the
@@ -386,7 +375,7 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
     llvm::Module* module,
     llvm::Type* var_type)
 {
-    if (!self->get_annotated_type()->is_global())
+    if (self->get_context()->get_context_type() != definition::ContextType::GLOBAL)
     {
         return std::nullopt;
     }
@@ -419,9 +408,22 @@ llvm::Value* AstVariableDeclaration::codegen(
     llvm::IRBuilderBase* builder
 )
 {
+    IAstType* type = this->has_annotated_type()
+        ? this->get_annotated_type().value()
+        : this->get_initial_value()->get_type();
+
+    if (!type)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Variable declaration must have a type or an initializer",
+            this->get_source_fragment()
+        );
+    }
+
     // Get the LLVM type for the variable
     llvm::Type* variable_ty = type_to_llvm_type(
-        this->get_annotated_type(),
+        type,
         module
     );
 
@@ -442,8 +444,8 @@ llvm::Value* AstVariableDeclaration::codegen(
         llvm::Value* init_value = nullptr;
         // Generate init value code only if it's a literal/constant,
         // otherwise dynamic init handles it (see global_var_declaration_codegen)
-        if (const auto initial_value = this->get_initial_value().get();
-            initial_value != nullptr && is_literal_ast_node(initial_value))
+        if (const auto initial_value = this->get_initial_value();
+            is_literal_ast_node(initial_value))
         {
             init_value = initial_value->codegen(
                 module,
@@ -486,14 +488,10 @@ llvm::Value* AstVariableDeclaration::codegen(
     llvm::BasicBlock* saved_block = builder->GetInsertBlock();
     const auto saved_point = builder->GetInsertPoint();
 
-    llvm::Value* init_value = nullptr;
-    if (const auto initial_value = this->get_initial_value().get())
-    {
-        init_value = initial_value->codegen(
-            module,
-            builder
-        );
-    }
+    llvm::Value* init_value = this->get_initial_value()->codegen(
+        module,
+        builder
+    );
 
     // Restore the insertion point after codegen
     if (saved_block && saved_block != builder->GetInsertBlock())
@@ -533,8 +531,8 @@ std::unique_ptr<IAstNode> AstVariableDeclaration::clone()
     return std::make_unique<AstVariableDeclaration>(
         this->get_context(),
         this->_symbol,
-        this->_variable_type ? this->_variable_type->clone_ty() : nullptr,
-        this->_initial_value ? this->_initial_value->clone_as<IAstExpression>() : nullptr,
+        this->has_annotated_type() ? this->_annotated_type.value()->clone_ty() : nullptr,
+        this->_initial_value->clone_as<IAstExpression>(),
         this->_visibility
     );
 }
@@ -545,6 +543,6 @@ std::string AstVariableDeclaration::to_string()
         "VariableDeclaration({}({}), {}, {})",
         get_variable_name(),
         get_internal_name(),
-        get_annotated_type()->to_string(),
-        this->get_initial_value() ? get_initial_value()->to_string() : "nil");
+        this->has_annotated_type() ? this->_annotated_type.value()->to_string() : "nil",
+        this->_initial_value->to_string());
 }

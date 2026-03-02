@@ -54,7 +54,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(AstLiteral*
             int_lit->get_source_fragment(),
             context,
             type,
-            int_lit->bit_count(),
             int_lit->get_flags()
         );
     }
@@ -171,7 +170,6 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(const AstUnaryOp* ope
                 prim->get_source_fragment(),
                 context,
                 prim->get_type(),
-                prim->bit_count(),
                 flags
             );
         }
@@ -215,14 +213,13 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(const AstArray* a
     if (array->get_elements().empty())
     {
         // This is one of those cases where it's impossible to deduce the type
-        // Therefore, we have an UNKNOWN type.
+        // Therefore, we have an int ptr type.
         return std::make_unique<AstPrimitiveType>(
             array->get_source_fragment(),
             array->get_context(),
-            PrimitiveType::UNKNOWN,
-            8,
-            // Always a pointer
-            0);
+            PrimitiveType::INT32,
+            SRFLAG_TYPE_PTR
+        );
     }
 
     return infer_expression_type(array->get_elements().front().get());
@@ -434,9 +431,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         return std::make_unique<AstPrimitiveType>(
             expr->get_source_fragment(),
             expr->get_context(),
-            PrimitiveType::BOOL,
-            1,
-            0
+            PrimitiveType::BOOL
         );
     }
 
@@ -445,40 +440,32 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         return infer_expression_type(operation->get_value(), recursion_guard);
     }
 
-    if (const auto* operation = cast_expr<AstVariableDeclaration*>(expr))
+    if (const auto* variable_declaration = cast_expr<AstVariableDeclaration*>(expr))
     {
-        const auto annotated_type = operation->get_annotated_type();
+        const auto annotated_type = variable_declaration->get_annotated_type();
         const auto value_type = infer_expression_type(
-            operation->get_initial_value().get(),
+            variable_declaration->get_initial_value(),
             recursion_guard
         );
-
-        // Both the expression type and the declared type are the same (e.g., let var: int32 = 10)
-        // so we can just return the declared type.
-        if (annotated_type->equals(*value_type))
+        if (!annotated_type.has_value() || annotated_type.value()->equals(*value_type))
         {
-            return annotated_type->clone_ty();
-        }
-
-        if (const auto unknown_type = cast_type<AstPrimitiveType*>(annotated_type);
-            unknown_type && unknown_type->get_type() == PrimitiveType::UNKNOWN)
-        {
+            value_type->set_flags(variable_declaration->get_flags());
             return value_type->clone_ty();
         }
 
-        if (!annotated_type->is_assignable_to(value_type.get()))
+        if (!annotated_type.value()->is_assignable_to(value_type.get()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Type mismatch in variable declaration: cannot assign value of type '{}' to variable of type '{}'",
                     value_type->get_type_name(),
-                    annotated_type->get_type_name()
+                    annotated_type.value()->get_type_name()
                 ),
-                operation->get_source_fragment()
+                variable_declaration->get_source_fragment()
             );
         }
-        return get_dominant_field_type(annotated_type, value_type.get());
+        return get_dominant_field_type(annotated_type.value(), value_type.get());
     }
 
     if (const auto* fn_call = cast_expr<AstFunctionCall*>(expr))
@@ -550,7 +537,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             expr->get_source_fragment(),
             expr->get_context(),
             PrimitiveType::INT8,
-            8,
             SRFLAG_TYPE_PTR
         );
     }

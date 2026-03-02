@@ -258,7 +258,6 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
                 rhs_primitive->get_source_fragment(),
                 context,
                 PrimitiveType::FLOAT64,
-                rhs_primitive->bit_count(),
                 rhs_primitive->get_flags()
             );
         }
@@ -298,17 +297,4 @@ std::optional<AstStructType*> stride::ast::get_struct_type_from_type(IAstType* t
     }
 
     return base_struct_type;
-}
-
-std::unique_ptr<IAstType> stride::ast::make_unknown_type(
-    const std::shared_ptr<ParsingContext>& context,
-    const TokenSet& set
-)
-{
-    return std::make_unique<AstPrimitiveType>(
-        set.peek_next().get_source_fragment(),
-        context,
-        PrimitiveType::UNKNOWN,
-        64
-    );
 }

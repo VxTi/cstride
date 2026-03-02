@@ -4,6 +4,8 @@ project(cstride)
 
 set(CMAKE_CXX_STANDARD 23)
 
+option(CSTRIDE_BUILD_ALL_LLVM_TARGETS "Link LLVM backends for multiple targets (enables cross-compiling)" OFF)
+
 # --- Dependencies ---
 find_package(LLVM 21.1.8 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -66,19 +68,44 @@ target_include_directories(cstride_lib PUBLIC
 # --- Linking & Definitions ---
 target_compile_definitions(cstride_lib PUBLIC ${LLVM_DEFINITIONS})
 
-# Determine architecture to link correct LLVM backend libraries for native target support
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
-    set(LLVM_NATIVE_ARCH AArch64)
+set(LLVM_BASE_COMPONENTS
+        orcjit executionengine core support
+        target targetparser
+        mc mcparser
+        runtimedyld
+        irreader
+        asmprinter
+        asmparser
+)
+
+if(CSTRIDE_BUILD_ALL_LLVM_TARGETS)
+    target_compile_definitions(cstride_lib PUBLIC CSTRIDE_ALL_TARGETS=1)
 else()
-    set(LLVM_NATIVE_ARCH X86)
+    target_compile_definitions(cstride_lib PUBLIC CSTRIDE_ALL_TARGETS=0)
+endif()
+
+if(CSTRIDE_BUILD_ALL_LLVM_TARGETS)
+    # All targets
+    set(LLVM_TARGET_COMPONENTS
+            AArch64CodeGen AArch64Desc AArch64Info AArch64AsmParser
+            X86CodeGen X86Desc X86Info X86AsmParser
+            ARMCodeGen ARMDesc ARMInfo ARMAsmParser
+            RISCVCodeGen RISCVDesc RISCVInfo RISCVAsmParser
+            WebAssemblyCodeGen WebAssemblyDesc WebAssemblyInfo WebAssemblyAsmParser
+            PowerPCCodeGen PowerPCDesc PowerPCInfo PowerPCAsmParser
+            MipsCodeGen MipsDesc MipsInfo MipsAsmParser
+    )
+else()
+    # Host-only
+    set(LLVM_TARGET_COMPONENTS
+            ${LLVM_NATIVE_ARCH}CodeGen ${LLVM_NATIVE_ARCH}Desc
+            ${LLVM_NATIVE_ARCH}Info ${LLVM_NATIVE_ARCH}AsmParser
+    )
 endif()
 
 llvm_map_components_to_libnames(LLVM_LIBS
-        orcjit executionengine core support
-        target targetparser runtimedyld irreader
-        asmprinter
-        ${LLVM_NATIVE_ARCH}CodeGen ${LLVM_NATIVE_ARCH}Desc
-        ${LLVM_NATIVE_ARCH}Info ${LLVM_NATIVE_ARCH}AsmParser
+        ${LLVM_BASE_COMPONENTS}
+        ${LLVM_TARGET_COMPONENTS}
 )
 
 target_link_libraries(cstride_lib

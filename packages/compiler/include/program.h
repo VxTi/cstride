@@ -63,12 +63,12 @@ namespace stride
 
         void optimize_ast_nodes();
 
-        void codegen(llvm::Module* module,
-                              llvm::IRBuilderBase* builder) const;
+        void codegen(llvm::Module* module, llvm::IRBuilderBase* builder) const;
 
         std::unique_ptr<llvm::Module> prepare_module(
             llvm::LLVMContext& context,
             const cli::CompilationOptions& options,
-            llvm::TargetMachine* target_machine) const;
+            llvm::TargetMachine* target_machine
+        ) const;
     };
 } // namespace stride

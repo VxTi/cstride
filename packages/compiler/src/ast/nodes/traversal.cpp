@@ -56,7 +56,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstExpression* node)
     else if (const auto* var_decl = dynamic_cast<AstVariableDeclaration*>(node))
     {
         if (var_decl->get_initial_value())
-            visit(visitor, var_decl->get_initial_value().get());
+            visit(visitor, var_decl->get_initial_value());
     }
     else if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(node))
     {

@@ -36,14 +36,11 @@ namespace stride::ast
         // If the resulting type is NIL, and the context allows for optional types,
         // we can safely ignore the type comparison.
         NIL,
-        // Reserved type for empty arrays;
-        // It's impossible to deduce the type from an empty array,
-        // as it would otherwise be done by inferring the type of its members.
-        // Therefore, we'll leave it as a special case.
-        UNKNOWN
     };
 
     std::string primitive_type_to_str(PrimitiveType type, int flags = SRFLAG_NONE);
+
+    size_t get_primitive_bit_count(PrimitiveType type);
 
     class IAstType
         : public IAstNode
@@ -135,12 +132,6 @@ namespace stride::ast
             return false;
         }
 
-        [[nodiscard]]
-        virtual bool is_unknown() const
-        {
-            return false;
-        }
-
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
@@ -152,19 +143,16 @@ namespace stride::ast
         : public IAstType
     {
         PrimitiveType _type;
-        size_t _bit_count;
 
     public:
         explicit AstPrimitiveType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const PrimitiveType type,
-            const size_t bit_count,
             const int flags = SRFLAG_NONE
         ) :
             IAstType(source, context, flags),
-            _type(type),
-            _bit_count(bit_count) {}
+            _type(type) {}
 
         ~AstPrimitiveType() override = default;
 
@@ -210,7 +198,7 @@ namespace stride::ast
         [[nodiscard]]
         size_t bit_count() const
         {
-            return this->_bit_count;
+            return get_primitive_bit_count(this->_type);
         }
 
         [[nodiscard]]
@@ -230,12 +218,6 @@ namespace stride::ast
         }
 
         bool equals(IAstType& other) override;
-
-        [[nodiscard]]
-        bool is_unknown() const override
-        {
-            return this->_type == PrimitiveType::UNKNOWN;
-        }
 
         [[nodiscard]]
         bool is_primitive() const override
@@ -526,10 +508,4 @@ namespace stride::ast
     /// will attempt to cast the type directly into a struct type.
     /// This function will never return nullptrs.
     std::optional<AstStructType*> get_struct_type_from_type(IAstType* type);
-
-    std::unique_ptr<IAstType> make_unknown_type(
-        const std::shared_ptr<ParsingContext>& context,
-        const TokenSet& set
-    );
-
 } // namespace stride::ast

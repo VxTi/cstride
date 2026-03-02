@@ -148,25 +148,19 @@ namespace stride::ast
         [[nodiscard]]
         bool is_extern() const
         {
-            return this->_flags & SRFLAG_FN_DEF_EXTERN;
+            return this->_flags & SRFLAG_FN_TYPE_EXTERN;
         }
 
         [[nodiscard]]
         bool is_variadic() const
         {
-            return this->_flags & SRFLAG_FN_DEF_VARIADIC;
-        }
-
-        [[nodiscard]]
-        bool is_mutable() const
-        {
-            return this->_flags & SRFLAG_FN_DEF_MUTABLE;
+            return this->_flags & SRFLAG_FN_TYPE_VARIADIC;
         }
 
         [[nodiscard]]
         bool is_anonymous() const
         {
-            return this->_flags & SRFLAG_FN_DEF_ANONYMOUS;
+            return this->_flags & SRFLAG_FN_TYPE_ANONYMOUS;
         }
 
         [[nodiscard]]

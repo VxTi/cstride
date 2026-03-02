@@ -42,13 +42,13 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     if (set.peek_next_eq(TokenType::KEYWORD_EXTERN))
     {
         set.next();
-        function_flags |= SRFLAG_FN_DEF_EXTERN;
+        function_flags |= SRFLAG_FN_TYPE_EXTERN;
     }
 
     if (set.peek_next_eq(TokenType::KEYWORD_ASYNC))
     {
         set.next();
-        function_flags |= SRFLAG_FN_DEF_ASYNC;
+        function_flags |= SRFLAG_FN_TYPE_ASYNC;
     }
 
     auto reference_token = set.expect(TokenType::KEYWORD_FN);
@@ -87,7 +87,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     std::unique_ptr<AstBlock> body = nullptr;
 
-    if (function_flags & SRFLAG_FN_DEF_EXTERN)
+    if (function_flags & SRFLAG_FN_TYPE_EXTERN)
     {
         set.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
         body = AstBlock::create_empty(function_context, position);
@@ -117,7 +117,7 @@ void stride::ast::parse_function_parameters(
     // If the first argument is variadic, no other parameters are allowed.
     if (set.peek_next_eq(TokenType::THREE_DOTS))
     {
-        function_flags |= SRFLAG_FN_DEF_VARIADIC;
+        function_flags |= SRFLAG_FN_TYPE_VARIADIC;
         set.next();
         return;
     }
@@ -143,7 +143,7 @@ void stride::ast::parse_function_parameters(
         // so if we encounter it, we can break out of the loop immediately.
         if (next.get_type() == TokenType::THREE_DOTS)
         {
-            function_flags |= SRFLAG_FN_DEF_VARIADIC;
+            function_flags |= SRFLAG_FN_TYPE_VARIADIC;
             set.next();
             break;
         }
@@ -377,7 +377,7 @@ void collect_free_variables(
         if (var_decl->get_initial_value())
         {
             collect_free_variables(
-                var_decl->get_initial_value().get(),
+                var_decl->get_initial_value(),
                 lambda_context,
                 outer_context,
                 captures);
@@ -894,7 +894,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_lambda_fn_expression(
     const auto reference_token = set.peek_next();
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
-    int function_flags = SRFLAG_FN_DEF_ANONYMOUS;
+    int function_flags = SRFLAG_FN_TYPE_ANONYMOUS;
     auto function_context = std::make_shared<ParsingContext>(
         context,
         ContextType::FUNCTION
