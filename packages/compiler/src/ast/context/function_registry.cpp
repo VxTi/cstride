@@ -67,12 +67,12 @@ bool FunctionDefinition::matches_signature(
 }
 
 bool FunctionDefinition::matches_signature(
-    const std::string& function_name,
+    const std::string& internal_function_name,
     const std::vector<std::unique_ptr<IAstType>>& other_parameter_types
 )
 const
 {
-    if (this->get_internal_symbol_name() != function_name)
+    if (this->get_internal_symbol_name() != internal_function_name)
         return false;
 
     const auto& self_params = this->_function_type->get_parameter_types();

@@ -5,6 +5,8 @@
 #include "ast/tokens/tokenizer.h"
 #include "files.h"
 #include "ast/nodes/blocks.h"
+#include "ast/nodes/traversal.h"
+#include "ast/nodes/type_inference_visitor.h"
 
 #include <gtest/gtest.h>
 #include <llvm/IR/IRBuilder.h>
@@ -15,15 +17,21 @@
 
 namespace stride::tests
 {
-    inline std::pair<std::unique_ptr<ast::AstBlock>, std::shared_ptr<
-                         ast::ParsingContext>>
-    parse_code_with_context(const std::string& code)
+    inline std::pair<std::unique_ptr<ast::AstBlock>, std::shared_ptr<ast::ParsingContext>> parse_code_with_context(
+        const std::string& code)
     {
         const auto source = std::make_shared<SourceFile>("test.sr", code);
         auto tokens = ast::tokenizer::tokenize(source);
         const auto context = std::make_shared<ast::ParsingContext>();
 
-        return { ast::parse_sequential(context, tokens), context };
+        auto parsed = parse_sequential(context, tokens);
+
+        ast::AstNodeTraverser traverser;
+        ast::TypeInferenceVisitor type_visitor;
+        traverser.visit(&type_visitor, parsed.get());
+        parsed->validate();
+
+        return std::make_pair(std::move(parsed), context);
     }
 
     inline std::unique_ptr<ast::AstBlock> parse_code(const std::string& code)

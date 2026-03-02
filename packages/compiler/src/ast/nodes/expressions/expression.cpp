@@ -1,7 +1,6 @@
 #include "ast/nodes/expression.h"
 
 #include "errors.h"
-#include "ast/type_inference.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token.h"

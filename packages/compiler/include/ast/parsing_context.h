@@ -164,7 +164,7 @@ namespace stride::ast
 
             [[nodiscard]]
             bool matches_signature(
-                const std::string& function_name,
+                const std::string& internal_function_name,
                 const std::vector<std::unique_ptr<IAstType>>& other_parameter_types
             ) const;
         };
