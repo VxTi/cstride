@@ -19,9 +19,12 @@ void TypeInferenceVisitor::accept(IAstExpression* expr)
     {
         // Use the initial value's type (already set by bottom-up traversal) as the
         // canonical type registered in context, which is what identifier lookups rely on.
+        const auto canonical_type = var_decl->get_initial_value()->get_type();
+        canonical_type->set_flags(var_decl->get_type()->get_flags()); // Ensure type flags are preserved
+
         var_decl->get_context()->define_variable(
             var_decl->get_symbol(),
-            var_decl->get_initial_value()->get_type()->clone_ty()
+            canonical_type->clone_ty()
         );
         return;
     }
