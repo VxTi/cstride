@@ -1,3 +1,4 @@
+#include "errors.h"
 #include "ast/casting.h"
 #include "ast/parsing_context.h"
 
@@ -108,10 +109,12 @@ void ParsingContext::define_function(
 {
     auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
 
-    if (this->is_function_defined_globally(function_name.name, function_type.get()))
+    if (this->is_function_defined_globally(function_name.internal_name, function_type.get()))
     {
-        throw std::runtime_error(
-            std::format("Function '{}' already defined globally", function_name.name)
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Function '{}' already defined globally", function_name.name),
+            function_name.symbol_position
         );
     }
 

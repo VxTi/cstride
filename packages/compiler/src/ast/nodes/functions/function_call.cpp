@@ -152,7 +152,7 @@ llvm::Value* AstFunctionCall::codegen(
     llvm::Function* callee = nullptr;
 
     if (const auto definition =
-            this->get_context()->get_function_definition(this->get_internal_name(), this->get_type());
+            this->get_context()->get_function_definition(this->get_internal_name(), this->get_argument_types());
         definition.has_value())
     {
         callee = module->getFunction(this->get_internal_name());
@@ -170,17 +170,11 @@ llvm::Value* AstFunctionCall::codegen(
     // No way to find it :(
     if (!callee)
     {
-        const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(
-            this->get_function_name());
+        const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(this->get_function_name());
         const auto suggested_alternative = suggested_alternative_symbol
             ? std::format("Did you mean '{}'?",
                           format_suggestion(suggested_alternative_symbol))
             : "";
-
-        for (const auto& fn_sym : module->getFunctionList())
-        {
-            printf("%s\n", fn_sym.getName().str().c_str());
-        }
 
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
