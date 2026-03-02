@@ -6,7 +6,7 @@
 #include "files.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/traversal.h"
-#include "ast/nodes/type_inference_visitor.h"
+#include "../include/ast/visitor.h"
 
 #include <gtest/gtest.h>
 #include <llvm/IR/IRBuilder.h>
@@ -28,6 +28,9 @@ namespace stride::tests
 
         ast::AstNodeTraverser traverser;
         ast::TypeInferenceVisitor type_visitor;
+        ast::FunctionDeclareVisitor function_declare_visitor;
+
+        traverser.visit(&function_declare_visitor, parsed.get());
         traverser.visit(&type_visitor, parsed.get());
         parsed->validate();
 

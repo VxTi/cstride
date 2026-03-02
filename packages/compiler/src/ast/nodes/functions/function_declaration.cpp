@@ -15,6 +15,7 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <iostream>
 #include <ranges>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
@@ -692,7 +693,7 @@ llvm::Value* IAstFunction::codegen(
     // Map captured variables to function arguments with __capture_ prefix
     //
     auto arg_it = function->arg_begin();
-    for (const auto& capture : this->get_captured_variables())
+    for (const auto& capture : this->_captured_variables)
     {
         if (arg_it != function->arg_end())
         {
@@ -736,9 +737,9 @@ llvm::Value* IAstFunction::codegen(
 
     // Generate Body
     llvm::Value* last_val = nullptr;
-    if (this->get_body())
+    if (this->_body)
     {
-        last_val = this->get_body()->codegen(module, builder);
+        last_val = this->_body->codegen(module, builder);
     }
 
     // Final Safety: Implicit Return
@@ -746,8 +747,8 @@ llvm::Value* IAstFunction::codegen(
     if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();
         current_bb && !current_bb->getTerminator())
     {
-        if (llvm::Type* ret_type = function->getReturnType(); ret_type->
-            isVoidTy())
+        if (llvm::Type* ret_type = function->getReturnType();
+            ret_type->isVoidTy())
         {
             builder->CreateRetVoid();
         }
@@ -770,7 +771,10 @@ llvm::Value* IAstFunction::codegen(
             {
                 throw parsing_error(
                     ErrorType::COMPILATION_ERROR,
-                    "Function " + this->get_function_name() + " missing return path.",
+                    std::format(
+                        "Function '{}' is missing a return path.",
+                        this->get_function_name()
+                    ),
                     this->get_source_fragment()
                 );
             }
