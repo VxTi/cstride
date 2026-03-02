@@ -77,7 +77,7 @@ const
 
     const auto& self_params = this->_function_type->get_parameter_types();
 
-    if ((this->get_flags() & SRFLAG_FN_DEF_VARIADIC) != 0)
+    if ((this->get_flags() & SRFLAG_FN_TYPE_VARIADIC) != 0)
     {
         if (other_parameter_types.size() < self_params.size())
             return false;

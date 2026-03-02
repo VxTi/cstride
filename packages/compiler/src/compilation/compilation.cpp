@@ -16,9 +16,17 @@ using namespace stride;
 int Program::compile(const cli::CompilationOptions& options) const
 {
     // Initialize LLVM targets
+#if CSTRIDE_ALL_TARGETS
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmParsers();
+    llvm::InitializeAllAsmPrinters();
+#else
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
+#endif
 
     auto target_triple_str = llvm::sys::getDefaultTargetTriple();
     llvm::Triple target_triple(target_triple_str);

@@ -5,6 +5,42 @@
 
 using namespace stride::ast;
 
+size_t stride::ast::get_primitive_bit_count(PrimitiveType type)
+{
+    switch (type)
+    {
+    case PrimitiveType::INT8:
+        return 8;
+    case PrimitiveType::INT16:
+        return 16;
+    case PrimitiveType::INT32:
+        return 32;
+    case PrimitiveType::INT64:
+        return 64;
+    case PrimitiveType::UINT8:
+        return 8;
+    case PrimitiveType::UINT16:
+        return 16;
+    case PrimitiveType::UINT32:
+        return 32;
+    case PrimitiveType::UINT64:
+        return 64;
+    case PrimitiveType::FLOAT32:
+        return 32;
+    case PrimitiveType::FLOAT64:
+        return 64;
+    case PrimitiveType::BOOL:
+        return 1;
+    case PrimitiveType::CHAR:
+    case PrimitiveType::STRING:
+        return 8;
+    case PrimitiveType::VOID:
+    case PrimitiveType::NIL:
+    default:
+        return 0;
+    }
+}
+
 std::string primitive_type_to_str_internal(const PrimitiveType type)
 {
     switch (type)
@@ -39,7 +75,6 @@ std::string primitive_type_to_str_internal(const PrimitiveType type)
         return "void";
     case PrimitiveType::NIL:
         return "nil";
-    case PrimitiveType::UNKNOWN:
     default:
         return "unknown";
     }
@@ -88,8 +123,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT8,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
             context_type_flags
         );
     }
@@ -100,8 +133,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT16,
-            /* bit_count = */
-            2 * BITS_PER_BYTE,
             context_type_flags
         );
     }
@@ -112,8 +143,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT32,
-            /* bit_count = */
-            4 * BITS_PER_BYTE,
             context_type_flags
         );
     }
@@ -124,8 +153,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT64,
-            /* bit_count = */
-            8 * BITS_PER_BYTE,
             context_type_flags);
     }
     break;
@@ -135,8 +162,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT8,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
             context_type_flags);
     }
     break;
@@ -146,8 +171,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT16,
-            /* bit_count = */
-            2 * BITS_PER_BYTE,
             context_type_flags
         );
     }
@@ -158,8 +181,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT32,
-            /* bit_count = */
-            4 * BITS_PER_BYTE,
             context_type_flags);
     }
     break;
@@ -169,8 +190,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT64,
-            /* bit_count = */
-            8 * BITS_PER_BYTE,
             context_type_flags);
     }
     break;
@@ -180,8 +199,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::FLOAT32,
-            /* bit_count = */
-            4 * BITS_PER_BYTE,
             context_type_flags
         );
     }
@@ -192,8 +209,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::FLOAT64,
-            /* bit_count = */
-            8 * BITS_PER_BYTE,
             context_type_flags
         );
     }
@@ -204,8 +219,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::BOOL,
-            /* bit_count = */
-            1,
             context_type_flags
         );
     }
@@ -216,8 +229,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::CHAR,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
             context_type_flags
         );
     }
@@ -228,8 +239,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::STRING,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
             context_type_flags
         );
     }
@@ -240,8 +249,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::VOID,
-            /* bit_count = */
-            1 * BITS_PER_BYTE,
             context_type_flags
         );
     }

@@ -1,5 +1,6 @@
 #include "program.h"
 
+#include "stride_runtime.h"
 #include "ast/parser.h"
 #include "ast/nodes/traversal.h"
 #include "../../include/ast/visitor.h"
@@ -122,6 +123,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     ast::TypeInferenceVisitor type_visitor;
     ast::FunctionDeclareVisitor function_declare_visitor;
 
+    runtime::register_runtime_symbols(this->get_global_context());
     traverser.visit(&function_declare_visitor, this->_root_node.get());
     traverser.visit(&type_visitor, this->_root_node.get());
     this->_root_node->resolve_forward_references(

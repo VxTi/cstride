@@ -329,19 +329,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::vector<std::unique_ptr<IAstType>> get_argument_types() const
-        {
-            if (this->_arguments.empty())
-                return {};
-
-            std::vector<std::unique_ptr<IAstType>> param_types;
-            param_types.reserve(this->_arguments.size());
-            for (const auto& arg : this->_arguments)
-            {
-                param_types.push_back(arg->get_type()->clone_ty());
-            }
-            return param_types;
-        }
+        std::vector<std::unique_ptr<IAstType>> get_argument_types() const;
 
         [[nodiscard]]
         const std::string& get_function_name() const
@@ -385,8 +373,8 @@ namespace stride::ast
     class AstVariableDeclaration
         : public IAstExpression
     {
-        const std::unique_ptr<IAstType> _variable_type;
-        const std::unique_ptr<IAstExpression> _initial_value;
+        std::optional<std::unique_ptr<IAstType>> _annotated_type;
+        std::unique_ptr<IAstExpression> _initial_value;
         const VisibilityModifier _visibility;
 
         const Symbol _symbol;
@@ -397,13 +385,13 @@ namespace stride::ast
         explicit AstVariableDeclaration(
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
-            std::unique_ptr<IAstType> variable_type,
+            std::optional<std::unique_ptr<IAstType>> variable_type,
             std::unique_ptr<IAstExpression> initial_value,
             VisibilityModifier visibility,
             const int flags = SRFLAG_NONE
         ) :
             IAstExpression(symbol.symbol_position, context),
-            _variable_type(std::move(variable_type)),
+            _annotated_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)),
             _visibility(visibility),
             _symbol(std::move(symbol)),
@@ -434,19 +422,24 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        IAstType* get_annotated_type() const
+        bool has_annotated_type() const
         {
-            if (this->_initial_value != nullptr)
-            {
-                return _initial_value->get_type();
-            }
-            return this->_variable_type.get();
+            return this->_annotated_type.has_value();
         }
 
         [[nodiscard]]
-        const std::unique_ptr<IAstExpression>& get_initial_value() const
+        std::optional<IAstType*> get_annotated_type() const
         {
-            return this->_initial_value;
+            if (this->_annotated_type.has_value())
+                return this->_annotated_type->get();
+
+            return std::nullopt;
+        }
+
+        [[nodiscard]]
+        IAstExpression* get_initial_value() const
+        {
+            return this->_initial_value.get();
         }
 
         std::string to_string() override;

@@ -11,7 +11,6 @@
 #include "ast/tokens/token_set.h"
 
 #include <format>
-#include <iostream>
 #include <sstream>
 #include <vector>
 #include <llvm/IR/Function.h>
@@ -25,7 +24,8 @@ using namespace stride::ast::definition;
 std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     const std::shared_ptr<ParsingContext>& context,
     const SymbolNameSegments& function_name_segments,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     const auto reference_token = set.peek(-1);
     auto function_parameter_set = collect_parenthesized_block(set);
@@ -73,6 +73,15 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
                 // If the next argument is a variadic argument reference, we stop parsing more arguments and mark this function call as variadic
                 if (cast_expr<AstVariadicArgReference*>(function_argument.get()))
                 {
+                    if (subset.has_next())
+                    {
+                        subset.throw_error(
+                            "Variadic argument propagation must be the last parameter in a function call"
+                        );
+                    }
+                    function_call_flags |= SRFLAG_FN_TYPE_VARIADIC;
+                    function_arg_nodes.push_back(std::move(function_argument));
+
                     break;
                 }
 
@@ -83,15 +92,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
 
     const auto& ref_pos = reference_token.get_source_fragment();
 
-    /* TODO: Fix this. Functions might not have parameters, in which case `back` returns a nullptr and segfaults here.
-     const auto& last_pos = parameter_types.back()->get_source_fragment();
-    auto position = SourceFragment(
-        set.get_source(),
-        ref_pos.offset,
-        parameter_types.empty()
-        ? ref_pos.length
-        : last_pos.offset + last_pos.length - ref_pos.offset);*/
-
+    // TODO: Fix symbol position, as this is now incorrect for scoped variables.
     return std::make_unique<AstFunctionCall>(
         context,
         resolve_internal_name(
@@ -469,6 +470,27 @@ void AstFunctionCall::validate()
     {
         arg->validate();
     }
+}
+
+std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() const
+{
+    if (this->_arguments.empty())
+        return {};
+
+    std::vector<std::unique_ptr<IAstType>> param_types;
+    param_types.reserve(this->_arguments.size());
+    for (const auto& arg : this->_arguments)
+    {
+        // The last parameter should be the variadic argument reference,
+        // which is not included in the type list, as this is dynamically expanded
+        // Additionally, this would mess with function lookup by signature
+        if (cast_expr<AstVariadicArgReference*>(arg.get()))
+        {
+            break;
+        }
+        param_types.push_back(arg->get_type()->clone_ty());
+    }
+    return param_types;
 }
 
 std::unique_ptr<IAstNode> AstFunctionCall::clone()
