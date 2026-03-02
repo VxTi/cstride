@@ -166,13 +166,9 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
     );
 }
 
-void AstVariableDeclaration::validate_expr()
+void AstVariableDeclaration::validate()
 {
     this->_initial_value->validate();
-    auto variable_type = this->_initial_value->get_type()->clone_ty();
-    variable_type->set_flags(this->_flags);
-    this->get_context()->define_variable(this->_symbol, std::move(variable_type));
-
 
     // If the variable type is inferred, we don't need to do any validation
     if (const auto unknown_ty = cast_type<AstPrimitiveType*>(this->_variable_type.get());
@@ -283,6 +279,12 @@ void append_to_global_ctors(
         llvm::ConstantArray::get(array_type, ctor_list),
         "llvm.global_ctors"
     );
+}
+
+void AstVariableDeclaration::resolve_types()
+{
+    this->_initial_value->resolve_types();
+    this->get_context()->define_variable(this->_symbol, this->_initial_value->get_type()->clone_ty());
 }
 
 void AstVariableDeclaration::resolve_forward_references(

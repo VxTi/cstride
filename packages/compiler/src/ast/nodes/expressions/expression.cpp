@@ -12,16 +12,6 @@
 
 using namespace stride::ast;
 
-void IAstExpression::validate()
-{
-    if (this->_type == nullptr)
-    {
-        this->_type = infer_expression_type(this);
-    }
-
-    validate_expr();
-}
-
 llvm::Value* IAstExpression::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder)

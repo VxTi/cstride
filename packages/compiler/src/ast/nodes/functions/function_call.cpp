@@ -471,7 +471,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     return nullptr;
 }
 
-void AstFunctionCall::validate_expr()
+void AstFunctionCall::validate()
 {
     for (const auto& arg : this->_arguments)
     {

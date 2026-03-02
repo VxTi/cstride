@@ -33,7 +33,7 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
     }
 }
 
-void AstLogicalOp::validate_expr()
+void AstLogicalOp::validate()
 {
     this->_lhs->validate();
     this->_rhs->validate();

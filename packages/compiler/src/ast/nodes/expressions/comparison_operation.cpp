@@ -51,7 +51,7 @@ std::string comparison_op_to_str(const ComparisonOpType op)
     }
 }
 
-void AstComparisonOp::validate_expr()
+void AstComparisonOp::validate()
 {
     this->_lhs->validate();
     this->_rhs->validate();

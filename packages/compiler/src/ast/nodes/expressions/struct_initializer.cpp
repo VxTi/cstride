@@ -99,7 +99,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         std::move(member_map));
 }
 
-void AstStructInitializer::validate_expr()
+void AstStructInitializer::validate()
 {
     const auto definition = this->get_context()->get_struct_type(this->_struct_name);
 

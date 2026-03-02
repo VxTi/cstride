@@ -331,7 +331,7 @@ std::unique_ptr<IAstNode> AstMemberAccessor::clone()
     );
 }
 
-void AstMemberAccessor::validate_expr()
+void AstMemberAccessor::validate()
 {
     for (const auto& member : this->_members)
     {

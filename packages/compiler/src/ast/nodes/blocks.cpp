@@ -113,7 +113,7 @@ void AstBlock::resolve_forward_references(
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
-    for (const auto& child : this->children())
+    for (const auto& child : this->get_children())
     {
         child->resolve_forward_references(context, module, builder);
     }
@@ -125,7 +125,7 @@ llvm::Value* AstBlock::codegen(
 {
     llvm::Value* last_value = nullptr;
 
-    for (const auto& child : this->children())
+    for (const auto& child : this->get_children())
     {
         // Don't generate unreachable code, unless it's a function declaration
         // (which defines a new code block / function) or a global variable declaration.
@@ -153,12 +153,20 @@ void AstBlock::validate()
     }
 }
 
+void AstBlock::resolve_types()
+{
+    for (const auto& child : this->_children)
+    {
+        child->resolve_types();
+    }
+}
+
 std::unique_ptr<IAstNode> AstBlock::clone()
 {
     std::vector<std::unique_ptr<IAstNode>> cloned_children;
-    cloned_children.reserve(this->children().size());
+    cloned_children.reserve(this->get_children().size());
 
-    for (const auto& child : this->children())
+    for (const auto& child : this->get_children())
     {
         cloned_children.push_back(child->clone());
     }
@@ -174,7 +182,7 @@ std::string AstBlock::to_string()
 {
     std::ostringstream result;
     result << "AstBlock";
-    for (const auto& child : this->children())
+    for (const auto& child : this->get_children())
     {
         result << "\n  " << child->to_string();
     }

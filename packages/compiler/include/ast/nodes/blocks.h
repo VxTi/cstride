@@ -42,7 +42,7 @@ namespace stride::ast
         void aggregate_block(AstBlock* other);
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstNode>>& children() const
+        const std::vector<std::unique_ptr<IAstNode>>& get_children() const
         {
             return this->_children;
         }

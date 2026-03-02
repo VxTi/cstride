@@ -96,13 +96,13 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
     const AstFunctionCall* fn_call)
 {
     const auto& context = fn_call->get_context();
-    if (const auto fn_def = context->get_function_definition(
+    /*if (const auto fn_def = context->get_function_definition(
             fn_call->get_function_name(),
             fn_call->get_type());
         fn_def.has_value())
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();
-    }
+    }*/
 
     // It might also be a field that's assigned a function
     if (const auto definition = context->lookup_symbol(

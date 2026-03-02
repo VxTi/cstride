@@ -82,7 +82,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     auto return_type = parse_type(context, set, "Expected return type in function header");
 
     const auto& position = reference_token.get_source_fragment();
-    auto function_name_symbol = Symbol(position, context->get_name(), fn_name);
+    auto sym_function_name = Symbol(position, context->get_name(), fn_name);
 
     // Prevent tagging extern functions with different internal names.
     // This prevents the linker from being unable to make a reference to this function.
@@ -95,7 +95,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         {
             parameter_types.push_back(param->get_type());
         }
-        function_name_symbol = resolve_internal_function_name(
+        sym_function_name = resolve_internal_function_name(
             context,
             position,
             { fn_name },
@@ -117,7 +117,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     return std::make_unique<AstFunctionDeclaration>(
         function_context,
-        function_name_symbol,
+        sym_function_name,
         std::move(parameters),
         std::move(body),
         std::move(return_type),
@@ -234,7 +234,7 @@ std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body)
     }
 
     std::vector<AstReturnStatement*> return_statements;
-    for (const auto& child : body->children())
+    for (const auto& child : body->get_children())
     {
         if (auto* return_stmt = dynamic_cast<AstReturnStatement*>(child.get()))
         {
@@ -517,7 +517,7 @@ void collect_free_variables(
     // Handle blocks (lambda bodies, function bodies, etc.)
     if (const auto* block = cast_ast<AstBlock*>(node))
     {
-        for (const auto& child : block->children())
+        for (const auto& child : block->get_children())
         {
             collect_free_variables(child.get(), lambda_context, outer_context, captures);
         }
@@ -529,7 +529,7 @@ void collect_free_variables(
     {
         if (const auto* body = container->get_body())
         {
-            for (const auto& child : body->children())
+            for (const auto& child : body->get_children())
             {
                 collect_free_variables(child.get(), lambda_context, outer_context, captures);
             }
@@ -539,26 +539,6 @@ void collect_free_variables(
 
 void IAstFunction::validate()
 {
-    std::vector<std::unique_ptr<IAstType>> parameter_types;
-    parameter_types.reserve(this->_parameters.size());
-
-    for (const auto& param : this->_parameters)
-    {
-        parameter_types.push_back(param->get_type()->clone_ty());
-
-        const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
-        this->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
-    }
-    this->get_context()->define_function(
-        this->_symbol,
-        std::make_unique<AstFunctionType>(
-            this->_symbol.symbol_position,
-            this->get_context(),
-            std::move(parameter_types),
-            this->_return_type->clone_ty()
-        )
-    );
-
     if (this->is_anonymous())
     {
         std::vector<Symbol> captures;
@@ -678,6 +658,24 @@ void IAstFunction::validate()
     // e.g., a struct
     // 2. The return type doesn't match the function signature
     // 3. All code paths return a value (if not void)
+}
+
+void IAstFunction::resolve_types()
+{
+    this->_body->resolve_types();
+    this->_type = infer_expression_type(this);
+
+    for (const auto& param : this->_parameters)
+    {
+        const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
+        this->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
+    }
+
+    this->get_context()->define_function(
+        this->_symbol,
+        // Type is now known
+        this->_type->clone_as<AstFunctionType>()
+    );
 }
 
 llvm::Value* IAstFunction::codegen(
@@ -911,7 +909,7 @@ std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_paramete
 ) const
 {
     std::vector<llvm::Type*> param_types;
-    for (const auto& param : this->get_parameters())
+    for (const auto& param : this->_parameters)
     {
         auto llvm_type = type_to_llvm_type(param->get_type(), module);
         if (!llvm_type)
@@ -1080,7 +1078,6 @@ void IAstFunction::resolve_forward_references(
         this->get_body()->resolve_forward_references(context, module, builder);
     }
 }
-
 
 std::string AstFunctionDeclaration::to_string()
 {

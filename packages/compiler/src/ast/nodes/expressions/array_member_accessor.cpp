@@ -40,7 +40,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_array_member_accessor(
     return std::move(base_expr);
 }
 
-void AstArrayMemberAccessor::validate_expr()
+void AstArrayMemberAccessor::validate()
 {
     this->_array_identifier->validate();
     this->_index_accessor_expr->validate();

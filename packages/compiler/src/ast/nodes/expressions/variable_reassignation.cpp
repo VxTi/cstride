@@ -114,7 +114,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     );
 }
 
-void AstVariableReassignment::validate_expr()
+void AstVariableReassignment::validate()
 {
     this->_value->validate();
     const auto identifier_def =

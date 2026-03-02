@@ -15,8 +15,7 @@ void AstWhileLoop::validate()
     if (this->_condition != nullptr)
         this->_condition->validate();
 
-    if (this->_body != nullptr)
-        this->_body->validate();
+    this->_body->validate();
 }
 
 std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
@@ -83,6 +82,14 @@ llvm::Value* AstWhileLoop::codegen(
     builder->SetInsertPoint(loop_end_bb);
 
     return nullptr;
+}
+
+void AstWhileLoop::resolve_types()
+{
+    if (this->_condition != nullptr)
+        this->_condition->resolve_types();
+
+    this->_body->resolve_types();
 }
 
 std::string AstWhileLoop::to_string()

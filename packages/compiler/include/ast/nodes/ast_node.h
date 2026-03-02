@@ -16,6 +16,7 @@ namespace llvm
 namespace stride::ast
 {
 
+    class AstExpression;
     class AstBlock;
     class ParsingContext;
 
@@ -37,8 +38,6 @@ namespace stride::ast
         virtual std::string to_string() = 0;
 
         virtual void validate() {}
-
-        virtual void resolve_types() = 0;
 
         [[nodiscard]]
         std::shared_ptr<SourceFile> get_source() const
@@ -124,5 +123,24 @@ namespace stride::ast
 
         [[nodiscard]]
         virtual AstBlock* get_body() = 0;
+    };
+
+    class Ast : public IAstContainer
+    {
+        friend class AstBlock;
+        friend class AstExpression;
+        friend class AstFunctionDefinition;
+        friend class AstSwitch;
+        friend class AstSwitchBranch;
+        friend class AstSwitchCase;
+        friend class AstSwitchDefault;
+        friend class AstVariableDefinition;
+        friend class AstVariableDeclaration;
+        friend class AstVariableAssignment;
+
+        static std::unique_ptr<Ast> parse(
+            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SourceFile>& source_file
+        );
     };
 } // namespace stride::ast

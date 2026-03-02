@@ -55,7 +55,7 @@ void Program::parse_files(std::vector<std::string> files)
 
 void Program::print_ast_nodes() const
 {
-    for (const auto& node : this->_root_node->children())
+    for (const auto& node : this->_root_node->get_children())
     {
         std::cout << node->to_string() << std::endl;
     }
@@ -64,7 +64,7 @@ void Program::print_ast_nodes() const
 void Program::optimize_ast_nodes()
 {
     std::vector<std::unique_ptr<ast::IAstNode>> new_children;
-    for (auto& child_ptr : this->_root_node->children())
+    for (auto& child_ptr : this->_root_node->get_children())
     {
         ast::IAstNode* child = child_ptr.get();
 
@@ -89,23 +89,6 @@ void Program::optimize_ast_nodes()
         this->_root_node->get_source_fragment(),
         this->get_global_context(),
         std::move(new_children));
-}
-
-void Program::validate_ast_nodes() const
-{
-    for (const auto& child : this->_root_node->children())
-    {
-        child->validate();
-    }
-}
-
-void Program::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) const
-{
-    this->_root_node->resolve_forward_references(
-        this->get_global_context().get(),
-        module,
-        builder
-    );
 }
 
 void Program::codegen(llvm::Module* module, llvm::IRBuilderBase* builder) const
@@ -133,8 +116,13 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     llvm::IRBuilder<> builder(context);
 
-    this->resolve_forward_references(module.get(), &builder);
-    this->validate_ast_nodes();
+    this->_root_node->resolve_forward_references(
+        this->get_global_context().get(),
+        module.get(),
+        &builder
+    );
+    this->_root_node->resolve_types();
+    this->_root_node->validate();
 
     // LLVM Codegeneration step
     this->codegen(module.get(), &builder);
@@ -175,7 +163,3 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     return module;
 }
-
-
-
-

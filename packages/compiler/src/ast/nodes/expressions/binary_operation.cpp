@@ -270,7 +270,7 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     }
 }
 
-void AstBinaryArithmeticOp::validate_expr()
+void AstBinaryArithmeticOp::validate()
 {
     this->_lhs->validate();
     this->_rhs->validate();

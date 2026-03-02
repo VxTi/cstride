@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast/symbols.h"
+#include "ast/type_inference.h"
 
 namespace stride::ast
 {
@@ -72,6 +73,8 @@ namespace stride::ast
     {
         std::unique_ptr<IAstType> _type;
 
+        friend class IAstFunction;
+
     public:
         explicit IAstExpression(
             const SourceFragment& source_position,
@@ -87,8 +90,6 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
-
         [[nodiscard]]
         IAstType* get_type() const
         {
@@ -100,7 +101,10 @@ namespace stride::ast
             return this->_type.get();
         }
 
-        virtual void validate_expr() {}
+        void resolve_types() override
+        {
+            this->_type = infer_expression_type(this);
+        }
 
         // Must be implemented by children
         bool is_reducible() override
@@ -139,7 +143,7 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        void validate_expr() override;
+        void validate() override;
 
         void resolve_forward_references(
             ParsingContext* context,
@@ -236,7 +240,7 @@ namespace stride::ast
 
         std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
-        void validate_expr() override;
+        void validate() override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -291,7 +295,7 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate_expr() override;
+        void validate() override;
 
     private:
         llvm::Value* codegen_global_member_accessor(
@@ -344,7 +348,7 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate_expr() override;
+        void validate() override;
 
     private:
         [[nodiscard]]
@@ -432,7 +436,9 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
-        void validate_expr() override;
+        void validate() override;
+
+        void resolve_types() override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -517,7 +523,7 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate_expr() override;
+        void validate() override;
     };
 
     class AstLogicalOp
@@ -548,7 +554,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate_expr() override;
+        void validate() override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -581,7 +587,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate_expr() override;
+        void validate() override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -635,7 +641,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate_expr() override;
+        void validate() override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -697,7 +703,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate_expr() override;
+        void validate() override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -739,7 +745,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate_expr() override;
+        void validate() override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -790,7 +796,7 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate_expr() override;
+        void validate() override;
     };
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *

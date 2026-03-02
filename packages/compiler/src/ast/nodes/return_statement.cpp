@@ -76,13 +76,23 @@ void AstReturnStatement::validate()
         this->get_return_expr()->validate();
 }
 
+void AstReturnStatement::resolve_types()
+{
+    if (this->_value)
+        this->_value->resolve_types();
+}
+
 std::string AstReturnStatement::to_string()
 {
     return std::format("Return(value: {})",
                        _value ? _value->to_string() : "nullptr");
 }
 
-void AstReturnStatement::resolve_forward_references(ParsingContext* context, llvm::Module* module, llvm::IRBuilderBase* builder)
+void AstReturnStatement::resolve_forward_references(
+    ParsingContext* context,
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder
+)
 {
     if (this->get_return_expr())
     {
@@ -93,7 +103,7 @@ void AstReturnStatement::resolve_forward_references(ParsingContext* context, llv
 llvm::Value* AstReturnStatement::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
-    )
+)
 {
     if (!this->get_return_expr())
     {

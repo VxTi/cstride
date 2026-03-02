@@ -61,6 +61,8 @@ namespace stride::ast
 
         void validate() override;
 
+        void resolve_types() override;
+
         std::unique_ptr<IAstNode> clone() override;
     };
 

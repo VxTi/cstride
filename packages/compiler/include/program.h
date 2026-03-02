@@ -61,11 +61,6 @@ namespace stride
     private:
         void print_ast_nodes() const;
 
-        void resolve_forward_references(llvm::Module* module,
-                                        llvm::IRBuilderBase* builder) const;
-
-        void validate_ast_nodes() const;
-
         void optimize_ast_nodes();
 
         void codegen(llvm::Module* module,

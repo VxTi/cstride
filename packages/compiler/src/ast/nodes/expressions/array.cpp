@@ -9,7 +9,7 @@
 
 using namespace stride::ast;
 
-void AstArray::validate_expr()
+void AstArray::validate()
 {
     for (const auto& element : this->_elements)
     {

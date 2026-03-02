@@ -8,7 +8,8 @@
 namespace stride::ast
 {
     class AstModule
-        : public IAstNode
+        : public IAstNode,
+          public IAstContainer
     {
         std::string _name;
         std::unique_ptr<AstBlock> _body;
@@ -33,14 +34,15 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        AstBlock* get_body() const
+        AstBlock* get_body() override
         {
             return this->_body.get();
         }
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            llvm::IRBuilderBase* builder
+        ) override;
 
         void resolve_forward_references(
             ParsingContext* context,
