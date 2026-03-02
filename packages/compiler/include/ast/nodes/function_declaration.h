@@ -115,6 +115,8 @@ namespace stride::ast
         std::vector<std::unique_ptr<AstFunctionParameter>> get_parameters() const
         {
             std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
+            cloned_params.reserve(this->_parameters.size());
+
             for (const auto& param : this->_parameters)
             {
                 cloned_params.push_back(param->clone_as<AstFunctionParameter>());
@@ -165,6 +167,12 @@ namespace stride::ast
         bool is_anonymous() const
         {
             return this->_flags & SRFLAG_FN_DEF_ANONYMOUS;
+        }
+
+        [[nodiscard]]
+        int get_flags() const
+        {
+            return this->_flags;
         }
 
         [[nodiscard]]

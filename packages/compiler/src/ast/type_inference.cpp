@@ -22,7 +22,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(AstLiteral*
             str->get_source_fragment(),
             context,
             PrimitiveType::STRING,
-            1);
+            8
+        );
     }
 
     if (const auto* fp_lit = cast_expr<AstFpLiteral*>(literal))
@@ -92,27 +93,26 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(AstLiteral*
         literal->get_source_fragment());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
-    const AstFunctionCall* fn_call)
+std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const AstFunctionCall* fn_call)
 {
+    /// --- Basic function lookup, find based on parameter signature (ignoring return type)
     const auto& context = fn_call->get_context();
-    /*if (const auto fn_def = context->get_function_definition(
-            fn_call->get_function_name(),
-            fn_call->get_type());
+    std::vector<std::unique_ptr<IAstType>> param_types;
+    param_types.reserve(fn_call->get_arguments().size());
+    for (const auto& arg : fn_call->get_arguments())
+    {
+        param_types.push_back(arg->get_type()->clone_ty());
+    }
+
+    if (const auto fn_def = context->get_function_definition(fn_call->get_function_name(), param_types);
         fn_def.has_value())
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();
-    }*/
+    }
 
-    // It might also be a field that's assigned a function
-    if (const auto definition = context->lookup_symbol(
-        fn_call->get_function_name()))
+    /// --- Hanadling lambda functions that might be assigned to variables
+    if (const auto definition = context->lookup_symbol(fn_call->get_function_name()))
     {
-        // Simple extraction. it's already referencing a 'real' function.
-        if (const auto callable = dynamic_cast<FunctionDefinition*>(definition))
-        {
-            return callable->get_type()->get_return_type()->clone_ty();
-        }
         // In case the symbol has a lambda function as value, we'll need to extract it here
         if (const auto field_fn_like_def = dynamic_cast<FieldDefinition*>(definition))
         {
@@ -133,8 +133,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
         fn_call->get_source_fragment());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(
-    const IBinaryOp* operation)
+std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(const IBinaryOp* operation)
 {
     auto lhs = infer_expression_type(operation->get_left());
     auto rhs = infer_expression_type(operation->get_right());
@@ -246,8 +245,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(const AstArray* a
     return infer_expression_type(array->get_elements().front().get());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
-    const AstMemberAccessor* member_accessor_expr)
+std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMemberAccessor* member_accessor_expr)
 {
     // Base must be an identifier, e.g., <identifier>.<member1>...
     const auto base_iden = cast_expr<AstIdentifier*>(member_accessor_expr->get_base());
@@ -342,8 +340,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(
     return parent_type->clone_ty();
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(
-    const AstStructInitializer* initializer)
+std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(const AstStructInitializer* initializer)
 {
     return std::make_unique<AstNamedType>(
         initializer->get_source_fragment(),
@@ -370,10 +367,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* e
     );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_expression_type(
-    IAstExpression* expr,
-    int recursion_guard
-)
+std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* expr, int recursion_guard)
 {
     if (!expr)
     {
