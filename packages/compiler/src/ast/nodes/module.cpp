@@ -7,6 +7,7 @@
 #include "ast/tokens/token_set.h"
 
 #include <format>
+#include <iostream>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;

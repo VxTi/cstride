@@ -128,18 +128,6 @@ llvm::Value* AstBlock::codegen(
 
     for (const auto& child : this->_children)
     {
-        // Don't generate unreachable code, unless it's a function declaration
-        // (which defines a new code block / function) or a global variable declaration.
-        if (auto* block = builder->GetInsertBlock();
-            block && block->getTerminator())
-        {
-            if (!cast_expr<AstFunctionDeclaration*>(child.get()) &&
-                !cast_expr<AstVariableDeclaration*>(child.get()))
-            {
-                continue;
-            }
-        }
-
         last_value = child->codegen(module, builder);
     }
 
