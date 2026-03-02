@@ -84,14 +84,6 @@ llvm::Value* AstWhileLoop::codegen(
     return nullptr;
 }
 
-void AstWhileLoop::resolve_types()
-{
-    if (this->_condition != nullptr)
-        this->_condition->resolve_types();
-
-    this->_body->resolve_types();
-}
-
 std::string AstWhileLoop::to_string()
 {
     return std::format(

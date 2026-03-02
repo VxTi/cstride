@@ -49,8 +49,6 @@ namespace stride::ast
 
         void validate() override;
 
-        void resolve_types() override;
-
         void resolve_forward_references(
             ParsingContext* context,
             llvm::Module* module,

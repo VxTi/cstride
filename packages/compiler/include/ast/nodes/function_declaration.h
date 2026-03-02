@@ -123,6 +123,20 @@ namespace stride::ast
             return cloned_params;
         }
 
+        /// Returns a non-owning const reference to the parameter list, avoiding the
+        /// clone overhead of get_parameters() when only read access is needed.
+        [[nodiscard]]
+        const std::vector<std::unique_ptr<AstFunctionParameter>>& get_parameters_ref() const
+        {
+            return this->_parameters;
+        }
+
+        [[nodiscard]]
+        Symbol get_symbol() const
+        {
+            return this->_symbol;
+        }
+
         [[nodiscard]]
         IAstType* get_return_type() const
         {
@@ -169,8 +183,6 @@ namespace stride::ast
             llvm::IRBuilderBase* builder) override;
 
         void validate() override;
-
-        void resolve_types() override;
 
         void resolve_forward_references(
             ParsingContext* context,

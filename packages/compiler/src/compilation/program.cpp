@@ -1,6 +1,8 @@
 #include "program.h"
 
 #include "ast/parser.h"
+#include "ast/nodes/traversal.h"
+#include "ast/nodes/type_inference_visitor.h"
 
 #include <iostream>
 #include <llvm/Analysis/LoopAnalysisManager.h>
@@ -121,7 +123,9 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
         module.get(),
         &builder
     );
-    this->_root_node->resolve_types();
+    ast::AstNodeTraverser traverser;
+    ast::TypeInferenceVisitor type_visitor;
+    traverser.visit(&type_visitor, this->_root_node.get());
     this->_root_node->validate();
 
     // LLVM Codegeneration step

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ast/symbols.h"
-#include "ast/type_inference.h"
 
 namespace stride::ast
 {
@@ -101,9 +100,9 @@ namespace stride::ast
             return this->_type.get();
         }
 
-        void resolve_types() override
+        void set_type(std::unique_ptr<IAstType> type)
         {
-            this->_type = infer_expression_type(this);
+            this->_type = std::move(type);
         }
 
         // Must be implemented by children
@@ -437,8 +436,6 @@ namespace stride::ast
             llvm::IRBuilderBase* builder) override;
 
         void validate() override;
-
-        void resolve_types() override;
 
         std::unique_ptr<IAstNode> clone() override;
 

@@ -38,7 +38,5 @@ namespace stride::ast
         llvm::Value* codegen(
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
-
-        void resolve_types() override;
     };
 } // namespace stride::ast
