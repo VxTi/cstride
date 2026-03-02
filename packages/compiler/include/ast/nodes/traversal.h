@@ -2,6 +2,8 @@
 
 namespace stride::ast
 {
+    class AstModule;
+    class AstFunctionDeclaration;
     class IAstNode;
     class IAstExpression;
     class AstBlock;
@@ -20,7 +22,9 @@ namespace stride::ast
         virtual ~IVisitor() = default;
 
         /// Called for every expression node, after its sub-expressions have been visited.
-        virtual void accept(IAstExpression* expr) = 0;
+        virtual void accept(IAstExpression* expr) {};
+
+        virtual void accept(AstFunctionDeclaration* expr) {};
     };
 
     /// Traverses an AST tree and invokes an IVisitor for each expression node.
@@ -29,9 +33,10 @@ namespace stride::ast
     class AstNodeTraverser
     {
     public:
+        void visit(IVisitor* visitor, AstModule* node);
+        void visit(IVisitor* visitor, AstFunctionDeclaration* node);
         void visit(IVisitor* visitor, IAstNode* node);
         void visit(IVisitor* visitor, AstForLoop* node);
-        void visit(IVisitor* visitor, IAstFunction* node);
         void visit(IVisitor* visitor, AstWhileLoop* node);
         void visit(IVisitor* visitor, IAstExpression* node);
         void visit(IVisitor* visitor, AstConditionalStatement* node);

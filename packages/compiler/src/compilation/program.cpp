@@ -2,7 +2,7 @@
 
 #include "ast/parser.h"
 #include "ast/nodes/traversal.h"
-#include "ast/nodes/type_inference_visitor.h"
+#include "../../include/ast/visitor.h"
 
 #include <iostream>
 #include <llvm/Analysis/LoopAnalysisManager.h>
@@ -120,6 +120,9 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     ast::AstNodeTraverser traverser;
     ast::TypeInferenceVisitor type_visitor;
+    ast::FunctionDeclareVisitor function_declare_visitor;
+
+    traverser.visit(&function_declare_visitor, this->_root_node.get());
     traverser.visit(&type_visitor, this->_root_node.get());
     this->_root_node->resolve_forward_references(
         this->get_global_context().get(),

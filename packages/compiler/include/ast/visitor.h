@@ -1,9 +1,10 @@
 #pragma once
 
-#include "traversal.h"
+#include "nodes/traversal.h"
 
 namespace stride::ast
 {
+    class AstFunctionDeclaration;
     class IAstExpression;
 
     /// Visitor that infers and assigns types to every expression node in the AST.
@@ -20,5 +21,11 @@ namespace stride::ast
         /// For AstVariableDeclaration: also registers the variable in its context.
         /// For IAstFunction: also registers the function in its context.
         void accept(IAstExpression* expr) override;
+    };
+
+    class FunctionDeclareVisitor : public IVisitor
+    {
+    public:
+        void accept(AstFunctionDeclaration* fn_declaration) override;
     };
 }

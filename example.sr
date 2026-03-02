@@ -1,4 +1,31 @@
 const k: int32 = 1.0;
+
+/**
+ * In this example, we'll try to calculate an approximation of e^x using a taylor series.
+ * This shows parts of the language;
+ * - Function invocation
+ * - External function calls
+ * - The significant speed : )
+ */
+fn main(): void {
+    const pow: float64 = 3.5D;
+
+    const start: uint64 = system_time_ns();
+    const iterations = 100;
+    let k: float64 = 0.0D;
+
+    for (let i: int32 = 0; i < iterations; i++) {
+        k = e_to_the_x(pow);
+    }
+    const end: uint64 = system_time_ns();
+
+    const elapsed: uint64 = (end - start) / iterations;
+
+    io::println("calculating e^x in %d iterations in %d nanoseconds: %f", iterations, elapsed, k);
+
+    io::println("Hello world");
+}
+
 extern fn powl(base: float64, exp: float64): float64;
 
 extern fn system_time_ns(): uint64;
@@ -32,31 +59,4 @@ fn e_to_the_x(x: float64): float64 {
     }
 
     return approximation;
-}
-
-/**
- * In this example, we'll try to calculate an approximation of e^x using a taylor series.
- * This shows parts of the language;
- * - Function invocation
- * - External function calls
- * - The significant speed : )
- */
-fn main(): void {
-    printf("Hello???");
-    const pow: float64 = 3.5D;
-
-    const start: uint64 = system_time_ns();
-    const iterations = 100;
-    let k: float64 = 0.0D;
-
-    for (let i: int32 = 0; i < iterations; i++) {
-        k = e_to_the_x(pow);
-    }
-    const end: uint64 = system_time_ns();
-
-    const elapsed: uint64 = (end - start) / iterations;
-
-    io::println("calculating e^x in %d iterations in %d nanoseconds: %f", iterations, elapsed, k);
-
-    io::println("Hello world");
 }

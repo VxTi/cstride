@@ -1,4 +1,4 @@
-#include "ast/nodes/type_inference_visitor.h"
+#include "../../../include/ast/visitor.h"
 
 #include "ast/parsing_context.h"
 #include "ast/type_inference.h"
@@ -26,17 +26,22 @@ void TypeInferenceVisitor::accept(IAstExpression* expr)
             var_decl->get_symbol(),
             canonical_type->clone_ty()
         );
-        return;
     }
+}
 
-    // --- Function declaration / lambda: register the function in its context
-    // so that call-sites can resolve the return type during later traversal.
-    if (const auto* fn = dynamic_cast<IAstFunction*>(expr))
+void FunctionDeclareVisitor::accept(AstFunctionDeclaration* fn_declaration)
+{
+    // Define parameters in the function's own context BEFORE traversing the body,
+    // so that identifiers referencing params resolve correctly inside the body.
+    for (const auto& param : fn_declaration->get_parameters_ref())
     {
-        fn->get_context()->define_function(
-            fn->get_symbol(),
-            expr->get_type()->clone_as<AstFunctionType>(),
-            fn->get_flags()
-        );
+        const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
+        fn_declaration->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
     }
+    fn_declaration->set_type(infer_expression_type(fn_declaration));
+    fn_declaration->get_context()->define_function(
+        fn_declaration->get_symbol(),
+        fn_declaration->get_type()->clone_as<AstFunctionType>(),
+        fn_declaration->get_flags()
+    );
 }

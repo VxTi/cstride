@@ -10,7 +10,6 @@
 #include "ast/nodes/module.h"
 #include "ast/nodes/return_statement.h"
 #include "ast/nodes/while_loop.h"
-#include "ast/symbols.h"
 
 #include <ranges>
 
@@ -18,16 +17,24 @@ using namespace stride::ast;
 
 void AstNodeTraverser::visit(IVisitor* visitor, const AstBlock* node)
 {
-    if (!node) return;
+    if (!node)
+        return;
+
     for (const auto& child : node->get_children())
     {
         visit(visitor, child.get());
     }
 }
 
+void AstNodeTraverser::visit(IVisitor* visitor, AstModule* node)
+{
+    visit(visitor, node->get_body());
+}
+
 void AstNodeTraverser::visit(IVisitor* visitor, IAstExpression* node)
 {
-    if (!node) return;
+    if (!node)
+        return;
 
     // IAstFunction is an expression but needs special handling (body traversal + params)
     if (auto* fn = dynamic_cast<IAstFunction*>(node))
@@ -91,21 +98,6 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstExpression* node)
     visitor->accept(node);
 }
 
-void AstNodeTraverser::visit(IVisitor* visitor, IAstFunction* node)
-{
-    // Define parameters in the function's own context BEFORE traversing the body,
-    // so that identifiers referencing params resolve correctly inside the body.
-    for (const auto& param : node->get_parameters_ref())
-    {
-        const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
-        node->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
-    }
-
-
-    visitor->accept(node);
-    visit(visitor, node->get_body());
-}
-
 void AstNodeTraverser::visit(IVisitor* visitor, AstConditionalStatement* node)
 {
     visit(visitor, node->get_condition());
@@ -138,14 +130,20 @@ void AstNodeTraverser::visit(IVisitor* visitor, const AstReturnStatement* node)
         visit(visitor, node->get_return_expr());
 }
 
+void AstNodeTraverser::visit(IVisitor* visitor, AstFunctionDeclaration* node)
+{
+    visitor->accept(node);
+    visit(visitor, node->get_body());
+}
+
 void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
 {
-    if (!node) return;
+    if (!node)
+        return;
 
-    // IAstFunction must be checked before IAstExpression (it is a subtype)
-    if (auto* fn = dynamic_cast<IAstFunction*>(node))
+    if (auto* fn_decl = dynamic_cast<AstFunctionDeclaration*>(node))
     {
-        visit(visitor, fn);
+        visit(visitor, fn_decl);
     }
     else if (auto* conditional = dynamic_cast<AstConditionalStatement*>(node))
     {
@@ -159,15 +157,15 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     {
         visit(visitor, for_loop);
     }
-    else if (auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
+    else if (const auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
     {
         visit(visitor, return_stmt);
     }
     else if (auto* module = dynamic_cast<AstModule*>(node))
     {
-        visit(visitor, module->get_body());
+        visit(visitor, module);
     }
-    else if (auto* block = dynamic_cast<AstBlock*>(node))
+    else if (const auto* block = dynamic_cast<AstBlock*>(node))
     {
         visit(visitor, block);
     }
