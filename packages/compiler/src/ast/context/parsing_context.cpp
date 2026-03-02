@@ -59,26 +59,29 @@ bool ParsingContext::is_function_defined_globally(
 
 void ParsingContext::define_function(
     Symbol function_name,
-    std::unique_ptr<AstFunctionType> function_type) const
+    std::unique_ptr<AstFunctionType> function_type,
+    const int flags
+) const
 {
     auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
 
     if (this->is_function_defined_globally(function_name.internal_name))
     {
         throw std::runtime_error(
-            std::format("Function '{}' already defined globally",
-                        function_name.name));
+            std::format("Function '{}' already defined globally", function_name.name)
+        );
     }
 
     global_scope._symbols.push_back(
-        std::make_unique<FunctionDefinition>(std::move(function_type), function_name));
+        std::make_unique<FunctionDefinition>(std::move(function_type), function_name, flags)
+    );
 }
 
-void ParsingContext::define_symbol(const Symbol& symbol_name,
-                                   const SymbolType type)
+void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType type)
 {
     this->_symbols.push_back(
-        std::make_unique<IdentifiableSymbolDef>(type, symbol_name));
+        std::make_unique<IdentifiableSymbolDef>(type, symbol_name)
+    );
 }
 
 const FieldDefinition* ParsingContext::get_variable_def(
@@ -91,7 +94,7 @@ const FieldDefinition* ParsingContext::get_variable_def(
             symbol_def.get()))
         {
             if (field_definition->get_internal_symbol_name() == variable_name
-                || (use_raw_name && field_definition->get_symbol().name == variable_name))
+                || (use_raw_name && field_definition->get_field_name() == variable_name))
             {
                 return field_definition;
             }
@@ -321,4 +324,3 @@ const
     }
     return nullptr;
 }
-

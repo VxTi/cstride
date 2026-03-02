@@ -1,5 +1,6 @@
 #include "ast/nodes/traversal.h"
 
+#include "ast/parsing_context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/conditional_statement.h"
@@ -13,7 +14,7 @@
 
 using namespace stride::ast;
 
-void AstNodeTraverser::visit(IVisitor* visitor, AstBlock* node)
+void AstNodeTraverser::visit(IVisitor* visitor, const AstBlock* node)
 {
     if (!node) return;
     for (const auto& child : node->get_children())
@@ -132,7 +133,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, AstForLoop* node)
     visit(visitor, node->get_body());
 }
 
-void AstNodeTraverser::visit(IVisitor* visitor, AstReturnStatement* node)
+void AstNodeTraverser::visit(IVisitor* visitor, const AstReturnStatement* node)
 {
     if (node->get_return_expr())
         visit(visitor, node->get_return_expr());

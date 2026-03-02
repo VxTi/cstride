@@ -24,7 +24,7 @@ PenaltyReturnTypeOnItsOwnLine: 10000 # Ensure that return type never on its own 
 PenaltyBreakBeforeFirstCallParameter: 1
 
 # Very important settings
-ColumnLimit: 100
+ColumnLimit: 120
 IndentWidth: 4
 ContinuationIndentWidth: 4
 AccessModifierOffset: -4

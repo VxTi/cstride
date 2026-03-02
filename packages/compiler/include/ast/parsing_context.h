@@ -107,7 +107,7 @@ namespace stride::ast
             /// Can be either a variable or a field in a struct/class
         public:
             explicit FieldDefinition(const Symbol& symbol,
-                              std::unique_ptr<IAstType> type) :
+                                     std::unique_ptr<IAstType> type) :
                 IDefinition(symbol),
                 _type(std::move(type)) {}
 
@@ -116,19 +116,29 @@ namespace stride::ast
             {
                 return this->_type.get();
             }
+
+            [[nodiscard]]
+            std::string get_field_name() const
+            {
+                return this->get_symbol().name;
+            }
         };
 
         class FunctionDefinition
             : public IDefinition
         {
             std::unique_ptr<AstFunctionType> _function_type;
+            int _flags;
 
         public:
             explicit FunctionDefinition(
                 std::unique_ptr<AstFunctionType> function_type,
-                const Symbol& symbol) :
+                const Symbol& symbol,
+                const int flags
+            ) :
                 IDefinition(symbol),
-                _function_type(std::move(function_type)) {}
+                _function_type(std::move(function_type)),
+                _flags(flags) {}
 
             [[nodiscard]]
             AstFunctionType* get_type() const
@@ -136,9 +146,27 @@ namespace stride::ast
                 return this->_function_type.get();
             }
 
+            [[nodiscard]]
+            std::string get_function_name() const
+            {
+                return this->get_symbol().name;
+            }
+
+            [[nodiscard]]
+            int get_flags() const
+            {
+                return this->_flags;
+            }
+
             ~FunctionDefinition() override = default;
 
-            bool equals(const std::string& name, const AstFunctionType* signature) const;
+            bool matches_signature(const std::string& name, const AstFunctionType* signature) const;
+
+            [[nodiscard]]
+            bool matches_signature(
+                const std::string& function_name,
+                const std::vector<std::unique_ptr<IAstType>>& other_parameter_types
+            ) const;
         };
     } // namespace definition
 
@@ -225,6 +253,14 @@ namespace stride::ast
             bool use_raw_name = false
         ) const;
 
+        /// Primarily used for function invocations, where the parameter types are known,
+        /// but we don't yet know what the return type is.
+        [[nodiscard]]
+        std::optional<definition::FunctionDefinition*> get_function_definition(
+            const std::string& function_name,
+            const std::vector<std::unique_ptr<IAstType>>& parameter_types
+        ) const;
+
         std::optional<definition::FunctionDefinition*> get_function_definition(
             const std::string& function_name,
             IAstType* function_type
@@ -261,7 +297,8 @@ namespace stride::ast
         /// Will attempt to define the function in the global context.
         void define_function(
             Symbol function_name,
-            std::unique_ptr<AstFunctionType> function_type
+            std::unique_ptr<AstFunctionType> function_type,
+            int flags
         ) const;
 
         void define_type(
