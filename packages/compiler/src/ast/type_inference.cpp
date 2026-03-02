@@ -105,7 +105,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const Ast
         return fn_def.value()->get_type()->get_return_type()->clone_ty();
     }
 
-    /// --- Hanadling lambda functions that might be assigned to variables
+    /// --- Handling lambda functions that might be assigned to variables
     if (const auto definition = context->lookup_symbol(fn_call->get_function_name()))
     {
         // In case the symbol has a lambda function as value, we'll need to extract it here

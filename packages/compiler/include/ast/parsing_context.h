@@ -160,10 +160,10 @@ namespace stride::ast
 
             ~FunctionDefinition() override = default;
 
-            bool matches_signature(const std::string& name, const AstFunctionType* signature) const;
+            bool matches_type_signature(const std::string& name, const AstFunctionType* signature) const;
 
             [[nodiscard]]
-            bool matches_signature(
+            bool matches_parameter_signature(
                 const std::string& internal_function_name,
                 const std::vector<std::unique_ptr<IAstType>>& other_parameter_types
             ) const;

@@ -11,6 +11,7 @@
 #include "ast/tokens/token_set.h"
 
 #include <format>
+#include <iostream>
 #include <sstream>
 #include <vector>
 #include <llvm/IR/Function.h>
