@@ -37,46 +37,6 @@ const ParsingContext& ParsingContext::traverse_to_root() const
     return *current;
 }
 
-bool ParsingContext::is_function_defined_globally(
-    const std::string& internal_function_name) const
-{
-    return std::ranges::any_of(
-        this->traverse_to_root()._symbols,
-        [&](const auto& symbol)
-        {
-            if (const auto* fn_def = dynamic_cast<const FunctionDefinition*>(symbol.
-                get()))
-            {
-                if (fn_def->get_internal_symbol_name() ==
-                    internal_function_name)
-                {
-                    return true;
-                }
-            }
-            return false;
-        });
-}
-
-void ParsingContext::define_function(
-    Symbol function_name,
-    std::unique_ptr<AstFunctionType> function_type,
-    const int flags
-) const
-{
-    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
-
-    if (this->is_function_defined_globally(function_name.internal_name))
-    {
-        throw std::runtime_error(
-            std::format("Function '{}' already defined globally", function_name.name)
-        );
-    }
-
-    global_scope._symbols.push_back(
-        std::make_unique<FunctionDefinition>(std::move(function_type), function_name, flags)
-    );
-}
-
 void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType type)
 {
     this->_symbols.push_back(

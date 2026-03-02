@@ -104,7 +104,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const Ast
         param_types.push_back(arg->get_type()->clone_ty());
     }
 
-    if (const auto fn_def = context->get_function_definition(fn_call->get_function_name(), param_types);
+    if (const auto fn_def = context->get_function_definition(fn_call->get_internal_name(), param_types);
         fn_def.has_value())
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();
@@ -129,8 +129,10 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const Ast
         ErrorType::TYPE_ERROR,
         std::format(
             "Unable to resolve return type for function '{}'",
-            fn_call->get_function_name()),
-        fn_call->get_source_fragment());
+            fn_call->get_function_name()
+        ),
+        fn_call->get_source_fragment()
+    );
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(const IBinaryOp* operation)

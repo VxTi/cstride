@@ -1,6 +1,8 @@
 #include "ast/casting.h"
 #include "ast/parsing_context.h"
 
+#include <algorithm>
+
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
@@ -69,7 +71,7 @@ bool FunctionDefinition::matches_signature(
 )
 const
 {
-    if (this->get_function_name() != function_name)
+    if (this->get_internal_symbol_name() != function_name)
         return false;
 
     const auto& self_params = this->_function_type->get_parameter_types();
@@ -96,4 +98,42 @@ const
     }
 
     return true;
+}
+
+void ParsingContext::define_function(
+    Symbol function_name,
+    std::unique_ptr<AstFunctionType> function_type,
+    const int flags
+) const
+{
+    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
+
+    if (this->is_function_defined_globally(function_name.name, function_type.get()))
+    {
+        throw std::runtime_error(
+            std::format("Function '{}' already defined globally", function_name.name)
+        );
+    }
+
+    global_scope._symbols.push_back(
+        std::make_unique<FunctionDefinition>(std::move(function_type), function_name, flags)
+    );
+}
+
+bool ParsingContext::is_function_defined_globally(
+    const std::string& function_name,
+    const AstFunctionType* function_type
+) const
+{
+    return std::ranges::any_of(
+        this->traverse_to_root()._symbols,
+        [&](const auto& symbol)
+        {
+            if (const auto* fn_def = dynamic_cast<const FunctionDefinition*>(symbol.get()))
+            {
+                return fn_def->matches_signature(function_name, function_type);
+            }
+            return false;
+        }
+    );
 }

@@ -1,11 +1,10 @@
 #include "ast/nodes/type_inference_visitor.h"
 
-#include "ast/casting.h"
 #include "ast/parsing_context.h"
+#include "ast/type_inference.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/types.h"
-#include "ast/type_inference.h"
 
 using namespace stride::ast;
 
