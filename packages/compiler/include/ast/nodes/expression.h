@@ -175,7 +175,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::string& get_internal_name() const
+        const std::string& get_scoped_name() const
         {
             return this->_symbol.internal_name;
         }
@@ -224,7 +224,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const IAstExpression* get_index() const
+        IAstExpression* get_index() const
         {
             return this->_index_accessor_expr.get();
         }
@@ -350,7 +350,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::string& get_internal_name() const
+        const std::string& get_scoped_function_name() const
         {
             return this->_symbol.internal_name;
         }

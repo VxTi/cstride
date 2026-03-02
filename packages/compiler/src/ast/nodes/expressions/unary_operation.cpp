@@ -261,7 +261,7 @@ llvm::Value* AstUnaryOp::codegen(
                 this->get_source_fragment());
         }
 
-        auto internal_name = identifier->get_internal_name();
+        auto internal_name = identifier->get_scoped_name();
 
         if (const auto definition = this->get_context()->lookup_variable(
             identifier->get_name(),
@@ -321,8 +321,7 @@ llvm::Value* AstUnaryOp::codegen(
         }
 
         // Increment / Decrement
-        auto* loaded_val = builder->
-            CreateLoad(loaded_type, var_addr, "loadtmp");
+        auto* loaded_val = builder->CreateLoad(loaded_type, var_addr, "loadtmp");
         const bool is_fp = loaded_type->isFloatingPointTy();
 
         llvm::Value* one = is_fp

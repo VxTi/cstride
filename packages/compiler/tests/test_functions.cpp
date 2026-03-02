@@ -21,6 +21,8 @@ TEST(Functions, Lambda)
 TEST(Functions, DeclarationAndInvocation)
 {
     const std::string code = R"(
+        extern fn printf(in: string, ...): void;
+
         fn add(a: int32, b: int32): int32 {
             return a + b;
         }

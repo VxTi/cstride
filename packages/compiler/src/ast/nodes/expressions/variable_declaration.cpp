@@ -73,7 +73,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         set.next();
         value = parse_inline_expression(context, set);
         // We don't know the type yet, as this is inferred in the validation step.
-        variable_type = make_unknown_type(context, set);
+        variable_type = make_unknown_type(context, set, flags);
     }
     else
     {
@@ -172,7 +172,7 @@ void AstVariableDeclaration::validate()
 
     // If the variable type is inferred, we don't need to do any validation
     if (const auto unknown_ty = cast_type<AstPrimitiveType*>(this->_variable_type.get());
-        unknown_ty->get_type() == PrimitiveType::UNKNOWN)
+        unknown_ty && unknown_ty->get_type() == PrimitiveType::UNKNOWN)
     {
         return;
     }
@@ -281,7 +281,6 @@ void append_to_global_ctors(
     );
 }
 
-
 void AstVariableDeclaration::resolve_forward_references(
     ParsingContext* context,
     llvm::Module* module,
@@ -387,8 +386,7 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
         return std::nullopt;
     }
 
-    llvm::GlobalVariable* global_var = module->getNamedGlobal(
-        self->get_internal_name());
+    llvm::GlobalVariable* global_var = module->getNamedGlobal(self->get_internal_name());
 
     if (!global_var)
     {

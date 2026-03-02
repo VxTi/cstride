@@ -220,7 +220,7 @@ PrimaryExpression ::= LiteralExpression
                      | TupleInitializationExpression
                      | ELLIPSIS // variadic parameter pack expansion
 
-ArrayDeclarationExpression ::= LSQUARE_BRACKET PrimaryExpression RSQUARE_BRACKET
+ArrayDeclarationExpression ::= LSQUARE_BRACKET PrimaryExpression (COMMA PrimaryExpression)* RSQUARE_BRACKET
 TupleInitializationExpression ::= LPAREN Expression (COMMA Expression)* RPAREN
 
 FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {

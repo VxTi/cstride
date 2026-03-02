@@ -15,7 +15,7 @@ llvm::Value* AstIdentifier::codegen(
 {
     llvm::Value* val = nullptr;
 
-    std::string internal_name = this->get_internal_name();
+    std::string internal_name = this->get_scoped_name();
 
     if (const auto symbol_definition = this->get_context()->lookup_symbol(this->get_name()))
     {
@@ -124,6 +124,6 @@ std::string AstIdentifier::to_string()
     return std::format(
         "Identifier<{}({})>",
         this->get_name(),
-        this->get_internal_name()
+        this->get_scoped_name()
     );
 }
