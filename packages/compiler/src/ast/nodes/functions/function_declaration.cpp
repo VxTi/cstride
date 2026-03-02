@@ -659,7 +659,6 @@ void IAstFunction::validate()
     // 3. All code paths return a value (if not void)
 }
 
-
 llvm::Value* IAstFunction::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder

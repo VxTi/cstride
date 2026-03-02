@@ -73,11 +73,6 @@ void AstModule::resolve_forward_references(
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
-    if (this->_body != nullptr)
-    {
-        return;
-    }
-
     this->_body->resolve_forward_references(context, module, builder);
 }
 

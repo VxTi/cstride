@@ -151,12 +151,11 @@ llvm::Value* AstFunctionCall::codegen(
 {
     llvm::Function* callee = nullptr;
 
-    if (const auto definition = this->get_context()->get_function_definition(
-            this->get_function_name(),
-            this->get_type());
+    if (const auto definition =
+            this->get_context()->get_function_definition(this->get_internal_name(), this->get_type());
         definition.has_value())
     {
-        callee = module->getFunction(definition.value()->get_internal_symbol_name());
+        callee = module->getFunction(this->get_internal_name());
     }
 
     // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
@@ -168,11 +167,6 @@ llvm::Value* AstFunctionCall::codegen(
         }
     }
 
-    // Resolves functions that may have different internalized names than the resolved internalized name,
-    // e.g., variadic function calls might be internalized with more parameters than how they're defined,
-    // causing a mismatch in function symbol lookup. Therefore, we look up the function definition by the regular name,
-    // rather than the internalized one.
-
     // No way to find it :(
     if (!callee)
     {
@@ -182,6 +176,11 @@ llvm::Value* AstFunctionCall::codegen(
             ? std::format("Did you mean '{}'?",
                           format_suggestion(suggested_alternative_symbol))
             : "";
+
+        for (const auto& fn_sym : module->getFunctionList())
+        {
+            printf("%s\n", fn_sym.getName().str().c_str());
+        }
 
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
