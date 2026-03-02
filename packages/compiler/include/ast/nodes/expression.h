@@ -434,8 +434,12 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        IAstType* get_variable_type() const
+        IAstType* get_annotated_type() const
         {
+            if (this->_initial_value != nullptr)
+            {
+                return _initial_value->get_type();
+            }
             return this->_variable_type.get();
         }
 

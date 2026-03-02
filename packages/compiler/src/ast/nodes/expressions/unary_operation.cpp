@@ -206,9 +206,10 @@ void AstUnaryOp::validate()
             {
                 throw parsing_error(
                     ErrorType::TYPE_ERROR,
-                    std::format("Invalid type '{}' for {} operand",
-                                operand_type->to_string(),
-                                op == UnaryOpType::PLUS ? "unary plus" : "negation"
+                    std::format(
+                        "Invalid type '{}' for {} operand",
+                        operand_type->to_string(),
+                        op == UnaryOpType::PLUS ? "unary plus" : "negation"
                     ),
                     this->get_source_fragment());
             }

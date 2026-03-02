@@ -9,6 +9,7 @@
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
+#include <iostream>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
@@ -73,7 +74,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         set.next();
         value = parse_inline_expression(context, set);
         // We don't know the type yet, as this is inferred in the validation step.
-        variable_type = make_unknown_type(context, set, flags);
+        variable_type = make_unknown_type(context, set);
     }
     else
     {
@@ -137,6 +138,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         internal_name
     );
 
+    variable_type->set_flags(flags);
+
     return std::make_unique<AstVariableDeclaration>(
         context,
         symbol,
@@ -170,30 +173,31 @@ void AstVariableDeclaration::validate()
 {
     this->_initial_value->validate();
 
-    // If the variable type is inferred, we don't need to do any validation
-    if (const auto unknown_ty = cast_type<AstPrimitiveType*>(this->_variable_type.get());
-        unknown_ty && unknown_ty->get_type() == PrimitiveType::UNKNOWN)
+    if (this->_variable_type->is_unknown() && !this->_initial_value)
     {
-        return;
+        throw parsing_error(
+            ErrorType::SYNTAX_ERROR,
+            "Variable declaration must have a type or an initializer",
+            this->get_source_fragment()
+        );
     }
 
-    const auto lhs_type = this->get_variable_type();
+    const auto annotated_type = this->get_annotated_type();
 
-    if (const auto rhs_type = this->get_initial_value()->get_type();
-        !lhs_type->equals(*rhs_type))
+    if (const auto value_type = this->get_initial_value()->get_type();
+        !annotated_type->equals(*value_type))
     {
-        if (const auto primitive_type = cast_type<AstPrimitiveType*>(rhs_type);
-            primitive_type != nullptr &&
-            primitive_type->get_type() == PrimitiveType::NIL)
+        if (const auto val_primitive_ty = cast_type<AstPrimitiveType*>(value_type);
+            val_primitive_ty && val_primitive_ty->get_type() == PrimitiveType::NIL)
         {
-            if (lhs_type->is_optional())
+            if (annotated_type->is_optional())
             {
                 return;
             }
 
             const std::vector references = {
-                ErrorSourceReference(lhs_type->to_string(), this->get_source_fragment()),
-                ErrorSourceReference(rhs_type->to_string(),
+                ErrorSourceReference(annotated_type->to_string(), this->get_source_fragment()),
+                ErrorSourceReference(value_type->to_string(),
                                      this->get_initial_value()->get_source_fragment())
             };
 
@@ -201,14 +205,14 @@ void AstVariableDeclaration::validate()
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Cannot assign nil to variable of non-optional type '{}'",
-                    lhs_type->to_string()
+                    annotated_type->to_string()
                 ),
                 references
             );
         }
 
-        const std::string lhs_type_str = lhs_type->to_string();
-        const std::string rhs_type_str = rhs_type->to_string();
+        const std::string lhs_type_str = annotated_type->to_string();
+        const std::string rhs_type_str = value_type->to_string();
 
         const std::vector references = {
             ErrorSourceReference(lhs_type_str, this->get_source_fragment()),
@@ -289,12 +293,12 @@ void AstVariableDeclaration::resolve_forward_references(
 {
     this->_initial_value->resolve_forward_references(context, module, builder);
 
-    if (!this->get_variable_type()->is_global())
+    if (!this->get_annotated_type()->is_global())
     {
         return;
     }
 
-    llvm::Type* var_type = type_to_llvm_type(this->get_variable_type(), module);
+    llvm::Type* var_type = type_to_llvm_type(this->get_annotated_type(), module);
     if (!var_type)
     {
         return;
@@ -312,7 +316,7 @@ void AstVariableDeclaration::resolve_forward_references(
     new llvm::GlobalVariable(
         *module,
         var_type,
-        !this->get_variable_type()->is_mutable(),
+        !this->get_annotated_type()->is_mutable(),
         llvm::GlobalValue::ExternalLinkage,
         default_init,
         this->get_internal_name()
@@ -382,7 +386,7 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
     llvm::Module* module,
     llvm::Type* var_type)
 {
-    if (!self->get_variable_type()->is_global())
+    if (!self->get_annotated_type()->is_global())
     {
         return std::nullopt;
     }
@@ -417,7 +421,7 @@ llvm::Value* AstVariableDeclaration::codegen(
 {
     // Get the LLVM type for the variable
     llvm::Type* variable_ty = type_to_llvm_type(
-        this->get_variable_type(),
+        this->get_annotated_type(),
         module
     );
 
@@ -541,6 +545,6 @@ std::string AstVariableDeclaration::to_string()
         "VariableDeclaration({}({}), {}, {})",
         get_variable_name(),
         get_internal_name(),
-        get_variable_type()->to_string(),
+        get_annotated_type()->to_string(),
         this->get_initial_value() ? get_initial_value()->to_string() : "nil");
 }

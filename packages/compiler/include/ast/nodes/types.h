@@ -50,9 +50,8 @@ namespace stride::ast
     {
         int _flags;
 
-
     public:
-        IAstType(
+        explicit IAstType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const int flags
@@ -125,8 +124,19 @@ namespace stride::ast
 
         virtual bool equals(IAstType& other) = 0;
 
+        virtual bool is_assignable_to(IAstType* other) const
+        {
+            return false;
+        }
+
         [[nodiscard]]
         virtual bool is_primitive() const
+        {
+            return false;
+        }
+
+        [[nodiscard]]
+        virtual bool is_unknown() const
         {
             return false;
         }
@@ -150,7 +160,8 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             const PrimitiveType type,
             const size_t bit_count,
-            const int flags = SRFLAG_NONE) :
+            const int flags = SRFLAG_NONE
+        ) :
             IAstType(source, context, flags),
             _type(type),
             _bit_count(bit_count) {}
@@ -219,6 +230,12 @@ namespace stride::ast
         }
 
         bool equals(IAstType& other) override;
+
+        [[nodiscard]]
+        bool is_unknown() const override
+        {
+            return this->_type == PrimitiveType::UNKNOWN;
+        }
 
         [[nodiscard]]
         bool is_primitive() const override
@@ -512,8 +529,7 @@ namespace stride::ast
 
     std::unique_ptr<IAstType> make_unknown_type(
         const std::shared_ptr<ParsingContext>& context,
-        const TokenSet& set,
-        int flags
+        const TokenSet& set
     );
 
 } // namespace stride::ast

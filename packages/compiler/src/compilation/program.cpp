@@ -118,14 +118,14 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     llvm::IRBuilder<> builder(context);
 
+    ast::AstNodeTraverser traverser;
+    ast::TypeInferenceVisitor type_visitor;
+    traverser.visit(&type_visitor, this->_root_node.get());
     this->_root_node->resolve_forward_references(
         this->get_global_context().get(),
         module.get(),
         &builder
     );
-    ast::AstNodeTraverser traverser;
-    ast::TypeInferenceVisitor type_visitor;
-    traverser.visit(&type_visitor, this->_root_node.get());
     this->_root_node->validate();
 
     // LLVM Codegeneration step
