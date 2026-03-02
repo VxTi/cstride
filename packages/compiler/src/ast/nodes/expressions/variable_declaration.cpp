@@ -323,7 +323,8 @@ void global_var_declaration_codegen(
     const AstVariableDeclaration* self,
     llvm::GlobalVariable* global_var,
     llvm::Module* module,
-    llvm::IRBuilderBase* ir_builder)
+    llvm::IRBuilderBase* ir_builder
+)
 {
     // Dynamic Initialization ("Global Constructor" Pattern)
     // Create a function: void __init_variable_name()
@@ -431,8 +432,7 @@ llvm::Value* AstVariableDeclaration::codegen(
 
     // If we are generating a global, we might rely on constant initialization
     // or dynamic initialization handled later.
-    if (const std::optional<llvm::GlobalVariable*> global_var =
-            get_global_var_decl(this, module, variable_ty);
+    if (const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(this, module, variable_ty);
         global_var.has_value())
     {
         llvm::Value* init_value = nullptr;

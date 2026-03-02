@@ -17,7 +17,7 @@ std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
     {
         if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
         {
-            if (fn_def->matches_signature(function_name, parameter_types))
+            if (fn_def->matches_parameter_signature(function_name, parameter_types))
             {
                 return fn_def;
             }
@@ -43,7 +43,7 @@ std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
     {
         if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
         {
-            if (fn_def->matches_signature(function_name, signature))
+            if (fn_def->matches_type_signature(function_name, signature))
             {
                 return fn_def;
             }
@@ -52,7 +52,7 @@ std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
     return std::nullopt;
 }
 
-bool FunctionDefinition::matches_signature(
+bool FunctionDefinition::matches_type_signature(
     const std::string& name,
     const AstFunctionType* signature
 ) const
@@ -62,11 +62,11 @@ bool FunctionDefinition::matches_signature(
 
     const auto& other_params = signature->get_parameter_types();
 
-    return matches_signature(name, other_params);
+    return matches_parameter_signature(name, other_params);
 
 }
 
-bool FunctionDefinition::matches_signature(
+bool FunctionDefinition::matches_parameter_signature(
     const std::string& internal_function_name,
     const std::vector<std::unique_ptr<IAstType>>& other_parameter_types
 )
@@ -82,10 +82,10 @@ const
         if (other_parameter_types.size() < self_params.size())
             return false;
 
-        // Otherwise, we expect the same amount of arguments
     }
     else
     {
+        // Otherwise, we expect the same number of arguments
         if (other_parameter_types.size() != self_params.size())
             return false;
     }
@@ -134,7 +134,7 @@ bool ParsingContext::is_function_defined_globally(
         {
             if (const auto* fn_def = dynamic_cast<const FunctionDefinition*>(symbol.get()))
             {
-                return fn_def->matches_signature(function_name, function_type);
+                return fn_def->matches_type_signature(function_name, function_type);
             }
             return false;
         }

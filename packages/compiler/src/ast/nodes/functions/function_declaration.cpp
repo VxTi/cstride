@@ -84,25 +84,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const auto& position = reference_token.get_source_fragment();
     auto sym_function_name = Symbol(position, context->get_name(), fn_name);
 
-    // Prevent tagging extern functions with different internal names.
-    // This prevents the linker from being unable to make a reference to this function.
-    /*if ((function_flags & SRFLAG_FN_DEF_EXTERN) == 0)
-    {
-        std::vector<IAstType*> parameter_types;
-        parameter_types.reserve(parameters.size());
-
-        for (const auto& param : parameters)
-        {
-            parameter_types.push_back(param->get_type());
-        }
-        sym_function_name = resolve_internal_function_name(
-            context,
-            position,
-            { fn_name },
-            parameter_types
-        );
-    }*/
-
     std::unique_ptr<AstBlock> body = nullptr;
 
     if (function_flags & SRFLAG_FN_DEF_EXTERN)
@@ -195,8 +176,7 @@ void stride::ast::parse_standalone_fn_param(
         set.expect(TokenType::IDENTIFIER, "Expected a function parameter name");
     set.expect(TokenType::COLON);
 
-    std::unique_ptr<IAstType> fn_param_type =
-        parse_type(context, set, "Expected function parameter type", flags);
+    std::unique_ptr<IAstType> fn_param_type = parse_type(context, set, "Expected function parameter type", flags);
 
     const auto& param_name = reference_token.get_lexeme();
 
