@@ -23,8 +23,8 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # --- Library Setup ---
-file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.cc")
-file(GLOB_RECURSE HEADER_FILES "include/*.h" "include/*.hpp")
+file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "src/*.cpp" "src/*.cc")
+file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "include/*.h" "include/*.hpp")
 list(REMOVE_ITEM SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
 add_library(cstride_lib STATIC
@@ -33,7 +33,15 @@ add_library(cstride_lib STATIC
 )
 
 # --- Runtime Library ---
+# Always build the runtime optimized and without debug info so that compiled
+# user binaries don't embed local build paths or unnecessary C++ template symbols.
 add_library(stride_runtime STATIC src/stl/stride_runtime.cpp)
+target_compile_options(stride_runtime PRIVATE
+    -O2                  # inline chrono templates → far fewer symbol entries
+    -g0                  # no DWARF → removes embedded source file paths
+    -ffunction-sections  # one section per function, enables dead-code stripping
+    -fdata-sections
+)
 
 # --- Installation ---
 include(GNUInstallDirs)

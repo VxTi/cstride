@@ -93,11 +93,25 @@ int Program::compile(const cli::CompilationOptions& options) const
     std::string runtime_path = TOSTRING(STRIDE_RUNTIME_LIB_PATH);
     std::vector<std::string> files = { runtime_path, filename};
 
-    // Construct the linker command
-    // We are linking the object file we just created.
-    // Ensure you link against standard libraries if needed (like C++ runtime if used by runtime.cpp/stl).
-    // Using `clang++` or `g++` is often the easiest way to link object files properly on most systems.
-    std::string linker_command = std::format("clang++ {} -o {}", join(files, " "), output_binary);
+    // Dead-code elimination and stripping differ by platform.
+    //
+    // macOS (Apple ld):
+    //   -Wl,-dead_strip   removes unreferenced sections
+    //   -s is obsolete;   use a post-link `strip -S -x` instead
+    //     -S  strips debug info (removes embedded source paths)
+    //     -x  strips local (non-global) symbols
+    //
+    // Linux (GNU ld / lld):
+    //   -Wl,--gc-sections removes unreferenced sections
+    //     (requires -ffunction-sections/-fdata-sections on the objects,
+    //      already set for stride_runtime in CMakeLists.txt)
+    //   -Wl,--strip-all   strips all symbols in one linker pass
+    const bool is_darwin = target_triple.isOSDarwin();
+    std::string dead_strip_flag = is_darwin ? "-Wl,-dead_strip" : "-Wl,--gc-sections";
+    std::string strip_flag      = is_darwin ? ""                : "-Wl,--strip-all";
+
+    std::string linker_command = std::format("clang++ {} -o {} {} {}",
+        join(files, " "), output_binary, dead_strip_flag, strip_flag);
 
     if (options.debug_mode)
     {
@@ -109,6 +123,22 @@ int Program::compile(const cli::CompilationOptions& options) const
     {
         std::cerr << "Linking failed." << std::endl;
         return link_result;
+    }
+
+    // On macOS, -s is obsolete in Apple ld. Run strip(1) after linking instead:
+    //   -S  removes debug info (DWARF / stabs) — eliminates embedded build paths
+    //   -x  removes local (non-exported) symbols — reduces symbol table size
+    if (is_darwin)
+    {
+        std::string strip_command = std::format("strip -S -x {}", output_binary);
+        if (options.debug_mode)
+            std::cout << "Strip command: " << strip_command << std::endl;
+        if (int strip_result = system(strip_command.c_str());
+            strip_result != 0)
+        {
+            std::cerr << "strip failed." << std::endl;
+            return strip_result;
+        }
     }
 
     std::cout << "Executable created: " << output_binary << std::endl;

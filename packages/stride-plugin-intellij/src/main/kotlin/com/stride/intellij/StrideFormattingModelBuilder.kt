@@ -45,6 +45,9 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
 
             .after(StrideTypes.COLON).spaceIf(true)
             .before(StrideTypes.COLON).spaceIf(false)
+            // Specific comma rules must come before the general .after(COMMA) rule
+            // because SpacingBuilder uses first-match semantics
+            .afterInside(StrideTypes.COMMA, StrideTypes.STRUCT_INIT_FIELDS).lineBreakInCode()
             .after(StrideTypes.COMMA).spaceIf(true)
             .before(StrideTypes.COMMA).spaceIf(false)
             .before(StrideTypes.SEMICOLON).spaceIf(false)
@@ -62,7 +65,6 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             .afterInside(StrideTypes.LBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
             .beforeInside(StrideTypes.RBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
             .beforeInside(StrideTypes.STRUCT_INIT_FIELD, StrideTypes.STRUCT_INIT_FIELDS).lineBreakInCode()
-            .afterInside(StrideTypes.COMMA, StrideTypes.STRUCT_INIT_FIELDS).lineBreakInCode()
 
             .between(StrideTypes.TYPE_DEFINITION, StrideTypes.TYPE_DEFINITION).blankLines(1)
             .between(StrideTypes.FUNCTION_DECLARATION, StrideTypes.FUNCTION_DECLARATION).blankLines(1)

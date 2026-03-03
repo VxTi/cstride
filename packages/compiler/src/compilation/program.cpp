@@ -1,9 +1,10 @@
 #include "program.h"
 
-#include "stride_runtime.h"
+#include "../../include/runtime/stride_runtime.h"
 #include "ast/parser.h"
 #include "ast/nodes/traversal.h"
 #include "../../include/ast/visitor.h"
+#include "runtime/symbols.h"
 
 #include <iostream>
 #include <llvm/Analysis/LoopAnalysisManager.h>
