@@ -1,22 +1,12 @@
 #pragma once
-#include <cstdint>
 #include <memory>
 
-namespace llvm::orc
-{
+namespace llvm::orc {
     class LLJIT;
 }
 
-namespace stride::ast
-{
+namespace stride::ast {
     class ParsingContext;
-}
-
-extern "C" {
-int stride_printf(const char* format, ...);
-uint64_t system_time_ns();
-uint64_t system_time_us();
-uint64_t system_time_ms();
 }
 
 namespace stride::runtime

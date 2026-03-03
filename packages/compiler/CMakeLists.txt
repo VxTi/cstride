@@ -23,8 +23,8 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # --- Library Setup ---
-file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.cc")
-file(GLOB_RECURSE HEADER_FILES "include/*.h" "include/*.hpp")
+file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "src/*.cpp" "src/*.cc")
+file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "include/*.h" "include/*.hpp")
 list(REMOVE_ITEM SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
 add_library(cstride_lib STATIC

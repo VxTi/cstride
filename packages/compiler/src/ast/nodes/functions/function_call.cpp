@@ -19,6 +19,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
+#include <llvm/TargetParser/Triple.h>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -288,7 +289,23 @@ llvm::Value* AstFunctionCall::codegen(
 
     if (va_list_ptr)
     {
-        args_v.push_back(va_list_ptr);
+        // On Darwin ARM64, va_list is char* (a single pointer value), not a struct.
+        // vprintf expects that char* value in a register, so we must load it from
+        // the alloca rather than passing the alloca's address.
+        const llvm::Triple triple(module->getTargetTriple());
+        if (triple.getArch() == llvm::Triple::aarch64 && triple.isOSDarwin())
+        {
+            llvm::Value* va_list_val = builder->CreateLoad(
+                llvm::PointerType::get(module->getContext(), 0),
+                va_list_ptr,
+                "va_list_val"
+            );
+            args_v.push_back(va_list_val);
+        }
+        else
+        {
+            args_v.push_back(va_list_ptr);
+        }
     }
 
     auto actual_callee = callee;

@@ -64,12 +64,20 @@ llvm::Type* get_va_list_type(const llvm::Module* module) {
 
     // AArch64 (ARM64)
     if (triple.getArch() == llvm::Triple::aarch64) {
+        if (triple.isOSDarwin()) {
+            // Apple ARM64 (Darwin ABI): va_list is simply char* (single pointer).
+            // All variadic arguments are placed on the stack; va_start sets this
+            // pointer to the address of the first variadic argument.
+            return llvm::PointerType::get(module->getContext(), 0);
+        }
+
+        // AAPCS64 (Linux, etc.)
         // struct __va_list {
         //    void *__stack;
         //    void *__gr_top;
         //    void *__vr_top;
-        //    int   __gr_off;
-        //    int   __vr_off;
+        //    int   __gr_offs;
+        //    int   __vr_offs;
         // };
         llvm::Type* i32_ty = llvm::Type::getInt32Ty(module->getContext());
         llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
