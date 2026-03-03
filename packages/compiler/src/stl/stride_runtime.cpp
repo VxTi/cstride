@@ -4,10 +4,13 @@
 #include <chrono>
 #include <cstdarg>
 #include <cstdio>
+#include <llvm/ExecutionEngine/Orc/AbsoluteSymbols.h>
+#include <llvm/ExecutionEngine/Orc/CoreContainers.h>
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
 
 extern "C" {
 
-int printf(const char* format, ...)
+int stride_printf(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -109,4 +112,34 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
         ),
         0
     );
+}
+
+void stride::runtime::register_jit_symbols(llvm::orc::LLJIT* jit)
+{
+    llvm::orc::SymbolMap syms;
+    auto& es = jit->getExecutionSession();
+    llvm::orc::MangleAndInterner mangle(es, jit->getDataLayout());
+
+    syms[mangle("printf")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&stride_printf),
+        llvm::JITSymbolFlags::Exported
+    );
+    syms[mangle("vprintf")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&vprintf),
+        llvm::JITSymbolFlags::Exported
+    );
+    syms[mangle("system_time_ns")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&system_time_ns),
+        llvm::JITSymbolFlags::Exported
+    );
+    syms[mangle("system_time_us")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&system_time_us),
+        llvm::JITSymbolFlags::Exported
+    );
+    syms[mangle("system_time_ms")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&system_time_ms),
+        llvm::JITSymbolFlags::Exported
+    );
+
+    llvm::cantFail(jit->getMainJITDylib().define(llvm::orc::absoluteSymbols(syms)));
 }

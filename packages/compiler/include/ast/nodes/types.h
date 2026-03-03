@@ -219,6 +219,8 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
+        bool is_assignable_to(IAstType* other) const override;
+
         [[nodiscard]]
         bool is_primitive() const override
         {

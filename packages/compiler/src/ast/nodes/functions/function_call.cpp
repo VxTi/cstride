@@ -2,6 +2,7 @@
 #include "formatting.h"
 #include "ast/casting.h"
 #include "ast/closures.h"
+#include "ast/flags.h"
 #include "ast/optionals.h"
 #include "ast/parsing_context.h"
 #include "ast/symbols.h"
@@ -11,6 +12,7 @@
 #include "ast/tokens/token_set.h"
 
 #include <format>
+#include <iostream>
 #include <sstream>
 #include <vector>
 #include <llvm/IR/Function.h>
@@ -80,7 +82,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
                         );
                     }
                     function_call_flags |= SRFLAG_FN_TYPE_VARIADIC;
-                    function_arg_nodes.push_back(std::move(function_argument));
 
                     break;
                 }
@@ -158,6 +159,35 @@ llvm::Value* AstFunctionCall::codegen(
         definition.has_value())
     {
         callee = module->getFunction(this->get_scoped_function_name());
+
+        // If the symbol exists in the semantic context but not yet in the IR module,
+        // declare it as an external function now.
+        if (!callee)
+        {
+            const auto fn_type = definition.value()->get_type();
+            std::vector<llvm::Type*> param_types;
+            param_types.reserve(fn_type->get_parameter_types().size());
+
+            for (const auto& param : fn_type->get_parameter_types())
+            {
+                param_types.push_back(type_to_llvm_type(param.get(), module));
+            }
+
+            llvm::Type* ret_type = type_to_llvm_type(fn_type->get_return_type().get(), module);
+
+            llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
+                ret_type,
+                param_types,
+                fn_type->is_variadic()
+            );
+
+            auto callee_cand = module->getOrInsertFunction(
+                this->get_scoped_function_name(),
+                llvm_fn_type
+            );
+
+            callee = llvm::dyn_cast<llvm::Function>(callee_cand.getCallee());
+        }
     }
 
     // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
@@ -172,6 +202,11 @@ llvm::Value* AstFunctionCall::codegen(
     // No way to find it :(
     if (!callee)
     {
+        for (const auto& defined_function : module->getFunctionList())
+        {
+            std::cout << defined_function.getName().str() << std::endl;
+        }
+
         const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(this->get_function_name());
         const auto suggested_alternative = suggested_alternative_symbol
             ? std::format("Did you mean '{}'?",
@@ -204,9 +239,25 @@ llvm::Value* AstFunctionCall::codegen(
     std::vector<llvm::Value*> args_v;
     const auto& arguments = this->get_arguments();
 
+    llvm::Value* va_list_ptr = nullptr;
+    if (this->is_variadic())
+    {
+        va_list_ptr = AstVariadicArgReference::init_variadic_reference(module, builder);
+    }
+
     for (size_t i = 0; i < arguments.size(); ++i)
     {
-        const auto arg_val = arguments[i]->codegen(module, builder);
+        llvm::Value* arg_val = nullptr;
+
+        if (cast_expr<AstVariadicArgReference*>(arguments[i].get()))
+        {
+            // Do nothing, we'll append the va_list_ptr later if it exists
+            continue;
+        }
+        else
+        {
+            arg_val = arguments[i]->codegen(module, builder);
+        }
 
         if (!arg_val)
         {
@@ -235,11 +286,47 @@ llvm::Value* AstFunctionCall::codegen(
         args_v.push_back(final_val);
     }
 
-    return builder->CreateCall(
-        callee,
+    if (va_list_ptr)
+    {
+        args_v.push_back(va_list_ptr);
+    }
+
+    auto actual_callee = callee;
+    if (this->is_variadic() && (callee->getName() == "printf" || callee->getName() == "stride_printf"))
+    {
+        if (auto* vprintf_fn = module->getFunction("vprintf"))
+        {
+            actual_callee = vprintf_fn;
+        }
+        else
+        {
+            // Declare vprintf
+            auto* vprintf_type = llvm::FunctionType::get(
+                callee->getReturnType(),
+                {
+                    callee->getFunctionType()->getParamType(0),
+                    llvm::PointerType::get(module->getContext(), 0)
+                },
+                false
+            );
+            actual_callee = llvm::cast<llvm::Function>(
+                module->getOrInsertFunction("vprintf", vprintf_type).getCallee()
+            );
+        }
+    }
+
+    const auto call_inst = builder->CreateCall(
+        actual_callee,
         args_v,
-        callee->getReturnType()->isVoidTy() ? "" : "calltmp"
+        actual_callee->getReturnType()->isVoidTy() ? "" : "calltmp"
     );
+
+    if (va_list_ptr)
+    {
+        AstVariadicArgReference::end_variadic_reference(module, builder, va_list_ptr);
+    }
+
+    return call_inst;
 }
 
 llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
@@ -470,6 +557,11 @@ void AstFunctionCall::validate()
     {
         arg->validate();
     }
+}
+
+bool AstFunctionCall::is_variadic() const
+{
+    return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
 }
 
 std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() const

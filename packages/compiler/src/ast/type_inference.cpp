@@ -453,19 +453,20 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             return value_type->clone_ty();
         }
 
-        if (!annotated_type.value()->is_assignable_to(value_type.get()))
+        if (annotated_type.value()->is_assignable_to(value_type.get()))
         {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Type mismatch in variable declaration: cannot assign value of type '{}' to variable of type '{}'",
-                    value_type->get_type_name(),
-                    annotated_type.value()->get_type_name()
-                ),
-                variable_declaration->get_source_fragment()
-            );
+            return get_dominant_field_type(annotated_type.value(), value_type.get());
         }
-        return get_dominant_field_type(annotated_type.value(), value_type.get());
+
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Type mismatch in variable declaration: cannot assign value of type '{}' to variable of type '{}'",
+                value_type->get_type_name(),
+                annotated_type.value()->get_type_name()
+            ),
+            variable_declaration->get_source_fragment()
+        );
     }
 
     if (const auto* fn_call = cast_expr<AstFunctionCall*>(expr))

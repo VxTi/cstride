@@ -17,7 +17,7 @@ fn main(): int32 {
     }
     const end: uint64 = system_time_ns();
 
-    const elapsed: int64 = (end - start) / iterations;
+    const elapsed: uint64 = (end - start) / iterations;
 
     io::println("calculating e^x in %d iterations in %llu nanoseconds: %f \n ", iterations, elapsed, k);
 
