@@ -343,6 +343,9 @@ namespace stride::ast
             return this->_symbol.internal_name;
         }
 
+        [[nodiscard]]
+        bool is_variadic() const;
+
         std::string to_string() override;
 
         llvm::Value* codegen(
@@ -781,6 +784,17 @@ namespace stride::ast
         std::string to_string() override;
 
         std::unique_ptr<IAstNode> clone() override;
+
+        static llvm::Value* init_variadic_reference(
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder
+        );
+
+        static void end_variadic_reference(
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder,
+            llvm::Value* va_list_ptr
+        );
     };
 
     class AstTupleInitializer

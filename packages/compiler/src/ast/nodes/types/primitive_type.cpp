@@ -289,3 +289,13 @@ bool AstPrimitiveType::equals(IAstType& other)
 
     return false;
 }
+
+bool AstPrimitiveType::is_assignable_to(IAstType* other) const
+{
+    if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
+    {
+        return this->is_integer_ty() && other_primitive->is_integer_ty()
+            || this->is_fp() && other_primitive->is_fp();
+    }
+    return false;
+}

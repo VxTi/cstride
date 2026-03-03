@@ -12,7 +12,7 @@ namespace
     llvm::Function* get_or_declare_va_start(llvm::Module* module)
     {
         llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
-        return getOrInsertDeclaration(
+        return llvm::Intrinsic::getOrInsertDeclaration(
             module,
             llvm::Intrinsic::vastart,
             { i8_ptr_ty }
@@ -23,7 +23,7 @@ namespace
     llvm::Function* get_or_declare_va_copy(llvm::Module* module)
     {
         llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
-        return getOrInsertDeclaration(
+        return llvm::Intrinsic::getOrInsertDeclaration(
             module,
             llvm::Intrinsic::vacopy,
             { i8_ptr_ty }
@@ -34,7 +34,7 @@ namespace
     llvm::Function* get_or_declare_va_end(llvm::Module* module)
     {
         llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
-        return getOrInsertDeclaration(
+        return llvm::Intrinsic::getOrInsertDeclaration(
             module,
             llvm::Intrinsic::vaend,
             { i8_ptr_ty }
@@ -85,15 +85,20 @@ llvm::Type* get_va_list_type(const llvm::Module* module) {
 
 llvm::Value* AstVariadicArgReference::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
+    throw parsing_error(
+        ErrorType::COMPILATION_ERROR,
+        "Variadic argument reference '...' cannot be directly codegened",
+        this->get_source_fragment()
+    );
+}
+
+llvm::Value* AstVariadicArgReference::init_variadic_reference(llvm::Module* module, llvm::IRBuilderBase* builder)
+{
     // Verify we're inside a variadic function
     if (const llvm::Function* current_function = builder->GetInsertBlock()->getParent();
         !current_function || !current_function->isVarArg())
     {
-        throw parsing_error(
-            ErrorType::SEMANTIC_ERROR,
-            "Variadic argument reference '...' can only be used inside a variadic function",
-            this->get_source_fragment()
-        );
+        return nullptr;
     }
 
     // Create and initialize a va_list to access the variadic arguments
@@ -147,6 +152,21 @@ llvm::Value* AstVariadicArgReference::codegen(llvm::Module* module, llvm::IRBuil
     // Note: The caller (or function cleanup) is responsible for calling va_end
     // on this copy when done using it
     return va_list_copy_ptr;
+}
+
+void AstVariadicArgReference::end_variadic_reference(llvm::Module* module, llvm::IRBuilderBase* builder, llvm::Value* va_list_ptr)
+{
+    if (!va_list_ptr)
+        return;
+
+    llvm::Value* va_list_i8_ptr = builder->CreateBitCast(
+        va_list_ptr,
+        llvm::PointerType::get(module->getContext(), 0),
+        "varargs_list_end.cast"
+    );
+
+    llvm::Function* va_end_fn = get_or_declare_va_end(module);
+    builder->CreateCall(va_end_fn, { va_list_i8_ptr });
 }
 
 std::unique_ptr<IAstNode> AstVariadicArgReference::clone()

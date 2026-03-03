@@ -1,5 +1,7 @@
 #include "program.h"
+#include "stride_runtime.h"
 
+#include <iostream>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
@@ -35,6 +37,7 @@ llvm::Expected<llvm::orc::ExecutorAddr> locate_main_fn(llvm::orc::LLJIT* jit)
 int Program::compile_jit(const cli::CompilationOptions& options) const
 {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
+
     setvbuf(stdout, nullptr, _IONBF, 0);
 
     llvm::InitializeNativeTarget();
@@ -74,20 +77,23 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
        .setJITTargetMachineBuilder(std::move(jtmb))
        .create()
     );
-    auto module = prepare_module(*context, options, target_machine.get());
 
-    jit->getMainJITDylib().addGenerator(
+    auto& jit_dylib = jit->getMainJITDylib();
+
+    jit_dylib.addGenerator(
         llvm::cantFail(
             llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
                 jit->getDataLayout().getGlobalPrefix()))
     );
+    runtime::register_jit_symbols(jit.get());
+    auto module = prepare_module(*context, options, target_machine.get());
 
     llvm::orc::ThreadSafeModule thread_safe_module(
         std::move(module),
         std::move(tsc));
     llvm::cantFail(jit->addIRModule(std::move(thread_safe_module)));
 
-    if (auto err = jit->initialize(jit->getMainJITDylib()))
+    if (auto err = jit->initialize(jit_dylib))
     {
         llvm::logAllUnhandledErrors(
             std::move(err),
@@ -107,7 +113,7 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     const auto main_fn = main_fn_executor->toPtr<int (*)()>();
     const int result = main_fn();
 
-    if (auto err = jit->deinitialize(jit->getMainJITDylib()))
+    if (auto err = jit->deinitialize(jit_dylib))
     {
         llvm::logAllUnhandledErrors(
             std::move(err),

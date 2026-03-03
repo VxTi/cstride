@@ -59,7 +59,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
        .expect(TokenType::IDENTIFIER, "Expected variable name in variable declaration")
        .get_lexeme();
 
-    std::unique_ptr<IAstType> variable_type = nullptr;
+    std::optional<std::unique_ptr<IAstType>> variable_type = std::nullopt;
     std::unique_ptr<IAstExpression> value = nullptr;
 
     if (set.peek_next_eq(TokenType::EQUALS))
@@ -84,6 +84,8 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
             "Expected variable type after variable name",
             flags
         );
+        const auto& type = variable_type.value().get();
+
         if (set.peek_next_eq(TokenType::EQUALS))
         {
             set.next();
@@ -91,19 +93,19 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         }
         else
         {
-            if (!variable_type->is_optional())
+            if (!type->is_optional())
             {
                 throw parsing_error(
                     ErrorType::SYNTAX_ERROR,
                     "Expected '=' after type annotation in variable declaration",
-                    variable_type->get_source_fragment()
+                    type->get_source_fragment()
                 );
             }
 
             // If no expression was provided (lacking '='), initialize with nil if the initial type
             // is optional
             const auto& ref_src_pos = reference_token.get_source_fragment();
-            const auto& var_type_src_pos = variable_type->get_source_fragment();
+            const auto& var_type_src_pos = type->get_source_fragment();
 
             value = std::make_unique<AstNilLiteral>(
                 SourceFragment(
@@ -117,7 +119,9 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
     }
 
     const auto& ref_tok_pos = reference_token.get_source_fragment();
-    const auto& var_type_pos = variable_type ? variable_type->get_source_fragment() : value->get_source_fragment();
+    const auto& var_type_pos = variable_type.has_value()
+        ? variable_type.value()->get_source_fragment()
+        : value->get_source_fragment();
     const auto symbol_position = SourceFragment(
         ref_tok_pos.source,
         ref_tok_pos.offset,
