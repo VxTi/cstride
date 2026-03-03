@@ -1,5 +1,6 @@
 #include "program.h"
-#include "stride_runtime.h"
+#include "../../include/runtime/stride_runtime.h"
+#include "runtime/symbols.h"
 
 #include <iostream>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
