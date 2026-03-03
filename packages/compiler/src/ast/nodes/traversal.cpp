@@ -37,7 +37,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstExpression* node)
         return;
 
     // IAstFunction is an expression but needs special handling (body traversal + params)
-    if (auto* fn = dynamic_cast<IAstFunction*>(node))
+    if (auto* fn = dynamic_cast<AstFunctionDeclaration*>(node))
     {
         visit(visitor, fn);
         return;
@@ -92,6 +92,14 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstExpression* node)
         // Visit the base identifier so its type is resolved before the accessor's type is inferred.
         visit(visitor, member_access->get_base());
     }
+    else if (auto* fn_decl = dynamic_cast<AstFunctionDeclaration*>(node))
+    {
+        visit(visitor, fn_decl);
+    }
+    else if (auto* lambda = dynamic_cast<AstLambdaFunctionExpression*>(node))
+    {
+        visit(visitor, lambda);
+    }
     // AstLiteral, AstIdentifier, AstVariadicArgReference,
     // AstArrayMemberAccessor (base/index already handled above) — leaf nodes, no children.
 
@@ -136,16 +144,25 @@ void AstNodeTraverser::visit(IVisitor* visitor, AstFunctionDeclaration* node)
     visit(visitor, node->get_body());
 }
 
+void AstNodeTraverser::visit(IVisitor* visitor, AstLambdaFunctionExpression* node)
+{
+    visitor->accept(node);
+    visit(visitor, node->get_body());
+}
+
+void AstNodeTraverser::visit(IVisitor* visitor, AstVariableDeclaration* node)
+{
+    visitor->accept(node);
+    visit(visitor, node->get_initial_value());
+}
+
 void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
 {
     if (!node)
         return;
 
-    if (auto* fn_decl = dynamic_cast<AstFunctionDeclaration*>(node))
-    {
-        visit(visitor, fn_decl);
-    }
-    else if (auto* conditional = dynamic_cast<AstConditionalStatement*>(node))
+
+    if (auto* conditional = dynamic_cast<AstConditionalStatement*>(node))
     {
         visit(visitor, conditional);
     }
@@ -172,5 +189,9 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     else if (auto* expr = dynamic_cast<IAstExpression*>(node))
     {
         visit(visitor, expr);
+    }
+    else if (auto* variable_declaration = dynamic_cast<AstVariableDeclaration*>(node))
+    {
+        visit(visitor, variable_declaration);
     }
 }

@@ -10,8 +10,9 @@ using namespace stride::ast;
 
 void TypeInferenceVisitor::accept(IAstExpression* expr)
 {
+    auto type = infer_expression_type(expr);
     // Infer and store the expression's type
-    expr->set_type(infer_expression_type(expr));
+    expr->set_type(std::move(type));
 
     // --- Variable declaration: register the resolved type in the local context
     // so that subsequent expressions in the same scope can look up the variable.
@@ -29,7 +30,7 @@ void TypeInferenceVisitor::accept(IAstExpression* expr)
     }
 }
 
-void FunctionDeclareVisitor::accept(AstFunctionDeclaration* fn_declaration)
+void FunctionDeclareVisitor::accept(IAstFunction* fn_declaration)
 {
     // Define parameters in the function's own context BEFORE traversing the body,
     // so that identifiers referencing params resolve correctly inside the body.
@@ -38,10 +39,14 @@ void FunctionDeclareVisitor::accept(AstFunctionDeclaration* fn_declaration)
         const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
         fn_declaration->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
     }
-    fn_declaration->set_type(infer_expression_type(fn_declaration));
-    fn_declaration->get_context()->define_function(
-        fn_declaration->get_symbol(),
-        fn_declaration->get_type()->clone_as<AstFunctionType>(),
-        fn_declaration->get_flags()
-    );
+
+    if (dynamic_cast<AstFunctionDeclaration*>(fn_declaration))
+    {
+        fn_declaration->set_type(infer_expression_type(fn_declaration));
+        fn_declaration->get_context()->define_function(
+            fn_declaration->get_symbol(),
+            fn_declaration->get_type()->clone_as<AstFunctionType>(),
+            fn_declaration->get_flags()
+        );
+    }
 }

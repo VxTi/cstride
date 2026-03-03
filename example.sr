@@ -1,56 +1,8 @@
-/**
- * In this example, we'll try to calculate an approximation of e^x using a taylor series.
- * This shows parts of the language;
- * - Function invocation
- * - External function calls
- * - The significant speed : )
- */
-fn main(): int32 {
-    const pow: float64 = 3.5D;
+const add: (int32, int32) -> int32 = (x: int32, y: int32): int32 -> {
+    return x + y;
+};
 
-    const start: uint64 = system_time_ns();
-    const iterations = 100;
-    let k: float64 = 0.0D;
-
-    for (let i: int32 = 0; i < iterations; i++) {
-        k = e_to_the_x(pow);
-    }
-    const end: uint64 = system_time_ns();
-
-    const elapsed: uint64 = (end - start) / iterations;
-
-    io::println("calculating e^x in %d iterations in %llu nanoseconds: %f \n ", iterations, elapsed, k);
-
-    return 0;
-}
-
-extern fn powl(base: float64, exp: float64): float64;
-
-module io {
-    fn println(input: string, ...): void {
-        printf(input, ...);
-    }
-}
-
-// A basic recursive factorial function
-fn factorial(n: float64): float64 {
-    if (n <= 1.0D) {
-        return 1.0D;
-    }
-
-    // Recursive step: n * factorial of (n-1)
-    return n * factorial(n - 1.0D);
-}
-
-// Here we try to calculate e^x by using a taylor series
-// In this case, we get an accuracy of 7 digits with 20 iterations.
-fn e_to_the_x(x: float64): float64 {
-    let approximation: float64 = 0.0D;
-    const iterations: int32 = 20;
-
-    for (let n: float64 = 0.0D; n < iterations; n++) {
-        approximation += powl(x, n) / factorial(n);
-    }
-
-    return approximation;
+fn main(): void {
+    const another_add: (int32, int32) -> int32 = add;
+    const result: int32 = another_add(3, 4);
 }

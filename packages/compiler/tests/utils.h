@@ -7,6 +7,7 @@
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/traversal.h"
 #include "../include/ast/visitor.h"
+#include "runtime/symbols.h"
 
 #include <gtest/gtest.h>
 #include <llvm/IR/IRBuilder.h>
@@ -14,6 +15,7 @@
 #include <memory>
 #include <string>
 #include <llvm/IR/Module.h>
+#include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 
 namespace stride::tests
 {
@@ -30,9 +32,9 @@ namespace stride::tests
         ast::TypeInferenceVisitor type_visitor;
         ast::FunctionDeclareVisitor function_declare_visitor;
 
+        runtime::register_runtime_symbols(context);
         traverser.visit(&function_declare_visitor, parsed.get());
         traverser.visit(&type_visitor, parsed.get());
-        parsed->validate();
 
         return std::make_pair(std::move(parsed), context);
     }
@@ -58,8 +60,13 @@ namespace stride::tests
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
 
+        auto jtmb = llvm::cantFail(llvm::orc::JITTargetMachineBuilder::detectHost());
+        const auto target_machine = llvm::cantFail(jtmb.createTargetMachine());
+
         llvm::LLVMContext llvm_context;
         llvm::Module module("test_module", llvm_context);
+        module.setDataLayout(target_machine->createDataLayout());
+        module.setTargetTriple(target_machine->getTargetTriple());
         llvm::IRBuilder<> builder(llvm_context);
 
         block->resolve_forward_references(context.get(), &module, &builder);

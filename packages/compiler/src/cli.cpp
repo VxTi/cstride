@@ -23,14 +23,12 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
 
     if (argc < 2 || command == "-h" || command == "--help" || command == "help")
     {
-        std::cout << format_message("Usage: cstride <command> [options]\n");
-        std::cout << "Available commands:" << std::endl;
-        std::cout <<
-            "  -c, --compile <file1> <file2> ...    Compile stride files" <<
-            std::endl;
-        std::cout <<
-            "  -r, --run <file1> <file2> ...        Run stride files using JIT" <<
-            std::endl;
+        std::cout << "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓" << std::endl;
+        std::cout << "┃ Usage: cstride <command> [options]                               ┃" << std::endl;
+        std::cout << "┃ Available commands:                                              ┃" << std::endl;
+        std::cout << "┃  -c, --compile <file1> <file2> ...    Compile stride files       ┃" <<std::endl;
+        std::cout << "┃  -r, --run <file1> <file2> ...        Run stride files using JIT ┃" <<std::endl;
+        std::cout << "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛" << std::endl;
         return 0;
     }
 
