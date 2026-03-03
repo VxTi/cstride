@@ -1,6 +1,8 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <llvm/IR/DerivedTypes.h>
+
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_optional(
@@ -72,6 +74,27 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     );
 
     return parse_type_metadata(std::move(fn_type), set, context_type_flags);
+}
+
+llvm::FunctionType* AstFunctionType::get_llvm_type(llvm::Module* module) const
+{
+    std::vector<llvm::Type*> param_types;
+    param_types.reserve(this->_parameters.size());
+
+    for (const auto& param : this->_parameters)
+    {
+        param_types.push_back(type_to_llvm_type(param.get(), module));
+    }
+
+    llvm::Type* ret_type = type_to_llvm_type(
+        this->_return_type.get(),
+        module
+    );
+    return llvm::FunctionType::get(
+        ret_type,
+        param_types,
+        false
+    );
 }
 
 std::unique_ptr<IAstNode> AstFunctionType::clone()

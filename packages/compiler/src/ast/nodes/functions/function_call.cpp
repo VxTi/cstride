@@ -292,8 +292,8 @@ llvm::Value* AstFunctionCall::codegen(
         // On Darwin ARM64, va_list is char* (a single pointer value), not a struct.
         // vprintf expects that char* value in a register, so we must load it from
         // the alloca rather than passing the alloca's address.
-        const llvm::Triple triple(module->getTargetTriple());
-        if (triple.getArch() == llvm::Triple::aarch64 && triple.isOSDarwin())
+        if (const llvm::Triple& triple(module->getTargetTriple());
+            triple.getArch() == llvm::Triple::aarch64 && triple.isOSDarwin())
         {
             llvm::Value* va_list_val = builder->CreateLoad(
                 llvm::PointerType::get(module->getContext(), 0),
@@ -358,6 +358,32 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     {
         if (const auto* fn_type = cast_type<AstFunctionType*>(var_def->get_type()))
         {
+            // First: check if the variable's internal name maps to a named function in the
+            // symbol table with a matching type signature. If so, call it directly without
+            // any pointer indirection.
+            if (this->get_context()->get_function_definition(
+                var_def->get_internal_symbol_name(),
+                var_def->get_type()).has_value())
+            {
+                if (llvm::Function* callee =
+                    module->getFunction(var_def->get_internal_symbol_name()))
+                {
+                    std::vector<llvm::Value*> args_v;
+                    for (const auto& arg : this->get_arguments())
+                    {
+                        auto* arg_val = arg->codegen(module, builder);
+                        if (!arg_val)
+                            return nullptr;
+                        args_v.push_back(unwrap_optional_value(arg_val, builder));
+                    }
+                    const auto instruction_name =
+                        callee->getReturnType()->isVoidTy() ? "" : "indcalltmp";
+                    return builder->CreateCall(callee, args_v, instruction_name);
+                }
+            }
+
+            // Otherwise: assume the value is a function pointer and make a generic pointer call.
+
             // Validate argument count matches lambda signature
             const auto expected_param_count = fn_type->get_parameter_types().size();
 
@@ -406,24 +432,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 }
             }
 
-            // Reconstruct the concrete llvm::FunctionType from the AST type
-            std::vector<llvm::Type*> param_types;
-            param_types.reserve(fn_type->get_parameter_types().size());
-
-            for (const auto& param : fn_type->get_parameter_types())
-            {
-                param_types.push_back(type_to_llvm_type(param.get(), module));
-            }
-
-            llvm::Type* ret_type = type_to_llvm_type(
-                fn_type->get_return_type().get(),
-                module
-            );
-            llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
-                ret_type,
-                param_types,
-                false
-            );
+            llvm::FunctionType* llvm_fn_type = fn_type->get_llvm_type(module);
 
             // Load the function pointer from the variable
             const auto fn_ptr = var_def->get_internal_symbol_name();
@@ -535,26 +544,20 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 }
 
                 // Add the declared arguments
-                const auto& arguments = this->get_arguments();
-                for (size_t i = 0; i < arguments.size(); ++i)
+                for (const auto& arguments = this->get_arguments();
+                     const auto& argument : arguments)
                 {
-                    auto* arg_val = arguments[i]->codegen(
-                        module,
-                        builder);
+                    auto* arg_val = argument->codegen(module, builder);
                     if (!arg_val)
-                        return nullptr;
-
-                    if (i < param_types.size() && arg_val->getType() !=
-                        param_types[i])
                     {
-                        arg_val = unwrap_optional_value(arg_val, builder);
+                        return nullptr;
                     }
-                    args_v.push_back(arg_val);
+
+                    args_v.push_back(unwrap_optional_value(arg_val, builder));
                 }
 
-                const auto instruction_name = ret_type->isVoidTy()
-                    ? ""
-                    : "indcalltmp";
+                const auto instruction_name =
+                    call_fn_type->getReturnType()->isVoidTy() ? "" : "indcalltmp";
                 return builder->CreateCall(
                     call_fn_type,
                     actual_fn_ptr,

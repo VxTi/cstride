@@ -10,6 +10,7 @@
 
 namespace llvm
 {
+    class FunctionType;
     class Type;
 }
 
@@ -304,6 +305,9 @@ namespace stride::ast
         {
             return _return_type;
         }
+
+        [[nodiscard]]
+        llvm::FunctionType* get_llvm_type(llvm::Module* module) const;
 
         [[nodiscard]]
         std::unique_ptr<IAstNode> clone() override;

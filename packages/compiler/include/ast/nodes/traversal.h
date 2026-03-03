@@ -2,6 +2,8 @@
 
 namespace stride::ast
 {
+    class AstVariableDeclaration;
+    class AstLambdaFunctionExpression;
     class AstModule;
     class AstFunctionDeclaration;
     class IAstNode;
@@ -24,7 +26,7 @@ namespace stride::ast
         /// Called for every expression node, after its sub-expressions have been visited.
         virtual void accept(IAstExpression* expr) {};
 
-        virtual void accept(AstFunctionDeclaration* expr) {};
+        virtual void accept(IAstFunction* expr) {};
     };
 
     /// Traverses an AST tree and invokes an IVisitor for each expression node.
@@ -34,7 +36,9 @@ namespace stride::ast
     {
     public:
         void visit(IVisitor* visitor, AstModule* node);
+        void visit(IVisitor* visitor, AstVariableDeclaration* node);
         void visit(IVisitor* visitor, AstFunctionDeclaration* node);
+        void visit(IVisitor* visitor, AstLambdaFunctionExpression* node);
         void visit(IVisitor* visitor, IAstNode* node);
         void visit(IVisitor* visitor, AstForLoop* node);
         void visit(IVisitor* visitor, AstWhileLoop* node);

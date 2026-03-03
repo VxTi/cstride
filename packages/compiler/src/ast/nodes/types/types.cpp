@@ -139,14 +139,6 @@ llvm::Type* stride::ast::type_to_llvm_type(
 
     if (const auto* named_ty = cast_type<AstNamedType*>(type))
     {
-        // If it's a pointer, we don't even need to look up the struct name
-        // to return the LLVM type, because all pointers are the same.
-        // However, usually you want to validate the type exists first.
-        if (named_ty->is_pointer())
-        {
-            return llvm::PointerType::get(module->getContext(), 0);
-        }
-
         const auto ref_type = named_ty->get_reference_type();
         if (!ref_type.has_value())
         {

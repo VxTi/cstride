@@ -1,5 +1,6 @@
 #pragma once
 
+#include "errors.h"
 #include "ast/symbols.h"
 
 namespace stride::ast
@@ -94,8 +95,11 @@ namespace stride::ast
         {
             if (!this->_type)
             {
-                throw std::runtime_error(
-                    "Cannot infer type for expression before validation stage");
+                throw parsing_error(
+                    ErrorType::COMPILATION_ERROR,
+                    "Unable to deduce type for expression",
+                    this->get_source_fragment()
+                );
             }
             return this->_type.get();
         }

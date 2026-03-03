@@ -26,6 +26,6 @@ namespace stride::ast
     class FunctionDeclareVisitor : public IVisitor
     {
     public:
-        void accept(AstFunctionDeclaration* fn_declaration) override;
+        void accept(IAstFunction* fn_declaration) override;
     };
 }

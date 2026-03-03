@@ -124,7 +124,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const Ast
     throw parsing_error(
         ErrorType::TYPE_ERROR,
         std::format(
-            "Unable to resolve return type for function '{}'",
+            "Function '{}' was not found in this scope",
             fn_call->get_function_name()
         ),
         fn_call->get_source_fragment()
