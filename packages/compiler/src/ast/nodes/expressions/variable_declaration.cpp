@@ -10,6 +10,7 @@
 #include "ast/tokens/token_set.h"
 
 #include <iostream>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
@@ -327,51 +328,64 @@ void global_var_declaration_codegen(
     llvm::IRBuilderBase* ir_builder
 )
 {
-    // Dynamic Initialization ("Global Constructor" Pattern)
-    // Create a function: void __init_variable_name()
-    const std::string func_name = "__init_global_" + self->get_internal_name();
-    llvm::FunctionType* func_type = llvm::FunctionType::get(ir_builder->getVoidTy(), false);
-    llvm::Function* init_func = llvm::Function::Create(
-        func_type,
-        llvm::GlobalValue::InternalLinkage,
-        func_name,
-        module
-    );
+    // All global dynamic initializers share a single __init_globals function so the
+    // ctors list only ever gets one entry, rather than one per variable.
+    static constexpr auto INIT_FN_NAME = "__init_globals";
 
-    // Set up the entry block for the constructor
-    llvm::BasicBlock* entry = llvm::BasicBlock::Create(
-        module->getContext(),
-        "entry",
-        init_func
-    );
+    llvm::Function* init_func = module->getFunction(INIT_FN_NAME);
+    if (!init_func)
+    {
+        llvm::FunctionType* func_type = llvm::FunctionType::get(ir_builder->getVoidTy(), false);
+        init_func = llvm::Function::Create(
+            func_type,
+            llvm::GlobalValue::InternalLinkage,
+            INIT_FN_NAME,
+            module
+        );
 
-    // Create a temporary builder for the constructor to avoid state pollution
-    llvm::IRBuilder tempBuilder(module->getContext());
-    tempBuilder.SetInsertPoint(entry);
+        llvm::BasicBlock* entry = llvm::BasicBlock::Create(
+            module->getContext(),
+            "entry",
+            init_func
+        );
 
-    // Re-generate the initial value inside the constructor function
-    // Note: we MUST NOT call codegen on something that might have already been generated
-    // if it's not designed to be called multiple times.
+        // Seed the block with a ret so subsequent variables can insert before it.
+        llvm::IRBuilder<>(entry).CreateRetVoid();
+
+        // Register once in llvm.global_ctors
+        append_to_global_ctors(module, ir_builder, init_func, 65535);
+    }
+
+    // Insert new initialization code before the existing terminator (ret void).
+    llvm::IRBuilder tempBuilder(init_func->getEntryBlock().getTerminator());
+
+    // Re-generate the initial value inside the constructor function.
     llvm::Value* dynamic_init_value = self->get_initial_value()->codegen(
         module,
         &tempBuilder
     );
 
     // IAstFunction::codegen (e.g. a lambda) redirects the builder's insert point into its
-    // own function body. Restore it to the init function's entry block before emitting the
-    // store and return so they land in the right function.
-    tempBuilder.SetInsertPoint(entry);
+    // own function body. Restore it to just before the terminator.
+    tempBuilder.SetInsertPoint(init_func->getEntryBlock().getTerminator());
 
     if (dynamic_init_value)
     {
-        // Perform the store
-        tempBuilder.CreateStore(dynamic_init_value, global_var);
+        llvm::Value* value_to_store = dynamic_init_value;
+
+        // Wrap in Optional if the global expects Optional<T> but the init value is plain T
+        if (is_optional_wrapped_type(global_var->getValueType()) &&
+            !is_optional_wrapped_type(dynamic_init_value->getType()))
+        {
+            if (llvm::Value* wrapped = wrap_optional_value(
+                dynamic_init_value, global_var->getValueType(), &tempBuilder))
+            {
+                value_to_store = wrapped;
+            }
+        }
+
+        tempBuilder.CreateStore(value_to_store, global_var);
     }
-
-    tempBuilder.CreateRetVoid();
-
-    // Register this function in llvm.global_ctors
-    append_to_global_ctors(module, ir_builder, init_func, 65535);
 }
 
 std::optional<llvm::GlobalVariable*> get_global_var_decl(
@@ -461,7 +475,20 @@ llvm::Value* AstVariableDeclaration::codegen(
         {
             if (auto* constant = llvm::dyn_cast<llvm::Constant>(init_value))
             {
-                global_var.value()->setInitializer(constant);
+                llvm::Constant* initializer = constant;
+
+                // Wrap in Optional if the global expects Optional<T> but the literal is plain T
+                if (is_optional_wrapped_type(variable_ty) &&
+                    !is_optional_wrapped_type(constant->getType()))
+                {
+                    auto* struct_ty = llvm::cast<llvm::StructType>(variable_ty);
+                    llvm::Constant* has_value_const = llvm::ConstantInt::get(
+                        llvm::Type::getInt1Ty(module->getContext()), OPT_HAS_VALUE);
+                    initializer = llvm::ConstantStruct::get(
+                        struct_ty, {has_value_const, constant});
+                }
+
+                global_var.value()->setInitializer(initializer);
             }
         }
         else
