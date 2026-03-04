@@ -29,6 +29,13 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
         std::cout << "\x1b[31m┃\x1b[0m Available commands:                                              \x1b[31m┃" << std::endl;
         std::cout << "\x1b[31m┃\x1b[0m  -c, --compile <file1> <file2> ...    Compile stride files       \x1b[31m┃" <<std::endl;
         std::cout << "\x1b[31m┃\x1b[0m  -r, --run <file1> <file2> ...        Run stride files using JIT \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m  --targets                            List available targets     \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m Available compile/run options:                                   \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m  -o, --output <name>                  Output binary name         \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m  -d, --dir <path>                     Output directory           \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m  --target <triple>                    Cross-compilation target   \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m                                       e.g. riscv32-unknown-elf   \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m  --debug                              Enable debug output        \x1b[31m┃" <<std::endl;
         std::cout << "\x1b[31m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛" << std::endl;
         return 0;
     }
@@ -106,7 +113,13 @@ CompilationOptions stride::cli::resolve_compilation_options_from_args(const int 
             options.debug_mode = true;
         }
 
-        // Handle other flags here in the future
+        if (argument == "--target")
+        {
+            if (i + 1 < argc)
+            {
+                options.target_triple = std::string(argv[++i]);
+            }
+        }
     }
 
     return options;

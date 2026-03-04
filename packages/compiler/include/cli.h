@@ -68,6 +68,14 @@ namespace stride::cli
          * of the input file).
          */
         std::string program_name;
+
+        /**
+         * @brief Specifies the LLVM target triple for cross-compilation.
+         *
+         * When empty, the compiler defaults to the host target triple.
+         * Examples: "xtensa-esp32-elf", "riscv32-unknown-elf", "aarch64-linux-gnu".
+         */
+        std::string target_triple;
     } CompilationOptions;
 
     /**
