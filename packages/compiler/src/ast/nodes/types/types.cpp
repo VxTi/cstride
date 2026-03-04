@@ -188,6 +188,26 @@ llvm::Type* stride::ast::type_to_llvm_type(
     return nullptr;
 }
 
+bool IAstType::is_assignable_to(IAstType* other)
+{
+    // Check if LHS is optional and RHS is nil
+    if (this->is_optional() && other->is_primitive() &&
+        cast_type<AstPrimitiveType*>(other)->get_primitive_type() == PrimitiveType::NIL)
+    {
+        return true;
+    }
+
+    // Check if LHS is nil and RHS is optional
+    if (other->is_optional() && this->is_primitive() &&
+        cast_type<AstPrimitiveType*>(this)->get_primitive_type() == PrimitiveType::NIL)
+    {
+        return true;
+    }
+
+    // Otherwise it's up to the other implementors to decide.
+    return this->is_assignable_to_impl(other);
+}
+
 std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     IAstType* lhs,
     IAstType* rhs
@@ -197,6 +217,17 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
     auto* lhs_primitive = cast_type<AstPrimitiveType*>(lhs);
     auto* rhs_primitive = cast_type<AstPrimitiveType*>(rhs);
+
+    // If LHS is a nil primitive, we prefer the RHS type, since the LHS can be safely ignored in this context (e.g., optional types)
+    if (lhs_primitive && lhs_primitive->get_primitive_type() == PrimitiveType::NIL)
+    {
+        return rhs->clone_ty();
+    }
+    // Same holds true here
+    if (rhs_primitive && rhs_primitive->get_primitive_type() == PrimitiveType::NIL)
+    {
+        return lhs->clone_ty();
+    }
 
     const auto* lhs_named = cast_type<AstNamedType*>(lhs);
     const auto* rhs_named = cast_type<AstNamedType*>(rhs);

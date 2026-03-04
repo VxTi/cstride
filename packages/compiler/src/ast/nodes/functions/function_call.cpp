@@ -579,11 +579,6 @@ void AstFunctionCall::validate()
     }
 }
 
-bool AstFunctionCall::is_variadic() const
-{
-    return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
-}
-
 std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() const
 {
     if (this->_arguments.empty())

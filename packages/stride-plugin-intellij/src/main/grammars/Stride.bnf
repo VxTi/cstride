@@ -61,6 +61,7 @@
     ASTERISK_EQ='*='
     SLASH_EQ='/='
     MOD_EQ='%='
+    QUESTION='?'
     PLUS='+'
     MINUS='-'
     ASTERISK='*'
@@ -126,12 +127,12 @@ StructDefinitionFields ::= StructField (SEMICOLON StructField)* [SEMICOLON]
 StructField ::= IDENTIFIER COLON Type
 
 VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
-VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type EQ Expression
+VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type [EQ Expression]
 
 VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
-Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*]
+Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*] [QUESTION]
 // <module>::<type> or <type>
 PrimitiveType ::= VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING
 UserType ::= ScopedIdentifier [GenericTypeArguments] {
