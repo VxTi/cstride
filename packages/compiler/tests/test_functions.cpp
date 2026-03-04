@@ -79,3 +79,19 @@ TEST(Functions, ExternalFunctions)
     )";
     assert_parses(code);
 }
+
+TEST(Functions, VariadicPropagation)
+{
+    const std::string code = R"(
+        extern fn printf(in: string, ...): int32;
+
+        fn my_println(fmt: string, ...): void {
+            printf(fmt, ...);
+        }
+
+        fn main(): void {
+            my_println("Hello %s %d", "World", 123);
+        }
+    )";
+    assert_compiles(code);
+}

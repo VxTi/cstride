@@ -11,10 +11,9 @@ int __vprintf_internal(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    const int result = std::vprintf(format, args);
+    int r = vprintf(format, args);
     va_end(args);
-
-    return result;
+    return r;
 }
 
 uint64_t __system_time_ns_internal()

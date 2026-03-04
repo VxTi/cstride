@@ -20,7 +20,7 @@ module io {
      */
     fn println(input: string, ...): void {
         __vprintf_internal(input, ...);
-        __vprintf_internal("\n");
+        __vprintf_internal("\n", ...);
     }
 
     /**
