@@ -379,7 +379,7 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
     llvm::Module* module,
     llvm::Type* var_type)
 {
-    if (self->get_context()->get_context_type() != definition::ContextType::GLOBAL)
+    if (!self->get_context()->is_global_scope())
     {
         return std::nullopt;
     }

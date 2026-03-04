@@ -6,6 +6,11 @@
 
 #include <utility>
 
+namespace llvm
+{
+    class Function;
+}
+
 namespace stride::ast
 {
 #define MAX_FUNCTION_PARAMETERS (32)
@@ -71,6 +76,12 @@ namespace stride::ast
         std::unique_ptr<IAstType> _return_type;
         std::vector<Symbol> _captured_variables;
         int _flags;
+
+        /// Cached LLVM function pointer for anonymous functions.
+        /// Named functions are always looked up by their scoped name in the module,
+        /// but anonymous functions are created with an empty name (LLVM auto-assigns
+        /// a numeric ID), so we must track them by pointer instead.
+        llvm::Function* _llvm_function = nullptr;
 
         friend class AstFunctionDeclaration;
         friend class AstFunctionParameter;

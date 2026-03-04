@@ -53,7 +53,11 @@ llvm::Value* AstIdentifier::codegen(
 
                 if (auto* global = module->getNamedGlobal(internal_name))
                 {
-                    return global;
+                    return builder->CreateLoad(
+                        global->getValueType(),
+                        global,
+                        internal_name
+                    );
                 }
 
                 throw parsing_error(

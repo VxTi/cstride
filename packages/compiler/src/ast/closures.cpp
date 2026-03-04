@@ -105,7 +105,7 @@ namespace stride::ast::closures
 
         for (auto& fn : module->functions())
         {
-            if (fn.getName().starts_with(ANONYMOUS_FN_PREFIX))
+            if (fn.hasFnAttribute("stride.anonymous"))
             {
                 const llvm::FunctionType* lambda_type = fn.getFunctionType();
 

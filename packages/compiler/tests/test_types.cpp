@@ -70,7 +70,7 @@ TEST(TypeErrors, StructMemberTypeMismatch)
 
         const a: Point = Color::{ r: 1, g: 2, b: 3 };
     )",
-        "Type mismatch in variable declaration; expected type 'Point', got 'Color'");
+        "Type mismatch in variable declaration: cannot assign value of type 'Color' to variable of type 'Point'");
 }
 
 TEST(TypeErrors, StructReferenceTypeMismatch)

@@ -4,6 +4,7 @@
 
 #include <format>
 #include <iostream>
+#include <llvm/MC/TargetRegistry.h>
 
 using namespace stride::cli;
 
@@ -23,12 +24,12 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
 
     if (argc < 2 || command == "-h" || command == "--help" || command == "help")
     {
-        std::cout << "┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓" << std::endl;
-        std::cout << "┃ Usage: cstride <command> [options]                               ┃" << std::endl;
-        std::cout << "┃ Available commands:                                              ┃" << std::endl;
-        std::cout << "┃  -c, --compile <file1> <file2> ...    Compile stride files       ┃" <<std::endl;
-        std::cout << "┃  -r, --run <file1> <file2> ...        Run stride files using JIT ┃" <<std::endl;
-        std::cout << "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛" << std::endl;
+        std::cout << "\x1b[31m┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓" << std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m Usage: cstride <command> [options]                               \x1b[31m┃" << std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m Available commands:                                              \x1b[31m┃" << std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m  -c, --compile <file1> <file2> ...    Compile stride files       \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┃\x1b[0m  -r, --run <file1> <file2> ...        Run stride files using JIT \x1b[31m┃" <<std::endl;
+        std::cout << "\x1b[31m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛" << std::endl;
         return 0;
     }
 
@@ -40,6 +41,13 @@ int stride::cli::resolve_cli_command(const int argc, char** argv)
     if (command == "-r" || command == "--run")
     {
         return resolve_run_command(argc - 1, argv + 1);
+    }
+
+    if (command == "--targets")
+    {
+        std::cout << "Available targets: ";
+        llvm::TargetRegistry::printRegisteredTargetsForVersion(llvm::outs());
+        return 0;
     }
 
     std::cout << format_message(std::format("Unknown command '{}'", command));
