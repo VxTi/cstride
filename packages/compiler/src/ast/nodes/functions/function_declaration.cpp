@@ -963,7 +963,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_lambda_fn_expression(
     }
 
     return std::make_unique<AstLambdaFunctionExpression>(
-        context,
+        function_context,
         symbol_name,
         std::move(parameters),
         std::move(lambda_body),

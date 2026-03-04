@@ -92,8 +92,7 @@ const
 
     for (size_t i = 0; i < self_params.size(); i++)
     {
-        if (!self_params[i]->equals(*other_parameter_types[i]) &&
-            !self_params[i]->is_assignable_to(other_parameter_types[i].get()))
+        if (!self_params[i]->equals(*other_parameter_types[i]))
         {
             return false;
         }

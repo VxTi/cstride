@@ -14,6 +14,7 @@
 
   tokens=[
     FN='fn'
+    NIL='nil'
     STRUCT='struct'
     CONST='const'
     LET='let'
@@ -231,7 +232,7 @@ FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {
   ]
 }
 
-LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL
+LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL | NIL
 // some::Struct { field1: value1, field2: value2 }
 StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] RBRACE {
   methods=[

@@ -18,7 +18,7 @@ import com.intellij.psi.TokenType;
 CRLF=\R
 WHITE_SPACE=[\ \n\r\t\f]
 COMMENT="//"[^\r\n]*
-IDENTIFIER=[a-zA-Z_][a-zA-Z0-9_]*
+IDENTIFIER=[a-zA-Z_$][a-zA-Z0-9_$]*
 NUMBER_LITERAL=[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)?[fFdDLuU]*|0x[0-9a-fA-F]+
 CHAR_LITERAL='([^\\'\r\n]|\\[^\r\n])'
 STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
@@ -43,6 +43,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "module"           { return StrideTypes.MODULE; }
   "async"            { return StrideTypes.ASYNC; }
   "fn"               { return StrideTypes.FN; }
+  "nil"              { return StrideTypes.NIL; }
   "break"            { return StrideTypes.BREAK; }
   "continue"         { return StrideTypes.CONTINUE; }
   "struct"           { return StrideTypes.STRUCT; }

@@ -21,7 +21,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(const AstLi
         literal->get_primitive_type());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const AstFunctionCall* fn_call)
+std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(AstFunctionCall* fn_call)
 {
     /// --- Basic function lookup, find based on parameter signature (ignoring return type)
     const auto& context = fn_call->get_context();
@@ -52,7 +52,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const Ast
         ErrorType::TYPE_ERROR,
         std::format(
             "Function '{}' was not found in this scope",
-            fn_call->get_function_name()
+            fn_call->get_formatted_call()
         ),
         fn_call->get_source_fragment()
     );
@@ -388,7 +388,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Type mismatch in variable declaration: cannot assign value of type '{}' to variable of type '{}'",
+                "Type mismatch in variable declaration: cannot assign value of type '{}' to type '{}'",
                 value_type->to_string(),
                 annotated_type.value()->to_string()
             ),
@@ -396,7 +396,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         );
     }
 
-    if (const auto* fn_call = cast_expr<AstFunctionCall*>(expr))
+    if (auto* fn_call = cast_expr<AstFunctionCall*>(expr))
     {
         return infer_function_call_return_type(fn_call);
     }

@@ -630,6 +630,23 @@ std::optional<std::unique_ptr<IAstNode>> AstFunctionCall::reduce()
     return std::nullopt;
 }
 
+std::string AstFunctionCall::get_formatted_call() const
+{
+    std::vector<std::string> arg_names;
+    arg_names.reserve(this->_arguments.size());
+
+    for (const auto& arg : this->_arguments)
+    {
+        arg_names.push_back(arg->get_type()->get_type_name());
+    }
+
+    return std::format(
+        "{}({})",
+        this->get_function_name(),
+        join(arg_names, ", ")
+    );
+}
+
 std::string AstFunctionCall::to_string()
 {
     std::ostringstream oss;

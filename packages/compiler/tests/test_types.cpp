@@ -70,7 +70,7 @@ TEST(TypeErrors, StructMemberTypeMismatch)
 
         const a: Point = Color::{ r: 1, g: 2, b: 3 };
     )",
-        "Type mismatch in variable declaration: cannot assign value of type 'Color' to variable of type 'Point'");
+        "Type mismatch in variable declaration: cannot assign value of type 'Color' to type 'Point'");
 }
 
 TEST(TypeErrors, StructReferenceTypeMismatch)
@@ -86,7 +86,7 @@ TEST(TypeErrors, StructReferenceTypeMismatch)
 
         const a: Point = Vec::{ x: 1, y: 2 };
     )",
-        "Type mismatch in variable declaration; expected type 'Point', got 'Vec'");
+        "Type mismatch in variable declaration: cannot assign value of type 'Vec' to type 'Point'");
 }
 
 TEST(TypeErrors, StructMemberOrderMismatch)
@@ -123,7 +123,7 @@ TEST(TypeErrors, ArrayTypeMismatch)
         R"(
         let a: int32[] = [1L, 2L, 3L];
     )",
-        "Type mismatch in variable declaration; expected type 'int32[]', got 'int64[]'");
+        "Type mismatch in variable declaration: cannot assign value of type 'int64[]' to type 'int32[]'");
 }
 
 TEST(TypeErrors, FunctionCallTypeMismatch)
@@ -152,7 +152,7 @@ TEST(TypeErrors, FunctionTypeMismatch)
         R"(
         const k: (int32, int32) -> int32 = [(x: int32, y: int32): int32 -> { return 1; }];
     )",
-        "Type mismatch in variable declaration; expected type '(int32, int32) -> int32', got '((int32, int32) -> int32)[]'");
+        "Type mismatch in variable declaration: cannot assign value of type '((int32, int32) -> int32)[]' to type '(int32, int32) -> int32'");
 
     assert_throws_message(
         R"(
@@ -160,7 +160,7 @@ TEST(TypeErrors, FunctionTypeMismatch)
 
         let a: (int32, int32) -> int32 = test;
     )",
-        "Type mismatch in variable declaration; expected type '(int32, int32) -> int32', got '(int32) -> int32'");
+        "Type mismatch in variable declaration: cannot assign value of type '(int32) -> int32' to type '(int32, int32) -> int32'");
 
     assert_compiles(R"(
         fn test(p: int32): int32 { return 0; }
@@ -230,7 +230,7 @@ TEST(OptionalTypes, OptionalMismatch)
         R"(
         let a: int32? = 10.0;
     )",
-        "Type mismatch in variable declaration; expected type 'int32?', got 'float32'");
+        "Type mismatch in variable declaration: cannot assign value of type 'float32' to type 'int32?'");
 
     assert_compiles(R"(
         let a: int32? = nil;
@@ -240,7 +240,7 @@ TEST(OptionalTypes, OptionalMismatch)
         R"(
         let a: int32 = nil;
     )",
-        "Cannot assign nil to variable of non-optional type 'int32'");
+        "Type mismatch in variable declaration: cannot assign value of type 'nil' to type 'int32'");
 }
 
 TEST(PrimitiveTypes, DominantType)
@@ -309,5 +309,5 @@ TEST(PrimitiveTypes, CharAndString)
         R"(
         const c: char = "string";
     )",
-        "Type mismatch in variable declaration; expected type 'char', got 'string'");
+        "Type mismatch in variable declaration: cannot assign value of type 'string' to type 'char'");
 }
