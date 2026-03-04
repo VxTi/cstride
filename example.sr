@@ -1,15 +1,14 @@
-    module Foo {
-        const field = "foo";
-    }
+module Foo {
+    const field = "foo";
+}
 
-    const field = "bar";
-
-        module io {
-        fn println(input: string, ...): void {
-            printf(input, ...);
-        }
+const field = "bar";
+module io {
+    fn println(input: string, ...): void {
+        printf(input, ...);
     }
+}
 
-    fn main(): void {
-        io::println("field: %s", field);
-    }
+fn main(): void {
+    io::println("field: %s", field);
+}
