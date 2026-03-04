@@ -1,1 +1,9 @@
-const c: char = "string";
+fn print(msg: string, ...): void {
+    printf(msg, ...);
+}
+
+fn main(): void {
+    const arr: float64[]?;
+
+    print("Arr: %p\n", arr);
+}

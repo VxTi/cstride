@@ -122,10 +122,7 @@ namespace stride::ast
 
         virtual bool equals(IAstType& other) = 0;
 
-        virtual bool is_assignable_to(IAstType* other) const
-        {
-            return false;
-        }
+        bool is_assignable_to(IAstType* other);
 
         [[nodiscard]]
         virtual bool is_primitive() const
@@ -137,6 +134,9 @@ namespace stride::ast
         {
             return nullptr;
         }
+
+    private:
+        virtual bool is_assignable_to_impl(IAstType* other) const { return false; }
     };
 
     /// Types like int, float, char, etc.
@@ -220,13 +220,14 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
-        bool is_assignable_to(IAstType* other) const override;
-
         [[nodiscard]]
         bool is_primitive() const override
         {
             return true;
         }
+
+    private:
+        bool is_assignable_to_impl(IAstType* other) const override;
     };
 
     /// References to other types

@@ -24,6 +24,7 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             .around(StrideTypes.ASTERISK_EQ).spaceIf(true)
             .around(StrideTypes.SLASH_EQ).spaceIf(true)
             .around(StrideTypes.MOD_EQ).spaceIf(true)
+
             .around(StrideTypes.EQ_EQ).spaceIf(true)
             .around(StrideTypes.EXCL_EQ).spaceIf(true)
             .around(StrideTypes.LT).spaceIf(true)

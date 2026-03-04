@@ -348,7 +348,10 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool is_variadic() const;
+        bool is_variadic() const
+        {
+            return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
+        }
 
         std::string to_string() override;
 

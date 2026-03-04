@@ -75,6 +75,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.TILDE,
             StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ,
             StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR,
+            StrideTypes.QUESTION,
             StrideTypes.ARROW, StrideTypes.PLUS_PLUS, StrideTypes.MINUS_MINUS,
             StrideTypes.PLUS_EQ, StrideTypes.MINUS_EQ, StrideTypes.ASTERISK_EQ,
             StrideTypes.SLASH_EQ, StrideTypes.MOD_EQ, StrideTypes.COLON -> OPERATOR_KEYS
