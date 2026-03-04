@@ -176,6 +176,7 @@ namespace stride::ast
             case PrimitiveType::UINT16:
             case PrimitiveType::UINT32:
             case PrimitiveType::UINT64:
+            case PrimitiveType::CHAR:
             case PrimitiveType::BOOL: // 1 bit, still an int
                 return true;
             default:
@@ -241,7 +242,8 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
-            const int flags = SRFLAG_NONE) :
+            const int flags = SRFLAG_NONE
+            ) :
             IAstType(source, context, flags),
             _name(std::move(name)) {}
 
@@ -273,8 +275,12 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
+
         [[nodiscard]]
         std::optional<std::unique_ptr<IAstType>> get_reference_type() const;
+
+    private:
+        bool is_assignable_to_impl(IAstType* other) const override;
     };
 
     class AstFunctionType
@@ -366,8 +372,7 @@ namespace stride::ast
         [[nodiscard]]
         std::string get_type_name() override
         {
-            return std::format("[{}]",
-                               this->_element_type->get_type_name());
+            return std::format("[{}]", this->_element_type->get_type_name());
         }
 
         bool equals(IAstType& other) override;

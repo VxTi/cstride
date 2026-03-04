@@ -18,7 +18,7 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
         ast::PrimitiveType::STRING
     ));
     context->define_function(
-        ast::Symbol(fragment, "printf"),
+        ast::Symbol(fragment, "__vprintf_internal"),
         std::make_unique<ast::AstFunctionType>(
             fragment,
             context,
@@ -30,12 +30,11 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
             ),
             /* is_variadic = */
             true
-        ),
-        0
+        )
     );
 
     context->define_function(
-        ast::Symbol(fragment, "system_time_ns"),
+        ast::Symbol(fragment, "__system_time_ns_internal"),
         std::make_unique<ast::AstFunctionType>(
             fragment,
             context,
@@ -45,12 +44,11 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 context,
                 ast::PrimitiveType::UINT64
             )
-        ),
-        0
+        )
     );
 
     context->define_function(
-        ast::Symbol(fragment, "system_time_us"),
+        ast::Symbol(fragment, "__system_time_us_internal"),
         std::make_unique<ast::AstFunctionType>(
             fragment,
             context,
@@ -60,12 +58,11 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 context,
                 ast::PrimitiveType::UINT64
             )
-        ),
-        0
+        )
     );
 
     context->define_function(
-        ast::Symbol(fragment, "system_time_ms"),
+        ast::Symbol(fragment, "__system_time_ms_internal"),
         std::make_unique<ast::AstFunctionType>(
             fragment,
             context,
@@ -75,8 +72,7 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 context,
                 ast::PrimitiveType::UINT64
             )
-        ),
-        0
+        )
     );
 }
 
@@ -86,24 +82,20 @@ void stride::runtime::register_jit_symbols(llvm::orc::LLJIT* jit)
     auto& es = jit->getExecutionSession();
     llvm::orc::MangleAndInterner mangle(es, jit->getDataLayout());
 
-    syms[mangle("printf")] = llvm::orc::ExecutorSymbolDef(
-        llvm::orc::ExecutorAddr::fromPtr(&stride_printf),
+    syms[mangle("__vprintf_internal")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&__vprintf_internal),
         llvm::JITSymbolFlags::Exported
     );
-    syms[mangle("vprintf")] = llvm::orc::ExecutorSymbolDef(
-        llvm::orc::ExecutorAddr::fromPtr(&vprintf),
+    syms[mangle("__system_time_ns_internal")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&__system_time_ns_internal),
         llvm::JITSymbolFlags::Exported
     );
-    syms[mangle("system_time_ns")] = llvm::orc::ExecutorSymbolDef(
-        llvm::orc::ExecutorAddr::fromPtr(&system_time_ns),
+    syms[mangle("__system_time_us_internal")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&__system_time_us_internal),
         llvm::JITSymbolFlags::Exported
     );
-    syms[mangle("system_time_us")] = llvm::orc::ExecutorSymbolDef(
-        llvm::orc::ExecutorAddr::fromPtr(&system_time_us),
-        llvm::JITSymbolFlags::Exported
-    );
-    syms[mangle("system_time_ms")] = llvm::orc::ExecutorSymbolDef(
-        llvm::orc::ExecutorAddr::fromPtr(&system_time_ms),
+    syms[mangle("__system_time_ms_internal")] = llvm::orc::ExecutorSymbolDef(
+        llvm::orc::ExecutorAddr::fromPtr(&__system_time_ms_internal),
         llvm::JITSymbolFlags::Exported
     );
 
