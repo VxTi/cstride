@@ -8,54 +8,36 @@
 #define BITS_PER_BYTE (8)
 #define INFER_INT_BIT_COUNT(x) (((x) > 0xFFFFFFFF) ? ((short)64) : ((short)32))
 
-#define INFER_FLOAT_BYTE_COUNT(x)                                                                  \
-    (((x) >> 23) & 0xFF) ? 4 : (((x) >> 12) & 0xFF) ? 2 : (((x) >> 6) & 0xFF) ? 1 : 0
-
-#define SRFLAG_INT_UNSIGNED (0x2)
-
 namespace stride::ast
 {
-    enum class LiteralType
-    {
-        STRING,
-        INTEGER,
-        FLOAT,
-        BOOLEAN,
-        CHAR,
-        NIL
-    };
-
     class AstLiteral
         : public IAstExpression
     {
-        short _bit_count;
-        LiteralType _literal_type;
+        PrimitiveType _primitive_type;
 
     public:
-        AstLiteral(
+        explicit AstLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            const LiteralType type,
-            const short bit_count
+            const PrimitiveType type
         ) :
             IAstExpression(source, context),
-            _bit_count(bit_count),
-            _literal_type(type) {}
+            _primitive_type(type) {}
 
         ~AstLiteral() override = default;
 
         std::string to_string() override = 0;
 
         [[nodiscard]]
-        short bit_count() const
+        size_t get_bit_count() const
         {
-            return this->_bit_count;
+            return get_primitive_bit_count(this->_primitive_type);
         }
 
         [[nodiscard]]
-        LiteralType get_literal_type() const
+        PrimitiveType get_primitive_type() const
         {
-            return this->_literal_type;
+            return this->_primitive_type;
         }
     };
 
@@ -69,11 +51,10 @@ namespace stride::ast
         explicit IAstLiteralBase(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            const LiteralType type,
-            T value,
-            const short bit_count
+            const PrimitiveType type,
+            T value
         ) :
-            AstLiteral(source, context, type, bit_count),
+            AstLiteral(source, context, type),
             _value(std::move(value)) {}
 
         [[nodiscard]]
@@ -94,12 +75,7 @@ namespace stride::ast
         ) :
             // Strings are only considered to be a single byte,
             // as they're pointing to a memory location
-            IAstLiteralBase(
-                source,
-                context,
-                LiteralType::STRING,
-                std::move(val),
-                8) {}
+            IAstLiteralBase(source, context, PrimitiveType::STRING, std::move(val)) {}
 
         ~AstStringLiteral() override = default;
 
@@ -121,16 +97,11 @@ namespace stride::ast
         explicit AstIntLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
+            const PrimitiveType type,
             const int64_t value,
-            const short bit_count,
             const int flags = SRFLAG_TYPE_INT_SIGNED
         ) :
-            IAstLiteralBase(
-                source,
-                context,
-                LiteralType::INTEGER,
-                value,
-                bit_count),
+            IAstLiteralBase(source, context, type, value),
             _flags(flags) {}
 
         [[nodiscard]]
@@ -161,15 +132,10 @@ namespace stride::ast
         explicit AstFpLiteral(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            const long double value,
-            const short bit_count
+            const PrimitiveType type,
+            const long double value
         ) :
-            IAstLiteralBase(
-                source,
-                context,
-                LiteralType::FLOAT,
-                value,
-                bit_count) {}
+            IAstLiteralBase(source, context, type, value) {}
 
         std::string to_string() override;
 
@@ -190,13 +156,7 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             const bool value
         ) :
-            IAstLiteralBase(
-                source,
-                context,
-                LiteralType::BOOLEAN,
-                value,
-                1 /* Single bit only*/
-            ) {}
+            IAstLiteralBase(source, context, PrimitiveType::BOOL, value) {}
 
         std::string to_string() override;
 
@@ -216,11 +176,7 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             const char value
         ) :
-            IAstLiteralBase(source,
-                            context,
-                            LiteralType::CHAR,
-                            value,
-                            8) {}
+            IAstLiteralBase(source, context, PrimitiveType::CHAR, value) {}
 
         std::string to_string() override;
 
@@ -240,9 +196,12 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context
         ) :
-            AstLiteral(source, context, LiteralType::NIL, 8) {}
+            AstLiteral(source, context, PrimitiveType::NIL) {}
 
-        std::string to_string() override;
+        std::string to_string() override
+        {
+            return "nil";
+        }
 
         llvm::Value* codegen(
             llvm::Module* module,
@@ -276,5 +235,8 @@ namespace stride::ast
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 
-    bool is_literal_ast_node(IAstNode* node);
+    inline bool is_literal_ast_node(IAstNode* node)
+    {
+        return dynamic_cast<AstLiteral*>(node) != nullptr;
+    }
 } // namespace stride::ast

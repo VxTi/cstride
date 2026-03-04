@@ -27,7 +27,7 @@ namespace stride::ast
     std::unique_ptr<IAstType> infer_binary_op_type(const IBinaryOp* operation);
 
     /// Infers the type of a literal expression
-    std::unique_ptr<IAstType> infer_expression_literal_type(AstLiteral* literal);
+    std::unique_ptr<IAstType> infer_expression_literal_type(const AstLiteral* literal);
 
     /// Infers the return type of a function call expression
     std::unique_ptr<IAstType> infer_function_call_return_type(const AstFunctionCall* fn_call);
