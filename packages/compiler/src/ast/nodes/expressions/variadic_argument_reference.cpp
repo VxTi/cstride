@@ -19,17 +19,6 @@ namespace
         );
     }
 
-    /// Get or declare the va_copy intrinsic for the current module
-    llvm::Function* get_or_declare_va_copy(llvm::Module* module)
-    {
-        llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
-        return llvm::Intrinsic::getOrInsertDeclaration(
-            module,
-            llvm::Intrinsic::vacopy,
-            { i8_ptr_ty }
-        );
-    }
-
     /// Get or declare the va_end intrinsic for the current module
     llvm::Function* get_or_declare_va_end(llvm::Module* module)
     {
@@ -131,35 +120,10 @@ llvm::Value* AstVariadicArgReference::init_variadic_reference(llvm::Module* modu
     llvm::Function* va_start_fn = get_or_declare_va_start(module);
     builder->CreateCall(va_start_fn, { va_list_i8_ptr });
 
-    // When forwarding variadic arguments, we need to create a copy of the va_list
-    // This is because the receiving function will consume the va_list, and we may
-    // need the original for cleanup or multiple uses.
-    llvm::AllocaInst* va_list_copy_ptr = builder->CreateAlloca(
-        va_list_ty,
-        nullptr,
-        "varargs_list_copy"
-    );
-
-    llvm::Value* va_list_copy_i8_ptr = builder->CreateBitCast(
-        va_list_copy_ptr,
-        llvm::PointerType::get(module->getContext(), 0),
-        "varargs_list_copy.cast"
-    );
-
-    // Declare and call va_copy to create a copy of the va_list
-    // va_copy(dest, src) copies the state from src to dest
-    llvm::Function* va_copy_fn = get_or_declare_va_copy(module);
-    builder->CreateCall(va_copy_fn, { va_list_copy_i8_ptr, va_list_i8_ptr });
-
-    // Clean up the original va_list immediately since we're using the copy
-    // This ensures proper resource management
-    llvm::Function* va_end_fn = get_or_declare_va_end(module);
-    builder->CreateCall(va_end_fn, { va_list_i8_ptr });
-
-    // Return the copied va_list pointer
+    // Return the va_list pointer
     // Note: The caller (or function cleanup) is responsible for calling va_end
-    // on this copy when done using it
-    return va_list_copy_ptr;
+    // on this pointer when done using it
+    return va_list_ptr;
 }
 
 void AstVariadicArgReference::end_variadic_reference(llvm::Module* module, llvm::IRBuilderBase* builder, llvm::Value* va_list_ptr)
