@@ -44,6 +44,11 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() cons
     return std::nullopt;
 }
 
+bool AstNamedType::is_assignable_to_impl(IAstType* other) const
+{
+    return false;
+}
+
 bool AstNamedType::equals(IAstType& other)
 {
     // Simple naming checks, e.g., "Vec3 == Vec3"

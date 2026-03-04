@@ -298,7 +298,7 @@ namespace stride::ast
         void define_function(
             Symbol function_name,
             std::unique_ptr<AstFunctionType> function_type,
-            int flags
+            int flags = SRFLAG_NONE
         ) const;
 
         void define_type(

@@ -6,6 +6,7 @@
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
+#include <unistd.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
@@ -136,7 +137,6 @@ llvm::Type* stride::ast::type_to_llvm_type(
             return llvm::Type::getVoidTy(module->getContext());
         }
     }
-
     if (const auto* named_ty = cast_type<AstNamedType*>(type))
     {
         const auto ref_type = named_ty->get_reference_type();
@@ -298,7 +298,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     throw parsing_error(
         ErrorType::TYPE_ERROR,
         "Cannot compute dominant type for incompatible primitive types",
-        references);
+        references
+    );
 }
 
 std::optional<AstStructType*> stride::ast::get_struct_type_from_type(IAstType* type)

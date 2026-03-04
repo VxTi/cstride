@@ -181,7 +181,7 @@ private ForInitializerPart ::= VariableDeclaration | InlineAssignment | Expressi
 PackageStatement ::= PACKAGE ScopedIdentifier SEMICOLON
 WhileLoopStatement ::= WHILE LPAREN Expression RPAREN BlockStatement
 ModuleStatement ::= MODULE ScopedIdentifier LBRACE StandaloneItem* RBRACE
-IfStatement ::= IF LPAREN Expression RPAREN BlockStatement [ELSE (IfStatement | BlockStatement)]
+IfStatement ::= IF LPAREN Expression RPAREN (BlockStatement | Expression) [ELSE (IfStatement | (BlockStatement | Expression))]
 
 ExpressionStatement ::= Expression SEMICOLON
 
@@ -222,7 +222,7 @@ PrimaryExpression ::= LiteralExpression
                      | TupleInitializationExpression
                      | ELLIPSIS // variadic parameter pack expansion
 
-ArrayDeclarationExpression ::= LSQUARE_BRACKET PrimaryExpression (COMMA PrimaryExpression)* RSQUARE_BRACKET
+ArrayDeclarationExpression ::= LSQUARE_BRACKET [PrimaryExpression (COMMA PrimaryExpression)*] RSQUARE_BRACKET
 TupleInitializationExpression ::= LPAREN Expression (COMMA Expression)* RPAREN
 
 FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {
