@@ -368,6 +368,8 @@ namespace stride::ast
 
         void validate() override;
 
+        std::string get_formatted_call() const;
+
     private:
         [[nodiscard]]
         std::string format_function_name() const;

@@ -354,7 +354,7 @@ TEST(LambdaErrors, TypeMismatchInDeclaration)
             return x + y;
         };
     )",
-        "Type mismatch in variable declaration; expected type '(int32, int32) -> int64', got '(int32, int32) -> int32'");
+        "Type mismatch in variable declaration: cannot assign value of type '(int32, int32) -> int32' to type '(int32, int32) -> int64'");
 }
 
 TEST(LambdaErrors, ParameterTypeMismatch)
@@ -365,7 +365,7 @@ TEST(LambdaErrors, ParameterTypeMismatch)
             return 1L;
         };
     )",
-        "Type mismatch in variable declaration; expected type '(int64, int64) -> int64', got '(int32, int32) -> int64'");
+        "Type mismatch in variable declaration: cannot assign value of type '(int32, int32) -> int64' to type '(int64, int64) -> int64'");
 }
 
 TEST(LambdaErrors, ParameterCountMismatch)
@@ -376,7 +376,7 @@ TEST(LambdaErrors, ParameterCountMismatch)
             return x + y;
         };
     )",
-        "Type mismatch in variable declaration; expected type '(int32) -> int32', got '(int32, int32) -> int32'");
+        "Type mismatch in variable declaration: cannot assign value of type '(int32, int32) -> int32' to type '(int32) -> int32'");
 }
 
 TEST(LambdaErrors, WrongReturnType)

@@ -1,9 +1,5 @@
-fn print(msg: string, ...): void {
-    printf(msg, ...);
+fn add(x: int32, y: int32): int32 {
+    return x + y;
 }
 
-fn main(): void {
-    const arr: float64[]?;
-
-    print("Arr: %p\n", arr);
-}
+const result: int32 = add(1L, 2L);
