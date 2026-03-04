@@ -165,7 +165,8 @@ llvm::Value* AstFunctionCall::codegen(
         // declare it as an external function now.
         if (!callee)
         {
-            const auto fn_type = definition.value()->get_type();
+            const auto fn_def = definition.value();
+            const auto fn_type = fn_def->get_type();
             std::vector<llvm::Type*> param_types;
             param_types.reserve(fn_type->get_parameter_types().size());
 
@@ -176,10 +177,24 @@ llvm::Value* AstFunctionCall::codegen(
 
             llvm::Type* ret_type = type_to_llvm_type(fn_type->get_return_type().get(), module);
 
+            // When propagating varargs (call has '...'), the callee receives the caller's
+            // va_list as an extra fixed pointer argument rather than as true variadic args.
+            // This lets the callee forward the va_list directly to vprintf/vscanf-style APIs.
+            bool llvm_is_variadic;
+            if (this->is_variadic())
+            {
+                param_types.push_back(llvm::PointerType::get(module->getContext(), 0));
+                llvm_is_variadic = false;
+            }
+            else
+            {
+                llvm_is_variadic = (fn_def->get_flags() & SRFLAG_FN_TYPE_VARIADIC) != 0;
+            }
+
             llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
                 ret_type,
                 param_types,
-                fn_type->is_variadic()
+                llvm_is_variadic
             );
 
             auto callee_cand = module->getOrInsertFunction(
@@ -224,15 +239,18 @@ llvm::Value* AstFunctionCall::codegen(
 
     const auto minimum_arg_count = callee->arg_size();
 
-    if (const auto provided_arg_count = this->get_arguments().size();
-        provided_arg_count < minimum_arg_count)
+    // When propagating varargs via '...', the va_list is appended as an extra argument
+    // at codegen time, so the caller's declared arg count is one less than the callee expects.
+    const auto effective_provided = this->get_arguments().size() + (this->is_variadic() ? 1 : 0);
+
+    if (effective_provided < minimum_arg_count)
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Incorrect arguments passed for function '{}', expected {}, got {}",
                         this->get_function_name(),
                         minimum_arg_count,
-                        provided_arg_count),
+                        effective_provided),
             this->get_source_fragment()
         );
     }
@@ -308,34 +326,10 @@ llvm::Value* AstFunctionCall::codegen(
         }
     }
 
-    auto actual_callee = callee;
-    if (this->is_variadic() && (callee->getName() == "printf" || callee->getName() == "stride_printf"))
-    {
-        if (auto* vprintf_fn = module->getFunction("vprintf"))
-        {
-            actual_callee = vprintf_fn;
-        }
-        else
-        {
-            // Declare vprintf
-            auto* vprintf_type = llvm::FunctionType::get(
-                callee->getReturnType(),
-                {
-                    callee->getFunctionType()->getParamType(0),
-                    llvm::PointerType::get(module->getContext(), 0)
-                },
-                false
-            );
-            actual_callee = llvm::cast<llvm::Function>(
-                module->getOrInsertFunction("vprintf", vprintf_type).getCallee()
-            );
-        }
-    }
-
     const auto call_inst = builder->CreateCall(
-        actual_callee,
+        callee,
         args_v,
-        actual_callee->getReturnType()->isVoidTy() ? "" : "calltmp"
+        callee->getReturnType()->isVoidTy() ? "" : "calltmp"
     );
 
     if (va_list_ptr)

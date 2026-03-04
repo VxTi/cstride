@@ -1,3 +1,4 @@
+#include "ast/flags.h"
 #include "ast/parsing_context.h"
 #include "runtime/stride_runtime.h"
 #include "runtime/symbols.h"
@@ -27,10 +28,9 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 fragment,
                 context,
                 ast::PrimitiveType::INT32
-            ),
-            /* is_variadic = */
-            true
-        )
+            )
+        ),
+        SRFLAG_FN_TYPE_VARIADIC
     );
 
     context->define_function(

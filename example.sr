@@ -1,27 +1,15 @@
-type IntArray = int32[];
 
-fn test(a: IntArray): void {}
-
-extern fn read(fd: int32, buffer: char[], count: int32): int32;
 
 fn main(): void {
     io::print("Enter your name: ");
     let name: string = "User";
-    
-    let age: int32 = 25;
 
-    io::print("Enter your age: ");
-    let ch: char[] = ['\0'];
-    while(read(0, ch, 1) > 0)
-    {
-        if (ch[0] == '\n') {
-            break;
-        }
-        age = age * 10 + (ch[0] - '0');
-    }
+    let name: string = "";
 
-    
-    io::println("Hello, %s! You are %d years old.", name, age);
+    scanf("%s", &name);
+
+
+    io::println("Hello, %s!", name);
 
     io::println("Goodbye, world!");
 }
