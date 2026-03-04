@@ -13,85 +13,12 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(AstLiteral* literal)
+std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(const AstLiteral* literal)
 {
-    const auto& context = literal->get_context();
-    if (const auto* str = cast_expr<AstStringLiteral*>(literal))
-    {
-        return std::make_unique<AstPrimitiveType>(
-            str->get_source_fragment(),
-            context,
-            PrimitiveType::STRING,
-            8
-        );
-    }
-
-    if (const auto* fp_lit = cast_expr<AstFpLiteral*>(literal))
-    {
-        auto type = fp_lit->bit_count() > 32
-            ? PrimitiveType::FLOAT64
-            : PrimitiveType::FLOAT32;
-        return std::make_unique<AstPrimitiveType>(
-            fp_lit->get_source_fragment(),
-            context,
-            type,
-            fp_lit->bit_count()
-        );
-    }
-
-    if (const auto* int_lit = cast_expr<AstIntLiteral*>(literal))
-    {
-        auto type = int_lit->is_signed()
-            ? (int_lit->bit_count() > 32
-                ? PrimitiveType::INT64
-                : PrimitiveType::INT32)
-            : (int_lit->bit_count() > 32
-                ? PrimitiveType::UINT64
-                : PrimitiveType::UINT32);
-
-        return std::make_unique<AstPrimitiveType>(
-
-            int_lit->get_source_fragment(),
-            context,
-            type,
-            int_lit->get_flags()
-        );
-    }
-
-    if (const auto* char_lit = cast_expr<AstCharLiteral*>(literal))
-    {
-        return std::make_unique<AstPrimitiveType>(
-
-            char_lit->get_source_fragment(),
-            context,
-            PrimitiveType::CHAR,
-            char_lit->bit_count());
-    }
-
-    if (const auto* bool_lit = cast_expr<AstBooleanLiteral*>(literal))
-    {
-        return std::make_unique<AstPrimitiveType>(
-
-            bool_lit->get_source_fragment(),
-            context,
-            PrimitiveType::BOOL,
-            bool_lit->bit_count());
-    }
-
-    if (const auto* nil_lit = cast_expr<AstNilLiteral*>(literal))
-    {
-        return std::make_unique<AstPrimitiveType>(
-
-            nil_lit->get_source_fragment(),
-            context,
-            PrimitiveType::NIL,
-            8);
-    }
-
-    throw parsing_error(
-        ErrorType::TYPE_ERROR,
-        "Unable to resolve expression literal type",
-        literal->get_source_fragment());
+    return std::make_unique<AstPrimitiveType>(
+        literal->get_source_fragment(),
+        literal->get_context(),
+        literal->get_primitive_type());
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(const AstFunctionCall* fn_call)
