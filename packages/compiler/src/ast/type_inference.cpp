@@ -462,8 +462,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             ErrorType::TYPE_ERROR,
             std::format(
                 "Type mismatch in variable declaration: cannot assign value of type '{}' to variable of type '{}'",
-                value_type->get_type_name(),
-                annotated_type.value()->get_type_name()
+                value_type->to_string(),
+                annotated_type.value()->to_string()
             ),
             variable_declaration->get_source_fragment()
         );

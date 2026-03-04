@@ -1,8 +1,15 @@
-const add: (int32, int32) -> int32 = (x: int32, y: int32): int32 -> {
-    return x + y;
-};
+    module Foo {
+        const field = "foo";
+    }
 
-fn main(): void {
-    const another_add: (int32, int32) -> int32 = add;
-    const result: int32 = another_add(3, 4);
-}
+    const field = "bar";
+
+        module io {
+        fn println(input: string, ...): void {
+            printf(input, ...);
+        }
+    }
+
+    fn main(): void {
+        io::println("field: %s", field);
+    }

@@ -645,15 +645,34 @@ llvm::Value* IAstFunction::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Function* function = module->getFunction(this->get_scoped_function_name());
-    if (!function)
+    // Anonymous functions are tracked by their cached pointer (they have no stable
+    // string name in the module). Named functions are looked up the normal way.
+    llvm::Function* function = nullptr;
+    if (this->is_anonymous())
     {
-        module->print(llvm::errs(), nullptr);
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            "Function symbol missing: " + this->get_scoped_function_name(),
-            this->get_source_fragment()
-        );
+        function = this->_llvm_function;
+        if (!function)
+        {
+            module->print(llvm::errs(), nullptr);
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                "Anonymous function pointer missing — resolve_forward_references must run first",
+                this->get_source_fragment()
+            );
+        }
+    }
+    else
+    {
+        function = module->getFunction(this->get_scoped_function_name());
+        if (!function)
+        {
+            module->print(llvm::errs(), nullptr);
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                "Function symbol missing: " + this->get_scoped_function_name(),
+                this->get_source_fragment()
+            );
+        }
     }
 
     if (this->is_extern())
@@ -966,11 +985,19 @@ void IAstFunction::resolve_forward_references(
     llvm::IRBuilderBase* builder
 )
 {
-    const auto& function_name = this->get_scoped_function_name();
-
-    // Avoid re-registering if already declared (e.g. called multiple times)
-    if (module->getFunction(function_name))
-        return;
+    // Avoid re-registering if already declared.
+    // Named functions are looked up by their scoped name; anonymous functions are
+    // tracked by the cached _llvm_function pointer (they have no stable string name).
+    if (this->is_anonymous())
+    {
+        if (this->_llvm_function)
+            return;
+    }
+    else
+    {
+        if (module->getFunction(this->get_scoped_function_name()))
+            return;
+    }
 
     llvm::Type* return_type = type_to_llvm_type(
         this->get_return_type(),
@@ -1010,7 +1037,7 @@ void IAstFunction::resolve_forward_references(
         {
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format("Failed to resolve parameter type for function '{}'", function_name),
+                std::format("Failed to resolve parameter type for function '{}'", this->get_scoped_function_name()),
                 param->get_type()->get_source_fragment()
             );
         }
@@ -1028,12 +1055,25 @@ void IAstFunction::resolve_forward_references(
         ? llvm::Function::PrivateLinkage
         : llvm::Function::ExternalLinkage;
 
-    llvm::Function::Create(
+    // Anonymous functions are created with an empty name so LLVM auto-assigns a
+    // numeric ID (e.g. @0, @1). We tag them with the "stride.anonymous" attribute
+    // so that other passes (e.g. find_lambda_function) can identify them without
+    // relying on a fragile name prefix. The pointer is cached in _llvm_function.
+    const std::string llvm_function_name =
+        this->is_anonymous() ? "" : this->get_scoped_function_name();
+
+    llvm::Function* created_fn = llvm::Function::Create(
         function_type,
         linkage,
-        function_name,
+        llvm_function_name,
         module
     );
+
+    if (this->is_anonymous())
+    {
+        created_fn->addFnAttr("stride.anonymous");
+        this->_llvm_function = created_fn;
+    }
 
     // Recursively resolve forward references in the function body
     // This is necessary for nested lambdas (e.g., lambdas that return lambdas)
