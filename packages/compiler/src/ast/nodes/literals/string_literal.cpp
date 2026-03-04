@@ -19,7 +19,8 @@ stride::ast::parse_string_literal_optional(
         return std::make_unique<AstStringLiteral>(
             reference_token.get_source_fragment(),
             context,
-            str_tok.get_lexeme());
+            str_tok.get_lexeme()
+        );
     }
     return std::nullopt;
 }
@@ -42,7 +43,7 @@ llvm::Value* AstStringLiteral::codegen(
             llvm::dyn_cast<llvm::ConstantDataArray>(global.getInitializer()))
         {
             if (const_entry->isCString() && const_entry->getAsString().
-                drop_back() == this->value())
+                                                         drop_back() == this->value())
             {
                 // Return a pointer to the existing global string
                 return builder->CreateInBoundsGEP(

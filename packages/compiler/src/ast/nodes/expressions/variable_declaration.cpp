@@ -183,7 +183,7 @@ void AstVariableDeclaration::validate()
         !annotated_type->equals(*value_type))
     {
         if (const auto val_primitive_ty = cast_type<AstPrimitiveType*>(value_type);
-            val_primitive_ty && val_primitive_ty->get_type() == PrimitiveType::NIL)
+            val_primitive_ty && val_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
         {
             if (annotated_type->is_optional())
             {

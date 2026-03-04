@@ -559,7 +559,7 @@ void IAstFunction::validate()
     // For void types, we only disallow returning expressions, as this is redundant.
     if (const auto void_ret = cast_type<AstPrimitiveType*>(
             this->get_return_type());
-        void_ret != nullptr && void_ret->get_type() == PrimitiveType::VOID)
+        void_ret != nullptr && void_ret->get_primitive_type() == PrimitiveType::VOID)
     {
         for (const auto& return_stmt : return_statements)
         {

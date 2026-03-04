@@ -158,7 +158,7 @@ namespace stride::ast
         ~AstPrimitiveType() override = default;
 
         [[nodiscard]]
-        PrimitiveType get_type() const
+        PrimitiveType get_primitive_type() const
         {
             return this->_type;
         }
@@ -210,7 +210,7 @@ namespace stride::ast
 
         std::string get_type_name() override
         {
-            return primitive_type_to_str(this->get_type(), this->get_flags());
+            return primitive_type_to_str(this->get_primitive_type(), this->get_flags());
         }
 
         std::string to_string() override

@@ -107,7 +107,7 @@ llvm::Type* stride::ast::type_to_llvm_type(
 
     if (const auto* primitive_ty = cast_type<AstPrimitiveType*>(type))
     {
-        switch (primitive_ty->get_type())
+        switch (primitive_ty->get_primitive_type())
         {
         case PrimitiveType::INT8:
         case PrimitiveType::UINT8:

@@ -17,14 +17,23 @@ llvm::Value* AstIdentifier::codegen(
 
     std::string internal_name = this->get_scoped_name();
 
-    if (const auto symbol_definition = this->get_context()->lookup_symbol(this->get_name()))
+    // Prefer exact internal-name match first. This ensures that an unqualified
+    // reference like `field` resolves to the global `field` (internal_name="field")
+    // rather than a same-named symbol in a sibling module like `Foo__field`.
+    if (const auto var_def = this->get_context()->lookup_variable(internal_name, false))
+    {
+        internal_name = var_def->get_internal_symbol_name();
+    }
+    // Fall back to name-based lookup, which resolves short names to their internal
+    // names (e.g. `x` → `x.0` for locals with a counter suffix).
+    else if (const auto symbol_definition = this->get_context()->lookup_symbol(internal_name))
     {
         internal_name = symbol_definition->get_internal_symbol_name();
     }
     else
     {
-        // Try looking up as a variable to handle captured variables
-        if (const auto var_def = this->get_context()->lookup_variable(this->get_name(), true))
+        // Last resort: raw name match (handles captured variables).
+        if (const auto var_def = this->get_context()->lookup_variable(internal_name, true))
         {
             internal_name = var_def->get_internal_symbol_name();
         }
