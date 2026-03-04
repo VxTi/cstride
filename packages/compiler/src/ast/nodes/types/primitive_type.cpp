@@ -5,7 +5,7 @@
 
 using namespace stride::ast;
 
-size_t stride::ast::get_primitive_bit_count(PrimitiveType type)
+size_t stride::ast::get_primitive_bit_count(const PrimitiveType type)
 {
     switch (type)
     {
@@ -275,16 +275,16 @@ bool AstPrimitiveType::equals(IAstType& other)
     {
         // If either types is optional, and the other is NIL, they're also "equal".
         const auto is_one_optional =
-            (this->get_type() == PrimitiveType::NIL && other_primitive->is_optional()) ||
-            (other_primitive->get_type() == PrimitiveType::NIL && this->is_optional());
+            (this->get_primitive_type() == PrimitiveType::NIL && other_primitive->is_optional()) ||
+            (other_primitive->get_primitive_type() == PrimitiveType::NIL && this->is_optional());
 
-        return this->get_type() == other_primitive->get_type() ||
+        return this->get_primitive_type() == other_primitive->get_primitive_type() ||
             is_one_optional;
     }
 
     if (const auto* struct_type = cast_type<AstNamedType*>(&other))
     {
-        return this->get_type() == PrimitiveType::NIL && struct_type->is_optional();
+        return this->get_primitive_type() == PrimitiveType::NIL && struct_type->is_optional();
     }
 
     return false;
@@ -294,8 +294,14 @@ bool AstPrimitiveType::is_assignable_to(IAstType* other) const
 {
     if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
+        if (this->is_optional() && other_primitive->get_primitive_type() == PrimitiveType::NIL)
+        {
+            return true;
+        }
+
         return this->is_integer_ty() && other_primitive->is_integer_ty()
             || this->is_fp() && other_primitive->is_fp();
     }
+
     return false;
 }

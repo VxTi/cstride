@@ -56,7 +56,7 @@ bool AstNamedType::equals(IAstType& other)
     // then we consider the types equal if this is optional
     if (const auto* other_primitive = cast_type<AstPrimitiveType*>(&other))
     {
-        return other_primitive->get_type() == PrimitiveType::NIL
+        return other_primitive->get_primitive_type() == PrimitiveType::NIL
             && this->is_optional();
     }
     return false;

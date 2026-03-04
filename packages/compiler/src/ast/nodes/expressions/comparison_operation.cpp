@@ -69,14 +69,14 @@ void AstComparisonOp::validate()
 
     // If LHS is NIL and RHS is valid, allow the comparison (nil checks)
     if (lhs_primitive && rhs_primitive
-        && lhs_primitive->get_type() == PrimitiveType::NIL
-        && rhs_primitive->get_type() != PrimitiveType::NIL)
+        && lhs_primitive->get_primitive_type() == PrimitiveType::NIL
+        && rhs_primitive->get_primitive_type() != PrimitiveType::NIL)
         return;
 
     // visa versa; LHS is primitive and RHS is nil
     if (rhs_primitive && lhs_primitive
-        && rhs_primitive->get_type() == PrimitiveType::NIL
-        && lhs_primitive->get_type() != PrimitiveType::NIL)
+        && rhs_primitive->get_primitive_type() == PrimitiveType::NIL
+        && lhs_primitive->get_primitive_type() != PrimitiveType::NIL)
         return;
 
     const auto lhs_struct = cast_type<AstNamedType*>(lhs_type);
@@ -84,11 +84,11 @@ void AstComparisonOp::validate()
 
     // LHS is optional struct and RHS is primitive and RHS is not nil
     if (lhs_struct && rhs_primitive && lhs_struct->is_optional() &&
-        rhs_primitive->get_type() == PrimitiveType::NIL)
+        rhs_primitive->get_primitive_type() == PrimitiveType::NIL)
         return;
 
     if (lhs_primitive && rhs_struct && rhs_struct->is_optional() &&
-        lhs_primitive->get_type() == PrimitiveType::NIL)
+        lhs_primitive->get_primitive_type() == PrimitiveType::NIL)
         return;
 
     throw parsing_error(
