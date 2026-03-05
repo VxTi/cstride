@@ -7,12 +7,9 @@
 
 extern "C" {
 
-int _printf_internal(const char* format, ...)
+int _printf_internal(const char* format, va_list args)
 {
-    va_list args;
-    va_start(args, format);
     int r = vprintf(format, args);
-    va_end(args);
     return r;
 }
 

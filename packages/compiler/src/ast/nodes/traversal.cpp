@@ -92,14 +92,15 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstExpression* node)
         // Visit the base identifier so its type is resolved before the accessor's type is inferred.
         visit(visitor, member_access->get_base());
     }
-    else if (auto* fn_decl = dynamic_cast<AstFunctionDeclaration*>(node))
-    {
-        visit(visitor, fn_decl);
-    }
     else if (auto* lambda = dynamic_cast<AstLambdaFunctionExpression*>(node))
     {
         visit(visitor, lambda);
     }
+    else if (auto* fn_decl = dynamic_cast<AstFunctionDeclaration*>(node))
+    {
+        visit(visitor, fn_decl);
+    }
+
     // AstLiteral, AstIdentifier, AstVariadicArgReference,
     // AstArrayMemberAccessor (base/index already handled above) — leaf nodes, no children.
 
