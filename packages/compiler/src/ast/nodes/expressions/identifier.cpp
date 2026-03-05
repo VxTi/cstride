@@ -33,9 +33,9 @@ llvm::Value* AstIdentifier::codegen(
     else
     {
         // Last resort: raw name match (handles captured variables).
-        if (const auto var_def = this->get_context()->lookup_variable(internal_name, true))
+        if (const auto definition = this->get_context()->lookup_variable(internal_name, true))
         {
-            internal_name = var_def->get_internal_symbol_name();
+            internal_name = definition->get_internal_symbol_name();
         }
     }
 

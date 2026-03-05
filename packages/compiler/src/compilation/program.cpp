@@ -127,12 +127,13 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     runtime::register_runtime_symbols(this->get_global_context());
     traverser.visit(&function_declare_visitor, this->_root_node.get());
     traverser.visit(&type_visitor, this->_root_node.get());
+
+    this->_root_node->validate();
     this->_root_node->resolve_forward_references(
         this->get_global_context().get(),
         module.get(),
         &builder
     );
-    this->_root_node->validate();
 
     // LLVM Codegeneration step
     this->codegen(module.get(), &builder);
