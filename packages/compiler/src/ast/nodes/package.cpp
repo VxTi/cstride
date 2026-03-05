@@ -10,7 +10,7 @@ void AstPackage::validate() {}
 
 std::string AstPackage::to_string()
 {
-    return std::format("Package({})", this->get_name());
+    return std::format("Package({})", this->get_package_name());
 }
 
 bool stride::ast::is_package_declaration(const TokenSet& set)
@@ -47,6 +47,6 @@ std::unique_ptr<IAstNode> AstPackage::clone()
     return std::make_unique<AstPackage>(
         this->get_source_fragment(),
         this->get_context(),
-        this->get_name()
+        this->get_package_name()
     );
 }

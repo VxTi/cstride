@@ -21,7 +21,7 @@ namespace stride::ast
             _name(std::move(package_name)) {}
 
         [[nodiscard]]
-        const std::string& get_name() const
+        const std::string& get_package_name() const
         {
             return this->_name;
         }

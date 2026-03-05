@@ -40,4 +40,14 @@ namespace stride::ast
             return this->_files;
         }
     };
+
+    std::unique_ptr<IAstNode> parse_next_statement(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set
+    );
+
+    std::unique_ptr<AstBlock> parse_sequential(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set
+    );
 }

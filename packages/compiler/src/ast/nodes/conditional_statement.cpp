@@ -1,8 +1,8 @@
 #include "ast/nodes/conditional_statement.h"
 
 #include "errors.h"
+#include "ast/ast.h"
 #include "ast/conditionals.h"
-#include "ast/parser.h"
 #include "ast/parsing_context.h"
 #include "ast/tokens/token_set.h"
 
