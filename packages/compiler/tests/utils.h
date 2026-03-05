@@ -29,8 +29,8 @@ namespace stride::tests
         auto parsed = parse_sequential(context, tokens);
 
         ast::AstNodeTraverser traverser;
-        ast::TypeInferenceVisitor type_visitor;
-        ast::FunctionDeclareVisitor function_declare_visitor;
+        ast::ExpressionVisitor type_visitor;
+        ast::FunctionVisitor function_declare_visitor;
 
         runtime::register_runtime_symbols(context);
         traverser.visit(&function_declare_visitor, parsed.get());

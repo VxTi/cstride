@@ -4,6 +4,8 @@
 
 namespace stride::ast
 {
+    class AstImport;
+    class AstPackage;
     class AstFunctionDeclaration;
     class IAstExpression;
 
@@ -14,7 +16,7 @@ namespace stride::ast
     /// have already been typed.  In addition to setting types, the visitor registers
     /// variable declarations and function declarations in the appropriate parsing context,
     /// matching the work previously performed by the scattered resolve_types() calls.
-    class TypeInferenceVisitor : public IVisitor
+    class ExpressionVisitor : public IVisitor
     {
     public:
         /// Infers the type of `expr` and stores it on the node.
@@ -23,9 +25,26 @@ namespace stride::ast
         void accept(IAstExpression* expr) override;
     };
 
-    class FunctionDeclareVisitor : public IVisitor
+    class FunctionVisitor : public IVisitor
     {
     public:
         void accept(IAstFunction* fn_declaration) override;
+    };
+
+    class ImportVisitor : public IVisitor
+    {
+        std::string _current_file_name;
+        std::map</* file_name = */ std::string, /* package_name = */ std::string> _file_package_mapping;
+        std::map</* package_name = */ std::string, /* import_list = */ std::vector<std::string>> _import_registry;
+
+    public:
+        void set_current_file_name(const std::string& file_name)
+        {
+            this->_current_file_name = file_name;
+        }
+
+        void accept(AstImport* node);
+
+        void accept(AstPackage* node);
     };
 }

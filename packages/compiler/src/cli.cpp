@@ -133,7 +133,7 @@ int stride::cli::resolve_compile_command(const int argc, char** argv)
 
     Program program;
 
-    program.parse_files(options.source_files);
+    program.from_sources(options.source_files);
 
     return program.compile(options);
 }
@@ -146,7 +146,7 @@ int stride::cli::resolve_run_command(const int argc, char** argv)
 
     Program program;
 
-    program.parse_files(options.source_files);
+    program.from_sources(options.source_files);
 
     return program.compile_jit(options);
 }

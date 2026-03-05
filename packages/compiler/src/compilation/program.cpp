@@ -4,9 +4,11 @@
 #include "ast/parser.h"
 #include "ast/nodes/traversal.h"
 #include "../../include/ast/visitor.h"
+#include "ast/ast.h"
 #include "runtime/symbols.h"
 
 #include <iostream>
+#include <ranges>
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/Orc/LLJIT.h>
@@ -22,90 +24,17 @@
 
 using namespace stride;
 
-void Program::parse_files(std::vector<std::string> files)
+Program Program::from_sources(const std::vector<std::string>& files)
 {
-    this->_global_scope = std::make_shared<ast::ParsingContext>();
-    this->_files = std::move(files);
-
-    std::vector<std::unique_ptr<ast::AstBlock>> ast_nodes;
-
-    for (const auto& file : this->_files)
-    {
-        auto parsed = ast::parser::parse_file(*this, file);
-        if (!parsed)
-        {
-            std::cout << "Failed to parse file: " << file << std::endl;
-            exit(1);
-        }
-        ast_nodes.push_back(std::move(parsed));
-    }
-
-    if (this->_files.empty())
+    if (files.empty())
     {
         std::cout << "No valid stride files found" << std::endl;
         exit(0);
     }
 
-    auto first_node = std::move(ast_nodes.front());
+    auto ast = ast::Ast::parse_files(files);
 
-    // Append all other nodes into first
-    for (auto it = ast_nodes.begin() + 1; it != ast_nodes.end(); ++it)
-    {
-        first_node->aggregate_block(it->get());
-    }
-
-    this->_root_node = std::move(first_node);
-}
-
-void Program::print_ast_nodes() const
-{
-    for (const auto& node : this->_root_node->get_children())
-    {
-        std::cout << node->to_string() << std::endl;
-    }
-}
-
-void Program::optimize_ast_nodes()
-{
-    std::vector<std::unique_ptr<ast::IAstNode>> new_children;
-    for (auto& child_ptr : this->_root_node->get_children())
-    {
-        ast::IAstNode* child = child_ptr.get();
-
-        if (auto* reducible = dynamic_cast<ast::IReducible*>(child))
-        {
-            if (std::unique_ptr<ast::IAstNode> reduced = reducible->reduce().value())
-            {
-                // Note: Assuming reduce() returns a new raw pointer or
-                // you manage ownership correctly in your AST implementation.
-                new_children.push_back(std::move(reduced));
-                std::cout << "Optimized node: " << child->to_string() << " to "
-                    << reduced->to_string() << std::endl;
-                continue;
-            }
-        }
-        // If not reducible or reduction failed, move the original node
-        // This requires changing the loop to take ownership or clone
-        new_children.push_back(std::unique_ptr<ast::IAstNode>(child));
-    }
-
-    this->_root_node = std::make_unique<ast::AstBlock>(
-        this->_root_node->get_source_fragment(),
-        this->get_global_context(),
-        std::move(new_children));
-}
-
-void Program::codegen(llvm::Module* module, llvm::IRBuilderBase* builder) const
-{
-    if (this->_root_node->codegen(module, builder) == nullptr)
-    {
-        throw std::runtime_error(
-            std::format(
-                "Failed to build executable for file '{}'",
-                this->_root_node->get_source()->path
-            )
-        );
-    }
+    return Program(std::move(ast));
 }
 
 std::unique_ptr<llvm::Module> Program::prepare_module(
@@ -121,22 +50,27 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     llvm::IRBuilder<> builder(context);
 
     ast::AstNodeTraverser traverser;
-    ast::TypeInferenceVisitor type_visitor;
-    ast::FunctionDeclareVisitor function_declare_visitor;
+    ast::ExpressionVisitor type_visitor;
+    ast::FunctionVisitor function_declare_visitor;
+    ast::ImportVisitor import_visitor;
 
-    runtime::register_runtime_symbols(this->get_global_context());
-    traverser.visit(&function_declare_visitor, this->_root_node.get());
-    traverser.visit(&type_visitor, this->_root_node.get());
+    for (const auto& [file_name, node] : this->_ast->get_files())
+    {
+        runtime::register_runtime_symbols(node->get_context());
+        traverser.visit(&function_declare_visitor, node.get());
+        traverser.visit(&type_visitor, node.get());
 
-    this->_root_node->validate();
-    this->_root_node->resolve_forward_references(
-        this->get_global_context().get(),
-        module.get(),
-        &builder
-    );
+        import_visitor.set_current_file_name(file_name);
+        traverser.visit(&import_visitor, node.get());
 
-    // LLVM Codegeneration step
-    this->codegen(module.get(), &builder);
+        node->validate();
+        node->resolve_forward_references(
+            node->get_context().get(),
+            module.get(),
+            &builder
+        );
+        node->codegen(module.get(), &builder);
+    }
 
     if (llvm::verifyModule(*module, &llvm::errs()))
     {
