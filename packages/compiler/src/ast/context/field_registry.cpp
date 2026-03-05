@@ -84,7 +84,6 @@ void ParsingContext::define_variable(
     std::unique_ptr<IAstType> type
 )
 {
-    printf("Defining variable %s\n", variable_sym.name.c_str());
     if (this->is_global_scope())
     {
         this->define_variable_globally(std::move(variable_sym), std::move(type));
