@@ -2,6 +2,10 @@
 
 #include "nodes/traversal.h"
 
+#include <map>
+#include <string>
+#include <vector>
+
 namespace stride::ast
 {
     class AstImport;
@@ -34,8 +38,17 @@ namespace stride::ast
     class ImportVisitor : public IVisitor
     {
         std::string _current_file_name;
-        std::map</* file_name = */ std::string, /* package_name = */ std::string> _file_package_mapping;
-        std::map</* package_name = */ std::string, /* import_list = */ std::vector<std::string>> _import_registry;
+        std::map<
+            std::string, /* file_name    */
+            std::string  /* package_name */
+        > _file_package_mapping;
+        std::map<
+            std::string, /* file_name */
+            std::pair<
+                std::string,             /* package_name */
+                std::vector<std::string> /* module_names::functions/types */
+            >
+        > _import_registry;
 
     public:
         void set_current_file_name(const std::string& file_name)
@@ -43,8 +56,8 @@ namespace stride::ast
             this->_current_file_name = file_name;
         }
 
-        void accept(AstImport* node);
+        void accept(AstImport* node) override;
 
-        void accept(AstPackage* node);
+        void accept(AstPackage* node) override;
     };
 }

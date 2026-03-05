@@ -1,10 +1,8 @@
 #include "program.h"
 
-#include "../../include/runtime/stride_runtime.h"
-#include "ast/parser.h"
-#include "ast/nodes/traversal.h"
-#include "../../include/ast/visitor.h"
 #include "ast/ast.h"
+#include "ast/visitor.h"
+#include "ast/nodes/traversal.h"
 #include "runtime/symbols.h"
 
 #include <iostream>
@@ -51,17 +49,21 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     ast::AstNodeTraverser traverser;
     ast::ExpressionVisitor type_visitor;
-    ast::FunctionVisitor function_declare_visitor;
+    ast::FunctionVisitor function_visitor;
     ast::ImportVisitor import_visitor;
 
     for (const auto& [file_name, node] : this->_ast->get_files())
     {
-        runtime::register_runtime_symbols(node->get_context());
-        traverser.visit(&function_declare_visitor, node.get());
-        traverser.visit(&type_visitor, node.get());
-
         import_visitor.set_current_file_name(file_name);
         traverser.visit(&import_visitor, node.get());
+
+        traverser.visit(&function_visitor, node.get());
+    }
+
+    for (const auto& node : this->_ast->get_files() | std::views::values)
+    {
+        runtime::register_runtime_symbols(node->get_context());
+        traverser.visit(&type_visitor, node.get());
 
         node->validate();
         node->resolve_forward_references(

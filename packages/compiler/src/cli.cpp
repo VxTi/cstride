@@ -131,9 +131,7 @@ int stride::cli::resolve_compile_command(const int argc, char** argv)
     auto options = resolve_compilation_options_from_args(argc, argv);
     options.mode = CompilationMode::COMPILE;
 
-    Program program;
-
-    program.from_sources(options.source_files);
+    const auto program = Program::from_sources(options.source_files);
 
     return program.compile(options);
 }
@@ -144,9 +142,7 @@ int stride::cli::resolve_run_command(const int argc, char** argv)
     auto options = resolve_compilation_options_from_args(argc, argv);
     options.mode = CompilationMode::COMPILE_JIT;
 
-    Program program;
-
-    program.from_sources(options.source_files);
+    const auto program = Program::from_sources(options.source_files);
 
     return program.compile_jit(options);
 }

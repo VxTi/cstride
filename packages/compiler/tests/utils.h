@@ -33,8 +33,8 @@ namespace stride::tests
         ast::FunctionVisitor function_declare_visitor;
 
         runtime::register_runtime_symbols(context);
-        traverser.visit(&function_declare_visitor, parsed.get());
-        traverser.visit(&type_visitor, parsed.get());
+        traverser.visit_for_loop(&function_declare_visitor, parsed.get());
+        traverser.visit_for_loop(&type_visitor, parsed.get());
 
         return std::make_pair(std::move(parsed), context);
     }
