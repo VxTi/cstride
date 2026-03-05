@@ -197,8 +197,11 @@ llvm::Value* AstFunctionCall::codegen(
                 llvm_is_variadic
             );
 
+            // If we are calling a variadic function and propagating '...', 
+            // the callee is actually a non-variadic function that takes a va_list.
+            // But we should use the actual function name for the lookup.
             auto callee_cand = module->getOrInsertFunction(
-                this->get_scoped_function_name(),
+                fn_def->get_internal_symbol_name(),
                 llvm_fn_type
             );
 

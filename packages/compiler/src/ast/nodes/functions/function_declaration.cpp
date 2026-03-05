@@ -1055,12 +1055,10 @@ void IAstFunction::resolve_forward_references(
         ? llvm::Function::PrivateLinkage
         : llvm::Function::ExternalLinkage;
 
-    // Anonymous functions are created with an empty name so LLVM auto-assigns a
-    // numeric ID (e.g. @0, @1). We tag them with the "stride.anonymous" attribute
-    // so that other passes (e.g. find_lambda_function) can identify them without
-    // relying on a fragile name prefix. The pointer is cached in _llvm_function.
+    // Anonymous functions are created with a stable name prefix and a numeric ID
+    // so they are easily findable in the module without ambiguity.
     const std::string llvm_function_name =
-        this->is_anonymous() ? "" : this->get_scoped_function_name();
+        this->is_anonymous() ? this->get_scoped_function_name() : this->get_scoped_function_name();
 
     llvm::Function* created_fn = llvm::Function::Create(
         function_type,

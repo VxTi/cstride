@@ -12,5 +12,6 @@ fn main(): void {
     const add_five: (int32) -> int32 = create_adder(5);
     const result: int32 = add_five(10);
 
-    print("Result: %s", result); // Should print "Result: 15"
+    print("Result: %d", result); // Should print "Result: 15"
+    print("TEST");
 }

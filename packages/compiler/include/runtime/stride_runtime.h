@@ -5,7 +5,7 @@
 #include <memory>
 
 extern "C" {
-int _printf_internal(const char* format, ...);
+int _printf_internal(const char* format, va_list args);
 uint64_t _system_time_ns_internal();
 uint64_t _system_time_us_internal();
 uint64_t _system_time_ms_internal();
