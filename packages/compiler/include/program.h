@@ -1,5 +1,6 @@
 #pragma once
 #include "cli.h"
+#include "ast/ast.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
@@ -32,22 +33,15 @@ namespace stride
 
     class Program
     {
-        std::vector<std::string> _files;
-        std::shared_ptr<ast::ParsingContext> _global_scope;
-        std::unique_ptr<ast::AstBlock> _root_node;
+        std::unique_ptr<ast::Ast> _ast;
+
+        explicit Program(std::unique_ptr<ast::Ast> ast) :
+            _ast(std::move(ast)) {}
 
     public:
-        explicit Program() = default;
-
-        void parse_files(std::vector<std::string> files);
+        static Program from_sources(const std::vector<std::string>& files);
 
         ~Program() = default;
-
-        [[nodiscard]]
-        std::shared_ptr<ast::ParsingContext> get_global_context() const
-        {
-            return this->_global_scope;
-        }
 
         Program(const Program&) = delete;
         Program& operator=(const Program&) = delete;
@@ -58,13 +52,13 @@ namespace stride
         [[nodiscard]]
         int compile(const cli::CompilationOptions& options) const;
 
+        [[nodiscard]]
+        ast::Ast* get_ast() const
+        {
+            return this->_ast.get();
+        }
+
     private:
-        void print_ast_nodes() const;
-
-        void optimize_ast_nodes();
-
-        void codegen(llvm::Module* module, llvm::IRBuilderBase* builder) const;
-
         std::unique_ptr<llvm::Module> prepare_module(
             llvm::LLVMContext& context,
             const cli::CompilationOptions& options,

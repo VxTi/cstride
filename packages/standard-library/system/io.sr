@@ -15,16 +15,6 @@ module io {
     }
 
     /**
-     * Prints the given string to the console, followed by a newline.
-     * @param input The string to print.
-     * @param ... Additional arguments to format into the string.
-     */
-    fn println(input: string, ...): void {
-        io::print(input, ...);
-        io::print("\n");
-    }
-
-    /**
      * Reads a string from STDIN
      */
     fn read(bytes: int32): string {

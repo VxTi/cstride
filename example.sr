@@ -1,17 +1,20 @@
-fn print(input: string, ...): void {
-    _printf_internal(input, ...);
-}
-
-const create_adder: (int32) -> (int32) -> int32 = (x: int32): (int32) -> int32 -> {
+const create_adder = (x: int32): (int32) -> int32 -> {
     return (y: int32): int32 -> {
         return x + y;
     };
 };
+fn print(input: string, ...): void {
+    _printf_internal(input, ...);
+}
 
-fn main(): void {
-    const add_five: (int32) -> int32 = create_adder(5);
+fn main(): int32 {
+    const add_five = create_adder(5);
     const result: int32 = add_five(10);
 
-    print("Result: %d", result); // Should print "Result: 15"
-    print("TEST");
+    io::print("Result: %d. Type something else: ", result); // Should print "Result: 15"
+
+    const input = io::read(10);
+
+    io::print("You entered: %s", input);
+    return 0;
 }
