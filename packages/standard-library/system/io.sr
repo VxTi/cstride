@@ -1,16 +1,17 @@
 package system;
 
-extern fn sleep(milliseconds: int32): void;
-extern fn scanf(input: string, ...): int32;
-
 module io {
+
+    const stdout_fd: int32 = 0;
+    const stdin_fd: int32 = 1;
+
     /**
      * Prints the given string to the console.
      * @param input The string to print.
      * @param ... Additional arguments to format into the string.
      */
     fn print(input: string, ...): void {
-        __vprintf_internal(input, ...);
+        _printf_internal(input, ...);
     }
 
     /**
@@ -19,17 +20,14 @@ module io {
      * @param ... Additional arguments to format into the string.
      */
     fn println(input: string, ...): void {
-        __vprintf_internal(input, ...);
-        __vprintf_internal("\n", ...);
+        io::print(input, ...);
+        io::print("\n");
     }
 
     /**
-     * Reads a formatted string from the console.
-     * @param input The format string.
-     * @param ... Pointers to the variables where the data should be stored.
-     * @return The number of items successfully read.
+     * Reads a string from STDIN
      */
-    fn read(input: string, ...): int32 {
-        return scanf(input, ...);
+    fn read(bytes: int32): string {
+        return _read_in_internal(bytes);
     }
 }
