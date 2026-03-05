@@ -1,15 +1,5 @@
-
-
 fn main(): void {
-    io::print("Enter your name: ");
-    let name: string = "User";
-
-    let name: string = "";
-
-    scanf("%s", &name);
-
-
-    io::println("Hello, %s!", name);
-
+    // io::print("Enter your name: ");
+    io::println("Hello, %s!", "test");
     io::println("Goodbye, world!");
 }
