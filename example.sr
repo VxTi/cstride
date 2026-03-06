@@ -22,12 +22,13 @@ pub fn print(input: string, ...): void {
     _printf_internal(input, ...);
 }
 
- const a: int32? = nil;
- const b: int32 = a as int32;
+ type IntArray = int32[];
+ const value = [1, 2, 3];
 
- fn main(): int32 {
-     return 0;
- }
+ fn test(a: IntArray): void {}
+
+ fn main(): void { test(value as IntArray); }
+
  /*
 fn typed(p: int32): void {
     print("Typed 32");

@@ -57,8 +57,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_base_reference_type()
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format(
-                    "Exceeded maximum recursion depth of {} while resolving base type of '{}'",
-                    MAX_RECURSION_DEPTH,
+                    "Exceeded maximum recursion depth while resolving base type of '{}'",
                     this->get_name()),
                 this->get_source_fragment()
             );
@@ -76,13 +75,13 @@ bool AstNamedType::is_castable_to_impl(IAstType* other)
         return false;
 
     // Check our base type is a primitive, and whether that type is castable to `other`
-    if (auto* other_primitive = dynamic_cast<AstPrimitiveType*>(other))
+    if (auto* other_primitive = cast_type<AstPrimitiveType*>(other))
     {
         return self_reference_type.value()->is_castable_to(other_primitive);
     }
 
     // Final case would be to check whether both base types are the same
-    if (const auto* other_named_ty = dynamic_cast<AstNamedType*>(other))
+    if (const auto* other_named_ty = cast_type<AstNamedType*>(other))
     {
         if (const auto second_reference_type = other_named_ty->get_base_reference_type();
             second_reference_type.has_value())
@@ -95,7 +94,7 @@ bool AstNamedType::is_castable_to_impl(IAstType* other)
 
 bool AstNamedType::is_assignable_to_impl(IAstType* other)
 {
-    if (const auto other_named = dynamic_cast<AstNamedType*>(other))
+    if (const auto other_named = cast_type<AstNamedType*>(other))
     {
         if (this->get_name() == other_named->get_name())
         {
@@ -113,7 +112,7 @@ bool AstNamedType::is_assignable_to_impl(IAstType* other)
         return true;
     }
 
-    if (const auto* other_named_ptr = dynamic_cast<AstNamedType*>(other))
+    if (const auto* other_named_ptr = cast_type<AstNamedType*>(other))
     {
         const auto other_base_type = other_named_ptr->get_base_reference_type();
         if (other_base_type.has_value() && this->is_assignable_to(other_base_type.value().get()))
@@ -128,7 +127,7 @@ bool AstNamedType::is_assignable_to_impl(IAstType* other)
 bool AstNamedType::equals(const IAstType& other) const
 {
     // Simple naming checks, e.g., "Vec3 == Vec3"
-    if (auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+    if (auto* other_named = cast_type<const AstNamedType*>(&other))
     {
         if (this->get_name() == other_named->get_name())
         {
@@ -136,28 +135,5 @@ bool AstNamedType::equals(const IAstType& other) const
         }
     }
 
-    // Try resolving base types
-    const auto self_base_type = get_base_reference_type();
-    if (self_base_type.has_value() && self_base_type.value()->equals(other))
-    {
-        return true;
-    }
-
-    if (auto* other_named = dynamic_cast<const AstNamedType*>(&other))
-    {
-        const auto other_base_type = other_named->get_base_reference_type();
-        if (other_base_type.has_value() && this->equals(*other_base_type.value()))
-        {
-            return true;
-        }
-    }
-
-    // The other type might be a primitive "NIL" type,
-    // then we consider the types equal if this is optional
-    if (const auto* other_primitive = dynamic_cast<const AstPrimitiveType*>(&other))
-    {
-        return other_primitive->get_primitive_type() == PrimitiveType::NIL
-            && this->is_optional();
-    }
     return false;
 }

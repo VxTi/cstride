@@ -55,7 +55,8 @@ std::unique_ptr<IAstNode> AstArrayType::clone()
         this->get_source_fragment(),
         this->get_context(),
         this->_element_type->clone_ty(),
-        this->_initial_length
+        this->_initial_length,
+        this->get_flags()
     );
 }
 
@@ -95,7 +96,7 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
     // whether the referencing type is assignable to this array's element type,
     // e.g., for `type SomeArray = [1, 2, 3]`, `equals(int32[], SomeArray)` should check
     // whether `[1, 2, 3]` in `SomeArray` (int32[]) is assignable to `Array(int32)`
-    if (const auto * other_named = cast_type<AstNamedType*>(other))
+    if (const auto* other_named = cast_type<AstNamedType*>(other))
     {
         const auto reference_type = other_named->get_base_reference_type();
         if (!reference_type.has_value())

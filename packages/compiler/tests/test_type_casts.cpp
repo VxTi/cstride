@@ -32,7 +32,7 @@ TEST(TypeCast, Downcast)
 TEST(TypeCast, MultipleCasts)
 {
     assert_compiles(R"(
-        const a: int8 = 10;
+        const a: int8 = 10 as int8;
         const b: int64 = (a as int32) as int64;
     )");
 }
