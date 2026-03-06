@@ -22,12 +22,16 @@ pub fn print(input: string, ...): void {
     _printf_internal(input, ...);
 }
 
- type IntArray = int32[];
- const value = [1, 2, 3];
+ type BinaryOp = (int32, int32) -> int32;
+ fn add(a: int32, b: int32): int32 { return a + b; }
 
- fn test(a: IntArray): void {}
+ let op = add as BinaryOp;
+ const secondOp: BinaryOp = add;
 
- fn main(): void { test(value as IntArray); }
+ fn main(): int32 {
+     op(1, 2);
+     return 0;
+ }
 
  /*
 fn typed(p: int32): void {

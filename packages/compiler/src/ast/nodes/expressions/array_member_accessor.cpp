@@ -76,7 +76,24 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    const auto array_iden_type = this->_array_identifier->get_type();
+    std::unique_ptr<IAstType> array_iden_type = this->_array_identifier->get_type()->clone_ty();
+
+    if (const auto named_ty = cast_type<AstNamedType*>(array_iden_type.get()))
+    {
+        if (const auto reference_type = named_ty->get_base_reference_type();
+            reference_type.has_value())
+        {
+            array_iden_type = reference_type.value()->clone_ty();
+        }
+        else
+        {
+            throw parsing_error(
+                ErrorType::SEMANTIC_ERROR,
+                "Array member accessor used on non-reference type",
+                this->get_source_fragment()
+            );
+        }
+    }
 
     llvm::Value* base_ptr = this->_array_identifier->codegen(
         module,
@@ -89,7 +106,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 
     // Element type, not the array type.
     // Assumes `array_iden_type` is something like "T[]" and has an element type you can extract.
-    const auto* array_ty = cast_type<AstArrayType*>(array_iden_type);
+    const auto* array_ty = cast_type<AstArrayType*>(array_iden_type.get());
     if (!array_ty)
     {
         throw parsing_error(
