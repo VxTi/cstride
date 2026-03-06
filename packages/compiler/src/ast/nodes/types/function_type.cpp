@@ -1,3 +1,4 @@
+#include "ast/casting.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
@@ -140,6 +141,19 @@ bool AstFunctionType::equals(const IAstType& other) const
     if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
     {
         return other_named->equals(*this);
+    }
+
+    return false;
+}
+
+bool AstFunctionType::is_castable_to_impl(IAstType* other)
+{
+    if (const auto other_named = cast_type<AstNamedType*>(other))
+    {
+        if (const auto base_type = other_named->get_base_reference_type(); base_type.has_value())
+        {
+            return this->equals(*base_type.value());
+        }
     }
 
     return false;

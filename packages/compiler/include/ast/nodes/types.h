@@ -369,10 +369,7 @@ namespace stride::ast
             return false;
         }
 
-        bool is_castable_to_impl(IAstType* other) override
-        {
-            return false;
-        }
+        bool is_castable_to_impl(IAstType* other) override;
     };
 
     class AstArrayType
