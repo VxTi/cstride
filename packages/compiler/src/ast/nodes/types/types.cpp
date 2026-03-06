@@ -299,6 +299,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     const auto& lhs_primitive_ty = extract_primitive_reference_types(lhs);
     const auto& rhs_primitive_ty = extract_primitive_reference_types(rhs);
 
+    // Check whether we're mixing types, e.g., `10 + <struct>`
     if ((!lhs_primitive_ty && rhs_primitive_ty) || (lhs_primitive_ty && !rhs_primitive_ty))
     {
         throw parsing_error(

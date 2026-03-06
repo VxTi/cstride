@@ -440,10 +440,37 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             array_accessor->get_array_identifier(),
             recursion_guard);
 
+        // If the immediate type is an array, we can simply return the member type
         if (const auto array = cast_type<AstArrayType*>(array_type.get()))
         {
             return array->get_element_type()->clone_ty();
         }
+
+        // It's possible that we're referring to a named type, in which case we'll have to extract the base type
+        if (const auto named = cast_type<AstNamedType*>(array_type.get()))
+        {
+            const auto base_ty = named->get_base_reference_type();
+
+            if (!base_ty.has_value())
+            {
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
+                    std::format(
+                        "Named type '{}' does not reference another type, cannot be used as array type",
+                        named->get_name()
+                    ),
+                    named->get_source_fragment()
+                );
+            }
+
+            return base_ty.value()->clone_ty();
+        }
+
+        throw parsing_error(
+            ErrorType::SEMANTIC_ERROR,
+            "Unable to resolve array member accessor type",
+            array_accessor->get_source_fragment()
+        );
     }
 
     if (const auto* struct_init = cast_expr<AstStructInitializer*>(expr))

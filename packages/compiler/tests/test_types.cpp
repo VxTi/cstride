@@ -294,7 +294,10 @@ TEST(TypeAliases, ComplexAliases)
 
         let op: BinaryOp = add;
 
-        op(1, 2);
+        fn main(): int32 {
+            op(1, 2);
+            return 0;
+        }
     )");
 }
 
