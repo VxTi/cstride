@@ -837,6 +837,46 @@ namespace stride::ast
         void validate() override;
     };
 
+    class AstTypeCastOp
+        : public IAstExpression
+    {
+        std::unique_ptr<IAstExpression> _value;
+        std::unique_ptr<IAstType> _target_type;
+
+    public:
+        explicit AstTypeCastOp(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context,
+            std::unique_ptr<IAstExpression> value,
+            std::unique_ptr<IAstType> target_type
+        ) :
+            IAstExpression(source, context),
+            _value(std::move(value)),
+            _target_type(std::move(target_type)) {}
+
+        [[nodiscard]]
+        IAstExpression* get_value() const
+        {
+            return this->_value.get();
+        }
+
+        [[nodiscard]]
+        IAstType* get_target_type() const
+        {
+            return this->_target_type.get();
+        }
+
+        llvm::Value* codegen(
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder) override;
+
+        std::string to_string() override;
+
+        void validate() override;
+
+        std::unique_ptr<IAstNode> clone() override;
+    };
+
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
      #                                                           #
      *                    PARSER FUNCTIONS                       *

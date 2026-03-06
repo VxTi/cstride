@@ -139,7 +139,7 @@ bool AstFunctionType::equals(IAstType& other)
     return false;
 }
 
-std::string AstFunctionType::to_string()
+std::string AstFunctionType::get_type_name()
 {
     std::vector<std::string> param_strings;
     param_strings.reserve(this->_parameters.size());

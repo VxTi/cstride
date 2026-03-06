@@ -128,6 +128,18 @@ namespace stride::ast
 
         virtual bool equals(IAstType& other) = 0;
 
+        [[nodiscard]]
+        bool equals(const std::unique_ptr<IAstType>& other)
+        {
+            return this->equals(*other);
+        }
+
+        [[nodiscard]]
+        bool equals(IAstType* other)
+        {
+            return this->equals(*other);
+        }
+
         bool is_assignable_to(IAstType* other);
 
         [[nodiscard]]
@@ -142,7 +154,10 @@ namespace stride::ast
         }
 
     private:
-        virtual bool is_assignable_to_impl(IAstType* other) const { return false; }
+        virtual bool is_assignable_to_impl(IAstType* other)
+        {
+            return false;
+        }
     };
 
     /// Types like int, float, char, etc.
@@ -240,7 +255,7 @@ namespace stride::ast
         }
 
     private:
-        bool is_assignable_to_impl(IAstType* other) const override;
+        bool is_assignable_to_impl(IAstType* other) override;
     };
 
     /// References to other types
@@ -255,7 +270,7 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             const int flags = SRFLAG_NONE
-            ) :
+        ) :
             IAstType(source, context, flags),
             _name(std::move(name)) {}
 
@@ -291,8 +306,15 @@ namespace stride::ast
         [[nodiscard]]
         std::optional<std::unique_ptr<IAstType>> get_reference_type() const;
 
+        /// Returns the super base type of the reference, e.g., if we have:
+        /// type RootType = int32;
+        /// type MidType = RootType;
+        /// type LeafType = MidType;
+        /// Then, calling `get_base_reference_type` on `LeafType` will return `int32`.
+        [[nodiscard]] std::optional<std::unique_ptr<IAstType>> get_base_reference_type() const;
+
     private:
-        bool is_assignable_to_impl(IAstType* other) const override;
+        bool is_assignable_to_impl(IAstType* other) override;
     };
 
     class AstFunctionType
@@ -331,14 +353,14 @@ namespace stride::ast
         [[nodiscard]]
         std::unique_ptr<IAstNode> clone() override;
 
-        std::string to_string() override;
+        std::string get_type_name() override;
+
+        std::string to_string() override
+        {
+            return get_type_name();
+        }
 
         bool equals(IAstType& other) override;
-
-        std::string get_type_name() override
-        {
-            return "Function";
-        }
     };
 
     class AstArrayType
@@ -388,6 +410,9 @@ namespace stride::ast
         }
 
         bool equals(IAstType& other) override;
+
+    private:
+        bool is_assignable_to_impl(IAstType* other) override;
     };
 
     class AstStructType

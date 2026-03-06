@@ -100,7 +100,7 @@ bool AstTupleType::equals(IAstType& other)
 
     for (size_t i = 0; i < this->_members.size(); ++i)
     {
-        if (!this->_members[i]->equals(*other_tuple->_members[i]))
+        if (!this->_members[i]->equals(other_tuple->_members[i]))
         {
             return false; // Found a pair of members that are not equal
         }

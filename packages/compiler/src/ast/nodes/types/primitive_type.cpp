@@ -290,7 +290,7 @@ bool AstPrimitiveType::equals(IAstType& other)
     return false;
 }
 
-bool AstPrimitiveType::is_assignable_to_impl(IAstType* other) const
+bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
 {
     if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {

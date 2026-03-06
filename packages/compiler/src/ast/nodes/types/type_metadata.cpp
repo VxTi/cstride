@@ -54,9 +54,7 @@ std::unique_ptr<IAstNode> AstArrayType::clone()
     return std::make_unique<AstArrayType>(
         this->get_source_fragment(),
         this->get_context(),
-        this->_element_type
-        ? this->_element_type->clone_ty()
-        : nullptr,
+        this->_element_type->clone_ty(),
         this->_initial_length
     );
 }
@@ -80,8 +78,30 @@ bool AstArrayType::equals(IAstType& other)
 {
     if (const auto* other_array = cast_type<AstArrayType*>(&other))
     {
-        // Length here doesn't matter; merely the types should be the same.
-        return this->_element_type->equals(*other_array->_element_type);
+        return this->_element_type->equals(other_array->_element_type);
     }
     return false;
+}
+
+
+bool AstArrayType::is_assignable_to_impl(IAstType* other)
+{
+    // If we're trying to assign a named type to an array, we have to check
+    // whether the referencing type is assignable to this array's element type,
+    // e.g., for `type SomeArray = [1, 2, 3]`, `equals(int32[], SomeArray)` should check
+    // whether `[1, 2, 3]` in `SomeArray` (int32[]) is assignable to `Array(int32)`
+    if (const auto * other_named = cast_type<AstNamedType*>(other))
+    {
+        const auto reference_type = other_named->get_base_reference_type();
+        if (!reference_type.has_value())
+        {
+            return false;
+        }
+
+        // Validate whether the reference type of `other_named` is assignable to
+        return this->is_assignable_to(reference_type.value().get());
+    }
+    // If both are arrays, we can just simply check whether their element types are equal
+    // This is handled in the `equals` case.
+    return this->equals(*other);
 }

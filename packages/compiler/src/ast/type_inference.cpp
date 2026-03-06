@@ -385,6 +385,17 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             return get_dominant_field_type(annotated_type.value(), value_type.get());
         }
 
+        const auto references = {
+            ErrorSourceReference(
+                annotated_type.value()->to_string(),
+                annotated_type.value()->get_source_fragment()
+            ),
+            ErrorSourceReference(
+                value_type->to_string(),
+                value_type->get_source_fragment()
+            )
+        };
+
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
@@ -392,7 +403,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
                 value_type->to_string(),
                 annotated_type.value()->to_string()
             ),
-            variable_declaration->get_source_fragment()
+            references
         );
     }
 
