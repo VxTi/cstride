@@ -3,6 +3,7 @@
 #include "ast_node.h"
 #include "blocks.h"
 #include "expression.h"
+#include "ast/modifiers.h"
 
 #include <utility>
 
@@ -73,9 +74,10 @@ namespace stride::ast
         std::unique_ptr<AstBlock> _body;
         Symbol _symbol;
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
-        std::unique_ptr<IAstType> _return_type;
+        std::unique_ptr<IAstType> _annotated_return_type;
         std::vector<Symbol> _captured_variables;
         int _flags;
+        VisibilityModifier _visibility;
 
         /// Cached LLVM function pointer for anonymous functions.
         /// Named functions are always looked up by their scoped name in the module,
@@ -94,14 +96,16 @@ namespace stride::ast
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<IAstType> return_type,
+            const VisibilityModifier visibility,
             const int flags
         ) :
             IAstExpression(source, context),
             _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
-            _return_type(std::move(return_type)),
-            _flags(flags) {}
+            _annotated_return_type(std::move(return_type)),
+            _flags(flags),
+            _visibility(visibility) {}
 
 
         [[nodiscard]]
@@ -153,7 +157,7 @@ namespace stride::ast
         [[nodiscard]]
         IAstType* get_return_type() const
         {
-            return this->_return_type.get();
+            return this->_annotated_return_type.get();
         }
 
         [[nodiscard]]
@@ -172,6 +176,12 @@ namespace stride::ast
         bool is_anonymous() const
         {
             return this->_flags & SRFLAG_FN_TYPE_ANONYMOUS;
+        }
+
+        [[nodiscard]]
+        bool is_private() const
+        {
+            return this->_visibility == VisibilityModifier::PRIVATE;
         }
 
         [[nodiscard]]
@@ -218,6 +228,7 @@ namespace stride::ast
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<IAstType> return_type,
+            const VisibilityModifier visibility,
             const int flags
         ) :
             IAstFunction(
@@ -227,6 +238,7 @@ namespace stride::ast
                 std::move(parameters),
                 std::move(body),
                 std::move(return_type),
+                visibility,
                 flags
             ) {}
 
@@ -248,6 +260,7 @@ namespace stride::ast
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<IAstType> return_type,
+            const VisibilityModifier visibility,
             const int flags
         ) :
             IAstFunction(
@@ -257,6 +270,7 @@ namespace stride::ast
                 std::move(parameters),
                 std::move(body),
                 std::move(return_type),
+                visibility,
                 flags
             ) {}
 

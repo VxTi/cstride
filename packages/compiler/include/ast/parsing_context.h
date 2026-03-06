@@ -15,11 +15,7 @@ namespace llvm
 
 namespace stride::ast
 {
-    namespace definition
-    {
-        using StructFieldPair = std::pair<std::string, std::unique_ptr<IAstType>>;
-
-        enum class ContextType
+    enum class ContextType
         {
             GLOBAL,
             MODULE,
@@ -27,6 +23,11 @@ namespace stride::ast
             CLASS,
             CONTROL_FLOW
         };
+    namespace definition
+    {
+        using StructFieldPair = std::pair<std::string, std::unique_ptr<IAstType>>;
+
+
 
         enum class SymbolType
         {
@@ -177,7 +178,7 @@ namespace stride::ast
          * e.g., in the context of modules.
          */
         std::string _context_name;
-        definition::ContextType _context_type;
+        ContextType _context_type;
         std::shared_ptr<ParsingContext> _parent_registry;
 
         std::vector<std::unique_ptr<definition::IDefinition>> _symbols;
@@ -190,7 +191,7 @@ namespace stride::ast
     public:
         explicit ParsingContext(
             std::string context_name,
-            const definition::ContextType type,
+            const ContextType type,
             std::shared_ptr<ParsingContext> parent) :
             _context_name(std::move(context_name)),
             _context_type(type),
@@ -199,19 +200,19 @@ namespace stride::ast
         /// Non-specific scope context definitions, e.g., for/while-loop blocks
         explicit ParsingContext(
             std::shared_ptr<ParsingContext> parent,
-            const definition::ContextType type
+            const ContextType type
         ) :
             // Context gets the same name as the parent
             ParsingContext(parent->_context_name, type, std::move(parent)) {}
 
         /// Root node initialization
         explicit ParsingContext() :
-            ParsingContext("", definition::ContextType::GLOBAL, nullptr) {}
+            ParsingContext("", ContextType::GLOBAL, nullptr) {}
 
         ParsingContext& operator=(const ParsingContext&) = delete;
 
         [[nodiscard]]
-        definition::ContextType get_context_type() const
+        ContextType get_context_type() const
         {
             return this->_context_type;
         }
@@ -220,8 +221,8 @@ namespace stride::ast
         bool is_global_scope() const
         {
             // We deem module scope as global as well
-            return this->_context_type == definition::ContextType::GLOBAL
-                || this->_context_type == definition::ContextType::MODULE;
+            return this->_context_type == ContextType::GLOBAL
+                || this->_context_type == ContextType::MODULE;
         }
 
         static void push_control_flow_block(
@@ -355,5 +356,5 @@ namespace stride::ast
         const ParsingContext& traverse_to_root() const;
     };
 
-    std::string scope_type_to_str(const definition::ContextType& scope_type);
+    std::string scope_type_to_str(const ContextType& scope_type);
 } // namespace stride::ast

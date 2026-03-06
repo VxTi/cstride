@@ -62,7 +62,7 @@ llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilderBas
 
 void AstBreakStatement::validate()
 {
-    if (this->get_context()->get_context_type() != definition::ContextType::CONTROL_FLOW)
+    if (this->get_context()->get_context_type() != ContextType::CONTROL_FLOW)
     {
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,

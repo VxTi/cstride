@@ -127,8 +127,8 @@ void AstNodeTraverser::visit_for_loop(IVisitor* visitor, AstForLoop* node)
 
 void AstNodeTraverser::visit_return_statement(IVisitor* visitor, const AstReturnStatement* node)
 {
-    if (node->get_return_expr())
-        visit(visitor, node->get_return_expr());
+    if (node->get_return_expression().has_value())
+        visit(visitor, node->get_return_expression().value().get());
 }
 
 void AstNodeTraverser::visit_variable_declaration(IVisitor* visitor, AstVariableDeclaration* node)

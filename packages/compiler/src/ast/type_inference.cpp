@@ -380,7 +380,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             return value_type->clone_ty();
         }
 
-        if (annotated_type.value()->is_assignable_to(value_type.get()))
+        if (value_type->is_assignable_to(annotated_type.value()))
         {
             return get_dominant_field_type(annotated_type.value(), value_type.get());
         }

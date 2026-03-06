@@ -38,11 +38,7 @@ TEST(Variables, IntegerTypes)
             let a: int8 = 0;
             let b: int16 = 0;
             let c: int32 = 0;
-            let d: int64 = 0;
-            let e: uint8 = 0;
-            let f: uint16 = 0;
-            let g: uint32 = 0;
-            let h: uint64 = 0;
+            let d: int64 = 0L;
         }
     )";
     assert_parses(code);

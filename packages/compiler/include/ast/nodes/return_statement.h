@@ -23,13 +23,13 @@ namespace stride::ast
     class AstReturnStatement
         : public IAstNode
     {
-        const std::unique_ptr<IAstExpression> _value;
+        std::optional<std::unique_ptr<IAstExpression>> _value;
 
     public:
         explicit AstReturnStatement(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<IAstExpression> value
+            std::optional<std::unique_ptr<IAstExpression>> value
         ) :
             IAstNode(source, context),
             _value(std::move(value)) {}
@@ -42,9 +42,15 @@ namespace stride::ast
 
 
         [[nodiscard]]
-        IAstExpression* get_return_expr() const
+        const std::optional<std::unique_ptr<IAstExpression>>& get_return_expression() const
         {
-            return _value.get();
+            return this->_value;
+        }
+
+        [[nodiscard]]
+        bool is_void_type() const
+        {
+            return !this->_value.has_value();
         }
 
         void validate() override;

@@ -12,8 +12,7 @@ using namespace stride::ast;
 
 void AstWhileLoop::validate()
 {
-    if (this->_condition != nullptr)
-        this->_condition->validate();
+    this->_condition->validate();
 
     this->_body->validate();
 }
@@ -34,7 +33,8 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
 
     const auto while_body_context = std::make_shared<ParsingContext>(
         context,
-        definition::ContextType::CONTROL_FLOW);
+        ContextType::CONTROL_FLOW
+    );
     auto header_condition = header_condition_opt.value();
 
     auto condition = parse_inline_expression(while_body_context, header_condition);

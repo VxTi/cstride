@@ -118,6 +118,12 @@ namespace stride::ast
         }
 
         [[nodiscard]]
+        virtual bool is_void_ty() const
+        {
+            return false;
+        }
+
+        [[nodiscard]]
         virtual std::string get_type_name() = 0;
 
         virtual bool equals(IAstType& other) = 0;
@@ -225,6 +231,12 @@ namespace stride::ast
         bool is_primitive() const override
         {
             return true;
+        }
+
+        [[nodiscard]]
+        bool is_void_ty() const override
+        {
+            return this->_type == PrimitiveType::VOID;
         }
 
     private:

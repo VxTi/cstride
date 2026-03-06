@@ -966,7 +966,4 @@ namespace stride::ast
     /// Checks whether the subsequent tokens might be member accessors
     /// e.g., <identifier>.<accessor>
     bool is_member_accessor(IAstExpression* lhs, const TokenSet& set);
-
-    /// Checks if the token set represents a lambda function expression
-    bool is_lambda_fn_expression(const TokenSet& set);
 } // namespace stride::ast

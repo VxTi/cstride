@@ -46,6 +46,10 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() cons
 
 bool AstNamedType::is_assignable_to_impl(IAstType* other) const
 {
+    if (const auto other_named = cast_type<AstNamedType*>(other))
+    {
+        return this->get_name() == other_named->get_name();
+    }
     return false;
 }
 

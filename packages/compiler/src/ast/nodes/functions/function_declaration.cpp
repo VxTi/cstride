@@ -15,7 +15,6 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
-#include <iostream>
 #include <ranges>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
@@ -35,7 +34,7 @@ using namespace stride::ast::definition;
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    [[maybe_unused]] VisibilityModifier modifier
+    VisibilityModifier modifier
 )
 {
     int function_flags = 0;
@@ -103,6 +102,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         std::move(parameters),
         std::move(body),
         std::move(return_type),
+        modifier,
         function_flags
     );
 }
@@ -294,14 +294,14 @@ void collect_free_variables(
     // Check specific node types first, then fall back to generic container handling
 
     // If it's an identifier, check if it references a variable from outer scope
-    if (const auto* identifier = dynamic_cast<const AstIdentifier*>(node))
+    if (const auto* identifier = cast_expr<const AstIdentifier*>(node))
     {
         capture_variable(identifier->get_name());
         return;
     }
 
     // Handle nested callables (lambdas) - recursively collect their free variables
-    if (auto* callable = dynamic_cast<IAstFunction*>(node))
+    if (auto* callable = cast_expr<IAstFunction*>(node))
     {
         // For nested lambdas, we need to:
         // 1. First collect what the nested lambda needs from its body (if not already done)
@@ -350,10 +350,10 @@ void collect_free_variables(
     // Handle return statements
     if (const auto* return_stmt = cast_ast<AstReturnStatement*>(node))
     {
-        if (return_stmt->get_return_expr())
+        if (return_stmt->get_return_expression().has_value())
         {
             collect_free_variables(
-                return_stmt->get_return_expr(),
+                return_stmt->get_return_expression().value().get(),
                 lambda_context,
                 outer_context,
                 captures);
@@ -563,7 +563,7 @@ void IAstFunction::validate()
     {
         for (const auto& return_stmt : return_statements)
         {
-            if (return_stmt->get_return_expr() != nullptr)
+            if (return_stmt->get_return_expression().has_value())
             {
                 throw parsing_error(
                     ErrorType::TYPE_ERROR,
@@ -591,23 +591,35 @@ void IAstFunction::validate()
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
             std::format(
-                "Function '{}' is missing a return statement.",
+                "{} is missing a return statement.",
                 this->is_anonymous()
-                ? "<anonymous function>"
-                : this->get_function_name()),
-            this->get_source_fragment());
+                ? "Anonymous function"
+                : std::format("Function '{}'", this->get_function_name())),
+            this->get_source_fragment()
+        );
     }
 
     for (const auto& return_stmt : return_statements)
     {
-        const auto ret_expr = return_stmt->get_return_expr();
-
-        if (ret_expr == nullptr)
+        if (return_stmt->is_void_type())
         {
-            continue;
+            if (!this->get_return_type()->is_void_ty())
+            {
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
+                    std::format(
+                        "Function '{}' returns a value of type '{}', but no return statement is present.",
+                        this->is_anonymous() ? "<anonymous function>" : this->get_function_name(),
+                        this->get_return_type()->to_string()),
+                    return_stmt->get_source_fragment()
+                );
+            }
+            return;
         }
 
-        if (!ret_expr->get_type()->equals(*this->get_return_type()))
+        if (const auto& ret_expr = return_stmt->get_return_expression().value();
+            !ret_expr->get_type()->equals(*this->get_return_type()) &&
+            !ret_expr->get_type()->is_assignable_to(this->get_return_type()))
         {
             const auto error_fragment = ErrorSourceReference(
                 std::format(
@@ -618,7 +630,7 @@ void IAstFunction::validate()
                     ? "function-type "
                     : "struct-type ",
                     this->get_return_type()->to_string()),
-                return_stmt->get_return_expr()->get_source_fragment()
+                ret_expr->get_source_fragment()
             );
 
             throw parsing_error(
@@ -802,10 +814,11 @@ llvm::Value* IAstFunction::codegen(
 
     if (llvm::verifyFunction(*function, &llvm::errs()))
     {
-        function->print(llvm::errs(), nullptr);
-        // Print IR to console to see what's wrong
-        throw std::runtime_error(
-            "LLVM Function Verification Failed for: " + this->get_function_name());
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "LLVM Function Verification Failed for: " + this->get_function_name(),
+            this->get_source_fragment()
+        );
     }
 
     // Restore the previous insert point for nested lambda generation
@@ -825,9 +838,7 @@ llvm::Value* IAstFunction::codegen(
             if (const auto block = builder->GetInsertBlock())
             {
                 llvm::Function* current_fn = block->getParent();
-                llvm::Value* captured_val = closures::lookup_variable_or_capture(
-                    current_fn,
-                    capture.internal_name);
+                llvm::Value* captured_val = closures::lookup_variable_or_capture(current_fn, capture.internal_name);
 
                 if (!captured_val)
                 {
@@ -855,37 +866,6 @@ llvm::Value* IAstFunction::codegen(
     }
 
     return function;
-}
-
-std::unique_ptr<IAstNode> AstFunctionParameter::clone()
-{
-    return std::make_unique<AstFunctionParameter>(
-        this->get_source_fragment(),
-        this->get_context(),
-        this->get_name(),
-        this->get_type()->clone_ty()
-    );
-}
-
-std::unique_ptr<IAstNode> IAstFunction::clone()
-{
-    std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
-    cloned_params.reserve(this->_parameters.size());
-
-    for (const auto& param : this->_parameters)
-    {
-        cloned_params.push_back(param->clone_as<AstFunctionParameter>());
-    }
-
-    return std::make_unique<IAstFunction>(
-        this->get_source_fragment(),
-        this->get_context(),
-        this->_symbol,
-        std::move(cloned_params),
-        this->_body->clone_as<AstBlock>(),
-        this->_return_type->clone_ty(),
-        this->_flags
-    );
 }
 
 std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(
@@ -968,15 +948,10 @@ std::unique_ptr<IAstExpression> stride::ast::parse_lambda_fn_expression(
         std::move(parameters),
         std::move(lambda_body),
         std::move(return_type),
+        VisibilityModifier::PRIVATE,
+        // Anonymous functions are always private
         function_flags
     );
-}
-
-bool stride::ast::is_lambda_fn_expression(const TokenSet& set)
-{
-    return set.peek_eq(TokenType::LPAREN, 0)
-        && set.peek_eq(TokenType::IDENTIFIER, 1)
-        && set.peek_eq(TokenType::COLON, 2);
 }
 
 void IAstFunction::resolve_forward_references(
@@ -1051,14 +1026,13 @@ void IAstFunction::resolve_forward_references(
         this->is_variadic()
     );
 
-    const auto linkage = this->is_anonymous()
+    const auto linkage = this->_visibility == VisibilityModifier::PRIVATE
         ? llvm::Function::PrivateLinkage
         : llvm::Function::ExternalLinkage;
 
     // Anonymous functions are created with a stable name prefix and a numeric ID
     // so they are easily findable in the module without ambiguity.
-    const std::string llvm_function_name =
-        this->is_anonymous() ? this->get_scoped_function_name() : this->get_scoped_function_name();
+    const std::string llvm_function_name = this->get_scoped_function_name();
 
     llvm::Function* created_fn = llvm::Function::Create(
         function_type,
@@ -1079,6 +1053,38 @@ void IAstFunction::resolve_forward_references(
     {
         this->get_body()->resolve_forward_references(context, module, builder);
     }
+}
+
+std::unique_ptr<IAstNode> AstFunctionParameter::clone()
+{
+    return std::make_unique<AstFunctionParameter>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->get_name(),
+        this->get_type()->clone_ty()
+    );
+}
+
+std::unique_ptr<IAstNode> IAstFunction::clone()
+{
+    std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
+    cloned_params.reserve(this->_parameters.size());
+
+    for (const auto& param : this->_parameters)
+    {
+        cloned_params.push_back(param->clone_as<AstFunctionParameter>());
+    }
+
+    return std::make_unique<IAstFunction>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_symbol,
+        std::move(cloned_params),
+        this->_body->clone_as<AstBlock>(),
+        this->_annotated_return_type->clone_ty(),
+        this->_visibility,
+        this->_flags
+    );
 }
 
 std::string AstFunctionDeclaration::to_string()

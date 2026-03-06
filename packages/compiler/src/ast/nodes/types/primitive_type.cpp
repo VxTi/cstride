@@ -294,8 +294,8 @@ bool AstPrimitiveType::is_assignable_to_impl(IAstType* other) const
 {
     if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
-        return this->is_integer_ty() && other_primitive->is_integer_ty()
-            || this->is_fp() && other_primitive->is_fp();
+        return (this->is_integer_ty() && other_primitive->is_integer_ty() || this->is_fp() && other_primitive->is_fp())
+            && this->bit_count() <= other_primitive->bit_count();
     }
 
     return false;
