@@ -1,4 +1,4 @@
-import system::{ io::print };
+import system::{ io::something_else::test, io::print, io::read };
 
 const create_adder = (x: int32): (int32) -> int32 -> {
     return (y: int32): int32 -> {
@@ -7,8 +7,10 @@ const create_adder = (x: int32): (int32) -> int32 -> {
 };
 
 fn main(): int32 {
+    io::something_else::test();
+
     const add_five = create_adder(5);
-    const result: int64 = add_five(10) as int64;
+    const result: int64 = add_five(10) as uint8;
 
     io::print("Result: %ull. Type something else: ", result); // Should print "Result: 15"
 
