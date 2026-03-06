@@ -20,7 +20,8 @@ void ExpressionVisitor::accept(IAstExpression* expr)
 
         var_decl->get_context()->define_variable(
             var_decl->get_symbol(),
-            canonical_type->clone_ty()
+            canonical_type->clone_ty(),
+            var_decl->get_visibility()
         );
     }
 }

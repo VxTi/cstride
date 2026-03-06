@@ -47,7 +47,8 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
 {
     for (const auto& [file_name, node] : ast->get_files())
     {
-        if (!this->_import_registry.contains(file_name)) continue;
+        if (!this->_import_registry.contains(file_name))
+            continue;
 
         // Get required imports by file_name
         for (const auto imports = this->_import_registry.at(file_name);
@@ -75,12 +76,11 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                 {
                     throw parsing_error(
                         ErrorType::REFERENCE_ERROR,
-                        std::format("Symbol '{}' not found in package '{}'", import_name, package_name),
+                        std::format("Variable or function '{}' not found in package '{}'", import_name, package_name),
                         node->get_source_fragment()
                     );
                 }
 
-                printf("Populating %s", definition->get_internal_symbol_name().c_str());
                 symbol_definitions.push_back(definition.value());
             }
 

@@ -185,6 +185,12 @@ namespace stride::ast
         }
 
         [[nodiscard]]
+        VisibilityModifier get_visibility() const
+        {
+            return this->_visibility;
+        }
+
+        [[nodiscard]]
         int get_flags() const
         {
             return this->_flags;

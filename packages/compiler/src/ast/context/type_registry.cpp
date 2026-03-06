@@ -95,7 +95,9 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
         {
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format("Exceeded maximum recursion depth of {} while resolving struct type '{}'", MAX_RECURSION_DEPTH, name),
+                std::format("Exceeded maximum recursion depth of {} while resolving struct type '{}'",
+                            MAX_RECURSION_DEPTH,
+                            name),
                 {
                     ErrorSourceReference(
                         "Type definition here",
@@ -109,7 +111,11 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
     return std::nullopt;
 }
 
-void ParsingContext::define_type(const Symbol& type_name, std::unique_ptr<IAstType> type) const
+void ParsingContext::define_type(
+    const Symbol& type_name,
+    std::unique_ptr<IAstType> type,
+    const VisibilityModifier visibility
+) const
 {
     auto& root_context = const_cast<ParsingContext&>(this->traverse_to_root());
 
@@ -128,5 +134,11 @@ void ParsingContext::define_type(const Symbol& type_name, std::unique_ptr<IAstTy
         );
     }
 
-    root_context._symbols.push_back(std::make_unique<TypeDefinition>(type_name, std::move(type)));
+    root_context._symbols.push_back(
+        std::make_unique<TypeDefinition>(
+            type_name,
+            std::move(type),
+            visibility
+        )
+    );
 }

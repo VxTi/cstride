@@ -30,6 +30,7 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 ast::PrimitiveType::INT32
             )
         ),
+        ast::VisibilityModifier::PUBLIC,
         SRFLAG_FN_TYPE_VARIADIC
     );
 
@@ -44,7 +45,8 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 context,
                 ast::PrimitiveType::UINT64
             )
-        )
+        ),
+        ast::VisibilityModifier::PUBLIC
     );
 
     context->define_function(
@@ -58,7 +60,8 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 context,
                 ast::PrimitiveType::UINT64
             )
-        )
+        ),
+        ast::VisibilityModifier::PUBLIC
     );
 
     context->define_function(
@@ -72,7 +75,8 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 context,
                 ast::PrimitiveType::UINT64
             )
-        )
+        ),
+        ast::VisibilityModifier::PUBLIC
     );
 
     std::vector<std::unique_ptr<ast::IAstType>> read_in_params;
@@ -92,7 +96,8 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
                 context,
                 ast::PrimitiveType::STRING
             )
-        )
+        ),
+        ast::VisibilityModifier::PUBLIC
     );
 }
 
