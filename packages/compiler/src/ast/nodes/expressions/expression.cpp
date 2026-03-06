@@ -145,6 +145,12 @@ std::unique_ptr<IAstExpression> parse_arithmetic_tier(
     }
     auto lhs = std::move(lhs_opt.value());
 
+    // Highest precedence: Type Cast (as)
+    while (auto cast_expr = parse_type_cast_op(context, set, lhs.get()))
+    {
+        lhs = std::move(cast_expr.value());
+    }
+
     // 2. Arithmetic Loop (handled by parse_arithmetic_binary_operation_optional)
     if (auto arith = parse_arithmetic_binary_operation_optional(
         context,

@@ -89,8 +89,13 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     }
     else if (auto* function_node = dynamic_cast<IAstFunction*>(node))
     {
-        visitor->accept(node);
+        visitor->accept(function_node);
         visit_block(visitor, function_node->get_body());
+    }
+    else if (auto* type_cast = dynamic_cast<AstTypeCastOp*>(node))
+    {
+        visitor->accept(type_cast);
+        visit(visitor, type_cast->get_target_type());
     }
 
     // AstLiteral, AstIdentifier, AstVariadicArgReference,
