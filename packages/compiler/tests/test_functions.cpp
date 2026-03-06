@@ -74,8 +74,7 @@ TEST(Functions, ReturnVoidImplicit)
 TEST(Functions, ExternalFunctions)
 {
     const std::string code = R"(
-        extern fn malloc(size: u64): u64;
-        extern fn free(ptr: u64): void;
+        extern fn printf(input: string, ...): void;
     )";
     assert_parses(code);
 }

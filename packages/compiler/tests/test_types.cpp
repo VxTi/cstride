@@ -220,7 +220,7 @@ TEST(TypeDefinition, RecursionLimit)
 
         const K: B?;
     )",
-        "Maximum recursion depth exceeded when resolving type"
+        "Exceeded maximum recursion depth while resolving base type of 'B'"
     );
 }
 

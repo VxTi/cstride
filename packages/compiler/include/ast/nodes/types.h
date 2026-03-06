@@ -386,13 +386,15 @@ namespace stride::ast
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<IAstType> element_type,
-            const size_t initial_length
+            const size_t initial_length,
+            const int flags = SRFLAG_NONE
         ) :
             IAstType(
                 source,
                 context,
-                (element_type ? element_type->get_flags() : 0) |
-                SRFLAG_TYPE_PTR
+                (element_type ? element_type->get_flags() : 0)
+                | flags
+                | SRFLAG_TYPE_PTR
             ),
             // Arrays are always ptrs
             _element_type(std::move(element_type)),

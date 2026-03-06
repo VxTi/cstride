@@ -86,6 +86,9 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
             flags
         );
         const auto& type = variable_type.value().get();
+        // It's possible that the type has gained additional flags, e.g., 'optional', which we'll have to append
+        // to the variable's flags.
+        flags |= type->get_flags();
 
         if (set.peek_next_eq(TokenType::EQUALS))
         {
@@ -180,7 +183,7 @@ void AstVariableDeclaration::validate()
     const auto annotated_type = this->get_annotated_type().value();
 
     if (const auto value_type = this->get_initial_value()->get_type();
-        !value_type->is_assignable_to(annotated_type))
+        !annotated_type->equals(value_type))
     {
         if (const auto val_primitive_ty = cast_type<AstPrimitiveType*>(value_type);
             val_primitive_ty && val_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
