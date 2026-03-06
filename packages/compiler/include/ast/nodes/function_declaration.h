@@ -76,8 +76,10 @@ namespace stride::ast
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
         std::unique_ptr<IAstType> _annotated_return_type;
         std::vector<Symbol> _captured_variables;
-        int _flags;
         VisibilityModifier _visibility;
+        int _flags;
+
+        std::vector<std::string> _generic_parameters;
 
         /// Cached LLVM function pointer for anonymous functions.
         /// Named functions are always looked up by their scoped name in the module,
@@ -97,7 +99,8 @@ namespace stride::ast
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<IAstType> return_type,
             const VisibilityModifier visibility,
-            const int flags
+            const int flags,
+            const std::vector<std::string>& generic_parameters
         ) :
             IAstExpression(source, context),
             _body(std::move(body)),
@@ -105,7 +108,8 @@ namespace stride::ast
             _parameters(std::move(parameters)),
             _annotated_return_type(std::move(return_type)),
             _flags(flags),
-            _visibility(visibility) {}
+            _visibility(visibility),
+            _generic_parameters(generic_parameters) {}
 
 
         [[nodiscard]]
@@ -197,6 +201,18 @@ namespace stride::ast
         }
 
         [[nodiscard]]
+        const std::vector<std::string>& get_generic_parameters() const
+        {
+            return this->_generic_parameters;
+        }
+
+        [[nodiscard]]
+        bool is_generic_function() const
+        {
+            return !this->_generic_parameters.empty();
+        }
+
+        [[nodiscard]]
         const std::vector<Symbol>& get_captured_variables() const
         {
             return this->_captured_variables;
@@ -245,7 +261,8 @@ namespace stride::ast
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<IAstType> return_type,
             const VisibilityModifier visibility,
-            const int flags
+            const int flags,
+            const std::vector<std::string>& generic_parameters
         ) :
             IAstFunction(
                 symbol.symbol_position,
@@ -255,7 +272,8 @@ namespace stride::ast
                 std::move(body),
                 std::move(return_type),
                 visibility,
-                flags
+                flags,
+                generic_parameters
             ) {}
 
         std::string to_string() override;
@@ -284,7 +302,8 @@ namespace stride::ast
                 std::move(body),
                 std::move(return_type),
                 visibility,
-                flags
+                flags,
+                {}
             ) {}
 
         std::string to_string() override;

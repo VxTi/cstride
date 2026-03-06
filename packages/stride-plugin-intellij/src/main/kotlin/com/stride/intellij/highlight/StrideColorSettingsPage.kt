@@ -21,7 +21,7 @@ class StrideColorSettingsPage : ColorSettingsPage {
 
     override fun getDemoText(): String = """
             // Stride example
-            extern async fn <func>fetch_data</func>(url: string): string;
+            extern async fn <func>fetch_data</func><generic><T></generic>(url: string): string;
 
             type <usertype>CustomInt</usertype> = int32;
 
@@ -43,7 +43,8 @@ class StrideColorSettingsPage : ColorSettingsPage {
 
     override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? = mapOf(
             "func" to StrideSyntaxHighlighter.FUNCTION_CALL,
-            "usertype" to StrideSyntaxHighlighter.USER_TYPE
+            "usertype" to StrideSyntaxHighlighter.USER_TYPE,
+            "generic" to StrideSyntaxHighlighter.GENERIC_TYPE_PARAMETER
         )
 
     companion object {
@@ -61,7 +62,8 @@ class StrideColorSettingsPage : ColorSettingsPage {
             AttributesDescriptor("Dot", StrideSyntaxHighlighter.DOT),
             AttributesDescriptor("Primitive types", StrideSyntaxHighlighter.TYPE),
             AttributesDescriptor("Function call", StrideSyntaxHighlighter.FUNCTION_CALL),
-            AttributesDescriptor("Custom types", StrideSyntaxHighlighter.USER_TYPE)
+            AttributesDescriptor("Custom types", StrideSyntaxHighlighter.USER_TYPE),
+            AttributesDescriptor("Generic type parameter", StrideSyntaxHighlighter.GENERIC_TYPE_PARAMETER)
 
         )
     }

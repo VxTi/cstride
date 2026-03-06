@@ -1,4 +1,8 @@
-import system::{ io::something_else::test, io::print, io::read };
+import system::{
+    io::something_else::test,
+    io::print,
+    io::read
+};
 
 const create_adder = (x: int32): (int32) -> int32 -> {
     return (y: int32): int32 -> {
@@ -6,7 +10,18 @@ const create_adder = (x: int32): (int32) -> int32 -> {
     };
 };
 
+
+fn some_fn<A, B, C>(k: A, l: B, m: C): void {
+
+}
+
+const anonymous = (): void -> {
+    some_fn<string, float64, bool>("Hello", 3.14, true);
+};
+
 fn main(): int32 {
+    some_fn<int32>(1, 2, 3);
+
     io::something_else::test();
 
     const add_five = create_adder(5);

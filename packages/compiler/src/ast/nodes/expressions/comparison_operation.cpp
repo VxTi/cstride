@@ -17,11 +17,11 @@ std::optional<ComparisonOpType> stride::ast::get_comparative_op_type(
         return ComparisonOpType::EQUAL;
     case TokenType::BANG_EQUALS:
         return ComparisonOpType::NOT_EQUAL;
-    case TokenType::LARROW:
+    case TokenType::LT:
         return ComparisonOpType::LESS_THAN;
     case TokenType::LEQUALS:
         return ComparisonOpType::LESS_THAN_OR_EQUAL;
-    case TokenType::RARROW:
+    case TokenType::GT:
         return ComparisonOpType::GREATER_THAN;
     case TokenType::GEQUALS:
         return ComparisonOpType::GREATER_THAN_OR_EQUAL;

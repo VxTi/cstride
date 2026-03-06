@@ -18,6 +18,21 @@ class StrideAnnotator : Annotator, DumbAware {
             is StrideFunctionDeclaration -> annotateFunctionDeclaration(element, holder)
             is StrideExternFunctionDeclaration -> annotateExternFunctionDeclaration(element, holder)
             is StridePostfixExpression -> annotatePostfixExpression(element, holder)
+            is StrideGenericTypeArguments -> annotateGenericTypeArguments(element, holder)
+        }
+    }
+
+    private fun annotateGenericTypeArguments(genericArgs: StrideGenericTypeArguments, holder: AnnotationHolder) {
+        // Highlight each identifier in the generic type arguments (e.g., <T, U>)
+        var child = genericArgs.node.firstChildNode
+        while (child != null) {
+            if (child.elementType == StrideTypes.IDENTIFIER) {
+                holder.newSilentAnnotation(HighlightSeverity.INFORMATION)
+                    .range(child.textRange)
+                    .textAttributes(StrideSyntaxHighlighter.GENERIC_TYPE_PARAMETER)
+                    .create()
+            }
+            child = child.treeNext
         }
     }
 
