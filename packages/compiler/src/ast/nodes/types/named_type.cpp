@@ -80,6 +80,12 @@ bool AstNamedType::is_castable_to_impl(IAstType* other)
         return self_reference_type.value()->is_castable_to(other_primitive);
     }
 
+    // A named type should be castable to its base type and vice versa
+    if (self_reference_type.value()->is_castable_to(other))
+    {
+        return true;
+    }
+
     // Final case would be to check whether both base types are the same
     if (const auto* other_named_ty = cast_type<AstNamedType*>(other))
     {

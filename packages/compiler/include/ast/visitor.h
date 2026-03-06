@@ -38,14 +38,14 @@ namespace stride::ast
 
     class ImportVisitor : public IVisitor
     {
-        std::string _current_file_name;
+        std::string _current_file_name; // temporary values
         std::map<
-            std::string, /* file_name    */
-            std::string  /* package_name */
-        > _file_package_mapping;
+            std::string, /* package_name */
+            std::string  /* file_name    */
+        > _package_file_mapping;
         std::map<
             std::string, /* file_name */
-            std::pair<
+            std::map<
                 std::string,             /* package_name */
                 std::vector<std::string> /* module_names::functions/types */
             >
@@ -61,6 +61,6 @@ namespace stride::ast
 
         void accept(AstPackage* node) override;
 
-        void cross_register_symbols(Ast* ast);
+        void cross_register_symbols(Ast* ast) const;
     };
 }

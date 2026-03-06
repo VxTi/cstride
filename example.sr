@@ -1,4 +1,4 @@
- /*import system::{ io::print };
+import system::{ io::print };
 
 const create_adder = (x: int32): (int32) -> int32 -> {
     return (y: int32): int32 -> {
@@ -8,40 +8,12 @@ const create_adder = (x: int32): (int32) -> int32 -> {
 
 fn main(): int32 {
     const add_five = create_adder(5);
-    const result: int32 = add_five(10) as int64;
+    const result: int64 = add_five(10) as int64;
 
-    print("Result: %d. Type something else: ", result); // Should print "Result: 15"
+    io::print("Result: %ull. Type something else: ", result); // Should print "Result: 15"
 
     const input = io::read(10);
 
-    print("You entered: %s", input);
+    io::print("You entered: %s", input);
     return 0;
-}*/
-
-pub fn print(input: string, ...): void {
-    _printf_internal(input, ...);
 }
-
- type BinaryOp = (int32, int32) -> int32;
- fn add(a: int32, b: int32): int32 { return a + b; }
-
- let op = add as BinaryOp;
- const secondOp: BinaryOp = add;
-
- fn main(): int32 {
-     op(1, 2);
-     return 0;
- }
-
- /*
-fn typed(p: int32): void {
-    print("Typed 32");
-}
-
-fn typed(p: int64): void {
-    print("Typed 64");
-}
-
-fn main(): void {
-    typed(32L);
-}*/

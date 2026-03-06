@@ -22,7 +22,6 @@ namespace stride::ast
     class Ast
     {
         std::map<FilePath, std::unique_ptr<AstBlock>> _files{};
-        ParsingContext _global_context;
 
         static std::pair<FilePath, std::unique_ptr<AstBlock>> parse_file(const FilePath& path);
 

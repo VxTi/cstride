@@ -44,6 +44,28 @@ void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType t
     );
 }
 
+void ParsingContext::define(std::unique_ptr<IDefinition> definition)
+{
+    this->_symbols.push_back(std::move(definition));
+}
+
+std::optional<const IDefinition> ParsingContext::get_definition_by_internal_name(const std::string& internal_name) const
+{
+    auto current = this;
+    while (current != nullptr)
+    {
+        for (const auto& symbol_def : this->_symbols)
+        {
+            if (symbol_def->get_symbol().internal_name == internal_name)
+            {
+                return *symbol_def;
+            }
+        }
+        current = current->_parent_registry.get();
+    }
+    return std::nullopt;
+}
+
 const IdentifiableSymbolDef* ParsingContext::get_symbol_def(
     const std::string& symbol_name) const
 {
