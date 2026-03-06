@@ -20,4 +20,12 @@ module io {
     pub fn read(bytes: int32): string {
         return _read_in_internal(bytes);
     }
+
+    module something_else {
+
+        fn test(): void {
+            io::print("HELLO!");
+        }
+    }
 }
+

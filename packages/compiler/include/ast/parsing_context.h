@@ -75,6 +75,9 @@ namespace stride::ast
             {
                 return this->_modifier;
             }
+
+            [[nodiscard]]
+            virtual std::unique_ptr<IDefinition> clone() const = 0;
         };
 
         class IdentifiableSymbolDef : public IDefinition
@@ -93,6 +96,12 @@ namespace stride::ast
             SymbolType get_symbol_type() const
             {
                 return this->_type;
+            }
+
+            [[nodiscard]]
+            std::unique_ptr<IDefinition> clone() const override
+            {
+                return std::make_unique<IdentifiableSymbolDef>(_type, get_symbol());
             }
         };
 
@@ -114,6 +123,12 @@ namespace stride::ast
             IAstType* get_type() const
             {
                 return this->_type.get();
+            }
+
+            [[nodiscard]]
+            std::unique_ptr<IDefinition> clone() const override
+            {
+                return std::make_unique<TypeDefinition>(get_symbol(), _type->clone_ty(), get_visibility());
             }
         };
 
@@ -141,6 +156,12 @@ namespace stride::ast
             std::string get_field_name() const
             {
                 return this->get_symbol().name;
+            }
+
+            [[nodiscard]]
+            std::unique_ptr<IDefinition> clone() const override
+            {
+                return std::make_unique<FieldDefinition>(get_symbol(), _type->clone_ty(), get_visibility());
             }
         };
 
@@ -199,6 +220,12 @@ namespace stride::ast
                 const std::string& internal_function_name,
                 const std::vector<std::unique_ptr<IAstType>>& other_parameter_types
             ) const;
+
+            [[nodiscard]]
+            std::unique_ptr<IDefinition> clone() const override
+            {
+                return std::make_unique<FunctionDefinition>(_function_type->clone_as<AstFunctionType>(), get_symbol(), get_visibility(), _flags);
+            }
         };
     } // namespace definition
 
@@ -310,7 +337,7 @@ namespace stride::ast
             const std::string& symbol_name
         ) const;
 
-        std::optional<const definition::IDefinition> get_definition_by_internal_name(
+        std::optional<std::unique_ptr<definition::IDefinition>> get_definition_by_internal_name(
             const std::string& internal_name) const;
 
         [[nodiscard]]

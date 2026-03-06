@@ -49,16 +49,16 @@ void ParsingContext::define(std::unique_ptr<IDefinition> definition)
     this->_symbols.push_back(std::move(definition));
 }
 
-std::optional<const IDefinition> ParsingContext::get_definition_by_internal_name(const std::string& internal_name) const
+std::optional<std::unique_ptr<IDefinition>> ParsingContext::get_definition_by_internal_name(const std::string& internal_name) const
 {
     auto current = this;
     while (current != nullptr)
     {
-        for (const auto& symbol_def : this->_symbols)
+        for (const auto& symbol_def : current->_symbols)
         {
             if (symbol_def->get_symbol().internal_name == internal_name)
             {
-                return *symbol_def;
+                return symbol_def->clone();
             }
         }
         current = current->_parent_registry.get();

@@ -9,11 +9,11 @@ void stride::ast::ImportVisitor::accept(AstImport* node)
 {
     const auto& [package_name, module_import_symbols] = node->get_dependency();
     std::vector<std::string> submodules;
-    submodules.reserve(submodules.size());
+    submodules.reserve(module_import_symbols.size());
 
     for (const auto& import_symbol : module_import_symbols)
     {
-        submodules.push_back(import_symbol.name);
+        submodules.push_back(import_symbol.internal_name);
     }
 
     if (this->_import_registry.contains(this->_current_file_name))
@@ -67,11 +67,10 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
             const auto& node_with_exports = ast->get_files().at(file_name_with_exports);
 
             // Acquire all symbols from `node_with_exports`
-            std::vector<definition::IDefinition> symbol_definitions;
-            for (const auto import_name : import_names)
+            for (const auto& import_name : import_names)
             {
                 // Acquire import from node_with_exports
-                const auto definition = node_with_exports->get_context()->get_definition_by_internal_name(import_name);
+                auto definition = node_with_exports->get_context()->get_definition_by_internal_name(import_name);
                 if (!definition)
                 {
                     throw parsing_error(
@@ -81,17 +80,11 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                     );
                 }
 
-                symbol_definitions.push_back(definition.value());
-            }
-
-            // Populate current node with aggregated symbols
-            for (const auto& sym : symbol_definitions)
-            {
                 // Define only if not yet present
-                if (node->get_context()->get_definition_by_internal_name(sym.get_internal_symbol_name()) ==
+                if (node->get_context()->get_definition_by_internal_name(definition.value()->get_internal_symbol_name()) ==
                     std::nullopt)
                 {
-                    node->get_context()->define(std::make_unique<definition::IDefinition>(sym));
+                    node->get_context()->define(std::move(definition.value()));
                 }
             }
         }
