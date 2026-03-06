@@ -40,7 +40,7 @@ void AstTypeCastOp::validate()
         );
     }
 
-    if (!this->_target_type->is_assignable_to(this->_value->get_type()))
+    if (!this->_value->get_type()->is_castable_to(this->_target_type.get()))
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,

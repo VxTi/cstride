@@ -140,7 +140,12 @@ namespace stride::ast
             return this->equals(*other);
         }
 
+        /// Checks whether other type is assignable to this one.
+        /// Lower bit-count primitives are assignable to higher ones, e.g.,
+        /// one can assign a 32-bit int to a int64 type, but not visa versa.
         bool is_assignable_to(IAstType* other);
+
+        virtual bool is_castable_to(IAstType* other);
 
         [[nodiscard]]
         virtual bool is_primitive() const
@@ -155,6 +160,11 @@ namespace stride::ast
 
     private:
         virtual bool is_assignable_to_impl(IAstType* other)
+        {
+            return false;
+        }
+
+        virtual bool is_castable_to_impl(IAstType* other)
         {
             return false;
         }
@@ -185,38 +195,10 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool is_integer_ty() const
-        {
-            switch (this->_type)
-            {
-            case PrimitiveType::INT8:
-            case PrimitiveType::INT16:
-            case PrimitiveType::INT32:
-            case PrimitiveType::INT64:
-            case PrimitiveType::UINT8:
-            case PrimitiveType::UINT16:
-            case PrimitiveType::UINT32:
-            case PrimitiveType::UINT64:
-            case PrimitiveType::CHAR:
-            case PrimitiveType::BOOL: // 1 bit, still an int
-                return true;
-            default:
-                return false;
-            }
-        }
+        bool is_integer_ty() const;
 
         [[nodiscard]]
-        bool is_fp() const
-        {
-            switch (this->_type)
-            {
-            case PrimitiveType::FLOAT32:
-            case PrimitiveType::FLOAT64:
-                return true;
-            default:
-                return false;
-            }
-        }
+        bool is_fp() const;
 
         [[nodiscard]]
         size_t bit_count() const
@@ -225,15 +207,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override
-        {
-            return std::make_unique<AstPrimitiveType>(
-                this->get_source_fragment(),
-                this->get_context(),
-                this->get_primitive_type(),
-                this->get_flags()
-            );
-        }
+        std::unique_ptr<IAstNode> clone() override;
 
         std::string get_type_name() override
         {
@@ -259,8 +233,15 @@ namespace stride::ast
             return this->_type == PrimitiveType::VOID;
         }
 
+        bool is_castable_to(IAstType* other) override
+        {
+            return IAstType::is_castable_to(other);
+        }
+
     private:
         bool is_assignable_to_impl(IAstType* other) override;
+
+        bool is_castable_to_impl(IAstType* other) override;
     };
 
     /// References to other types
@@ -312,8 +293,11 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
+        bool is_castable_to(IAstType* other) override
+        {
+            return IAstType::is_castable_to(other);
+        }
 
-        [[nodiscard]]
         std::optional<std::unique_ptr<IAstType>> get_reference_type() const;
 
         /// Returns the super base type of the reference, e.g., if we have:
@@ -325,6 +309,8 @@ namespace stride::ast
 
     private:
         bool is_assignable_to_impl(IAstType* other) override;
+
+        bool is_castable_to_impl(IAstType* other) override;
     };
 
     class AstFunctionType
@@ -371,6 +357,22 @@ namespace stride::ast
         }
 
         bool equals(IAstType& other) override;
+
+        bool is_castable_to(IAstType* other) override
+        {
+            return IAstType::is_castable_to(other);
+        }
+
+    private:
+        bool is_assignable_to_impl(IAstType* other) override
+        {
+            return false;
+        }
+
+        bool is_castable_to_impl(IAstType* other) override
+        {
+            return false;
+        }
     };
 
     class AstArrayType
@@ -421,8 +423,15 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
+        bool is_castable_to(IAstType* other) override
+        {
+            return IAstType::is_castable_to(other);
+        }
+
     private:
         bool is_assignable_to_impl(IAstType* other) override;
+
+        bool is_castable_to_impl(IAstType* other) override;
     };
 
     class AstStructType
@@ -462,8 +471,27 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
+        bool is_castable_to(IAstType* other) override
+        {
+            return IAstType::is_castable_to(other);
+        }
+
         [[nodiscard]]
         std::unique_ptr<IAstNode> clone() override;
+
+        [[nodiscard]]
+        std::string get_internalized_name() const;
+
+    private:
+        bool is_assignable_to_impl(IAstType* other) override
+        {
+            return false;
+        }
+
+        bool is_castable_to_impl(IAstType* other) override
+        {
+            return false;
+        }
 
         // Struct registration is done in the `resolve_forward_references` pass
         // so that one can reference structs before they're semantically defined.
@@ -476,9 +504,6 @@ namespace stride::ast
             ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
-
-        [[nodiscard]]
-        std::string get_internalized_name() const;
     };
 
     class AstTupleType
@@ -514,12 +539,28 @@ namespace stride::ast
 
         bool equals(IAstType& other) override;
 
+        bool is_castable_to(IAstType* other) override
+        {
+            return IAstType::is_castable_to(other);
+        }
+
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void resolve_forward_references(
             ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
+
+    private:
+        bool is_assignable_to_impl(IAstType* other) override
+        {
+            return false;
+        }
+
+        bool is_castable_to_impl(IAstType* other) override
+        {
+            return false;
+        }
     };
 
     std::unique_ptr<IAstType> parse_type(

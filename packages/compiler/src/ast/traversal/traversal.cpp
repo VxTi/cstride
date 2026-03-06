@@ -95,7 +95,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     else if (auto* type_cast = dynamic_cast<AstTypeCastOp*>(node))
     {
         visitor->accept(type_cast);
-        visit(visitor, type_cast->get_target_type());
+        visit_expression(visitor, type_cast->get_value());
     }
 
     // AstLiteral, AstIdentifier, AstVariadicArgReference,
@@ -147,6 +147,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     if (!node)
         return;
 
+    // Mainly statement parsing here
 
     if (auto* conditional = dynamic_cast<AstConditionalStatement*>(node))
     {
