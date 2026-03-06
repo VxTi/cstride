@@ -106,6 +106,7 @@ const
 void ParsingContext::define_function(
     Symbol function_name,
     std::unique_ptr<AstFunctionType> function_type,
+    const VisibilityModifier visibility,
     const int flags
 ) const
 {
@@ -121,7 +122,7 @@ void ParsingContext::define_function(
     }
 
     global_scope._symbols.push_back(
-        std::make_unique<FunctionDefinition>(std::move(function_type), function_name, flags)
+        std::make_unique<FunctionDefinition>(std::move(function_type), function_name, visibility, flags)
     );
 }
 

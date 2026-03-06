@@ -58,7 +58,8 @@ bool ParsingContext::is_field_defined_globally(
 
 void ParsingContext::define_variable_globally(
     Symbol variable_symbol,
-    std::unique_ptr<IAstType> type
+    std::unique_ptr<IAstType> type,
+    VisibilityModifier visibility
 ) const
 {
     if (is_field_defined_globally(variable_symbol.internal_name))
@@ -74,19 +75,25 @@ void ParsingContext::define_variable_globally(
     global_scope._symbols.push_back(
         std::make_unique<definition::FieldDefinition>(
             std::move(variable_symbol),
-            std::move(type)
+            std::move(type),
+            visibility
         )
     );
 }
 
 void ParsingContext::define_variable(
     Symbol variable_sym,
-    std::unique_ptr<IAstType> type
+    std::unique_ptr<IAstType> type,
+    VisibilityModifier visibility
 )
 {
     if (this->is_global_scope())
     {
-        this->define_variable_globally(std::move(variable_sym), std::move(type));
+        this->define_variable_globally(
+            std::move(variable_sym),
+            std::move(type),
+            visibility
+        );
         return;
     }
 
@@ -98,7 +105,13 @@ void ParsingContext::define_variable(
             type->get_source_fragment());
     }
 
-    this->_symbols.push_back(std::make_unique<definition::FieldDefinition>(std::move(variable_sym), std::move(type)));
+    this->_symbols.push_back(
+        std::make_unique<definition::FieldDefinition>(
+            std::move(variable_sym),
+            std::move(type),
+            visibility
+        )
+    );
 }
 
 const definition::FieldDefinition* ParsingContext::lookup_variable(

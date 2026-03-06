@@ -16,7 +16,11 @@ void FunctionVisitor::accept(IAstFunction* fn_declaration)
     for (const auto& param : fn_declaration->get_parameters_ref())
     {
         const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
-        fn_declaration->get_context()->define_variable(param_symbol, param->get_type()->clone_ty());
+        fn_declaration->get_context()->define_variable(
+            param_symbol,
+            param->get_type()->clone_ty(),
+            VisibilityModifier::PRIVATE
+        );
     }
 
 
@@ -26,6 +30,7 @@ void FunctionVisitor::accept(IAstFunction* fn_declaration)
         fn_declaration->get_context()->define_function(
             fn_declaration->get_symbol(),
             fn_declaration->get_type()->clone_as<AstFunctionType>(),
+            fn_declaration->get_visibility(),
             fn_declaration->get_flags()
         );
     }

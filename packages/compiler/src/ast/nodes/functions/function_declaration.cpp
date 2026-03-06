@@ -234,7 +234,9 @@ void collect_free_variables(
                 {
                     callable->get_context()->define_variable(
                         nested_capture,
-                        var_def->get_type()->clone_ty());
+                        var_def->get_type()->clone_ty(),
+                        VisibilityModifier::PRIVATE
+                    );
                 }
             }
         }
@@ -436,7 +438,11 @@ void IAstFunction::validate()
             // Also define the capture in the lambda's context so identifier lookup works
             if (const auto outer_var = this->get_context()->lookup_variable(capture.name, true))
             {
-                this->get_context()->define_variable(capture, outer_var->get_type()->clone_ty());
+                this->get_context()->define_variable(
+                    capture,
+                    outer_var->get_type()->clone_ty(),
+                    VisibilityModifier::PRIVATE
+                );
             }
         }
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "modifiers.h"
 #include "symbols.h"
 #include "ast/nodes/types.h"
 
@@ -16,6 +17,8 @@ namespace llvm
 
 namespace stride::ast
 {
+    enum class VisibilityModifier;
+
     enum class ContextType
     {
         GLOBAL,
@@ -43,10 +46,15 @@ namespace stride::ast
         class IDefinition
         {
             Symbol _symbol;
+            VisibilityModifier _modifier;
 
         public:
-            explicit IDefinition(Symbol symbol) :
-                _symbol(std::move(symbol)) {}
+            explicit IDefinition(
+                Symbol symbol,
+                const VisibilityModifier modifier
+            ) :
+                _symbol(std::move(symbol)),
+                _modifier(modifier) {}
 
             virtual ~IDefinition() = default;
 
@@ -61,6 +69,12 @@ namespace stride::ast
             {
                 return this->_symbol;
             }
+
+            [[nodiscard]]
+            VisibilityModifier get_visibility() const
+            {
+                return this->_modifier;
+            }
         };
 
         class IdentifiableSymbolDef : public IDefinition
@@ -72,7 +86,7 @@ namespace stride::ast
                 const SymbolType type,
                 const Symbol& symbol
             ) :
-                IDefinition(symbol),
+                IDefinition(symbol, VisibilityModifier::PRIVATE),
                 _type(type) {}
 
             [[nodiscard]]
@@ -90,9 +104,10 @@ namespace stride::ast
         public:
             explicit TypeDefinition(
                 Symbol type_name_symbol,
-                std::unique_ptr<IAstType> type
+                std::unique_ptr<IAstType> type,
+                const VisibilityModifier visibility
             ) :
-                IDefinition(std::move(type_name_symbol)),
+                IDefinition(std::move(type_name_symbol), visibility),
                 _type(std::move(type)) {}
 
             [[nodiscard]]
@@ -108,9 +123,12 @@ namespace stride::ast
 
             /// Can be either a variable or a field in a struct/class
         public:
-            explicit FieldDefinition(const Symbol& symbol,
-                                     std::unique_ptr<IAstType> type) :
-                IDefinition(symbol),
+            explicit FieldDefinition(
+                const Symbol& symbol,
+                std::unique_ptr<IAstType> type,
+                const VisibilityModifier visibility
+            ) :
+                IDefinition(symbol, visibility),
                 _type(std::move(type)) {}
 
             [[nodiscard]]
@@ -137,9 +155,10 @@ namespace stride::ast
             explicit FunctionDefinition(
                 std::unique_ptr<AstFunctionType> function_type,
                 const Symbol& symbol,
+                const VisibilityModifier visibility,
                 const int flags
             ) :
-                IDefinition(symbol),
+                IDefinition(symbol, visibility),
                 _function_type(std::move(function_type)),
                 _flags(flags) {}
 
@@ -291,7 +310,8 @@ namespace stride::ast
             const std::string& symbol_name
         ) const;
 
-        std::optional<const definition::IDefinition> get_definition_by_internal_name(const std::string &internal_name) const;
+        std::optional<const definition::IDefinition> get_definition_by_internal_name(
+            const std::string& internal_name) const;
 
         [[nodiscard]]
         std::shared_ptr<ParsingContext> get_parent_context() const
@@ -312,22 +332,26 @@ namespace stride::ast
         void define_function(
             Symbol function_name,
             std::unique_ptr<AstFunctionType> function_type,
+            VisibilityModifier visibility,
             int flags = SRFLAG_NONE
         ) const;
 
         void define_type(
             const Symbol& type_name,
-            std::unique_ptr<IAstType> type
+            std::unique_ptr<IAstType> type,
+            VisibilityModifier visibility
         ) const;
 
         void define_variable(
             Symbol variable_sym,
-            std::unique_ptr<IAstType> type
+            std::unique_ptr<IAstType> type,
+            VisibilityModifier visibility
         );
 
         void define_variable_globally(
             Symbol variable_symbol,
-            std::unique_ptr<IAstType> type
+            std::unique_ptr<IAstType> type,
+            VisibilityModifier visibility
         ) const;
 
         [[nodiscard]]
