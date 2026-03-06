@@ -22,3 +22,12 @@ std::shared_ptr<SourceFile> stride::read_file(const std::string& path)
 
     return std::make_shared<SourceFile>(path, std::move(content));
 }
+
+SourceFragment SourceFragment::concat(const SourceFragment& first, const SourceFragment& last)
+{
+    return SourceFragment(
+        first.source,
+        first.offset,
+        (last.offset + last.length) - first.offset
+    );
+}

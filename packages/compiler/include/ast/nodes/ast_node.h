@@ -16,7 +16,6 @@ namespace llvm
 namespace stride::ast
 {
 
-    class AstExpression;
     class AstBlock;
     class ParsingContext;
 
