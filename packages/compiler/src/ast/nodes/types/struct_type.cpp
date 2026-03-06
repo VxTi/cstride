@@ -228,9 +228,9 @@ void AstStructType::resolve_forward_references(
     struct_type->setBody(member_types, /*isPacked=*/false);
 }
 
-bool AstStructType::equals(IAstType& other)
+bool AstStructType::equals(const IAstType& other) const
 {
-    if (const auto other_struct_ty = cast_type<AstStructType*>(&other))
+    if (const auto other_struct_ty = dynamic_cast<const AstStructType*>(&other))
     {
         if (this->_members.size() != other_struct_ty->_members.size())
         {
@@ -250,8 +250,13 @@ bool AstStructType::equals(IAstType& other)
         }
 
         return true;
-
     }
+
+    if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+    {
+        return other_named->equals(*this);
+    }
+
     return false;
 }
 

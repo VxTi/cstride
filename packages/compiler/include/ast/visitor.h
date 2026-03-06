@@ -12,6 +12,7 @@ namespace stride::ast
     class AstPackage;
     class AstFunctionDeclaration;
     class IAstExpression;
+    class Ast;
 
     /// Visitor that infers and assigns types to every expression node in the AST.
     ///
@@ -59,5 +60,7 @@ namespace stride::ast
         void accept(AstImport* node) override;
 
         void accept(AstPackage* node) override;
+
+        void cross_register_symbols(Ast* ast);
     };
 }

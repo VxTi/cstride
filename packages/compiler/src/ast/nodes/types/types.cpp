@@ -203,16 +203,35 @@ bool IAstType::is_assignable_to(IAstType* other)
 
     // Check if LHS is optional and RHS is nil
     if (this->is_optional() && other->is_primitive() &&
-        cast_type<AstPrimitiveType*>(other)->get_primitive_type() == PrimitiveType::NIL)
+        dynamic_cast<AstPrimitiveType*>(other)->get_primitive_type() == PrimitiveType::NIL)
     {
         return true;
     }
 
     // Check if LHS is nil and RHS is optional
     if (other->is_optional() && this->is_primitive() &&
-        cast_type<AstPrimitiveType*>(this)->get_primitive_type() == PrimitiveType::NIL)
+        dynamic_cast<AstPrimitiveType*>(this)->get_primitive_type() == PrimitiveType::NIL)
     {
         return true;
+    }
+
+    // Try to resolve named types on both sides to check assignability
+    if (const auto* this_named = dynamic_cast<AstNamedType*>(this))
+    {
+        const auto self_base = this_named->get_base_reference_type();
+        if (self_base.has_value() && self_base.value()->is_assignable_to(other))
+        {
+            return true;
+        }
+    }
+
+    if (const auto* other_named = dynamic_cast<AstNamedType*>(other))
+    {
+        const auto other_base = other_named->get_base_reference_type();
+        if (other_base.has_value() && this->is_assignable_to(other_base.value().get()))
+        {
+            return true;
+        }
     }
 
     // Otherwise it's up to the other implementors to decide.

@@ -115,9 +115,9 @@ std::unique_ptr<IAstNode> AstFunctionType::clone()
     );
 }
 
-bool AstFunctionType::equals(IAstType& other)
+bool AstFunctionType::equals(const IAstType& other) const
 {
-    if (const auto* other_func = dynamic_cast<AstFunctionType*>(&other))
+    if (const auto* other_func = dynamic_cast<const AstFunctionType*>(&other))
     {
         if (!other_func->get_return_type()->equals(
             *this->get_return_type()))
@@ -136,6 +136,12 @@ bool AstFunctionType::equals(IAstType& other)
         }
         return true;
     }
+
+    if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+    {
+        return other_named->equals(*this);
+    }
+
     return false;
 }
 
