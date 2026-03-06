@@ -203,10 +203,44 @@ bool IAstType::is_assignable_to(IAstType* other)
         return true;
     }
 
+    if (this->equals(*other))
+    {
+        return true;
+    }
+
     // Otherwise it's up to the other implementors to decide.
     return this->is_assignable_to_impl(other);
 }
 
+AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
+{
+    if (!type)
+    {
+        return nullptr;
+    }
+
+    if (const auto named = cast_type<AstNamedType*>(type))
+    {
+        const auto ref_type = named->get_base_reference_type();
+
+        if (!ref_type.has_value())
+        {
+            return nullptr;
+        }
+
+        return extract_primitive_reference_types(ref_type.value().get());
+    }
+
+    if (const auto* array_type = cast_type<AstArrayType*>(type))
+    {
+        return extract_primitive_reference_types(array_type->get_element_type());
+    }
+
+    return cast_type<AstPrimitiveType*>(type);
+}
+
+/// Dominant field comparison can only be done on primitive types, e.g., int32 vs float64, int32 vs int64, etc.
+/// If we have named types on either side, we have to extract their primitive types, if they reference so.
 std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     IAstType* lhs,
     IAstType* rhs
@@ -214,49 +248,44 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 {
     const auto& context = lhs->get_context();
 
-    auto* lhs_primitive = cast_type<AstPrimitiveType*>(lhs);
-    auto* rhs_primitive = cast_type<AstPrimitiveType*>(rhs);
+    // Resolves LHS and RHS into possibly primitive types, if they reference so
+    const auto& lhs_primitive_ty = extract_primitive_reference_types(lhs);
+    const auto& rhs_primitive_ty = extract_primitive_reference_types(rhs);
+
+    if (!lhs_primitive_ty)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Cannot compute dominant type for non-primitive types",
+            lhs->get_source_fragment()
+        );
+    }
+
+    if (!rhs_primitive_ty)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Cannot compute dominant type for non-primitive types",
+            rhs->get_source_fragment()
+        );
+    }
+
 
     // If LHS is a nil primitive, we prefer the RHS type, since the LHS can be safely ignored in this context (e.g., optional types)
-    if (lhs_primitive && lhs_primitive->get_primitive_type() == PrimitiveType::NIL)
+    if (lhs_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
     {
         return rhs->clone_ty();
     }
+
     // Same holds true here
-    if (rhs_primitive && rhs_primitive->get_primitive_type() == PrimitiveType::NIL)
+    if (rhs_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
     {
         return lhs->clone_ty();
     }
 
-    const auto* lhs_named = cast_type<AstNamedType*>(lhs);
-    const auto* rhs_named = cast_type<AstNamedType*>(rhs);
-
-    // Error if one is named and the other is primitive
-    if ((lhs_named && rhs_primitive) || (lhs_primitive && rhs_named))
-    {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            "Cannot mix primitive type with named type",
-            lhs->get_source_fragment());
-    }
-
-    // Both must be primitives for dominance calculation
-    if (!lhs_primitive || !rhs_primitive)
-    {
-        const auto references = {
-            ErrorSourceReference(lhs->to_string(), lhs->get_source_fragment()),
-            ErrorSourceReference(rhs->get_type_name(), rhs->get_source_fragment())
-        };
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            "Cannot compute dominant type for non-primitive types",
-            references
-        );
-    }
-
     const bool are_both_sides_integers =
-        lhs_primitive->is_integer_ty() && rhs_primitive->is_integer_ty();
-    const bool are_both_sides_floats = lhs_primitive->is_fp() && rhs_primitive->
+        lhs_primitive_ty->is_integer_ty() && rhs_primitive_ty->is_integer_ty();
+    const bool are_both_sides_floats = lhs_primitive_ty->is_fp() && rhs_primitive_ty->
         is_fp();
 
     // TODO: Handle unsigned / signed properly
@@ -265,33 +294,33 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // E.g., dominant type (fp32, fp64) will yield fp64, (int32, int64) will yield int64
     if (are_both_sides_floats || are_both_sides_integers)
     {
-        return lhs_primitive->bit_count() >= rhs_primitive->bit_count()
-            ? lhs_primitive->clone_ty()
-            : rhs_primitive->clone_ty();
+        return lhs_primitive_ty->bit_count() >= rhs_primitive_ty->bit_count()
+            ? lhs->clone_ty()
+            : rhs->clone_ty();
     }
 
     // If LHS is a float, but the RHS is not, we'll have to convert the resulting
     // type into a float with the highest byte size
     // The same holds true for visa vesa.
-    if ((lhs_primitive->is_fp() && !rhs_primitive->is_fp()) ||
-        (rhs_primitive->is_fp() && !lhs_primitive->is_fp()))
+    if ((lhs_primitive_ty->is_fp() && !rhs_primitive_ty->is_fp()) ||
+        (rhs_primitive_ty->is_fp() && !lhs_primitive_ty->is_fp()))
     {
         // If the RHS has a higher byte size, we need to promote the RHS to a floating point type
         // and return the highest byte size
-        if (rhs_primitive->bit_count() > lhs_primitive->bit_count())
+        if (rhs_primitive_ty->bit_count() > lhs_primitive_ty->bit_count())
         {
             // RHS is dominant
             return std::make_unique<AstPrimitiveType>(
-                rhs_primitive->get_source_fragment(),
+                rhs->get_source_fragment(),
                 context,
                 PrimitiveType::FLOAT64,
-                rhs_primitive->get_flags()
+                rhs->get_flags()
             );
         }
 
         // Otherwise, just return the LHS as the dominant type (float32 / float64)
         // LHS is dominant
-        return lhs_primitive->clone_ty();
+        return lhs->clone_ty();
     }
 
     const std::vector references = {

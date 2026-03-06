@@ -374,10 +374,15 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             variable_declaration->get_initial_value(),
             recursion_guard
         );
-        if (!annotated_type.has_value() || annotated_type.value()->equals(*value_type))
+        if (!annotated_type.has_value())
         {
             value_type->set_flags(variable_declaration->get_flags());
             return value_type->clone_ty();
+        }
+
+        if (annotated_type.value()->equals(*value_type))
+        {
+            return annotated_type.value()->clone_ty();
         }
 
         if (value_type->is_assignable_to(annotated_type.value()))

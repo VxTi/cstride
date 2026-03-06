@@ -92,6 +92,8 @@ const
 
     for (size_t i = 0; i < self_params.size(); i++)
     {
+        // Strict equality check - parameters must match exactly,
+        // otherwise named overloading with different signatures wouldn't work.
         if (!self_params[i]->equals(*other_parameter_types[i]))
         {
             return false;

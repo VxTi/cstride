@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <llvm/IR/Function.h>
 
 namespace llvm
 {
@@ -130,6 +131,7 @@ namespace stride::ast
         {
             std::unique_ptr<AstFunctionType> _function_type;
             int _flags;
+            llvm::Function* _llvm_function = nullptr;
 
         public:
             explicit FunctionDefinition(
@@ -162,6 +164,16 @@ namespace stride::ast
             ~FunctionDefinition() override = default;
 
             bool matches_type_signature(const std::string& name, const AstFunctionType* signature) const;
+
+            void set_llvm_function(llvm::Function* function)
+            {
+                this->_llvm_function = function;
+            }
+
+            llvm::Function* get_llvm_function() const
+            {
+                return this->_llvm_function;
+            }
 
             [[nodiscard]]
             bool matches_parameter_signature(

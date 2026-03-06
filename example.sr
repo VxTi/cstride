@@ -1,4 +1,4 @@
-import system::{ io::print };
+/* import system::{ io::print };
 
 const create_adder = (x: int32): (int32) -> int32 -> {
     return (y: int32): int32 -> {
@@ -16,4 +16,20 @@ fn main(): int32 {
 
     io::print("You entered: %s", input);
     return 0;
+}*/
+
+pub fn print(input: string, ...): void {
+    _printf_internal(input, ...);
+}
+
+fn typed(p: int32): void {
+    print("Typed 32");
+}
+
+fn typed(p: int64): void {
+    print("Typed 64");
+}
+
+fn main(): void {
+    typed(32L);
 }

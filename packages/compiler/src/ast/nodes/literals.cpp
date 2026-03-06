@@ -194,10 +194,6 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
             const PrimitiveType type =
                 reference_token.get_type() == TokenType::LONG_INTEGER_LITERAL
                 ? PrimitiveType::INT64
-                : value == (value & 0xFFFFFF00)
-                ? PrimitiveType::INT8
-                : value == (value & 0xFFFF0000)
-                ? PrimitiveType::INT16
                 : PrimitiveType::INT32;
 
             return std::make_unique<AstIntLiteral>(reference_token.get_source_fragment(), context, type, value);

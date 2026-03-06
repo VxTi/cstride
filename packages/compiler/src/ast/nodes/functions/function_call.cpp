@@ -159,7 +159,7 @@ llvm::Value* AstFunctionCall::codegen(
             this->get_context()->get_function_definition(this->get_scoped_function_name(), this->get_argument_types());
         definition.has_value())
     {
-        callee = module->getFunction(this->get_scoped_function_name());
+        callee = module->getFunction(definition.value()->get_internal_symbol_name());
 
         // If the symbol exists in the semantic context but not yet in the IR module,
         // declare it as an external function now.

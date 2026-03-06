@@ -295,6 +295,7 @@ bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
     if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
         return (this->is_integer_ty() && other_primitive->is_integer_ty() || this->is_fp() && other_primitive->is_fp())
+            // We can upcast, though downcasting must be done explicitly.
             && this->bit_count() <= other_primitive->bit_count();
     }
 

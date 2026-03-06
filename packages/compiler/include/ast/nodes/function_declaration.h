@@ -213,6 +213,16 @@ namespace stride::ast
             llvm::IRBuilderBase* builder) override;
 
         std::unique_ptr<IAstNode> clone() override;
+
+    private:
+        llvm::FunctionType* get_llvm_function_type(llvm::Module* module) const;
+
+        llvm::FunctionType* get_llvm_function_type(
+            llvm::Module* module,
+            std::vector<llvm::Type*> captured_variables
+        ) const;
+
+        std::optional<std::vector<llvm::Type*>> get_llvm_function_parameter_types(llvm::Module* module) const;
     };
 
     class AstFunctionDeclaration
@@ -245,9 +255,6 @@ namespace stride::ast
         std::string to_string() override;
 
         ~AstFunctionDeclaration() override = default;
-
-    private:
-        std::optional<std::vector<llvm::Type*>> resolve_parameter_types(llvm::Module* module) const;
     };
 
     class AstLambdaFunctionExpression

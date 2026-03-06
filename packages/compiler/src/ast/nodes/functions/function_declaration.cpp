@@ -28,6 +28,8 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
+static int internal_function_name_offset = 0;
+
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
@@ -548,11 +550,7 @@ void IAstFunction::validate()
         return;
     }
 
-    if (this->get_body() != nullptr)
-    {
-        this->get_body()->validate();
-    }
-
+    this->get_body()->validate();
 
     const auto return_statements = collect_return_statements(this->get_body());
 
@@ -644,12 +642,6 @@ void IAstFunction::validate()
             );
         }
     }
-
-    // We'll have to validate whether it:
-    // 1. Requires a return AST node - This can be the case when the return type is not a primitive,
-    // e.g., a struct
-    // 2. The return type doesn't match the function signature
-    // 3. All code paths return a value (if not void)
 }
 
 llvm::Value* IAstFunction::codegen(
@@ -681,7 +673,7 @@ llvm::Value* IAstFunction::codegen(
             module->print(llvm::errs(), nullptr);
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                "Function symbol missing: " + this->get_scoped_function_name(),
+                std::format("Function symbol '{}' missing", this->get_scoped_function_name()),
                 this->get_source_fragment()
             );
         }
@@ -767,11 +759,8 @@ llvm::Value* IAstFunction::codegen(
     }
 
     // Generate Body
-    llvm::Value* last_val = nullptr;
-    if (this->_body)
-    {
-        last_val = this->_body->codegen(module, builder);
-    }
+    llvm::Value* function_body_value = this->_body->codegen(module, builder);
+
 
     // Final Safety: Implicit Return
     // If the get_body didn't explicitly return (no terminator found), add one.
@@ -783,9 +772,9 @@ llvm::Value* IAstFunction::codegen(
         {
             builder->CreateRetVoid();
         }
-        else if (last_val && last_val->getType() == ret_type)
+        else if (function_body_value && function_body_value->getType() == ret_type)
         {
-            builder->CreateRet(last_val);
+            builder->CreateRet(function_body_value);
         }
         else
         {
@@ -814,6 +803,7 @@ llvm::Value* IAstFunction::codegen(
 
     if (llvm::verifyFunction(*function, &llvm::errs()))
     {
+        module->print(llvm::errs(), nullptr);
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
             "LLVM Function Verification Failed for: " + this->get_function_name(),
@@ -868,7 +858,46 @@ llvm::Value* IAstFunction::codegen(
     return function;
 }
 
-std::optional<std::vector<llvm::Type*>> AstFunctionDeclaration::resolve_parameter_types(
+llvm::FunctionType* IAstFunction::get_llvm_function_type(
+    llvm::Module* module,
+    std::vector<llvm::Type*> captured_variables
+) const
+{
+    const auto& base_parameter_types = this->get_llvm_function_parameter_types(module);
+    if (!base_parameter_types.has_value())
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Could not get LLVM function parameter types for function: " + this->get_function_name(),
+            this->get_source_fragment()
+        );
+    }
+    std::vector<llvm::Type*> parameter_types;
+    parameter_types.reserve(base_parameter_types->size() + captured_variables.size());
+
+    // Captured variables are first in the internal LLVM function type
+    parameter_types.insert(parameter_types.end(), captured_variables.begin(), captured_variables.end());
+    parameter_types.insert(parameter_types.end(), base_parameter_types->begin(), base_parameter_types->end());
+
+    const auto return_type = type_to_llvm_type(this->get_return_type(), module);
+    if (!return_type)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Could not get LLVM return type for function: " + this->get_function_name(),
+            this->get_source_fragment()
+        );
+    }
+
+    return llvm::FunctionType::get(return_type, parameter_types, this->is_variadic());
+}
+
+llvm::FunctionType* IAstFunction::get_llvm_function_type(llvm::Module* module) const
+{
+    return this->get_llvm_function_type(module, {});
+}
+
+std::optional<std::vector<llvm::Type*>> IAstFunction::get_llvm_function_parameter_types(
     llvm::Module* module
 ) const
 {
@@ -968,63 +997,34 @@ void IAstFunction::resolve_forward_references(
         if (this->_llvm_function)
             return;
     }
-    else
-    {
-        if (module->getFunction(this->get_scoped_function_name()))
-            return;
-    }
-
-    llvm::Type* return_type = type_to_llvm_type(
-        this->get_return_type(),
-        module
-    );
-    if (!return_type)
-    {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            std::format("Failed to resolve return type for function '{}'", this->get_function_name()),
-            this->get_return_type()->get_source_fragment()
-        );
-    }
-
-    std::vector<llvm::Type*> param_types;
-    param_types.reserve(_captured_variables.size() + _parameters.size());
 
     // Add captured variables as first parameters
+    std::vector<llvm::Type*> captured_types;
     for (const auto& capture : this->_captured_variables)
     {
         if (const auto capture_def = this->get_context()->lookup_variable(capture.name, true))
         {
-            if (llvm::Type* capture_type = type_to_llvm_type(
-                capture_def->get_type(),
-                module))
+            if (llvm::Type* capture_type = type_to_llvm_type(capture_def->get_type(), module))
             {
-                param_types.push_back(capture_type);
+                captured_types.push_back(capture_type);
             }
         }
     }
 
-    // Add regular parameters
-    for (const auto& param : this->_parameters)
+    llvm::FunctionType* function_type = this->get_llvm_function_type(module, captured_types);
+
+    if (const auto fn = module->getFunction(this->get_scoped_function_name());
+        fn != nullptr && fn->getFunctionType() != function_type)
     {
-        llvm::Type* llvm_type = type_to_llvm_type(param->get_type(), module);
-        if (!llvm_type)
-        {
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                std::format("Failed to resolve parameter type for function '{}'", this->get_scoped_function_name()),
-                param->get_type()->get_source_fragment()
-            );
-        }
-
-        param_types.push_back(llvm_type);
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format(
+                "Function symbol '{}' already exists with a different signature",
+                this->get_scoped_function_name()
+            ),
+            this->get_source_fragment()
+        );
     }
-
-    llvm::FunctionType* function_type = llvm::FunctionType::get(
-        return_type,
-        param_types,
-        this->is_variadic()
-    );
 
     const auto linkage = this->_visibility == VisibilityModifier::PRIVATE
         ? llvm::Function::PrivateLinkage
@@ -1047,12 +1047,7 @@ void IAstFunction::resolve_forward_references(
         this->_llvm_function = created_fn;
     }
 
-    // Recursively resolve forward references in the function body
-    // This is necessary for nested lambdas (e.g., lambdas that return lambdas)
-    if (this->get_body())
-    {
-        this->get_body()->resolve_forward_references(context, module, builder);
-    }
+    this->get_body()->resolve_forward_references(context, module, builder);
 }
 
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()
