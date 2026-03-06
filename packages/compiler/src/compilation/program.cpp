@@ -55,15 +55,15 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     for (const auto& [file_name, node] : this->_ast->get_files())
     {
         import_visitor.set_current_file_name(file_name);
-        traverser.visit(&import_visitor, node.get());
+        traverser.visit_block(&import_visitor, node.get());
 
-        traverser.visit(&function_visitor, node.get());
+        traverser.visit_block(&function_visitor, node.get());
     }
 
     for (const auto& node : this->_ast->get_files() | std::views::values)
     {
         runtime::register_runtime_symbols(node->get_context());
-        traverser.visit(&type_visitor, node.get());
+        traverser.visit_block(&type_visitor, node.get());
 
         node->validate();
         node->resolve_forward_references(

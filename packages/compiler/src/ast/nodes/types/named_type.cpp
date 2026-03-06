@@ -65,7 +65,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_base_reference_type()
         }
     }
 
-    return base_type;
+    return std::move(base_type);
 }
 
 bool AstNamedType::is_assignable_to_impl(IAstType* other)

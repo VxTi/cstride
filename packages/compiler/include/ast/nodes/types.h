@@ -227,7 +227,12 @@ namespace stride::ast
         [[nodiscard]]
         std::unique_ptr<IAstNode> clone() override
         {
-            return std::make_unique<AstPrimitiveType>(*this);
+            return std::make_unique<AstPrimitiveType>(
+                this->get_source_fragment(),
+                this->get_context(),
+                this->get_primitive_type(),
+                this->get_flags()
+            );
         }
 
         std::string get_type_name() override
@@ -283,7 +288,12 @@ namespace stride::ast
         [[nodiscard]]
         std::unique_ptr<IAstNode> clone() override
         {
-            return std::make_unique<AstNamedType>(*this);
+            return std::make_unique<AstNamedType>(
+                this->get_source_fragment(),
+                this->get_context(),
+                this->_name,
+                this->get_flags()
+            );
         }
 
         std::string get_type_name() override

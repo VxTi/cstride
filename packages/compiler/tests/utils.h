@@ -34,12 +34,12 @@ namespace stride::tests
         ast::ImportVisitor import_visitor;
 
         import_visitor.set_current_file_name("test.sr");
-        traverser.visit(&import_visitor, node.get());
+        traverser.visit_block(&import_visitor, node.get());
 
-        traverser.visit(&function_visitor, node.get());
+        traverser.visit_block(&function_visitor, node.get());
 
         runtime::register_runtime_symbols(node->get_context());
-        traverser.visit(&type_visitor, node.get());
+        traverser.visit_block(&type_visitor, node.get());
 
         node->validate();
 
