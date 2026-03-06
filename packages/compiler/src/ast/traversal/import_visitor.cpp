@@ -1,3 +1,4 @@
+#include "ast/ast.h"
 #include "ast/visitor.h"
 #include "ast/nodes/import.h"
 #include "ast/nodes/package.h"
@@ -25,4 +26,9 @@ void stride::ast::ImportVisitor::accept(AstImport* node)
 void stride::ast::ImportVisitor::accept(AstPackage* node)
 {
     this->_file_package_mapping.emplace(this->_current_file_name, node->get_package_name());
+}
+
+void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast)
+{
+
 }

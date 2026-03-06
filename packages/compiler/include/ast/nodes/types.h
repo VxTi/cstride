@@ -126,16 +126,16 @@ namespace stride::ast
         [[nodiscard]]
         virtual std::string get_type_name() = 0;
 
-        virtual bool equals(IAstType& other) = 0;
+        virtual bool equals(const IAstType& other) const = 0;
 
         [[nodiscard]]
-        bool equals(const std::unique_ptr<IAstType>& other)
+        bool equals(const std::unique_ptr<IAstType>& other) const
         {
             return this->equals(*other);
         }
 
         [[nodiscard]]
-        bool equals(IAstType* other)
+        bool equals(const IAstType* other) const
         {
             return this->equals(*other);
         }
@@ -219,7 +219,7 @@ namespace stride::ast
             return this->get_type_name();
         }
 
-        bool equals(IAstType& other) override;
+        bool equals(const IAstType& other) const override;
 
         [[nodiscard]]
         bool is_primitive() const override
@@ -291,7 +291,7 @@ namespace stride::ast
                 this->is_optional() ? "?" : "");
         }
 
-        bool equals(IAstType& other) override;
+        bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
         {
@@ -356,7 +356,7 @@ namespace stride::ast
             return get_type_name();
         }
 
-        bool equals(IAstType& other) override;
+        bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
         {
@@ -421,7 +421,7 @@ namespace stride::ast
             return std::format("[{}]", this->_element_type->get_type_name());
         }
 
-        bool equals(IAstType& other) override;
+        bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
         {
@@ -469,7 +469,7 @@ namespace stride::ast
             return this->get_type_name();
         }
 
-        bool equals(IAstType& other) override;
+        bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
         {
@@ -537,7 +537,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        bool equals(IAstType& other) override;
+        bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
         {

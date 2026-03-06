@@ -353,7 +353,17 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     if (const auto* var_def =
         this->get_context()->lookup_variable(this->get_scoped_function_name(), true))
     {
-        if (const auto* fn_type = cast_type<AstFunctionType*>(var_def->get_type()))
+        auto base_type = var_def->get_type()->clone_ty();
+        if (const auto* named = dynamic_cast<AstNamedType*>(base_type.get()))
+        {
+            if (const auto resolved = named->get_base_reference_type();
+                resolved.has_value())
+            {
+                base_type = resolved.value()->clone_ty();
+            }
+        }
+
+        if (const auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))
         {
             // First: check if the variable's internal name maps to a named function in the
             // symbol table with a matching type signature. If so, call it directly without

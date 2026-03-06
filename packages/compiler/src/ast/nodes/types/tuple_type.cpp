@@ -87,12 +87,18 @@ std::unique_ptr<IAstNode> AstTupleType::clone()
     );
 }
 
-bool AstTupleType::equals(IAstType& other)
+bool AstTupleType::equals(const IAstType& other) const
 {
-    const auto other_tuple = cast_type<AstTupleType*>(&other);
+    const auto other_tuple = dynamic_cast<const AstTupleType*>(&other);
 
     if (!other_tuple)
+    {
+        if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+        {
+            return other_named->equals(*this);
+        }
         return false; // other type is not a tuple; no equality
+    }
 
     // Member count must be equal
     if (this->_members.size() != other_tuple->_members.size())

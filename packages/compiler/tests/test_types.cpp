@@ -287,7 +287,7 @@ TEST(TypeAliases, ComplexAliases)
         fn main(): void { test(value as IntArray); }
     )");
 
-    assert_throws_message(
+    assert_compiles(
         R"(
         type BinaryOp = (int32, int32) -> int32;
         fn add(a: int32, b: int32): int32 { return a + b; }
@@ -295,8 +295,7 @@ TEST(TypeAliases, ComplexAliases)
         let op: BinaryOp = add;
 
         op(1, 2);
-    )",
-        "Type mismatch in variable declaration; expected type 'BinaryOp', got '(int32, int32) -> int32'");
+    )");
 }
 
 TEST(PrimitiveTypes, CharAndString)

@@ -74,12 +74,18 @@ std::string AstArrayType::to_string()
         (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
 }
 
-bool AstArrayType::equals(IAstType& other)
+bool AstArrayType::equals(const IAstType& other) const
 {
-    if (const auto* other_array = cast_type<AstArrayType*>(&other))
+    if (const auto* other_array = dynamic_cast<const AstArrayType*>(&other))
     {
         return this->_element_type->equals(other_array->_element_type);
     }
+
+    if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+    {
+        return other_named->equals(*this);
+    }
+
     return false;
 }
 

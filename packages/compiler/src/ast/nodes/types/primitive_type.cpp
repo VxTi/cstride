@@ -269,9 +269,9 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     );
 }
 
-bool AstPrimitiveType::equals(IAstType& other)
+bool AstPrimitiveType::equals(const IAstType& other) const
 {
-    if (const auto* other_primitive = cast_type<AstPrimitiveType*>(&other))
+    if (const auto* other_primitive = dynamic_cast<const AstPrimitiveType*>(&other))
     {
         // If either types is optional, and the other is NIL, they're also "equal".
         const auto is_one_optional =
@@ -282,9 +282,14 @@ bool AstPrimitiveType::equals(IAstType& other)
             is_one_optional;
     }
 
-    if (const auto* struct_type = cast_type<AstNamedType*>(&other))
+    if (const auto* struct_type = dynamic_cast<const AstNamedType*>(&other))
     {
-        return this->get_primitive_type() == PrimitiveType::NIL && struct_type->is_optional();
+        if (this->get_primitive_type() == PrimitiveType::NIL && struct_type->is_optional())
+        {
+            return true;
+        }
+
+        return struct_type->equals(*this);
     }
 
     return false;
@@ -292,7 +297,7 @@ bool AstPrimitiveType::equals(IAstType& other)
 
 bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
 {
-    if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
+    if (const auto other_primitive = dynamic_cast<AstPrimitiveType*>(other))
     {
         // Check if both sides are integers or both sides are floating-point types
         if ((this->is_integer_ty() && other_primitive->is_integer_ty()) ||
@@ -309,7 +314,7 @@ bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
 // Casting can be done both ways - Low -> Hi, and Hi -> Low
 bool AstPrimitiveType::is_castable_to_impl(IAstType* other)
 {
-    if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
+    if (const auto other_primitive = dynamic_cast<AstPrimitiveType*>(other))
     {
         return (this->is_integer_ty() || this->is_fp()) && (other_primitive->is_integer_ty() || other_primitive->is_fp());
     }

@@ -59,6 +59,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
         traverser.visit_block(&function_visitor, node.get());
     }
+    import_visitor.cross_register_symbols(this->_ast.get());
 
     for (const auto& node : this->_ast->get_files() | std::views::values)
     {
