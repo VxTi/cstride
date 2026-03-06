@@ -44,12 +44,47 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() cons
     return std::nullopt;
 }
 
-bool AstNamedType::is_assignable_to_impl(IAstType* other) const
+std::optional<std::unique_ptr<IAstType>> AstNamedType::get_base_reference_type() const
+{
+    std::optional<std::unique_ptr<IAstType>> base_type = this->get_reference_type();
+    int recursion_guard = 0; // Prevent self-referencing types causing infinite loops
+
+    while (const auto* named_reference = cast_type<AstNamedType*>(base_type.value().get()))
+    {
+        base_type = named_reference->get_reference_type();
+        if (++recursion_guard > MAX_RECURSION_DEPTH)
+        {
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format(
+                    "Exceeded maximum recursion depth of {} while resolving base type of '{}'",
+                    MAX_RECURSION_DEPTH,
+                    this->get_name()),
+                this->get_source_fragment()
+            );
+        }
+    }
+
+    return base_type;
+}
+
+bool AstNamedType::is_assignable_to_impl(IAstType* other)
 {
     if (const auto other_named = cast_type<AstNamedType*>(other))
     {
         return this->get_name() == other_named->get_name();
     }
+
+    // It might be the case that we're trying to assign primitive references to a named value, e.g.,
+    // type SomePrimitive = int32[]
+    // const someVar: SomePrimitive = [1, 2, 3];
+    // In this case, `[1, 2, 3]` should be assignable to the base types of `SomePrimitive`
+    if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
+    {
+        const auto base_type = get_base_reference_type();
+        return base_type.has_value() && base_type.value()->equals(*other_primitive);
+    }
+
     return false;
 }
 

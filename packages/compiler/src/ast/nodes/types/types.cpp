@@ -6,7 +6,6 @@
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
-#include <unistd.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
@@ -244,10 +243,15 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // Both must be primitives for dominance calculation
     if (!lhs_primitive || !rhs_primitive)
     {
+        const auto references = {
+            ErrorSourceReference(lhs->to_string(), lhs->get_source_fragment()),
+            ErrorSourceReference(rhs->get_type_name(), rhs->get_source_fragment())
+        };
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Cannot compute dominant type for non-primitive types",
-            lhs->get_source_fragment());
+            references
+        );
     }
 
     const bool are_both_sides_integers =

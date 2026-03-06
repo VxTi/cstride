@@ -405,7 +405,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 const auto arg_type = this->get_arguments()[i]->get_type();
 
                 if (const auto expected_type = fn_type->get_parameter_types()[i].get();
-                    arg_type->get_type_name() != expected_type->get_type_name())
+                    !arg_type->equals(*expected_type))
                 {
                     throw parsing_error(
                         ErrorType::TYPE_ERROR,
