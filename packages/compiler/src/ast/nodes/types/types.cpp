@@ -189,6 +189,18 @@ llvm::Type* stride::ast::type_to_llvm_type(
 
 bool IAstType::is_assignable_to(IAstType* other)
 {
+    // A type is not assignable to another if the source is optional but the target is not.
+    // E.g., `int32?` is not assignable to `int32`.
+    if (this->is_optional() && !other->is_optional())
+    {
+        return false;
+    }
+
+    if (this->equals(*other))
+    {
+        return true;
+    }
+
     // Check if LHS is optional and RHS is nil
     if (this->is_optional() && other->is_primitive() &&
         cast_type<AstPrimitiveType*>(other)->get_primitive_type() == PrimitiveType::NIL)
@@ -203,13 +215,25 @@ bool IAstType::is_assignable_to(IAstType* other)
         return true;
     }
 
+    // Otherwise it's up to the other implementors to decide.
+    return this->is_assignable_to_impl(other);
+}
+
+bool IAstType::is_castable_to(IAstType* other)
+{
+    // A type is not castable to another if the source is optional but the target is not.
+    // E.g., `int32?` is not castable to `int32`.
+    if (this->is_optional() && !other->is_optional())
+    {
+        return false;
+    }
+
     if (this->equals(*other))
     {
         return true;
     }
 
-    // Otherwise it's up to the other implementors to decide.
-    return this->is_assignable_to_impl(other);
+    return this->is_castable_to_impl(other);
 }
 
 AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
@@ -251,6 +275,18 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // Resolves LHS and RHS into possibly primitive types, if they reference so
     const auto& lhs_primitive_ty = extract_primitive_reference_types(lhs);
     const auto& rhs_primitive_ty = extract_primitive_reference_types(rhs);
+
+    if ((!lhs_primitive_ty && rhs_primitive_ty) || (lhs_primitive_ty && !rhs_primitive_ty))
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Cannot mix primitive type with named type",
+            {
+                ErrorSourceReference(lhs->get_type_name(), lhs->get_source_fragment()),
+                ErrorSourceReference(rhs->get_type_name(), rhs->get_source_fragment())
+            }
+        );
+    }
 
     if (!lhs_primitive_ty)
     {

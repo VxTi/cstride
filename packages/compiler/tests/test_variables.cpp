@@ -35,8 +35,8 @@ TEST(Variables, IntegerTypes)
 {
     const std::string code = R"(
         fn main(): void {
-            let a: int8 = 0;
-            let b: int16 = 0;
+            let a: int8 = 0 as int8;
+            let b: int16 = 0 as int16;
             let c: int32 = 0;
             let d: int64 = 0L;
         }

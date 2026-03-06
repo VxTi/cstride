@@ -68,21 +68,67 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_base_reference_type()
     return std::move(base_type);
 }
 
+bool AstNamedType::is_castable_to_impl(IAstType* other)
+{
+    const auto self_reference_type = get_base_reference_type();
+
+    if (!self_reference_type.has_value())
+        return false;
+
+    // Check our base type is a primitive, and whether that type is castable to `other`
+    if (auto* other_primitive = cast_type<AstPrimitiveType*>(other))
+    {
+        return self_reference_type.value()->is_castable_to(other_primitive);
+    }
+
+    // Final case would be to check whether both base types are the same
+    if (const auto* other_named_ty = cast_type<AstNamedType*>(other))
+    {
+        if (const auto second_reference_type = other_named_ty->get_base_reference_type();
+            second_reference_type.has_value())
+        {
+            return self_reference_type.value()->equals(*second_reference_type);
+        }
+    }
+    return false;
+}
+
 bool AstNamedType::is_assignable_to_impl(IAstType* other)
 {
     if (const auto other_named = cast_type<AstNamedType*>(other))
     {
-        return this->get_name() == other_named->get_name();
+        if (this->get_name() == other_named->get_name())
+        {
+            return true;
+        }
     }
 
     // It might be the case that we're trying to assign primitive references to a named value, e.g.,
     // type SomePrimitive = int32[]
     // const someVar: SomePrimitive = [1, 2, 3];
     // In this case, `[1, 2, 3]` should be assignable to the base types of `SomePrimitive`
-    if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
+    const auto self_base_type = get_base_reference_type();
+    if (self_base_type.has_value() && self_base_type.value()->is_assignable_to(other))
     {
-        const auto base_type = get_base_reference_type();
-        return base_type.has_value() && base_type.value()->equals(*other_primitive);
+        return true;
+    }
+
+    if (const auto* other_named_ptr = cast_type<AstNamedType*>(other))
+    {
+        const auto other_base_type = other_named_ptr->get_base_reference_type();
+        if (other_base_type.has_value() && this->is_assignable_to(other_base_type.value().get()))
+        {
+            return true;
+        }
+    }
+
+    // Special case for primitive types
+    if (const auto* other_primitive = cast_type<AstPrimitiveType*>(other))
+    {
+        if (self_base_type.has_value() && self_base_type.value()->is_assignable_to(other))
+        {
+            return true;
+        }
     }
 
     return false;

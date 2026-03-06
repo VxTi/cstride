@@ -280,11 +280,11 @@ TEST(TypeAliases, ComplexAliases)
 {
     assert_compiles(R"(
         type IntArray = int32[];
-        const value: IntArray = [1, 2, 3];
+        const value = [1, 2, 3];
 
         fn test(a: IntArray): void {}
 
-        fn main(): void { test(value); }
+        fn main(): void { test(value as IntArray); }
     )");
 
     assert_throws_message(
