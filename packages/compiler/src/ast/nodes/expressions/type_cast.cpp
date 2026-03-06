@@ -1,10 +1,33 @@
 #include "ast/nodes/expression.h"
+#include "ast/tokens/token.h"
+#include "ast/tokens/token_set.h"
 
 #include <llvm/IR/IRBuilder.h>
 
 using namespace stride::ast;
 
-// TODO: Implement parsing
+std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_type_cast_op(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set,
+    IAstExpression* lhs
+)
+{
+    if (!set.peek_next_eq(TokenType::KEYWORD_AS))
+        return std::nullopt;
+
+    set.next();
+
+    auto type = parse_type(context, set, "Expected type after 'as' in type cast operation");
+
+    const auto source_fragment = SourceFragment::concat(lhs->get_source_fragment(), type->get_source_fragment());
+
+    return std::make_unique<AstTypeCastOp>(
+        source_fragment,
+        context,
+        lhs->clone_as<IAstExpression>(),
+        std::move(type)
+    );
+}
 
 void AstTypeCastOp::validate()
 {

@@ -929,42 +929,55 @@ namespace stride::ast
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> lhs,
-        int min_precedence);
+        int min_precedence
+    );
 
     /// This parses both function call chaining, and struct member access
     std::unique_ptr<IAstExpression> parse_chained_member_access(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        const std::unique_ptr<IAstExpression>& lhs);
+        const std::unique_ptr<IAstExpression>& lhs
+    );
 
     /// Parses a unary operator expression
     std::optional<std::unique_ptr<IAstExpression>> parse_binary_unary_op(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+        TokenSet& set
+    );
 
     /// Parses an array initializer expression, e.g., [1, 2, 3]
     std::unique_ptr<AstArray> parse_array_initializer(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+        TokenSet& set
+    );
 
     /// Parses an array member accessor expression, e.g., <array_identifier>[<index_expression>]
     std::unique_ptr<IAstExpression> parse_array_member_accessor(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        std::unique_ptr<AstIdentifier> array_identifier);
+        std::unique_ptr<AstIdentifier> array_identifier
+    );
 
     /// Parses a struct initializer expression into an AstStructInitializer node
     std::unique_ptr<AstStructInitializer> parse_struct_initializer(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+        TokenSet& set
+    );
 
     /// Parses a dot-separated identifier into its individual name segments, e.g., `foo::bar::baz`
     SymbolNameSegments parse_segmented_identifier(TokenSet& set, const std::string& error_message);
 
     /// Parses a lambda function literal into an expression node
-    std::unique_ptr<IAstExpression> parse_lambda_fn_expression(
+    std::unique_ptr<IAstExpression> parse_anonymous_fn_expression(
         const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+        TokenSet& set
+    );
+
+    std::optional<std::unique_ptr<IAstExpression>> parse_type_cast_op(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        IAstExpression *lhs
+    );
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
      #                                                           #

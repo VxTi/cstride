@@ -284,6 +284,8 @@ namespace stride::ast
         std::string to_string() override;
 
         ~AstLambdaFunctionExpression() override = default;
+
+        std::string get_mangled_name() const;
     };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(

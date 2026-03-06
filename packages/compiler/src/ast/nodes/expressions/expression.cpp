@@ -103,7 +103,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
             || (set.peek_eq(TokenType::RPAREN, 1) && // Checks for "():"
                 set.peek_eq(TokenType::COLON, 2)))
         {
-            return parse_lambda_fn_expression(context, set);
+            return parse_anonymous_fn_expression(context, set);
         }
 
         set.next();
