@@ -312,21 +312,35 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         );
     }
 
-    if (!lhs_primitive_ty)
+    // If LHS and RHS are not primitive, we can still compute a dominant type if they are equal
+    if (!lhs_primitive_ty || !rhs_primitive_ty)
     {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            "Cannot compute dominant type for non-primitive types",
-            lhs->get_source_fragment()
-        );
-    }
+        if (lhs->equals(*rhs))
+        {
+            return lhs->clone_ty();
+        }
 
-    if (!rhs_primitive_ty)
-    {
+        // If one is a named type and the other is its base type, we can also return the dominant type
+        if (const auto lhs_named = cast_type<AstNamedType*>(lhs))
+        {
+            if (const auto base = lhs_named->get_base_reference_type(); base.has_value() && base.value()->equals(*rhs))
+            {
+                return rhs->clone_ty();
+            }
+        }
+
+        if (const auto rhs_named = cast_type<AstNamedType*>(rhs))
+        {
+            if (const auto base = rhs_named->get_base_reference_type(); base.has_value() && base.value()->equals(*lhs))
+            {
+                return lhs->clone_ty();
+            }
+        }
+
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             "Cannot compute dominant type for non-primitive types",
-            rhs->get_source_fragment()
+            !lhs_primitive_ty ? lhs->get_source_fragment() : rhs->get_source_fragment()
         );
     }
 

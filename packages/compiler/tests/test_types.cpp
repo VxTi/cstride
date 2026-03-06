@@ -169,6 +169,28 @@ TEST(TypeErrors, FunctionTypeMismatch)
     )");
 }
 
+TEST(TypeErrors, NamedFunctionTypeAssignment)
+{
+    EXPECT_NO_THROW({
+        assert_compiles(R"(
+        type BinaryOp = (int32, int32) -> int32;
+        fn add(a: int32, b: int32): int32 { return a + b; }
+        const secondOp: BinaryOp = add;
+    )");
+    });
+}
+
+TEST(TypeErrors, NamedFunctionTypeCast)
+{
+    EXPECT_NO_THROW({
+        assert_compiles(R"(
+        type BinaryOp = (int32, int32) -> int32;
+        fn add(a: int32, b: int32): int32 { return a + b; }
+        let op = add as BinaryOp;
+    )");
+    });
+}
+
 TEST(TypeReferences, DeepFunctionReferential)
 {
     auto [block, context] = parse_code_with_context(R"(
@@ -289,15 +311,17 @@ TEST(TypeAliases, ComplexAliases)
 
     assert_compiles(
         R"(
-        type BinaryOp = (int32, int32) -> int32;
-        fn add(a: int32, b: int32): int32 { return a + b; }
+         type BinaryOp = (int32, int32) -> int32;
+         fn add(a: int32, b: int32): int32 {
+             return a + b;
+         }
 
-        let op: BinaryOp = add;
+         const operation: BinaryOp = add;
 
-        fn main(): int32 {
-            op(1, 2);
-            return 0;
-        }
+         fn main(): int32 {
+             operation(1, 2);
+             return 0;
+         }
     )");
 }
 

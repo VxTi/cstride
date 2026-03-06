@@ -17,17 +17,17 @@ namespace llvm
 namespace stride::ast
 {
     enum class ContextType
-        {
-            GLOBAL,
-            MODULE,
-            FUNCTION,
-            CLASS,
-            CONTROL_FLOW
-        };
+    {
+        GLOBAL,
+        MODULE,
+        FUNCTION,
+        CLASS,
+        CONTROL_FLOW
+    };
+
     namespace definition
     {
         using StructFieldPair = std::pair<std::string, std::unique_ptr<IAstType>>;
-
 
 
         enum class SymbolType
@@ -254,8 +254,7 @@ namespace stride::ast
             return control_flow_loop_blocks.back();
         }
 
-        static std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>>
-        get_control_flow_blocks()
+        static std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> get_control_flow_blocks()
         {
             return control_flow_loop_blocks;
         }
@@ -291,6 +290,8 @@ namespace stride::ast
         const definition::IdentifiableSymbolDef* get_symbol_def(
             const std::string& symbol_name
         ) const;
+
+        std::optional<const definition::IDefinition> get_definition_by_internal_name(const std::string &internal_name) const;
 
         [[nodiscard]]
         std::shared_ptr<ParsingContext> get_parent_context() const
@@ -339,6 +340,8 @@ namespace stride::ast
         bool is_type_defined(const std::string& type_name) const;
 
         void define_symbol(const Symbol& symbol_name, definition::SymbolType type);
+
+        void define(std::unique_ptr<definition::IDefinition> definition);
 
         /// Checks whether the provided variable name is defined in the current context.
         [[nodiscard]]
