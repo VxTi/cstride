@@ -23,7 +23,11 @@ std::unique_ptr<IAstExpression> collect_initiator(
         return nullptr;
     }
 
-    return parse_variable_declaration_inline(context, initiator.value(), VisibilityModifier::NONE);
+    return parse_variable_declaration_inline(
+        context,
+        initiator.value(),
+        VisibilityModifier::PRIVATE // Irrelevant here
+    );
 }
 
 std::unique_ptr<IAstExpression> collect_condition(

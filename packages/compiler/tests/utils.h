@@ -1,21 +1,21 @@
 #pragma once
 
-#include "ast/parser.h"
-#include "ast/parsing_context.h"
-#include "ast/tokens/tokenizer.h"
 #include "files.h"
+#include "ast/ast.h"
+#include "ast/parsing_context.h"
+#include "ast/visitor.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/traversal.h"
-#include "../include/ast/visitor.h"
+#include "ast/tokens/tokenizer.h"
 #include "runtime/symbols.h"
 
-#include <gtest/gtest.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/Support/TargetSelect.h>
 #include <memory>
 #include <string>
-#include <llvm/IR/Module.h>
+#include <gtest/gtest.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Support/TargetSelect.h>
 
 namespace stride::tests
 {
@@ -26,17 +26,25 @@ namespace stride::tests
         auto tokens = ast::tokenizer::tokenize(source);
         const auto context = std::make_shared<ast::ParsingContext>();
 
-        auto parsed = parse_sequential(context, tokens);
+        auto node = parse_sequential(context, tokens);
 
         ast::AstNodeTraverser traverser;
         ast::ExpressionVisitor type_visitor;
-        ast::FunctionVisitor function_declare_visitor;
+        ast::FunctionVisitor function_visitor;
+        ast::ImportVisitor import_visitor;
 
-        runtime::register_runtime_symbols(context);
-        traverser.visit_for_loop(&function_declare_visitor, parsed.get());
-        traverser.visit_for_loop(&type_visitor, parsed.get());
+        import_visitor.set_current_file_name("test.sr");
+        traverser.visit(&import_visitor, node.get());
 
-        return std::make_pair(std::move(parsed), context);
+        traverser.visit(&function_visitor, node.get());
+
+        runtime::register_runtime_symbols(node->get_context());
+        traverser.visit(&type_visitor, node.get());
+
+        node->validate();
+
+
+        return std::make_pair(std::move(node), context);
     }
 
     inline std::unique_ptr<ast::AstBlock> parse_code(const std::string& code)

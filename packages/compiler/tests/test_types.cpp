@@ -11,7 +11,7 @@ TEST(TypeErrors, VariableInitTypeMismatch)
         R"(
         const b: int32 = 10l;
     )",
-        "Type mismatch in variable declaration; expected type 'int32', got 'int64'");
+        "Type mismatch in variable declaration: cannot assign value of type 'int64' to type 'int32'");
 }
 
 TEST(TypeErrors, StructTypeMismatch)

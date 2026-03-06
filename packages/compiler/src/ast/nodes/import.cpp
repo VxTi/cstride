@@ -97,7 +97,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
 
 void AstImport::validate()
 {
-    if (this->get_context()->get_context_type() != definition::ContextType::GLOBAL)
+    if (this->get_context()->get_context_type() != ContextType::GLOBAL)
     {
         throw parsing_error(
             ErrorType::SYNTAX_ERROR,

@@ -82,7 +82,6 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     if (options.debug_mode)
     {
-        std::cout << "LLVM IR Pre-optimizations:" << std::endl;
         module->print(llvm::errs(), nullptr);
     }
 

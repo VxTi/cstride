@@ -113,8 +113,8 @@ private StandaloneItem ::= (
 ImportStatement ::= IMPORT ScopedIdentifier COLON_COLON LBRACE ScopedIdentifier (COMMA ScopedIdentifier)* RBRACE SEMICOLON
 
 // --- Declarations ---
-ExternFunctionDeclaration ::= [AccessModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
-FunctionDeclaration ::= [AccessModifier] [ASYNC] FunctionDeclarationHeader BlockStatement
+ExternFunctionDeclaration ::= [VisibilityModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
+FunctionDeclaration ::= [VisibilityModifier] [ASYNC] FunctionDeclarationHeader BlockStatement
 private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN FunctionParameterList RPAREN COLON Type
 
 FunctionParameterList ::= (FunctionParameter (COMMA FunctionParameter)* [COMMA ELLIPSIS]) | [ELLIPSIS]
@@ -130,7 +130,7 @@ StructField ::= IDENTIFIER COLON Type
 VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
 VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type [EQ Expression]
 
-VariableDeclarationStatement ::= (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
+VariableDeclarationStatement ::= [VisibilityModifier] (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
 Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*] [QUESTION]
@@ -260,7 +260,7 @@ ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)* {
   ]
 }
 
-AccessModifier ::= PUBLIC
+VisibilityModifier ::= PUBLIC
 
 private BOOLEAN_LITERAL ::= 'true' | 'false'
 private LogicalOp ::= '&&' | '||'

@@ -26,7 +26,7 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
     const auto reference_token = set.next();
     const auto& ref_pos = reference_token.get_source_fragment();
 
-    std::unique_ptr<IAstExpression> return_value = nullptr;
+    std::optional<std::unique_ptr<IAstExpression>> return_value = std::nullopt;
 
     // If we don't see a semicolon immediately after, we expect a return expression.
     if (!set.peek_next_eq(TokenType::SEMICOLON))
@@ -72,14 +72,18 @@ void AstReturnStatement::validate()
             this->get_source_fragment());
     }
 
-    if (this->get_return_expr())
-        this->get_return_expr()->validate();
+    if (this->get_return_expression().has_value())
+        this->get_return_expression().value()->validate();
 }
 
 std::string AstReturnStatement::to_string()
 {
-    return std::format("Return(value: {})",
-                       _value ? _value->to_string() : "nullptr");
+    return std::format(
+        "Return(value: {})",
+        this->_value.has_value()
+        ? this->_value.value()->to_string()
+        : "void"
+    );
 }
 
 void AstReturnStatement::resolve_forward_references(
@@ -88,9 +92,9 @@ void AstReturnStatement::resolve_forward_references(
     llvm::IRBuilderBase* builder
 )
 {
-    if (this->get_return_expr())
+    if (this->get_return_expression().has_value())
     {
-        this->get_return_expr()->resolve_forward_references(context, module, builder);
+        this->get_return_expression().value()->resolve_forward_references(context, module, builder);
     }
 }
 
@@ -99,27 +103,25 @@ llvm::Value* AstReturnStatement::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    if (!this->get_return_expr())
+    // If no return expression is provided, default to void
+    if (!this->get_return_expression().has_value())
     {
         return builder->CreateRetVoid();
     }
 
-    llvm::Value* expr_return_val = this->get_return_expr()->codegen(
+    llvm::Value* return_value = this->get_return_expression().value()->codegen(
         module,
         builder
     );
 
-    if (!expr_return_val)
-        return nullptr;
-
     llvm::BasicBlock* cur_bb = builder->GetInsertBlock();
-
-    if (!cur_bb)
+    if (!return_value || !cur_bb)
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
             "Cannot return from a function that has no basic block",
-            this->get_source_fragment());
+            this->get_source_fragment()
+        );
     }
 
     // Implicitly unwrap optional if the return type is not optional
@@ -129,27 +131,43 @@ llvm::Value* AstReturnStatement::codegen(
         // If the received return type doesn't match the function return type, we may need to
         // wrap it into an optional container
         if (llvm::Type* expected_return_ty = cur_func->getReturnType();
-            expr_return_val->getType() != expected_return_ty)
+            return_value->getType() != expected_return_ty)
         {
-            const auto is_expr_optional = is_optional_wrapped_type(expr_return_val->getType());
+            const auto is_expr_optional = is_optional_wrapped_type(return_value->getType());
 
             // Function returns non-optional, but we have an optional -> Unwrap
             if (const auto is_fn_return_optional = is_optional_wrapped_type(expected_return_ty);
                 is_expr_optional && !is_fn_return_optional)
             {
-                expr_return_val = unwrap_optional_value(
-                    expr_return_val,
-                    builder
-                );
+                return_value = unwrap_optional_value(return_value, builder);
             }
             // Function returns optional, but we have a non-optional (or nil) -> Wrap
             else if (!is_expr_optional && is_fn_return_optional)
             {
-                expr_return_val = wrap_optional_value(
-                    expr_return_val,
-                    expected_return_ty,
-                    builder
-                );
+                return_value = wrap_optional_value(return_value, expected_return_ty, builder);
+            }
+            else
+            {
+                // We have a different type, so we have to check whether we can
+                // cast the expression's type to the function's return type
+                if (expected_return_ty->isIntegerTy() && return_value->getType()->isIntegerTy() &&
+                    expected_return_ty->getIntegerBitWidth() != return_value->getType()->getIntegerBitWidth())
+                {
+                    return_value = builder->CreateIntCast(return_value, expected_return_ty, true);
+                }
+                else if (expected_return_ty->isFloatTy() && return_value->getType()->isFloatTy() &&
+                    expected_return_ty->getPrimitiveSizeInBits() != return_value->getType()->getPrimitiveSizeInBits())
+                {
+                    return_value = builder->CreateFPExt(return_value, expected_return_ty, "fpext");
+                }
+                else
+                {
+                    throw parsing_error(
+                        ErrorType::COMPILATION_ERROR,
+                        "Cannot cast return value to function return type",
+                        this->get_source_fragment()
+                    );
+                }
             }
         }
     }
@@ -163,7 +181,7 @@ llvm::Value* AstReturnStatement::codegen(
     }
 
     // Create the return instruction
-    return builder->CreateRet(expr_return_val);
+    return builder->CreateRet(return_value);
 }
 
 std::unique_ptr<IAstNode> AstReturnStatement::clone()
@@ -171,6 +189,8 @@ std::unique_ptr<IAstNode> AstReturnStatement::clone()
     return std::make_unique<AstReturnStatement>(
         this->get_source_fragment(),
         this->get_context(),
-        this->get_return_expr()->clone_as<IAstExpression>()
+        this->_value.has_value()
+        ? std::make_optional(this->_value.value()->clone_as<IAstExpression>())
+        : std::nullopt
     );
 }
