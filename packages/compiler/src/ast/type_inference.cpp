@@ -290,7 +290,12 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         );
     }
 
-    if (auto* literal = cast_expr<AstLiteral*>(expr))
+    if (const auto* type_cast = cast_expr<AstTypeCastOp*>(expr))
+    {
+        return type_cast->get_target_type()->clone_ty();
+    }
+
+    if (const auto* literal = cast_expr<AstLiteral*>(expr))
     {
         return infer_expression_literal_type(literal);
     }
