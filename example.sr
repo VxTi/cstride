@@ -3,7 +3,7 @@ import System::{
     IO::Read
 };
 
-type Array = int32[];
+type Array<T> = T[];
 
 fn some_fn(arr: Array): void{
     const sum: int32 = arr[0] + arr[1] + arr[2] + arr[3] + arr[4];
