@@ -16,10 +16,12 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     // Custom types are identifiers in the type position.
     const auto reference_token = set.peek_next();
 
-    if (set.peek_next().get_type() != TokenType::IDENTIFIER)
+    if (reference_token.get_type() != TokenType::IDENTIFIER)
     {
         return std::nullopt;
     }
+
+    auto generics = parse_generic_arguments(context, set);
 
     const auto segments = parse_segmented_identifier(set, "Expected identifier for named type");
 
@@ -29,7 +31,9 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         reference_token.get_source_fragment(),
         context,
         name,
-        context_type_flags);
+        context_type_flags,
+        std::move(generics)
+    );
 
     return parse_type_metadata(std::move(named_type), set, context_type_flags);
 }
@@ -135,10 +139,20 @@ bool AstNamedType::equals(const IAstType& other) const
     // Simple naming checks, e.g., "Vec3 == Vec3"
     if (auto* other_named = cast_type<const AstNamedType*>(&other))
     {
-        if (this->get_name() == other_named->get_name())
+        if (this->get_name() != other_named->get_name())
+        {
+            return false;
+        }
+
+        // If both aren't generic, then name comparison should suffice
+        if (!this->is_generic_overload() && !other_named->is_generic_overload())
         {
             return true;
         }
+
+        // Otherwise it's just a matter of quantity comparison,
+        // as we don't really care of their inner types, as this can differ per context
+        return this->get_generic_types().size() == other_named->get_generic_types().size();
     }
 
     return false;

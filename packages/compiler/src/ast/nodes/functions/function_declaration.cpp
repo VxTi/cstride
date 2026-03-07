@@ -880,7 +880,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
         "Expected type after anonymous function header definition"
     );
     const auto lambda_arrow = set.expect(
-        TokenType::DASH_RARROW,
+        TokenType::RARROW,
         "Expected '->' after lambda parameters"
     );
 

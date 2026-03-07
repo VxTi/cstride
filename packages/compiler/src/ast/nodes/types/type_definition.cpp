@@ -17,6 +17,8 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
 
     const auto type_name = set.expect(TokenType::IDENTIFIER, "Expected type name").get_lexeme();
 
+    GenericParameterList generic_params = parse_generic_declaration(set);
+
     set.expect(TokenType::EQUALS);
 
     auto type = parse_type(context, set, "Expected type definition");
@@ -44,7 +46,8 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
         context,
         type_name,
         std::move(type),
-        modifier
+        modifier,
+        generic_params
     );
 }
 

@@ -15,58 +15,58 @@ namespace stride::ast
         COMMENT_MULTILINE, // /* */
         END_OF_FILE,       // EOF symbol
 
-        LPAREN,               // (
-        RPAREN,               // )
-        LBRACE,               // {
-        RBRACE,               // }
-        LSQUARE_BRACKET,      // [
-        RSQUARE_BRACKET,      // ]
-        COMMA,                // ,
-        LARROW_DASH,          // <-
-        DASH_RARROW,          // ->
-        GT,                   // >
-        LT,                   // <
-        EQUALS,               // =
-        DOUBLE_EQUALS,        // ==
-        NOT_EQUALS,           // !=
-        LEQUALS,              // <=
-        GEQUALS,              // >=
-        PLUS,                 // +
-        MINUS,                // -
-        STAR,                 // *
-        SLASH,                // /
-        PERCENT,              // %
-        AMPERSAND,            // &
-        PIPE,                 // |
-        CARET,                // ^
-        TILDE,                // ~
-        BANG,                 // !
-        QUESTION,             // ?
-        TILDE_EQUALS,         // ~=
-        STAR_EQUALS,          // *=
-        SLASH_EQUALS,         // /=
-        PERCENT_EQUALS,       // %=
-        PLUS_EQUALS,          // +=
-        MINUS_EQUALS,         // -=
-        AMPERSAND_EQUALS,     // &=
-        PIPE_EQUALS,          // |=
-        CARET_EQUALS,         // ^=
-        BANG_EQUALS,          // !=
-        DOUBLE_LARROW,        // <<
-        DOUBLE_RARROW,        // >>
-        DOUBLE_LARROW_EQUALS, // <<=
-        DOUBLE_RARROW_EQUALS, // >>=
-        DOUBLE_STAR_EQUALS,   // **=
-        DOUBLE_PIPE,          // ||
-        DOUBLE_AMPERSAND,     // &&
-        DOUBLE_PLUS,          // ++
-        DOUBLE_MINUS,         // --
-        DOUBLE_STAR,          // **
-        DOUBLE_COLON,         // ::
-        SEMICOLON,            // ;
-        COLON,                // :
-        DOT,                  // .
-        THREE_DOTS,           // ...
+        LPAREN,             // (
+        RPAREN,             // )
+        LBRACE,             // {
+        RBRACE,             // }
+        LSQUARE_BRACKET,    // [
+        RSQUARE_BRACKET,    // ]
+        COMMA,              // ,
+        LARROW,             // <-
+        RARROW,             // ->
+        GT,                 // >
+        LT,                 // <
+        EQUALS,             // =
+        DOUBLE_EQUALS,      // ==
+        NOT_EQUALS,         // !=
+        LEQUALS,            // <=
+        GEQUALS,            // >=
+        PLUS,               // +
+        MINUS,              // -
+        STAR,               // *
+        SLASH,              // /
+        PERCENT,            // %
+        AMPERSAND,          // &
+        PIPE,               // |
+        CARET,              // ^
+        TILDE,              // ~
+        BANG,               // !
+        QUESTION,           // ?
+        TILDE_EQUALS,       // ~=
+        STAR_EQUALS,        // *=
+        SLASH_EQUALS,       // /=
+        PERCENT_EQUALS,     // %=
+        PLUS_EQUALS,        // +=
+        MINUS_EQUALS,       // -=
+        AMPERSAND_EQUALS,   // &=
+        PIPE_EQUALS,        // |=
+        CARET_EQUALS,       // ^=
+        BANG_EQUALS,        // !=
+        DOUBLE_LT,          // <<
+        DOUBLE_GT,          // >>
+        DOUBLE_LT_EQ,       // <<=
+        DOUBLE_GT_EQ,       // >>=
+        DOUBLE_ASTERISK_EQ, // **=
+        DOUBLE_PIPE,        // ||
+        DOUBLE_AMPERSAND,   // &&
+        DOUBLE_PLUS,        // ++
+        DOUBLE_MINUS,       // --
+        DOUBLE_STAR,        // **
+        DOUBLE_COLON,       // ::
+        SEMICOLON,          // ;
+        COLON,              // :
+        DOT,                // .
+        THREE_DOTS,         // ...
 
         /* Primitives */
         PRIMITIVE_UINT8,  // uint8
@@ -178,9 +178,9 @@ namespace stride::ast
             return "]";
         case TokenType::COMMA:
             return ",";
-        case TokenType::LARROW_DASH:
+        case TokenType::LARROW:
             return "<-";
-        case TokenType::DASH_RARROW:
+        case TokenType::RARROW:
             return "->";
         case TokenType::GT:
             return ">";
@@ -238,15 +238,15 @@ namespace stride::ast
             return "^=";
         case TokenType::BANG_EQUALS:
             return "!=";
-        case TokenType::DOUBLE_LARROW:
+        case TokenType::DOUBLE_LT:
             return "<<";
-        case TokenType::DOUBLE_RARROW:
+        case TokenType::DOUBLE_GT:
             return ">>";
-        case TokenType::DOUBLE_LARROW_EQUALS:
+        case TokenType::DOUBLE_LT_EQ:
             return "<<=";
-        case TokenType::DOUBLE_RARROW_EQUALS:
+        case TokenType::DOUBLE_GT_EQ:
             return ">>=";
-        case TokenType::DOUBLE_STAR_EQUALS:
+        case TokenType::DOUBLE_ASTERISK_EQ:
             return "**=";
         case TokenType::DOUBLE_PIPE:
             return "||";

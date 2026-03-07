@@ -136,7 +136,7 @@ VariableDeclarationStatement ::= [VisibilityModifier] (VariableDeclaration | Var
 Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*] [QUESTION]
 // <module>::<type> or <type>
 PrimitiveType ::= VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING
-UserType ::= ScopedIdentifier [GenericTypeArguments] {
+UserType ::= ScopedIdentifier [GenericTypeValueArguments] {
   mixin="com.stride.intellij.psi.StrideUserTypeMixin"
   methods=[
     getScopedIdentifier
@@ -148,6 +148,7 @@ TupleType ::= LPAREN Type (COMMA Type)* RPAREN
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 
 GenericTypeArguments ::= LT IDENTIFIER (COMMA IDENTIFIER)* GT
+GenericTypeValueArguments ::= LT Type (COMMA Type)* GT
 FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN [ArrayNotion*])
 SingularFunctionType ::= LPAREN [Type (COMMA Type)*] RPAREN ARROW Type
 
