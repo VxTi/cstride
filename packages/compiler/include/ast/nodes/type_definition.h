@@ -17,19 +17,22 @@ namespace stride:: ast
         std::string _name;
         std::unique_ptr<IAstType> _type;
         VisibilityModifier _visibility;
+        GenericParameterList _generic_parameters;
 
     public:
         explicit AstTypeDefinition(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::string  name,
+            std::string name,
             std::unique_ptr<IAstType> type,
-            const VisibilityModifier visibility
+            const VisibilityModifier visibility,
+            const GenericParameterList& generic_parameters = {}
         ) :
             IAstNode(source, context),
             _name(std::move(name)),
             _type(std::move(type)),
-            _visibility(visibility) {}
+            _visibility(visibility),
+            _generic_parameters(generic_parameters) {}
 
         [[nodiscard]]
         const std::string& get_name() const
@@ -51,11 +54,29 @@ namespace stride:: ast
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        void resolve_forward_references(ParsingContext* context, llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        void resolve_forward_references(
+            ParsingContext* context,
+                                        llvm::Module* module,
+                                        llvm::IRBuilderBase* builder) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
-        std::string to_string() override { return std::format("Type<{}>", this->get_name()); }
+        [[nodiscard]]
+        const GenericParameterList& get_generic_parameters() const
+        {
+            return this->_generic_parameters;
+        }
+
+        [[nodiscard]]
+        bool is_generic_type() const
+        {
+            return !this->_generic_parameters.empty();
+        }
+
+        std::string to_string() override
+        {
+            return std::format("Type<{}>", this->get_name());
+        }
     };
 
     std::unique_ptr<AstTypeDefinition> parse_type_statement(

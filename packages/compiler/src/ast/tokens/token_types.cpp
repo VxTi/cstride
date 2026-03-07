@@ -92,9 +92,9 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::INTEGER_LITERAL, R"(\d+)"),
 
     // Multi-character operators (must come before single-char operators)
-    TOKEN(TokenType::DOUBLE_STAR_EQUALS, R"(\*\*=)"),
-    TOKEN(TokenType::DOUBLE_LARROW_EQUALS, R"(<<=)"),
-    TOKEN(TokenType::DOUBLE_RARROW_EQUALS, R"(>>=)"),
+    TOKEN(TokenType::DOUBLE_ASTERISK_EQ, R"(\*\*=)"),
+    TOKEN(TokenType::DOUBLE_LT_EQ, R"(<<=)"),
+    TOKEN(TokenType::DOUBLE_GT_EQ, R"(>>=)"),
     TOKEN(TokenType::STAR_EQUALS, R"(\*=)"),
     TOKEN(TokenType::SLASH_EQUALS, R"(/=)"),
     TOKEN(TokenType::PERCENT_EQUALS, R"(%=)"),
@@ -108,16 +108,16 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::DOUBLE_EQUALS, R"(==)"),
     TOKEN(TokenType::LEQUALS, R"(<=)"),
     TOKEN(TokenType::GEQUALS, R"(>=)"),
-    TOKEN(TokenType::DOUBLE_LARROW, R"(<<)"),
-    TOKEN(TokenType::DOUBLE_RARROW, R"(>>)"),
+    TOKEN(TokenType::DOUBLE_LT, R"(<<)"),
+    TOKEN(TokenType::DOUBLE_GT, R"(>>)"),
     TOKEN(TokenType::DOUBLE_PLUS, R"(\+\+)"),
     TOKEN(TokenType::DOUBLE_MINUS, R"(--)"),
     TOKEN(TokenType::DOUBLE_STAR, R"(\*\*)"),
     TOKEN(TokenType::DOUBLE_COLON, R"(::)"),
     TOKEN(TokenType::DOUBLE_AMPERSAND, R"(&&)"),
     TOKEN(TokenType::DOUBLE_PIPE, R"(\|\|)"),
-    TOKEN(TokenType::DASH_RARROW, R"(->)"),
-    TOKEN(TokenType::LARROW_DASH, R"(<-)"),
+    TOKEN(TokenType::RARROW, R"(->)"),
+    TOKEN(TokenType::LARROW, R"(<-)"),
     TOKEN(TokenType::THREE_DOTS, R"(\.\.\.)"),
 
     // Single-character operators

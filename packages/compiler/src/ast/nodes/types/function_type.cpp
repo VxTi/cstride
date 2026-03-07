@@ -53,7 +53,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     }
 
     set.expect(TokenType::RPAREN, "Expected ')' after function type notation");
-    set.expect(TokenType::DASH_RARROW, "Expected '->' between function parameters and return type");
+    set.expect(TokenType::RARROW, "Expected '->' between function parameters and return type");
     auto return_type = parse_type(
         context,
         set,

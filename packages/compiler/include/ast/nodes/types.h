@@ -3,10 +3,12 @@
 #include "ast_node.h"
 #include "formatting.h"
 #include "ast/flags.h"
+#include "ast/generics.h"
 
 #include <format>
 #include <memory>
 #include <optional>
+#include <utility>
 
 namespace llvm
 {
@@ -254,16 +256,19 @@ namespace stride::ast
         : public IAstType
     {
         std::string _name;
+        GenericTypeList _generic_types;
 
     public:
         explicit AstNamedType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
-            const int flags = SRFLAG_NONE
+            const int flags = SRFLAG_NONE,
+            GenericTypeList generic_parameters = {}
         ) :
             IAstType(source, context, flags),
-            _name(std::move(name)) {}
+            _name(std::move(name)),
+            _generic_types(std::move(generic_parameters)) {}
 
         [[nodiscard]]
         std::string get_name() const
@@ -302,6 +307,18 @@ namespace stride::ast
         bool is_castable_to(IAstType* other) override
         {
             return IAstType::is_castable_to(other);
+        }
+
+        [[nodiscard]]
+        bool is_generic_overload() const
+        {
+            return !this->_generic_types.empty();
+        }
+
+        [[nodiscard]]
+        const GenericTypeList& get_generic_types() const
+        {
+            return this->_generic_types;
         }
 
         [[nodiscard]]
