@@ -372,7 +372,7 @@ llvm::Value* AstUnaryOp::codegen(
 
         return builder->CreateICmpEQ(
             val,
-            llvm::ConstantInt::get(val->getType(), 0),
+            llvm::ConstantInt::get(val->getType(), 0, false),
             "lognotcmp");
     }
     case UnaryOpType::PLUS:
