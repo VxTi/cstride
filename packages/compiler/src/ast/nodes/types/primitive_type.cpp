@@ -304,7 +304,9 @@ bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
             (this->is_fp() && other_primitive->is_fp()))
         {
             // We can upcast, though downcasting must be done explicitly.
-            return this->bit_count() <= other_primitive->bit_count();
+            return this->bit_count() <= other_primitive->bit_count()
+                && this->is_signed_int_ty() == other_primitive->is_signed_int_ty();
+            // Ensure both are either signed or unsigned
         }
     }
 
@@ -316,7 +318,8 @@ bool AstPrimitiveType::is_castable_to_impl(IAstType* other)
 {
     if (const auto other_primitive = dynamic_cast<AstPrimitiveType*>(other))
     {
-        return (this->is_integer_ty() || this->is_fp()) && (other_primitive->is_integer_ty() || other_primitive->is_fp());
+        return (this->is_integer_ty() || this->is_fp()) && (other_primitive->is_integer_ty() || other_primitive->
+            is_fp());
     }
     return false;
 }
@@ -335,6 +338,23 @@ bool AstPrimitiveType::is_integer_ty() const
     case PrimitiveType::UINT64:
     case PrimitiveType::CHAR:
     case PrimitiveType::BOOL: // 1 bit, still an int
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool AstPrimitiveType::is_signed_int_ty() const
+{
+    if (!this->is_integer_ty())
+        return false;
+
+    switch (this->_type)
+    {
+    case PrimitiveType::INT8:
+    case PrimitiveType::INT16:
+    case PrimitiveType::INT32:
+    case PrimitiveType::INT64:
         return true;
     default:
         return false;
