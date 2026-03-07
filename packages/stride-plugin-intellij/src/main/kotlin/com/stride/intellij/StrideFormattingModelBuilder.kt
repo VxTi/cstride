@@ -59,6 +59,27 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             .beforeInside(StrideTypes.RBRACE, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
             .afterInside(StrideTypes.LBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
             .beforeInside(StrideTypes.RBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
+            .afterInside(StrideTypes.LBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
+            .beforeInside(StrideTypes.RBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
+
+            .afterInside(StrideTypes.SCOPED_IDENTIFIER, StrideTypes.MODULE_STATEMENT).spaceIf(true)
+            .afterInside(StrideTypes.COLON_COLON, StrideTypes.STRUCT_INITIALIZATION).spaceIf(false)
+            .afterInside(StrideTypes.LPAREN, StrideTypes.IF).spaceIf(false)
+            .afterInside(StrideTypes.LPAREN, StrideTypes.WHILE).spaceIf(false)
+            .afterInside(StrideTypes.LPAREN, StrideTypes.FOR).spaceIf(false)
+            .beforeInside(StrideTypes.LBRACE, StrideTypes.MODULE_STATEMENT).spaceIf(true)
+            .beforeInside(StrideTypes.LBRACE, StrideTypes.BLOCK_STATEMENT).spaceIf(true)
+            .beforeInside(StrideTypes.LBRACE, StrideTypes.TYPE).spaceIf(true)
+            .beforeInside(StrideTypes.LBRACE, StrideTypes.STRUCT_INITIALIZATION).spaceIf(false)
+
+            // Module items should be on separate lines
+            .afterInside(StrideTypes.MODULE, StrideTypes.MODULE_STATEMENT).spaceIf(true)
+            .afterInside(StrideTypes.IDENTIFIER, StrideTypes.MODULE_STATEMENT).spaceIf(true)
+            .afterInside(StrideTypes.MODULE_STATEMENT, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
+            .afterInside(StrideTypes.FUNCTION_DECLARATION, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
+            .afterInside(StrideTypes.TYPE_DEFINITION, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
+            .afterInside(StrideTypes.VARIABLE_DECLARATION_STATEMENT, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
+            .afterInside(StrideTypes.EXTERN_FUNCTION_DECLARATION, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
 
             // Statements should be on separate lines - use STATEMENT wrapper
             .afterInside(StrideTypes.STATEMENT, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()

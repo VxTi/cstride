@@ -17,7 +17,7 @@ llvm::Value* stride::ast::codegen_conditional_value(
 {
     if (!condition) // Fall back to 1 if no condition is provided, e.g., in `if { ... }`
     {
-        return llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 1));
+        return builder->getInt1(true);
     }
 
     llvm::Value* condValue = condition->codegen(module, builder);
@@ -38,7 +38,7 @@ llvm::Value* stride::ast::codegen_conditional_value(
         {
             return builder->CreateICmpNE(
                 condValue,
-                llvm::ConstantInt::get(module->getContext(), llvm::APInt(1, 0))
+                llvm::ConstantInt::get(condValue->getType(), 0, false)
             );
         }
         return condValue;

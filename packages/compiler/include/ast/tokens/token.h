@@ -24,8 +24,8 @@ namespace stride::ast
         COMMA,                // ,
         LARROW_DASH,          // <-
         DASH_RARROW,          // ->
-        RARROW,               // >
-        LARROW,               // <
+        GT,                   // >
+        LT,                   // <
         EQUALS,               // =
         DOUBLE_EQUALS,        // ==
         NOT_EQUALS,           // !=
@@ -182,9 +182,9 @@ namespace stride::ast
             return "<-";
         case TokenType::DASH_RARROW:
             return "->";
-        case TokenType::RARROW:
+        case TokenType::GT:
             return ">";
-        case TokenType::LARROW:
+        case TokenType::LT:
             return "<";
         case TokenType::EQUALS:
             return "=";

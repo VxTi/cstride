@@ -1,21 +1,19 @@
-import system::{ io::something_else::test, io::print, io::read };
-
-const create_adder = (x: int32): (int32) -> int32 -> {
-    return (y: int32): int32 -> {
-        return x + y;
-    };
+import System::{
+    IO::Print,
+    IO::Read
 };
 
+type Array<T> = T[];
+
+fn some_fn(arr: Array): void{
+    const sum: int32 = arr[0] + arr[1] + arr[2] + arr[3] + arr[4];
+    IO::Print("Result: %d\n", sum);
+}
+
 fn main(): int32 {
-    io::something_else::test();
+    const some_array: Array = [1, 2, 3, 4, 5];
 
-    const add_five = create_adder(5);
-    const result: int64 = add_five(10) as uint8;
+    some_fn(some_array);
 
-    io::print("Result: %ull. Type something else: ", result); // Should print "Result: 15"
-
-    const input = io::read(10);
-
-    io::print("You entered: %s", input);
     return 0;
 }

@@ -98,7 +98,7 @@
   ]
 }
 
-StrideFile ::= [PackageStatement] [ImportStatement] StandaloneItem*
+StrideFile ::= [PackageStatement] ImportStatement* StandaloneItem*
 
 private StandaloneItem ::= (
     FunctionDeclaration
@@ -115,12 +115,12 @@ ImportStatement ::= IMPORT ScopedIdentifier COLON_COLON LBRACE ScopedIdentifier 
 // --- Declarations ---
 ExternFunctionDeclaration ::= [VisibilityModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
 FunctionDeclaration ::= [VisibilityModifier] [ASYNC] FunctionDeclarationHeader BlockStatement
-private FunctionDeclarationHeader ::= FN IDENTIFIER LPAREN FunctionParameterList RPAREN COLON Type
+private FunctionDeclarationHeader ::= FN IDENTIFIER [GenericTypeArguments] LPAREN FunctionParameterList RPAREN COLON Type
 
 FunctionParameterList ::= (FunctionParameter (COMMA FunctionParameter)* [COMMA ELLIPSIS]) | [ELLIPSIS]
 FunctionParameter ::= IDENTIFIER COLON Type
 
-TypeDefinition ::= KW_TYPE IDENTIFIER EQ Type SEMICOLON
+TypeDefinition ::= KW_TYPE IDENTIFIER [GenericTypeArguments] EQ Type SEMICOLON
 
 // Ensure structs have at least 1 field
 StructDefinitionFields ::= StructField (SEMICOLON StructField)* [SEMICOLON]
@@ -147,7 +147,7 @@ TupleType ::= LPAREN Type (COMMA Type)* RPAREN
 
 private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
 
-GenericTypeArguments ::= LT Type (COMMA Type)* GT
+GenericTypeArguments ::= LT IDENTIFIER (COMMA IDENTIFIER)* GT
 FunctionType ::= SingularFunctionType | (LPAREN SingularFunctionType RPAREN [ArrayNotion*])
 SingularFunctionType ::= LPAREN [Type (COMMA Type)*] RPAREN ARROW Type
 
@@ -225,7 +225,7 @@ PrimaryExpression ::= LiteralExpression
 ArrayDeclarationExpression ::= LSQUARE_BRACKET [PrimaryExpression (COMMA PrimaryExpression)*] RSQUARE_BRACKET
 TupleInitializationExpression ::= LPAREN Expression (COMMA Expression)* RPAREN
 
-FunctionCallExpression ::= ScopedIdentifier LPAREN [ArgumentList] RPAREN {
+FunctionCallExpression ::= ScopedIdentifier [LT Type (COMMA Type)* GT] LPAREN [ArgumentList] RPAREN {
   methods=[
     getTarget
     getScopedIdentifier
