@@ -18,14 +18,13 @@ void AstArray::validate()
 }
 
 void AstArray::resolve_forward_references(
-    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
     for (const auto& element : this->get_elements())
     {
-        element->resolve_forward_references(context, module, builder);
+        element->resolve_forward_references(module, builder);
     }
 }
 

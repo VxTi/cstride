@@ -108,14 +108,13 @@ void AstBlock::aggregate_block(AstBlock* other)
 }
 
 void AstBlock::resolve_forward_references(
-    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
     for (const auto& child : this->_children)
     {
-        child->resolve_forward_references(context, module, builder);
+        child->resolve_forward_references(module, builder);
     }
 }
 

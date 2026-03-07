@@ -70,11 +70,10 @@ void AstModule::validate()
 }
 
 void AstModule::resolve_forward_references(
-    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
-    this->_body->resolve_forward_references(context, module, builder);
+    this->_body->resolve_forward_references(module, builder);
 }
 
 std::unique_ptr<IAstNode> AstModule::clone()

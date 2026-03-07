@@ -283,12 +283,11 @@ void append_to_global_ctors(
 }
 
 void AstVariableDeclaration::resolve_forward_references(
-    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
-    this->_initial_value->resolve_forward_references(context, module, builder);
+    this->_initial_value->resolve_forward_references(module, builder);
 
     if (this->has_annotated_type() && !this->get_annotated_type().value()->is_global())
     {

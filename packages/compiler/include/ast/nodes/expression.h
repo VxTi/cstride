@@ -149,7 +149,6 @@ namespace stride::ast
         void validate() override;
 
         void resolve_forward_references(
-            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
@@ -457,7 +456,6 @@ namespace stride::ast
         std::string to_string() override;
 
         void resolve_forward_references(
-            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
@@ -719,7 +717,6 @@ namespace stride::ast
         ) override;
 
         void resolve_forward_references(
-            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;

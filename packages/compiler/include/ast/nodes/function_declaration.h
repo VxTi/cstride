@@ -230,7 +230,6 @@ namespace stride::ast
         void validate() override;
 
         void resolve_forward_references(
-            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
