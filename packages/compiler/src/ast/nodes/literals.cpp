@@ -218,7 +218,7 @@ llvm::Value* AstCharLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* 
 {
     return llvm::ConstantInt::get(
         module->getContext(),
-        llvm::APInt(this->get_bit_count(), this->value(), true)
+        llvm::APInt(8, static_cast<uint8_t>(this->value()))
     );
 }
 
@@ -265,7 +265,7 @@ llvm::Value* AstBooleanLiteral::codegen(llvm::Module* module, llvm::IRBuilderBas
 {
     return llvm::ConstantInt::get(
         module->getContext(),
-        llvm::APInt(this->get_bit_count(), this->value(), true)
+        llvm::APInt(1, this->value() ? 1 : 0)
     );
 }
 
