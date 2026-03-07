@@ -3,23 +3,17 @@ import System::{
     IO::Read
 };
 
-fn some_function_with_a_float(a: float32): void {
+type Array = int32[];
 
+fn some_fn(arr: Array): void{
+    const sum: int32 = arr[0] + arr[1] + arr[2] + arr[3] + arr[4];
+    IO::Print("Result: %d\n", sum);
 }
 
 fn main(): int32 {
-    IO::Print("Type something else: "); // Should print "Result: 15"
+    const some_array: Array = [1, 2, 3, 4, 5];
 
-    const some_variable = 123 as float32;
-
-    some_function_with_a_float(some_variable);
-
-
-    while (true) {
-        const input = IO::Read(1);
-
-        IO::Print("\x1b[31mYou entered: %s\n", input);
-    }
+    some_fn(some_array);
 
     return 0;
 }

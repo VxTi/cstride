@@ -463,7 +463,19 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
                 );
             }
 
-            return base_ty.value()->clone_ty();
+            if (const auto array_base_ty = cast_type<AstArrayType*>(base_ty.value().get()))
+            {
+                return array_base_ty->get_element_type()->clone_ty();
+            }
+
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Named type '{}' references a type that is not an array, cannot be used as array type",
+                    named->get_name()
+                ),
+                named->get_source_fragment()
+            );
         }
 
         throw parsing_error(

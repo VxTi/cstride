@@ -126,6 +126,7 @@ namespace stride::ast
         [[nodiscard]]
         virtual std::string get_type_name() = 0;
 
+        [[nodiscard]]
         virtual bool equals(const IAstType& other) const = 0;
 
         [[nodiscard]]
@@ -198,6 +199,9 @@ namespace stride::ast
         bool is_integer_ty() const;
 
         [[nodiscard]]
+        bool is_signed_int_ty() const;
+
+        [[nodiscard]]
         bool is_fp() const;
 
         [[nodiscard]]
@@ -219,6 +223,7 @@ namespace stride::ast
             return this->get_type_name();
         }
 
+        [[nodiscard]]
         bool equals(const IAstType& other) const override;
 
         [[nodiscard]]
@@ -291,6 +296,7 @@ namespace stride::ast
                 this->is_optional() ? "?" : "");
         }
 
+        [[nodiscard]]
         bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
@@ -298,6 +304,7 @@ namespace stride::ast
             return IAstType::is_castable_to(other);
         }
 
+        [[nodiscard]]
         std::optional<std::unique_ptr<IAstType>> get_reference_type() const;
 
         /// Returns the super base type of the reference, e.g., if we have:
@@ -356,6 +363,7 @@ namespace stride::ast
             return get_type_name();
         }
 
+        [[nodiscard]]
         bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
@@ -420,6 +428,7 @@ namespace stride::ast
             return std::format("[{}]", this->_element_type->get_type_name());
         }
 
+        [[nodiscard]]
         bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
@@ -468,6 +477,7 @@ namespace stride::ast
             return this->get_type_name();
         }
 
+        [[nodiscard]]
         bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override
@@ -536,6 +546,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
+        [[nodiscard]]
         bool equals(const IAstType& other) const override;
 
         bool is_castable_to(IAstType* other) override

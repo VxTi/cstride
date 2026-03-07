@@ -98,7 +98,7 @@
   ]
 }
 
-StrideFile ::= [PackageStatement] [ImportStatement] StandaloneItem*
+StrideFile ::= [PackageStatement] ImportStatement* StandaloneItem*
 
 private StandaloneItem ::= (
     FunctionDeclaration
