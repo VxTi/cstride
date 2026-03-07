@@ -34,9 +34,19 @@ class StrideBlock(
 
         return when {
             // Block statements (function bodies, control flow blocks)
-            parentType == StrideTypes.BLOCK_STATEMENT ||
-            parentType == StrideTypes.MODULE_STATEMENT -> {
+            parentType == StrideTypes.BLOCK_STATEMENT -> {
                 if (elementType != StrideTypes.LBRACE && elementType != StrideTypes.RBRACE) {
+                    Indent.getNormalIndent()
+                } else {
+                    Indent.getNoneIndent()
+                }
+            }
+            parentType == StrideTypes.MODULE_STATEMENT -> {
+                if (elementType != StrideTypes.LBRACE &&
+                    elementType != StrideTypes.RBRACE &&
+                    elementType != StrideTypes.MODULE &&
+                    elementType != StrideTypes.IDENTIFIER &&
+                    elementType != StrideTypes.SCOPED_IDENTIFIER) {
                     Indent.getNormalIndent()
                 } else {
                     Indent.getNoneIndent()

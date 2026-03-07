@@ -30,8 +30,6 @@ class StrideRunConfigurationProducer : LazyRunConfigurationProducer<StrideRunCon
         val file = context.location?.virtualFile ?: return false
         if (file.fileType != StrideFileType) return false
 
-        val basePath = context.project.basePath ?: return false
-
         configuration.scriptPath = file.path
         configuration.name = "Run ${file.name}"
 

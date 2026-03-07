@@ -1,36 +1,17 @@
-import system::{
-    io::something_else::test,
-    io::print,
-    io::read
-};
-
-const create_adder = (x: int32): (int32) -> int32 -> {
-    return (y: int32): int32 -> {
-        return x + y;
-    };
-};
-
-
-fn some_fn<A, B, C>(k: A, l: B, m: C): void {
-
-}
-
-const anonymous = (): void -> {
-    some_fn<string, float64, bool>("Hello", 3.14, true);
+import System::{
+    IO::Print,
+    IO::Read
 };
 
 fn main(): int32 {
-    some_fn<int32>(1, 2, 3);
+    IO::Print("Type something else: "); // Should print "Result: 15"
 
-    io::something_else::test();
+    while (true) {
+        const input = IO::Read(1);
 
-    const add_five = create_adder(5);
-    const result: int64 = add_five(10) as uint8;
+        IO::Print("Typed: %d", input);
+    }
 
-    io::print("Result: %ull. Type something else: ", result); // Should print "Result: 15"
-
-    const input = io::read(10);
-
-    io::print("You entered: %s", input);
+    IO::Print("You entered: %s", input);
     return 0;
 }
