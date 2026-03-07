@@ -19,7 +19,27 @@ class StrideAnnotator : Annotator, DumbAware {
             is StrideExternFunctionDeclaration -> annotateExternFunctionDeclaration(element, holder)
             is StridePostfixExpression -> annotatePostfixExpression(element, holder)
             is StrideGenericTypeArguments -> annotateGenericTypeArguments(element, holder)
+            is StrideImportStatement -> annotateImportStatement(element, holder)
+            is StridePackageStatement -> annotatePackageStatement(element, holder)
+            is StrideModuleStatement -> annotateModuleStatement(element, holder)
         }
+    }
+
+    private fun annotateImportStatement(import: StrideImportStatement, holder: AnnotationHolder) {
+        // Highlight all identifiers in import (e.g., import System::{ IO::Print })
+        import.scopedIdentifierList.forEach { scopedId ->
+            highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.IMPORT_IDENTIFIER)
+        }
+    }
+
+    private fun annotatePackageStatement(pkg: StridePackageStatement, holder: AnnotationHolder) {
+        // Highlight all identifiers in package statement
+        highlightIdentifiers(pkg.scopedIdentifier, holder, StrideSyntaxHighlighter.PACKAGE_NAME)
+    }
+
+    private fun annotateModuleStatement(module: StrideModuleStatement, holder: AnnotationHolder) {
+        // Highlight all identifiers in module statement
+        highlightIdentifiers(module.scopedIdentifier, holder, StrideSyntaxHighlighter.MODULE_NAME)
     }
 
     private fun annotateGenericTypeArguments(genericArgs: StrideGenericTypeArguments, holder: AnnotationHolder) {
