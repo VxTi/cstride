@@ -45,7 +45,6 @@ namespace stride::ast
         ) override;
 
         void resolve_forward_references(
-            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 

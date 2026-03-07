@@ -173,7 +173,6 @@ std::string AstStructType::get_internalized_name() const
 }
 
 void AstStructType::resolve_forward_references(
-    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )

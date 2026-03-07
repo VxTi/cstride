@@ -916,7 +916,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
 }
 
 void IAstFunction::resolve_forward_references(
-    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -979,7 +978,7 @@ void IAstFunction::resolve_forward_references(
         this->_llvm_function = created_fn;
     }
 
-    this->get_body()->resolve_forward_references(context, module, builder);
+    this->get_body()->resolve_forward_references(module, builder);
 }
 
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()

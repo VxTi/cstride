@@ -11,12 +11,11 @@
 using namespace stride::ast;
 
 void AstVariableReassignment::resolve_forward_references(
-    ParsingContext* context,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
-    this->get_value()->resolve_forward_references(context, module, builder);
+    this->get_value()->resolve_forward_references(module, builder);
 }
 
 /**

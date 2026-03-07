@@ -55,9 +55,8 @@ namespace stride:: ast
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void resolve_forward_references(
-            ParsingContext* context,
-                                        llvm::Module* module,
-                                        llvm::IRBuilderBase* builder) override;
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder) override;
 
         std::unique_ptr<IAstNode> clone() override;
 

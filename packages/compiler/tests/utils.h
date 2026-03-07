@@ -77,7 +77,7 @@ namespace stride::tests
         module.setTargetTriple(target_machine->getTargetTriple());
         llvm::IRBuilder<> builder(llvm_context);
 
-        block->resolve_forward_references(context.get(), &module, &builder);
+        block->resolve_forward_references(&module, &builder);
         block->validate();
         block->codegen(&module, &builder);
     }

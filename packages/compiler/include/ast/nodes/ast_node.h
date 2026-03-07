@@ -63,7 +63,6 @@ namespace stride::ast
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
-            ParsingContext* context,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) {}

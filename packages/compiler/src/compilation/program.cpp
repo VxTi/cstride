@@ -68,7 +68,6 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
         node->validate();
         node->resolve_forward_references(
-            node->get_context().get(),
             module.get(),
             &builder
         );
