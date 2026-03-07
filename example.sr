@@ -3,15 +3,23 @@ import System::{
     IO::Read
 };
 
+fn some_function_with_a_float(a: float32): void {
+
+}
+
 fn main(): int32 {
     IO::Print("Type something else: "); // Should print "Result: 15"
+
+    const some_variable = 123 as float32;
+
+    some_function_with_a_float(some_variable);
+
 
     while (true) {
         const input = IO::Read(1);
 
-        IO::Print("Typed: %d", input);
+        IO::Print("\x1b[31mYou entered: %s\n", input);
     }
 
-    IO::Print("You entered: %s", input);
     return 0;
 }
