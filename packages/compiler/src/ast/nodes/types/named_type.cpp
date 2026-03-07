@@ -21,9 +21,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
         return std::nullopt;
     }
 
-    auto generics = parse_generic_arguments(context, set);
-
     const auto segments = parse_segmented_identifier(set, "Expected identifier for named type");
+    auto generics = parse_generic_arguments(context, set);
 
     const auto name = resolve_internal_name(segments);
 
