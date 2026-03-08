@@ -36,6 +36,7 @@ bool is_variable_mutative_token(const TokenType type)
     case TokenType::PLUS_EQUALS:
     case TokenType::MINUS_EQUALS:
     case TokenType::STAR_EQUALS:
+    case TokenType::TILDE_EQUALS:
     case TokenType::SLASH_EQUALS:
     case TokenType::PERCENT_EQUALS:
     case TokenType::AMPERSAND_EQUALS:
@@ -82,6 +83,8 @@ MutativeAssignmentType parse_mutative_assignment_type(const Token& token)
         return MutativeAssignmentType::MODULO;
     case TokenType::AMPERSAND_EQUALS:
         return MutativeAssignmentType::BITWISE_AND;
+    case TokenType::TILDE_EQUALS:
+        return MutativeAssignmentType::BITWISE_NOT;
     case TokenType::PIPE_EQUALS:
         return MutativeAssignmentType::BITWISE_OR;
     case TokenType::CARET_EQUALS:
@@ -306,6 +309,9 @@ llvm::Value* AstVariableReassignment::codegen(
             break;
         case MutativeAssignmentType::BITWISE_LEFT_SHIFT:
             finalValue = builder->CreateLShr(cur_val, assign_val, "lshr_tmp");
+            break;
+        case MutativeAssignmentType::BITWISE_NOT:
+            finalValue = builder->CreateNot(cur_val, "not_tmp");
             break;
         default:
             break;

@@ -69,6 +69,7 @@ namespace stride::ast
         BITWISE_XOR,         // <..> ^= <..>
         BITWISE_LEFT_SHIFT,  // <..> <<= <..>
         BITWISE_RIGHT_SHIFT, // <..> >>= <..>
+        BITWISE_NOT,         // <..> ~= <..>
     };
 
     class IAstExpression
