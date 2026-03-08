@@ -44,14 +44,16 @@ namespace stride::ast
 
     enum class UnaryOpType
     {
-        LOGICAL_NOT, //  !<..>
-        NEGATE,      //  -<..>
-        PLUS,        //  +<..>
-        COMPLEMENT,  //  ~<..>
-        INCREMENT,   // ++<..> or <..>++
-        DECREMENT,   // --<..> or <..>--
-        ADDRESS_OF,  //  &<..>
-        DEREFERENCE, //  *<..>
+        LOGICAL_NOT,       //  !<..>
+        NEGATE,            //  -<..>
+        PLUS,              //  +<..>
+        COMPLEMENT,        //  ~<..>
+        INCREMENT_INFIX,   // --<..>
+        INCREMENT_POSTFIX, // <..>++
+        DECREMENT_INFIX,   // ++<..>
+        DECREMENT_POSTFIX, // <..>--
+        ADDRESS_OF,        //  &<..>
+        DEREFERENCE,       //  *<..>
     };
 
     enum class MutativeAssignmentType
@@ -622,25 +624,23 @@ namespace stride::ast
     {
         const UnaryOpType _op_type;
         std::unique_ptr<IAstExpression> _operand;
-        const bool _is_lsh;
 
     public:
         explicit AstUnaryOp(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             const UnaryOpType op,
-            std::unique_ptr<IAstExpression> operand,
-            const bool is_lsh = false
+            std::unique_ptr<IAstExpression> operand
         ) :
             IAstExpression(source, context),
             _op_type(op),
-            _operand(std::move(operand)),
-            _is_lsh(is_lsh) {}
+            _operand(std::move(operand)) {}
 
         [[nodiscard]]
-        bool is_lsh() const
+        bool is_postfix_operation() const
         {
-            return this->_is_lsh;
+            return this->_op_type == UnaryOpType::INCREMENT_POSTFIX
+                || this->_op_type == UnaryOpType::DECREMENT_POSTFIX;
         }
 
         [[nodiscard]]
@@ -973,7 +973,7 @@ namespace stride::ast
     std::optional<std::unique_ptr<IAstExpression>> parse_type_cast_op(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        IAstExpression *lhs
+        IAstExpression* lhs
     );
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
@@ -995,7 +995,7 @@ namespace stride::ast
     std::optional<BinaryOpType> get_binary_op_type(TokenType type);
 
     /// Converts a token type to its corresponding unary operator type
-    std::optional<UnaryOpType> get_unary_op_type(TokenType type);
+    std::optional<UnaryOpType> get_unary_op_type(TokenType type, bool is_infix);
 
     /* # * # * # * # * # * # * # * # * # * # * # * # * # * # * # *
      #                                                           #

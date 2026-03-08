@@ -23,9 +23,11 @@ std::string unary_op_type_to_str(const UnaryOpType type)
         return "+";
     case UnaryOpType::COMPLEMENT:
         return "~";
-    case UnaryOpType::INCREMENT:
+    case UnaryOpType::INCREMENT_INFIX:
+    case UnaryOpType::INCREMENT_POSTFIX:
         return "++";
-    case UnaryOpType::DECREMENT:
+    case UnaryOpType::DECREMENT_INFIX:
+    case UnaryOpType::DECREMENT_POSTFIX:
         return "--";
     case UnaryOpType::ADDRESS_OF:
         return "&";
@@ -41,8 +43,10 @@ bool requires_identifier_operand(const UnaryOpType op)
 {
     switch (op)
     {
-    case UnaryOpType::INCREMENT:
-    case UnaryOpType::DECREMENT:
+    case UnaryOpType::DECREMENT_INFIX:
+    case UnaryOpType::DECREMENT_POSTFIX:
+    case UnaryOpType::INCREMENT_INFIX:
+    case UnaryOpType::INCREMENT_POSTFIX:
     case UnaryOpType::ADDRESS_OF:
         return true;
     default:
@@ -58,8 +62,8 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
     const auto& op_type_tok = set.peek_next();
     const auto& op_type_pos = op_type_tok.get_source_fragment();
 
-    // Prefix Parsing
-    if (const auto op_type = get_unary_op_type(op_type_tok.get_type());
+    // -- Infix parsing
+    if (const auto op_type = get_unary_op_type(op_type_tok.get_type(), /*is_infix = */ true);
         op_type.has_value())
     {
         set.next(); // Consume operator
@@ -89,8 +93,7 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
             source,
             context,
             op_type.value(),
-            std::move(rhs_expr.value()),
-            false // Prefix
+            std::move(rhs_expr.value())
         );
     }
 
@@ -98,13 +101,12 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
     auto expr = parse_inline_expression_part(context, set);
 
     // Postfix Parsing
-    while (set.peek_next_eq(TokenType::DOUBLE_PLUS) || set.peek_next_eq(
-        TokenType::DOUBLE_MINUS))
+    if (set.peek_next_eq(TokenType::DOUBLE_PLUS) || set.peek_next_eq(TokenType::DOUBLE_MINUS))
     {
         const auto op_tok = set.next();
         UnaryOpType type = op_tok.get_type() == TokenType::DOUBLE_PLUS
-            ? UnaryOpType::INCREMENT
-            : UnaryOpType::DECREMENT;
+            ? UnaryOpType::INCREMENT_POSTFIX
+            : UnaryOpType::DECREMENT_POSTFIX;
 
         if (!cast_expr<AstIdentifier*>(expr.get()))
         {
@@ -122,15 +124,14 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
             source,
             context,
             type,
-            std::move(expr),
-            true // Postfix
+            std::move(expr)
         );
     }
 
     return std::move(expr);
 }
 
-std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
+std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type, bool is_infix)
 {
     switch (type)
     {
@@ -143,9 +144,9 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type)
     case TokenType::TILDE:
         return UnaryOpType::COMPLEMENT;
     case TokenType::DOUBLE_PLUS:
-        return UnaryOpType::INCREMENT;
+        return is_infix ? UnaryOpType::INCREMENT_INFIX : UnaryOpType::INCREMENT_POSTFIX;
     case TokenType::DOUBLE_MINUS:
-        return UnaryOpType::DECREMENT;
+        return is_infix ? UnaryOpType::DECREMENT_INFIX : UnaryOpType::DECREMENT_POSTFIX;
     case TokenType::STAR:
         return UnaryOpType::DEREFERENCE;
     case TokenType::AMPERSAND:
@@ -163,7 +164,10 @@ void AstUnaryOp::validate()
 
     const auto op = this->get_op_type();
 
-    if (op == UnaryOpType::INCREMENT || op == UnaryOpType::DECREMENT)
+    if (op == UnaryOpType::INCREMENT_INFIX ||
+        op == UnaryOpType::INCREMENT_POSTFIX ||
+        op == UnaryOpType::DECREMENT_INFIX ||
+        op == UnaryOpType::DECREMENT_POSTFIX)
     {
         if (!operand_type->is_mutable())
         {
@@ -224,16 +228,23 @@ void AstUnaryOp::validate()
                     this->get_source_fragment());
             }
             break;
-        case UnaryOpType::INCREMENT:
-        case UnaryOpType::DECREMENT:
+        case UnaryOpType::DECREMENT_INFIX:
+        case UnaryOpType::DECREMENT_POSTFIX:
+        case UnaryOpType::INCREMENT_INFIX:
+        case UnaryOpType::INCREMENT_POSTFIX:
             if (!is_int && !is_fp)
             {
+                const auto operand_name = op == UnaryOpType::INCREMENT_INFIX
+                    ? "infix increment"
+                    : op == UnaryOpType::INCREMENT_POSTFIX
+                    ? "postfix increment"
+                    : op == UnaryOpType::DECREMENT_INFIX
+                    ? "infix decrement"
+                    : "postfix decrement";
+
                 throw parsing_error(
                     ErrorType::TYPE_ERROR,
-                    std::format("Invalid type '{}' for {} operand",
-                                operand_type->to_string(),
-                                op == UnaryOpType::INCREMENT ? "increment" : "decrement"
-                    ),
+                    std::format("Invalid type '{}' for {} operand", operand_type->to_string(), operand_name),
                     this->get_source_fragment());
             }
             break;
@@ -307,8 +318,7 @@ llvm::Value* AstUnaryOp::codegen(
         {
             loaded_type = alloca->getAllocatedType();
         }
-        else if (const auto* global = llvm::dyn_cast<llvm::GlobalVariable>(
-            var_addr))
+        else if (const auto* global = llvm::dyn_cast<llvm::GlobalVariable>(var_addr))
         {
             loaded_type = global->getValueType();
         }
@@ -316,8 +326,7 @@ llvm::Value* AstUnaryOp::codegen(
         {
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format("Cannot determine type of variable '{}'",
-                            internal_name),
+                std::format("Cannot determine type of variable '{}'",internal_name),
                 this->get_source_fragment());
         }
 
@@ -331,7 +340,8 @@ llvm::Value* AstUnaryOp::codegen(
 
         llvm::Value* new_val;
 
-        if (this->get_op_type() == UnaryOpType::INCREMENT)
+        if (this->get_op_type() == UnaryOpType::INCREMENT_INFIX ||
+            this->get_op_type() == UnaryOpType::INCREMENT_POSTFIX)
         {
             new_val = is_fp
                 ? builder->CreateFAdd(loaded_val, one, "inctmp")
@@ -347,7 +357,7 @@ llvm::Value* AstUnaryOp::codegen(
         builder->CreateStore(new_val, var_addr);
 
         // Postfix returns old value, Prefix returns new value
-        return this->is_lsh() ? loaded_val : new_val;
+        return this->is_postfix_operation() ? loaded_val : new_val;
     }
 
     auto* val = get_operand().codegen(module, builder);
@@ -417,8 +427,7 @@ std::unique_ptr<IAstNode> AstUnaryOp::clone()
         this->get_source_fragment(),
         this->get_context(),
         this->get_op_type(),
-        this->_operand->clone_as<IAstExpression>(),
-        this->is_lsh()
+        this->_operand->clone_as<IAstExpression>()
     );
 }
 
@@ -436,10 +445,10 @@ std::string AstUnaryOp::to_string()
 {
     return std::format(
         "UnaryOp({}{})",
-        this->is_lsh()
+        this->is_postfix_operation()
         ? unary_op_type_to_str(this->get_op_type())
         : this->get_operand().to_string(),
-        this->is_lsh()
+        this->is_postfix_operation()
         ? this->get_operand().to_string()
         : unary_op_type_to_str(this->get_op_type())
     );

@@ -137,8 +137,8 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(const AstUnaryOp* ope
         return std::make_unique<AstPrimitiveType>(
             operation->get_source_fragment(),
             context,
-            PrimitiveType::BOOL,
-            1);
+            PrimitiveType::BOOL
+        );
     }
 
     return type;

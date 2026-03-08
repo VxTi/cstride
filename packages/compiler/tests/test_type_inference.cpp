@@ -181,7 +181,7 @@ TEST_F(TypeInferenceTest, InferUnaryOp)
 
     // Address of
     auto iden = std::make_unique<AstIdentifier>(context, dummy_sym("x"));
-    auto addr_op = std::make_unique<AstUnaryOp>(dummy_sf(), context, UnaryOpType::ADDRESS_OF, std::move(iden), false);
+    auto addr_op = std::make_unique<AstUnaryOp>(dummy_sf(), context, UnaryOpType::ADDRESS_OF, std::move(iden));
     EXPECT_EQ(infer_expression_type(addr_op.get())->to_string(), "*int32");
 
     // Dereference
@@ -194,23 +194,13 @@ TEST_F(TypeInferenceTest, InferUnaryOp)
             SRFLAG_TYPE_PTR),
         VisibilityModifier::PUBLIC);
     auto p_iden = std::make_unique<AstIdentifier>(context, dummy_sym("px"));
-    auto deref_op = std::make_unique<AstUnaryOp>(
-        dummy_sf(),
-        context,
-        UnaryOpType::DEREFERENCE,
-        std::move(p_iden),
-        false);
+    auto deref_op = std::make_unique<AstUnaryOp>(dummy_sf(), context, UnaryOpType::DEREFERENCE, std::move(p_iden));
     EXPECT_EQ(infer_expression_type(deref_op.get())->to_string(), "*int32");
 
     // Logical Not
     auto bool_lit = std::make_unique<AstBooleanLiteral>(dummy_sf(), context, true);
-    auto not_op = std::make_unique<AstUnaryOp>(
-        dummy_sf(),
-        context,
-        UnaryOpType::LOGICAL_NOT,
-        std::move(bool_lit),
-        false);
-    EXPECT_EQ(infer_expression_type(not_op.get())->to_string(), "*bool");
+    auto not_op = std::make_unique<AstUnaryOp>(dummy_sf(), context, UnaryOpType::LOGICAL_NOT, std::move(bool_lit));
+    EXPECT_EQ(infer_expression_type(not_op.get())->to_string(), "bool");
 }
 
 TEST_F(TypeInferenceTest, InferLogicalAndComparison)
