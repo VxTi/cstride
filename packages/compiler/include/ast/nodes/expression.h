@@ -34,7 +34,7 @@ namespace stride::ast
 
     enum class ComparisonOpType
     {
-        EQUAL,
+        EQUALS,
         NOT_EQUAL,
         LESS_THAN,
         LESS_THAN_OR_EQUAL,

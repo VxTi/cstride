@@ -14,7 +14,7 @@ std::optional<ComparisonOpType> stride::ast::get_comparative_op_type(
     switch (type)
     {
     case TokenType::DOUBLE_EQUALS:
-        return ComparisonOpType::EQUAL;
+        return ComparisonOpType::EQUALS;
     case TokenType::BANG_EQUALS:
         return ComparisonOpType::NOT_EQUAL;
     case TokenType::LT:
@@ -34,7 +34,7 @@ std::string comparison_op_to_str(const ComparisonOpType op)
 {
     switch (op)
     {
-    case ComparisonOpType::EQUAL:
+    case ComparisonOpType::EQUALS:
         return "==";
     case ComparisonOpType::NOT_EQUAL:
         return "!=";
@@ -153,7 +153,7 @@ llvm::Value* AstComparisonOp::codegen(
                 "not_nil_check"
             );
         }
-        if (this->get_op_type() == ComparisonOpType::EQUAL)
+        if (this->get_op_type() == ComparisonOpType::EQUALS)
         {
             // val == nil -> has_value == 0
             return builder->CreateICmpEQ(
@@ -220,7 +220,7 @@ llvm::Value* AstComparisonOp::codegen(
 
     switch (this->get_op_type())
     {
-    case ComparisonOpType::EQUAL:
+    case ComparisonOpType::EQUALS:
         return is_float
             ? builder->CreateFCmpOEQ(left, right, "eqtmp")
             : builder->CreateICmpEQ(left, right, "eqtmp");

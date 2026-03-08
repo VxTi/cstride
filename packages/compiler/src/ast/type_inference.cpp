@@ -58,8 +58,17 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(AstFuncti
     );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(const IBinaryOp* operation)
+std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(IBinaryOp* operation)
 {
+    if (cast_expr<AstLogicalOp*>(operation) || cast_expr<AstComparisonOp*>(operation))
+    {
+        return std::make_unique<AstPrimitiveType>(
+            operation->get_source_fragment(),
+            operation->get_context(),
+            PrimitiveType::BOOL
+        );
+    }
+
     auto lhs = infer_expression_type(operation->get_left());
     auto rhs = infer_expression_type(operation->get_right());
 
@@ -348,7 +357,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             identifier->get_source_fragment());
     }
 
-    if (const auto* operation = cast_expr<IBinaryOp*>(expr))
+    if (auto* operation = cast_expr<IBinaryOp*>(expr))
     {
         return infer_binary_op_type(operation);
     }
@@ -356,15 +365,6 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
     if (const auto* operation = cast_expr<AstUnaryOp*>(expr))
     {
         return infer_unary_op_type(operation);
-    }
-
-    if (cast_expr<AstLogicalOp*>(expr) || cast_expr<AstComparisonOp*>(expr))
-    {
-        return std::make_unique<AstPrimitiveType>(
-            expr->get_source_fragment(),
-            expr->get_context(),
-            PrimitiveType::BOOL
-        );
     }
 
     if (const auto* operation = cast_expr<AstVariableReassignment*>(expr))

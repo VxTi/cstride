@@ -218,13 +218,14 @@ TEST_F(TypeInferenceTest, InferLogicalAndComparison)
     auto lhs = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 1, 0);
     auto rhs = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 2, 0);
 
-    auto comp_op = std::make_unique<AstComparisonOp>(
+    const auto comp_op = std::make_unique<AstComparisonOp>(
         dummy_sf(),
         context,
         std::move(lhs),
-        ComparisonOpType::EQUAL,
-        std::move(rhs));
-    EXPECT_EQ(infer_expression_type(comp_op.get())->to_string(), "int32");
+        ComparisonOpType::EQUALS,
+        std::move(rhs)
+    );
+    EXPECT_EQ(infer_expression_type(comp_op.get())->to_string(), "bool");
 
     auto blhs = std::make_unique<AstBooleanLiteral>(dummy_sf(), context, true);
     auto brhs = std::make_unique<AstBooleanLiteral>(dummy_sf(), context, false);
@@ -371,9 +372,9 @@ TEST_F(TypeInferenceTest, RecursionGuard)
         PrimitiveType::INT32,
         1,
         0);
-    for (int i = 0; i < 505; ++i)
+    for (int i = 0; i < 101; ++i)
     {
-        // assuming MAX_RECURSION_DEPTH is 500
+        // assuming MAX_RECURSION_DEPTH is 100
         auto prev = std::move(current);
         current = std::make_unique<AstVariableReassignment>(
             dummy_sf(),
