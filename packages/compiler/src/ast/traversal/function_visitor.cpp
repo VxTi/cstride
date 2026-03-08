@@ -23,7 +23,6 @@ void FunctionVisitor::accept(IAstFunction* fn_declaration)
         );
     }
 
-
     // Forward declare the function in the symbol registry
     if (dynamic_cast<AstFunctionDeclaration*>(fn_declaration))
     {

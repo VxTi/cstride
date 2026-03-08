@@ -80,7 +80,6 @@ namespace stride::ast
         GenericParameterList _generic_parameters;
         int _flags;
 
-
         /// Cached LLVM function pointer for anonymous functions.
         /// Named functions are always looked up by their scoped name in the module,
         /// but anonymous functions are created with an empty name (LLVM auto-assigns
@@ -110,7 +109,6 @@ namespace stride::ast
             _visibility(visibility),
             _generic_parameters(generic_parameters),
             _flags(flags) {}
-
 
         [[nodiscard]]
         const std::string& get_function_name() const

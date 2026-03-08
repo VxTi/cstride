@@ -277,7 +277,6 @@ std::unique_ptr<IAstExpression> parse_expression_internal(
     return parse_logical_tier(context, set);
 }
 
-
 /**
  * General expression parsing. These can occur in global / function scopes
  */

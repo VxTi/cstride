@@ -20,12 +20,10 @@ bool stride::ast::precedes(const TokenType lhs, const TokenType rhs)
         rhs);
 }
 
-
 std::vector<TokenDefinition> stride::ast::tokenTypes = {
     // Comments (should be matched first)
     TOKEN(TokenType::COMMENT, R"(//[^\n]*)"),
     TOKEN(TokenType::COMMENT_MULTILINE, R"(/\*[\s\S]*?\*/)"),
-
 
     // Keywords
     TOKEN(TokenType::KEYWORD_CONST, R"(\bconst\b)"),

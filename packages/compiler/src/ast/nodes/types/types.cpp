@@ -31,7 +31,6 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
         return std::move(named_type.value());
     }
 
-
     if (auto function_type = parse_function_type_optional(context, set, type_flags);
         function_type.has_value())
     {
@@ -343,7 +342,6 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
             !lhs_primitive_ty ? lhs->get_source_fragment() : rhs->get_source_fragment()
         );
     }
-
 
     // If LHS is a nil primitive, we prefer the RHS type, since the LHS can be safely ignored in this context (e.g., optional types)
     if (lhs_primitive_ty->get_primitive_type() == PrimitiveType::NIL)

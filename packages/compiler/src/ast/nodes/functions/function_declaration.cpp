@@ -668,7 +668,6 @@ llvm::Value* IAstFunction::codegen(
     // Generate Body
     llvm::Value* function_body_value = this->_body->codegen(module, builder);
 
-
     // Final Safety: Implicit Return
     // If the get_body didn't explicitly return (no terminator found), add one.
     if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();

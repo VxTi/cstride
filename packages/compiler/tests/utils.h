@@ -43,7 +43,6 @@ namespace stride::tests
 
         node->validate();
 
-
         return std::make_pair(std::move(node), context);
     }
 
@@ -81,7 +80,6 @@ namespace stride::tests
         block->validate();
         block->codegen(&module, &builder);
     }
-
 
     inline void assert_throws(const std::string& code)
     {

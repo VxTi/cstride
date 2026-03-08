@@ -28,7 +28,6 @@ namespace stride::ast
             _body(std::move(body)),
             _else_body(std::move(else_body)) {}
 
-
         [[nodiscard]]
         IAstExpression* get_condition() const
         {

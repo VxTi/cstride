@@ -50,7 +50,6 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
     );
 }
 
-
 void AstReturnStatement::validate()
 {
     auto context = this->get_context();
