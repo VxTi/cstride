@@ -8,7 +8,7 @@ type IArray = Array<int32>;
 type NestedArray = Array<Array<int32>>;
 
 fn some_fn(arr: Array<int32>): void{
-    const sum: int32 = arr[0] + arr[1] + arr[2] + arr[3] + arr[4];
+    const sum: int32 = arr[0] + arr[1] + arr[2] + arr[3] + arr[4]; const k = 123;
     IO::Print("Result: %d\n", sum);
 }
 

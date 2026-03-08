@@ -27,17 +27,19 @@ std::unique_ptr<IAstExpression> stride::ast::parse_array_member_accessor(
         set.throw_error("Expected array index accessor after '['");
     }
 
-    auto index_expression = parse_inline_expression(
-        context,
-        expression_block.value());
+    // If `expression_block` has content, we can safely access `set.peek(-1)` for the source fragment of the closing ']'.
+    const auto last_src_pos = set.peek(-1).get_source_fragment();
 
-    auto base_expr = std::make_unique<AstArrayMemberAccessor>(
-        array_identifier->get_source_fragment(),
+    auto index_expression = parse_inline_expression(context, expression_block.value());
+
+    const auto source_pos = SourceFragment::concat(array_identifier->get_source_fragment(), last_src_pos);
+
+    return std::make_unique<AstArrayMemberAccessor>(
+        source_pos,
         context,
         std::move(array_identifier),
-        std::move(index_expression));
-
-    return std::move(base_expr);
+        std::move(index_expression)
+    );
 }
 
 void AstArrayMemberAccessor::validate()
