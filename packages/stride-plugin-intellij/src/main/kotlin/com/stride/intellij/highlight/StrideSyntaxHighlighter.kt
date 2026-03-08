@@ -70,19 +70,26 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.CHAR, StrideTypes.STRING -> TYPE_KEYS
 
             StrideTypes.NUMBER_LITERAL -> NUMBER_KEYS
+
             StrideTypes.STRING_LITERAL, StrideTypes.CHAR_LITERAL -> STRING_KEYS
+
             StrideTypes.BOOLEAN_LITERAL -> KEYWORD_KEYS
+
             StrideTypes.COMMENT -> COMMENT_KEYS
+
             StrideTypes.EQ, StrideTypes.PLUS, StrideTypes.MINUS,
             StrideTypes.AMPERSAND, StrideTypes.ASTERISK, StrideTypes.DIV,
             StrideTypes.MOD, StrideTypes.EXCL, StrideTypes.LT,
-            StrideTypes.TILDE,
+            StrideTypes.TILDE, StrideTypes.AMPERSAND_EQ, StrideTypes.TILDE,
+            StrideTypes.TILDE_EQ, StrideTypes.PIPE, StrideTypes.PIPE_EQ,
+            StrideTypes.LEFTSHIFT_EQ, StrideTypes.RIGHTSHIFT_EQ,
             StrideTypes.GT, StrideTypes.EQ_EQ, StrideTypes.EXCL_EQ,
             StrideTypes.LT_EQ, StrideTypes.GT_EQ, StrideTypes.OPERATOR,
-            StrideTypes.QUESTION,
+            StrideTypes.QUESTION, StrideTypes.CARET, StrideTypes.CARET_EQ,
             StrideTypes.ARROW, StrideTypes.PLUS_PLUS, StrideTypes.MINUS_MINUS,
             StrideTypes.PLUS_EQ, StrideTypes.MINUS_EQ, StrideTypes.ASTERISK_EQ,
             StrideTypes.SLASH_EQ, StrideTypes.MOD_EQ, StrideTypes.COLON -> OPERATOR_KEYS
+
             StrideTypes.LPAREN, StrideTypes.RPAREN -> PARENTHESES_KEYS
             StrideTypes.LBRACE, StrideTypes.RBRACE -> BRACES_KEYS
             StrideTypes.LSQUARE_BRACKET, StrideTypes.RSQUARE_BRACKET -> BRACKETS_KEYS

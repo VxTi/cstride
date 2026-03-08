@@ -57,22 +57,33 @@
     PLUS_PLUS='++'
     MINUS_MINUS='--'
     ARROW='->'
-    PLUS_EQ='+='
-    MINUS_EQ='-='
-    ASTERISK_EQ='*='
-    SLASH_EQ='/='
-    MOD_EQ='%='
     QUESTION='?'
+    PLUS_EQ='+='
     PLUS='+'
+    MINUS_EQ='-='
     MINUS='-'
+    ASTERISK_EQ='*='
     ASTERISK='*'
+    AMPERSAND_EQ='&='
+    LEFTSHIFT_EQ='<<='
+    RIGHTSHIFT_EQ='>>='
     AMPERSAND='&'
+    SLASH_EQ='/='
     DIV='/'
+    TILDE_EQ='~='
     TILDE='~'
+    MOD_EQ='%='
     MOD='%'
     EXCL='!'
+    EXCL_EQ='!='
     LT='<'
+    LT_EQ='<='
     GT='>'
+    PIPE='|'
+    PIPE_EQ='|='
+    CARET='^'
+    CARET_EQ='^='
+    GT_EQ='>='
     LBRACE='{'
     RBRACE='}'
     LPAREN='('
@@ -81,9 +92,6 @@
     RSQUARE_BRACKET=']'
     COLON_COLON='::'
     EQ_EQ='=='
-    EXCL_EQ='!='
-    LT_EQ='<='
-    GT_EQ='>='
 
     COMMENT='regexp:/\*([^*]|\*+[^*/])*\*+/ | //.*'
 
@@ -172,7 +180,7 @@ ControlFlowStatement ::= BreakStatement | ContinueStatement
 BreakStatement ::= BREAK SEMICOLON
 ContinueStatement ::= CONTINUE SEMICOLON
 
-InlineAssignment ::= IDENTIFIER (EQ | PLUS_EQ | MINUS_EQ | ASTERISK_EQ | SLASH_EQ) Expression
+InlineAssignment ::= IDENTIFIER AssignmentOp Expression
 AssignmentStatement ::= InlineAssignment SEMICOLON
 ReturnStatement ::= RETURN [Expression] SEMICOLON
 
@@ -189,7 +197,9 @@ ExpressionStatement ::= Expression SEMICOLON
 // --- Expressions (Precedence, lowest to highest) ---
 Expression ::= CastExpression
 
-CastExpression ::= LogicalExpression (AS Type)*
+CastExpression ::= BinaryExpression (AS Type)*
+
+BinaryExpression ::= LogicalExpression (BitwiseOp LogicalExpression)*
 
 LogicalExpression ::= ComparisonExpression (LogicalOp ComparisonExpression)*
 
@@ -270,3 +280,5 @@ private AdditiveOp ::= PLUS | MINUS
 private MultiplicativeOp ::= ASTERISK | DIV | MOD
 private LhsUnaryOp ::= PLUS | MINUS | EXCL | TILDE
 private IncrDecrOp ::= PLUS_PLUS | MINUS_MINUS
+private BitwiseOp ::= AMPERSAND | PIPE | CARET | (LT LT) | (GT GT)
+private AssignmentOp ::= EQ | PIPE_EQ | PLUS_EQ | MINUS_EQ | ASTERISK_EQ | SLASH_EQ | MOD_EQ | AMPERSAND_EQ | TILDE_EQ | CARET_EQ | LEFTSHIFT_EQ | RIGHTSHIFT_EQ
