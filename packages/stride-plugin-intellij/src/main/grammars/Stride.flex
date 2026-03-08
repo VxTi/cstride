@@ -79,25 +79,35 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   ","                { return StrideTypes.COMMA; }
   "..."              { return StrideTypes.ELLIPSIS; }
   "."                { return StrideTypes.DOT; }
+  "=="               { return StrideTypes.EQ_EQ; }
   "="                { return StrideTypes.EQ; }
   "++"               { return StrideTypes.PLUS_PLUS; }
   "--"               { return StrideTypes.MINUS_MINUS; }
-  "+="               { return StrideTypes.PLUS_EQ; }
-  "-="               { return StrideTypes.MINUS_EQ; }
   "*="               { return StrideTypes.ASTERISK_EQ; }
+  "*"                { return StrideTypes.ASTERISK; }
   "/="               { return StrideTypes.SLASH_EQ; }
+  "/"                { return StrideTypes.DIV; }
   "%="               { return StrideTypes.MOD_EQ; }
+  "%"                { return StrideTypes.MOD; }
   "?"                { return StrideTypes.QUESTION; }
+  "+="               { return StrideTypes.PLUS_EQ; }
+  "|"                { return StrideTypes.PIPE; }
+  "|="               { return StrideTypes.PIPE_EQ; }
+  "^="               { return StrideTypes.CARET_EQ; }
+  "^"                { return StrideTypes.CARET; }
   "+"                { return StrideTypes.PLUS; }
   "->"               { return StrideTypes.ARROW; }
+  "-="               { return StrideTypes.MINUS_EQ; }
   "-"                { return StrideTypes.MINUS; }
-  "*"                { return StrideTypes.ASTERISK; }
+  "&="               { return StrideTypes.AMPERSAND_EQ; }
   "&"                { return StrideTypes.AMPERSAND; }
-  "/"                { return StrideTypes.DIV; }
-  "%"                { return StrideTypes.MOD; }
+  "!="               { return StrideTypes.EXCL_EQ; }
   "!"                { return StrideTypes.EXCL; }
+  "~="               { return StrideTypes.TILDE_EQ; }
   "~"                { return StrideTypes.TILDE; }
+  "<<="              { return StrideTypes.LEFTSHIFT_EQ; }
   "<"                { return StrideTypes.LT; }
+  ">>="              { return StrideTypes.RIGHTSHIFT_EQ; }
   ">"                { return StrideTypes.GT; }
   "["                { return StrideTypes.LSQUARE_BRACKET; }
   "]"                { return StrideTypes.RSQUARE_BRACKET; }
@@ -106,8 +116,6 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "("                { return StrideTypes.LPAREN; }
   ")"                { return StrideTypes.RPAREN; }
   "::"               { return StrideTypes.COLON_COLON; }
-  "=="               { return StrideTypes.EQ_EQ; }
-  "!="               { return StrideTypes.EXCL_EQ; }
   "<="               { return StrideTypes.LT_EQ; }
   ">="               { return StrideTypes.GT_EQ; }
   "&&"               { return StrideTypes.OPERATOR; }

@@ -1,4 +1,5 @@
 #include "errors.h"
+#include "ast/casting.h"
 #include "ast/optionals.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/expression.h"
@@ -42,6 +43,21 @@ bool is_variable_mutative_token(const TokenType type)
     case TokenType::CARET_EQUALS:
     case TokenType::DOUBLE_GT_EQ:
     case TokenType::DOUBLE_LT_EQ:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool is_bitwise_mutative_operation(const MutativeAssignmentType type)
+{
+    switch (type)
+    {
+    case MutativeAssignmentType::BITWISE_AND:
+    case MutativeAssignmentType::BITWISE_OR:
+    case MutativeAssignmentType::BITWISE_XOR:
+    case MutativeAssignmentType::BITWISE_RIGHT_SHIFT:
+    case MutativeAssignmentType::BITWISE_LEFT_SHIFT:
         return true;
     default:
         return false;
@@ -122,8 +138,8 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 void AstVariableReassignment::validate()
 {
     this->_value->validate();
-    const auto identifier_def =
-        this->get_context()->lookup_variable(this->get_variable_name(), true);
+    const auto identifier_def = this->get_context()->lookup_variable(this->get_variable_name(), true);
+
     if (!identifier_def)
     {
         throw parsing_error(
@@ -135,6 +151,18 @@ void AstVariableReassignment::validate()
     }
 
     this->_internal_name = identifier_def->get_internal_symbol_name();
+
+    if (is_bitwise_mutative_operation(this->_operator) &&
+        this->_value->get_type()->is_primitive() &&
+        cast_type<AstPrimitiveType*>(this->_value->get_type())->is_fp())
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Bitwise mutative operations are not supported on floating point types, got type '{}'",
+                this->_value->get_type()->to_string()),
+            this->get_source_fragment());
+    }
 
     if (!identifier_def->get_type()->is_mutable())
     {
@@ -166,12 +194,10 @@ llvm::Value* AstVariableReassignment::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    auto& ctx = module->getContext();
     const auto internal_name = this->_internal_name.value();
 
     // Locate the variable (AllocaInst or GlobalVariable)
-    llvm::Value* variable =
-        builder->GetInsertBlock()->getValueSymbolTable()->lookup(internal_name);
+    llvm::Value* variable = builder->GetInsertBlock()->getValueSymbolTable()->lookup(internal_name);
     if (!variable)
     {
         variable = module->getNamedGlobal(this->get_variable_name());
@@ -196,9 +222,7 @@ llvm::Value* AstVariableReassignment::codegen(
     const auto saved_point = builder->GetInsertPoint();
 
     // Generate the RHS value
-    llvm::Value* assign_val = this->get_value()->codegen(
-        module,
-        builder);
+    llvm::Value* assign_val = this->get_value()->codegen(module, builder);
 
     // Restore the insertion point after codegen
     if (saved_block && saved_block != builder->GetInsertBlock())
@@ -223,7 +247,7 @@ llvm::Value* AstVariableReassignment::codegen(
         builder->CreateStore(wrapped_val, variable);
 
         return variable;
-    } // end optional type check
+    }
 
     const bool is_float = assign_ty->isFloatingPointTy();
 
