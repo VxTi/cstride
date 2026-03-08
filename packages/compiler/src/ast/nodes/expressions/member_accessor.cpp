@@ -53,7 +53,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_chained_member_access(
     }
 
     const auto last_source_pos = chained_accessors.back().get()->get_source_fragment();
-    const auto source_pos = SourceFragment::concat(lhs_source_pos, last_source_pos);
+    const auto source_pos = SourceFragment::combine(lhs_source_pos, last_source_pos);
 
     return std::make_unique<AstMemberAccessor>(
         source_pos,

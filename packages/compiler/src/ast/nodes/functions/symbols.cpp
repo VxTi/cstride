@@ -54,8 +54,7 @@ Symbol stride::ast::resolve_internal_name(
     return Symbol(position, context_name, resolve_internal_name(segments));
 }
 
-std::string stride::ast::resolve_internal_name(
-    const SymbolNameSegments& segments)
+std::string stride::ast::resolve_internal_name(const SymbolNameSegments& segments)
 {
     return join(segments, DELIMITER);
 }

@@ -83,10 +83,9 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     const auto import_list = consume_import_submodules(set);
 
     const Dependency dependency = {
-        .module_base = import_module,
+        .package_name = import_module,
         .submodules  = import_list
     };
-
 
     return std::make_unique<AstImport>(
         reference_token.get_source_fragment(),
