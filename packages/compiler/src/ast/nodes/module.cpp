@@ -29,10 +29,9 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_MODULE);
 
-    const auto module_identifier =
-        set
-       .expect(TokenType::IDENTIFIER, "Expected module name after 'module' keyword")
-       .get_lexeme();
+    const auto& module_identifier_tok =
+        set.expect(TokenType::IDENTIFIER, "Expected module name after 'module' keyword");
+    const auto module_identifier = module_identifier_tok.get_lexeme();
 
     // If the module is defined in another module, we might already have a context name.
     // This means we'll have to extend the current name so that other callees can access nested
@@ -43,14 +42,11 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
 
     const auto module_name = resolve_internal_name(module_name_segments);
 
-    const auto module_context = std::make_shared<ParsingContext>(
-        module_name,
-        ContextType::MODULE,
-        context);
+    const auto module_context = std::make_shared<ParsingContext>(module_name, ContextType::MODULE, context);
     auto module_body = parse_block(module_context, set);
 
     return std::make_unique<AstModule>(
-        reference_token.get_source_fragment(),
+        SourceFragment::combine(reference_token.get_source_fragment(), module_identifier_tok.get_source_fragment()),
         module_context,
         module_name,
         std::move(module_body)

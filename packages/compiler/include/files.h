@@ -43,7 +43,7 @@ namespace stride
             return *this;
         }
 
-        static SourceFragment concat(const SourceFragment& source_fragment, const SourceFragment& get_source_fragment);
+        static SourceFragment combine(const SourceFragment& source_fragment, const SourceFragment& get_source_fragment);
     };
 
     std::shared_ptr<SourceFile> read_file(const std::string& path);

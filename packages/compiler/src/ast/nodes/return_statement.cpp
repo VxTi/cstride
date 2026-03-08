@@ -38,17 +38,13 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
         }
     }
 
-    const auto& end_tok = set.expect(TokenType::SEMICOLON, "Expected ';' after return statement");
-    const auto& end_pos = end_tok.get_source_fragment();
-
-    const auto position = SourceFragment(
-        set.get_source(),
-        ref_pos.offset,
-        ref_pos.offset + end_pos.offset - end_pos.length
-    );
+    const auto& end_pos =
+        set
+       .expect(TokenType::SEMICOLON, "Expected ';' after return statement")
+       .get_source_fragment();
 
     return std::make_unique<AstReturnStatement>(
-        position,
+        SourceFragment::combine(ref_pos, end_pos),
         context,
         std::move(return_value)
     );

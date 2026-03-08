@@ -25,7 +25,7 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
     const auto& last_token = set.expect(TokenType::SEMICOLON, "Expected ';' after type definition");
     const auto& last_pos = last_token.get_source_fragment();
 
-    const auto source_fragment = SourceFragment::concat(ref_pos, last_pos);
+    const auto source_fragment = SourceFragment::combine(ref_pos, last_pos);
     const auto type_name_symbol = resolve_internal_name(
         context->get_name(),
         source_fragment,

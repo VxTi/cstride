@@ -12,7 +12,7 @@ namespace stride::ast
 
     typedef struct Dependency
     {
-        Symbol module_base;
+        Symbol package_name;
         std::vector<Symbol> submodules;
     } Dependency;
 
@@ -32,7 +32,7 @@ namespace stride::ast
         [[nodiscard]]
         const Symbol& get_module() const
         {
-            return this->_dependency.module_base;
+            return this->_dependency.package_name;
         }
 
         [[nodiscard]]

@@ -32,15 +32,14 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
         set.throw_error("Package declarations must be at the top of the file");
     }
 
-    set.expect(TokenType::SEMICOLON,
-               "Expected semicolon after package declaration");
+    const auto& last_pos = set.expect(TokenType::SEMICOLON, "Expected semicolon after package declaration");
 
     return std::make_unique<AstPackage>(
-        reference_token.get_source_fragment(),
+        SourceFragment::combine(reference_token.get_source_fragment(), last_pos.get_source_fragment()),
         context,
-        package_name);
+        package_name
+    );
 }
-
 
 std::unique_ptr<IAstNode> AstPackage::clone()
 {

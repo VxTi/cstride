@@ -79,9 +79,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
         reference_token.get_type() == TokenType::DOUBLE_LITERAL)
     {
         const auto next = set.next();
-        const auto numeric = next.get_lexeme().substr(
-            0,
-            next.get_lexeme().length() - 1);
+        const auto numeric = next.get_lexeme().substr(0, next.get_lexeme().length() - 1);
         // Remove the trailing D
 
         return std::make_unique<AstFpLiteral>(
