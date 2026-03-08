@@ -18,28 +18,28 @@ namespace stride::ast
 
     enum class BinaryOpType
     {
-        ADD,
-        SUBTRACT,
-        MULTIPLY,
-        DIVIDE,
-        MODULO,
-        POWER
+        ADD,      // <..> + <..>
+        SUBTRACT, // <..> - <..>
+        MULTIPLY, // <..> * <..>
+        DIVIDE,   // <..> / <..>
+        MODULO,   // <..> % <..>
+        POWER     // <..> ** <..>
     };
 
     enum class LogicalOpType
     {
-        AND,
-        OR
+        AND, // <..> && <..>
+        OR   // <..> || <..>
     };
 
     enum class ComparisonOpType
     {
-        EQUALS,
-        NOT_EQUAL,
-        LESS_THAN,
-        LESS_THAN_OR_EQUAL,
-        GREATER_THAN,
-        GREATER_THAN_OR_EQUAL
+        EQUALS,               // <..> == <..>
+        NOT_EQUAL,            // <..> != <..>
+        LESS_THAN,            // <..> < <..>
+        LESS_THAN_OR_EQUAL,   // <..> <= <..>
+        GREATER_THAN,         // <..> > <..>
+        GREATER_THAN_OR_EQUAL // <..> >= <..>
     };
 
     enum class UnaryOpType
@@ -58,15 +58,17 @@ namespace stride::ast
 
     enum class MutativeAssignmentType
     {
-        ASSIGN,
-        ADD,
-        SUBTRACT,
-        MULTIPLY,
-        DIVIDE,
-        MODULO,
-        BITWISE_OR,
-        BITWISE_AND,
-        BITWISE_XOR
+        ASSIGN,              // <..> = <..>
+        ADD,                 // <..> += <..>
+        SUBTRACT,            // <..> -= <..>
+        MULTIPLY,            // <..> *= <..>
+        DIVIDE,              // <..> /= <..>
+        MODULO,              // <..> %= <..>
+        BITWISE_OR,          // <..> |= <..>
+        BITWISE_AND,         // <..> &= <..>
+        BITWISE_XOR,         // <..> ^= <..>
+        BITWISE_LEFT_SHIFT,  // <..> <<= <..>
+        BITWISE_RIGHT_SHIFT, // <..> >>= <..>
     };
 
     class IAstExpression

@@ -126,8 +126,7 @@ llvm::Value* stride::ast::wrap_optional_value_gep(
 {
     const auto value_ty = value->getType();
 
-    if (!is_optional_wrapped_type(optional_ty) || is_optional_wrapped_type(
-        value_ty))
+    if (!is_optional_wrapped_type(optional_ty) || is_optional_wrapped_type(value_ty))
     {
         return value;
     }

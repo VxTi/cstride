@@ -40,6 +40,8 @@ bool is_variable_mutative_token(const TokenType type)
     case TokenType::AMPERSAND_EQUALS:
     case TokenType::PIPE_EQUALS:
     case TokenType::CARET_EQUALS:
+    case TokenType::DOUBLE_GT_EQ:
+    case TokenType::DOUBLE_LT_EQ:
         return true;
     default:
         return false;
@@ -68,6 +70,10 @@ MutativeAssignmentType parse_mutative_assignment_type(const Token& token)
         return MutativeAssignmentType::BITWISE_OR;
     case TokenType::CARET_EQUALS:
         return MutativeAssignmentType::BITWISE_XOR;
+    case TokenType::DOUBLE_GT_EQ:
+        return MutativeAssignmentType::BITWISE_RIGHT_SHIFT;
+    case TokenType::DOUBLE_LT_EQ:
+        return MutativeAssignmentType::BITWISE_LEFT_SHIFT;
     default:
         TokenSet::throw_error(
             token,
@@ -212,58 +218,9 @@ llvm::Value* AstVariableReassignment::codegen(
         variable_def != nullptr &&
         variable_def->get_type()->is_optional())
     {
-        if (llvm::Type* optional_ty = type_to_llvm_type(variable_def->get_type(), module);
-            assign_ty == optional_ty)
-        {
-            builder->CreateStore(assign_val, variable);
-        }
-        else
-        {
-            llvm::Value* has_value = nullptr;
-            llvm::Value* value = nullptr;
-
-            const auto value_ty = optional_ty->getStructElementType(
-                OPT_IDX_ELEMENT_TYPE);
-
-            if (llvm::isa<llvm::ConstantPointerNull>(assign_val))
-            {
-                has_value = llvm::ConstantInt::get(
-                    llvm::Type::getInt1Ty(ctx),
-                    OPT_NO_VALUE);
-                value = llvm::UndefValue::get(value_ty);
-            }
-            else
-            {
-                has_value = llvm::ConstantInt::get(
-                    llvm::Type::getInt1Ty(ctx),
-                    OPT_HAS_VALUE);
-                value = assign_val;
-
-                if (value->getType() != value_ty
-                    && value->getType()->isIntegerTy() &&
-                    value_ty->isIntegerTy())
-                {
-                    value = builder->CreateIntCast(value, value_ty, true);
-                }
-            }
-
-            // Store has_value
-            llvm::Value* has_value_ptr =
-                builder->CreateStructGEP(optional_ty,
-                                         variable,
-                                         OPT_IDX_HAS_VALUE);
-            builder->CreateStore(has_value, has_value_ptr);
-
-            // Store value
-            if (!llvm::isa<llvm::ConstantPointerNull>(assign_val))
-            {
-                llvm::Value* value_ptr =
-                    builder->CreateStructGEP(optional_ty,
-                                             variable,
-                                             OPT_IDX_ELEMENT_TYPE);
-                builder->CreateStore(value, value_ptr);
-            }
-        }
+        llvm::Type* optional_ty = type_to_llvm_type(variable_def->get_type(), module);
+        llvm::Value* wrapped_val = wrap_optional_value(assign_val, optional_ty, builder);
+        builder->CreateStore(wrapped_val, variable);
 
         return variable;
     } // end optional type check
@@ -320,6 +277,12 @@ llvm::Value* AstVariableReassignment::codegen(
         case MutativeAssignmentType::BITWISE_XOR:
             finalValue = builder->CreateXor(cur_val, assign_val, "xor_tmp");
             break;
+        case MutativeAssignmentType::BITWISE_RIGHT_SHIFT:
+            finalValue = builder->CreateAShr(cur_val, assign_val, "ashr_tmp");
+            break;
+        case MutativeAssignmentType::BITWISE_LEFT_SHIFT:
+            finalValue = builder->CreateLShr(cur_val, assign_val, "lshr_tmp");
+            break;
         default:
             break;
         }
@@ -343,13 +306,7 @@ std::unique_ptr<IAstNode> AstVariableReassignment::clone()
 
 bool AstVariableReassignment::is_reducible()
 {
-    if (auto* reducible = dynamic_cast<IReducible*>(this->get_value());
-        reducible != nullptr)
-    {
-        return reducible->is_reducible();
-    }
-
-    return false;
+    return this->get_value()->is_reducible();
 }
 
 std::optional<std::unique_ptr<IAstNode>> AstVariableReassignment::reduce()
