@@ -20,10 +20,23 @@ class StrideColorSettingsPage : ColorSettingsPage {
     override fun getHighlighter(): SyntaxHighlighter = StrideSyntaxHighlighter()
 
     override fun getDemoText(): String = """
-            // Stride example
-            extern async fn <func>fetch_data</func><generic><T></generic>(url: string): string;
+            package System;
 
-            type <usertype>CustomInt</usertype> = int32;
+            import System::{
+                IO::Print,
+                Time::Sleep
+            };
+
+            type <usertype>Array</usertype>&lt;<generic>T</generic>&gt; = <generic>T</generic>[];
+            type <usertype>IArray</usertype> = <usertype>Array</usertype>&lt;int32&gt;;
+
+            /**
+             * Prints the given string and sleeps for the specified duration.
+             */
+            pub async fn <func>delayed_print</func>(msg: string, ms: int32): void {
+                IO::<func>Print</func>(msg);
+                Time::<func>Sleep</func>(ms);
+            }
 
             struct Point {
                 x: float32,
@@ -32,10 +45,11 @@ class StrideColorSettingsPage : ColorSettingsPage {
 
             async fn <func>main</func>(): int32 {
                 const p: Point = Point::{ x: 1.0, y: 2.0 };
-                const num: <usertype>CustomInt</usertype> = 42;
+                const numbers: <usertype>IArray</usertype> = [1, 2, 3, 4, 5];
                 let msg: string = "Hello, Stride!";
+
                 if (p.x > 0.0 && true) {
-                    <func>fetch_data</func>("https://example.com");
+                    <func>delayed_print</func>(msg, 1000);
                 }
                 return 0;
             }

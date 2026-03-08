@@ -77,9 +77,9 @@ namespace stride::ast
         std::unique_ptr<IAstType> _annotated_return_type;
         std::vector<Symbol> _captured_variables;
         VisibilityModifier _visibility;
+        GenericParameterList _generic_parameters;
         int _flags;
 
-        std::vector<std::string> _generic_parameters;
 
         /// Cached LLVM function pointer for anonymous functions.
         /// Named functions are always looked up by their scoped name in the module,
@@ -100,16 +100,16 @@ namespace stride::ast
             std::unique_ptr<IAstType> return_type,
             const VisibilityModifier visibility,
             const int flags,
-            const std::vector<std::string>& generic_parameters
+            const GenericParameterList& generic_parameters
         ) :
             IAstExpression(source, context),
             _body(std::move(body)),
             _symbol(std::move(symbol)),
             _parameters(std::move(parameters)),
             _annotated_return_type(std::move(return_type)),
-            _flags(flags),
             _visibility(visibility),
-            _generic_parameters(generic_parameters) {}
+            _generic_parameters(generic_parameters),
+            _flags(flags) {}
 
 
         [[nodiscard]]
@@ -261,7 +261,7 @@ namespace stride::ast
             std::unique_ptr<IAstType> return_type,
             const VisibilityModifier visibility,
             const int flags,
-            const std::vector<std::string>& generic_parameters
+            const GenericParameterList& generic_parameters
         ) :
             IAstFunction(
                 symbol.symbol_position,
@@ -309,7 +309,7 @@ namespace stride::ast
 
         ~AstLambdaFunctionExpression() override = default;
 
-        std::string get_mangled_name() const;
+        std::string get_mangled_name() const { return ""; }; // TODO: Implement
     };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(

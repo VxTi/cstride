@@ -28,7 +28,6 @@ namespace stride::ast
         LT,                 // <
         EQUALS,             // =
         DOUBLE_EQUALS,      // ==
-        NOT_EQUALS,         // !=
         LEQUALS,            // <=
         GEQUALS,            // >=
         PLUS,               // +
@@ -190,8 +189,6 @@ namespace stride::ast
             return "=";
         case TokenType::DOUBLE_EQUALS:
             return "==";
-        case TokenType::NOT_EQUALS:
-            return "!=";
         case TokenType::LEQUALS:
             return "<=";
         case TokenType::GEQUALS:
