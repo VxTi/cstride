@@ -26,13 +26,13 @@ namespace stride:: ast
             std::string name,
             std::unique_ptr<IAstType> type,
             const VisibilityModifier visibility,
-            const GenericParameterList& generic_parameters = {}
+            GenericParameterList  generic_parameters = {}
         ) :
             IAstNode(source, context),
             _name(std::move(name)),
             _type(std::move(type)),
             _visibility(visibility),
-            _generic_parameters(generic_parameters) {}
+            _generic_parameters(std::move(generic_parameters)) {}
 
         [[nodiscard]]
         const std::string& get_name() const

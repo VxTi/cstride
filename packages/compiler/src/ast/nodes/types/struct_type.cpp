@@ -14,7 +14,7 @@ using namespace stride::ast;
 void parse_struct_member(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    std::vector<definition::StructFieldPair>& fields
+    StructTypeMemberList& fields
 )
 {
     const auto struct_member_name_tok = set.expect(
@@ -82,7 +82,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
             reference_token.get_source_fragment());
     }
 
-    std::vector<definition::StructFieldPair> struct_fields = {};
+    StructTypeMemberList struct_fields = {};
     const auto struct_type_context = std::make_shared<ParsingContext>(
         context,
         context->get_context_type());
@@ -229,7 +229,7 @@ void AstStructType::resolve_forward_references(
 
 bool AstStructType::equals(const IAstType& other) const
 {
-    if (const auto other_struct_ty = dynamic_cast<const AstStructType*>(&other))
+    if (const auto other_struct_ty = cast_type<const AstStructType*>(&other))
     {
         if (this->_members.size() != other_struct_ty->_members.size())
         {
@@ -251,7 +251,7 @@ bool AstStructType::equals(const IAstType& other) const
         return true;
     }
 
-    if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+    if (const auto* other_named = cast_type<const AstNamedType*>(&other))
     {
         return other_named->equals(*this);
     }
@@ -261,7 +261,8 @@ bool AstStructType::equals(const IAstType& other) const
 
 std::unique_ptr<IAstNode> AstStructType::clone()
 {
-    std::vector<definition::StructFieldPair> cloned_members = {};
+    StructTypeMemberList cloned_members;
+    cloned_members.reserve(this->_members.size());
 
     for (const auto& [name, type] : this->_members)
     {
