@@ -27,31 +27,6 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-
-std::vector<std::string> parse_generic_parameters(TokenSet& set)
-{
-    std::vector<std::string> generic_parameter_names;
-    if (set.peek_next_eq(TokenType::LT))
-    {
-        set.next();
-        generic_parameter_names.push_back(
-            set.expect(TokenType::IDENTIFIER, "Expected initial generic parameter name").get_lexeme()
-        );
-
-        while (set.peek_next_eq(TokenType::COMMA))
-        {
-            set.next();
-            generic_parameter_names.push_back(
-                set.expect(TokenType::IDENTIFIER, "Expected generic parameter name").get_lexeme()
-            );
-        }
-
-        set.expect(TokenType::GT, "Expected '>' after generic parameter list");
-    }
-
-    return generic_parameter_names;
-}
-
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
@@ -83,7 +58,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 
     auto function_context = std::make_shared<ParsingContext>(context, ContextType::FUNCTION);
 
-    std::vector<std::string> generic_parameter_names = parse_generic_parameters(set);
+    GenericParameterList generic_parameter_names = parse_generic_declaration(set);
 
     set.expect(TokenType::LPAREN, "Expected '(' after function name");
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
