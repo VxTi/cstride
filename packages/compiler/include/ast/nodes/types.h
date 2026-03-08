@@ -18,6 +18,10 @@ namespace llvm
 
 namespace stride::ast
 {
+    namespace definition {
+        class TypeDefinition;
+    }
+
     class TokenSet;
 
     using StructTypeMemberPair = std::pair<std::string, std::unique_ptr<IAstType>>;
@@ -333,6 +337,9 @@ namespace stride::ast
         /// type LeafType = MidType;
         /// Then, calling `get_base_reference_type` on `LeafType` will return `int32`.
         [[nodiscard]] std::optional<std::unique_ptr<IAstType>> get_base_reference_type() const;
+
+        [[nodiscard]]
+        std::optional<definition::TypeDefinition*> get_type_definition() const;
 
     private:
         bool is_assignable_to_impl(IAstType* other) override;
