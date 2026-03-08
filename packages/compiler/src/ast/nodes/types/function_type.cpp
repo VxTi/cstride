@@ -100,17 +100,17 @@ llvm::FunctionType* AstFunctionType::get_llvm_type(llvm::Module* module) const
 
 std::unique_ptr<IAstNode> AstFunctionType::clone()
 {
-    std::vector<std::unique_ptr<IAstType>> parameters_clone;
-    parameters_clone.reserve(this->_parameters.size());
+    std::vector<std::unique_ptr<IAstType>> parameters;
+    parameters.reserve(this->_parameters.size());
     for (const auto& p : this->_parameters)
     {
-        parameters_clone.push_back(p->clone_ty());
+        parameters.push_back(p->clone_ty());
     }
 
     return std::make_unique<AstFunctionType>(
         this->get_source_fragment(),
         this->get_context(),
-        std::move(parameters_clone),
+        std::move(parameters),
         this->_return_type->clone_ty(),
         this->get_flags()
     );
@@ -118,7 +118,7 @@ std::unique_ptr<IAstNode> AstFunctionType::clone()
 
 bool AstFunctionType::equals(const IAstType& other) const
 {
-    if (const auto* other_func = dynamic_cast<const AstFunctionType*>(&other))
+    if (const auto* other_func = cast_type<const AstFunctionType*>(&other))
     {
         if (!other_func->get_return_type()->equals(
             *this->get_return_type()))
@@ -138,7 +138,7 @@ bool AstFunctionType::equals(const IAstType& other) const
         return true;
     }
 
-    if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+    if (const auto* other_named = cast_type<const AstNamedType*>(&other))
     {
         return other_named->equals(*this);
     }

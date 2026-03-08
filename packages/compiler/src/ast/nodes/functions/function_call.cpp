@@ -33,7 +33,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     const auto reference_token = set.peek(-1);
     auto function_parameter_set = collect_parenthesized_block(set);
 
-    std::vector<std::unique_ptr<IAstExpression>> function_arg_nodes = {};
+    ExpressionList function_arg_nodes = {};
 
     int function_call_flags = SRFLAG_NONE;
 
@@ -609,7 +609,7 @@ std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() con
 
 std::unique_ptr<IAstNode> AstFunctionCall::clone()
 {
-    std::vector<std::unique_ptr<IAstExpression>> cloned_args;
+    ExpressionList cloned_args;
     cloned_args.reserve(this->get_arguments().size());
     for (const auto& arg : this->get_arguments())
     {

@@ -22,7 +22,7 @@ llvm::Value* AstTupleInitializer::codegen(llvm::Module* module, llvm::IRBuilderB
 
 std::unique_ptr<IAstNode> AstTupleInitializer::clone()
 {
-    std::vector<std::unique_ptr<IAstExpression>> cloned_members;
+    ExpressionList cloned_members;
     cloned_members.reserve(this->_members.size());
 
     for (const auto& member : this->_members)

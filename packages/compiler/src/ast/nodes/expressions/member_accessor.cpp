@@ -31,11 +31,10 @@ bool stride::ast::is_member_accessor(IAstExpression* lhs, const TokenSet& set)
     // We assume the expression and subsequent tokens are "member accessors"
     // if the LHS is an identifier, and it's followed by `.<identifier>`
     // E.g., `struct_var.member`
-    if (dynamic_cast<AstIdentifier*>(lhs))
+    if (cast_expr<AstIdentifier*>(lhs))
     {
-        return set.peek_eq(TokenType::DOT, 0) && set.peek_eq(
-            TokenType::IDENTIFIER,
-            1);
+        return set.peek_eq(TokenType::DOT, 0)
+            && set.peek_eq(TokenType::IDENTIFIER, 1);
     }
     return false;
 }
@@ -49,7 +48,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_chained_member_access(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const std::unique_ptr<IAstExpression>& lhs
-    )
+)
 {
     std::vector<std::unique_ptr<AstIdentifier>> chained_accessors = {};
 
@@ -315,19 +314,19 @@ llvm::Value* AstMemberAccessor::codegen(
 
 std::unique_ptr<IAstNode> AstMemberAccessor::clone()
 {
-    std::vector<std::unique_ptr<AstIdentifier>> members_clone;
-    members_clone.reserve(this->_members.size());
+    std::vector<std::unique_ptr<AstIdentifier>> members;
+    members.reserve(this->_members.size());
 
     for (const auto& member : this->_members)
     {
-        members_clone.push_back(member->clone_as<AstIdentifier>());
+        members.push_back(member->clone_as<AstIdentifier>());
     }
 
     return std::make_unique<AstMemberAccessor>(
         this->get_source_fragment(),
         this->get_context(),
         this->_base->clone_as<AstIdentifier>(),
-        std::move(members_clone)
+        std::move(members)
     );
 }
 

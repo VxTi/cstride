@@ -30,9 +30,6 @@ namespace stride::ast
 
     namespace definition
     {
-        using StructFieldPair = std::pair<std::string, std::unique_ptr<IAstType>>;
-
-
         enum class SymbolType
         {
             CLASS,
@@ -210,6 +207,7 @@ namespace stride::ast
                 this->_llvm_function = function;
             }
 
+            [[nodiscard]]
             llvm::Function* get_llvm_function() const
             {
                 return this->_llvm_function;
@@ -337,6 +335,7 @@ namespace stride::ast
             const std::string& symbol_name
         ) const;
 
+        [[nodiscard]]
         std::optional<std::unique_ptr<definition::IDefinition>> get_definition_by_internal_name(
             const std::string& internal_name) const;
 

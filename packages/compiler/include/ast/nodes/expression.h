@@ -125,22 +125,24 @@ namespace stride::ast
         }
     };
 
+    using ExpressionList = std::vector<std::unique_ptr<IAstExpression>>;
+
     class AstArray
         : public IAstExpression
     {
-        std::vector<std::unique_ptr<IAstExpression>> _elements;
+        ExpressionList _elements;
 
     public:
         explicit AstArray(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::vector<std::unique_ptr<IAstExpression>> elements
+            ExpressionList elements
         ) :
             IAstExpression(source, context),
             _elements(std::move(elements)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstExpression>>& get_elements() const
+        const ExpressionList& get_elements() const
         {
             return this->_elements;
         }
@@ -313,7 +315,7 @@ namespace stride::ast
     class AstFunctionCall
         : public IAstExpression
     {
-        std::vector<std::unique_ptr<IAstExpression>> _arguments;
+        ExpressionList _arguments;
         const Symbol _symbol;
         int _flags;
 
@@ -321,7 +323,7 @@ namespace stride::ast
         explicit AstFunctionCall(
             const std::shared_ptr<ParsingContext>& context,
             Symbol function_call_sym,
-            std::vector<std::unique_ptr<IAstExpression>> arguments,
+            ExpressionList arguments,
             const int flags = SRFLAG_NONE
         ) :
             IAstExpression(function_call_sym.symbol_position, context),
@@ -330,7 +332,7 @@ namespace stride::ast
             _flags(flags) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstExpression>>& get_arguments() const
+        const ExpressionList& get_arguments() const
         {
             return this->_arguments;
         }
@@ -808,19 +810,19 @@ namespace stride::ast
     class AstTupleInitializer
         : public IAstExpression
     {
-        std::vector<std::unique_ptr<IAstExpression>> _members;
+        ExpressionList _members;
 
     public:
         explicit AstTupleInitializer(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::vector<std::unique_ptr<IAstExpression>> members
+            ExpressionList members
         ) :
             IAstExpression(source, context),
             _members(std::move(members)) {}
 
         [[nodiscard]]
-        const std::vector<std::unique_ptr<IAstExpression>>& get_members() const
+        const ExpressionList& get_members() const
         {
             return this->_members;
         }

@@ -20,6 +20,9 @@ namespace stride::ast
 {
     class TokenSet;
 
+    using StructTypeMemberPair = std::pair<std::string, std::unique_ptr<IAstType>>;
+    using StructTypeMemberList = std::vector<StructTypeMemberPair>;
+
     enum class PrimitiveType
     {
         INT8,
@@ -462,20 +465,20 @@ namespace stride::ast
     class AstStructType
         : public IAstType
     {
-        std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> _members;
+        StructTypeMemberList _members;
 
     public:
         explicit AstStructType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> members,
+            StructTypeMemberList members,
             const int flags = SRFLAG_NONE
         ) :
             IAstType(source, context, flags),
             _members(std::move(members)) {}
 
         [[nodiscard]]
-        std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> get_members() const;
+        StructTypeMemberList get_members() const;
 
         [[nodiscard]]
         std::optional<IAstType*> get_member_field_type(const std::string& field_name) const;

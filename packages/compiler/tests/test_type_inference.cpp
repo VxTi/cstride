@@ -268,14 +268,14 @@ TEST_F(TypeInferenceTest, InferVariableDeclaration)
 TEST_F(TypeInferenceTest, InferArrayAndAccessor)
 {
     // Array
-    std::vector<std::unique_ptr<IAstExpression>> elements;
+    ExpressionList elements;
     elements.push_back(std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 1, 0));
     elements.push_back(std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 2, 0));
     auto array = std::make_unique<AstArray>(dummy_sf(), context, std::move(elements));
     EXPECT_EQ(infer_expression_type(array.get())->to_string(), "int32[]");
 
     // Empty array
-    std::vector<std::unique_ptr<IAstExpression>> empty_elements;
+    ExpressionList empty_elements;
     auto empty_array = std::make_unique<AstArray>(dummy_sf(), context, std::move(empty_elements));
     EXPECT_EQ(infer_expression_type(empty_array.get())->to_string(), "*int32[]");
 
@@ -312,7 +312,7 @@ TEST_F(TypeInferenceTest, InferArrayAccessorErrors)
 
 TEST_F(TypeInferenceTest, InferTuple)
 {
-    std::vector<std::unique_ptr<IAstExpression>> members;
+    ExpressionList members;
     members.push_back(std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 1, 0));
     members.push_back(std::make_unique<AstBooleanLiteral>(dummy_sf(), context, true));
     auto tuple = std::make_unique<AstTupleInitializer>(dummy_sf(), context, std::move(members));
@@ -393,7 +393,7 @@ TEST_F(TypeInferenceTest, InferFunctionCall)
             PrimitiveType::FLOAT32));
     context->define_function(fn_sym, std::move(fn_ty), VisibilityModifier::PUBLIC, 0);
 
-    std::vector<std::unique_ptr<IAstExpression>> args;
+    ExpressionList args;
     auto arg1 = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 1, 0);
     arg1->set_type(std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::INT32));
     args.push_back(std::move(arg1));
@@ -417,7 +417,7 @@ TEST_F(TypeInferenceTest, InferFunctionCall)
     auto l_fn_call = std::make_unique<AstFunctionCall>(
         context,
         lambda_var,
-        std::vector<std::unique_ptr<IAstExpression>>{},
+        ExpressionList{},
         0);
     EXPECT_EQ(infer_expression_type(l_fn_call.get())->to_string(), "int64");
 }

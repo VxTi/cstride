@@ -30,7 +30,7 @@ void AstArray::resolve_forward_references(
 
 std::unique_ptr<IAstNode> AstArray::clone()
 {
-    std::vector<std::unique_ptr<IAstExpression>> elements_clone;
+    ExpressionList elements_clone;
     elements_clone.reserve(this->get_elements().size());
 
     for (const auto& element : this->get_elements())
