@@ -52,6 +52,8 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_base_reference_type()
     std::optional<std::unique_ptr<IAstType>> base_type = this->get_reference_type();
     int recursion_guard = 0; // Prevent self-referencing types causing infinite loops
 
+    if (!base_type.has_value()) return std::nullopt;
+
     while (const auto* named_reference = cast_type<AstNamedType*>(base_type.value().get()))
     {
         base_type = named_reference->get_reference_type();
