@@ -295,7 +295,6 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-
         std::string to_string() override;
 
         bool is_reducible() override;

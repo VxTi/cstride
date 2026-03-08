@@ -113,7 +113,6 @@ llvm::Value* stride::ast::optionally_upcast_type(
         return builder->CreatePointerCast(value, target_ty);
     }
 
-
     return value;
 }
 

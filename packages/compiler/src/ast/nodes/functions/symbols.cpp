@@ -45,7 +45,6 @@ Symbol stride::ast::resolve_internal_function_name(
     );
 }
 
-
 Symbol stride::ast::resolve_internal_name(
     const std::string& context_name,
     const SourceFragment& position,

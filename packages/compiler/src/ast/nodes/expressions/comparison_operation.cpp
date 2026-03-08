@@ -66,7 +66,6 @@ void AstComparisonOp::validate()
     const auto lhs_primitive = cast_type<AstPrimitiveType*>(lhs_type);
     const auto rhs_primitive = cast_type<AstPrimitiveType*>(rhs_type);
 
-
     // If LHS is NIL and RHS is valid, allow the comparison (nil checks)
     if (lhs_primitive && rhs_primitive
         && lhs_primitive->get_primitive_type() == PrimitiveType::NIL

@@ -220,7 +220,6 @@ void AstConditionalStatement::validate()
         this->_else_body->validate();
 }
 
-
 std::unique_ptr<IAstNode> AstConditionalStatement::clone()
 {
     return std::make_unique<AstConditionalStatement>(

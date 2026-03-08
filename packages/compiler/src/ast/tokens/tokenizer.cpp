@@ -73,7 +73,6 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
             continue;
         }
 
-
         if (src[i] == '\"')
         {
             // Start of string

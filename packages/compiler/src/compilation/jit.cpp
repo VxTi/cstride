@@ -67,7 +67,6 @@ int Program::compile_jit(const cli::CompilationOptions& options) const
     }
     auto jtmb = std::move(*jit_target_machine_builder);
 
-
     // We explicitly create the TargetMachine to use it for both the JIT and the Optimizer
     const auto target_machine = llvm::cantFail(jtmb.createTargetMachine());
 

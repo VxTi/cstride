@@ -10,7 +10,6 @@ namespace stride::ast
 {
     class IAstExpression;
 
-
     llvm::Value* codegen_conditional_value(
         llvm::Module* module,
         llvm::IRBuilderBase* builder,

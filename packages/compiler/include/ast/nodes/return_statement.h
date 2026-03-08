@@ -38,8 +38,8 @@ namespace stride::ast
 
         llvm::Value* codegen(
             llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
-
+            llvm::IRBuilderBase* builder
+        ) override;
 
         [[nodiscard]]
         const std::optional<std::unique_ptr<IAstExpression>>& get_return_expression() const

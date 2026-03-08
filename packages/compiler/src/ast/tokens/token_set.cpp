@@ -67,7 +67,6 @@ Token TokenSet::peek_next() const
     return this->at(this->position());
 }
 
-
 bool TokenSet::peek_next_eq(const TokenType type) const
 {
     return this->peek_eq(type, 0);
