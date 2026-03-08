@@ -402,7 +402,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
             ),
             ErrorSourceReference(
                 value_type->to_string(),
-                value_type->get_source_fragment()
+                variable_declaration->get_initial_value()->get_source_fragment()
             )
         };
 

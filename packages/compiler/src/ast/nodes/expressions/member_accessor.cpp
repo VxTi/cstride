@@ -11,34 +11,6 @@
 
 using namespace stride::ast;
 
-std::vector<AstIdentifier*> AstMemberAccessor::get_members() const
-{
-    // We don't wanna transfer ownership to anyone else...
-    std::vector<AstIdentifier*> result;
-    result.reserve(this->_members.size());
-    std::ranges::transform(
-        this->_members,
-        std::back_inserter(result),
-        [](const std::unique_ptr<AstIdentifier>& member)
-        {
-            return member.get();
-        });
-    return result;
-}
-
-bool stride::ast::is_member_accessor(IAstExpression* lhs, const TokenSet& set)
-{
-    // We assume the expression and subsequent tokens are "member accessors"
-    // if the LHS is an identifier, and it's followed by `.<identifier>`
-    // E.g., `struct_var.member`
-    if (cast_expr<AstIdentifier*>(lhs))
-    {
-        return set.peek_eq(TokenType::DOT, 0)
-            && set.peek_eq(TokenType::IDENTIFIER, 1);
-    }
-    return false;
-}
-
 /// This parses both function call chaining, and struct member access
 /// e.g.,
 /// foo().bar.baz()
@@ -81,17 +53,42 @@ std::unique_ptr<IAstExpression> stride::ast::parse_chained_member_access(
     }
 
     const auto last_source_pos = chained_accessors.back().get()->get_source_fragment();
+    const auto source_pos = SourceFragment::concat(lhs_source_pos, last_source_pos);
 
     return std::make_unique<AstMemberAccessor>(
-        SourceFragment(
-            set.get_source(),
-            lhs_source_pos.offset,
-            last_source_pos.offset + last_source_pos.length - lhs_source_pos.
-            offset),
+        source_pos,
         context,
         lhs_identifier->clone_as<AstIdentifier>(),
         std::move(chained_accessors)
     );
+}
+
+std::vector<AstIdentifier*> AstMemberAccessor::get_members() const
+{
+    // We don't wanna transfer ownership to anyone else...
+    std::vector<AstIdentifier*> result;
+    result.reserve(this->_members.size());
+    std::ranges::transform(
+        this->_members,
+        std::back_inserter(result),
+        [](const std::unique_ptr<AstIdentifier>& member)
+        {
+            return member.get();
+        });
+    return result;
+}
+
+bool stride::ast::is_member_accessor(IAstExpression* lhs, const TokenSet& set)
+{
+    // We assume the expression and subsequent tokens are "member accessors"
+    // if the LHS is an identifier, and it's followed by `.<identifier>`
+    // E.g., `struct_var.member`
+    if (cast_expr<AstIdentifier*>(lhs))
+    {
+        return set.peek_eq(TokenType::DOT, 0)
+            && set.peek_eq(TokenType::IDENTIFIER, 1);
+    }
+    return false;
 }
 
 llvm::Value* AstMemberAccessor::codegen_global_member_accessor(

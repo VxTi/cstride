@@ -61,7 +61,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
                     // Since the RParen is already consumed, we have to manually extract its
                     // position with the following assumption It's possible this yields END_OF_FILE
                     const auto len =
-                        set.at(set.position() - 1).get_source_fragment().offset - 1 -
+                        set.peek(-1).get_source_fragment().offset - 1 -
                         preceding.get_source_fragment().offset;
                     throw parsing_error(
                         ErrorType::SYNTAX_ERROR,
