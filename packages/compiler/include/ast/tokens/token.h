@@ -51,8 +51,6 @@ namespace stride::ast
         PIPE_EQUALS,        // |=
         CARET_EQUALS,       // ^=
         BANG_EQUALS,        // !=
-        DOUBLE_LT,          // <<
-        DOUBLE_GT,          // >>
         DOUBLE_LT_EQ,       // <<=
         DOUBLE_GT_EQ,       // >>=
         DOUBLE_ASTERISK_EQ, // **=
@@ -235,10 +233,6 @@ namespace stride::ast
             return "^=";
         case TokenType::BANG_EQUALS:
             return "!=";
-        case TokenType::DOUBLE_LT:
-            return "<<";
-        case TokenType::DOUBLE_GT:
-            return ">>";
         case TokenType::DOUBLE_LT_EQ:
             return "<<=";
         case TokenType::DOUBLE_GT_EQ:

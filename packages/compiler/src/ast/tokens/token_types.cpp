@@ -108,8 +108,6 @@ std::vector<TokenDefinition> stride::ast::tokenTypes = {
     TOKEN(TokenType::DOUBLE_EQUALS, R"(==)"),
     TOKEN(TokenType::LEQUALS, R"(<=)"),
     TOKEN(TokenType::GEQUALS, R"(>=)"),
-    TOKEN(TokenType::DOUBLE_LT, R"(<<)"),
-    TOKEN(TokenType::DOUBLE_GT, R"(>>)"),
     TOKEN(TokenType::DOUBLE_PLUS, R"(\+\+)"),
     TOKEN(TokenType::DOUBLE_MINUS, R"(--)"),
     TOKEN(TokenType::DOUBLE_STAR, R"(\*\*)"),
