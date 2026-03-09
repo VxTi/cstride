@@ -68,19 +68,13 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
         SymbolType::ENUM
     );
 
-    const auto opt_enum_body_subset = collect_block(set);
-
-    if (!opt_enum_body_subset.has_value())
-    {
-        set.throw_error("Expected a block in enum declaration");
-    }
+    auto enum_body_subset = collect_block_required(set, "Expected a block in enum declaration");
 
     std::vector<std::unique_ptr<AstEnumerableMember>> members = {};
 
     auto enum_definition_context = std::make_shared<ParsingContext>(
         context,
         context->get_context_type());
-    auto enum_body_subset = opt_enum_body_subset.value();
 
     while (enum_body_subset.has_next())
     {

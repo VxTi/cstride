@@ -11,13 +11,14 @@ type Vector<T> = {
     z: T;
 };
 
-fn some_fn(nested: Vector<f64>): void {
-    IO::Print("Vector: [x: %f, y: %f, z: %f]", nested.x, nested.y, nested.z);
+fn some_fn(vectors: Array<Vector<f64>>): void {
+    for (let i = 0; i < 3; i++) {
+        const vec = vectors[i];
+        IO::Print("Vector: [x: %f, y: %f, z: %f]", vec.x, vec.y, vec.z);
+    }
 }
 
 fn main(): i32 {
-    const instantiated = Vector::{ x: 1.0, y: 2.0, z: 3.0 };
-
     const vecArray: Array<Vector<f64>> = [
         Vector::{ x: 1.0, y: 2.0, z: 3.0 },
         Vector::{ x: 4.0, y: 5.0, z: 6.0 },

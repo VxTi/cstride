@@ -71,16 +71,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
 
     const auto reference_token = set.peek_next();
 
-    auto struct_body_set = collect_block(set);
-
-    // Ensure we have at least one member in the struct body
-    if (!struct_body_set.has_value() || !struct_body_set.value().has_next())
-    {
-        throw parsing_error(
-            ErrorType::SEMANTIC_ERROR,
-            "A struct must have at least 1 member",
-            reference_token.get_source_fragment());
-    }
+    auto struct_body_set = collect_block_required(set, "A struct must have at least 1 member");
 
     StructTypeMemberList struct_fields = {};
     const auto struct_type_context = std::make_shared<ParsingContext>(
@@ -88,16 +79,9 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
         context->get_context_type());
 
     // Parse fields
-    if (struct_body_set.has_value())
+    while (struct_body_set.has_next())
     {
-        while (struct_body_set.value().has_next())
-        {
-            parse_struct_member(
-                struct_type_context,
-                struct_body_set.value(),
-                struct_fields
-            );
-        }
+        parse_struct_member(struct_type_context, struct_body_set, struct_fields);
     }
 
     // Re-verification
@@ -106,7 +90,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
         set.throw_error("Struct must have at least one member");
     }
 
-     auto struct_ty = std::make_unique<AstStructType>(
+    auto struct_ty = std::make_unique<AstStructType>(
         reference_token.get_source_fragment(),
         struct_type_context,
         std::move(struct_fields),

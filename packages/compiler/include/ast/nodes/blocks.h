@@ -65,6 +65,8 @@ namespace stride::ast
 
     std::optional<TokenSet> collect_block(TokenSet& set);
 
+    TokenSet collect_block_required(TokenSet& set, const std::string& error);
+
     std::optional<TokenSet> collect_block_variant(
         TokenSet& set,
         TokenType start_token,

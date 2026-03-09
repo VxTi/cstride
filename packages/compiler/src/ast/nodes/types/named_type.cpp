@@ -144,31 +144,17 @@ bool AstAliasType::is_castable_to_impl(IAstType* other)
 
 bool AstAliasType::is_assignable_to_impl(IAstType* other)
 {
-    if (const auto other_named = cast_type<AstAliasType*>(other))
-    {
-        if (this->get_name() == other_named->get_name())
-        {
-            return true;
-        }
-    }
+    // Basic name comparison is already done higher up.
+    // Here we check other conditions that might have to be met to assign.
 
     // It might be the case that we're trying to assign primitive references to a named value, e.g.,
     // type SomePrimitive = i32[]
     // const someVar: SomePrimitive = [1, 2, 3];
     // In this case, `[1, 2, 3]` should be assignable to the base types of `SomePrimitive`
-    const auto self_base_type = get_underlying_type();
-    if (self_base_type.has_value() && self_base_type.value()->is_assignable_to(other))
+    if (const auto self_base_type = get_underlying_type();
+        self_base_type.has_value())
     {
-        return true;
-    }
-
-    if (const auto* other_named_ptr = cast_type<AstAliasType*>(other))
-    {
-        const auto other_base_type = other_named_ptr->get_underlying_type();
-        if (other_base_type.has_value() && this->is_assignable_to(other_base_type.value().get()))
-        {
-            return true;
-        }
+        return self_base_type.value()->is_assignable_to(other);
     }
 
     return false;

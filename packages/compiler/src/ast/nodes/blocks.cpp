@@ -55,8 +55,8 @@ std::optional<TokenSet> stride::ast::collect_block_variant(
 {
     set.expect(start_token);
     for (int64_t level = 1, offset = 0;
-        level > 0 && offset < set.size();
-        ++offset)
+         level > 0 && offset < set.size();
+         ++offset)
     {
         if (const auto next = set.peek(offset); next.get_type() == start_token)
         {
@@ -93,6 +93,16 @@ std::optional<TokenSet> stride::ast::collect_block_variant(
 std::optional<TokenSet> stride::ast::collect_block(TokenSet& set)
 {
     return collect_block_variant(set, TokenType::LBRACE, TokenType::RBRACE);
+}
+
+TokenSet stride::ast::collect_block_required(TokenSet& set, const std::string& error)
+{
+    const auto block = collect_block(set);
+    if (!block.has_value())
+    {
+        set.throw_error(error);
+    }
+    return block.value();
 }
 
 std::optional<TokenSet> stride::ast::collect_parenthesized_block(TokenSet& set)
