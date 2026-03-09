@@ -98,7 +98,7 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
     // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
     if (const auto* other_named = cast_type<AstNamedType*>(other))
     {
-        const auto reference_type = other_named->get_base_reference_type();
+        const auto reference_type = other_named->get_underlying_type();
         if (!reference_type.has_value())
         {
             return false;
@@ -120,7 +120,7 @@ bool AstArrayType::is_castable_to_impl(IAstType* other)
     // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
     if (const auto* other_named = cast_type<AstNamedType*>(other))
     {
-        const auto reference_type = other_named->get_base_reference_type();
+        const auto reference_type = other_named->get_underlying_type();
         if (!reference_type.has_value())
         {
             return false;

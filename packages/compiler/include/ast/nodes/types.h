@@ -284,15 +284,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override
-        {
-            return std::make_unique<AstNamedType>(
-                this->get_source_fragment(),
-                this->get_context(),
-                this->_name,
-                this->get_flags()
-            );
-        }
+        std::unique_ptr<IAstNode> clone() override;
 
         std::string get_type_name() override
         {
@@ -336,7 +328,7 @@ namespace stride::ast
         /// type MidType = RootType;
         /// type LeafType = MidType;
         /// Then, calling `get_base_reference_type` on `LeafType` will return `i32`.
-        [[nodiscard]] std::optional<std::unique_ptr<IAstType>> get_base_reference_type() const;
+        [[nodiscard]] std::optional<std::unique_ptr<IAstType>> get_underlying_type() const;
 
         [[nodiscard]]
         std::optional<definition::TypeDefinition*> get_type_definition() const;

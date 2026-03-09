@@ -221,7 +221,7 @@ bool IAstType::is_assignable_to(IAstType* other)
         {
             return this_named->equals(*other_named);
         }
-        if (const auto self_base = this_named->get_base_reference_type();
+        if (const auto self_base = this_named->get_underlying_type();
             self_base.has_value() && self_base.value()->is_assignable_to(other))
         {
             return true;
@@ -230,7 +230,7 @@ bool IAstType::is_assignable_to(IAstType* other)
 
     if (const auto* other_named = cast_type<AstNamedType*>(other))
     {
-        if (const auto other_base = other_named->get_base_reference_type();
+        if (const auto other_base = other_named->get_underlying_type();
             other_base.has_value() && this->is_assignable_to(other_base.value().get()))
         {
             return true;
@@ -267,7 +267,7 @@ AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
 
     if (const auto named = cast_type<AstNamedType*>(type))
     {
-        const auto ref_type = named->get_base_reference_type();
+        const auto ref_type = named->get_underlying_type();
 
         if (!ref_type.has_value())
         {
@@ -322,7 +322,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         // If one is a named type and the other is its base type, we can also return the dominant type
         if (const auto lhs_named = cast_type<AstNamedType*>(lhs))
         {
-            if (const auto base = lhs_named->get_base_reference_type(); base.has_value() && base.value()->equals(*rhs))
+            if (const auto base = lhs_named->get_underlying_type(); base.has_value() && base.value()->equals(*rhs))
             {
                 return rhs->clone_ty();
             }
@@ -330,7 +330,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
         if (const auto rhs_named = cast_type<AstNamedType*>(rhs))
         {
-            if (const auto base = rhs_named->get_base_reference_type(); base.has_value() && base.value()->equals(*lhs))
+            if (const auto base = rhs_named->get_underlying_type(); base.has_value() && base.value()->equals(*lhs))
             {
                 return lhs->clone_ty();
             }

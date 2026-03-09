@@ -356,7 +356,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
         auto base_type = var_def->get_type()->clone_ty();
         if (const auto* named = dynamic_cast<AstNamedType*>(base_type.get()))
         {
-            if (const auto resolved = named->get_base_reference_type();
+            if (const auto resolved = named->get_underlying_type();
                 resolved.has_value())
             {
                 base_type = resolved.value()->clone_ty();
