@@ -33,7 +33,7 @@ int Program::compile(const cli::CompilationOptions& options) const
         : options.target_triple;
     llvm::Triple target_triple(target_triple_str);
     std::string error;
-    auto target = llvm::TargetRegistry::lookupTarget(target_triple_str, error);
+    auto target = llvm::TargetRegistry::lookupTarget(target_triple, error);
 
     if (!target)
     {
