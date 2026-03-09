@@ -61,15 +61,41 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() cons
 
 std::optional<std::unique_ptr<IAstType>> AstNamedType::get_underlying_type() const
 {
-    std::optional<std::unique_ptr<IAstType>> base_type = this->get_reference_type();
-    int recursion_guard = 0; // Prevent self-referencing types causing infinite loops
+    const auto& reference_type_definition = this->get_type_definition();
+
+    if (!reference_type_definition.has_value())
+    {
+        return std::nullopt;
+    }
+
+    std::optional<std::unique_ptr<IAstType>> base_type = this->is_generic_overload()
+        ? instantiate_generic_type(this, reference_type_definition.value())
+        : this->get_reference_type();
+
+    int recursion_guard = 0;
 
     if (!base_type.has_value())
         return std::nullopt;
 
     while (const auto* named_reference = cast_type<AstNamedType*>(base_type.value().get()))
     {
-        base_type = named_reference->get_reference_type();
+        if (named_reference->is_generic_overload())
+        {
+            if (const auto next_def = named_reference->get_type_definition();
+                next_def.has_value())
+            {
+                base_type = instantiate_generic_type(named_reference, next_def.value());
+            }
+            else
+            {
+                break;
+            }
+        }
+        else
+        {
+            base_type = named_reference->get_reference_type();
+        }
+
         if (++recursion_guard > MAX_RECURSION_DEPTH)
         {
             throw parsing_error(
@@ -153,20 +179,41 @@ bool AstNamedType::equals(const IAstType& other) const
     // Simple naming checks, e.g., "Vec3 == Vec3"
     if (auto* other_named = cast_type<const AstNamedType*>(&other))
     {
-        if (this->get_name() != other_named->get_name())
+        if (this->get_name() == other_named->get_name())
         {
-            return false;
-        }
+            // If both aren't generic, then name comparison should suffice
+            if (!this->is_generic_overload() && !other_named->is_generic_overload())
+            {
+                return true;
+            }
 
-        // If both aren't generic, then name comparison should suffice
-        if (!this->is_generic_overload() && !other_named->is_generic_overload())
-        {
-            return true;
+            // If both are generic, they must have the same number of parameters
+            if (this->get_instantiated_generic_types().size() == other_named->get_instantiated_generic_types().size())
+            {
+                // And all parameters must be equal
+                bool all_equal = true;
+                for (size_t i = 0; i < this->get_instantiated_generic_types().size(); i++)
+                {
+                    if (!this->get_instantiated_generic_types()[i]->equals(
+                        other_named->get_instantiated_generic_types()[i]))
+                    {
+                        all_equal = false;
+                        break;
+                    }
+                }
+                if (all_equal)
+                {
+                    return true;
+                }
+            }
         }
+    }
 
-        // Otherwise it's just a matter of quantity comparison,
-        // as we don't really care of their inner types, as this can differ per context
-        return this->get_generic_types().size() == other_named->get_generic_types().size();
+    // If it's not a named type, or names/generics didn't match, check underlying types
+    const auto self_underlying = this->get_underlying_type();
+    if (self_underlying.has_value())
+    {
+        return self_underlying.value()->equals(other);
     }
 
     return false;
