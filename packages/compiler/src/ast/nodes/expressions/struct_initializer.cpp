@@ -16,10 +16,9 @@ bool stride::ast::is_struct_initializer(const TokenSet& set)
 {
     // We assume an expression is a struct initializer if it starts with `<name>::{ <identifier`
     // Obviously, this can also be a block, but we will disambiguate that during parsing
-    return set.peek_eq(TokenType::IDENTIFIER, 0) && set.peek_eq(
-            TokenType::DOUBLE_COLON,
-            1) &&
-        set.peek_eq(TokenType::LBRACE, 2);
+    return set.peek_eq(TokenType::IDENTIFIER, 0)
+        && set.peek_eq(TokenType::DOUBLE_COLON, 1)
+        && set.peek_eq(TokenType::LBRACE, 2);
 }
 
 std::pair<std::string, std::unique_ptr<IAstExpression>> parse_struct_member_initializer(
@@ -27,10 +26,7 @@ std::pair<std::string, std::unique_ptr<IAstExpression>> parse_struct_member_init
     TokenSet& set
 )
 {
-    const auto member_iden = set.expect(
-        TokenType::IDENTIFIER,
-        "Expected identifier in struct initializer"
-    );
+    const auto member_iden = set.expect(TokenType::IDENTIFIER, "Expected identifier in struct initializer");
     set.expect(TokenType::COLON, "Expected ':' after identifier in struct initializer");
 
     auto member_expr = parse_inline_expression(context, set);
@@ -53,50 +49,45 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     );
 
     std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> member_map = {};
-    auto member_set = collect_block(set);
-
-    if (!member_set.has_value())
-    {
-        set.throw_error("Expected struct initializer body after '{'");
-    }
+    auto member_set = collect_block_required(set, "Expected struct initializer body after '{'");
 
     // Parse initial member
     auto [initial_member_iden, initial_member_expr] =
-        parse_struct_member_initializer(context, member_set.value());
-    member_map.emplace_back(std::move(initial_member_iden),
-                            std::move(initial_member_expr));
+        parse_struct_member_initializer(context, member_set);
+
+    member_map.emplace_back(std::move(initial_member_iden), std::move(initial_member_expr));
+
+    // TODO: Handle unnamed initialization, e.g., `SomeStruct::{ 1, 3, 3 }`
 
     // Subsequent member parsing
-    while (member_set->has_next())
+    while (member_set.has_next())
     {
-        member_set->expect(
-            TokenType::COMMA,
-            "Expected ',' between struct initializer members"
-        );
+        member_set.expect(TokenType::COMMA, "Expected ',' between struct initializer members");
 
         // It's possible that this previous comma *was* the trailing one, so we'll have to do an
         // additional check
-        if (!member_set->has_next())
+        if (!member_set.has_next())
         {
             break;
         }
 
         auto [member_iden, member_expr] =
-            parse_struct_member_initializer(context, member_set.value());
+            parse_struct_member_initializer(context, member_set);
         member_map.emplace_back(std::move(member_iden), std::move(member_expr));
     }
 
     // Optionally consume trailing comma
-    if (member_set->peek_next_eq(TokenType::COMMA))
+    if (member_set.peek_next_eq(TokenType::COMMA))
     {
-        member_set->next();
+        member_set.next();
     }
 
     return std::make_unique<AstStructInitializer>(
         reference_token.get_source_fragment(),
         context,
         reference_token.get_lexeme(),
-        std::move(member_map));
+        std::move(member_map)
+    );
 }
 
 void AstStructInitializer::validate()

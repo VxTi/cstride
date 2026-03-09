@@ -77,12 +77,12 @@ std::string AstArrayType::to_string()
 
 bool AstArrayType::equals(const IAstType& other) const
 {
-    if (const auto* other_array = dynamic_cast<const AstArrayType*>(&other))
+    if (const auto* other_array = cast_type<const AstArrayType*>(&other))
     {
         return this->_element_type->equals(other_array->_element_type);
     }
 
-    if (const auto* other_named = dynamic_cast<const AstAliasType*>(&other))
+    if (const auto* other_named = cast_type<const AstAliasType*>(&other))
     {
         return other_named->equals(*this);
     }
@@ -107,6 +107,7 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
         // Validate whether the reference type of `other_named` is assignable to
         return this->is_assignable_to(reference_type.value().get());
     }
+
     // If both are arrays, we can just simply check whether their element types are equal
     // This is handled in the `equals` case.
     return this->equals(*other);
