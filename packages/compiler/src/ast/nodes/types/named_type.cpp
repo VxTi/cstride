@@ -127,7 +127,7 @@ bool AstNamedType::is_assignable_to_impl(IAstType* other)
     }
 
     // It might be the case that we're trying to assign primitive references to a named value, e.g.,
-    // type SomePrimitive = int32[]
+    // type SomePrimitive = i32[]
     // const someVar: SomePrimitive = [1, 2, 3];
     // In this case, `[1, 2, 3]` should be assignable to the base types of `SomePrimitive`
     const auto self_base_type = get_base_reference_type();

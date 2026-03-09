@@ -66,17 +66,17 @@ namespace stride::ast
         THREE_DOTS,         // ...
 
         /* Primitives */
-        PRIMITIVE_UINT8,  // uint8
-        PRIMITIVE_UINT16, // uint16
-        PRIMITIVE_UINT32, // uint32
-        PRIMITIVE_UINT64, // uint64
-        PRIMITIVE_INT8,   // int8
-        PRIMITIVE_INT16,  // int16
-        PRIMITIVE_INT32,  // int32
-        PRIMITIVE_INT64,  // int64
+        PRIMITIVE_UINT8,  // u8
+        PRIMITIVE_UINT16, // u16
+        PRIMITIVE_UINT32, // u32
+        PRIMITIVE_UINT64, // u64
+        PRIMITIVE_INT8,   // i8
+        PRIMITIVE_INT16,  // i16
+        PRIMITIVE_INT32,  // i32
+        PRIMITIVE_INT64,  // i64
 
-        PRIMITIVE_FLOAT32, // float32
-        PRIMITIVE_FLOAT64, // float64
+        PRIMITIVE_FLOAT32, // f32
+        PRIMITIVE_FLOAT64, // f64
 
         PRIMITIVE_BOOL,   // bool
         PRIMITIVE_STRING, // string
@@ -260,25 +260,25 @@ namespace stride::ast
         case TokenType::THREE_DOTS:
             return "...";
         case TokenType::PRIMITIVE_UINT8:
-            return "uint8";
+            return "u8";
         case TokenType::PRIMITIVE_UINT16:
-            return "uint16";
+            return "u16";
         case TokenType::PRIMITIVE_UINT32:
-            return "uint32";
+            return "u32";
         case TokenType::PRIMITIVE_UINT64:
-            return "uint64";
+            return "u64";
         case TokenType::PRIMITIVE_INT8:
-            return "int8";
+            return "i8";
         case TokenType::PRIMITIVE_INT16:
-            return "int16";
+            return "i16";
         case TokenType::PRIMITIVE_INT32:
-            return "int32";
+            return "i32";
         case TokenType::PRIMITIVE_INT64:
-            return "int64";
+            return "i64";
         case TokenType::PRIMITIVE_FLOAT32:
-            return "float32";
+            return "f32";
         case TokenType::PRIMITIVE_FLOAT64:
-            return "float64";
+            return "f64";
         case TokenType::PRIMITIVE_BOOL:
             return "bool";
         case TokenType::PRIMITIVE_STRING:
@@ -366,9 +366,9 @@ namespace stride::ast
         case TokenType::HEX_LITERAL:
             return "Hexadecimal";
         case TokenType::FLOAT_LITERAL:
-            return "float32";
+            return "f32";
         case TokenType::DOUBLE_LITERAL:
-            return "float64";
+            return "f64";
         case TokenType::BOOLEAN_LITERAL:
             return "Bool";
         default:

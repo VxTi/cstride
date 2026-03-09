@@ -1,6 +1,6 @@
 package System;
 
-extern fn sleep(milliseconds: int32): void;
+extern fn sleep(milliseconds: i32): void;
 
 module Time {
 
@@ -8,19 +8,19 @@ module Time {
      * Pauses the execution of the current thread for the specified duration.
      * @param milliseconds The duration to sleep in milliseconds.
      */
-    fn Sleep(milliseconds: int32): void {
+    fn Sleep(milliseconds: i32): void {
         sleep(milliseconds);
     }
 
-    fn CurrentMs(): uint64 {
+    fn CurrentMs(): u64 {
         return _system_time_ms_internal();
     }
 
-    fn CurrentUs(): uint64 {
+    fn CurrentUs(): u64 {
         return _system_time_us_internal();
     }
 
-    fn CurrentNs(): uint64 {
+    fn CurrentNs(): u64 {
         return _system_time_ns_internal();
     }
 }

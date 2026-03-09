@@ -152,7 +152,7 @@ namespace stride::ast
 
         /// Checks whether other type is assignable to this one.
         /// Lower bit-count primitives are assignable to higher ones, e.g.,
-        /// one can assign a 32-bit int to a int64 type, but not visa versa.
+        /// one can assign a 32-bit int to a i64 type, but not visa versa.
         bool is_assignable_to(IAstType* other);
 
         virtual bool is_castable_to(IAstType* other);
@@ -332,10 +332,10 @@ namespace stride::ast
         std::optional<std::unique_ptr<IAstType>> get_reference_type() const;
 
         /// Returns the super base type of the reference, e.g., if we have:
-        /// type RootType = int32;
+        /// type RootType = i32;
         /// type MidType = RootType;
         /// type LeafType = MidType;
-        /// Then, calling `get_base_reference_type` on `LeafType` will return `int32`.
+        /// Then, calling `get_base_reference_type` on `LeafType` will return `i32`.
         [[nodiscard]] std::optional<std::unique_ptr<IAstType>> get_base_reference_type() const;
 
         [[nodiscard]]

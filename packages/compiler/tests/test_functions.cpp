@@ -7,12 +7,12 @@ using namespace stride::tests;
 TEST(Functions, Lambda)
 {
     const std::string code = R"(
-        const lambda: (int32) -> int32 = (x: int32): int32 -> {
+        const lambda: (i32) -> i32 = (x: i32): i32 -> {
             return x + 1;
         };
 
         fn main(): void {
-            const result: int32 = lambda(10);
+            const result: i32 = lambda(10);
         }
     )";
     assert_compiles(code);
@@ -23,7 +23,7 @@ TEST(Functions, DeclarationAndInvocation)
     const std::string code = R"(
         extern fn printf(in: string, ...): void;
 
-        fn add(a: int32, b: int32): int32 {
+        fn add(a: i32, b: i32): i32 {
             return a + b;
         }
 
@@ -32,7 +32,7 @@ TEST(Functions, DeclarationAndInvocation)
         }
 
         fn main(): void {
-            const result: int32 = add(10, 5);
+            const result: i32 = add(10, 5);
             printf("Stride");
             greet("Stride");
         }
@@ -44,7 +44,7 @@ TEST(Functions, Parameters)
 {
     // Test potentially many parameters
     const std::string code = R"(
-        fn many_params(a: int32, b: int32, c: int32, d: int32, e: int32): int32 {
+        fn many_params(a: i32, b: i32, c: i32, d: i32, e: i32): i32 {
             return a + b + c + d + e;
         }
     )";
@@ -82,7 +82,7 @@ TEST(Functions, ExternalFunctions)
 TEST(Functions, VariadicPropagation)
 {
     const std::string code = R"(
-        extern fn printf(in: string, ...): int32;
+        extern fn printf(in: string, ...): i32;
 
         fn my_println(fmt: string, ...): void {
             printf(fmt, ...);

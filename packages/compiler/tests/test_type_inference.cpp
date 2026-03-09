@@ -42,20 +42,20 @@ TEST_F(TypeInferenceTest, InferLiteralTypes)
     // Int literals
     auto i32_lit = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 42, 0);
     auto i32_ty = infer_expression_type(i32_lit.get());
-    EXPECT_EQ(i32_ty->to_string(), "int32");
+    EXPECT_EQ(i32_ty->to_string(), "i32");
 
     auto i64_lit = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT64, 42, 0);
     auto i64_ty = infer_expression_type(i64_lit.get());
-    EXPECT_EQ(i64_ty->to_string(), "int64");
+    EXPECT_EQ(i64_ty->to_string(), "i64");
 
     // Float literals
     auto f32_lit = std::make_unique<AstFpLiteral>(dummy_sf(), context, PrimitiveType::FLOAT32, 3.14f);
     auto f32_ty = infer_expression_type(f32_lit.get());
-    EXPECT_EQ(f32_ty->to_string(), "float32");
+    EXPECT_EQ(f32_ty->to_string(), "f32");
 
     auto f64_lit = std::make_unique<AstFpLiteral>(dummy_sf(), context, PrimitiveType::FLOAT64, 3.14);
     auto f64_ty = infer_expression_type(f64_lit.get());
-    EXPECT_EQ(f64_ty->to_string(), "float64");
+    EXPECT_EQ(f64_ty->to_string(), "f64");
 
     // Bool literal
     auto bool_lit = std::make_unique<AstBooleanLiteral>(dummy_sf(), context, true);
@@ -89,7 +89,7 @@ TEST_F(TypeInferenceTest, InferIdentifierTypes)
 
     auto iden = std::make_unique<AstIdentifier>(context, var_sym);
     auto ty = infer_expression_type(iden.get());
-    EXPECT_EQ(ty->to_string(), "int32");
+    EXPECT_EQ(ty->to_string(), "i32");
 
     // Function lookup (as identifier)
     Symbol fn_sym = dummy_sym("foo");
@@ -107,7 +107,7 @@ TEST_F(TypeInferenceTest, InferIdentifierTypes)
 
     auto fn_iden = std::make_unique<AstIdentifier>(context, fn_sym);
     auto fn_res_ty = infer_expression_type(fn_iden.get());
-    EXPECT_EQ(fn_res_ty->to_string(), "(int32) -> float32");
+    EXPECT_EQ(fn_res_ty->to_string(), "(i32) -> f32");
 
     // Symbol not found
     auto unknown_iden = std::make_unique<AstIdentifier>(context, dummy_sym("unknown"));
@@ -121,7 +121,7 @@ TEST_F(TypeInferenceTest, InferTypeCast)
     auto cast = std::make_unique<AstTypeCastOp>(dummy_sf(), context, std::move(lit), std::move(target_ty));
 
     auto ty = infer_expression_type(cast.get());
-    EXPECT_EQ(ty->to_string(), "float64");
+    EXPECT_EQ(ty->to_string(), "f64");
 }
 
 TEST_F(TypeInferenceTest, InferBinaryOp)
@@ -135,7 +135,7 @@ TEST_F(TypeInferenceTest, InferBinaryOp)
         std::move(lhs),
         BinaryOpType::ADD,
         std::move(rhs));
-    EXPECT_EQ(infer_expression_type(op.get())->to_string(), "int32");
+    EXPECT_EQ(infer_expression_type(op.get())->to_string(), "i32");
 
     // Pointer priority (LHS)
     context->define_variable(
@@ -159,7 +159,7 @@ TEST_F(TypeInferenceTest, InferBinaryOp)
         std::move(p_iden),
         BinaryOpType::ADD,
         std::move(i_iden));
-    EXPECT_EQ(infer_expression_type(p_op.get())->to_string(), "*int32");
+    EXPECT_EQ(infer_expression_type(p_op.get())->to_string(), "*i32");
 
     auto i_iden2 = std::make_unique<AstIdentifier>(context, dummy_sym("i"));
     auto p_iden2 = std::make_unique<AstIdentifier>(context, dummy_sym("p"));
@@ -169,7 +169,7 @@ TEST_F(TypeInferenceTest, InferBinaryOp)
         std::move(i_iden2),
         BinaryOpType::ADD,
         std::move(p_iden2));
-    EXPECT_EQ(infer_expression_type(p_op2.get())->to_string(), "int32");
+    EXPECT_EQ(infer_expression_type(p_op2.get())->to_string(), "i32");
 }
 
 TEST_F(TypeInferenceTest, InferUnaryOp)
@@ -182,7 +182,7 @@ TEST_F(TypeInferenceTest, InferUnaryOp)
     // Address of
     auto iden = std::make_unique<AstIdentifier>(context, dummy_sym("x"));
     auto addr_op = std::make_unique<AstUnaryOp>(dummy_sf(), context, UnaryOpType::ADDRESS_OF, std::move(iden));
-    EXPECT_EQ(infer_expression_type(addr_op.get())->to_string(), "*int32");
+    EXPECT_EQ(infer_expression_type(addr_op.get())->to_string(), "*i32");
 
     // Dereference
     context->define_variable(
@@ -195,7 +195,7 @@ TEST_F(TypeInferenceTest, InferUnaryOp)
         VisibilityModifier::PUBLIC);
     auto p_iden = std::make_unique<AstIdentifier>(context, dummy_sym("px"));
     auto deref_op = std::make_unique<AstUnaryOp>(dummy_sf(), context, UnaryOpType::DEREFERENCE, std::move(p_iden));
-    EXPECT_EQ(infer_expression_type(deref_op.get())->to_string(), "*int32");
+    EXPECT_EQ(infer_expression_type(deref_op.get())->to_string(), "*i32");
 
     // Logical Not
     auto bool_lit = std::make_unique<AstBooleanLiteral>(dummy_sf(), context, true);
@@ -238,7 +238,7 @@ TEST_F(TypeInferenceTest, InferVariableDeclaration)
                                                          std::move(val),
                                                          VisibilityModifier::PUBLIC,
                                                          0);
-    EXPECT_EQ(infer_expression_type(decl.get())->to_string(), "int32");
+    EXPECT_EQ(infer_expression_type(decl.get())->to_string(), "i32");
 
     // Annotated same type
     auto val2 = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 42, 0);
@@ -250,7 +250,7 @@ TEST_F(TypeInferenceTest, InferVariableDeclaration)
         std::move(val2),
         VisibilityModifier::PUBLIC,
         0);
-    EXPECT_EQ(infer_expression_type(decl2.get())->to_string(), "int32");
+    EXPECT_EQ(infer_expression_type(decl2.get())->to_string(), "i32");
 
     // Annotated mismatch
     auto val3 = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT64, 42, 0);
@@ -272,12 +272,12 @@ TEST_F(TypeInferenceTest, InferArrayAndAccessor)
     elements.push_back(std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 1, 0));
     elements.push_back(std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 2, 0));
     auto array = std::make_unique<AstArray>(dummy_sf(), context, std::move(elements));
-    EXPECT_EQ(infer_expression_type(array.get())->to_string(), "int32[]");
+    EXPECT_EQ(infer_expression_type(array.get())->to_string(), "i32[]");
 
     // Empty array
     ExpressionList empty_elements;
     auto empty_array = std::make_unique<AstArray>(dummy_sf(), context, std::move(empty_elements));
-    EXPECT_EQ(infer_expression_type(empty_array.get())->to_string(), "*int32[]");
+    EXPECT_EQ(infer_expression_type(empty_array.get())->to_string(), "*i32[]");
 
     // Array Accessor
     context->define_variable(
@@ -294,7 +294,7 @@ TEST_F(TypeInferenceTest, InferArrayAndAccessor)
     auto arr_iden = std::make_unique<AstIdentifier>(context, dummy_sym("arr"));
     auto idx = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 0, 0);
     auto accessor = std::make_unique<AstArrayMemberAccessor>(dummy_sf(), context, std::move(arr_iden), std::move(idx));
-    EXPECT_EQ(infer_expression_type(accessor.get())->to_string(), "int32");
+    EXPECT_EQ(infer_expression_type(accessor.get())->to_string(), "i32");
 }
 
 TEST_F(TypeInferenceTest, InferArrayAccessorErrors)
@@ -316,13 +316,13 @@ TEST_F(TypeInferenceTest, InferTuple)
     members.push_back(std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 1, 0));
     members.push_back(std::make_unique<AstBooleanLiteral>(dummy_sf(), context, true));
     auto tuple = std::make_unique<AstTupleInitializer>(dummy_sf(), context, std::move(members));
-    EXPECT_EQ(infer_expression_type(tuple.get())->to_string(), "(int32, bool)");
+    EXPECT_EQ(infer_expression_type(tuple.get())->to_string(), "(i32, bool)");
 }
 
 TEST_F(TypeInferenceTest, InferVariadicArg)
 {
     auto variadic = std::make_unique<AstVariadicArgReference>(dummy_sf(), context);
-    EXPECT_EQ(infer_expression_type(variadic.get())->to_string(), "*int8");
+    EXPECT_EQ(infer_expression_type(variadic.get())->to_string(), "*i8");
 }
 
 TEST_F(TypeInferenceTest, InferFunctionDefinition)
@@ -351,7 +351,7 @@ TEST_F(TypeInferenceTest, InferFunctionDefinition)
         0,
         std::vector<std::string>{});
 
-    EXPECT_EQ(infer_expression_type(fn.get())->to_string(), "(int32) -> float32");
+    EXPECT_EQ(infer_expression_type(fn.get())->to_string(), "(i32) -> f32");
 }
 
 TEST_F(TypeInferenceTest, RecursionGuard)
@@ -399,7 +399,7 @@ TEST_F(TypeInferenceTest, InferFunctionCall)
     args.push_back(std::move(arg1));
     auto fn_call = std::make_unique<AstFunctionCall>(context, fn_sym, std::move(args), 0);
 
-    EXPECT_EQ(infer_expression_type(fn_call.get())->to_string(), "float32");
+    EXPECT_EQ(infer_expression_type(fn_call.get())->to_string(), "f32");
 
     // Lambda in variable
     Symbol lambda_var = dummy_sym("bar");
@@ -419,7 +419,7 @@ TEST_F(TypeInferenceTest, InferFunctionCall)
         lambda_var,
         ExpressionList{},
         0);
-    EXPECT_EQ(infer_expression_type(l_fn_call.get())->to_string(), "int64");
+    EXPECT_EQ(infer_expression_type(l_fn_call.get())->to_string(), "i64");
 }
 
 TEST_F(TypeInferenceTest, InferStructAndMemberAccess)
@@ -457,7 +457,7 @@ TEST_F(TypeInferenceTest, InferStructAndMemberAccess)
         context,
         std::move(base2),
         std::move(access_members2));
-    EXPECT_EQ(infer_expression_type(member_access2.get())->to_string(), "int32");
+    EXPECT_EQ(infer_expression_type(member_access2.get())->to_string(), "i32");
 }
 
 TEST_F(TypeInferenceTest, InferMemberAccessorErrors)

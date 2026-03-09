@@ -236,7 +236,7 @@ void append_to_global_ctors(
     const int priority
 )
 {
-    // The struct type: { int32, void ()*, int8* }
+    // The struct type: { i32, void ()*, i8* }
     llvm::StructType* ctor_struct_type = llvm::StructType::get(
         builder->getInt32Ty(),
         init_func->getType(),
@@ -546,7 +546,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         }
         else
         {
-            // Handle basic upcasts (e.g. int32 -> int64, etc)
+            // Handle basic upcasts (e.g. i32 -> i64, etc)
             value_to_store = optionally_upcast_type(
                 init_value,
                 variable_ty,

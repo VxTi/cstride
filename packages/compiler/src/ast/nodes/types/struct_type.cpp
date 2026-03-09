@@ -52,7 +52,7 @@ void parse_struct_member(
  * Structures are defined like follows:
  * <code>
  * type Struct = {
- *   field: int32,
+ *   field: i32,
  *   ...
  * }
  * </code>

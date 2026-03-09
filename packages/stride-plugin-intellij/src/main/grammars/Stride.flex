@@ -58,16 +58,16 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "if"               { return StrideTypes.IF; }
   "else"             { return StrideTypes.ELSE; }
   "void"             { return StrideTypes.VOID; }
-  "int8"             { return StrideTypes.INT8; }
-  "int16"            { return StrideTypes.INT16; }
-  "int32"            { return StrideTypes.INT32; }
-  "int64"            { return StrideTypes.INT64; }
-  "uint8"            { return StrideTypes.UINT8; }
-  "uint16"           { return StrideTypes.UINT16; }
-  "uint32"           { return StrideTypes.UINT32; }
-  "uint64"           { return StrideTypes.UINT64; }
-  "float32"          { return StrideTypes.FLOAT32; }
-  "float64"          { return StrideTypes.FLOAT64; }
+  "i8"             { return StrideTypes.INT8; }
+  "i16"            { return StrideTypes.INT16; }
+  "i32"            { return StrideTypes.INT32; }
+  "i64"            { return StrideTypes.INT64; }
+  "u8"            { return StrideTypes.UINT8; }
+  "u16"           { return StrideTypes.UINT16; }
+  "u32"           { return StrideTypes.UINT32; }
+  "u64"           { return StrideTypes.UINT64; }
+  "f32"          { return StrideTypes.f32; }
+  "f64"          { return StrideTypes.f64; }
   "bool"             { return StrideTypes.BOOL; }
   "char"             { return StrideTypes.CHAR; }
   "string"           { return StrideTypes.STRING; }

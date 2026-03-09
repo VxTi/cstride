@@ -12,20 +12,20 @@ TEST(UnaryExpressions, LogicalNot)
 
 TEST(UnaryExpressions, Negate)
 {
-    assert_compiles("const a: int32 = -10;");
-    assert_compiles("const a: float64 = -10.5D;");
+    assert_compiles("const a: i32 = -10;");
+    assert_compiles("const a: f64 = -10.5D;");
 }
 
 TEST(UnaryExpressions, Complement)
 {
-    assert_compiles("const a: int32 = ~10;");
+    assert_compiles("const a: i32 = ~10;");
 }
 
 TEST(UnaryExpressions, IncrementDecrement)
 {
     assert_compiles(R"(
         fn test(): void {
-            let x: int32 = 10;
+            let x: i32 = 10;
             ++x;
             x++;
             --x;
@@ -37,7 +37,7 @@ TEST(UnaryExpressions, IncrementDecrement)
 TEST(UnaryExpressions, AddressOf)
 {
     assert_compiles(R"(
-        let x: int32 = 10;
+        let x: i32 = 10;
         const y = &x;
     )");
 }
@@ -45,8 +45,8 @@ TEST(UnaryExpressions, AddressOf)
 TEST(UnaryExpressions, Chained)
 {
     assert_compiles("const a: bool = !!true;");
-    assert_compiles("const a: int32 = - -10;");
-    assert_compiles("const a: int32 = ~ ~10;");
+    assert_compiles("const a: i32 = - -10;");
+    assert_compiles("const a: i32 = ~ ~10;");
 }
 
 TEST(UnaryErrors, ImmutableIncrement)
@@ -54,7 +54,7 @@ TEST(UnaryErrors, ImmutableIncrement)
     assert_throws_message(
         R"(
         fn test(): void {
-            const x: int32 = 10;
+            const x: i32 = 10;
             ++x;
         }
     )",
@@ -66,7 +66,7 @@ TEST(UnaryErrors, ImmutableDecrement)
     assert_throws_message(
         R"(
         fn test(): void {
-            const x: int32 = 10;
+            const x: i32 = 10;
             --x;
         }
     )",
@@ -79,7 +79,7 @@ TEST(UnaryErrors, InvalidTypeComplement)
         R"(
         const a = ~10.5D;
     )",
-        "Invalid type 'float64' for bitwise complement");
+        "Invalid type 'f64' for bitwise complement");
 }
 
 TEST(UnaryErrors, InvalidTypeNegate)
@@ -87,7 +87,7 @@ TEST(UnaryErrors, InvalidTypeNegate)
     // Assuming we can't negate a struct or something non-numeric
     assert_throws_message(
         R"(
-        type Point = { x: int32; y: int32; };
+        type Point = { x: i32; y: i32; };
         const p = Point::{ x: 1, y: 2 };
         const a = -p;
     )",
@@ -119,7 +119,7 @@ TEST(UnaryErrors, AddressOfLiteral)
 {
     assert_throws_message(
         R"(
-        let x: int32 = 10;
+        let x: i32 = 10;
         let y = &x;
         let z = *y;
     )",

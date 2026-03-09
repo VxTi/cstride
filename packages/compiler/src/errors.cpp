@@ -35,7 +35,7 @@ std::string stride::make_source_error(
         source.length())
     {
         return std::format(
-            "\n┃ in {}\n┃ {}\n┃ \x1b[31m{}\x1b[0m\n┃\n{}",
+            "\n\033[0;31m┃ in {}\n\033[0;31m┃ {}\n\033[0;31m┃ \x1b[31m{}\x1b[0m\n\033[0;31m┃\n\033[0;31m{}",
             source_file->path.empty() ? "unknown" : source_file->path,
             error_type_str,
             error,
@@ -82,7 +82,7 @@ std::string stride::make_source_error(
     const size_t column_offset = column_in_line + line_nr_str.length() - 1;
 
     return std::format(
-        "\n┃ {} in \x1b[4m{}\x1b[0m\n┃\n┃ {}\n┃\n┃ \x1b[0;97m{} \x1b[37m{}\x1b[0m\n┃  {} {}{}",
+        "\n\033[0;31m┃ {} in \x1b[4m{}\x1b[0m\n\033[0;31m┃\n\033[0;31m┃ {}\n\033[0;31m┃\n\033[0;31m┃ \x1b[0;97m{} \x1b[37m{}\x1b[0m\n\033[0;31m┃  {} {}{}",
         error_type_str,
         source_file->path,
         error,
@@ -101,7 +101,7 @@ std::string stride::make_source_error(
     if (references.empty())
     {
         return std::format(
-            "\n┃ {}\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
+            "\n\033[0;31m┃ {}\n\033[0;31m┃ \x1b[31m{}\x1b[0m\n\033[0;31m┃\n\033[0;31m┃",
             error_type_to_string(error_type),
             error);
     }
@@ -113,7 +113,7 @@ std::string stride::make_source_error(
     if (first_ref.source_position.offset >= source_file.source->source.length())
     {
         return std::format(
-            "\n┃ {} in {}\n┃\n┃ \x1b[31m{}\x1b[0m\n┃\n┃",
+            "\n\033[0;31m┃ {} in {}\n\033[0;31m┃\n\033[0;31m┃ \x1b[31m{}\x1b[0m\n\033[0;31m┃\n\033[0;31m┃",
             error_type_str,
             source_file.source->path,
             error);
@@ -197,7 +197,7 @@ std::string stride::make_source_error(
     }
 
     return std::format(
-        "\n┃ {} in \x1b[4m{}\x1b[0m:\n┃\n┃ {}\n┃\n┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m\n┃ {}\n┃ {}",
+        "\n\033[0;31m┃ {} in \x1b[4m{}\x1b[0m:\n\033[0;31m┃\n\033[0;31m┃ {}\n\033[0;31m┃\n\033[0;31m┃ \x1b[0;97m{}\x1b[37m {}\n\033[0;31m┃ {}\n\033[0;31m┃ {}",
         error_type_str,
         source_file.source->path,
         error,

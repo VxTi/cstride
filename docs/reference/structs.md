@@ -11,15 +11,15 @@ Structs are defined using the `type` keyword followed by a name, an equals sign,
 
 ```stride
 type Point = {
-    x: int32;
-    y: int32;
+    x: i32;
+    y: i32;
 };
 
 type Color = {
-    r: uint8;
-    g: uint8;
-    b: uint8;
-    a: uint8;
+    r: u8;
+    g: u8;
+    b: u8;
+    a: u8;
 };
 ```
 

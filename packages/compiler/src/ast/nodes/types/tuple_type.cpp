@@ -12,7 +12,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
 )
 {
     // Tuples must be in the form of (T0, T1, ...), where Tn can be any type.
-    // Member types are also allowed to be tuples, so ((int8, int32), int32) is allowed.
+    // Member types are also allowed to be tuples, so ((i8, i32), i32) is allowed.
     if (!set.peek_next_eq(TokenType::LPAREN))
         return std::nullopt;
 

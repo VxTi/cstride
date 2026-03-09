@@ -15,14 +15,14 @@ Stride provides keywords for variable declaration with different mutability rule
 
 ```stride
 // Creating a constant variable
-const pi: float64 = 3.14159D;
+const pi: f64 = 3.14159D;
 
 // Creating a mutable 32-bit integer variable
-let x: int32 = 10;
+let x: i32 = 10;
 x = 20; // OK
 
 // Mutable variables in a loop
-for (let i: int32 = 0; i < 10; i++) {
+for (let i: i32 = 0; i < 10; i++) {
     printf("%d\n", i);
 }
 ```
@@ -32,8 +32,8 @@ for (let i: int32 = 0; i < 10; i++) {
 ### Integer Types
 
 Stride supports several integer types:
-- Signed: `int8`, `int16`, `int32`, `int64`
-- Unsigned: `uint8`, `uint16`, `uint32`, `uint64`
+- Signed: `i8`, `i16`, `i32`, `i64`
+- Unsigned: `u8`, `u16`, `u32`, `u64`
 
 ### Integer Literals
 
@@ -42,13 +42,13 @@ For example, `0x12345` is a hexadecimal integer literal.
 
 64-bit integer literals can be suffixed with an 'L':
 ```stride
-let large_int: int64 = 12345678901234567890L;
+let large_int: i64 = 12345678901234567890L;
 ```
 
 ### Floating Point Types
 
-- `float32`: Single precision
-- `float64`: Double precision
+- `f32`: Single precision
+- `f64`: Double precision
 
 Floating point literals can be suffixed with 'F' for single precision or 'D' for double precision.
 For example, `3.14F` is a single precision float, and `2.71828D` is a double precision float.
@@ -65,8 +65,8 @@ For example, `3.14F` is a single precision float, and `2.71828D` is a double pre
 Stride supports multi-dimensional arrays.
 
 ```stride
-let list: int32[] = [1, 2, 3];
-let grid: int32[][] = [[1, 2], [3, 4]];
+let list: i32[] = [1, 2, 3];
+let grid: i32[][] = [[1, 2], [3, 4]];
 ```
 
 ## Optional Types
@@ -74,7 +74,7 @@ let grid: int32[][] = [[1, 2], [3, 4]];
 Types can be marked as optional using the `?` suffix, allowing them to hold a `nil` value.
 
 ```stride
-let maybe_int: int32? = nil;
+let maybe_int: i32? = nil;
 maybe_int = 10;
 ```
 
@@ -83,8 +83,8 @@ maybe_int = 10;
 You can create aliases for existing types using the `type` keyword.
 
 ```stride
-type ID = int64;
-type IntList = int32[];
+type ID = i64;
+type IntList = i32[];
 
 let my_id: ID = 100L;
 let my_list: IntList = [1, 2, 3];
@@ -95,21 +95,21 @@ let my_list: IntList = [1, 2, 3];
 Stride uses traditional arithmetic and comparison operators.
 
 ```stride
-let x: int32 = 10;
-let y: float64 = 3.0D;
+let x: i32 = 10;
+let y: f64 = 3.0D;
 
 // Arithmetic operators
-let sum: float64 = (x as float64) + y;
-let difference: float64 = (x as float64) - y;
-let product: float64 = (x as float64) * y;
-let quotient: float64 = (x as float64) / y;
-let remainder: int32 = x % 3;
+let sum: f64 = (x as f64) + y;
+let difference: f64 = (x as f64) - y;
+let product: f64 = (x as f64) * y;
+let quotient: f64 = (x as f64) / y;
+let remainder: i32 = x % 3;
 
 // Comparison operators
-let is_equal: bool = (x as float64) == y;
-let is_not_equal: bool = (x as float64) != y;
-let is_less_than: bool = (x as float64) < y;
-let is_greater_than: bool = (x as float64) > y;
+let is_equal: bool = (x as f64) == y;
+let is_not_equal: bool = (x as f64) != y;
+let is_less_than: bool = (x as f64) < y;
+let is_greater_than: bool = (x as f64) > y;
 ```
 
 ### Type Casting
@@ -117,6 +117,6 @@ let is_greater_than: bool = (x as float64) > y;
 Stride requires explicit casting between different types using the `as` keyword.
 
 ```stride
-let integer: int32 = 10;
-let floating: float64 = integer as float64;
+let integer: i32 = 10;
+let floating: f64 = integer as f64;
 ```
