@@ -66,7 +66,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
             StrideTypes.VOID, StrideTypes.INT8, StrideTypes.INT16,
             StrideTypes.INT32, StrideTypes.INT64, StrideTypes.UINT8,
             StrideTypes.UINT16, StrideTypes.UINT32, StrideTypes.UINT64,
-            StrideTypes.f32, StrideTypes.f64, StrideTypes.BOOL,
+            StrideTypes.FLOAT32, StrideTypes.FLOAT64, StrideTypes.BOOL,
             StrideTypes.CHAR, StrideTypes.STRING -> TYPE_KEYS
 
             StrideTypes.NUMBER_LITERAL -> NUMBER_KEYS
