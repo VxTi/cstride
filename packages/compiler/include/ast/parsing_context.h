@@ -106,15 +106,18 @@ namespace stride::ast
             : public IDefinition
         {
             std::unique_ptr<IAstType> _type;
+            GenericParameterList _generics;
 
         public:
             explicit TypeDefinition(
                 Symbol type_name_symbol,
                 std::unique_ptr<IAstType> type,
+                GenericParameterList generics,
                 const VisibilityModifier visibility
             ) :
                 IDefinition(std::move(type_name_symbol), visibility),
-                _type(std::move(type)) {}
+                _type(std::move(type)),
+                _generics(std::move(generics)) {}
 
             [[nodiscard]]
             IAstType* get_type() const
@@ -123,9 +126,25 @@ namespace stride::ast
             }
 
             [[nodiscard]]
+            GenericParameterList get_generics() const
+            {
+                return this->_generics;
+            }
+
+            [[nodiscard]]
+            bool is_generic() const
+            {
+                return !this->_generics.empty();
+            }
+
+            [[nodiscard]]
             std::unique_ptr<IDefinition> clone() const override
             {
-                return std::make_unique<TypeDefinition>(get_symbol(), _type->clone_ty(), get_visibility());
+                return std::make_unique<TypeDefinition>(
+                    get_symbol(),
+                    _type->clone_ty(),
+                    get_generics(),
+                    get_visibility());
             }
         };
 
@@ -222,7 +241,10 @@ namespace stride::ast
             [[nodiscard]]
             std::unique_ptr<IDefinition> clone() const override
             {
-                return std::make_unique<FunctionDefinition>(_function_type->clone_as<AstFunctionType>(), get_symbol(), get_visibility(), _flags);
+                return std::make_unique<FunctionDefinition>(_function_type->clone_as<AstFunctionType>(),
+                                                            get_symbol(),
+                                                            get_visibility(),
+                                                            _flags);
             }
         };
     } // namespace definition
@@ -365,6 +387,7 @@ namespace stride::ast
         void define_type(
             const Symbol& type_name,
             std::unique_ptr<IAstType> type,
+            GenericParameterList generics,
             VisibilityModifier visibility
         ) const;
 

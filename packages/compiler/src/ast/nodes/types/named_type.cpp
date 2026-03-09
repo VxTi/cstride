@@ -22,19 +22,21 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     }
 
     const auto segments = parse_segmented_identifier(set, "Expected identifier for named type");
-    auto generics = parse_generic_arguments(context, set);
+    auto generic_types = parse_generic_arguments(context, set);
 
     const auto name = resolve_internal_name(segments);
 
-    auto named_type = std::make_unique<AstNamedType>(
-        reference_token.get_source_fragment(),
-        context,
-        name,
-        context_type_flags,
-        std::move(generics)
+    return parse_type_metadata(
+        std::make_unique<AstNamedType>(
+            reference_token.get_source_fragment(),
+            context,
+            name,
+            context_type_flags,
+            std::move(generic_types)
+        ),
+        set,
+        context_type_flags
     );
-
-    return parse_type_metadata(std::move(named_type), set, context_type_flags);
 }
 
 std::optional<definition::TypeDefinition*> AstNamedType::get_type_definition() const
@@ -62,7 +64,8 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_base_reference_type()
     std::optional<std::unique_ptr<IAstType>> base_type = this->get_reference_type();
     int recursion_guard = 0; // Prevent self-referencing types causing infinite loops
 
-    if (!base_type.has_value()) return std::nullopt;
+    if (!base_type.has_value())
+        return std::nullopt;
 
     while (const auto* named_reference = cast_type<AstNamedType*>(base_type.value().get()))
     {

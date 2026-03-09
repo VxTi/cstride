@@ -26,7 +26,7 @@ namespace stride:: ast
             std::string name,
             std::unique_ptr<IAstType> type,
             const VisibilityModifier visibility,
-            GenericParameterList  generic_parameters = {}
+            GenericParameterList  generic_parameters
         ) :
             IAstNode(source, context),
             _name(std::move(name)),
@@ -78,7 +78,7 @@ namespace stride:: ast
         }
     };
 
-    std::unique_ptr<AstTypeDefinition> parse_type_statement(
+    std::unique_ptr<AstTypeDefinition> parse_type_definition(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         VisibilityModifier modifier

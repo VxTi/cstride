@@ -49,5 +49,5 @@ GenericTypeList stride::ast::parse_generic_arguments(const std::shared_ptr<Parsi
 
         set.expect(TokenType::GT);
     }
-    return generic_params;
+    return std::move(generic_params);
 }

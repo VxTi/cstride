@@ -114,6 +114,7 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
 void ParsingContext::define_type(
     const Symbol& type_name,
     std::unique_ptr<IAstType> type,
+    GenericParameterList generics,
     const VisibilityModifier visibility
 ) const
 {
@@ -138,6 +139,7 @@ void ParsingContext::define_type(
         std::make_unique<TypeDefinition>(
             type_name,
             std::move(type),
+            std::move(generics),
             visibility
         )
     );
