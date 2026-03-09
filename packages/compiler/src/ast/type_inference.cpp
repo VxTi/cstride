@@ -436,9 +436,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
 
     if (const auto* array_accessor = cast_expr<AstArrayMemberAccessor*>(expr))
     {
-        const auto array_type = infer_expression_type(
-            array_accessor->get_array_identifier(),
-            recursion_guard);
+        // Infer the identifier's type. We must ensure it's an array type, and then we can return the member type.
+        const auto array_type = infer_expression_type(array_accessor->get_array_identifier(), recursion_guard);
 
         // If the immediate type is an array, we can simply return the member type
         if (const auto array = cast_type<AstArrayType*>(array_type.get()))

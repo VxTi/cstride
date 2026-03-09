@@ -128,7 +128,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
     case TokenType::KEYWORD_IMPORT:
         return parse_import_statement(context, set);
     case TokenType::KEYWORD_TYPE:
-        return parse_type_statement(context, set, visibility_modifier);
+        return parse_type_definition(context, set, visibility_modifier);
     case TokenType::KEYWORD_CONTINUE:
         return parse_continue_statement(context, set);
     case TokenType::KEYWORD_BREAK:
@@ -156,7 +156,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
     case TokenType::KEYWORD_EXTERN:
         return parse_fn_declaration(context, set, visibility_modifier);
     case TokenType::KEYWORD_TYPE:
-        return parse_type_statement(context, set, visibility_modifier);
+        return parse_type_definition(context, set, visibility_modifier);
     case TokenType::KEYWORD_ENUM:
         return parse_enumerable_declaration(context, set, visibility_modifier);
     case TokenType::KEYWORD_FOR:

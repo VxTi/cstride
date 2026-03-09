@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
+std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_definition(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     VisibilityModifier modifier
@@ -34,6 +34,7 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_statement(
     context->define_type(
         type_name_symbol,
         type->clone_ty(),
+        generic_params,
         modifier
     );
 
@@ -66,6 +67,7 @@ std::unique_ptr<IAstNode> AstTypeDefinition::clone()
         this->get_context(),
         this->_name,
         this->_type->clone_ty(),
-        this->_visibility
+        this->_visibility,
+        this->_generic_parameters
     );
 }
