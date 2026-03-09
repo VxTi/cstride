@@ -430,7 +430,7 @@ TEST_F(TypeInferenceTest, InferStructAndMemberAccess)
     members.emplace_back("y", std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::FLOAT32));
     auto struct_ty = std::make_unique<AstStructType>(dummy_sf(), context, std::move(members));
 
-    context->define_type(dummy_sym("Point"), std::move(struct_ty), VisibilityModifier::PUBLIC);
+    context->define_type(dummy_sym("Point"), std::move(struct_ty), {}, VisibilityModifier::PUBLIC);
 
     // Struct initializer
     std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> inits;
