@@ -82,7 +82,7 @@ bool AstArrayType::equals(const IAstType& other) const
         return this->_element_type->equals(other_array->_element_type);
     }
 
-    if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+    if (const auto* other_named = dynamic_cast<const AstAliasType*>(&other))
     {
         return other_named->equals(*this);
     }
@@ -96,7 +96,7 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
     // whether the referencing type is assignable to this array's element type,
     // e.g., for `type SomeArray = [1, 2, 3]`, `equals(i32[], SomeArray)` should check
     // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
-    if (const auto* other_named = cast_type<AstNamedType*>(other))
+    if (const auto* other_named = cast_type<AstAliasType*>(other))
     {
         const auto reference_type = other_named->get_underlying_type();
         if (!reference_type.has_value())
@@ -118,7 +118,7 @@ bool AstArrayType::is_castable_to_impl(IAstType* other)
     // whether the referencing type is assignable to this array's element type,
     // e.g., for `type SomeArray = [1, 2, 3]`, `equals(i32[], SomeArray)` should check
     // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
-    if (const auto* other_named = cast_type<AstNamedType*>(other))
+    if (const auto* other_named = cast_type<AstAliasType*>(other))
     {
         const auto reference_type = other_named->get_underlying_type();
         if (!reference_type.has_value())

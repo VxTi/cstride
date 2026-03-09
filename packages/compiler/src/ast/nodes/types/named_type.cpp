@@ -27,7 +27,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     const auto name = resolve_internal_name(segments);
 
     return parse_type_metadata(
-        std::make_unique<AstNamedType>(
+        std::make_unique<AstAliasType>(
             reference_token.get_source_fragment(),
             context,
             name,
@@ -39,7 +39,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     );
 }
 
-std::optional<definition::TypeDefinition*> AstNamedType::get_type_definition() const
+std::optional<definition::TypeDefinition*> AstAliasType::get_type_definition() const
 {
     if (const auto ref_def = this->get_context()->get_type_definition(this->get_name());
         ref_def.has_value())
@@ -49,7 +49,7 @@ std::optional<definition::TypeDefinition*> AstNamedType::get_type_definition() c
     return std::nullopt;
 }
 
-std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() const
+std::optional<std::unique_ptr<IAstType>> AstAliasType::get_reference_type() const
 {
     if (const auto ref_def = this->get_type_definition();
         ref_def.has_value())
@@ -59,7 +59,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() cons
     return std::nullopt;
 }
 
-std::optional<std::unique_ptr<IAstType>> AstNamedType::get_underlying_type() const
+std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type() const
 {
     const auto& reference_type_definition = this->get_type_definition();
 
@@ -77,7 +77,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_underlying_type() con
     if (!base_type.has_value())
         return std::nullopt;
 
-    while (const auto* named_reference = cast_type<AstNamedType*>(base_type.value().get()))
+    while (const auto* named_reference = cast_type<AstAliasType*>(base_type.value().get()))
     {
         if (named_reference->is_generic_overload())
         {
@@ -111,7 +111,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_underlying_type() con
     return std::move(base_type);
 }
 
-bool AstNamedType::is_castable_to_impl(IAstType* other)
+bool AstAliasType::is_castable_to_impl(IAstType* other)
 {
     const auto self_reference_type = get_underlying_type();
 
@@ -131,7 +131,7 @@ bool AstNamedType::is_castable_to_impl(IAstType* other)
     }
 
     // Final case would be to check whether both base types are the same
-    if (const auto* other_named_ty = cast_type<AstNamedType*>(other))
+    if (const auto* other_named_ty = cast_type<AstAliasType*>(other))
     {
         if (const auto second_reference_type = other_named_ty->get_underlying_type();
             second_reference_type.has_value())
@@ -142,9 +142,9 @@ bool AstNamedType::is_castable_to_impl(IAstType* other)
     return false;
 }
 
-bool AstNamedType::is_assignable_to_impl(IAstType* other)
+bool AstAliasType::is_assignable_to_impl(IAstType* other)
 {
-    if (const auto other_named = cast_type<AstNamedType*>(other))
+    if (const auto other_named = cast_type<AstAliasType*>(other))
     {
         if (this->get_name() == other_named->get_name())
         {
@@ -162,7 +162,7 @@ bool AstNamedType::is_assignable_to_impl(IAstType* other)
         return true;
     }
 
-    if (const auto* other_named_ptr = cast_type<AstNamedType*>(other))
+    if (const auto* other_named_ptr = cast_type<AstAliasType*>(other))
     {
         const auto other_base_type = other_named_ptr->get_underlying_type();
         if (other_base_type.has_value() && this->is_assignable_to(other_base_type.value().get()))
@@ -174,52 +174,40 @@ bool AstNamedType::is_assignable_to_impl(IAstType* other)
     return false;
 }
 
-bool AstNamedType::equals(const IAstType& other) const
+bool AstAliasType::equals(const IAstType& other) const
 {
     // Simple naming checks, e.g., "Vec3 == Vec3"
-    if (auto* other_named = cast_type<const AstNamedType*>(&other))
+    if (auto* other_named = cast_type<const AstAliasType*>(&other))
     {
-        if (this->get_name() == other_named->get_name())
-        {
-            // If both aren't generic, then name comparison should suffice
-            if (!this->is_generic_overload() && !other_named->is_generic_overload())
-            {
-                return true;
-            }
+        if (this->get_name() != other_named->get_name())
+            return false;
 
-            // If both are generic, they must have the same number of parameters
-            if (this->get_instantiated_generic_types().size() == other_named->get_instantiated_generic_types().size())
+        // If both aren't generic, then name comparison should suffice
+        if (!this->is_generic_overload() && !other_named->is_generic_overload())
+        {
+            return true;
+        }
+
+        const auto& self_generic_types = this->get_instantiated_generic_types();
+        const auto& other_generic_types = other_named->get_instantiated_generic_types();
+
+        if (self_generic_types.size() != other_generic_types.size())
+            return false;
+
+        // If both are generic, they must have the same number of parameters
+        for (size_t i = 0; i < self_generic_types.size(); i++)
+        {
+            if (!self_generic_types[i]->equals(other_generic_types[i]))
             {
-                // And all parameters must be equal
-                bool all_equal = true;
-                for (size_t i = 0; i < this->get_instantiated_generic_types().size(); i++)
-                {
-                    if (!this->get_instantiated_generic_types()[i]->equals(
-                        other_named->get_instantiated_generic_types()[i]))
-                    {
-                        all_equal = false;
-                        break;
-                    }
-                }
-                if (all_equal)
-                {
-                    return true;
-                }
+                return false;
             }
         }
+        return true;
     }
-
-    // If it's not a named type, or names/generics didn't match, check underlying types
-    const auto self_underlying = this->get_underlying_type();
-    if (self_underlying.has_value())
-    {
-        return self_underlying.value()->equals(other);
-    }
-
     return false;
 }
 
-std::unique_ptr<IAstNode> AstNamedType::clone()
+std::unique_ptr<IAstNode> AstAliasType::clone()
 {
     GenericTypeList generic_types;
     generic_types.reserve(this->_generic_types.size());
@@ -227,11 +215,35 @@ std::unique_ptr<IAstNode> AstNamedType::clone()
     {
         generic_types.push_back(generic_type->clone_ty());
     }
-    return std::make_unique<AstNamedType>(
+    return std::make_unique<AstAliasType>(
         this->get_source_fragment(),
         this->get_context(),
         this->_name,
         this->get_flags(),
         std::move(generic_types)
+    );
+}
+
+std::string AstAliasType::to_string()
+{
+    std::string name = this->get_name();
+    if (this->is_generic_overload())
+    {
+        name += "<";
+        for (size_t i = 0; i < this->_generic_types.size(); i++)
+        {
+            name += this->_generic_types[i]->to_string();
+            if (i < this->_generic_types.size() - 1)
+            {
+                name += ", ";
+            }
+        }
+        name += ">";
+    }
+    return std::format(
+        "{}{}{}",
+        this->is_pointer() ? "*" : "",
+        name,
+        this->is_optional() ? "?" : ""
     );
 }

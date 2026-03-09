@@ -4,19 +4,27 @@ import System::{
 };
 
 type Array<T> = T[];
-type IArray = Array<i32>[];
-type NestedArray = Array<IArray>;
 
-fn some_fn(arr: NestedArray): void {
-    const sum: i32 = arr[0] + arr[1] + arr[2] + arr[3] + arr[4];
+type SomeStruct<A, B, C> = {
+    field1: A;
+    field2: B;
+    field3: C;
+};
 
-    IO::Print("Result: %d\n", sum);
+fn some_fn(nested: SomeStruct<i32, i32, i32>): void {
+    IO::Print("Field1: %d", nested.field1);
+    IO::Print("Field2: %d", nested.field2);
+    IO::Print("Field3: %d", nested.field3);
 }
 
 fn main(): i32 {
-    const some_array: NestedArray = [1, 2, 3, 4, 5];
+    const instantiated = SomeStruct::{
+        field1: 1,
+        field2: 2,
+        field3: 3
+    };
 
-    some_fn(some_array);
+    some_fn(instantiated);
 
     return 0;
 }

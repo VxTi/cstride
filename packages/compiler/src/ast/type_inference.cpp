@@ -109,9 +109,9 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(const AstUnaryOp* ope
                 flags
             );
         }
-        if (const auto* named = cast_type<AstNamedType*>(type.get()))
+        if (const auto* named = cast_type<AstAliasType*>(type.get()))
         {
-            return std::make_unique<AstNamedType>(
+            return std::make_unique<AstAliasType>(
                 named->get_source_fragment(),
                 context,
                 named->get_name(),
@@ -258,7 +258,7 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMembe
 
 std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(const AstStructInitializer* initializer)
 {
-    return std::make_unique<AstNamedType>(
+    return std::make_unique<AstAliasType>(
         initializer->get_source_fragment(),
         initializer->get_context(),
         initializer->get_struct_name()
@@ -446,7 +446,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         }
 
         // It's possible that we're referring to a named type, in which case we'll have to extract the base type
-        if (const auto named = cast_type<AstNamedType*>(array_type.get()))
+        if (const auto named = cast_type<AstAliasType*>(array_type.get()))
         {
             // Instantiate type if it contains generics
             const auto base_ty = named->get_underlying_type();

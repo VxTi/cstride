@@ -18,7 +18,8 @@ namespace llvm
 
 namespace stride::ast
 {
-    namespace definition {
+    namespace definition
+    {
         class TypeDefinition;
     }
 
@@ -259,14 +260,14 @@ namespace stride::ast
     };
 
     /// References to other types
-    class AstNamedType
+    class AstAliasType
         : public IAstType
     {
         std::string _name;
         GenericTypeList _generic_types;
 
     public:
-        explicit AstNamedType(
+        explicit AstAliasType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
@@ -288,32 +289,10 @@ namespace stride::ast
 
         std::string get_type_name() override
         {
-            return this->_name;
+            return this->get_name();
         }
 
-        std::string to_string() override
-        {
-            std::string name = this->get_name();
-            if (this->is_generic_overload())
-            {
-                name += "<";
-                for (size_t i = 0; i < this->_generic_types.size(); i++)
-                {
-                    name += this->_generic_types[i]->to_string();
-                    if (i < this->_generic_types.size() - 1)
-                    {
-                        name += ", ";
-                    }
-                }
-                name += ">";
-            }
-
-            return std::format(
-                "{}{}{}",
-                this->is_pointer() ? "*" : "",
-                name,
-                this->is_optional() ? "?" : "");
-        }
+        std::string to_string() override;
 
         [[nodiscard]]
         bool equals(const IAstType& other) const override;

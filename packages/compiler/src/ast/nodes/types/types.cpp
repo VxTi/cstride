@@ -135,7 +135,7 @@ llvm::Type* stride::ast::type_to_llvm_type(
             return llvm::Type::getVoidTy(module->getContext());
         }
     }
-    if (const auto* named_ty = cast_type<AstNamedType*>(type))
+    if (const auto* named_ty = cast_type<AstAliasType*>(type))
     {
         const auto ref_type = named_ty->get_reference_type();
         if (!ref_type.has_value())
@@ -215,9 +215,9 @@ bool IAstType::is_assignable_to(IAstType* other)
     }
 
     // Try to resolve named types on both sides to check assignability
-    if (const auto* this_named = cast_type<AstNamedType*>(this))
+    if (const auto* this_named = cast_type<AstAliasType*>(this))
     {
-        if (const auto other_named = cast_type<AstNamedType*>(other))
+        if (const auto other_named = cast_type<AstAliasType*>(other))
         {
             return this_named->equals(*other_named);
         }
@@ -228,7 +228,7 @@ bool IAstType::is_assignable_to(IAstType* other)
         }
     }
 
-    if (const auto* other_named = cast_type<AstNamedType*>(other))
+    if (const auto* other_named = cast_type<AstAliasType*>(other))
     {
         if (const auto other_base = other_named->get_underlying_type();
             other_base.has_value() && this->is_assignable_to(other_base.value().get()))
@@ -265,7 +265,7 @@ AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
         return nullptr;
     }
 
-    if (const auto named = cast_type<AstNamedType*>(type))
+    if (const auto named = cast_type<AstAliasType*>(type))
     {
         const auto ref_type = named->get_underlying_type();
 
@@ -320,7 +320,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         }
 
         // If one is a named type and the other is its base type, we can also return the dominant type
-        if (const auto lhs_named = cast_type<AstNamedType*>(lhs))
+        if (const auto lhs_named = cast_type<AstAliasType*>(lhs))
         {
             if (const auto base = lhs_named->get_underlying_type(); base.has_value() && base.value()->equals(*rhs))
             {
@@ -328,7 +328,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
             }
         }
 
-        if (const auto rhs_named = cast_type<AstNamedType*>(rhs))
+        if (const auto rhs_named = cast_type<AstAliasType*>(rhs))
         {
             if (const auto base = rhs_named->get_underlying_type(); base.has_value() && base.value()->equals(*lhs))
             {

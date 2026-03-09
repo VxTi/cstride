@@ -61,7 +61,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
     const GenericTypeList& instantiated_types
 )
 {
-    if (auto* named_type = cast_type<AstNamedType*>(type))
+    if (auto* named_type = cast_type<AstAliasType*>(type))
     {
         for (size_t i = 0; i < param_names.size(); i++)
         {
@@ -79,7 +79,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
                 resolved_params.push_back(resolve_generics(param.get(), param_names, instantiated_types));
             }
 
-            return std::make_unique<AstNamedType>(
+            return std::make_unique<AstAliasType>(
                 named_type->get_source_fragment(),
                 named_type->get_context(),
                 named_type->get_name(),
@@ -161,7 +161,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
 }
 
 std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
-    const AstNamedType* named_type,
+    const AstAliasType* named_type,
     const definition::TypeDefinition* type_definition
 )
 {

@@ -92,7 +92,7 @@ bool AstTupleType::equals(const IAstType& other) const
 
     if (!other_tuple)
     {
-        if (const auto* other_named = dynamic_cast<const AstNamedType*>(&other))
+        if (const auto* other_named = dynamic_cast<const AstAliasType*>(&other))
         {
             return other_named->equals(*this);
         }

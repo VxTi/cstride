@@ -253,7 +253,7 @@ bool AstStructType::equals(const IAstType& other) const
         return true;
     }
 
-    if (const auto* other_named = cast_type<const AstNamedType*>(&other))
+    if (const auto* other_named = cast_type<const AstAliasType*>(&other))
     {
         return other_named->equals(*this);
     }

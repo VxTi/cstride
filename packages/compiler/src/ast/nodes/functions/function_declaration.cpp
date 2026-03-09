@@ -483,7 +483,7 @@ void IAstFunction::validate()
 
     if (return_statements.empty())
     {
-        if (cast_type<AstNamedType*>(this->get_return_type()))
+        if (cast_type<AstAliasType*>(this->get_return_type()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
