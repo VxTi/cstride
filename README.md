@@ -88,24 +88,24 @@ Stride is statically typed and supports various primitive and complex types.
 
 ```stride
 // Primitive types
-let a: int32 = 10;
-let b: int64 = 100L;
-let c: float32 = 3.14F;
-let d: float64 = 2.718D;
+let a: i32 = 10;
+let b: i64 = 100L;
+let c: f32 = 3.14F;
+let d: f64 = 2.718D;
 let e: bool = true;
 let f: char = 'A';
 let g: string = "Hello, Stride!";
 
 // Optional types (can be nil)
-let h: int32? = nil;
+let h: i32? = nil;
 h = 42;
 
 // Arrays (fixed-size or dynamic-size)
-let i: int32[] = [1, 2, 3, 4, 5];
-let j: float64[][] = [[1.0, 2.0], [3.0, 4.0]];
+let i: i32[] = [1, 2, 3, 4, 5];
+let j: f64[][] = [[1.0, 2.0], [3.0, 4.0]];
 
 // Type Aliases
-type IntList = int32[];
+type IntList = i32[];
 let k: IntList = [10, 20, 30];
 ```
 
@@ -115,8 +115,8 @@ Structs allow grouping related data. They use nominal typing, meaning each type 
 
 ```stride
 type Point = {
-    x: int32;
-    y: int32;
+    x: i32;
+    y: i32;
 };
 
 // Initialization using the ::{ } syntax
@@ -125,8 +125,8 @@ const p: Point = Point::{ x: 10, y: 20 };
 // Composition
 type Rect = {
     origin: Point;
-    width: int32;
-    height: int32;
+    width: i32;
+    height: i32;
 };
 
 const r = Rect::{
@@ -142,16 +142,16 @@ Functions are first-class citizens in Stride.
 
 ```stride
 // Standard function declaration
-fn add(a: int32, b: int32): int32 {
+fn add(a: i32, b: i32): i32 {
     return a + b;
 }
 
 // Function types and references
-const op: (int32, int32) -> int32 = add;
+const op: (i32, i32) -> i32 = add;
 let result = op(10, 20);
 
 // Extern functions (linking to C)
-extern fn printf(format: string, ...): int32;
+extern fn printf(format: string, ...): i32;
 ```
 
 ### Operators
@@ -159,8 +159,8 @@ extern fn printf(format: string, ...): int32;
 Stride supports standard arithmetic and comparison operators with dominant type promotion.
 
 ```stride
-let x = 10 + 20L; // x is int64
-let y = 10.0 + 5; // y is float64
+let x = 10 + 20L; // x is i64
+let y = 10.0 + 5; // y is f64
 
 let is_equal = (x == 30L);
 ```

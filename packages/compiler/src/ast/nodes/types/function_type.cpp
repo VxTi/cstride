@@ -28,7 +28,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
 
     // If the previous paren is followed by another one,
     // then we might expect an array of functions
-    // e.g., `((int32, int32) -> int32)[]
+    // e.g., `((i32, i32) -> i32)[]
     if (set.peek_next_eq(TokenType::LPAREN))
     {
         set.next();

@@ -30,18 +30,18 @@ features:
 ## A Taste of Stride
 
 ```stride
-type Point = { x: int32; y: int32; };
+type Point = { x: i32; y: i32; };
 
 fn main(): void {
     const p: Point = Point::{ x: 10, y: 20 };
-    let list: int32[] = [1, 2, 3];
-    let maybe_val: int32? = nil;
+    let list: i32[] = [1, 2, 3];
+    let maybe_val: i32? = nil;
 
     if (p.x > 5) {
         maybe_val = p.x + list[0];
     }
 
-    const op: (int32, int32) -> int32 = (a: int32, b: int32): int32 -> { return a + b; };
+    const op: (i32, i32) -> i32 = (a: i32, b: i32): i32 -> { return a + b; };
     printf("Result: %d\n", op(p.x, p.y));
 }
 ```

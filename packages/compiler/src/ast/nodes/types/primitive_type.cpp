@@ -46,25 +46,25 @@ std::string primitive_type_to_str_internal(const PrimitiveType type)
     switch (type)
     {
     case PrimitiveType::INT8:
-        return "int8";
+        return "i8";
     case PrimitiveType::INT16:
-        return "int16";
+        return "i16";
     case PrimitiveType::INT32:
-        return "int32";
+        return "i32";
     case PrimitiveType::INT64:
-        return "int64";
+        return "i64";
     case PrimitiveType::UINT8:
-        return "uint8";
+        return "u8";
     case PrimitiveType::UINT16:
-        return "uint16";
+        return "u16";
     case PrimitiveType::UINT32:
-        return "uint32";
+        return "u32";
     case PrimitiveType::UINT64:
-        return "uint64";
+        return "u64";
     case PrimitiveType::FLOAT32:
-        return "float32";
+        return "f32";
     case PrimitiveType::FLOAT64:
-        return "float64";
+        return "f64";
     case PrimitiveType::BOOL:
         return "bool";
     case PrimitiveType::CHAR:

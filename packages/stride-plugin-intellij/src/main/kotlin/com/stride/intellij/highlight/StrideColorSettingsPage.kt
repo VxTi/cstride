@@ -28,22 +28,22 @@ class StrideColorSettingsPage : ColorSettingsPage {
             };
 
             type <usertype>Array</usertype>&lt;<generic>T</generic>&gt; = <generic>T</generic>[];
-            type <usertype>IArray</usertype> = <usertype>Array</usertype>&lt;int32&gt;;
+            type <usertype>IArray</usertype> = <usertype>Array</usertype>&lt;i32&gt;;
 
             /**
              * Prints the given string and sleeps for the specified duration.
              */
-            pub async fn <func>delayed_print</func>(msg: string, ms: int32): void {
+            pub async fn <func>delayed_print</func>(msg: string, ms: i32): void {
                 IO::<func>Print</func>(msg);
                 Time::<func>Sleep</func>(ms);
             }
 
             struct Point {
-                x: float32,
-                y: float32
+                x: f32,
+                y: f32
             }
 
-            async fn <func>main</func>(): int32 {
+            async fn <func>main</func>(): i32 {
                 const p: Point = Point::{ x: 1.0, y: 2.0 };
                 const numbers: <usertype>IArray</usertype> = [1, 2, 3, 4, 5];
                 let msg: string = "Hello, Stride!";

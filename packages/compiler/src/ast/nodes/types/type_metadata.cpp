@@ -37,7 +37,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
 
     // If the preceding token is a question mark, the type is determined
     // to be optional.
-    // An example of this would be `int32?` or `int32[]?`
+    // An example of this would be `i32?` or `i32[]?`
     if (set.peek_next_eq(TokenType::QUESTION))
     {
         set.skip(1);
@@ -94,8 +94,8 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
 {
     // If we're trying to assign a named type to an array, we have to check
     // whether the referencing type is assignable to this array's element type,
-    // e.g., for `type SomeArray = [1, 2, 3]`, `equals(int32[], SomeArray)` should check
-    // whether `[1, 2, 3]` in `SomeArray` (int32[]) is assignable to `Array(int32)`
+    // e.g., for `type SomeArray = [1, 2, 3]`, `equals(i32[], SomeArray)` should check
+    // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
     if (const auto* other_named = cast_type<AstNamedType*>(other))
     {
         const auto reference_type = other_named->get_base_reference_type();
@@ -116,8 +116,8 @@ bool AstArrayType::is_castable_to_impl(IAstType* other)
 {
     // If we're trying to cast an array to a named type, we have to check
     // whether the referencing type is assignable to this array's element type,
-    // e.g., for `type SomeArray = [1, 2, 3]`, `equals(int32[], SomeArray)` should check
-    // whether `[1, 2, 3]` in `SomeArray` (int32[]) is assignable to `Array(int32)`
+    // e.g., for `type SomeArray = [1, 2, 3]`, `equals(i32[], SomeArray)` should check
+    // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
     if (const auto* other_named = cast_type<AstNamedType*>(other))
     {
         const auto reference_type = other_named->get_base_reference_type();

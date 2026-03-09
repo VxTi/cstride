@@ -189,7 +189,7 @@ llvm::Type* stride::ast::type_to_llvm_type(
 bool IAstType::is_assignable_to(IAstType* other)
 {
     // A type is not assignable to another if the source is optional but the target is not.
-    // E.g., `int32?` is not assignable to `int32`.
+    // E.g., `i32?` is not assignable to `i32`.
     if (this->is_optional() && !other->is_optional())
     {
         return false;
@@ -244,7 +244,7 @@ bool IAstType::is_assignable_to(IAstType* other)
 bool IAstType::is_castable_to(IAstType* other)
 {
     // A type is not castable to another if the source is optional but the target is not.
-    // E.g., `int32?` is not castable to `int32`.
+    // E.g., `i32?` is not castable to `i32`.
     if (this->is_optional() && !other->is_optional())
     {
         return false;
@@ -285,7 +285,7 @@ AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
     return cast_type<AstPrimitiveType*>(type);
 }
 
-/// Dominant field comparison can only be done on primitive types, e.g., int32 vs float64, int32 vs int64, etc.
+/// Dominant field comparison can only be done on primitive types, e.g., i32 vs f64, i32 vs i64, etc.
 /// If we have named types on either side, we have to extract their primitive types, if they reference so.
 std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     IAstType* lhs,
@@ -363,7 +363,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // TODO: Handle unsigned / signed properly
 
     // If both sides are the same, we'll just return the one with the highest byte count
-    // E.g., dominant type (fp32, fp64) will yield fp64, (int32, int64) will yield int64
+    // E.g., dominant type (fp32, fp64) will yield fp64, (i32, i64) will yield i64
     if (are_both_sides_floats || are_both_sides_integers)
     {
         return lhs_primitive_ty->bit_count() >= rhs_primitive_ty->bit_count()
@@ -390,7 +390,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
             );
         }
 
-        // Otherwise, just return the LHS as the dominant type (float32 / float64)
+        // Otherwise, just return the LHS as the dominant type (f32 / f64)
         // LHS is dominant
         return lhs->clone_ty();
     }

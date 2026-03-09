@@ -8,7 +8,7 @@ A function declaration consists of the `fn` keyword, followed by the function na
 
 ```stride
 // Function declaration
-fn add(a: int32, b: int32): int32 {
+fn add(a: i32, b: i32): i32 {
     return a + b;
 }
 
@@ -19,7 +19,7 @@ fn greet(name: string): void {
 
 fn main(): void {
     // Invoking functions
-    const result: int32 = add(10, 5);
+    const result: i32 = add(10, 5);
     printf("10 + 5 = %d\n", result);
     
     greet("Stride");
@@ -39,13 +39,13 @@ Functions return values using the `return` keyword. If a function is declared wi
 Functions in Stride are first-class citizens and have types. A function type is denoted by its parameter types and its return type: `(param1_type, param2_type) -> return_type`.
 
 ```stride
-fn add(a: int32, b: int32): int32 {
+fn add(a: i32, b: i32): i32 {
     return a + b;
 }
 
 fn main(): void {
-    const op: (int32, int32) -> int32 = add;
-    const result: int32 = op(10, 20);
+    const op: (i32, i32) -> i32 = add;
+    const result: i32 = op(10, 20);
 }
 ```
 
@@ -55,11 +55,11 @@ Lambdas allow you to define functions inline. They follow the syntax `(params): 
 
 ```stride
 fn main(): void {
-    const multiply: (int32, int32) -> int32 = (x: int32, y: int32): int32 -> {
+    const multiply: (i32, i32) -> i32 = (x: i32, y: i32): i32 -> {
         return x * y;
     };
     
-    const result: int32 = multiply(5, 10);
+    const result: i32 = multiply(5, 10);
 }
 ```
 
@@ -67,8 +67,8 @@ Lambdas can also capture variables from their outer scope:
 
 ```stride
 fn main(): void {
-    const factor: int32 = 10;
-    const multiply_by_factor: (int32) -> int32 = (x: int32): int32 -> {
+    const factor: i32 = 10;
+    const multiply_by_factor: (i32) -> i32 = (x: i32): i32 -> {
         return x * factor;
     };
     
@@ -92,11 +92,11 @@ You can also declare externally linked functions (e.g., from C libraries) using 
 
 ```stride
 // Declare printf from the C standard library
-extern fn printf(format: string, ...): int32;
+extern fn printf(format: string, ...): i32;
 
 // Declare other external functions
 extern fn system_time_ns(): u64;
-extern fn exit(code: int32): void;
+extern fn exit(code: i32): void;
 
 fn main(): void {
     printf("System time: %llu ns\n", system_time_ns());

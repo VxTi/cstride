@@ -34,16 +34,16 @@
     IF='if'
     ELSE='else'
     VOID='void'
-    INT8='int8'
-    INT16='int16'
-    INT32='int32'
-    INT64='int64'
-    UINT8='uint8'
-    UINT16='uint16'
-    UINT32='uint32'
-    UINT64='uint64'
-    FLOAT32='float32'
-    FLOAT64='float64'
+    INT8='i8'
+    INT16='i16'
+    INT32='i32'
+    INT64='i64'
+    UINT8='u8'
+    UINT16='u16'
+    UINT32='u32'
+    UINT64='u64'
+    f32='f32'
+    f64='f64'
     BOOL='bool'
     CHAR='char'
     STRING='string'
@@ -132,7 +132,7 @@ TypeDefinition ::= KW_TYPE IDENTIFIER [GenericTypeArguments] EQ Type SEMICOLON
 
 // Ensure structs have at least 1 field
 StructDefinitionFields ::= StructField (SEMICOLON StructField)* [SEMICOLON]
-// field: int32
+// field: i32
 StructField ::= IDENTIFIER COLON Type
 
 VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
@@ -143,7 +143,7 @@ VariableDeclarationStatement ::= [VisibilityModifier] (VariableDeclaration | Var
 // --- Types ---
 Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*] [QUESTION]
 // <module>::<type> or <type>
-PrimitiveType ::= VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING
+PrimitiveType ::= VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | f32 | f64 | BOOL | CHAR | STRING
 UserType ::= ScopedIdentifier [GenericTypeValueArguments] {
   mixin="com.stride.intellij.psi.StrideUserTypeMixin"
   methods=[
@@ -185,7 +185,7 @@ AssignmentStatement ::= InlineAssignment SEMICOLON
 ReturnStatement ::= RETURN [Expression] SEMICOLON
 
 ForLoopStatement ::= FOR LPAREN [ForInitializerPart] SEMICOLON [Expression] SEMICOLON [Expression] RPAREN BlockStatement
-private ForInitializerPart ::= VariableDeclaration | InlineAssignment | Expression
+private ForInitializerPart ::= (VariableDeclaration | VariableDeclarationInferredType) | InlineAssignment | Expression
 
 PackageStatement ::= PACKAGE ScopedIdentifier SEMICOLON
 WhileLoopStatement ::= WHILE LPAREN Expression RPAREN BlockStatement
@@ -259,7 +259,7 @@ StructInitField ::= ScopedIdentifier COLON Expression {
 ArgumentList ::= Expression (COMMA Expression)*
 ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
 
-// (p: int32) -> int32 { ... }
+// (p: i32) -> i32 { ... }
 LambdaExpression ::= LPAREN FunctionParameterList RPAREN COLON Type ARROW BlockStatement
 
 // some::field

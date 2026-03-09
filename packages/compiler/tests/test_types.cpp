@@ -9,9 +9,9 @@ TEST(TypeErrors, VariableInitTypeMismatch)
 {
     assert_throws_message(
         R"(
-        const b: int32 = 10l;
+        const b: i32 = 10l;
     )",
-        "Type mismatch in variable declaration: cannot assign value of type 'int64' to type 'int32'");
+        "Type mismatch in variable declaration: cannot assign value of type 'i64' to type 'i32'");
 }
 
 TEST(TypeErrors, StructTypeMismatch)
@@ -19,13 +19,13 @@ TEST(TypeErrors, StructTypeMismatch)
     assert_throws_message(
         R"(
         type Point = {
-            x: int32;
-            y: int32;
+            x: i32;
+            y: i32;
         };
 
         const a: Point = Point::{ x: 1.0D, y: 1 };
     )",
-        "Type mismatch for member 'x' in struct initializer 'Point': expected 'int32', got 'float64'");
+        "Type mismatch for member 'x' in struct initializer 'Point': expected 'i32', got 'f64'");
 }
 
 TEST(TypeErrors, StructTypeMemberCountMismatch)
@@ -33,8 +33,8 @@ TEST(TypeErrors, StructTypeMemberCountMismatch)
     assert_throws_message(
         R"(
         type Point = {
-            x: int32;
-            y: int32;
+            x: i32;
+            y: i32;
         };
 
         const a: Point = Point::{ x: 1, y: 1, z: 2 };
@@ -44,8 +44,8 @@ TEST(TypeErrors, StructTypeMemberCountMismatch)
     assert_throws_message(
         R"(
         type Point = {
-            x: int32;
-            y: int32;
+            x: i32;
+            y: i32;
         };
 
         const a: Point = Point::{ x: 1 };
@@ -58,14 +58,14 @@ TEST(TypeErrors, StructMemberTypeMismatch)
     assert_throws_message(
         R"(
         type Point = {
-            x: int32;
-            y: int32;
+            x: i32;
+            y: i32;
         };
 
         type Color = {
-            r: int32;
-            g: int32;
-            b: int32;
+            r: i32;
+            g: i32;
+            b: i32;
         };
 
         const a: Point = Color::{ r: 1, g: 2, b: 3 };
@@ -78,8 +78,8 @@ TEST(TypeErrors, StructReferenceTypeMismatch)
     assert_throws_message(
         R"(
         type Point = {
-            x: int32;
-            y: int32;
+            x: i32;
+            y: i32;
         };
 
         type Vec = Point;
@@ -94,8 +94,8 @@ TEST(TypeErrors, StructMemberOrderMismatch)
     assert_throws_message(
         R"(
         type Point = {
-            x: int32;
-            y: int32;
+            x: i32;
+            y: i32;
         };
 
         const a: Point = Point::{ y: 1, x: 1 };
@@ -108,8 +108,8 @@ TEST(TypeErrors, StructMemberUnknownField)
     assert_throws_message(
         R"(
         type Point = {
-            x: int32;
-            y: int32;
+            x: i32;
+            y: i32;
         };
 
         const a: Point = Point::{ x: 1, unknown: 123 };
@@ -121,51 +121,51 @@ TEST(TypeErrors, ArrayTypeMismatch)
 {
     assert_throws_message(
         R"(
-        let a: int32[] = [1L, 2L, 3L];
+        let a: i32[] = [1L, 2L, 3L];
     )",
-        "Type mismatch in variable declaration: cannot assign value of type 'int64[]' to type 'int32[]'");
+        "Type mismatch in variable declaration: cannot assign value of type 'i64[]' to type 'i32[]'");
 }
 
 TEST(TypeErrors, FunctionCallTypeMismatch)
 {
     assert_compiles(R"(
-        fn add(x: int32, y: int32): int32 {
+        fn add(x: i32, y: i32): i32 {
             return x + y;
         }
 
-        const result: int32 = add(1, 2);
+        const result: i32 = add(1, 2);
     )");
     assert_throws_message(
         R"(
-        fn add(x: int32, y: int32): int32 {
+        fn add(x: i32, y: i32): i32 {
             return x + y;
         }
 
-        const result: int32 = add(1L, 2L);
+        const result: i32 = add(1L, 2L);
     )",
-        "Function 'add(int64, int64)' was not found in this scope");
+        "Function 'add(i64, i64)' was not found in this scope");
 }
 
 TEST(TypeErrors, FunctionTypeMismatch)
 {
     assert_throws_message(
         R"(
-        const k: (int32, int32) -> int32 = [(x: int32, y: int32): int32 -> { return 1; }];
+        const k: (i32, i32) -> i32 = [(x: i32, y: i32): i32 -> { return 1; }];
     )",
-        "Type mismatch in variable declaration: cannot assign value of type '((int32, int32) -> int32)[]' to type '(int32, int32) -> int32'");
+        "Type mismatch in variable declaration: cannot assign value of type '((i32, i32) -> i32)[]' to type '(i32, i32) -> i32'");
 
     assert_throws_message(
         R"(
-        fn test(p: int32): int32 { return 0; }
+        fn test(p: i32): i32 { return 0; }
 
-        let a: (int32, int32) -> int32 = test;
+        let a: (i32, i32) -> i32 = test;
     )",
-        "Type mismatch in variable declaration: cannot assign value of type '(int32) -> int32' to type '(int32, int32) -> int32'");
+        "Type mismatch in variable declaration: cannot assign value of type '(i32) -> i32' to type '(i32, i32) -> i32'");
 
     assert_compiles(R"(
-        fn test(p: int32): int32 { return 0; }
+        fn test(p: i32): i32 { return 0; }
 
-        const a: (int32) -> int32 = test;
+        const a: (i32) -> i32 = test;
     )");
 }
 
@@ -173,8 +173,8 @@ TEST(TypeErrors, NamedFunctionTypeAssignment)
 {
     EXPECT_NO_THROW({
         assert_compiles(R"(
-        type BinaryOp = (int32, int32) -> int32;
-        fn add(a: int32, b: int32): int32 { return a + b; }
+        type BinaryOp = (i32, i32) -> i32;
+        fn add(a: i32, b: i32): i32 { return a + b; }
         const secondOp: BinaryOp = add;
     )");
     });
@@ -184,8 +184,8 @@ TEST(TypeErrors, NamedFunctionTypeCast)
 {
     EXPECT_NO_THROW({
         assert_compiles(R"(
-        type BinaryOp = (int32, int32) -> int32;
-        fn add(a: int32, b: int32): int32 { return a + b; }
+        type BinaryOp = (i32, i32) -> i32;
+        fn add(a: i32, b: i32): i32 { return a + b; }
         let op = add as BinaryOp;
     )");
     });
@@ -194,7 +194,7 @@ TEST(TypeErrors, NamedFunctionTypeCast)
 TEST(TypeReferences, DeepFunctionReferential)
 {
     auto [block, context] = parse_code_with_context(R"(
-    fn root(x: int32): int32 {
+    fn root(x: i32): i32 {
         return x + 10;
     }
 
@@ -208,15 +208,15 @@ TEST(TypeReferences, DeepFunctionReferential)
     EXPECT_NE(symbol, nullptr) << "Expected 'second_ref' to be found in the symbol table";
     EXPECT_NE(field, nullptr)
         << "Expected 'second_ref' to be a FieldDefinition, but it was not found or was of a different type";
-    EXPECT_EQ(field->get_type()->to_string(), "(int32) -> int32")
-    << "Expected 'second_ref' to have type '(int32) -> int32', but got '"
+    EXPECT_EQ(field->get_type()->to_string(), "(i32) -> i32")
+    << "Expected 'second_ref' to have type '(i32) -> i32', but got '"
     << field->get_type()->to_string() << "'";
 }
 
 TEST(TypeReferences, StructTypeReference)
 {
     auto [block, context] = parse_code_with_context(R"(
-    type Point = { x: int32; y: int32; };
+    type Point = { x: i32; y: i32; };
 
     type Vec = Point;
     )");
@@ -250,40 +250,40 @@ TEST(OptionalTypes, OptionalMismatch)
 {
     assert_throws_message(
         R"(
-        let a: int32? = 10.0;
+        let a: i32? = 10.0;
     )",
-        "Type mismatch in variable declaration: cannot assign value of type 'float32' to type 'int32?'");
+        "Type mismatch in variable declaration: cannot assign value of type 'f32' to type 'i32?'");
 
     assert_compiles(R"(
-        let a: int32? = nil;
+        let a: i32? = nil;
     )");
 
     assert_throws_message(
         R"(
-        let a: int32 = nil;
+        let a: i32 = nil;
     )",
-        "Type mismatch in variable declaration: cannot assign value of type 'nil' to type 'int32'");
+        "Type mismatch in variable declaration: cannot assign value of type 'nil' to type 'i32'");
 }
 
 TEST(PrimitiveTypes, DominantType)
 {
     assert_compiles(R"(
-        const a: int64 = 10 + 20L;
-        const b: float32 = 10.0 + 20;
+        const a: i64 = 10 + 20L;
+        const b: f32 = 10.0 + 20;
     )");
 
     assert_throws_message(
         R"(
-        type Point = { x: int32; y: int32; };
+        type Point = { x: i32; y: i32; };
         const p: Point = Point::{ x: 1, y: 1 };
-        const a: int32 = 10 + p; 
+        const a: i32 = 10 + p; 
     )",
         "Cannot mix primitive type with named type");
 
     assert_throws_message(
         R"(
-        type Point = { x: int32; y: int32; };
-        type Color = { r: int32; g: int32; b: int32; };
+        type Point = { x: i32; y: i32; };
+        type Color = { r: i32; g: i32; b: i32; };
         const p: Point = Point::{ x: 1, y: 1 };
         const c: Color = Color::{ r: 1, g: 1, b: 1 };
         const a = p + c;
@@ -294,14 +294,14 @@ TEST(PrimitiveTypes, DominantType)
 TEST(ArrayTypes, MultiDimensional)
 {
     assert_compiles(R"(
-        let a: int32[][] = [[1, 2], [3, 4]];
+        let a: i32[][] = [[1, 2], [3, 4]];
     )");
 }
 
 TEST(TypeAliases, ComplexAliases)
 {
     assert_compiles(R"(
-        type IntArray = int32[];
+        type IntArray = i32[];
         const value = [1, 2, 3];
 
         fn test(a: IntArray): void {}
@@ -311,14 +311,14 @@ TEST(TypeAliases, ComplexAliases)
 
     assert_compiles(
         R"(
-         type BinaryOp = (int32, int32) -> int32;
-         fn add(a: int32, b: int32): int32 {
+         type BinaryOp = (i32, i32) -> i32;
+         fn add(a: i32, b: i32): i32 {
              return a + b;
          }
 
          const operation: BinaryOp = add;
 
-         fn main(): int32 {
+         fn main(): i32 {
              operation(1, 2);
              return 0;
          }

@@ -2,8 +2,8 @@ package System;
 
 module IO {
 
-    pub const stdout_fd: int32 = 0;
-    pub const stdin_fd: int32 = 1;
+    pub const stdout_fd: i32 = 0;
+    pub const stdin_fd: i32 = 1;
 
     /**
      * Prints the given string to the console.
@@ -17,7 +17,7 @@ module IO {
     /**
      * Reads a string from STDIN
      */
-    pub fn Read(bytes: int32): string {
+    pub fn Read(bytes: i32): string {
         return _read_in_internal(bytes);
     }
 }
