@@ -42,8 +42,8 @@
     UINT16='u16'
     UINT32='u32'
     UINT64='u64'
-    f32='f32'
-    f64='f64'
+    FLOAT32='f32'
+    FLOAT64='f64'
     BOOL='bool'
     CHAR='char'
     STRING='string'
@@ -143,7 +143,7 @@ VariableDeclarationStatement ::= [VisibilityModifier] (VariableDeclaration | Var
 // --- Types ---
 Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*] [QUESTION]
 // <module>::<type> or <type>
-PrimitiveType ::= VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | f32 | f64 | BOOL | CHAR | STRING
+PrimitiveType ::= VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING
 UserType ::= ScopedIdentifier [GenericTypeValueArguments] {
   mixin="com.stride.intellij.psi.StrideUserTypeMixin"
   methods=[
