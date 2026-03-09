@@ -32,7 +32,7 @@ GenericParameterList stride::ast::parse_generic_declaration(TokenSet& set)
     return generic_params;
 }
 
-GenericTypeList stride::ast::parse_generic_arguments(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
+GenericTypeList stride::ast::parse_generic_type_arguments(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
 {
     GenericTypeList generic_params;
     if (set.peek_next_eq(TokenType::LT))

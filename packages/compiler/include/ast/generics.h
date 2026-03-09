@@ -21,7 +21,7 @@ namespace stride::ast
 
     GenericParameterList parse_generic_declaration(TokenSet& set);
 
-    GenericTypeList parse_generic_arguments(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
+    GenericTypeList parse_generic_type_arguments(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
 
     std::unique_ptr<IAstType> resolve_generics(
         IAstType* type,

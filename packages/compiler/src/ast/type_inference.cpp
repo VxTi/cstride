@@ -161,7 +161,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(const AstArray* a
     return infer_expression_type(array->get_elements().front().get());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMemberAccessor* member_accessor_expr)
+std::unique_ptr<IAstType> stride::ast::infer_object_member_accessor_type(const AstMemberAccessor* member_accessor_expr)
 {
     // Base must be an identifier, e.g., <identifier>.<member1>...
     const auto base_iden = cast_expr<AstIdentifier*>(member_accessor_expr->get_base());
@@ -256,12 +256,21 @@ std::unique_ptr<IAstType> stride::ast::infer_member_accessor_type(const AstMembe
     return parent_type->clone_ty();
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(const AstStructInitializer* initializer)
+std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(const AstStructInitializer* struct_initializer)
 {
+    GenericTypeList generic_type_arguments;
+    generic_type_arguments.reserve(struct_initializer->get_generic_type_arguments().size());
+    for (const auto& generic_type_argument : struct_initializer->get_generic_type_arguments())
+    {
+        generic_type_arguments.emplace_back(generic_type_argument->clone_ty());
+    }
+
     return std::make_unique<AstAliasType>(
-        initializer->get_source_fragment(),
-        initializer->get_context(),
-        initializer->get_struct_name()
+        struct_initializer->get_source_fragment(),
+        struct_initializer->get_context(),
+        struct_initializer->get_struct_name(),
+        0,
+        std::move(generic_type_arguments)
     );
 }
 
@@ -280,6 +289,151 @@ std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* e
         expression->get_context(),
         std::move(param_types),
         expression->get_return_type()->clone_ty()
+    );
+}
+
+std::unique_ptr<IAstType> stride::ast::infer_identifier_type(const AstIdentifier* identifier)
+{
+    const auto reference_sym = identifier->get_context()->lookup_symbol(identifier->get_name());
+
+    if (!reference_sym)
+    {
+        throw parsing_error(
+            ErrorType::REFERENCE_ERROR,
+            std::format(
+                "Unable to infer expression type for '{}': variable or function not found",
+                identifier->get_name()),
+            identifier->get_source_fragment());
+    }
+
+    if (const auto callable = dynamic_cast<FunctionDefinition*>(reference_sym))
+    {
+        std::vector<std::unique_ptr<IAstType>> param_types;
+        for (const auto& param :
+             callable->get_type()->get_parameter_types())
+        {
+            param_types.push_back(param->clone_ty());
+        }
+
+        return std::make_unique<AstFunctionType>(
+            identifier->get_source_fragment(),
+            identifier->get_context(),
+            std::move(param_types),
+            callable->get_type()->get_return_type()->clone_ty()
+        );
+    }
+
+    if (const auto field = dynamic_cast<FieldDefinition*>(reference_sym))
+    {
+        return field->get_type()->clone_ty();
+    }
+
+    throw parsing_error(
+        ErrorType::SEMANTIC_ERROR,
+        std::format(
+            "Unable to infer expression type for variable '{}': variable is not a field or "
+            "function",
+            identifier->get_name()),
+        identifier->get_source_fragment());
+}
+
+std::unique_ptr<IAstType> stride::ast::infer_variable_declaration_type(
+    const AstVariableDeclaration* declaration,
+    const int recursion_guard)
+{
+    const auto annotated_type = declaration->get_annotated_type();
+    const auto value_type = infer_expression_type(
+        declaration->get_initial_value(),
+        recursion_guard
+    );
+    if (!annotated_type.has_value())
+    {
+        value_type->set_flags(declaration->get_flags());
+        return value_type->clone_ty();
+    }
+
+    if (annotated_type.value()->equals(*value_type))
+    {
+        return annotated_type.value()->clone_ty();
+    }
+
+    if (value_type->is_assignable_to(annotated_type.value()))
+    {
+        return get_dominant_field_type(annotated_type.value(), value_type.get());
+    }
+
+    const auto references = {
+        ErrorSourceReference(
+            annotated_type.value()->to_string(),
+            annotated_type.value()->get_source_fragment()
+        ),
+        ErrorSourceReference(
+            value_type->to_string(),
+            declaration->get_initial_value()->get_source_fragment()
+        )
+    };
+
+    throw parsing_error(
+        ErrorType::TYPE_ERROR,
+        std::format(
+            "Type mismatch in variable declaration: cannot assign value of type '{}' to type '{}'",
+            value_type->to_string(),
+            annotated_type.value()->to_string()
+        ),
+        references
+    );
+}
+
+std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
+    const AstArrayMemberAccessor* accessor,
+    const int recursion_guard)
+{
+    // Infer the identifier's type. We must ensure it's an array type, and then we can return the member type.
+    const auto array_type = infer_expression_type(accessor->get_array_identifier(), recursion_guard);
+
+    // If the immediate type is an array, we can simply return the member type
+    if (const auto array = cast_type<AstArrayType*>(array_type.get()))
+    {
+        return array->get_element_type()->clone_ty();
+    }
+
+    // It's possible that we're referring to a named type, in which case we'll have to extract the base type
+    if (const auto named = cast_type<AstAliasType*>(array_type.get()))
+    {
+        // Instantiate type if it contains generics
+        const auto base_ty = named->get_underlying_type();
+
+        if (!base_ty.has_value())
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Named type '{}' does not reference another type, cannot be used as array type",
+                    named->get_name()
+                ),
+                named->get_source_fragment()
+            );
+        }
+
+        if (const auto array_base_ty = cast_type<AstArrayType*>(base_ty.value().get()))
+        {
+            return array_base_ty->get_element_type()->clone_ty();
+        }
+
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Named type '{}' references a type that is not an array, cannot be used as array type",
+                named->get_name()
+            ),
+            named->get_source_fragment()
+        );
+    }
+
+    throw parsing_error(
+        ErrorType::SEMANTIC_ERROR,
+        "Unable to resolve array member accessor type",
+        accessor->get_source_fragment()
     );
 }
 
@@ -311,50 +465,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
 
     if (const auto* identifier = cast_expr<AstIdentifier*>(expr))
     {
-        // TODO: Add generic support.
-        // Right now we just do a lookup for `identifier`'s name, though we might want to extend
-        // the lookup for generics.
-        const auto reference_sym = identifier->get_context()->lookup_symbol(identifier->get_name());
-
-        if (!reference_sym)
-        {
-            throw parsing_error(
-                ErrorType::REFERENCE_ERROR,
-                std::format(
-                    "Unable to infer expression type for '{}': variable or function not found",
-                    identifier->get_name()),
-                identifier->get_source_fragment());
-        }
-
-        if (const auto callable = dynamic_cast<FunctionDefinition*>(reference_sym))
-        {
-            std::vector<std::unique_ptr<IAstType>> param_types;
-            for (const auto& param :
-                 callable->get_type()->get_parameter_types())
-            {
-                param_types.push_back(param->clone_ty());
-            }
-
-            return std::make_unique<AstFunctionType>(
-                identifier->get_source_fragment(),
-                identifier->get_context(),
-                std::move(param_types),
-                callable->get_type()->get_return_type()->clone_ty()
-            );
-        }
-
-        if (const auto field = dynamic_cast<FieldDefinition*>(reference_sym))
-        {
-            return field->get_type()->clone_ty();
-        }
-
-        throw parsing_error(
-            ErrorType::SEMANTIC_ERROR,
-            std::format(
-                "Unable to infer expression type for variable '{}': variable is not a field or "
-                "function",
-                identifier->get_name()),
-            identifier->get_source_fragment());
+        return infer_identifier_type(identifier);
     }
 
     if (auto* operation = cast_expr<IBinaryOp*>(expr))
@@ -374,47 +485,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
 
     if (const auto* variable_declaration = cast_expr<AstVariableDeclaration*>(expr))
     {
-        const auto annotated_type = variable_declaration->get_annotated_type();
-        const auto value_type = infer_expression_type(
-            variable_declaration->get_initial_value(),
-            recursion_guard
-        );
-        if (!annotated_type.has_value())
-        {
-            value_type->set_flags(variable_declaration->get_flags());
-            return value_type->clone_ty();
-        }
-
-        if (annotated_type.value()->equals(*value_type))
-        {
-            return annotated_type.value()->clone_ty();
-        }
-
-        if (value_type->is_assignable_to(annotated_type.value()))
-        {
-            return get_dominant_field_type(annotated_type.value(), value_type.get());
-        }
-
-        const auto references = {
-            ErrorSourceReference(
-                annotated_type.value()->to_string(),
-                annotated_type.value()->get_source_fragment()
-            ),
-            ErrorSourceReference(
-                value_type->to_string(),
-                variable_declaration->get_initial_value()->get_source_fragment()
-            )
-        };
-
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            std::format(
-                "Type mismatch in variable declaration: cannot assign value of type '{}' to type '{}'",
-                value_type->to_string(),
-                annotated_type.value()->to_string()
-            ),
-            references
-        );
+        return infer_variable_declaration_type(variable_declaration, recursion_guard);
     }
 
     if (auto* fn_call = cast_expr<AstFunctionCall*>(expr))
@@ -436,53 +507,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
 
     if (const auto* array_accessor = cast_expr<AstArrayMemberAccessor*>(expr))
     {
-        // Infer the identifier's type. We must ensure it's an array type, and then we can return the member type.
-        const auto array_type = infer_expression_type(array_accessor->get_array_identifier(), recursion_guard);
-
-        // If the immediate type is an array, we can simply return the member type
-        if (const auto array = cast_type<AstArrayType*>(array_type.get()))
-        {
-            return array->get_element_type()->clone_ty();
-        }
-
-        // It's possible that we're referring to a named type, in which case we'll have to extract the base type
-        if (const auto named = cast_type<AstAliasType*>(array_type.get()))
-        {
-            // Instantiate type if it contains generics
-            const auto base_ty = named->get_underlying_type();
-
-            if (!base_ty.has_value())
-            {
-                throw parsing_error(
-                    ErrorType::TYPE_ERROR,
-                    std::format(
-                        "Named type '{}' does not reference another type, cannot be used as array type",
-                        named->get_name()
-                    ),
-                    named->get_source_fragment()
-                );
-            }
-
-            if (const auto array_base_ty = cast_type<AstArrayType*>(base_ty.value().get()))
-            {
-                return array_base_ty->get_element_type()->clone_ty();
-            }
-
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Named type '{}' references a type that is not an array, cannot be used as array type",
-                    named->get_name()
-                ),
-                named->get_source_fragment()
-            );
-        }
-
-        throw parsing_error(
-            ErrorType::SEMANTIC_ERROR,
-            "Unable to resolve array member accessor type",
-            array_accessor->get_source_fragment()
-        );
+        return infer_array_accessor_type(array_accessor, recursion_guard);
     }
 
     if (const auto* struct_init = cast_expr<AstStructInitializer*>(expr))
@@ -492,7 +517,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
 
     if (const auto* member_accessor = cast_expr<AstMemberAccessor*>(expr))
     {
-        return infer_member_accessor_type(member_accessor);
+        return infer_object_member_accessor_type(member_accessor);
     }
 
     if (const auto* function_definition = cast_expr<IAstFunction*>(expr))

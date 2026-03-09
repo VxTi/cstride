@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "errors.h"
 #include "ast/symbols.h"
 
@@ -127,6 +129,7 @@ namespace stride::ast
     };
 
     using ExpressionList = std::vector<std::unique_ptr<IAstExpression>>;
+    using StructMemberInitializerPair = std::pair<std::string, std::unique_ptr<IAstExpression>>;
 
     class AstArray
         : public IAstExpression
@@ -740,25 +743,26 @@ namespace stride::ast
         : public IAstExpression
     {
         std::string _struct_name;
-        std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>>
-        _initializers;
+        std::vector<StructMemberInitializerPair> _member_initializers;
+        GenericTypeList _generic_type_arguments;
 
     public:
         explicit AstStructInitializer(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string struct_name,
-            std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> initializers
+            std::vector<StructMemberInitializerPair> member_initializers,
+            GenericTypeList generic_type_arguments = {}
         ) :
             IAstExpression(source, context),
             _struct_name(std::move(struct_name)),
-            _initializers(std::move(initializers)) {}
+            _member_initializers(std::move(member_initializers)),
+            _generic_type_arguments(std::move(generic_type_arguments)) {}
 
         [[nodiscard]]
-        const std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>>&
-        get_initializers() const
+        const std::vector<StructMemberInitializerPair>& get_initializers() const
         {
-            return _initializers;
+            return _member_initializers;
         }
 
         [[nodiscard]]
@@ -767,9 +771,19 @@ namespace stride::ast
             return _struct_name;
         }
 
-        llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+        [[nodiscard]]
+        const GenericTypeList& get_generic_type_arguments() const
+        {
+            return _generic_type_arguments;
+        }
+
+        [[nodiscard]]
+        bool has_generic_type_arguments() const
+        {
+            return !this->_generic_type_arguments.empty();
+        }
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 

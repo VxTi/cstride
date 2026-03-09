@@ -20,12 +20,12 @@ fn some_fn(vectors: Array<Vector<f64>>): void {
 
 fn main(): i32 {
     const vecArray: Array<Vector<f64>> = [
-        Vector::{ x: 1.0, y: 2.0, z: 3.0 },
-        Vector::{ x: 4.0, y: 5.0, z: 6.0 },
-        Vector::{ x: 7.0, y: 8.0, z: 9.0 }
+        Vector<f64>::{ x: 1.0, y: 2.0, z: 3.0 },
+        Vector<f64>::{ x: 4.0, y: 5.0, z: 6.0 },
+        Vector<f64>::{ x: 7.0, y: 8.0, z: 9.0 }
     ];
 
-    some_fn(instantiated);
+    some_fn(vecArray);
 
     return 0;
 }

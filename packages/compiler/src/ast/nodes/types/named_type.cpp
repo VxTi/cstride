@@ -22,7 +22,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     }
 
     const auto segments = parse_segmented_identifier(set, "Expected identifier for named type");
-    auto generic_types = parse_generic_arguments(context, set);
+    auto generic_types = parse_generic_type_arguments(context, set);
 
     const auto name = resolve_internal_name(segments);
 
