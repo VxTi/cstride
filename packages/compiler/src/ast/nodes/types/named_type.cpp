@@ -59,6 +59,80 @@ std::optional<std::unique_ptr<IAstType>> AstAliasType::get_reference_type() cons
     return std::nullopt;
 }
 
+static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr<IAstType> type)
+{
+    if (auto* named = cast_type<AstAliasType*>(type.get()))
+    {
+        if (auto underlying = named->get_underlying_type(); underlying.has_value())
+        {
+            return std::move(underlying.value());
+        }
+    }
+    else if (auto* array = cast_type<AstArrayType*>(type.get()))
+    {
+        auto element_type = array->get_element_type()->clone_ty();
+        auto resolved_element = resolve_nested_underlying_types(std::move(element_type));
+
+        return std::make_unique<AstArrayType>(
+            array->get_source_fragment(),
+            array->get_context(),
+            std::move(resolved_element),
+            array->get_initial_length(),
+            array->get_flags()
+        );
+    }
+    else if (auto* struct_type = cast_type<AstStructType*>(type.get()))
+    {
+        StructTypeMemberList resolved_members;
+        for (const auto& [name, member_type] : struct_type->get_members())
+        {
+            resolved_members.emplace_back(name, resolve_nested_underlying_types(member_type->clone_ty()));
+        }
+
+        return std::make_unique<AstStructType>(
+            struct_type->get_source_fragment(),
+            struct_type->get_context(),
+            std::move(resolved_members),
+            struct_type->get_flags()
+        );
+    }
+    else if (auto* tuple = cast_type<AstTupleType*>(type.get()))
+    {
+        std::vector<std::unique_ptr<IAstType>> resolved_members;
+        for (const auto& member : tuple->get_members())
+        {
+            resolved_members.push_back(resolve_nested_underlying_types(member->clone_ty()));
+        }
+
+        return std::make_unique<AstTupleType>(
+            tuple->get_source_fragment(),
+            tuple->get_context(),
+            std::move(resolved_members),
+            tuple->get_flags()
+        );
+    }
+    else if (auto* func = cast_type<AstFunctionType*>(type.get()))
+    {
+        std::vector<std::unique_ptr<IAstType>> resolved_params;
+        for (const auto& param : func->get_parameter_types())
+        {
+            resolved_params.push_back(resolve_nested_underlying_types(param->clone_ty()));
+        }
+
+        auto resolved_return = resolve_nested_underlying_types(func->get_return_type()->clone_ty());
+
+        return std::make_unique<AstFunctionType>(
+            func->get_source_fragment(),
+            func->get_context(),
+            std::move(resolved_params),
+            std::move(resolved_return),
+            func->get_flags()
+        );
+    }
+
+    return std::move(type);
+}
+
 std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type() const
 {
     const auto& reference_type_definition = this->get_type_definition();
@@ -68,32 +142,54 @@ std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type() con
         return std::nullopt;
     }
 
-    std::optional<std::unique_ptr<IAstType>> base_type = this->is_generic_overload()
+    std::unique_ptr<IAstType> base_type = this->is_generic_overload()
         ? instantiate_generic_type(this, reference_type_definition.value())
-        : this->get_reference_type();
+        : this->get_reference_type().value_or(nullptr);
+
+    if (!base_type)
+        return std::nullopt;
 
     int recursion_guard = 0;
 
-    if (!base_type.has_value())
-        return std::nullopt;
-
-    while (const auto* named_reference = cast_type<AstAliasType*>(base_type.value().get()))
+    while (true)
     {
-        if (named_reference->is_generic_overload())
+        if (auto* named_reference = cast_type<AstAliasType*>(base_type.get()))
         {
-            if (const auto next_def = named_reference->get_type_definition();
-                next_def.has_value())
+            if (named_reference->is_generic_overload())
             {
-                base_type = instantiate_generic_type(named_reference, next_def.value());
+                if (const auto next_def = named_reference->get_type_definition();
+                    next_def.has_value())
+                {
+                    base_type = instantiate_generic_type(named_reference, next_def.value());
+                }
+                else
+                {
+                    break;
+                }
             }
             else
             {
-                break;
+                auto next_type = named_reference->get_reference_type();
+                if (next_type.has_value())
+                {
+                    base_type = std::move(next_type.value());
+                }
+                else
+                {
+                    break;
+                }
             }
         }
         else
         {
-            base_type = named_reference->get_reference_type();
+            // If it's not a named type, it might still contain named types (like Wrap<T>[])
+            base_type = resolve_nested_underlying_types(std::move(base_type));
+
+            if (cast_type<AstAliasType*>(base_type.get()))
+            {
+                continue;
+            }
+            break;
         }
 
         if (++recursion_guard > MAX_RECURSION_DEPTH)
@@ -190,6 +286,12 @@ bool AstAliasType::equals(const IAstType& other) const
         }
         return true;
     }
+
+    if (const auto self_base = this->get_underlying_type(); self_base.has_value())
+    {
+        return self_base.value()->equals(other);
+    }
+
     return false;
 }
 

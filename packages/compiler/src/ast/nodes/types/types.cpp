@@ -217,10 +217,6 @@ bool IAstType::is_assignable_to(IAstType* other)
     // Try to resolve named types on both sides to check assignability
     if (const auto* this_named = cast_type<AstAliasType*>(this))
     {
-        if (const auto other_named = cast_type<AstAliasType*>(other))
-        {
-            return this_named->equals(*other_named);
-        }
         if (const auto self_base = this_named->get_underlying_type();
             self_base.has_value() && self_base.value()->is_assignable_to(other))
         {
