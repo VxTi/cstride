@@ -82,7 +82,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 
     if (const auto named_ty = cast_type<AstNamedType*>(array_iden_type.get()))
     {
-        if (const auto reference_type = named_ty->get_base_reference_type();
+        if (const auto reference_type = named_ty->get_underlying_type();
             reference_type.has_value())
         {
             array_iden_type = reference_type.value()->clone_ty();

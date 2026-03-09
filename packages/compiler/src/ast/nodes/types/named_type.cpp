@@ -59,7 +59,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_reference_type() cons
     return std::nullopt;
 }
 
-std::optional<std::unique_ptr<IAstType>> AstNamedType::get_base_reference_type() const
+std::optional<std::unique_ptr<IAstType>> AstNamedType::get_underlying_type() const
 {
     std::optional<std::unique_ptr<IAstType>> base_type = this->get_reference_type();
     int recursion_guard = 0; // Prevent self-referencing types causing infinite loops
@@ -87,7 +87,7 @@ std::optional<std::unique_ptr<IAstType>> AstNamedType::get_base_reference_type()
 
 bool AstNamedType::is_castable_to_impl(IAstType* other)
 {
-    const auto self_reference_type = get_base_reference_type();
+    const auto self_reference_type = get_underlying_type();
 
     if (!self_reference_type.has_value())
         return false;
@@ -107,7 +107,7 @@ bool AstNamedType::is_castable_to_impl(IAstType* other)
     // Final case would be to check whether both base types are the same
     if (const auto* other_named_ty = cast_type<AstNamedType*>(other))
     {
-        if (const auto second_reference_type = other_named_ty->get_base_reference_type();
+        if (const auto second_reference_type = other_named_ty->get_underlying_type();
             second_reference_type.has_value())
         {
             return self_reference_type.value()->equals(*second_reference_type);
@@ -130,7 +130,7 @@ bool AstNamedType::is_assignable_to_impl(IAstType* other)
     // type SomePrimitive = i32[]
     // const someVar: SomePrimitive = [1, 2, 3];
     // In this case, `[1, 2, 3]` should be assignable to the base types of `SomePrimitive`
-    const auto self_base_type = get_base_reference_type();
+    const auto self_base_type = get_underlying_type();
     if (self_base_type.has_value() && self_base_type.value()->is_assignable_to(other))
     {
         return true;
@@ -138,7 +138,7 @@ bool AstNamedType::is_assignable_to_impl(IAstType* other)
 
     if (const auto* other_named_ptr = cast_type<AstNamedType*>(other))
     {
-        const auto other_base_type = other_named_ptr->get_base_reference_type();
+        const auto other_base_type = other_named_ptr->get_underlying_type();
         if (other_base_type.has_value() && this->is_assignable_to(other_base_type.value().get()))
         {
             return true;
@@ -170,4 +170,21 @@ bool AstNamedType::equals(const IAstType& other) const
     }
 
     return false;
+}
+
+std::unique_ptr<IAstNode> AstNamedType::clone()
+{
+    GenericTypeList generic_types;
+    generic_types.reserve(this->_generic_types.size());
+    for (const auto& generic_type : this->_generic_types)
+    {
+        generic_types.push_back(generic_type->clone_ty());
+    }
+    return std::make_unique<AstNamedType>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_name,
+        this->get_flags(),
+        std::move(generic_types)
+    );
 }

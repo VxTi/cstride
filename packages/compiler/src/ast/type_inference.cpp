@@ -449,7 +449,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         if (const auto named = cast_type<AstNamedType*>(array_type.get()))
         {
             // Instantiate type if it contains generics
-            const auto base_ty = named->get_base_reference_type();
+            const auto base_ty = named->get_underlying_type();
 
             if (!base_ty.has_value())
             {

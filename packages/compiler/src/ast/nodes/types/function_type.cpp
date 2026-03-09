@@ -150,7 +150,7 @@ bool AstFunctionType::is_castable_to_impl(IAstType* other)
 {
     if (const auto other_named = cast_type<AstNamedType*>(other))
     {
-        if (const auto base_type = other_named->get_base_reference_type(); base_type.has_value())
+        if (const auto base_type = other_named->get_underlying_type(); base_type.has_value())
         {
             return this->equals(*base_type.value());
         }
