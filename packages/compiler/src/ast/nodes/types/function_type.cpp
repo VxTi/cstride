@@ -138,7 +138,7 @@ bool AstFunctionType::equals(const IAstType& other) const
         return true;
     }
 
-    if (const auto* other_named = cast_type<const AstNamedType*>(&other))
+    if (const auto* other_named = cast_type<const AstAliasType*>(&other))
     {
         return other_named->equals(*this);
     }
@@ -148,7 +148,7 @@ bool AstFunctionType::equals(const IAstType& other) const
 
 bool AstFunctionType::is_castable_to_impl(IAstType* other)
 {
-    if (const auto other_named = cast_type<AstNamedType*>(other))
+    if (const auto other_named = cast_type<AstAliasType*>(other))
     {
         if (const auto base_type = other_named->get_underlying_type(); base_type.has_value())
         {

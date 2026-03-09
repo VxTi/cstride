@@ -282,7 +282,7 @@ bool AstPrimitiveType::equals(const IAstType& other) const
             is_one_optional;
     }
 
-    if (const auto* struct_type = dynamic_cast<const AstNamedType*>(&other))
+    if (const auto* struct_type = dynamic_cast<const AstAliasType*>(&other))
     {
         if (this->get_primitive_type() == PrimitiveType::NIL && struct_type->is_optional())
         {

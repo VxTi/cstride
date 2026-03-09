@@ -43,7 +43,7 @@ namespace stride::ast
         class IDefinition
         {
             Symbol _symbol;
-            VisibilityModifier _modifier;
+            VisibilityModifier _visibility;
 
         public:
             explicit IDefinition(
@@ -51,7 +51,7 @@ namespace stride::ast
                 const VisibilityModifier modifier
             ) :
                 _symbol(std::move(symbol)),
-                _modifier(modifier) {}
+                _visibility(modifier) {}
 
             virtual ~IDefinition() = default;
 
@@ -70,7 +70,7 @@ namespace stride::ast
             [[nodiscard]]
             VisibilityModifier get_visibility() const
             {
-                return this->_modifier;
+                return this->_visibility;
             }
 
             [[nodiscard]]

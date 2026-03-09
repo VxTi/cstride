@@ -72,7 +72,7 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
     // e.g.,
     // type A = { ... };
     // type B = A; (named type)
-    const auto* named_type = cast_type<AstNamedType*>(type_def.value()->get_type());
+    const auto* named_type = cast_type<AstAliasType*>(type_def.value()->get_type());
     int recursion_depth = 0;
 
     while (named_type != nullptr)
@@ -89,7 +89,7 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
             return struct_ty;
         }
 
-        named_type = cast_type<AstNamedType*>(reference_type_def.value()->get_type());
+        named_type = cast_type<AstAliasType*>(reference_type_def.value()->get_type());
 
         if (++recursion_depth > MAX_RECURSION_DEPTH)
         {

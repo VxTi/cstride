@@ -442,12 +442,12 @@ TEST_F(TypeInferenceTest, InferStructAndMemberAccess)
 
     // Member access
     context->define_variable(dummy_sym("p"),
-                             std::make_unique<AstNamedType>(dummy_sf(), context, "Point"),
+                             std::make_unique<AstAliasType>(dummy_sf(), context, "Point"),
                              VisibilityModifier::PUBLIC);
 
     // Nested member access
     context->define_variable(dummy_sym("q"),
-                             std::make_unique<AstNamedType>(dummy_sf(), context, "Point"),
+                             std::make_unique<AstAliasType>(dummy_sf(), context, "Point"),
                              VisibilityModifier::PUBLIC);
     auto base2 = std::make_unique<AstIdentifier>(context, dummy_sym("q"));
     std::vector<std::unique_ptr<AstIdentifier>> access_members2;

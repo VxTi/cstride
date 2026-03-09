@@ -80,7 +80,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 {
     std::unique_ptr<IAstType> array_iden_type = this->_array_identifier->get_type()->clone_ty();
 
-    if (const auto named_ty = cast_type<AstNamedType*>(array_iden_type.get()))
+    if (const auto named_ty = cast_type<AstAliasType*>(array_iden_type.get()))
     {
         if (const auto reference_type = named_ty->get_underlying_type();
             reference_type.has_value())

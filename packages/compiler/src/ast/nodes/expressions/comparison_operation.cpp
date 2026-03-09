@@ -78,8 +78,8 @@ void AstComparisonOp::validate()
         && lhs_primitive->get_primitive_type() != PrimitiveType::NIL)
         return;
 
-    const auto lhs_struct = cast_type<AstNamedType*>(lhs_type);
-    const auto rhs_struct = cast_type<AstNamedType*>(rhs_type);
+    const auto lhs_struct = cast_type<AstAliasType*>(lhs_type);
+    const auto rhs_struct = cast_type<AstAliasType*>(rhs_type);
 
     // LHS is optional struct and RHS is primitive and RHS is not nil
     if (lhs_struct && rhs_primitive && lhs_struct->is_optional() &&

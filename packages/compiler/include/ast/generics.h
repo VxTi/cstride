@@ -10,7 +10,7 @@ namespace stride::ast
         class TypeDefinition;
     }
 
-    class AstNamedType;
+    class AstAliasType;
     class ParsingContext;
     class IAstType;
     class TokenSet;
@@ -30,7 +30,7 @@ namespace stride::ast
     );
 
     std::unique_ptr<IAstType> instantiate_generic_type(
-        const AstNamedType* named_type,
+        const AstAliasType* named_type,
         const definition::TypeDefinition* type_definition
     );
 }

@@ -18,6 +18,34 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
 
     private fun createSpaceBuilder(settings: CodeStyleSettings): SpacingBuilder {
         return SpacingBuilder(settings, StrideLanguage)
+            // Generic type arguments/values: <T>, <i32, f64>
+            .afterInside(StrideTypes.LT, StrideTypes.GENERIC_TYPE_ARGUMENTS).spaceIf(false)
+            .beforeInside(StrideTypes.GT, StrideTypes.GENERIC_TYPE_ARGUMENTS).spaceIf(false)
+            .afterInside(StrideTypes.LT, StrideTypes.GENERIC_TYPE_VALUE_ARGUMENTS).spaceIf(false)
+            .beforeInside(StrideTypes.GT, StrideTypes.GENERIC_TYPE_VALUE_ARGUMENTS).spaceIf(false)
+            .afterInside(StrideTypes.LT, StrideTypes.FUNCTION_CALL_EXPRESSION).spaceIf(false)
+            .beforeInside(StrideTypes.GT, StrideTypes.FUNCTION_CALL_EXPRESSION).spaceIf(false)
+            .afterInside(StrideTypes.LT, StrideTypes.FUNCTION_DECLARATION).spaceIf(false)
+            .beforeInside(StrideTypes.GT, StrideTypes.FUNCTION_DECLARATION).spaceIf(false)
+            .afterInside(StrideTypes.LT, StrideTypes.EXTERN_FUNCTION_DECLARATION).spaceIf(false)
+            .beforeInside(StrideTypes.GT, StrideTypes.EXTERN_FUNCTION_DECLARATION).spaceIf(false)
+            .afterInside(StrideTypes.LT, StrideTypes.TYPE_DEFINITION).spaceIf(false)
+            .beforeInside(StrideTypes.GT, StrideTypes.TYPE_DEFINITION).spaceIf(false)
+            .beforeInside(StrideTypes.COMMA, StrideTypes.FUNCTION_CALL_EXPRESSION).spaceIf(false)
+            .beforeInside(StrideTypes.COMMA, StrideTypes.FUNCTION_DECLARATION).spaceIf(false)
+            .beforeInside(StrideTypes.COMMA, StrideTypes.EXTERN_FUNCTION_DECLARATION).spaceIf(false)
+            .beforeInside(StrideTypes.COMMA, StrideTypes.TYPE_DEFINITION).spaceIf(false)
+            .beforeInside(StrideTypes.COMMA, StrideTypes.GENERIC_TYPE_ARGUMENTS).spaceIf(false)
+            .beforeInside(StrideTypes.COMMA, StrideTypes.GENERIC_TYPE_VALUE_ARGUMENTS).spaceIf(false)
+            .beforeInside(StrideTypes.LT, StrideTypes.FUNCTION_CALL_EXPRESSION).spaceIf(false)
+            .afterInside(StrideTypes.GT, StrideTypes.FUNCTION_CALL_EXPRESSION).spaceIf(false)
+            .beforeInside(StrideTypes.LPAREN, StrideTypes.FUNCTION_CALL_EXPRESSION).spaceIf(false)
+
+            // Tuple types: (i32, i32)
+            .afterInside(StrideTypes.LPAREN, StrideTypes.TUPLE_TYPE).spaceIf(false)
+            .beforeInside(StrideTypes.RPAREN, StrideTypes.TUPLE_TYPE).spaceIf(false)
+            .beforeInside(StrideTypes.COMMA, StrideTypes.TUPLE_TYPE).spaceIf(false)
+
             .around(StrideTypes.EQ).spaceIf(true)
             .around(StrideTypes.PLUS_EQ).spaceIf(true)
             .around(StrideTypes.MINUS_EQ).spaceIf(true)
@@ -49,9 +77,13 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             // Specific comma rules must come before the general .after(COMMA) rule
             // because SpacingBuilder uses first-match semantics
             .afterInside(StrideTypes.COMMA, StrideTypes.STRUCT_INIT_FIELDS).lineBreakInCode()
+
             .after(StrideTypes.COMMA).spaceIf(true)
             .before(StrideTypes.COMMA).spaceIf(false)
             .before(StrideTypes.SEMICOLON).spaceIf(false)
+
+            // Array notation: T[]
+            .betweenInside(StrideTypes.LSQUARE_BRACKET, StrideTypes.RSQUARE_BRACKET, StrideTypes.TYPE).spaceIf(false)
 
             .afterInside(StrideTypes.LBRACE, StrideTypes.TYPE).lineBreakInCode()
             .beforeInside(StrideTypes.RBRACE, StrideTypes.TYPE).lineBreakInCode()
