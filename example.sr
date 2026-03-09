@@ -4,17 +4,17 @@ import System::{
 };
 
 type Array<T> = T[];
-// type IArray = Array<int32>;
-// type NestedArray = Array<Array<int32>>;
+type IArray = Array<int32>;
+type NestedArray = Array<IArray>;
 
-fn some_fn(arr: Array<int32>): void{
+fn some_fn(arr: NestedArray): void {
     const sum: int32 = arr[0] + arr[1] + arr[2] + arr[3] + arr[4];
 
     IO::Print("Result: %d\n", sum);
 }
 
 fn main(): int32 {
-    const some_array: Array<int32> = [1, 2, 3, 4, 5];
+    const some_array: NestedArray = [1, 2, 3, 4, 5];
 
     some_fn(some_array);
 

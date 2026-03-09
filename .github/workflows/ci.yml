@@ -34,30 +34,30 @@ jobs:
             googletest \
             libgtest-dev
 
-      - name: Install LLVM 21
+      - name: Install LLVM 22
         run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 21
-          sudo apt-get install -y clang-21 lldb-21 lld-21 llvm-21-dev
-          clang++-21 --version
+          sudo ./llvm.sh 22
+          sudo apt-get install -y clang-22 lldb-22 lld-22 llvm-22-dev
+          clang++-22 --version
 
       - name: Setup Ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: ${{ github.job }}-${{ runner.os }}-llvm-21
+          key: ${{ github.job }}-${{ runner.os }}-llvm-22
           append-timestamp: true
 
       - name: Configure CMake
         run: |
           cmake -S . -B build -G Ninja \
-            -DCMAKE_C_COMPILER=clang-21 \
-            -DCMAKE_CXX_COMPILER=clang++-21 \
+            -DCMAKE_C_COMPILER=clang-22 \
+            -DCMAKE_CXX_COMPILER=clang++-22 \
             -DCMAKE_CXX_STANDARD=23 \
             -DCMAKE_CXX_STANDARD_REQUIRED=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DLLVM_DIR=/usr/lib/llvm-21/lib/cmake/llvm
+            -DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm
 
       - name: Build
         run: cmake --build build --parallel $(nproc)
