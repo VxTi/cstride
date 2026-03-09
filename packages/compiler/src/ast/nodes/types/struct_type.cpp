@@ -106,12 +106,14 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
         set.throw_error("Struct must have at least one member");
     }
 
-    return std::make_unique<AstStructType>(
+     auto struct_ty = std::make_unique<AstStructType>(
         reference_token.get_source_fragment(),
         struct_type_context,
         std::move(struct_fields),
         context_type_flags
     );
+
+    return parse_type_metadata(std::move(struct_ty), set, context_type_flags);
 }
 
 std::optional<IAstType*> AstStructType::get_member_field_type(const std::string& field_name) const

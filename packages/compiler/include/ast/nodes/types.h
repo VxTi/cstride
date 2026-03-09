@@ -293,10 +293,25 @@ namespace stride::ast
 
         std::string to_string() override
         {
+            std::string name = this->get_name();
+            if (this->is_generic_overload())
+            {
+                name += "<";
+                for (size_t i = 0; i < this->_generic_types.size(); i++)
+                {
+                    name += this->_generic_types[i]->to_string();
+                    if (i < this->_generic_types.size() - 1)
+                    {
+                        name += ", ";
+                    }
+                }
+                name += ">";
+            }
+
             return std::format(
                 "{}{}{}",
                 this->is_pointer() ? "*" : "",
-                this->get_name(),
+                name,
                 this->is_optional() ? "?" : "");
         }
 
@@ -315,7 +330,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const GenericTypeList& get_generic_types() const
+        const GenericTypeList& get_instantiated_generic_types() const
         {
             return this->_generic_types;
         }

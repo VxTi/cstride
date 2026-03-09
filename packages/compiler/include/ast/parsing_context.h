@@ -126,7 +126,7 @@ namespace stride::ast
             }
 
             [[nodiscard]]
-            GenericParameterList get_generics() const
+            GenericParameterList get_generics_parameters() const
             {
                 return this->_generics;
             }
@@ -143,7 +143,7 @@ namespace stride::ast
                 return std::make_unique<TypeDefinition>(
                     get_symbol(),
                     _type->clone_ty(),
-                    get_generics(),
+                    get_generics_parameters(),
                     get_visibility());
             }
         };
