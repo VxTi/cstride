@@ -5,24 +5,24 @@ import System::{
 
 type Array<T> = T[];
 
-type SomeStruct<A, B, C> = {
-    field1: A;
-    field2: B;
-    field3: C;
+type Vector<T> = {
+    x: T;
+    y: T;
+    z: T;
 };
 
-fn some_fn(nested: SomeStruct<i32, i32, i32>): void {
-    IO::Print("Field1: %d", nested.field1);
-    IO::Print("Field2: %d", nested.field2);
-    IO::Print("Field3: %d", nested.field3);
+fn some_fn(nested: Vector<f64>): void {
+    IO::Print("Vector: [x: %f, y: %f, z: %f]", nested.x, nested.y, nested.z);
 }
 
 fn main(): i32 {
-    const instantiated = SomeStruct::{
-        field1: 1,
-        field2: 2,
-        field3: 3
-    };
+    const instantiated = Vector::{ x: 1.0, y: 2.0, z: 3.0 };
+
+    const vecArray: Array<Vector<f64>> = [
+        Vector::{ x: 1.0, y: 2.0, z: 3.0 },
+        Vector::{ x: 4.0, y: 5.0, z: 6.0 },
+        Vector::{ x: 7.0, y: 8.0, z: 9.0 }
+    ];
 
     some_fn(instantiated);
 
