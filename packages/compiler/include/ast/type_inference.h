@@ -3,6 +3,9 @@
 
 namespace stride::ast
 {
+    class AstArrayMemberAccessor;
+    class AstVariableDeclaration;
+    class AstIdentifier;
     class AstArray;
     class IBinaryOp;
     class IAstExpression;
@@ -33,11 +36,21 @@ namespace stride::ast
     std::unique_ptr<IAstType> infer_function_call_return_type(AstFunctionCall* fn_call);
 
     /// Infers the type produced by a struct initializer expression
-    std::unique_ptr<IAstType> infer_struct_initializer_type(const AstStructInitializer* initializer);
+    std::unique_ptr<IAstType> infer_struct_initializer_type(const AstStructInitializer* struct_initializer);
+
+    /// Infers the type of an identifier by looking it up in the current context
+    std::unique_ptr<IAstType> infer_identifier_type(const AstIdentifier* identifier);
+
+    /// Infers the type of a variable declaration, which is either the explicitly declared type or the type of the initializer expression
+    std::unique_ptr<IAstType> infer_variable_declaration_type(
+        const AstVariableDeclaration* declaration,
+        int recursion_guard);
 
     /// Infers the type of the field accessed via a member accessor expression
-    std::unique_ptr<IAstType> infer_member_accessor_type(
-        const AstMemberAccessor* member_accessor_expr);
+    std::unique_ptr<IAstType> infer_object_member_accessor_type(const AstMemberAccessor* member_accessor_expr);
+
+    /// Infers the type of the element accessed via an array member accessor expression, which is the element type of the array being accessed
+    std::unique_ptr<IAstType> infer_array_accessor_type(const AstArrayMemberAccessor* accessor, int recursion_guard);
 
     std::unique_ptr<IAstType> infer_function_type(
         const IAstFunction* expression);

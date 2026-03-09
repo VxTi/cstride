@@ -14,14 +14,46 @@ using namespace stride::ast;
 
 bool stride::ast::is_struct_initializer(const TokenSet& set)
 {
-    // We assume an expression is a struct initializer if it starts with `<name>::{ <identifier`
-    // Obviously, this can also be a block, but we will disambiguate that during parsing
-    return set.peek_eq(TokenType::IDENTIFIER, 0)
-        && set.peek_eq(TokenType::DOUBLE_COLON, 1)
-        && set.peek_eq(TokenType::LBRACE, 2);
+    int64_t i = 0;
+
+    if (!set.peek_eq(TokenType::IDENTIFIER, i))
+    {
+        return false;
+    }
+    ++i;
+
+    // Optional generic argument list: SomeStruct<...>
+    if (set.peek_eq(TokenType::LT, i))
+    {
+        int depth = 0;
+
+        do
+        {
+            if (set.peek_eq(TokenType::LT, i))
+            {
+                ++depth;
+            }
+            else if (set.peek_eq(TokenType::GT, i))
+            {
+                --depth;
+            }
+
+
+            ++i;
+            // Ran out of tokens before the generic list closed
+            if (set.at(i).get_type() == TokenType::END_OF_FILE && depth > 0)
+            {
+                return false;
+            }
+        }
+        while (depth > 0 && set.has_next());
+    }
+
+    return set.peek_eq(TokenType::DOUBLE_COLON, i)
+        && set.peek_eq(TokenType::LBRACE, i + 1);
 }
 
-std::pair<std::string, std::unique_ptr<IAstExpression>> parse_struct_member_initializer(
+StructMemberInitializerPair parse_struct_member_initializer(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -39,23 +71,14 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     TokenSet& set
 )
 {
-    const auto reference_token = set.expect(
-        TokenType::IDENTIFIER,
-        "Expected struct name in struct initializer"
-    );
-    set.expect(
-        TokenType::DOUBLE_COLON,
-        "Expected '::' after struct name in struct initializer"
-    );
+    const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected struct name in struct initializer");
+    auto generic_types = parse_generic_type_arguments(context, set);
+    set.expect(TokenType::DOUBLE_COLON, "Expected '::' after struct name in struct initializer");
 
-    std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> member_map = {};
+    std::vector<StructMemberInitializerPair> member_map;
     auto member_set = collect_block_required(set, "Expected struct initializer body after '{'");
 
-    // Parse initial member
-    auto [initial_member_iden, initial_member_expr] =
-        parse_struct_member_initializer(context, member_set);
-
-    member_map.emplace_back(std::move(initial_member_iden), std::move(initial_member_expr));
+    member_map.emplace_back(parse_struct_member_initializer(context, member_set));
 
     // TODO: Handle unnamed initialization, e.g., `SomeStruct::{ 1, 3, 3 }`
 
@@ -86,7 +109,8 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         reference_token.get_source_fragment(),
         context,
         reference_token.get_lexeme(),
-        std::move(member_map)
+        std::move(member_map),
+        std::move(generic_types)
     );
 }
 
@@ -107,21 +131,21 @@ void AstStructInitializer::validate()
     const auto fields = definition.value()->get_members();
 
     // Quick check: Ensure the number of members matches (no type comparisons required)
-    if (fields.size() != this->_initializers.size())
+    if (fields.size() != this->_member_initializers.size())
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Too {} members found in struct '{}': expected {}, got {}",
-                fields.size() > this->_initializers.size() ? "few" : "many",
+                fields.size() > this->_member_initializers.size() ? "few" : "many",
                 this->_struct_name,
                 fields.size(),
-                this->_initializers.size()),
+                this->_member_initializers.size()),
             this->get_source_fragment()
         );
     }
 
-    for (const auto& [field_name, initializer_expr] : this->_initializers)
+    for (const auto& [field_name, initializer_expr] : this->_member_initializers)
     {
         initializer_expr->validate();
         auto found_member = definition.value()->get_member_field_type(field_name);
@@ -160,7 +184,7 @@ void AstStructInitializer::validate()
 
     // Second quick check: Order validation - This is required to ensure a consistent data layout.
     size_t index = 0;
-    for (const auto& member_name : this->_initializers | std::views::keys)
+    for (const auto& member_name : this->_member_initializers | std::views::keys)
     {
         if (const auto& [field_name, field_type] = fields[index];
             member_name != field_name)
@@ -191,7 +215,7 @@ llvm::Value* AstStructInitializer::codegen(
     std::vector<llvm::Value*> dynamic_members;
     bool all_constants = true;
 
-    for (const auto& expr : this->_initializers | std::views::values)
+    for (const auto& expr : this->_member_initializers | std::views::values)
     {
         llvm::Value* val = expr->codegen(module, builder);
         if (!val)
@@ -267,19 +291,28 @@ llvm::Value* AstStructInitializer::codegen(
 
 std::unique_ptr<IAstNode> AstStructInitializer::clone()
 {
-    std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> cloned_initializers;
-    cloned_initializers.reserve(this->_initializers.size());
+    std::vector<StructMemberInitializerPair> member_initializers;
+    std::vector<std::unique_ptr<IAstType>> member_generic_types;
 
-    for (const auto& [name, expr] : this->_initializers)
+    member_initializers.reserve(this->_member_initializers.size());
+    member_generic_types.reserve(this->_generic_type_arguments.size());
+
+    for (const auto& [name, expr] : this->_member_initializers)
     {
-        cloned_initializers.emplace_back(name, expr->clone_as<IAstExpression>());
+        member_initializers.emplace_back(name, expr->clone_as<IAstExpression>());
+    }
+
+    for (const auto& type : this->_generic_type_arguments)
+    {
+        member_generic_types.push_back(type->clone_ty());
     }
 
     return std::make_unique<AstStructInitializer>(
         this->get_source_fragment(),
         this->get_context(),
         this->_struct_name,
-        std::move(cloned_initializers)
+        std::move(member_initializers),
+        std::move(member_generic_types)
     );
 }
 

@@ -245,7 +245,7 @@ FunctionCallExpression ::= ScopedIdentifier [LT Type (COMMA Type)* GT] LPAREN [A
 
 LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL | NIL
 // some::Struct { field1: value1, field2: value2 }
-StructInitialization ::= ScopedIdentifier COLON_COLON LBRACE [StructInitFields] RBRACE {
+StructInitialization ::= ScopedIdentifier [GenericTypeValueArguments] COLON_COLON LBRACE [StructInitFields] RBRACE {
   methods=[
     getScopedIdentifier
   ]

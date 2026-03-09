@@ -39,14 +39,9 @@ Token TokenSet::last() const
 
 Token TokenSet::at(const int64_t index) const
 {
-    if (this->size() == 0 || this->remaining() == 0 || index < 0)
+    if (this->size() == 0 || this->remaining() == 0 || index < 0 || index >= this->size())
     {
         return END_OF_FILE;
-    }
-
-    if (index >= this->size())
-    {
-        return this->_tokens.back();
     }
 
     return this->_tokens[index];
