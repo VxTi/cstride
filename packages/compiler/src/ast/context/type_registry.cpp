@@ -63,9 +63,9 @@ std::optional<AstObjectType*> ParsingContext::get_struct_type(const std::string&
 
     // It's an immediate struct definition (type K = { ... }),
     // so we're safe
-    if (const auto struct_ty = cast_type<AstObjectType*>(type_def.value()->get_type()))
+    if (const auto object_type = cast_type<AstObjectType*>(type_def.value()->get_type()))
     {
-        return struct_ty;
+        return object_type;
     }
 
     // It might be a reference struct, so we'll have to recursively extract it here.
@@ -84,9 +84,9 @@ std::optional<AstObjectType*> ParsingContext::get_struct_type(const std::string&
             return std::nullopt;
         }
 
-        if (const auto struct_ty = cast_type<AstObjectType*>(reference_type_def.value()->get_type()))
+        if (const auto object_type = cast_type<AstObjectType*>(reference_type_def.value()->get_type()))
         {
-            return struct_ty;
+            return object_type;
         }
 
         named_type = cast_type<AstAliasType*>(reference_type_def.value()->get_type());

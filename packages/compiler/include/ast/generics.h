@@ -5,6 +5,9 @@
 
 namespace stride::ast
 {
+    class AstObjectInitializer;
+    class AstObjectType;
+
     namespace definition
     {
         class TypeDefinition;
@@ -34,6 +37,12 @@ namespace stride::ast
 
     std::unique_ptr<IAstType> instantiate_generic_type(
         const AstAliasType* alias_type,
+        const definition::TypeDefinition* type_definition
+    );
+
+    std::unique_ptr<AstObjectType> instantiate_generic_type(
+        AstObjectInitializer* object,
+        AstObjectType* type,
         const definition::TypeDefinition* type_definition
     );
 }

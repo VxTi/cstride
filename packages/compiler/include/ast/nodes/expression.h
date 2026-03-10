@@ -746,6 +746,9 @@ namespace stride::ast
         std::vector<StructMemberInitializerPair> _member_initializers;
         GenericTypeList _generic_type_arguments;
 
+        // Instantiated type, if initializer is generic
+        std::unique_ptr<AstObjectType> _object_type = nullptr;
+
     public:
         explicit AstObjectInitializer(
             const SourceFragment& source,
@@ -790,6 +793,9 @@ namespace stride::ast
         void validate() override;
 
         std::unique_ptr<IAstNode> clone() override;
+
+    private:
+        std::unique_ptr<AstObjectType> get_instantiated_object_type();
     };
 
     class AstVariadicArgReference
