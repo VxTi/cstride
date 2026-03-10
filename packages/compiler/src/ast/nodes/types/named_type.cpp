@@ -81,15 +81,15 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
             array->get_flags()
         );
     }
-    else if (auto* struct_type = cast_type<AstStructType*>(type.get()))
+    else if (auto* struct_type = cast_type<AstObjectType*>(type.get()))
     {
-        StructTypeMemberList resolved_members;
+        ObjectTypeMemberList resolved_members;
         for (const auto& [name, member_type] : struct_type->get_members())
         {
             resolved_members.emplace_back(name, resolve_nested_underlying_types(member_type->clone_ty()));
         }
 
-        return std::make_unique<AstStructType>(
+        return std::make_unique<AstObjectType>(
             struct_type->get_source_fragment(),
             struct_type->get_context(),
             std::move(resolved_members),

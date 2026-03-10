@@ -14,7 +14,7 @@ TEST(TypeErrors, VariableInitTypeMismatch)
         "Type mismatch in variable declaration: cannot assign value of type 'i64' to type 'i32'");
 }
 
-TEST(TypeErrors, StructTypeMismatch)
+TEST(TypeErrors, ObjectTypeMismatch)
 {
     assert_throws_message(
         R"(
@@ -28,7 +28,7 @@ TEST(TypeErrors, StructTypeMismatch)
         "Type mismatch for member 'x' in struct initializer 'Point': expected 'i32', got 'f64'");
 }
 
-TEST(TypeErrors, StructTypeMemberCountMismatch)
+TEST(TypeErrors, ObjectTypeMemberCountMismatch)
 {
     assert_throws_message(
         R"(
@@ -213,7 +213,7 @@ TEST(TypeReferences, DeepFunctionReferential)
     << field->get_type()->to_string() << "'";
 }
 
-TEST(TypeReferences, StructTypeReference)
+TEST(TypeReferences, ObjectTypeReference)
 {
     auto [block, context] = parse_code_with_context(R"(
     type Point = { x: i32; y: i32; };

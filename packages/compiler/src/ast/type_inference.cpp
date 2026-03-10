@@ -256,7 +256,7 @@ std::unique_ptr<IAstType> stride::ast::infer_object_member_accessor_type(const A
     return parent_type->clone_ty();
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_struct_initializer_type(const AstStructInitializer* struct_initializer)
+std::unique_ptr<IAstType> stride::ast::infer_object_initializer_type(const AstObjectInitializer* struct_initializer)
 {
     GenericTypeList generic_type_arguments;
     generic_type_arguments.reserve(struct_initializer->get_generic_type_arguments().size());
@@ -510,9 +510,9 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         return infer_array_accessor_type(array_accessor, recursion_guard);
     }
 
-    if (const auto* struct_init = cast_expr<AstStructInitializer*>(expr))
+    if (const auto* struct_init = cast_expr<AstObjectInitializer*>(expr))
     {
-        return infer_struct_initializer_type(struct_init);
+        return infer_object_initializer_type(struct_init);
     }
 
     if (const auto* member_accessor = cast_expr<AstMemberAccessor*>(expr))

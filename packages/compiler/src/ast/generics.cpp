@@ -102,10 +102,10 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         );
     }
 
-    if (const auto* struct_type = cast_type<AstStructType*>(type))
+    if (const auto* struct_type = cast_type<AstObjectType*>(type))
     {
         const auto& members = struct_type->get_members();
-        StructTypeMemberList resolved_members;
+        ObjectTypeMemberList resolved_members;
         resolved_members.reserve(members.size());
 
         for (const auto& [field_name, field_ty] : members)
@@ -116,7 +116,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
             );
         }
 
-        return std::make_unique<AstStructType>(
+        return std::make_unique<AstObjectType>(
             struct_type->get_source_fragment(),
             struct_type->get_context(),
             std::move(resolved_members),

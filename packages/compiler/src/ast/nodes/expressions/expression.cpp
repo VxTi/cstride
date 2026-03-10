@@ -37,7 +37,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
     // Will try to parse <name>::{ ... }
     if (is_struct_initializer(set))
     {
-        return parse_struct_initializer(context, set);
+        return parse_object_initializer(context, set);
     }
 
     // Will try to parse [ ... ]

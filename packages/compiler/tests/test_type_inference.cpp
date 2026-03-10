@@ -428,7 +428,7 @@ TEST_F(TypeInferenceTest, InferStructAndMemberAccess)
     std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> members;
     members.emplace_back("x", std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::INT32));
     members.emplace_back("y", std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::FLOAT32));
-    auto struct_ty = std::make_unique<AstStructType>(dummy_sf(), context, std::move(members));
+    auto struct_ty = std::make_unique<AstObjectType>(dummy_sf(), context, std::move(members));
 
     context->define_type(dummy_sym("Point"), std::move(struct_ty), {}, VisibilityModifier::PUBLIC);
 
@@ -436,7 +436,7 @@ TEST_F(TypeInferenceTest, InferStructAndMemberAccess)
     std::vector<std::pair<std::string, std::unique_ptr<IAstExpression>>> inits;
     inits.emplace_back("x", std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 1, 0));
     inits.emplace_back("y", std::make_unique<AstFpLiteral>(dummy_sf(), context, PrimitiveType::FLOAT32, 1.0f));
-    auto struct_init = std::make_unique<AstStructInitializer>(dummy_sf(), context, "Point", std::move(inits));
+    auto struct_init = std::make_unique<AstObjectInitializer>(dummy_sf(), context, "Point", std::move(inits));
 
     EXPECT_EQ(infer_expression_type(struct_init.get())->to_string(), "Point");
 

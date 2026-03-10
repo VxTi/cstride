@@ -66,7 +66,7 @@ StructMemberInitializerPair parse_struct_member_initializer(
     return { member_iden.get_lexeme(), std::move(member_expr) };
 }
 
-std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
+std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -105,7 +105,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
         member_set.next();
     }
 
-    return std::make_unique<AstStructInitializer>(
+    return std::make_unique<AstObjectInitializer>(
         reference_token.get_source_fragment(),
         context,
         reference_token.get_lexeme(),
@@ -114,7 +114,7 @@ std::unique_ptr<AstStructInitializer> stride::ast::parse_struct_initializer(
     );
 }
 
-void AstStructInitializer::validate()
+void AstObjectInitializer::validate()
 {
     const auto definition = this->get_context()->get_struct_type(this->_struct_name);
 
@@ -205,7 +205,7 @@ void AstStructInitializer::validate()
     }
 }
 
-llvm::Value* AstStructInitializer::codegen(
+llvm::Value* AstObjectInitializer::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -289,7 +289,7 @@ llvm::Value* AstStructInitializer::codegen(
     return current_struct_val;
 }
 
-std::unique_ptr<IAstNode> AstStructInitializer::clone()
+std::unique_ptr<IAstNode> AstObjectInitializer::clone()
 {
     std::vector<StructMemberInitializerPair> member_initializers;
     std::vector<std::unique_ptr<IAstType>> member_generic_types;
@@ -307,7 +307,7 @@ std::unique_ptr<IAstNode> AstStructInitializer::clone()
         member_generic_types.push_back(type->clone_ty());
     }
 
-    return std::make_unique<AstStructInitializer>(
+    return std::make_unique<AstObjectInitializer>(
         this->get_source_fragment(),
         this->get_context(),
         this->_struct_name,
@@ -316,7 +316,7 @@ std::unique_ptr<IAstNode> AstStructInitializer::clone()
     );
 }
 
-std::string AstStructInitializer::to_string()
+std::string AstObjectInitializer::to_string()
 {
     return std::format("StructInit{{...}}");
 }

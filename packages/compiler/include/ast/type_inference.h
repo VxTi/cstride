@@ -12,7 +12,7 @@ namespace stride::ast
     class AstFunctionCall;
     class AstLiteral;
     class AstMemberAccessor;
-    class AstStructInitializer;
+    class AstObjectInitializer;
     class AstUnaryOp;
     class IAstType;
     class IAstFunction;
@@ -36,7 +36,7 @@ namespace stride::ast
     std::unique_ptr<IAstType> infer_function_call_return_type(AstFunctionCall* fn_call);
 
     /// Infers the type produced by a struct initializer expression
-    std::unique_ptr<IAstType> infer_struct_initializer_type(const AstStructInitializer* struct_initializer);
+    std::unique_ptr<IAstType> infer_object_initializer_type(const AstObjectInitializer* struct_initializer);
 
     /// Infers the type of an identifier by looking it up in the current context
     std::unique_ptr<IAstType> infer_identifier_type(const AstIdentifier* identifier);
