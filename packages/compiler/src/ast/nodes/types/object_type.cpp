@@ -11,10 +11,10 @@
 
 using namespace stride::ast;
 
-void parse_struct_member(
+void parse_object_member(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    StructTypeMemberList& fields
+    ObjectTypeMemberList& fields
 )
 {
     const auto struct_member_name_tok = set.expect(
@@ -57,7 +57,7 @@ void parse_struct_member(
  * }
  * </code>
  */
-std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional(
+std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     int context_type_flags
@@ -73,7 +73,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
 
     auto struct_body_set = collect_block_required(set, "A struct must have at least 1 member");
 
-    StructTypeMemberList struct_fields = {};
+    ObjectTypeMemberList struct_fields = {};
     const auto struct_type_context = std::make_shared<ParsingContext>(
         context,
         context->get_context_type());
@@ -81,7 +81,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
     // Parse fields
     while (struct_body_set.has_next())
     {
-        parse_struct_member(struct_type_context, struct_body_set, struct_fields);
+        parse_object_member(struct_type_context, struct_body_set, struct_fields);
     }
 
     // Re-verification
@@ -90,7 +90,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
         set.throw_error("Struct must have at least one member");
     }
 
-    auto struct_ty = std::make_unique<AstStructType>(
+    auto struct_ty = std::make_unique<AstObjectType>(
         reference_token.get_source_fragment(),
         struct_type_context,
         std::move(struct_fields),
@@ -100,7 +100,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_struct_type_optional
     return parse_type_metadata(std::move(struct_ty), set, context_type_flags);
 }
 
-std::optional<IAstType*> AstStructType::get_member_field_type(const std::string& field_name) const
+std::optional<IAstType*> AstObjectType::get_member_field_type(const std::string& field_name) const
 {
     for (const auto& [name, type] : this->_members)
     {
@@ -112,7 +112,7 @@ std::optional<IAstType*> AstStructType::get_member_field_type(const std::string&
     return std::nullopt;
 }
 
-std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> AstStructType::get_members() const
+std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> AstObjectType::get_members() const
 {
     std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> members;
     members.reserve(this->_members.size());
@@ -125,7 +125,7 @@ std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> AstStructType::ge
     return std::move(members);
 }
 
-std::optional<int> AstStructType::get_member_field_index(const std::string& field_name) const
+std::optional<int> AstObjectType::get_member_field_index(const std::string& field_name) const
 {
     for (size_t i = 0; i < this->_members.size(); i++)
     {
@@ -140,12 +140,12 @@ std::optional<int> AstStructType::get_member_field_index(const std::string& fiel
 /// Produces a name based on the field types,
 /// so that all structs with the same fields have the same name,
 /// resulting in no LLVM duplication
-std::string AstStructType::get_internalized_name() const
+std::string AstObjectType::get_internalized_name() const
 {
     std::string internalized_name;
     for (const auto& type : this->_members | std::views::values)
     {
-        if (const auto struct_ty = cast_type<AstStructType*>(type.get()))
+        if (const auto struct_ty = cast_type<AstObjectType*>(type.get()))
         {
             // Ensure nested structs are also appended properly
             internalized_name += "_" + struct_ty->get_internalized_name();
@@ -158,7 +158,7 @@ std::string AstStructType::get_internalized_name() const
     return std::format("struct${:x}", std::hash<std::string>{}(internalized_name));
 }
 
-void AstStructType::resolve_forward_references(
+void AstObjectType::resolve_forward_references(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -213,9 +213,9 @@ void AstStructType::resolve_forward_references(
     struct_type->setBody(member_types, /*isPacked=*/false);
 }
 
-bool AstStructType::equals(const IAstType& other) const
+bool AstObjectType::equals(const IAstType& other) const
 {
-    if (const auto other_struct_ty = cast_type<const AstStructType*>(&other))
+    if (const auto other_struct_ty = cast_type<const AstObjectType*>(&other))
     {
         if (this->_members.size() != other_struct_ty->_members.size())
         {
@@ -245,9 +245,9 @@ bool AstStructType::equals(const IAstType& other) const
     return false;
 }
 
-std::unique_ptr<IAstNode> AstStructType::clone()
+std::unique_ptr<IAstNode> AstObjectType::clone()
 {
-    StructTypeMemberList cloned_members;
+    ObjectTypeMemberList cloned_members;
     cloned_members.reserve(this->_members.size());
 
     for (const auto& [name, type] : this->_members)
@@ -255,7 +255,7 @@ std::unique_ptr<IAstNode> AstStructType::clone()
         cloned_members.emplace_back(name, type->clone_ty());
     }
 
-    return std::make_unique<AstStructType>(
+    return std::make_unique<AstObjectType>(
         this->get_source_fragment(),
         this->get_context(),
         std::move(cloned_members),

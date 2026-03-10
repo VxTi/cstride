@@ -68,7 +68,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         visit_expression(visitor, array_accessor->get_array_identifier());
         visit_expression(visitor, array_accessor->get_index());
     }
-    else if (const auto* struct_init = dynamic_cast<AstStructInitializer*>(node))
+    else if (const auto* struct_init = dynamic_cast<AstObjectInitializer*>(node))
     {
         for (const auto& val : struct_init->get_initializers() | std::views::values)
             visit_expression(visitor, val.get());

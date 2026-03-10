@@ -739,7 +739,7 @@ namespace stride::ast
         std::unique_ptr<IAstNode> clone() override;
     };
 
-    class AstStructInitializer
+    class AstObjectInitializer
         : public IAstExpression
     {
         std::string _struct_name;
@@ -747,7 +747,7 @@ namespace stride::ast
         GenericTypeList _generic_type_arguments;
 
     public:
-        explicit AstStructInitializer(
+        explicit AstObjectInitializer(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string struct_name,
@@ -973,8 +973,8 @@ namespace stride::ast
         std::unique_ptr<AstIdentifier> array_identifier
     );
 
-    /// Parses a struct initializer expression into an AstStructInitializer node
-    std::unique_ptr<AstStructInitializer> parse_struct_initializer(
+    /// Parses a struct initializer expression into an AstObjectInitializer node
+    std::unique_ptr<AstObjectInitializer> parse_object_initializer(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );

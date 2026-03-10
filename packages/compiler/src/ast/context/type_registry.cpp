@@ -17,7 +17,7 @@ bool ParsingContext::is_struct_type_defined(const std::string& struct_name) cons
     const auto type_def = get_type_definition(struct_name);
 
     return type_def.has_value() &&
-        cast_type<AstStructType*>(type_def.value()->get_type()) != nullptr;
+        cast_type<AstObjectType*>(type_def.value()->get_type()) != nullptr;
 }
 
 std::optional<TypeDefinition*> ParsingContext::get_type_definition(const std::string& name) const
@@ -52,7 +52,7 @@ std::optional<TypeDefinition*> ParsingContext::get_type_definition(const std::st
 
 /// Gets the root struct type layout for <code>name</code>.
 /// Will recursively look up the parent struct definition if <code>name</code> is a reference struct type.
-std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string& name) const
+std::optional<AstObjectType*> ParsingContext::get_struct_type(const std::string& name) const
 {
     const auto type_def = get_type_definition(name);
 
@@ -63,7 +63,7 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
 
     // It's an immediate struct definition (type K = { ... }),
     // so we're safe
-    if (const auto struct_ty = cast_type<AstStructType*>(type_def.value()->get_type()))
+    if (const auto struct_ty = cast_type<AstObjectType*>(type_def.value()->get_type()))
     {
         return struct_ty;
     }
@@ -84,7 +84,7 @@ std::optional<AstStructType*> ParsingContext::get_struct_type(const std::string&
             return std::nullopt;
         }
 
-        if (const auto struct_ty = cast_type<AstStructType*>(reference_type_def.value()->get_type()))
+        if (const auto struct_ty = cast_type<AstObjectType*>(reference_type_def.value()->get_type()))
         {
             return struct_ty;
         }

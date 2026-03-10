@@ -25,8 +25,8 @@ namespace stride::ast
 
     class TokenSet;
 
-    using StructTypeMemberPair = std::pair<std::string, std::unique_ptr<IAstType>>;
-    using StructTypeMemberList = std::vector<StructTypeMemberPair>;
+    using ObjectTypeMemberPair = std::pair<std::string, std::unique_ptr<IAstType>>;
+    using ObjectTypeMemberList = std::vector<ObjectTypeMemberPair>;
 
     enum class PrimitiveType
     {
@@ -455,23 +455,23 @@ namespace stride::ast
         bool is_castable_to_impl(IAstType* other) override;
     };
 
-    class AstStructType
+    class AstObjectType
         : public IAstType
     {
-        StructTypeMemberList _members;
+        ObjectTypeMemberList _members;
 
     public:
-        explicit AstStructType(
+        explicit AstObjectType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            StructTypeMemberList members,
+            ObjectTypeMemberList members,
             const int flags = SRFLAG_NONE
         ) :
             IAstType(source, context, flags),
             _members(std::move(members)) {}
 
         [[nodiscard]]
-        StructTypeMemberList get_members() const;
+        ObjectTypeMemberList get_members() const;
 
         [[nodiscard]]
         std::optional<IAstType*> get_member_field_type(const std::string& field_name) const;
@@ -615,7 +615,7 @@ namespace stride::ast
         TokenSet& set,
         int context_type_flags);
 
-    std::optional<std::unique_ptr<IAstType>> parse_struct_type_optional(
+    std::optional<std::unique_ptr<IAstType>> parse_object_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         int context_type_flags);
@@ -628,5 +628,5 @@ namespace stride::ast
     /// Will extract the struct type from a named type if possible, otherwise,
     /// will attempt to cast the type directly into a struct type.
     /// This function will never return nullptrs.
-    std::optional<AstStructType*> get_struct_type_from_type(IAstType* type);
+    std::optional<AstObjectType*> get_struct_type_from_type(IAstType* type);
 } // namespace stride::ast

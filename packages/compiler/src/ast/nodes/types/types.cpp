@@ -43,7 +43,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
         return std::move(tuple_type.value());
     }
 
-    if (auto struct_type = parse_struct_type_optional(context, set, type_flags);
+    if (auto struct_type = parse_object_type_optional(context, set, type_flags);
         struct_type.has_value())
     {
         return std::move(struct_type.value());
@@ -159,7 +159,7 @@ llvm::Type* stride::ast::type_to_llvm_type(
         return type_to_llvm_type(ref_type.value().get(), module, recursion_guard);
     }
 
-    if (const auto* struct_type = cast_type<AstStructType*>(type))
+    if (const auto* struct_type = cast_type<AstObjectType*>(type))
     {
         const auto& struct_name = struct_type->get_internalized_name();
         llvm::StructType* struct_ty = llvm::StructType::getTypeByName(
@@ -403,9 +403,9 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     );
 }
 
-std::optional<AstStructType*> stride::ast::get_struct_type_from_type(IAstType* type)
+std::optional<AstObjectType*> stride::ast::get_struct_type_from_type(IAstType* type)
 {
-    auto base_struct_type = cast_type<AstStructType*>(type);
+    auto base_struct_type = cast_type<AstObjectType*>(type);
 
     if (base_struct_type)
     {

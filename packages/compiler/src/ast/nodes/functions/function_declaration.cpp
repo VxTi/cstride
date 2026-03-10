@@ -383,7 +383,7 @@ void collect_free_variables(
     }
 
     // Handle struct initializers
-    if (const auto* struct_init = cast_expr<AstStructInitializer*>(node))
+    if (const auto* struct_init = cast_expr<AstObjectInitializer*>(node))
     {
         for (const auto& val : struct_init->get_initializers() | std::views::values)
         {
