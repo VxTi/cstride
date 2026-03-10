@@ -116,12 +116,11 @@ std::unique_ptr<IAstNode> AstFunctionType::clone()
     );
 }
 
-bool AstFunctionType::equals(const IAstType& other) const
+bool AstFunctionType::equals(IAstType* other)
 {
-    if (const auto* other_func = cast_type<const AstFunctionType*>(&other))
+    if (const auto* other_func = cast_type<const AstFunctionType*>(other))
     {
-        if (!other_func->get_return_type()->equals(
-            *this->get_return_type()))
+        if (!other_func->get_return_type()->equals(this->get_return_type().get()))
             return false;
 
         if (this->_parameters.size() != other_func->_parameters.size())
@@ -129,8 +128,7 @@ bool AstFunctionType::equals(const IAstType& other) const
 
         for (size_t i = 0; i < this->_parameters.size(); i++)
         {
-            if (!this->_parameters[i]->equals(
-                *other_func->_parameters[i]))
+            if (!this->_parameters[i]->equals(other_func->_parameters[i].get()))
             {
                 return false;
             }
@@ -138,9 +136,9 @@ bool AstFunctionType::equals(const IAstType& other) const
         return true;
     }
 
-    if (const auto* other_named = cast_type<const AstAliasType*>(&other))
+    if (auto* other_named = dynamic_cast<AstAliasType*>(other))
     {
-        return other_named->equals(*this);
+        return other_named->equals(this);
     }
 
     return false;
@@ -152,7 +150,7 @@ bool AstFunctionType::is_castable_to_impl(IAstType* other)
     {
         if (const auto base_type = other_named->get_underlying_type(); base_type.has_value())
         {
-            return this->equals(*base_type.value());
+            return this->equals(base_type.value().get());
         }
     }
 

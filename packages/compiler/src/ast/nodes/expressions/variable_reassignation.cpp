@@ -177,7 +177,7 @@ void AstVariableReassignment::validate()
             this->get_source_fragment());
     }
 
-    if (!identifier_def->get_type()->equals(*this->get_value()->get_type()))
+    if (!identifier_def->get_type()->equals(this->get_value()->get_type()))
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,

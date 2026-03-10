@@ -86,15 +86,15 @@ std::unique_ptr<IAstNode> AstTupleType::clone()
     );
 }
 
-bool AstTupleType::equals(const IAstType& other) const
+bool AstTupleType::equals(IAstType* other)
 {
-    const auto other_tuple = dynamic_cast<const AstTupleType*>(&other);
+    const auto other_tuple = cast_type<AstTupleType*>(other);
 
     if (!other_tuple)
     {
-        if (const auto* other_named = dynamic_cast<const AstAliasType*>(&other))
+        if (auto* other_named = cast_type<AstAliasType*>(other))
         {
-            return other_named->equals(*this);
+            return other_named->equals(this);
         }
         return false; // other type is not a tuple; no equality
     }
@@ -105,7 +105,7 @@ bool AstTupleType::equals(const IAstType& other) const
 
     for (size_t i = 0; i < this->_members.size(); ++i)
     {
-        if (!this->_members[i]->equals(other_tuple->_members[i]))
+        if (!this->_members[i]->equals(other_tuple->_members[i].get()))
         {
             return false; // Found a pair of members that are not equal
         }

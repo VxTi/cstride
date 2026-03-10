@@ -133,8 +133,14 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
     return std::move(type);
 }
 
-std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type() const
+std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type()
 {
+    // Prevent reinstantiating type if it's a complex type
+    if (this->_underlying_type != nullptr)
+    {
+        return this->_underlying_type->clone_ty();
+    }
+
     const auto& reference_type_definition = this->get_type_definition();
 
     if (!reference_type_definition.has_value())
@@ -147,13 +153,15 @@ std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type() con
         : this->get_reference_type().value_or(nullptr);
 
     if (!base_type)
+    {
         return std::nullopt;
+    }
 
     int recursion_guard = 0;
 
     while (true)
     {
-        if (auto* named_reference = cast_type<AstAliasType*>(base_type.get()))
+        if (const auto* named_reference = cast_type<AstAliasType*>(base_type.get()))
         {
             if (named_reference->is_generic_overload())
             {
@@ -169,8 +177,8 @@ std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type() con
             }
             else
             {
-                auto next_type = named_reference->get_reference_type();
-                if (next_type.has_value())
+                if (auto next_type = named_reference->get_reference_type();
+                    next_type.has_value())
                 {
                     base_type = std::move(next_type.value());
                 }
@@ -204,7 +212,9 @@ std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type() con
         }
     }
 
-    return std::move(base_type);
+    this->_underlying_type = std::move(base_type);
+
+    return this->_underlying_type->clone_ty();
 }
 
 bool AstAliasType::is_castable_to_impl(IAstType* other)
@@ -227,12 +237,12 @@ bool AstAliasType::is_castable_to_impl(IAstType* other)
     }
 
     // Final case would be to check whether both base types are the same
-    if (const auto* other_named_ty = cast_type<AstAliasType*>(other))
+    if (auto* other_alias_ty = cast_type<AstAliasType*>(other))
     {
-        if (const auto second_reference_type = other_named_ty->get_underlying_type();
+        if (const auto second_reference_type = other_alias_ty->get_underlying_type();
             second_reference_type.has_value())
         {
-            return self_reference_type.value()->equals(*second_reference_type);
+            return self_reference_type.value()->equals(second_reference_type.value().get());
         }
     }
     return false;
@@ -256,10 +266,10 @@ bool AstAliasType::is_assignable_to_impl(IAstType* other)
     return false;
 }
 
-bool AstAliasType::equals(const IAstType& other) const
+bool AstAliasType::equals(IAstType* other)
 {
     // Simple naming checks, e.g., "Vec3 == Vec3"
-    if (auto* other_named = cast_type<const AstAliasType*>(&other))
+    if (auto* other_named = cast_type<const AstAliasType*>(other))
     {
         if (this->get_name() != other_named->get_name())
             return false;
@@ -279,7 +289,7 @@ bool AstAliasType::equals(const IAstType& other) const
         // If both are generic, they must have the same number of parameters
         for (size_t i = 0; i < self_generic_types.size(); i++)
         {
-            if (!self_generic_types[i]->equals(other_generic_types[i]))
+            if (!self_generic_types[i]->equals(other_generic_types[i].get()))
             {
                 return false;
             }

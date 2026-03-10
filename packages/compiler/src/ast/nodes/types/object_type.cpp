@@ -213,9 +213,9 @@ void AstObjectType::resolve_forward_references(
     struct_type->setBody(member_types, /*isPacked=*/false);
 }
 
-bool AstObjectType::equals(const IAstType& other) const
+bool AstObjectType::equals(IAstType* other)
 {
-    if (const auto other_struct_ty = cast_type<const AstObjectType*>(&other))
+    if (const auto other_struct_ty = cast_type<const AstObjectType*>(other))
     {
         if (this->_members.size() != other_struct_ty->_members.size())
         {
@@ -228,7 +228,7 @@ bool AstObjectType::equals(const IAstType& other) const
             const auto& [second_field_name, second_type] = other_struct_ty->_members[i];
 
             if (first_field_name != second_field_name ||
-                !first_type.get()->equals(*second_type.get()))
+                !first_type.get()->equals(second_type.get()))
             {
                 return false;
             }
@@ -237,9 +237,9 @@ bool AstObjectType::equals(const IAstType& other) const
         return true;
     }
 
-    if (const auto* other_named = cast_type<const AstAliasType*>(&other))
+    if (auto* other_named = cast_type<AstAliasType*>(other))
     {
-        return other_named->equals(*this);
+        return other_named->equals(this);
     }
 
     return false;

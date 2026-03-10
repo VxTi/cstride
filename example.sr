@@ -5,24 +5,21 @@ import System::{
 
 type Array<T> = T[];
 
-type Vector<T> = {
-    x: T;
-    y: T;
-    z: T;
-};
+type Vector<T> = { x: T; y: T; z: T; };
 
-fn some_fn(vectors: Array<Vector<f64>>): void {
+fn some_fn(vectors: Array<Vector<f32>>): void {
     for (let i = 0; i < 3; i++) {
         const vec = vectors[i];
-        IO::Print("Vector: [x: %f, y: %f, z: %f]", vec.x, vec.y, vec.z);
+        IO::Print("Vector: [x: %f, y: %f, z: %f]\n", vec.x, vec.y, vec.z);
     }
 }
 
 fn main(): i32 {
-    const vecArray: Array<Vector<f64>> = [
-        Vector<f64>::{ x: 1.0, y: 2.0, z: 3.0 },
-        Vector<f64>::{ x: 4.0, y: 5.0, z: 6.0 },
-        Vector<f64>::{ x: 7.0, y: 8.0, z: 9.0 }
+
+    const vecArray: Array<Vector<f32>> = [
+        Vector<f32>::{ x: 4.0, y: 2.0, z: 3.0 },
+        Vector<f32>::{ x: 4.0, y: 5.0, z: 6.0 },
+        Vector<f32>::{ x: 7.0, y: 8.0, z: 9.0 }
     ];
 
     some_fn(vecArray);

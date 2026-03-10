@@ -523,7 +523,7 @@ void IAstFunction::validate()
         }
 
         if (const auto& ret_expr = return_stmt->get_return_expression().value();
-            !ret_expr->get_type()->equals(*this->get_return_type()) &&
+            !ret_expr->get_type()->equals(this->get_return_type()) &&
             !ret_expr->get_type()->is_assignable_to(this->get_return_type()))
         {
             const auto error_fragment = ErrorSourceReference(

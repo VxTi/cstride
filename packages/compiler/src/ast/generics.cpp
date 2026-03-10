@@ -161,11 +161,11 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
 }
 
 std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
-    const AstAliasType* named_type,
+    const AstAliasType* alias_type,
     const definition::TypeDefinition* type_definition
 )
 {
-    const auto& instantiated_types = named_type->get_instantiated_generic_types();
+    const auto& instantiated_types = alias_type->get_instantiated_generic_types();
     const auto& generic_param_names = type_definition->get_generics_parameters();
 
     const auto& base_type = type_definition->get_type();
@@ -177,11 +177,11 @@ std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Failed to instantiate generic type type '{}': expected {} parameters, got {}",
-                named_type->get_name(),
+                alias_type->get_name(),
                 generic_param_names.size(),
                 instantiated_types.size()
             ),
-            named_type->get_source_fragment()
+            alias_type->get_source_fragment()
         );
     }
 
