@@ -449,16 +449,34 @@ namespace stride::ast
         : public IAstType
     {
         ObjectTypeMemberList _members;
+        std::string _base_name;
+        GenericTypeList _instantiated_generics;
 
     public:
         explicit AstObjectType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             ObjectTypeMemberList members,
-            const int flags = SRFLAG_NONE
+            const int flags = SRFLAG_NONE,
+            std::string base_name = "",
+            GenericTypeList instantiated_generics = {}
         ) :
             IAstType(source, context, flags),
-            _members(std::move(members)) {}
+            _members(std::move(members)),
+            _base_name(std::move(base_name)),
+            _instantiated_generics(std::move(instantiated_generics)) {}
+
+        [[nodiscard]]
+        std::string get_base_name() const
+        {
+            return _base_name;
+        }
+
+        [[nodiscard]]
+        const GenericTypeList& get_instantiated_generics() const
+        {
+            return _instantiated_generics;
+        }
 
         [[nodiscard]]
         ObjectTypeMemberList get_members() const;
@@ -493,24 +511,6 @@ namespace stride::ast
 
         [[nodiscard]]
         std::string get_internalized_name() const;
-
-    private:
-        bool is_assignable_to_impl(IAstType* other) override
-        {
-            return false;
-        }
-
-        bool is_castable_to_impl(IAstType* other) override
-        {
-            return false;
-        }
-
-        // Struct registration is done in the `resolve_forward_references` pass
-        // so that one can reference structs before they're semantically defined.
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
-        {
-            return nullptr;
-        }
 
         void resolve_forward_references(
             llvm::Module* module,

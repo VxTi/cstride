@@ -1,4 +1,5 @@
 #include "errors.h"
+#include "ast/casting.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
@@ -66,6 +67,40 @@ StructMemberInitializerPair parse_struct_member_initializer(
     return { member_iden.get_lexeme(), std::move(member_expr) };
 }
 
+
+std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_type()
+{
+    if (this->_object_type != nullptr)
+    {
+        return this->_object_type->clone_as<AstObjectType>();
+    }
+
+    const auto type_def = this->get_context()->get_type_definition(this->_struct_name);
+
+    if (!type_def.has_value())
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Struct type '{}' is undefined", this->_struct_name),
+            this->get_source_fragment()
+        );
+    }
+
+    if (const auto* object_def = cast_type<AstObjectType*>(type_def.value()->get_type()))
+    {
+        auto resolved_type = instantiate_generic_type(this, const_cast<AstObjectType*>(object_def), type_def.value());
+
+        this->_object_type = std::move(resolved_type);
+
+        return this->_object_type->clone_as<AstObjectType>();
+    }
+    throw parsing_error(
+        ErrorType::COMPILATION_ERROR,
+        std::format("Type '{}' is not an object", this->_struct_name),
+        this->get_source_fragment()
+    );
+}
+
 std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
@@ -116,30 +151,20 @@ std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
 
 void AstObjectInitializer::validate()
 {
-    const auto definition = this->get_context()->get_struct_type(this->_struct_name);
+    const auto object_type = this->get_instantiated_object_type();
 
-    // Check whether the struct we're trying to assign actually exists
-    if (!definition.has_value())
-    {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            std::format("Struct '{}' does not exist", this->_struct_name),
-            this->get_source_fragment()
-        );
-    }
-
-    const auto fields = definition.value()->get_members();
+    const auto object_members = object_type->get_members();
 
     // Quick check: Ensure the number of members matches (no type comparisons required)
-    if (fields.size() != this->_member_initializers.size())
+    if (object_members.size() != this->_member_initializers.size())
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Too {} members found in struct '{}': expected {}, got {}",
-                fields.size() > this->_member_initializers.size() ? "few" : "many",
+                object_members.size() > this->_member_initializers.size() ? "few" : "many",
                 this->_struct_name,
-                fields.size(),
+                object_members.size(),
                 this->_member_initializers.size()),
             this->get_source_fragment()
         );
@@ -148,7 +173,7 @@ void AstObjectInitializer::validate()
     for (const auto& [field_name, initializer_expr] : this->_member_initializers)
     {
         initializer_expr->validate();
-        auto found_member = definition.value()->get_member_field_type(field_name);
+        auto found_member = object_type->get_member_field_type(field_name);
 
         if (!found_member.has_value())
         {
@@ -186,7 +211,7 @@ void AstObjectInitializer::validate()
     size_t index = 0;
     for (const auto& member_name : this->_member_initializers | std::views::keys)
     {
-        if (const auto& [field_name, field_type] = fields[index];
+        if (const auto& [field_name, field_type] = object_members[index];
             member_name != field_name)
         {
             throw parsing_error(
@@ -220,7 +245,11 @@ llvm::Value* AstObjectInitializer::codegen(
         llvm::Value* val = expr->codegen(module, builder);
         if (!val)
         {
-            return nullptr;
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                "Failed to codegen member initializer",
+                expr->get_source_fragment()
+            );
         }
 
         if (auto* c = llvm::dyn_cast<llvm::Constant>(val))
@@ -235,23 +264,24 @@ llvm::Value* AstObjectInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    const auto struct_def_opt = this->get_context()->get_struct_type(this->_struct_name);
-
-    if (!struct_def_opt.has_value())
-    {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            std::format("Struct type '{}' is undefined", this->_struct_name),
-            this->get_source_fragment()
-        );
-    }
-
-    const auto& actual_struct_name = struct_def_opt.value()->get_internalized_name();
+    const auto object_type = this->get_instantiated_object_type();
+    const auto& actual_struct_name = object_type->get_internalized_name();
 
     llvm::StructType* struct_type = llvm::StructType::getTypeByName(
         module->getContext(),
         actual_struct_name
     );
+
+    if (!struct_type)
+    {
+        // If it's not found by name, it might not have been resolved yet.
+        // We can try to resolve it now.
+        object_type->resolve_forward_references(module, builder);
+        struct_type = llvm::StructType::getTypeByName(
+            module->getContext(),
+            actual_struct_name
+        );
+    }
 
     if (!struct_type)
     {

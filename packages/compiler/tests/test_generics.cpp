@@ -47,3 +47,24 @@ TEST(Generics, ResolveGenericNamedTypeUnderlyingTypeMismatch)
         const some_var: SomeNamed<i32> = 12;
     )", "Type mismatch in variable declaration: cannot assign value of type 'i32' to type 'SomeNamed<i32>'");
 }
+
+TEST(Generics, ObjectInstantiationName)
+{
+    // Test that generic objects are correctly instantiated and named
+    assert_compiles(R"(
+        type Vector<T> = { x: T; y: T; };
+        const v: Vector<i32> = Vector<i32>::{ x: 1, y: 2 };
+    )");
+}
+
+TEST(Generics, NestedObjectInstantiation)
+{
+    assert_compiles(R"(
+        type Point<T> = { x: T; y: T; };
+        type Line<T> = { start: Point<T>; end: Point<T>; };
+        const l: Line<f32> = Line<f32>::{
+            start: Point<f32>::{ x: 0.0, y: 0.0 },
+            end: Point<f32>::{ x: 1.0, y: 1.0 }
+        };
+    )");
+}

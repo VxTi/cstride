@@ -142,6 +142,21 @@ std::optional<int> AstObjectType::get_member_field_index(const std::string& fiel
 /// resulting in no LLVM duplication
 std::string AstObjectType::get_internalized_name() const
 {
+    if (!this->_base_name.empty())
+    {
+        if (this->_instantiated_generics.empty())
+        {
+            return this->_base_name;
+        }
+
+        std::string name = this->_base_name;
+        for (const auto& gen : this->_instantiated_generics)
+        {
+            name += "_" + gen->get_type_name();
+        }
+        return name;
+    }
+
     std::string internalized_name;
     for (const auto& type : this->_members | std::views::values)
     {
@@ -227,8 +242,21 @@ bool AstObjectType::equals(IAstType* other)
             const auto& [first_field_name, first_type] = this->_members[i];
             const auto& [second_field_name, second_type] = other_struct_ty->_members[i];
 
-            if (first_field_name != second_field_name ||
-                !first_type.get()->equals(second_type.get()))
+            if (first_field_name != second_field_name)
+            {
+                return false;
+            }
+
+            // Optimization: if both types are named types with the same name, they are equal, 
+            // even if their underlying type is not yet resolvable (e.g. generic parameter T).
+            const auto* first_alias = cast_type<AstAliasType*>(first_type.get());
+            const auto* second_alias = cast_type<AstAliasType*>(second_type.get());
+            if (first_alias && second_alias && first_alias->get_name() == second_alias->get_name())
+            {
+                continue;
+            }
+
+            if (!first_type.get()->equals(second_type.get()))
             {
                 return false;
             }
@@ -255,10 +283,19 @@ std::unique_ptr<IAstNode> AstObjectType::clone()
         cloned_members.emplace_back(name, type->clone_ty());
     }
 
+    GenericTypeList cloned_generics;
+    cloned_generics.reserve(this->_instantiated_generics.size());
+    for (const auto& gen : this->_instantiated_generics)
+    {
+        cloned_generics.push_back(gen->clone_ty());
+    }
+
     return std::make_unique<AstObjectType>(
         this->get_source_fragment(),
         this->get_context(),
         std::move(cloned_members),
-        this->get_flags()
+        this->get_flags(),
+        this->_base_name,
+        std::move(cloned_generics)
     );
 }
