@@ -35,7 +35,7 @@ TEST(Generics, DeepGenericResolution)
     assert_compiles(R"(
         type Boxed<T> = { value: T; };
         type BoxedArray<T> = Boxed<T>[];
-        const some_var: BoxedArray<i32> = [Boxed::{ value: 1 }];
+        const some_var: BoxedArray<i32> = [Boxed<i32>::{ value: 1 }];
     )");
 }
 
