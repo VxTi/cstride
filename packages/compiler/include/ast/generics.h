@@ -19,6 +19,9 @@ namespace stride::ast
     using GenericParameterList = std::vector<GenericParameter>;
     using GenericTypeList = std::vector<std::unique_ptr<IAstType>>;
 
+#define EMPTY_GENERIC_PARAMETER_LIST (GenericParameterList{})
+#define EMPTY_GENERIC_TYPE_LIST (GenericTypeList{})
+
     GenericParameterList parse_generic_declaration(TokenSet& set);
 
     GenericTypeList parse_generic_type_arguments(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
@@ -30,7 +33,7 @@ namespace stride::ast
     );
 
     std::unique_ptr<IAstType> instantiate_generic_type(
-        const AstAliasType* named_type,
+        const AstAliasType* alias_type,
         const definition::TypeDefinition* type_definition
     );
 }

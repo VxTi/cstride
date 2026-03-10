@@ -195,7 +195,7 @@ bool IAstType::is_assignable_to(IAstType* other)
         return false;
     }
 
-    if (this->equals(*other))
+    if (this->equals(other))
     {
         return true;
     }
@@ -215,7 +215,7 @@ bool IAstType::is_assignable_to(IAstType* other)
     }
 
     // Try to resolve named types on both sides to check assignability
-    if (const auto* this_named = cast_type<AstAliasType*>(this))
+    if (auto* this_named = cast_type<AstAliasType*>(this))
     {
         if (const auto self_base = this_named->get_underlying_type();
             self_base.has_value() && self_base.value()->is_assignable_to(other))
@@ -224,7 +224,7 @@ bool IAstType::is_assignable_to(IAstType* other)
         }
     }
 
-    if (const auto* other_named = cast_type<AstAliasType*>(other))
+    if (auto* other_named = cast_type<AstAliasType*>(other))
     {
         if (const auto other_base = other_named->get_underlying_type();
             other_base.has_value() && this->is_assignable_to(other_base.value().get()))
@@ -246,7 +246,7 @@ bool IAstType::is_castable_to(IAstType* other)
         return false;
     }
 
-    if (this->equals(*other))
+    if (this->equals(other))
     {
         return true;
     }
@@ -310,7 +310,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // If LHS and RHS are not primitive, we can still compute a dominant type if they are equal
     if (!lhs_primitive_ty || !rhs_primitive_ty)
     {
-        if (lhs->equals(*rhs))
+        if (lhs->equals(rhs))
         {
             return lhs->clone_ty();
         }
@@ -318,7 +318,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         // If one is a named type and the other is its base type, we can also return the dominant type
         if (const auto lhs_named = cast_type<AstAliasType*>(lhs))
         {
-            if (const auto base = lhs_named->get_underlying_type(); base.has_value() && base.value()->equals(*rhs))
+            if (const auto base = lhs_named->get_underlying_type(); base.has_value() && base.value()->equals(rhs))
             {
                 return rhs->clone_ty();
             }
@@ -326,7 +326,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
         if (const auto rhs_named = cast_type<AstAliasType*>(rhs))
         {
-            if (const auto base = rhs_named->get_underlying_type(); base.has_value() && base.value()->equals(*lhs))
+            if (const auto base = rhs_named->get_underlying_type(); base.has_value() && base.value()->equals(lhs))
             {
                 return lhs->clone_ty();
             }

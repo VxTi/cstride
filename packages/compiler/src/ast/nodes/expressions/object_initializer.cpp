@@ -162,7 +162,7 @@ void AstObjectInitializer::validate()
                 this->get_source_fragment());
         }
 
-        if (!initializer_expr->get_type()->equals(*found_member.value()))
+        if (!initializer_expr->get_type()->equals(found_member.value()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,

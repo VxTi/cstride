@@ -269,9 +269,9 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     );
 }
 
-bool AstPrimitiveType::equals(const IAstType& other) const
+bool AstPrimitiveType::equals(IAstType* other)
 {
-    if (const auto* other_primitive = dynamic_cast<const AstPrimitiveType*>(&other))
+    if (const auto* other_primitive = dynamic_cast<const AstPrimitiveType*>(other))
     {
         // If either types is optional, and the other is NIL, they're also "equal".
         const auto is_one_optional =
@@ -282,14 +282,14 @@ bool AstPrimitiveType::equals(const IAstType& other) const
             is_one_optional;
     }
 
-    if (const auto* struct_type = dynamic_cast<const AstAliasType*>(&other))
+    if (auto* struct_type = dynamic_cast<AstAliasType*>(other))
     {
         if (this->get_primitive_type() == PrimitiveType::NIL && struct_type->is_optional())
         {
             return true;
         }
 
-        return struct_type->equals(*this);
+        return struct_type->equals(this);
     }
 
     return false;

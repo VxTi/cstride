@@ -137,19 +137,7 @@ namespace stride::ast
         virtual std::string get_type_name() = 0;
 
         [[nodiscard]]
-        virtual bool equals(const IAstType& other) const = 0;
-
-        [[nodiscard]]
-        bool equals(const std::unique_ptr<IAstType>& other) const
-        {
-            return this->equals(*other);
-        }
-
-        [[nodiscard]]
-        bool equals(const IAstType* other) const
-        {
-            return this->equals(*other);
-        }
+        virtual bool equals(IAstType* other) = 0;
 
         /// Checks whether other type is assignable to this one.
         /// Lower bit-count primitives are assignable to higher ones, e.g.,
@@ -234,7 +222,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool equals(const IAstType& other) const override;
+        bool equals(IAstType* other) override;
 
         [[nodiscard]]
         bool is_primitive() const override
@@ -266,13 +254,15 @@ namespace stride::ast
         std::string _name;
         GenericTypeList _generic_types;
 
+        std::unique_ptr<IAstType> _underlying_type = nullptr;
+
     public:
         explicit AstAliasType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
             std::string name,
             const int flags = SRFLAG_NONE,
-            GenericTypeList generic_parameters = {}
+            GenericTypeList generic_parameters = EMPTY_GENERIC_TYPE_LIST
         ) :
             IAstType(source, context, flags),
             _name(std::move(name)),
@@ -295,7 +285,7 @@ namespace stride::ast
         std::string to_string() override;
 
         [[nodiscard]]
-        bool equals(const IAstType& other) const override;
+        bool equals(IAstType* other) override;
 
         bool is_castable_to(IAstType* other) override
         {
@@ -322,7 +312,7 @@ namespace stride::ast
         /// type MidType = RootType;
         /// type LeafType = MidType;
         /// Then, calling `get_base_reference_type` on `LeafType` will return `i32`.
-        [[nodiscard]] std::optional<std::unique_ptr<IAstType>> get_underlying_type() const;
+        [[nodiscard]] std::optional<std::unique_ptr<IAstType>> get_underlying_type();
 
         [[nodiscard]]
         std::optional<definition::TypeDefinition*> get_type_definition() const;
@@ -377,7 +367,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool equals(const IAstType& other) const override;
+        bool equals(IAstType* other) override;
 
         bool is_castable_to(IAstType* other) override
         {
@@ -442,7 +432,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool equals(const IAstType& other) const override;
+        bool equals(IAstType* other) override;
 
         bool is_castable_to(IAstType* other) override
         {
@@ -491,7 +481,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool equals(const IAstType& other) const override;
+        bool equals(IAstType* other) override;
 
         bool is_castable_to(IAstType* other) override
         {
@@ -559,7 +549,7 @@ namespace stride::ast
         std::string to_string() override;
 
         [[nodiscard]]
-        bool equals(const IAstType& other) const override;
+        bool equals(IAstType* other) override;
 
         bool is_castable_to(IAstType* other) override
         {

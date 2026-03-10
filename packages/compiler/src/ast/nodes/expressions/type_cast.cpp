@@ -57,7 +57,7 @@ void AstTypeCastOp::validate()
 llvm::Value* AstTypeCastOp::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     const auto value = this->_value->codegen(module, builder);
-    if (this->_value->get_type()->equals(*this->_target_type))
+    if (this->_value->get_type()->equals(this->_target_type.get()))
     {
         // No cast needed, return the original value.
         return value;

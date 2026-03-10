@@ -72,7 +72,7 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(IBinaryOp* operation
     auto lhs = infer_expression_type(operation->get_left());
     auto rhs = infer_expression_type(operation->get_right());
 
-    if (lhs->equals(*rhs))
+    if (lhs->equals(rhs.get()))
     {
         return std::move(lhs);
     }
@@ -352,7 +352,7 @@ std::unique_ptr<IAstType> stride::ast::infer_variable_declaration_type(
         return value_type->clone_ty();
     }
 
-    if (annotated_type.value()->equals(*value_type))
+    if (annotated_type.value()->equals(value_type.get()))
     {
         return annotated_type.value()->clone_ty();
     }
@@ -398,10 +398,10 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
     }
 
     // It's possible that we're referring to a named type, in which case we'll have to extract the base type
-    if (const auto named = cast_type<AstAliasType*>(array_type.get()))
+    if (const auto alias_type = cast_type<AstAliasType*>(array_type.get()))
     {
         // Instantiate type if it contains generics
-        const auto base_ty = named->get_underlying_type();
+        const auto base_ty = alias_type->get_underlying_type();
 
         if (!base_ty.has_value())
         {
@@ -409,9 +409,9 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Named type '{}' does not reference another type, cannot be used as array type",
-                    named->get_name()
+                    alias_type->get_name()
                 ),
-                named->get_source_fragment()
+                alias_type->get_source_fragment()
             );
         }
 
@@ -424,9 +424,9 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Named type '{}' references a type that is not an array, cannot be used as array type",
-                named->get_name()
+                alias_type->get_name()
             ),
-            named->get_source_fragment()
+            alias_type->get_source_fragment()
         );
     }
 

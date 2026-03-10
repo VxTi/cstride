@@ -57,7 +57,7 @@ bool FunctionDefinition::matches_type_signature(
     const AstFunctionType* signature
 ) const
 {
-    if (!this->_function_type->get_return_type()->equals(*signature->get_return_type()))
+    if (!this->_function_type->get_return_type()->equals(signature->get_return_type().get()))
         return false;
 
     const auto& other_params = signature->get_parameter_types();
@@ -94,7 +94,7 @@ const
     {
         // Strict equality check - parameters must match exactly,
         // otherwise named overloading with different signatures wouldn't work.
-        if (!self_params[i]->equals(*other_parameter_types[i]))
+        if (!self_params[i]->equals(other_parameter_types[i].get()))
         {
             return false;
         }

@@ -354,9 +354,9 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
         this->get_context()->lookup_variable(this->get_scoped_function_name(), true))
     {
         auto base_type = var_def->get_type()->clone_ty();
-        if (const auto* named = dynamic_cast<AstAliasType*>(base_type.get()))
+        if (auto* alias_ty = cast_type<AstAliasType*>(base_type.get()))
         {
-            if (const auto resolved = named->get_underlying_type();
+            if (const auto resolved = alias_ty->get_underlying_type();
                 resolved.has_value())
             {
                 base_type = resolved.value()->clone_ty();
@@ -415,7 +415,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 const auto arg_type = this->get_arguments()[i]->get_type();
 
                 if (const auto expected_type = fn_type->get_parameter_types()[i].get();
-                    !arg_type->equals(*expected_type))
+                    !arg_type->equals(expected_type))
                 {
                     throw parsing_error(
                         ErrorType::TYPE_ERROR,

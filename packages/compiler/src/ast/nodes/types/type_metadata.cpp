@@ -75,16 +75,16 @@ std::string AstArrayType::to_string()
         (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
 }
 
-bool AstArrayType::equals(const IAstType& other) const
+bool AstArrayType::equals(IAstType* other)
 {
-    if (const auto* other_array = cast_type<const AstArrayType*>(&other))
+    if (const auto* other_array = cast_type<AstArrayType*>(other))
     {
-        return this->_element_type->equals(other_array->_element_type);
+        return this->_element_type->equals(other_array->_element_type.get());
     }
 
-    if (const auto* other_named = cast_type<const AstAliasType*>(&other))
+    if (auto* other_named = cast_type<AstAliasType*>(other))
     {
-        return other_named->equals(*this);
+        return other_named->equals(this);
     }
 
     return false;
@@ -96,9 +96,9 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
     // whether the referencing type is assignable to this array's element type,
     // e.g., for `type SomeArray = [1, 2, 3]`, `equals(i32[], SomeArray)` should check
     // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
-    if (const auto* other_named = cast_type<AstAliasType*>(other))
+    if (auto* other_alias_ty = cast_type<AstAliasType*>(other))
     {
-        const auto reference_type = other_named->get_underlying_type();
+        const auto reference_type = other_alias_ty->get_underlying_type();
         if (!reference_type.has_value())
         {
             return false;
@@ -110,7 +110,7 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
 
     // If both are arrays, we can just simply check whether their element types are equal
     // This is handled in the `equals` case.
-    return this->equals(*other);
+    return this->equals(other);
 }
 
 bool AstArrayType::is_castable_to_impl(IAstType* other)
@@ -119,9 +119,9 @@ bool AstArrayType::is_castable_to_impl(IAstType* other)
     // whether the referencing type is assignable to this array's element type,
     // e.g., for `type SomeArray = [1, 2, 3]`, `equals(i32[], SomeArray)` should check
     // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
-    if (const auto* other_named = cast_type<AstAliasType*>(other))
+    if (auto* other_alias_ty = cast_type<AstAliasType*>(other))
     {
-        const auto reference_type = other_named->get_underlying_type();
+        const auto reference_type = other_alias_ty->get_underlying_type();
         if (!reference_type.has_value())
         {
             return false;
