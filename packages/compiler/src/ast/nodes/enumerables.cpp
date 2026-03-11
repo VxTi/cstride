@@ -18,7 +18,9 @@ using namespace stride::ast::definition;
  */
 std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set,
+    size_t element_index
+)
 {
     const auto member_name_tok = set.expect(TokenType::IDENTIFIER);
     auto member_sym = member_name_tok.get_lexeme();
@@ -27,10 +29,32 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
         Symbol(
             member_name_tok.get_source_fragment(),
             context->get_name(),
-            member_sym,
-            /* internal_name = */
-            member_sym),
-        SymbolType::ENUM_MEMBER);
+            member_sym
+        ),
+        SymbolType::ENUM_MEMBER
+    );
+
+    if (!set.has_next() || !set.peek_next_eq(TokenType::COLON))
+    {
+        // Using index as element value
+        if (set.has_next() && set.peek_next_eq(TokenType::COMMA))
+        {
+            // Consume optional trailing comma
+            set.next();
+        }
+
+        return std::make_unique<AstEnumerableMember>(
+            member_name_tok.get_source_fragment(),
+            context,
+            std::move(member_sym),
+            std::make_unique<AstIntLiteral>(
+                member_name_tok.get_source_fragment(),
+                context,
+                PrimitiveType::INT32,
+                element_index
+            )
+        );
+    }
 
     set.expect(TokenType::COLON, "Expected a colon after enum member name");
 
@@ -76,9 +100,9 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
         context,
         context->get_context_type());
 
-    while (enum_body_subset.has_next())
+    for (size_t i = 0; enum_body_subset.has_next(); ++i)
     {
-        members.push_back(parse_enumerable_member(enum_definition_context, enum_body_subset));
+        members.push_back(parse_enumerable_member(enum_definition_context, enum_body_subset, i));
     }
 
     return std::make_unique<AstEnumerable>(

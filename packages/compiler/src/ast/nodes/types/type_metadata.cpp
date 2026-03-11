@@ -100,13 +100,9 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
     if (auto* other_alias_ty = cast_type<AstAliasType*>(other))
     {
         const auto reference_type = other_alias_ty->get_underlying_type();
-        if (!reference_type.has_value())
-        {
-            return false;
-        }
 
         // Validate whether the reference type of `other_named` is assignable to
-        return this->is_assignable_to(reference_type.value().get());
+        return this->is_assignable_to(reference_type);
     }
 
     // If both are arrays, we can just simply check whether their element types are equal
@@ -129,14 +125,7 @@ bool AstArrayType::is_castable_to_impl(IAstType* other)
     // whether `[1, 2, 3]` in `SomeArray` (i32[]) is assignable to `Array(i32)`
     if (auto* other_alias_ty = cast_type<AstAliasType*>(other))
     {
-        const auto reference_type = other_alias_ty->get_underlying_type();
-        if (!reference_type.has_value())
-        {
-            return false;
-        }
-
-        // Validate whether the reference type of `other_named` is assignable to
-        return this->is_castable_to(reference_type.value().get());
+        return this->is_castable_to(other_alias_ty->get_underlying_type());
     }
 
     return false;

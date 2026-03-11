@@ -1,7 +1,4 @@
-import System::{
-    IO::Print,
-    IO::Read
-};
+import system::{ io::print };
 
 enum SomeEnum {
     Variant1,
@@ -30,11 +27,36 @@ fn make_car(make: string, model: string, year: i32): SomeCar {
     return SomeCar::{ make, model, year };
 }
 
+fn make_person(name: string, age: i32, cars: Array<SomeCar>): SomePerson {
+    return SomePerson::{
+        name,
+        age,
+        cars
+    };
+}
+
 fn main(): i32 {
+    const me = make_person(
+        "Alice",
+        30,
+        Array<SomeCar>::{
+            length: 1,
+            data: [
+                make_car("Toyota", "Corolla", 2020)
+            ]
+        }
+    );
 
-    const my_car = make_car("Toyota", "Corolla", 2020);
 
-    IO::Print("My car is a %s %s from %d", my_car.make, my_car.model, my_car.year);
+    const my_cars = me.cars.data;
+    const my_car = my_cars[0];
+
+    io::print("I am %s, age %d\n", me.name, me.age);
+    io::print("My car is a %s %s from %d", my_car.make, my_car.model, my_car.year);
+
+    // const some_enum_val: SomeEnum = SomeEnum::Variant2;
+
+    //    io::print("The value of some_enum_val is: %d", some_enum_val);
 
     return 0;
 }

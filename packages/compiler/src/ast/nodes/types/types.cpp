@@ -108,19 +108,17 @@ bool IAstType::is_assignable_to(IAstType* other)
     }
 
     // Try to resolve named types on both sides to check assignability
-    if (auto* this_named = cast_type<AstAliasType*>(this))
+    if (auto* self_alias_ty = cast_type<AstAliasType*>(this))
     {
-        if (const auto self_base = this_named->get_underlying_type();
-            self_base.has_value() && self_base.value()->is_assignable_to(other))
+        if (self_alias_ty->get_underlying_type()->is_assignable_to(other))
         {
             return true;
         }
     }
 
-    if (auto* other_named = cast_type<AstAliasType*>(other))
+    if (auto* other_alias_ty = cast_type<AstAliasType*>(other))
     {
-        if (const auto other_base = other_named->get_underlying_type();
-            other_base.has_value() && this->is_assignable_to(other_base.value().get()))
+        if (this->is_assignable_to(other_alias_ty->get_underlying_type()))
         {
             return true;
         }
@@ -158,12 +156,7 @@ AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
     {
         const auto ref_type = named->get_underlying_type();
 
-        if (!ref_type.has_value())
-        {
-            return nullptr;
-        }
-
-        return extract_primitive_reference_types(ref_type.value().get());
+        return extract_primitive_reference_types(ref_type);
     }
 
     if (const auto* array_type = cast_type<AstArrayType*>(type))
@@ -211,7 +204,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         // If one is a named type and the other is its base type, we can also return the dominant type
         if (const auto lhs_named = cast_type<AstAliasType*>(lhs))
         {
-            if (const auto base = lhs_named->get_underlying_type(); base.has_value() && base.value()->equals(rhs))
+            if (const auto base = lhs_named->get_underlying_type(); base->equals(rhs))
             {
                 return rhs->clone_ty();
             }
@@ -219,7 +212,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
         if (const auto rhs_named = cast_type<AstAliasType*>(rhs))
         {
-            if (const auto base = rhs_named->get_underlying_type(); base.has_value() && base.value()->equals(lhs))
+            if (const auto base = rhs_named->get_underlying_type();
+                base->equals(lhs))
             {
                 return lhs->clone_ty();
             }
@@ -310,17 +304,14 @@ std::optional<AstObjectType*> stride::ast::get_object_type_from_type(IAstType* t
     // resolves to AstObjectType with concrete member types, not raw X/Y/Z params).
     if (auto* alias_type = cast_type<AstAliasType*>(type))
     {
-        if (auto* resolved = alias_type->get_underlying_type_ptr())
+        if (auto* object_type = cast_type<AstObjectType*>(alias_type->get_underlying_type()))
         {
-            if (auto* object_type = cast_type<AstObjectType*>(resolved))
-            {
-                return object_type;
-            }
+            return object_type;
         }
     }
 
     // Fall back to raw struct type lookup
-    base_struct_type = type->get_context()->get_struct_type(type->get_type_name())
+    base_struct_type = type->get_context()->get_object_type(type->get_type_name())
                             .value_or(nullptr);
 
     if (!base_struct_type)

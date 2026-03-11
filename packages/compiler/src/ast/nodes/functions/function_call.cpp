@@ -357,14 +357,10 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
         auto base_type = var_def->get_type()->clone_ty();
         if (auto* alias_ty = cast_type<AstAliasType*>(base_type.get()))
         {
-            if (const auto resolved = alias_ty->get_underlying_type();
-                resolved.has_value())
-            {
-                base_type = resolved.value()->clone_ty();
-            }
+            base_type = alias_ty->get_underlying_type()->clone_ty();
         }
 
-        if (auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))
+        if (const auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))
         {
             // First: check if the variable's internal name maps to a named function in the
             // symbol table with a matching type signature. If so, call it directly without

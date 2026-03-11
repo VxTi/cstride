@@ -68,3 +68,33 @@ TEST(Generics, NestedObjectInstantiation)
         };
     )");
 }
+
+TEST(Generics, FunctionSignatureMismatch)
+{
+    assert_compiles(R"(
+        type Array<T> = {
+            length: i32;
+            data: T[];
+        };
+
+        type SomeCar = {
+            make: string;
+        };
+
+        type SomePerson = {
+            cars: Array<SomeCar>;
+        };
+
+        fn make_person(cars: Array<SomeCar>): SomePerson {
+            return SomePerson::{ cars };
+        }
+
+        fn main(): i32 {
+            const p = make_person(Array<SomeCar>::{
+                length: 1,
+                data: [SomeCar::{ make: "Toyota" }]
+            });
+            return 0;
+        }
+    )");
+}
