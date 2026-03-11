@@ -9,8 +9,7 @@ extern "C" {
 
 int _printf_internal(const char* format, va_list args)
 {
-    int r = vprintf(format, args);
-    return r;
+    return vprintf(format, args);
 }
 
 uint64_t _system_time_ns_internal()

@@ -336,6 +336,7 @@ llvm::Value* AstObjectInitializer::codegen(
                 }
                 else
                 {
+                    // FIXME:
                     // For non-pointers, if they are both structs but have different names, 
                     // LLVM doesn't allow bitcast. However, they should have been the same.
                     // If we reach here, we might need a more complex conversion or 
@@ -359,9 +360,9 @@ llvm::Value* AstObjectInitializer::codegen(
     for (size_t i = 0; i < dynamic_members.size(); ++i)
     {
         auto* member_val = dynamic_members[i];
-        auto* target_type = struct_type->getElementType(i);
 
-        if (member_val->getType() != target_type)
+        if (auto* target_type = struct_type->getElementType(i);
+            member_val->getType() != target_type)
         {
             if (member_val->getType()->isPointerTy() && target_type->isPointerTy())
             {

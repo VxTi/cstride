@@ -56,7 +56,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
     override fun getTokenHighlights(tokenType: IElementType): Array<TextAttributesKey> {
         return when (tokenType) {
             StrideTypes.MODULE, StrideTypes.PACKAGE, StrideTypes.PUBLIC,
-            StrideTypes.FN, StrideTypes.CONST,
+            StrideTypes.FN, StrideTypes.CONST, StrideTypes.ENUM,
             StrideTypes.BREAK, StrideTypes.CONTINUE, StrideTypes.IMPORT,
             StrideTypes.LET, StrideTypes.EXTERN, StrideTypes.AS,
             StrideTypes.RETURN, StrideTypes.FOR, StrideTypes.WHILE,

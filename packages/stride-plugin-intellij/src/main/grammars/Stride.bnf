@@ -16,6 +16,7 @@
     FN='fn'
     NIL='nil'
     CONST='const'
+    ENUM='enum'
     LET='let'
     CONTINUE='continue'
     BREAK='break'
@@ -111,6 +112,7 @@ private StandaloneItem ::= (
     FunctionDeclaration
     | ModuleStatement
     | TypeDefinition
+    | EnumDefinition
     | VariableDeclarationStatement
     | ExternFunctionDeclaration
     | SEMICOLON
@@ -128,6 +130,10 @@ FunctionParameterList ::= (FunctionParameter (COMMA FunctionParameter)* [COMMA E
 FunctionParameter ::= IDENTIFIER COLON Type
 
 TypeDefinition ::= KW_TYPE IDENTIFIER [GenericTypeArguments] EQ Type SEMICOLON
+
+EnumDefinition ::= ENUM IDENTIFIER LBRACE EnumMember (COMMA EnumMember)* [COMMA /* trailing */] RBRACE
+
+EnumMember ::= IDENTIFIER | (IDENTIFIER EQ Expression)
 
 // Ensure structs have at least 1 field
 ObjectDefinitionFields ::= ObjectField+

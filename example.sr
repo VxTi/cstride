@@ -3,6 +3,12 @@ import System::{
     IO::Read
 };
 
+enum SomeEnum {
+    Variant1,
+    Variant2,
+    Variant3
+}
+
 type Array<T> = {
     length: i32;
     data: T[];

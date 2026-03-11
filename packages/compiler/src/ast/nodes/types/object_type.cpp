@@ -145,9 +145,9 @@ std::string AstObjectType::get_internalized_name()
 {
     std::string scoped_name = resolve_internal_name({ this->get_context()->get_name(), this->get_type_name() });
     
-    for (const auto& [name, type] : this->_members)
+    for (const auto& generic : this->_instantiated_generics)
     {
-        scoped_name += "$" + type->get_type_name();
+        scoped_name += "$" + generic->get_type_name();
     }
 
     return scoped_name;
