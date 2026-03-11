@@ -125,55 +125,62 @@ std::string stride::make_source_error(
     // Compute line start, end, and 1-based number for a source offset.
     struct LineInfo
     {
-        size_t start, end, number;
+        size_t line_start, line_end, line_number;
     };
-    auto get_line_info = [&](size_t offset) -> LineInfo
-    {
-        size_t ls = offset;
-        while (ls > 0 && src[ls - 1] != '\n')
-            ls--;
-        size_t le = offset;
-        while (le < src.size() && src[le] != '\n')
-            le++;
-        size_t ln = 1;
-        for (size_t i = 0; i < ls; i++)
-            if (src[i] == '\n')
-                ln++;
-        return { ls, le, ln };
-    };
-
-    // Sort references by source offset.
-    std::vector<size_t> order(references.size());
-    std::iota(order.begin(), order.end(), 0);
-    std::sort(order.begin(),
-              order.end(),
-              [&](size_t a, size_t b)
-              {
-                  return references[a].source_position.offset < references[b].source_position.offset;
-              });
-
-    // Group references by source line.
     struct LineGroup
     {
         LineInfo info;
-        std::vector<size_t> ref_indices;
+        std::vector<size_t> reference_indices;
     };
-    std::vector<LineGroup> groups;
-    for (size_t idx : order)
+
+    auto get_line_info = [&](const size_t offset) -> LineInfo
     {
-        auto li = get_line_info(references[idx].source_position.offset);
-        bool found = false;
-        for (auto& g : groups)
+        size_t start = offset;
+        while (start > 0 && src[start - 1] != '\n')
+            start--;
+
+        size_t end = offset;
+        while (end < src.size() && src[end] != '\n')
+            end++;
+
+        size_t number = 1;
+        for (size_t i = 0; i < start; i++)
         {
-            if (g.info.start == li.start)
+            if (src[i] == '\n')
+                number++;
+        }
+
+        return { start, end, number };
+    };
+
+    // Sort references by source offset.
+    std::vector<size_t> reference_order(references.size());
+    std::iota(reference_order.begin(), reference_order.end(), 0);
+    std::ranges::sort(reference_order,
+                      [&](const size_t a, const size_t b)
+                      {
+                          return references[a].source_position.offset < references[b].source_position.offset;
+                      });
+
+    // Group references by source line.
+    std::vector<LineGroup> line_groups;
+    for (size_t idx : reference_order)
+    {
+        auto line_info = get_line_info(references[idx].source_position.offset);
+        bool found = false;
+        for (auto& group : line_groups)
+        {
+            if (group.info.line_start == line_info.line_start)
             {
-                g.ref_indices.push_back(idx);
+                group.reference_indices.push_back(idx);
                 found = true;
                 break;
             }
         }
         if (!found)
-            groups.push_back({ li, { idx } });
+        {
+            line_groups.push_back({ line_info, { idx } });
+        }
     }
 
     std::string result = std::format(
@@ -182,133 +189,143 @@ std::string stride::make_source_error(
         source_file->path,
         error);
 
-    for (size_t gi = 0; gi < groups.size(); gi++)
+    for (size_t group_idx = 0; group_idx < line_groups.size(); group_idx++)
     {
-        const auto& group = groups[gi];
-        const std::string line_str = src.substr(
-            group.info.start,
-            group.info.end - group.info.start);
-        const std::string line_nr_str = std::to_string(group.info.number);
+        const auto& group = line_groups[group_idx];
+        const std::string line_content = src.substr(
+            group.info.line_start,
+            group.info.line_end - group.info.line_start);
+        const std::string line_nr_str = std::to_string(group.info.line_number);
 
-        // pw: offset in underline string so underline[pw + col] aligns with
-        // character col in the source line.  Source is shown as "┃ {nr} {src}",
-        // underline as "┃ {underline_str}" — pw = lnw + 1 bridges the gap.
-        const size_t pw = line_nr_str.size() + 1;
+        // base_padding: offset in underline string so underline[base_padding + column] 
+        // aligns with character column in the source line.
+        // Source is shown as "┃ {nr} {src}", underline as "┃ {underline_str}"
+        // base_padding = line_number_length + 1 space gap.
+        const size_t base_padding = line_nr_str.size() + 1;
 
-        result += std::format("\n\033[0;31m┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m",
-                              line_nr_str,
-                              line_str);
+        result += std::format(
+            "\n\033[0;31m┃ \x1b[0;97m{}\x1b[37m {}\x1b[0m",
+            line_nr_str,
+            line_content
+        );
 
-        // Build combined underline for all refs on this line.
-        const auto& refs = group.ref_indices;
-        size_t underline_end = pw;
-        for (size_t idx : refs)
+        // Build combined underline for all references on this line.
+        const auto& indices = group.reference_indices;
+        size_t underline_end = base_padding;
+        for (size_t idx : indices)
         {
             const auto& ref = references[idx];
-            const size_t col = ref.source_position.offset - group.info.start;
-            const size_t max_ul = line_str.size() > col ? line_str.size() - col : 0;
-            const size_t ul = std::min(ref.source_position.length, max_ul);
-            underline_end = std::max(underline_end, pw + col + ul);
+            const size_t column = ref.source_position.offset - group.info.line_start;
+            const size_t max_underline = line_content.size() > column ? line_content.size() - column : 0;
+            const size_t underline_len = std::min(ref.source_position.length, max_underline);
+            underline_end = std::max(underline_end, base_padding + column + underline_len);
         }
+
         std::string underline(underline_end, ' ');
-        for (size_t idx : refs)
+        for (size_t idx : indices)
         {
             const auto& ref = references[idx];
-            const size_t col = ref.source_position.offset - group.info.start;
-            const size_t max_ul = line_str.size() > col ? line_str.size() - col : 0;
-            const size_t ul = std::min(ref.source_position.length, max_ul);
-            for (size_t i = 0; i < ul && pw + col + i < underline.size(); i++)
-                underline[pw + col + i] = '^';
+            const size_t column = ref.source_position.offset - group.info.line_start;
+            const size_t max_underline = line_content.size() > column ? line_content.size() - column : 0;
+            const size_t underline_len = std::min(ref.source_position.length, max_underline);
+
+            for (size_t i = 0; i < underline_len && base_padding + column + i < underline.size(); i++)
+                underline[base_padding + column + i] = '^';
         }
         result += std::format("\n\033[0;31m┃ {}", underline);
 
-        if (refs.size() == 2)
+        if (indices.size() == 2)
         {
-            const auto& left_ref = references[refs[0]];  // leftmost
-            const auto& right_ref = references[refs[1]]; // rightmost
-            const size_t col1 = left_ref.source_position.offset - group.info.start;
-            const size_t col2 = right_ref.source_position.offset - group.info.start;
+            const auto& left_ref = references[indices[0]];  // leftmost
+            const auto& right_ref = references[indices[1]]; // rightmost
+            const size_t col1 = left_ref.source_position.offset - group.info.line_start;
+            const size_t col2 = right_ref.source_position.offset - group.info.line_start;
 
-            // Use descend format when both refs have messages and ref1's
-            // message would overlap ref2's column if placed on the same line.
+            // Use descend format when both references have messages and the first reference's
+            // message would overlap the second reference's column if placed on the same line.
             const bool need_descend = !left_ref.message.empty()
                 && !right_ref.message.empty()
-                && (pw + col1 + left_ref.message.size() >= pw + col2);
+                && (base_padding + col1 + left_ref.message.size() >= base_padding + col2);
 
             if (need_descend)
             {
-                // Right ref: pipe connector (for ref1) + message (for ref2)
-                std::string right_line(pw + col1, ' ');
+                // Line for the right-hand reference (placed first in order to be above the left message).
+                // right_line: pipe connector (for left_ref) + message (for right_ref)
+                std::string right_line(base_padding + col1, ' ');
                 right_line += "┃";
                 right_line += std::string(col2 - col1 - 1, ' ');
                 right_line += "┗ ";
                 right_line += right_ref.message;
                 result += std::format("\n\033[0;31m┃ {}", right_line);
 
-                // Left ref: ┃ descent connector
-                std::string connector(pw + col1, ' ');
+                // Connector line: vertical pipe for left reference.
+                std::string connector(base_padding + col1, ' ');
                 connector += "┃";
                 result += std::format("\n\033[0;31m┃ {}", connector);
 
-                // Left ref: message
-                std::string left_line(pw + col1, ' ');
+                // Line for the left-hand reference message.
+                std::string left_line(base_padding + col1, ' ');
                 left_line += "┗ " + left_ref.message;
                 result += std::format("\n\033[0;31m┃ {}", left_line);
             }
             else
             {
-                // Flat: place both messages at their column positions.
+                // Flat layout: place both messages at their column positions on the same line.
                 size_t msg_end = underline_end;
-                for (size_t idx : refs)
+                for (size_t idx : indices)
                 {
                     const auto& ref = references[idx];
-                    const size_t col = ref.source_position.offset - group.info.start;
-                    msg_end = std::max(msg_end, pw + col + ref.message.size());
+                    const size_t column = ref.source_position.offset - group.info.line_start;
+                    msg_end = std::max(msg_end, base_padding + column + ref.message.size());
                 }
+
                 std::string msg_line(msg_end, ' ');
-                bool has_msg = false;
-                for (size_t idx : refs)
+                bool has_message = false;
+                for (size_t idx : indices)
                 {
                     const auto& ref = references[idx];
                     if (ref.message.empty())
                         continue;
-                    has_msg = true;
-                    const size_t col = ref.source_position.offset - group.info.start;
-                    for (size_t i = 0; i < ref.message.size() && pw + col + i < msg_line.size(); i++)
-                        msg_line[pw + col + i] = ref.message[i];
+
+                    has_message = true;
+                    const size_t column = ref.source_position.offset - group.info.line_start;
+                    for (size_t i = 0; i < ref.message.size() && base_padding + column + i < msg_line.size(); i++)
+                        msg_line[base_padding + column + i] = ref.message[i];
                 }
-                if (has_msg)
+                if (has_message)
                     result += std::format("\n\033[0;31m┃ {}", msg_line);
             }
         }
         else
         {
-            // 1 or 3+ refs: flat message layout.
+            // 1 or 3+ references: flat message layout.
             size_t msg_end = underline_end;
-            for (size_t idx : refs)
+            for (size_t idx : indices)
             {
                 const auto& ref = references[idx];
-                const size_t col = ref.source_position.offset - group.info.start;
-                msg_end = std::max(msg_end, pw + col + ref.message.size());
+                const size_t column = ref.source_position.offset - group.info.line_start;
+                msg_end = std::max(msg_end, base_padding + column + ref.message.size());
             }
+
             std::string msg_line(msg_end, ' ');
-            bool has_msg = false;
-            for (size_t idx : refs)
+            bool has_message = false;
+            for (size_t idx : indices)
             {
                 const auto& ref = references[idx];
                 if (ref.message.empty())
                     continue;
-                has_msg = true;
-                const size_t col = ref.source_position.offset - group.info.start;
-                for (size_t i = 0; i < ref.message.size() && pw + col + i < msg_line.size(); i++)
-                    msg_line[pw + col + i] = ref.message[i];
+
+                has_message = true;
+                const size_t column = ref.source_position.offset - group.info.line_start;
+                for (size_t i = 0; i < ref.message.size() && base_padding + column + i < msg_line.size(); i++)
+                    msg_line[base_padding + column + i] = ref.message[i];
             }
-            if (has_msg)
+            if (has_message)
                 result += std::format("\n\033[0;31m┃ {}", msg_line);
         }
 
         // Blank separator between groups (different source lines).
-        if (gi + 1 < groups.size())
+        if (group_idx + 1 < line_groups.size())
             result += "\n\033[0;31m┃";
     }
 
