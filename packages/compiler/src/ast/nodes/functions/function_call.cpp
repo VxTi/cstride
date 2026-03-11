@@ -235,10 +235,10 @@ llvm::Value* AstFunctionCall::codegen(
 
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
-            std::format("Function '{}' was not found in this scope",
-                        this->format_function_name()),
+            std::format("Function '{}' was not found in this scope", this->format_function_name()),
             this->get_source_fragment(),
-            suggested_alternative);
+            suggested_alternative
+        );
     }
 
     const auto minimum_arg_count = callee->arg_size();

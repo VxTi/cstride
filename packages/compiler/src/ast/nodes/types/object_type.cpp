@@ -28,7 +28,7 @@ void parse_object_member(
     auto struct_member_type = parse_type(
         context,
         set,
-        "Expected object member type"
+        { "Expected object member type" }
     );
     const auto last_token = set.expect(
         TokenType::SEMICOLON,
@@ -60,7 +60,7 @@ void parse_object_member(
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    int context_type_flags
+    const TypeParsingOptions& options
 )
 {
     // Must start with `{`
@@ -93,11 +93,12 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional
     auto struct_ty = std::make_unique<AstObjectType>(
         reference_token.get_source_fragment(),
         struct_type_context,
+        options.type_name,
         std::move(struct_fields),
-        context_type_flags
+        options.flags
     );
 
-    return parse_type_metadata(std::move(struct_ty), set, context_type_flags);
+    return parse_type_metadata(std::move(struct_ty), set, options.flags);
 }
 
 std::optional<IAstType*> AstObjectType::get_member_field_type(const std::string& field_name) const
@@ -140,28 +141,15 @@ std::optional<int> AstObjectType::get_member_field_index(const std::string& fiel
 /// Produces a name based on the field types,
 /// so that all structs with the same fields have the same name,
 /// resulting in no LLVM duplication
-std::string AstObjectType::get_internalized_name() const
+std::string AstObjectType::get_internalized_name()
 {
-    std::string internalized_name;
-    for (const auto& type : this->_members | std::views::values)
-    {
-        if (const auto struct_ty = cast_type<AstObjectType*>(type.get()))
-        {
-            // Ensure nested structs are also appended properly
-            internalized_name += "_" + struct_ty->get_internalized_name();
-        }
-        else
-        {
-            internalized_name += "_" + type->get_type_name();
-        }
-    }
-
+    std::string scoped_name = resolve_internal_name({ this->get_context()->get_name(), this->get_type_name() });
     for (const auto& gen : this->_instantiated_generics)
     {
-        internalized_name += "$" + gen->get_type_name();
+        scoped_name += "$" + gen->get_type_name();
     }
 
-    return std::format("object${:x}", std::hash<std::string>{}(internalized_name));
+    return scoped_name;
 }
 
 llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
@@ -281,6 +269,7 @@ std::unique_ptr<IAstNode> AstObjectType::clone()
     return std::make_unique<AstObjectType>(
         this->get_source_fragment(),
         this->get_context(),
+        this->get_type_name(),
         std::move(cloned_members),
         this->get_flags(),
         std::move(cloned_generics)

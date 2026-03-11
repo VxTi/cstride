@@ -20,7 +20,7 @@ fn some_fn(vectors: Array<Vector<f32>>): void {
 
 fn main(): i32 {
 
-    const x = 4.0D as f32;
+    const x = 4 as f32;
 
     let vecArray: Vector<f32>[] = [
         Vector<f32>::{ x, y: 2.0, z: 3.0 },

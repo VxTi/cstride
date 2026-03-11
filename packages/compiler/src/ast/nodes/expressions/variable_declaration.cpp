@@ -82,8 +82,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
         variable_type = parse_type(
             context,
             set,
-            "Expected variable type after variable name",
-            flags
+            { "Expected variable type after variable name", "", flags }
         );
         const auto& type = variable_type.value().get();
         // It's possible that the type has gained additional flags, e.g., 'optional', which we'll have to append

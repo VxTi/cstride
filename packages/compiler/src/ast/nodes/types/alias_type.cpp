@@ -10,9 +10,10 @@ using namespace stride::ast;
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    int context_type_flags
+    const TypeParsingOptions& options
 )
 {
+    int flags = options.flags;
     // Custom types are identifiers in the type position.
     const auto reference_token = set.peek_next();
 
@@ -31,11 +32,11 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
             reference_token.get_source_fragment(),
             context,
             name,
-            context_type_flags,
+            flags,
             std::move(generic_types)
         ),
         set,
-        context_type_flags
+        flags
     );
 }
 
@@ -68,7 +69,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
             return std::move(underlying.value());
         }
     }
-    else if (auto* array = cast_type<AstArrayType*>(type.get()))
+    else if (const auto* array = cast_type<AstArrayType*>(type.get()))
     {
         auto element_type = array->get_element_type()->clone_ty();
         auto resolved_element = resolve_nested_underlying_types(std::move(element_type));
@@ -81,22 +82,23 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
             array->get_flags()
         );
     }
-    else if (auto* struct_type = cast_type<AstObjectType*>(type.get()))
+    else if (auto* object_type = cast_type<AstObjectType*>(type.get()))
     {
         ObjectTypeMemberList resolved_members;
-        for (const auto& [name, member_type] : struct_type->get_members())
+        for (const auto& [name, member_type] : object_type->get_members())
         {
             resolved_members.emplace_back(name, resolve_nested_underlying_types(member_type->clone_ty()));
         }
 
         return std::make_unique<AstObjectType>(
-            struct_type->get_source_fragment(),
-            struct_type->get_context(),
+            object_type->get_source_fragment(),
+            object_type->get_context(),
+            object_type->get_type_name(),
             std::move(resolved_members),
-            struct_type->get_flags()
+            object_type->get_flags()
         );
     }
-    else if (auto* tuple = cast_type<AstTupleType*>(type.get()))
+    else if (const auto* tuple = cast_type<AstTupleType*>(type.get()))
     {
         std::vector<std::unique_ptr<IAstType>> resolved_members;
         for (const auto& member : tuple->get_members())

@@ -460,17 +460,21 @@ namespace stride::ast
         ObjectTypeMemberList _members;
         GenericTypeList _instantiated_generics;
 
+        std::string _type_name;
+
     public:
         explicit AstObjectType(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
+            std::string type_name,
             ObjectTypeMemberList members,
             const int flags = SRFLAG_NONE,
             GenericTypeList instantiated_generics = {}
         ) :
             IAstType(source, context, flags),
             _members(std::move(members)),
-            _instantiated_generics(std::move(instantiated_generics)) {}
+            _instantiated_generics(std::move(instantiated_generics)),
+            _type_name(std::move(type_name)) {}
 
         [[nodiscard]]
         const GenericTypeList& get_instantiated_generics() const
@@ -490,7 +494,7 @@ namespace stride::ast
         [[nodiscard]]
         std::string get_type_name() override
         {
-            return "struct";
+            return this->_type_name;
         }
 
         std::string to_string() override
@@ -506,7 +510,7 @@ namespace stride::ast
         std::unique_ptr<IAstNode> clone() override;
 
         [[nodiscard]]
-        std::string get_internalized_name() const;
+        std::string get_internalized_name();
 
     private:
         llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
@@ -567,11 +571,17 @@ namespace stride::ast
         llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
+    struct TypeParsingOptions
+    {
+        std::string error_message;
+        std::string type_name;
+        int flags;
+    };
+
     std::unique_ptr<IAstType> parse_type(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        const std::string& error,
-        int type_flags = SRFLAG_NONE);
+        const TypeParsingOptions& options);
 
     std::unique_ptr<IAstType> get_dominant_field_type(IAstType* lhs, IAstType* rhs);
 
@@ -584,27 +594,27 @@ namespace stride::ast
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags);
+        const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_named_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags);
+        const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags);
+        const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_object_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags);
+        const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_tuple_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        int context_type_flags);
+        const TypeParsingOptions& options);
 
     /// Will extract the struct type from a named type if possible, otherwise,
     /// will attempt to cast the type directly into a struct type.

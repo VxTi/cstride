@@ -11,7 +11,7 @@ using namespace stride::ast;
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    int context_type_flags
+    const TypeParsingOptions& options
 )
 {
     // Tuples must be in the form of (T0, T1, ...), where Tn can be any type.
@@ -33,15 +33,19 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
         parse_type(
             context,
             type_set.value(),
-            "Expected types in tuple type declaration"));
+            { "Expected types in tuple type declaration" }
+        )
+    );
 
     while (set.peek_next_eq(TokenType::COMMA))
     {
         set.next();
         members.push_back(
-            parse_type(context,
-                       type_set.value(),
-                       "Expected types in tuple type declaration")
+            parse_type(
+                context,
+                type_set.value(),
+                { "Expected types in tuple type declaration" }
+            )
         );
     }
 
@@ -59,7 +63,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
         source,
         context,
         std::move(members),
-        context_type_flags
+        options.flags
     );
 }
 

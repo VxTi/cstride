@@ -80,7 +80,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     set.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(context, set, "Expected return type in function header");
+    auto return_type = parse_type(context, set, {"Expected return type in function header"});
 
     const auto& position = reference_token.get_source_fragment();
     auto sym_function_name = Symbol(position, context->get_name(), fn_name);
@@ -140,7 +140,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     auto return_type = parse_type(
         function_context,
         set,
-        "Expected type after anonymous function header definition"
+        {"Expected type after anonymous function header definition"}
     );
     const auto lambda_arrow = set.expect(
         TokenType::RARROW,

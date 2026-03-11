@@ -9,9 +9,10 @@ using namespace stride::ast;
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    int context_type_flags
+    const TypeParsingOptions& options
 )
 {
+    int flags = options.flags;
     // Must start with '('
     if (!set.peek_next_eq(TokenType::LPAREN))
     {
@@ -41,8 +42,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
             parse_type(
                 context,
                 set,
-                "Expected parameter type",
-                context_type_flags
+                { "Expected parameter type", options.type_name, flags }
             )
         );
         if (set.peek_next_eq(TokenType::RPAREN))
@@ -57,8 +57,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     auto return_type = parse_type(
         context,
         set,
-        "Expected return type",
-        context_type_flags
+        { "Expected return type", options.type_name, flags }
     );
 
     if (is_expecting_closing_paren)
@@ -71,10 +70,10 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
         context,
         std::move(parameters),
         std::move(return_type),
-        context_type_flags
+        flags
     );
 
-    return parse_type_metadata(std::move(fn_type), set, context_type_flags);
+    return parse_type_metadata(std::move(fn_type), set, flags);
 }
 
 std::unique_ptr<IAstNode> AstFunctionType::clone()
