@@ -113,7 +113,7 @@ llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
 
     for (const auto& accessor : this->_members)
     {
-        auto struct_def_opt = this->get_context()->get_struct_type(current_struct_name);
+        auto struct_def_opt = this->get_context()->get_object_type(current_struct_name);
         if (!struct_def_opt.has_value())
             return nullptr;
 

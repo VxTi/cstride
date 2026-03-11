@@ -82,19 +82,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 
     if (const auto named_ty = cast_type<AstAliasType*>(array_iden_type.get()))
     {
-        if (const auto reference_type = named_ty->get_underlying_type();
-            reference_type.has_value())
-        {
-            array_iden_type = reference_type.value()->clone_ty();
-        }
-        else
-        {
-            throw parsing_error(
-                ErrorType::SEMANTIC_ERROR,
-                "Array member accessor used on non-reference type",
-                this->get_source_fragment()
-            );
-        }
+        array_iden_type = named_ty->get_underlying_type()->clone_ty();
     }
 
     llvm::Value* base_ptr = this->_array_identifier->codegen(module, builder);

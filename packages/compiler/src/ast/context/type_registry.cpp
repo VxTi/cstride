@@ -52,7 +52,7 @@ std::optional<TypeDefinition*> ParsingContext::get_type_definition(const std::st
 
 /// Gets the root struct type layout for <code>name</code>.
 /// Will recursively look up the parent struct definition if <code>name</code> is a reference struct type.
-std::optional<AstObjectType*> ParsingContext::get_struct_type(const std::string& name) const
+std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string& name) const
 {
     const auto type_def = get_type_definition(name);
 

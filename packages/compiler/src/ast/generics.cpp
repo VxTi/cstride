@@ -118,10 +118,22 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         }
 
         GenericTypeList resolved_generics;
-        resolved_generics.reserve(object_type->get_instantiated_generics().size());
-        for (const auto& gen : object_type->get_instantiated_generics())
+        if (const auto& instantiated_generics = object_type->get_instantiated_generics();
+            instantiated_generics.empty() && !instantiated_types.empty() && !param_names.empty())
         {
-            resolved_generics.push_back(resolve_generics(gen.get(), param_names, instantiated_types));
+            resolved_generics.reserve(instantiated_types.size());
+            for (const auto& gen : instantiated_types)
+            {
+                resolved_generics.push_back(gen->clone_ty());
+            }
+        }
+        else
+        {
+            resolved_generics.reserve(instantiated_generics.size());
+            for (const auto& gen : instantiated_generics)
+            {
+                resolved_generics.push_back(resolve_generics(gen.get(), param_names, instantiated_types));
+            }
         }
 
         return std::make_unique<AstObjectType>(

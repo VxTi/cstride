@@ -403,24 +403,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
     if (const auto alias_type = cast_type<AstAliasType*>(array_type.get()))
     {
         // Instantiate type if it contains generics
-        const auto base_ty = alias_type->get_underlying_type();
-
-        if (!base_ty.has_value())
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Named type '{}' does not reference another type, cannot be used as array type",
-                    alias_type->get_name()
-                ),
-                {
-                    ErrorSourceReference("Named type", alias_type->get_source_fragment()),
-                    ErrorSourceReference("Requires array type", accessor->get_array_identifier()->get_source_fragment())
-                }
-            );
-        }
-
-        if (const auto array_base_ty = cast_type<AstArrayType*>(base_ty.value().get()))
+        if (const auto array_base_ty = cast_type<AstArrayType*>(alias_type->get_underlying_type()))
         {
             return array_base_ty->get_element_type()->clone_ty();
         }

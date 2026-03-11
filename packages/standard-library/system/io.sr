@@ -1,6 +1,6 @@
-package System;
+package system;
 
-module IO {
+module io {
 
     pub const stdout_fd: i32 = 0;
     pub const stdin_fd: i32 = 1;
@@ -10,14 +10,14 @@ module IO {
      * @param input The string to print.
      * @param ... Additional arguments to format into the string.
      */
-    pub fn Print(input: string, ...): void {
+    pub fn print(input: string, ...): void {
         _printf_internal(input, ...);
     }
 
     /**
      * Reads a string from STDIN
      */
-    pub fn Read(bytes: i32): string {
+    pub fn read(bytes: i32): string {
         return _read_in_internal(bytes);
     }
 }

@@ -313,18 +313,14 @@ namespace stride::ast
         [[nodiscard]]
         std::optional<std::unique_ptr<IAstType>> get_reference_type() const;
 
-        /// Returns the cached underlying type pointer (resolved including generics),
-        /// populating the cache via get_underlying_type() if needed.
-        /// The returned pointer is valid as long as this AstAliasType is alive.
-        [[nodiscard]]
-        IAstType* get_underlying_type_ptr();
-
         /// Returns the super base type of the reference, e.g., if we have:
         /// type RootType = i32;
         /// type MidType = RootType;
         /// type LeafType = MidType;
         /// Then, calling `get_base_reference_type` on `LeafType` will return `i32`.
-        [[nodiscard]] std::optional<std::unique_ptr<IAstType>> get_underlying_type();
+        /// Throws an exception if no underlying type can be resolved.
+        [[nodiscard]]
+        IAstType* get_underlying_type();
 
         [[nodiscard]]
         std::optional<definition::TypeDefinition*> get_type_definition() const;
