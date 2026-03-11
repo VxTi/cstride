@@ -445,28 +445,26 @@ TEST_F(TypeInferenceTest, InferStructAndMemberAccess)
                              std::make_unique<AstAliasType>(dummy_sf(), context, "Point"),
                              VisibilityModifier::PUBLIC);
 
-    // Nested member access
+    // Nested member access using AstChainedExpression
     context->define_variable(dummy_sym("q"),
                              std::make_unique<AstAliasType>(dummy_sf(), context, "Point"),
                              VisibilityModifier::PUBLIC);
     auto base2 = std::make_unique<AstIdentifier>(context, dummy_sym("q"));
-    std::vector<std::unique_ptr<AstIdentifier>> access_members2;
-    access_members2.push_back(std::make_unique<AstIdentifier>(context, dummy_sym("x")));
-    auto member_access2 = std::make_unique<AstMemberAccessor>(
+    auto member2 = std::make_unique<AstIdentifier>(context, dummy_sym("x"));
+    auto chained2 = std::make_unique<AstChainedExpression>(
         dummy_sf(),
         context,
         std::move(base2),
-        std::move(access_members2));
-    EXPECT_EQ(infer_expression_type(member_access2.get())->to_string(), "i32");
+        std::move(member2));
+    EXPECT_EQ(infer_expression_type(chained2.get())->to_string(), "i32");
 }
 
-TEST_F(TypeInferenceTest, InferMemberAccessorErrors)
+TEST_F(TypeInferenceTest, InferChainedExpressionErrors)
 {
     // Base not found
     auto base = std::make_unique<AstIdentifier>(context, dummy_sym("unknown_var"));
-    std::vector<std::unique_ptr<AstIdentifier>> members;
-    members.push_back(std::make_unique<AstIdentifier>(context, dummy_sym("x")));
-    auto access = std::make_unique<AstMemberAccessor>(dummy_sf(), context, std::move(base), std::move(members));
+    auto member = std::make_unique<AstIdentifier>(context, dummy_sym("x"));
+    auto access = std::make_unique<AstChainedExpression>(dummy_sf(), context, std::move(base), std::move(member));
     EXPECT_THROW(infer_expression_type(access.get()), parsing_error);
 
     // Base is not a struct
@@ -474,9 +472,8 @@ TEST_F(TypeInferenceTest, InferMemberAccessorErrors)
                              std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::INT32),
                              VisibilityModifier::PUBLIC);
     auto base2 = std::make_unique<AstIdentifier>(context, dummy_sym("i"));
-    std::vector<std::unique_ptr<AstIdentifier>> members2;
-    members2.push_back(std::make_unique<AstIdentifier>(context, dummy_sym("x")));
-    auto access2 = std::make_unique<AstMemberAccessor>(dummy_sf(), context, std::move(base2), std::move(members2));
+    auto member2 = std::make_unique<AstIdentifier>(context, dummy_sym("x"));
+    auto access2 = std::make_unique<AstChainedExpression>(dummy_sf(), context, std::move(base2), std::move(member2));
     EXPECT_THROW(infer_expression_type(access2.get()), parsing_error);
 }
 

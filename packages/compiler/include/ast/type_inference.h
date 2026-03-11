@@ -11,7 +11,8 @@ namespace stride::ast
     class IAstExpression;
     class AstFunctionCall;
     class AstLiteral;
-    class AstMemberAccessor;
+    class AstChainedExpression;
+    class AstIndirectCall;
     class AstObjectInitializer;
     class AstUnaryOp;
     class IAstType;
@@ -46,10 +47,13 @@ namespace stride::ast
         const AstVariableDeclaration* declaration,
         int recursion_guard);
 
-    /// Infers the type of the field accessed via a member accessor expression
-    std::unique_ptr<IAstType> infer_object_member_accessor_type(const AstMemberAccessor* member_accessor_expr);
+    /// Infers the type produced by a chained expression (base.followup member access)
+    std::unique_ptr<IAstType> infer_chained_expression_type(const AstChainedExpression* chained_expr);
 
-    /// Infers the type of the element accessed via an array member accessor expression, which is the element type of the array being accessed
+    /// Infers the return type of an indirect call expression (expr(args))
+    std::unique_ptr<IAstType> infer_indirect_call_type(const AstIndirectCall* call_expr);
+
+    /// Infers the element type produced by an array subscript expression
     std::unique_ptr<IAstType> infer_array_accessor_type(const AstArrayMemberAccessor* accessor, int recursion_guard);
 
     std::unique_ptr<IAstType> infer_function_type(

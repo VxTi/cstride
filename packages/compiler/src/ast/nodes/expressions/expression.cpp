@@ -29,27 +29,25 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
     TokenSet& set
 )
 {
+    std::unique_ptr<IAstExpression> result;
+
     if (auto lit = parse_literal_optional(context, set); lit.has_value())
     {
-        return std::move(lit.value());
+        result = std::move(lit.value());
     }
-
     // Will try to parse <name>::{ ... }
-    if (is_struct_initializer(set))
+    else if (is_struct_initializer(set))
     {
-        return parse_object_initializer(context, set);
+        result = parse_object_initializer(context, set);
     }
-
     // Will try to parse [ ... ]
-    if (is_array_initializer(set))
+    else if (is_array_initializer(set))
     {
-        return parse_array_initializer(context, set);
+        result = parse_array_initializer(context, set);
     }
-
-    // Could either be a function call, or object access
-    if (set.peek_next_eq(TokenType::IDENTIFIER))
+    // Could either be a function call, or object/array access
+    else if (set.peek_next_eq(TokenType::IDENTIFIER))
     {
-        /// Regular identifier parsing; can be variable reference
         const auto reference_token = set.peek_next();
         // Mangled name including module, e.g., `Math__PI`
         const SymbolNameSegments name_segments = parse_segmented_identifier(
@@ -67,64 +65,80 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
             return std::move(reassignment.value());
         }
 
-        /// Function invocations, e.g., `<identifier>(...)`, or `<module>::<identifier>`
+        // Named function invocations, e.g., `<identifier>(...)` or `<module>::<identifier>(...)`
         if (set.peek_next_eq(TokenType::LPAREN))
         {
-            return parse_function_call(context, name_segments, set);
+            result = parse_function_call(context, name_segments, set);
         }
-
-        if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
+        else
         {
-            return parse_array_member_accessor(
-                context,
-                set,
-                std::move(identifier)
-            );
+            result = std::move(identifier);
         }
-
-        if (is_member_accessor(identifier.get(), set))
-        {
-            return parse_chained_member_access(
-                context,
-                set,
-                std::move(identifier)
-            );
-        }
-
-        return std::move(identifier);
     }
-
     // If the next token is a '(', we'll try to descend into it
     // until we find another one, e.g. `(1 + (2 * 3))` with nested parentheses
-    if (set.peek_next_eq(TokenType::LPAREN))
+    else if (set.peek_next_eq(TokenType::LPAREN))
     {
         if ((set.peek_eq(TokenType::IDENTIFIER, 1) // Checks for "(<identifier>: ..."
                 && set.peek_eq(TokenType::COLON, 2))
             || (set.peek_eq(TokenType::RPAREN, 1) && // Checks for "():"
                 set.peek_eq(TokenType::COLON, 2)))
         {
-            return parse_anonymous_fn_expression(context, set);
+            result = parse_anonymous_fn_expression(context, set);
         }
-
-        set.next();
-        // Fixed: Use parse_inline_expression (full expression parser) instead of
-        // parse_inline_expression_part to allow binary operations inside parentheses.
-        auto expr = parse_inline_expression(context, set);
-        // TODO: If we have a comma next, it might be a tuple expression
-        set.expect(TokenType::RPAREN, "Expected ')' after expression");
-        return expr;
+        else
+        {
+            set.next();
+            // Fixed: Use parse_inline_expression (full expression parser) instead of
+            // parse_inline_expression_part to allow binary operations inside parentheses.
+            auto expr = parse_inline_expression(context, set);
+            // TODO: If we have a comma next, it might be a tuple expression
+            set.expect(TokenType::RPAREN, "Expected ')' after expression");
+            result = std::move(expr);
+        }
     }
-
-    if (set.peek_next_eq(TokenType::THREE_DOTS))
+    else if (set.peek_next_eq(TokenType::THREE_DOTS))
     {
         const auto& ref = set.next();
-        return std::make_unique<AstVariadicArgReference>(
+        result = std::make_unique<AstVariadicArgReference>(
             ref.get_source_fragment(),
             context
         );
     }
+    else
+    {
+        set.throw_error("Invalid token found in expression");
+    }
 
-    set.throw_error("Invalid token found in expression");
+    // Unified postfix operator loop:
+    // Handles `.member`, `[index]`, and `(args)` chaining on any primary expression.
+    // Builds a left-recursive tree so each step's base is the result of the previous step.
+    int recursion_depth = 0;
+    while (true)
+    {
+        if (is_member_accessor(set))
+        {
+            result = parse_chained_member_access(context, set, std::move(result));
+        }
+        else if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
+        {
+            result = parse_array_member_accessor(context, set, std::move(result));
+        }
+        else if (set.peek_next_eq(TokenType::LPAREN))
+        {
+            result = parse_indirect_call(context, set, std::move(result));
+        }
+        else
+        {
+            break;
+        }
+        if (++recursion_depth > MAX_RECURSION_DEPTH)
+        {
+            set.throw_error("Expression too complex");
+        }
+    }
+
+    return result;
 }
 
 /*
@@ -304,7 +318,7 @@ SymbolNameSegments stride::ast::parse_segmented_identifier(
     TokenSet& set,
     const std::string& error_message)
 {
-    std::vector<std::string> segments = {};
+    std::vector<std::string> segments;
 
     segments.push_back(set.expect(TokenType::IDENTIFIER, error_message).get_lexeme());
 

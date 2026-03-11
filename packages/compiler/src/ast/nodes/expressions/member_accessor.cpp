@@ -4,6 +4,7 @@
 #include "ast/parsing_context.h"
 #include "ast/nodes/enumerables.h"
 #include "ast/nodes/expression.h"
+#include "ast/nodes/blocks.h"
 #include "ast/tokens/token_set.h"
 
 #include <llvm/IR/IRBuilder.h>
@@ -11,160 +12,137 @@
 
 using namespace stride::ast;
 
-/// This parses both function call chaining, and struct member access
-/// e.g.,
-/// foo().bar.baz()
-/// or
-/// struct_var.member.member2 ...
-std::unique_ptr<IAstExpression> stride::ast::parse_chained_member_access(
+// ---------------------------------------------------------------------------
+// Parsing helpers
+// ---------------------------------------------------------------------------
+
+/// Checks whether the next two tokens begin a member access (`.identifier`).
+bool stride::ast::is_member_accessor(const TokenSet& set)
+{
+    return set.peek_eq(TokenType::DOT, 0)
+        && set.peek_eq(TokenType::IDENTIFIER, 1);
+}
+
+/// Consumes `.identifier` and wraps `lhs` in an AstChainedExpression.
+std::unique_ptr<AstChainedExpression> stride::ast::parse_chained_member_access(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    const std::unique_ptr<IAstExpression>& lhs
+    std::unique_ptr<IAstExpression> lhs
 )
 {
-    std::vector<std::unique_ptr<AstIdentifier>> chained_accessors = {};
+    set.expect(TokenType::DOT, "Expected '.' in member access");
+    const auto member_tok = set.expect(TokenType::IDENTIFIER, "Expected identifier after '.' in member access");
 
-    // Initial accessors
-    const auto reference_token = set.peek_next();
-
-    while (set.peek_next_eq(TokenType::DOT))
-    {
-        set.expect(TokenType::DOT, "Expected '.' after identifier in member access");
-
-        const auto accessor_iden_tok = set.expect(TokenType::IDENTIFIER,
-                                                  "Expected identifier after '.' in member access");
-
-        auto symbol = Symbol(accessor_iden_tok.get_source_fragment(),
-                             accessor_iden_tok.get_lexeme());
-
-        chained_accessors.push_back(std::make_unique<AstIdentifier>(context, symbol));
-    }
-
-    const auto lhs_source_pos = lhs->get_source_fragment();
-
-    // TODO: Allow function calls to be the last element as well.
-    auto lhs_identifier = cast_expr<AstIdentifier*>(lhs.get());
-    if (!lhs_identifier)
-    {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            "Member access base must be an identifier",
-            lhs_source_pos);
-    }
-
-    const auto last_source_pos = chained_accessors.back().get()->get_source_fragment();
-    const auto source_pos = SourceFragment::combine(lhs_source_pos, last_source_pos);
-
-    return std::make_unique<AstMemberAccessor>(
-        source_pos,
+    auto member_id = std::make_unique<AstIdentifier>(
         context,
-        lhs_identifier->clone_as<AstIdentifier>(),
-        std::move(chained_accessors)
+        Symbol(member_tok.get_source_fragment(), member_tok.get_lexeme())
+    );
+
+    const auto source = SourceFragment::combine(lhs->get_source_fragment(), member_tok.get_source_fragment());
+
+    return std::make_unique<AstChainedExpression>(
+        source,
+        context,
+        std::move(lhs),
+        std::move(member_id)
     );
 }
 
-std::vector<AstIdentifier*> AstMemberAccessor::get_members() const
+/// Consumes `(<args>)` and wraps `callee` in an AstIndirectCall.
+std::unique_ptr<AstIndirectCall> stride::ast::parse_indirect_call(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set,
+    std::unique_ptr<IAstExpression> callee
+)
 {
-    // We don't wanna transfer ownership to anyone else...
-    std::vector<AstIdentifier*> result;
-    result.reserve(this->_members.size());
-    std::ranges::transform(
-        this->_members,
-        std::back_inserter(result),
-        [](const std::unique_ptr<AstIdentifier>& member)
-        {
-            return member.get();
-        });
-    return result;
-}
+    const auto callee_src = callee->get_source_fragment();
+    auto param_block = collect_parenthesized_block(set);
 
-bool stride::ast::is_member_accessor(IAstExpression* lhs, const TokenSet& set)
-{
-    // We assume the expression and subsequent tokens are "member accessors"
-    // if the LHS is an identifier, and it's followed by `.<identifier>`
-    // E.g., `struct_var.member`
-    if (cast_expr<AstIdentifier*>(lhs))
+    ExpressionList args;
+    if (param_block.has_value())
     {
-        return set.peek_eq(TokenType::DOT, 0)
-            && set.peek_eq(TokenType::IDENTIFIER, 1);
+        auto subset = param_block.value();
+        if (subset.has_next())
+        {
+            args.push_back(parse_inline_expression(context, subset));
+            while (subset.has_next())
+            {
+                subset.expect(TokenType::COMMA, "Expected ',' between arguments");
+                args.push_back(parse_inline_expression(context, subset));
+            }
+        }
     }
-    return false;
+
+    const auto close_src = set.peek(-1).get_source_fragment();
+    const auto source = SourceFragment::combine(callee_src, close_src);
+
+    return std::make_unique<AstIndirectCall>(
+        source,
+        context,
+        std::move(callee),
+        std::move(args)
+    );
 }
 
-llvm::Value* AstMemberAccessor::codegen_global_member_accessor(
+// ---------------------------------------------------------------------------
+// AstChainedExpression
+// ---------------------------------------------------------------------------
+
+llvm::Value* AstChainedExpression::codegen_global_member_accessor(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 ) const
 {
     llvm::Value* base_val = this->_base->codegen(module, builder);
-    IAstType* cloned_base_type = this->_base->get_type();
-    std::string base_type_name = cloned_base_type->get_type_name();
+    IAstType* current_type = this->_base->get_type();
+    std::string current_struct_name = current_type->get_type_name();
 
-    // We look for a GlobalVariable with an initializer
     auto* global_var = llvm::dyn_cast_or_null<llvm::GlobalVariable>(base_val);
     if (!global_var || !global_var->hasInitializer())
     {
-        // If the base isn't a global with an initializer, we can't fold it.
         return nullptr;
     }
 
     llvm::Constant* current_const = global_var->getInitializer();
-    std::string current_struct_name = base_type_name;
 
-    for (const auto& accessor : this->_members)
+    const auto* member_id = cast_expr<AstIdentifier*>(this->_followup.get());
+    if (!member_id)
     {
-        auto struct_def_opt = this->get_context()->get_object_type(current_struct_name);
-        if (!struct_def_opt.has_value())
-            return nullptr;
+        return nullptr;
+    }
 
-        const auto struct_def = struct_def_opt.value();
+    auto struct_def_opt = this->get_context()->get_object_type(current_struct_name);
+    if (!struct_def_opt.has_value())
+        return nullptr;
 
-        const auto member_index = struct_def->get_member_field_index(accessor->get_name());
-        if (!member_index.has_value())
-        {
-            return nullptr;
-        }
+    const auto struct_def = struct_def_opt.value();
+    const auto member_index = struct_def->get_member_field_index(member_id->get_name());
+    if (!member_index.has_value())
+        return nullptr;
 
-        // Extract the constant field value
-        current_const = current_const->getAggregateElement(member_index.value());
-        if (!current_const)
-        {
-            // Index out of bounds or invalid aggregate
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                std::format("Invalid member access on constant '{}'", base_type_name),
-                this->get_source_fragment()
-            );
-        }
-
-        auto member_field_type = struct_def->get_member_field_type(accessor->get_name());
-        if (!member_field_type.has_value())
-        {
-            return nullptr;
-        }
-
-        cloned_base_type = member_field_type.value();
-        current_struct_name = cloned_base_type->get_type_name();
+    current_const = current_const->getAggregateElement(member_index.value());
+    if (!current_const)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Invalid member access on constant '{}'", current_struct_name),
+            this->get_source_fragment()
+        );
     }
 
     return current_const;
 }
 
-llvm::Value* AstMemberAccessor::codegen(
+llvm::Value* AstChainedExpression::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
-    // Global struct definitions have no insertion point, so we need to do
-    // constant folding here by looking up the global variable and its initializer.
     if (!builder->GetInsertBlock())
     {
         return codegen_global_member_accessor(module, builder);
     }
 
-    // Standard Code Generation (Function context)
-
-    // Will codegen identifier - reference to variable (getptr)
     llvm::Value* current_val = this->_base->codegen(module, builder);
     if (!current_val)
     {
@@ -172,191 +150,245 @@ llvm::Value* AstMemberAccessor::codegen(
     }
 
     const auto base_struct_type = get_object_type_from_type(this->_base->get_type());
-
-    // Base must be a struct for member access to be valid.
-    // This would be okay if there were on members, however, this should never happen
     if (!base_struct_type.has_value())
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
-            "Member access base must be a struct",
+            "Member access base must be a struct type",
+            this->get_source_fragment()
+        );
+    }
+
+    const auto* member_id = cast_expr<AstIdentifier*>(this->_followup.get());
+    if (!member_id)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Chained expression followup must be an identifier (member name)",
             this->get_source_fragment()
         );
     }
 
     IAstType* parent_type = base_struct_type.value();
-    std::string parent_struct_internalized_name = base_struct_type.value()->get_internalized_name();
-    std::string current_accessor_name = this->_base->get_name();
+    const std::string parent_struct_internalized_name = base_struct_type.value()->get_internalized_name();
 
-    // With opaque pointers, we need to know if we are operating on an address (L-value)
-    // or a loaded struct value (R-value). Pointers allow GEP, values require ExtractValue.
     const bool is_pointer_ty = current_val->getType()->isPointerTy();
 
-    for (const auto& accessor : this->_members)
+    auto parent_struct_type_opt = get_object_type_from_type(parent_type);
+    if (!parent_struct_type_opt.has_value())
     {
-        auto parent_struct_type_opt = get_object_type_from_type(parent_type);
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Cannot access member '{}' of non-struct type",
+                member_id->get_name()
+            ),
+            this->get_source_fragment()
+        );
+    }
 
-        // In next iteration, it's possible that the previous member produced a non-struct type,
-        // hence yielding a nullptr.
-        if (!parent_struct_type_opt.has_value())
+    const auto parent_struct_type = parent_struct_type_opt.value();
+    const std::string internalized_name = parent_struct_type->get_internalized_name();
+
+    const auto member_index = parent_struct_type->get_member_field_index(member_id->get_name());
+    if (!member_index.has_value())
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Cannot access member '{}' of object type '{}': member does not exist",
+                member_id->get_name(),
+                parent_struct_type->get_type_name()
+            ),
+            this->get_source_fragment()
+        );
+    }
+
+    if (is_pointer_ty)
+    {
+        llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(
+            module->getContext(),
+            internalized_name
+        );
+        if (!struct_llvm_type)
         {
             throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Cannot access member '{}' of non-struct type '{}'",
-                    accessor->get_name(),
-                    current_accessor_name
-                ),
+                ErrorType::COMPILATION_ERROR,
+                std::format("Object '{}' not registered internally", parent_struct_type->get_type_name()),
                 this->get_source_fragment()
             );
         }
 
-        const auto parent_struct_type = parent_struct_type_opt.value();
+        llvm::Value* member_ptr = builder->CreateStructGEP(
+            struct_llvm_type,
+            current_val,
+            member_index.value(),
+            "ptr_" + member_id->get_name()
+        );
 
-        parent_struct_internalized_name = parent_struct_type->get_internalized_name();
-
-        const auto member_index = parent_struct_type->get_member_field_index(accessor->get_name());
-
-        // Validate whether the previous struct contains the "member" field
-        if (!member_index.has_value())
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Cannot access member '{}' of object type '{}': member does not exist",
-                    accessor->get_name(),
-                    parent_struct_type->get_type_name()
-                ),
-                this->get_source_fragment()
-            );
-        }
-
-        if (is_pointer_ty)
-        {
-            // Get the LLVM type for the current struct to generate the GEP
-            llvm::StructType* struct_llvm_type = llvm::StructType::getTypeByName(
-                module->getContext(),
-                parent_struct_internalized_name
-            );
-            if (!struct_llvm_type)
-            {
-                throw parsing_error(
-                    ErrorType::COMPILATION_ERROR,
-                    std::format(
-                        "Object '{}' not registered internally",
-                        parent_struct_type->get_type_name()),
-                    this->get_source_fragment());
-            }
-
-            // Create the GEP (GetElementPtr) instruction: &current_ptr->member
-            current_val = builder->CreateStructGEP(
-                struct_llvm_type,
-                current_val,
-                member_index.value(),
-                "ptr_" + accessor->get_name()
-            );
-        }
-        else
-        {
-            // We have a direct value, extract the member: current_val.member
-            current_val = builder->CreateExtractValue(
-                current_val,
-                member_index.value(),
-                "val_" + accessor->get_name()
-            );
-        }
-
-        auto member_field_type = parent_struct_type->get_member_field_type(accessor->get_name());
+        auto member_field_type = parent_struct_type->get_member_field_type(member_id->get_name());
         if (!member_field_type.has_value())
         {
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format(
-                    "Unknown member type '{}' in object '{}'",
-                    accessor->get_name(),
-                    parent_struct_type->get_type_name()
-                ),
-                this->get_source_fragment());
+                std::format("Unknown member type '{}' in object '{}'",
+                    member_id->get_name(), parent_struct_type->get_type_name()),
+                this->get_source_fragment()
+            );
         }
 
-        parent_type = member_field_type.value();
+        llvm::Type* final_llvm_type = member_field_type.value()->get_llvm_type(module);
+        return builder->CreateLoad(final_llvm_type, member_ptr, "val_member_access");
     }
 
-    if (!parent_type)
-    {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            std::format(
-                "Invalid member access on non-struct type '{}'",
-                this->_base->get_type()->get_type_name()
-            ),
-            this->get_source_fragment());
-    }
+    // Value (not pointer) — use ExtractValue
+    llvm::Value* val = builder->CreateExtractValue(
+        current_val,
+        member_index.value(),
+        "val_" + member_id->get_name()
+    );
 
-    // if we were working with pointers, we need to load the final result
-    if (is_pointer_ty)
-    {
-        llvm::Type* final_llvm_type = parent_type->get_llvm_type(module);
-
-        return builder->CreateLoad(
-            final_llvm_type,
-            current_val,
-            "val_member_access"
-        );
-    }
-
-    // If we were working with values (ExtractValue), we already have the result.
-    return current_val;
+    return val;
 }
 
-std::unique_ptr<IAstNode> AstMemberAccessor::clone()
+std::unique_ptr<IAstNode> AstChainedExpression::clone()
 {
-    std::vector<std::unique_ptr<AstIdentifier>> members;
-    members.reserve(this->_members.size());
-
-    for (const auto& member : this->_members)
-    {
-        members.push_back(member->clone_as<AstIdentifier>());
-    }
-
-    return std::make_unique<AstMemberAccessor>(
+    return std::make_unique<AstChainedExpression>(
         this->get_source_fragment(),
         this->get_context(),
-        this->_base->clone_as<AstIdentifier>(),
-        std::move(members)
+        this->_base->clone_as<IAstExpression>(),
+        this->_followup->clone_as<IAstExpression>()
     );
 }
 
-void AstMemberAccessor::validate()
+void AstChainedExpression::validate()
 {
-    for (const auto& member : this->_members)
+    this->_base->validate();
+    this->_followup->validate();
+}
+
+std::string AstChainedExpression::to_string()
+{
+    return std::format(
+        "ChainedExpression(base: {}, followup: {})",
+        this->_base->to_string(),
+        this->_followup->to_string()
+    );
+}
+
+std::optional<std::unique_ptr<IAstNode>> AstChainedExpression::reduce()
+{
+    return std::nullopt;
+}
+
+bool AstChainedExpression::is_reducible()
+{
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// AstIndirectCall
+// ---------------------------------------------------------------------------
+
+llvm::Value* AstIndirectCall::codegen(
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder
+)
+{
+    llvm::Value* callee_val = this->_callee->codegen(module, builder);
+    if (!callee_val)
     {
-        member->validate();
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Indirect call: could not evaluate callee expression",
+            this->get_source_fragment()
+        );
+    }
+
+    // Derive the LLVM function type from the callee's AST type
+    auto callee_ast_type = this->_callee->get_type()->clone_ty();
+    if (auto* alias_ty = cast_type<AstAliasType*>(callee_ast_type.get()))
+    {
+        callee_ast_type = alias_ty->get_underlying_type()->clone_ty();
+    }
+
+    const auto* fn_type = dynamic_cast<AstFunctionType*>(callee_ast_type.get());
+    if (!fn_type)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Indirect call: callee expression does not have a function type",
+            this->get_source_fragment()
+        );
+    }
+
+    std::vector<llvm::Type*> llvm_param_types;
+    llvm_param_types.reserve(fn_type->get_parameter_types().size());
+    for (const auto& param : fn_type->get_parameter_types())
+    {
+        llvm_param_types.push_back(param->get_llvm_type(module));
+    }
+
+    llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
+        fn_type->get_return_type()->get_llvm_type(module),
+        llvm_param_types,
+        fn_type->is_variadic()
+    );
+
+    std::vector<llvm::Value*> args_v;
+    args_v.reserve(this->_args.size());
+    for (const auto& arg : this->_args)
+    {
+        llvm::Value* arg_val = arg->codegen(module, builder);
+        if (!arg_val)
+            return nullptr;
+        args_v.push_back(arg_val);
+    }
+
+    const auto instruction_name =
+        llvm_fn_type->getReturnType()->isVoidTy() ? "" : "indcalltmp";
+
+    return builder->CreateCall(llvm_fn_type, callee_val, args_v, instruction_name);
+}
+
+std::unique_ptr<IAstNode> AstIndirectCall::clone()
+{
+    ExpressionList cloned_args;
+    cloned_args.reserve(this->_args.size());
+    for (const auto& arg : this->_args)
+    {
+        cloned_args.push_back(arg->clone_as<IAstExpression>());
+    }
+
+    return std::make_unique<AstIndirectCall>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_callee->clone_as<IAstExpression>(),
+        std::move(cloned_args)
+    );
+}
+
+void AstIndirectCall::validate()
+{
+    this->_callee->validate();
+    for (const auto& arg : this->_args)
+    {
+        arg->validate();
     }
 }
 
-std::string AstMemberAccessor::to_string()
+std::string AstIndirectCall::to_string()
 {
-    std::vector<std::string> member_names;
-    member_names.reserve(this->_members.size());
-
-    for (const auto& member : this->_members)
+    std::vector<std::string> arg_strs;
+    arg_strs.reserve(this->_args.size());
+    for (const auto& arg : this->_args)
     {
-        member_names.push_back(member->get_name());
+        arg_strs.push_back(arg->to_string());
     }
 
     return std::format(
-        "MemberAccessor(base: {}, member: {})",
-        this->get_base()->to_string(),
-        join(member_names, ","));
-}
-
-std::optional<std::unique_ptr<IAstNode>> AstMemberAccessor::reduce()
-{
-    return std::nullopt; // Not yet reducible
-}
-
-bool AstMemberAccessor::is_reducible()
-{
-    return false;
+        "IndirectCall(callee: {}, args: [{}])",
+        this->_callee->to_string(),
+        join(arg_strs, ", ")
+    );
 }

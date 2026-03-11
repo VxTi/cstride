@@ -461,10 +461,10 @@ void collect_free_variables(
         return;
     }
 
-    // Handle member access
-    if (const auto* member = cast_expr<AstMemberAccessor*>(node))
+    // Handle chained member access
+    if (const auto* chained = cast_expr<AstChainedExpression*>(node))
     {
-        collect_free_variables(member->get_base(), lambda_context, outer_context, captures);
+        collect_free_variables(chained->get_base(), lambda_context, outer_context, captures);
         return;
     }
 
