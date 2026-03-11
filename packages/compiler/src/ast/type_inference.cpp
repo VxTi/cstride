@@ -411,7 +411,10 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
                     "Named type '{}' does not reference another type, cannot be used as array type",
                     alias_type->get_name()
                 ),
-                alias_type->get_source_fragment()
+                {
+                    ErrorSourceReference("Named type", alias_type->get_source_fragment()),
+                    ErrorSourceReference("Requires array type", accessor->get_array_identifier()->get_source_fragment())
+                }
             );
         }
 
@@ -426,7 +429,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
                 "Named type '{}' references a type that is not an array, cannot be used as array type",
                 alias_type->get_name()
             ),
-            alias_type->get_source_fragment()
+            accessor->get_array_identifier()->get_source_fragment()
         );
     }
 

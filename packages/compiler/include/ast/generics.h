@@ -41,7 +41,7 @@ namespace stride::ast
     );
 
     std::unique_ptr<AstObjectType> instantiate_generic_type(
-        AstObjectInitializer* object,
+        const AstObjectInitializer* object,
         AstObjectType* type,
         const definition::TypeDefinition* type_definition
     );

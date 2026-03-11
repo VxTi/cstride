@@ -5,28 +5,53 @@ import System::{
 
 type Array<T> = T[];
 
-type Vector<T> = {
-    x: T;
-    y: T;
-    z: T;
+type Vector<X, Y, Z> = {
+    x: X;
+    y: Y;
+    z: Z;
 };
 
-fn some_fn(vectors: Array<Vector<f32>>): void {
-    for (let i = 0; i < 3; i++) {
-        const vec = vectors[i];
-        IO::Print("Vector: [x: %f, y: %f, z: %f]\n", vec.x, vec.y, vec.z);
-    }
+type Nested = Vector<
+    Array<f64>,
+    Array<f32>,
+    Array<i32>
+>;
+
+fn some_fn(vec: Nested): void {
+    const x = vec.x;
+    const y = vec.y;
+    const z = vec.z;
+
+    IO::Print("Vector: [x: %f, y: %f, z: %f]\n", x[0], y[0], z[0]);
 }
 
 fn main(): i32 {
 
-    const x = 4 as f32;
+    const x = 4 as f64;
 
-    let vecArray: Vector<f32>[] = [
-        Vector<f32>::{ x, y: 2.0, z: 3.0 },
-        Vector<f32>::{ x: 4.0, y: 5.0, z: 6.0 },
-        Vector<f32>::{ x: 7.0, y: 8.0, z: 9.0 }
-    ];
+    let vecArray: Nested = Nested::{
+        x: [
+            Vector<f32>::{
+                x,
+                y: 2.0D,
+                z: 3.0D
+            }
+        ],
+        y: [
+            Vector<f32>::{
+                x: 4.0,
+                y: 5.0,
+                z: 6.0
+            }
+        ],
+        z: [
+            Vector<i32>::{
+                x: 1,
+                y: 2,
+                z: 3,
+            }
+        ]
+    };
 
     some_fn(vecArray);
 
