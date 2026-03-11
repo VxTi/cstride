@@ -234,14 +234,10 @@ namespace stride::ast
         std::unique_ptr<IAstNode> clone() override;
 
     private:
-        llvm::FunctionType* get_llvm_function_type(llvm::Module* module) const;
-
         llvm::FunctionType* get_llvm_function_type(
             llvm::Module* module,
             std::vector<llvm::Type*> captured_variables
         ) const;
-
-        std::optional<std::vector<llvm::Type*>> get_llvm_function_parameter_types(llvm::Module* module) const;
     };
 
     class AstFunctionDeclaration
