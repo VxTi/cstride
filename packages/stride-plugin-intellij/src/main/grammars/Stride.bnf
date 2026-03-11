@@ -15,7 +15,6 @@
   tokens=[
     FN='fn'
     NIL='nil'
-    STRUCT='struct'
     CONST='const'
     LET='let'
     CONTINUE='continue'
@@ -131,9 +130,9 @@ FunctionParameter ::= IDENTIFIER COLON Type
 TypeDefinition ::= KW_TYPE IDENTIFIER [GenericTypeArguments] EQ Type SEMICOLON
 
 // Ensure structs have at least 1 field
-StructDefinitionFields ::= StructField (SEMICOLON StructField)* [SEMICOLON]
+ObjectDefinitionFields ::= ObjectField+
 // field: i32
-StructField ::= IDENTIFIER COLON Type
+ObjectField ::= IDENTIFIER COLON Type SEMICOLON
 
 VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
 VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type [EQ Expression]
@@ -153,7 +152,7 @@ UserType ::= ScopedIdentifier [GenericTypeValueArguments] {
 
 TupleType ::= LPAREN Type (COMMA Type)* RPAREN
 
-private StructDefinitionBody ::= LBRACE [StructDefinitionFields] RBRACE
+private StructDefinitionBody ::= LBRACE [ObjectDefinitionFields] RBRACE
 
 GenericTypeArguments ::= LT IDENTIFIER (COMMA IDENTIFIER)* GT
 GenericTypeValueArguments ::= LT Type (COMMA Type)* GT
@@ -225,7 +224,7 @@ private MemberAccessor ::= DOT IDENTIFIER
 private MemberIndexing ::= LSQUARE_BRACKET Expression RSQUARE_BRACKET
 
 PrimaryExpression ::= LiteralExpression
-                     | StructInitialization
+                     | ObjectInitialization
                      | ParenthesizedExpression
                      | FunctionCallExpression
                      | ScopedIdentifier
@@ -244,14 +243,14 @@ FunctionCallExpression ::= ScopedIdentifier [LT Type (COMMA Type)* GT] LPAREN [A
 }
 
 LiteralExpression ::= NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL | CHAR_LITERAL | NIL
-// some::Struct { field1: value1, field2: value2 }
-StructInitialization ::= ScopedIdentifier [GenericTypeValueArguments] COLON_COLON LBRACE [StructInitFields] RBRACE {
+// some::Object { field1: value1, field2: value2 }
+ObjectInitialization ::= ScopedIdentifier [GenericTypeValueArguments] COLON_COLON LBRACE [ObjectInitFields] RBRACE {
   methods=[
     getScopedIdentifier
   ]
 }
-StructInitFields ::= StructInitField (COMMA StructInitField)* [COMMA]
-StructInitField ::= ScopedIdentifier COLON Expression {
+ObjectInitFields ::= ObjectInitField (COMMA ObjectInitField)* [COMMA]
+ObjectInitField ::= ScopedIdentifier [COLON Expression] {
   methods=[
     getScopedIdentifier
   ]

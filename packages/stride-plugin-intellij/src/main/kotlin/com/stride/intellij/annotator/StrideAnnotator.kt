@@ -13,7 +13,7 @@ class StrideAnnotator : Annotator, DumbAware {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         when (element) {
             is StrideFunctionCallExpression -> annotateFunctionCall(element, holder)
-            is StrideStructInitialization -> annotateStructInitialization(element, holder)
+            is StrideObjectInitialization -> annotateObjectInitialization(element, holder)
             is StrideUserType -> annotateUserType(element, holder)
             is StrideFunctionDeclaration -> annotateFunctionDeclaration(element, holder)
             is StrideExternFunctionDeclaration -> annotateExternFunctionDeclaration(element, holder)
@@ -62,10 +62,10 @@ class StrideAnnotator : Annotator, DumbAware {
         highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.FUNCTION_CALL)
     }
 
-    private fun annotateStructInitialization(init: StrideStructInitialization, holder: AnnotationHolder) {
+    private fun annotateObjectInitialization(init: StrideObjectInitialization, holder: AnnotationHolder) {
         // Highlight the type name in struct initialization (e.g., Test::{ ... })
         val scopedId = init.scopedIdentifier
-        highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.STRUCT_TYPE)
+        highlightIdentifiers(scopedId, holder, StrideSyntaxHighlighter.OBJECT_TYPE)
     }
 
     private fun annotateUserType(userType: StrideUserType, holder: AnnotationHolder) {

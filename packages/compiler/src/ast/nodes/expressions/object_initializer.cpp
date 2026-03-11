@@ -60,6 +60,17 @@ StructMemberInitializerPair parse_object_member_initializer(
 )
 {
     const auto member_iden = set.expect(TokenType::IDENTIFIER, "Expected identifier in struct initializer");
+
+    // Implicit reference to another variable with the same name as the member
+    if (!set.has_next() || set.peek_next_eq(TokenType::COMMA))
+    {
+        auto member_symbol = Symbol(
+            member_iden.get_source_fragment(),
+            member_iden.get_lexeme()
+        );
+        return { member_iden.get_lexeme(), std::make_unique<AstIdentifier>(context, member_symbol) };
+    }
+
     set.expect(TokenType::COLON, "Expected ':' after identifier in struct initializer");
 
     auto member_expr = parse_inline_expression(context, set);
@@ -103,7 +114,8 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
         {
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format("Named type '{}' does not reference another type, cannot be used as object type", alias_def->get_name()),
+                std::format("Named type '{}' does not reference another type, cannot be used as object type",
+                            alias_def->get_name()),
                 this->get_source_fragment()
             );
         }

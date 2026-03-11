@@ -133,11 +133,12 @@ std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
 std::string AstFunctionCall::format_function_name() const
 {
     std::vector<std::string> arg_types;
+
     arg_types.reserve(this->_arguments.size());
 
     for (const auto& arg : this->_arguments)
     {
-        arg_types.push_back(arg->get_type()->get_type_name());
+        arg_types.push_back(arg->get_type()->to_string());
     }
 
     if (arg_types.empty())

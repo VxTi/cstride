@@ -76,7 +76,7 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             .before(StrideTypes.COLON).spaceIf(false)
             // Specific comma rules must come before the general .after(COMMA) rule
             // because SpacingBuilder uses first-match semantics
-            .afterInside(StrideTypes.COMMA, StrideTypes.STRUCT_INIT_FIELDS).lineBreakInCode()
+            .afterInside(StrideTypes.COMMA, StrideTypes.OBJECT_INIT_FIELDS).lineBreakInCode()
 
             .after(StrideTypes.COMMA).spaceIf(true)
             .before(StrideTypes.COMMA).spaceIf(false)
@@ -91,18 +91,18 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             .beforeInside(StrideTypes.RBRACE, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
             .afterInside(StrideTypes.LBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
             .beforeInside(StrideTypes.RBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
-            .afterInside(StrideTypes.LBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
-            .beforeInside(StrideTypes.RBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
+            .afterInside(StrideTypes.LBRACE, StrideTypes.OBJECT_INITIALIZATION).lineBreakInCode()
+            .beforeInside(StrideTypes.RBRACE, StrideTypes.OBJECT_INITIALIZATION).lineBreakInCode()
 
             .afterInside(StrideTypes.SCOPED_IDENTIFIER, StrideTypes.MODULE_STATEMENT).spaceIf(true)
-            .afterInside(StrideTypes.COLON_COLON, StrideTypes.STRUCT_INITIALIZATION).spaceIf(false)
+            .afterInside(StrideTypes.COLON_COLON, StrideTypes.OBJECT_INITIALIZATION).spaceIf(false)
             .afterInside(StrideTypes.LPAREN, StrideTypes.IF).spaceIf(false)
             .afterInside(StrideTypes.LPAREN, StrideTypes.WHILE).spaceIf(false)
             .afterInside(StrideTypes.LPAREN, StrideTypes.FOR).spaceIf(false)
             .beforeInside(StrideTypes.LBRACE, StrideTypes.MODULE_STATEMENT).spaceIf(true)
             .beforeInside(StrideTypes.LBRACE, StrideTypes.BLOCK_STATEMENT).spaceIf(true)
             .beforeInside(StrideTypes.LBRACE, StrideTypes.TYPE).spaceIf(true)
-            .beforeInside(StrideTypes.LBRACE, StrideTypes.STRUCT_INITIALIZATION).spaceIf(false)
+            .beforeInside(StrideTypes.LBRACE, StrideTypes.OBJECT_INITIALIZATION).spaceIf(false)
 
             // Module items should be on separate lines
             .afterInside(StrideTypes.MODULE, StrideTypes.MODULE_STATEMENT).spaceIf(true)
@@ -116,9 +116,9 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             // Statements should be on separate lines - use STATEMENT wrapper
             .afterInside(StrideTypes.STATEMENT, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
 
-            .afterInside(StrideTypes.LBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
-            .beforeInside(StrideTypes.RBRACE, StrideTypes.STRUCT_INITIALIZATION).lineBreakInCode()
-            .beforeInside(StrideTypes.STRUCT_INIT_FIELD, StrideTypes.STRUCT_INIT_FIELDS).lineBreakInCode()
+            .afterInside(StrideTypes.LBRACE, StrideTypes.OBJECT_INITIALIZATION).lineBreakInCode()
+            .beforeInside(StrideTypes.RBRACE, StrideTypes.OBJECT_INITIALIZATION).lineBreakInCode()
+            .beforeInside(StrideTypes.OBJECT_INIT_FIELD, StrideTypes.OBJECT_INIT_FIELDS).lineBreakInCode()
 
             .between(StrideTypes.TYPE_DEFINITION, StrideTypes.TYPE_DEFINITION).blankLines(1)
             .between(StrideTypes.FUNCTION_DECLARATION, StrideTypes.FUNCTION_DECLARATION).blankLines(1)
