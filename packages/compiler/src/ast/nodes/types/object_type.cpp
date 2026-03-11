@@ -144,9 +144,10 @@ std::optional<int> AstObjectType::get_member_field_index(const std::string& fiel
 std::string AstObjectType::get_internalized_name()
 {
     std::string scoped_name = resolve_internal_name({ this->get_context()->get_name(), this->get_type_name() });
-    for (const auto& gen : this->_instantiated_generics)
+    
+    for (const auto& [name, type] : this->_members)
     {
-        scoped_name += "$" + gen->get_type_name();
+        scoped_name += "$" + type->get_type_name();
     }
 
     return scoped_name;
