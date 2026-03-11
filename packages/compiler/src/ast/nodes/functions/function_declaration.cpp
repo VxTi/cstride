@@ -878,7 +878,6 @@ void IAstFunction::resolve_forward_references(
     llvm::Function* created_fn = llvm::Function::Create(
         function_type,
         linkage,
-        0,
         llvm_function_name,
         module
     );

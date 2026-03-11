@@ -94,6 +94,30 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
 
         return this->_object_type->clone_as<AstObjectType>();
     }
+
+    if (auto* alias_def = cast_type<AstAliasType*>(type_def.value()->get_type()))
+    {
+        const auto underlying_type = alias_def->get_underlying_type();
+
+        if (!underlying_type.has_value())
+        {
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format("Named type '{}' does not reference another type, cannot be used as object type", alias_def->get_name()),
+                this->get_source_fragment()
+            );
+        }
+
+        if (auto* object_def = cast_type<AstObjectType*>(underlying_type.value().get()))
+        {
+            auto resolved_type = instantiate_generic_type(this, object_def, type_def.value());
+
+            this->_object_type = std::move(resolved_type);
+
+            return this->_object_type->clone_as<AstObjectType>();
+        }
+    }
+
     throw parsing_error(
         ErrorType::COMPILATION_ERROR,
         std::format("Type '{}' is not an object", this->_struct_name),
