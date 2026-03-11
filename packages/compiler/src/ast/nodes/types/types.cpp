@@ -52,138 +52,32 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     set.throw_error(error);
 }
 
-llvm::Type* stride::ast::type_to_llvm_type(
-    IAstType* type,
-    llvm::Module* module,
-    size_t recursion_guard
-)
+llvm::Type* IAstType::get_llvm_type(llvm::Module* module)
 {
-    if (!type)
-    {
-        return nullptr;
-    }
-    const auto context = type->get_context();
 
-    // Wrapping T -> Optional<T>
-    if (type->is_optional())
+    if (this->is_optional())
     {
-        const auto inner = type->clone_ty();
+        const auto non_optional = this->clone_ty();
+
         // Remove the optional flag so that it doesn't recursively enter this same scope
-        inner->set_flags(inner->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
-        llvm::Type* inner_type = type_to_llvm_type(inner.get(), module);
+        non_optional->set_flags(non_optional->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
+
+        llvm::Type* value_ty = non_optional->get_llvm_type(module);
 
         return llvm::StructType::get(
             module->getContext(),
             {
                 llvm::Type::getInt1Ty(module->getContext()), // has_value
-                inner_type                                   // value (T)
+                value_ty                                     // value (T)
             });
     }
 
-    if (type->is_pointer())
+    if (this->is_pointer())
     {
         return llvm::PointerType::get(module->getContext(), 0);
     }
 
-    if (const auto* array_ty = cast_type<AstArrayType*>(type))
-    {
-        llvm::Type* element_type = type_to_llvm_type(
-            array_ty->get_element_type(),
-            module
-        );
-
-        if (!element_type)
-        {
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                "Unable to resolve internal type for array element",
-                array_ty->get_source_fragment()
-            );
-        }
-
-        return llvm::ArrayType::get(element_type, array_ty->get_initial_length());
-    }
-
-    if (const auto* primitive_ty = cast_type<AstPrimitiveType*>(type))
-    {
-        switch (primitive_ty->get_primitive_type())
-        {
-        case PrimitiveType::INT8:
-        case PrimitiveType::UINT8:
-            return llvm::Type::getInt8Ty(module->getContext());
-        case PrimitiveType::INT16:
-        case PrimitiveType::UINT16:
-            return llvm::Type::getInt16Ty(module->getContext());
-        case PrimitiveType::INT32:
-        case PrimitiveType::UINT32:
-            return llvm::Type::getInt32Ty(module->getContext());
-        case PrimitiveType::INT64:
-        case PrimitiveType::UINT64:
-            return llvm::Type::getInt64Ty(module->getContext());
-        case PrimitiveType::FLOAT32:
-            return llvm::Type::getFloatTy(module->getContext());
-        case PrimitiveType::FLOAT64:
-            return llvm::Type::getDoubleTy(module->getContext());
-        case PrimitiveType::BOOL:
-            return llvm::Type::getInt1Ty(module->getContext());
-        case PrimitiveType::CHAR:
-            return llvm::Type::getInt8Ty(module->getContext());
-        case PrimitiveType::STRING:
-            return llvm::PointerType::get(module->getContext(), 0);
-        case PrimitiveType::VOID:
-        default:
-            return llvm::Type::getVoidTy(module->getContext());
-        }
-    }
-    if (const auto* named_ty = cast_type<AstAliasType*>(type))
-    {
-        const auto ref_type = named_ty->get_reference_type();
-        if (!ref_type.has_value())
-        {
-            throw parsing_error(
-                ErrorType::REFERENCE_ERROR,
-                std::format("Reference type '{}' not found", named_ty->get_name()),
-                named_ty->get_source_fragment()
-            );
-        }
-
-        if (++recursion_guard > MAX_RECURSION_DEPTH)
-        {
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                "Maximum recursion depth exceeded when resolving type",
-                named_ty->get_source_fragment()
-            );
-        }
-
-        return type_to_llvm_type(ref_type.value().get(), module, recursion_guard);
-    }
-
-    if (const auto* struct_type = cast_type<AstObjectType*>(type))
-    {
-        const auto& struct_name = struct_type->get_internalized_name();
-        llvm::StructType* struct_ty = llvm::StructType::getTypeByName(
-            module->getContext(),
-            struct_name
-        );
-        if (!struct_ty)
-        {
-            throw parsing_error(
-                ErrorType::REFERENCE_ERROR,
-                "Struct type not found",
-                struct_type->get_source_fragment()
-            );
-        }
-
-        return struct_ty;
-    }
-
-    if (cast_type<AstFunctionType*>(type))
-    {
-        return llvm::PointerType::get(module->getContext(), 0);
-    }
-
-    return nullptr;
+    return this->get_llvm_type_impl(module);
 }
 
 bool IAstType::is_assignable_to(IAstType* other)
@@ -403,7 +297,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     );
 }
 
-std::optional<AstObjectType*> stride::ast::get_struct_type_from_type(IAstType* type)
+std::optional<AstObjectType*> stride::ast::get_object_type_from_type(IAstType* type)
 {
     auto base_struct_type = cast_type<AstObjectType*>(type);
 

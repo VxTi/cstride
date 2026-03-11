@@ -64,7 +64,7 @@ llvm::Value* AstTypeCastOp::codegen(llvm::Module* module, llvm::IRBuilderBase* b
     }
 
     const auto value_ty = value->getType();
-    const auto target_ty = type_to_llvm_type(this->_target_type.get(), module);
+    const auto target_ty = this->_target_type->get_llvm_type(module);
 
     if (value_ty->isIntegerTy() && target_ty->isIntegerTy())
     {

@@ -117,9 +117,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
             this->get_source_fragment());
     }
 
-    llvm::Type* elem_llvm_ty = type_to_llvm_type(
-        array_ty->get_element_type(),
-        module);
+    llvm::Type* elem_llvm_ty = array_ty->get_element_type()->get_llvm_type(module);
 
     // Treat base_ptr as elem*
     llvm::Value* typed_base_ptr = builder->CreateBitCast(

@@ -785,7 +785,7 @@ llvm::FunctionType* IAstFunction::get_llvm_function_type(
     parameter_types.insert(parameter_types.end(), captured_variables.begin(), captured_variables.end());
     parameter_types.insert(parameter_types.end(), base_parameter_types->begin(), base_parameter_types->end());
 
-    const auto return_type = type_to_llvm_type(this->get_return_type(), module);
+    const auto return_type = this->get_return_type()->get_llvm_type(module);
     if (!return_type)
     {
         throw parsing_error(
@@ -803,19 +803,12 @@ llvm::FunctionType* IAstFunction::get_llvm_function_type(llvm::Module* module) c
     return this->get_llvm_function_type(module, {});
 }
 
-std::optional<std::vector<llvm::Type*>> IAstFunction::get_llvm_function_parameter_types(
-    llvm::Module* module
-) const
+std::optional<std::vector<llvm::Type*>> IAstFunction::get_llvm_function_parameter_types(llvm::Module* module) const
 {
     std::vector<llvm::Type*> param_types;
     for (const auto& param : this->_parameters)
     {
-        auto llvm_type = type_to_llvm_type(param->get_type(), module);
-        if (!llvm_type)
-        {
-            return std::nullopt;
-        }
-        param_types.push_back(llvm_type);
+        param_types.push_back(param->get_type()->get_llvm_type(module));
     }
     return param_types;
 }
@@ -909,7 +902,7 @@ void IAstFunction::resolve_forward_references(
     {
         if (const auto capture_def = this->get_context()->lookup_variable(capture.name, true))
         {
-            if (llvm::Type* capture_type = type_to_llvm_type(capture_def->get_type(), module))
+            if (llvm::Type* capture_type = capture_def->get_type()->get_llvm_type(module))
             {
                 captured_types.push_back(capture_type);
             }

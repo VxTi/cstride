@@ -172,10 +172,10 @@ llvm::Value* AstFunctionCall::codegen(
 
             for (const auto& param : fn_type->get_parameter_types())
             {
-                param_types.push_back(type_to_llvm_type(param.get(), module));
+                param_types.push_back(param->get_llvm_type(module));
             }
 
-            llvm::Type* ret_type = type_to_llvm_type(fn_type->get_return_type().get(), module);
+            llvm::Type* ret_type = fn_type->get_return_type()->get_llvm_type(module);
 
             // When propagating varargs (call has '...'), the callee receives the caller's
             // va_list as an extra fixed pointer argument rather than as true variadic args.
@@ -363,7 +363,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
             }
         }
 
-        if (const auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))
+        if (auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))
         {
             // First: check if the variable's internal name maps to a named function in the
             // symbol table with a matching type signature. If so, call it directly without
@@ -439,7 +439,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 }
             }
 
-            llvm::FunctionType* llvm_fn_type = fn_type->get_llvm_type(module);
+            auto* llvm_fn_type = llvm::cast<llvm::FunctionType>(fn_type->get_llvm_type(module));
 
             // Load the function pointer from the variable
             const auto fn_ptr = var_def->get_internal_symbol_name();
