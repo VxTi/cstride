@@ -266,6 +266,13 @@ bool AstAliasType::is_assignable_to_impl(IAstType* other)
     return false;
 }
 
+llvm::Type* AstAliasType::get_llvm_type_impl(llvm::Module* module)
+{
+    if (!this->_underlying_type) return nullptr;
+
+    return this->_underlying_type->get_llvm_type(module);
+}
+
 bool AstAliasType::equals(IAstType* other)
 {
     // Simple naming checks, e.g., "Vec3 == Vec3"

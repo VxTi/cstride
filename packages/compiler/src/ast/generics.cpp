@@ -103,9 +103,9 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         );
     }
 
-    if (const auto* struct_type = cast_type<AstObjectType*>(type))
+    if (const auto* object_type = cast_type<AstObjectType*>(type))
     {
-        const auto& members = struct_type->get_members();
+        const auto& members = object_type->get_members();
         ObjectTypeMemberList resolved_members;
         resolved_members.reserve(members.size());
 
@@ -118,18 +118,18 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         }
 
         GenericTypeList resolved_generics;
-        resolved_generics.reserve(struct_type->get_instantiated_generics().size());
-        for (const auto& gen : struct_type->get_instantiated_generics())
+        resolved_generics.reserve(object_type->get_instantiated_generics().size());
+        for (const auto& gen : object_type->get_instantiated_generics())
         {
             resolved_generics.push_back(resolve_generics(gen.get(), param_names, instantiated_types));
         }
 
         return std::make_unique<AstObjectType>(
-            struct_type->get_source_fragment(),
-            struct_type->get_context(),
+            object_type->get_source_fragment(),
+            object_type->get_context(),
             std::move(resolved_members),
-            struct_type->get_flags(),
-            struct_type->get_base_name(),
+            object_type->get_flags(),
+            object_type->get_base_name(),
             std::move(resolved_generics)
         );
     }

@@ -77,27 +77,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     return parse_type_metadata(std::move(fn_type), set, context_type_flags);
 }
 
-llvm::FunctionType* AstFunctionType::get_llvm_type(llvm::Module* module) const
-{
-    std::vector<llvm::Type*> param_types;
-    param_types.reserve(this->_parameters.size());
-
-    for (const auto& param : this->_parameters)
-    {
-        param_types.push_back(type_to_llvm_type(param.get(), module));
-    }
-
-    llvm::Type* ret_type = type_to_llvm_type(
-        this->_return_type.get(),
-        module
-    );
-    return llvm::FunctionType::get(
-        ret_type,
-        param_types,
-        false
-    );
-}
-
 std::unique_ptr<IAstNode> AstFunctionType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> parameters;
@@ -155,6 +134,24 @@ bool AstFunctionType::is_castable_to_impl(IAstType* other)
     }
 
     return false;
+}
+
+llvm::Type* AstFunctionType::get_llvm_type_impl(llvm::Module* module)
+{
+    std::vector<llvm::Type*> param_types;
+    param_types.reserve(this->_parameters.size());
+
+    for (const auto& param : this->_parameters)
+    {
+        param_types.push_back(param->get_llvm_type(module));
+    }
+
+    llvm::Type* ret_type = this->_return_type->get_llvm_type(module);
+    return llvm::FunctionType::get(
+        ret_type,
+        param_types,
+        false
+    );
 }
 
 std::string AstFunctionType::get_type_name()

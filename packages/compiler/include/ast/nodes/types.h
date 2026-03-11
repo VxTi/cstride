@@ -157,6 +157,8 @@ namespace stride::ast
             return nullptr;
         }
 
+        llvm::Type* get_llvm_type(llvm::Module* module);
+
     private:
         virtual bool is_assignable_to_impl(IAstType* other)
         {
@@ -167,6 +169,8 @@ namespace stride::ast
         {
             return false;
         }
+
+        virtual llvm::Type* get_llvm_type_impl(llvm::Module* module) = 0;
     };
 
     /// Types like int, float, char, etc.
@@ -245,6 +249,8 @@ namespace stride::ast
         bool is_assignable_to_impl(IAstType* other) override;
 
         bool is_castable_to_impl(IAstType* other) override;
+
+        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
     /// References to other types
@@ -321,6 +327,8 @@ namespace stride::ast
         bool is_assignable_to_impl(IAstType* other) override;
 
         bool is_castable_to_impl(IAstType* other) override;
+
+        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
     class AstFunctionType
@@ -354,9 +362,6 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        llvm::FunctionType* get_llvm_type(llvm::Module* module) const;
-
-        [[nodiscard]]
         std::unique_ptr<IAstNode> clone() override;
 
         std::string get_type_name() override;
@@ -381,6 +386,8 @@ namespace stride::ast
         }
 
         bool is_castable_to_impl(IAstType* other) override;
+
+        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
     class AstArrayType
@@ -443,6 +450,8 @@ namespace stride::ast
         bool is_assignable_to_impl(IAstType* other) override;
 
         bool is_castable_to_impl(IAstType* other) override;
+
+        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
     class AstObjectType
@@ -512,9 +521,8 @@ namespace stride::ast
         [[nodiscard]]
         std::string get_internalized_name() const;
 
-        void resolve_forward_references(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+    private:
+        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
     class AstTupleType
@@ -558,10 +566,6 @@ namespace stride::ast
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        void resolve_forward_references(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
-
     private:
         bool is_assignable_to_impl(IAstType* other) override
         {
@@ -572,6 +576,8 @@ namespace stride::ast
         {
             return false;
         }
+
+        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
     std::unique_ptr<IAstType> parse_type(
@@ -579,8 +585,6 @@ namespace stride::ast
         TokenSet& set,
         const std::string& error,
         int type_flags = SRFLAG_NONE);
-
-    llvm::Type* type_to_llvm_type(IAstType* type, llvm::Module* module, size_t recursion_guard = 0);
 
     std::unique_ptr<IAstType> get_dominant_field_type(IAstType* lhs, IAstType* rhs);
 
@@ -618,5 +622,5 @@ namespace stride::ast
     /// Will extract the struct type from a named type if possible, otherwise,
     /// will attempt to cast the type directly into a struct type.
     /// This function will never return nullptrs.
-    std::optional<AstObjectType*> get_struct_type_from_type(IAstType* type);
+    std::optional<AstObjectType*> get_object_type_from_type(IAstType* type);
 } // namespace stride::ast

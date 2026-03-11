@@ -173,13 +173,8 @@ std::string AstObjectType::get_internalized_name() const
     return std::format("struct${:x}", std::hash<std::string>{}(internalized_name));
 }
 
-void AstObjectType::resolve_forward_references(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
-)
+llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
 {
-    // Retrieve or Create the named struct type (Opaque)
-    // We check if it already exists to support forward declarations or multi-pass compilation.
     const auto internal_name = this->get_internalized_name();
     llvm::StructType* struct_type = llvm::StructType::getTypeByName(
         module->getContext(),
@@ -193,7 +188,7 @@ void AstObjectType::resolve_forward_references(
     // If the body is already defined, we stop here to avoid re-definition errors.
     if (!struct_type->isOpaque())
     {
-        return;
+        return struct_type;
     }
 
     std::vector<llvm::Type*> member_types;
@@ -202,7 +197,7 @@ void AstObjectType::resolve_forward_references(
     // Case: type Name { members... }
     for (const auto& [member_name, member_type] : this->get_members())
     {
-        llvm::Type* llvm_type = type_to_llvm_type(member_type.get(), module);
+        llvm::Type* llvm_type = member_type->get_llvm_type(module);
 
         if (!llvm_type)
         {
@@ -226,6 +221,8 @@ void AstObjectType::resolve_forward_references(
     // This finalizes the layout of the struct.
     // 'isPacked' is false by default unless you have specific packing rules.
     struct_type->setBody(member_types, /*isPacked=*/false);
+
+    return struct_type;
 }
 
 bool AstObjectType::equals(IAstType* other)

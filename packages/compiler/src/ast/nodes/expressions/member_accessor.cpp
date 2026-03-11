@@ -171,7 +171,7 @@ llvm::Value* AstMemberAccessor::codegen(
         return nullptr;
     }
 
-    const auto base_struct_type = get_struct_type_from_type(this->_base->get_type());
+    const auto base_struct_type = get_object_type_from_type(this->_base->get_type());
 
     // Base must be a struct for member access to be valid.
     // This would be okay if there were on members, however, this should never happen
@@ -194,7 +194,7 @@ llvm::Value* AstMemberAccessor::codegen(
 
     for (const auto& accessor : this->_members)
     {
-        auto parent_struct_type_opt = get_struct_type_from_type(parent_type);
+        auto parent_struct_type_opt = get_object_type_from_type(parent_type);
 
         // In next iteration, it's possible that the previous member produced a non-struct type,
         // hence yielding a nullptr.
@@ -296,7 +296,7 @@ llvm::Value* AstMemberAccessor::codegen(
     // if we were working with pointers, we need to load the final result
     if (is_pointer_ty)
     {
-        llvm::Type* final_llvm_type = type_to_llvm_type(parent_type, module);
+        llvm::Type* final_llvm_type = parent_type->get_llvm_type(module);
 
         return builder->CreateLoad(
             final_llvm_type,

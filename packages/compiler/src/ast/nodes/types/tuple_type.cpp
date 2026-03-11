@@ -3,6 +3,9 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Module.h>
+
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
@@ -65,9 +68,18 @@ llvm::Value* AstTupleType::codegen(llvm::Module* module, llvm::IRBuilderBase* bu
     return nullptr;
 }
 
-void AstTupleType::resolve_forward_references(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder) {}
+llvm::Type* AstTupleType::get_llvm_type_impl(llvm::Module* module)
+{
+    std::vector<llvm::Type*> member_llvm_types;
+    member_llvm_types.reserve(this->_members.size());
+
+    for (const auto& member : this->_members)
+    {
+        member_llvm_types.push_back(member->get_llvm_type(module));
+    }
+
+    return llvm::StructType::get(module->getContext(), member_llvm_types);
+}
 
 std::unique_ptr<IAstNode> AstTupleType::clone()
 {

@@ -61,10 +61,7 @@ llvm::Value* AstArray::codegen(
 
     if (const auto* array_type = cast_type<AstArrayType*>(resolved_type))
     {
-        llvm::Type* element_llvm_type = type_to_llvm_type(
-            array_type->get_element_type(),
-            module
-        );
+        llvm::Type* element_llvm_type = array_type->get_element_type()->get_llvm_type(module);
         concrete_array_type = llvm::ArrayType::get(
             element_llvm_type,
             this->get_elements().size()
@@ -74,7 +71,7 @@ llvm::Value* AstArray::codegen(
     {
         // Fallback: If we can't determine the type from the AST, try to verify
         // if the resolved LLVM type is already an array type.
-        if (llvm::Type* possible_type = type_to_llvm_type(resolved_type, module);
+        if (llvm::Type* possible_type = resolved_type->get_llvm_type(module);
             llvm::isa<llvm::ArrayType>(possible_type))
         {
             concrete_array_type = llvm::cast<llvm::ArrayType>(possible_type);

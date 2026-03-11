@@ -2,13 +2,14 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <llvm/IR/DerivedTypes.h>
+
 using namespace stride::ast;
 
 bool is_array_notation(const TokenSet& set)
 {
-    return set.peek_eq(TokenType::LSQUARE_BRACKET, 0) && set.peek_eq(
-        TokenType::RSQUARE_BRACKET,
-        1);
+    return set.peek_eq(TokenType::LSQUARE_BRACKET, 0)
+        && set.peek_eq(TokenType::RSQUARE_BRACKET, 1);
 }
 
 std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
@@ -111,6 +112,13 @@ bool AstArrayType::is_assignable_to_impl(IAstType* other)
     // If both are arrays, we can just simply check whether their element types are equal
     // This is handled in the `equals` case.
     return this->equals(other);
+}
+
+llvm::Type* AstArrayType::get_llvm_type_impl(llvm::Module* module)
+{
+    llvm::Type* element_type = this->get_element_type()->get_llvm_type(module);
+
+    return llvm::ArrayType::get(element_type, this->_initial_length);
 }
 
 bool AstArrayType::is_castable_to_impl(IAstType* other)

@@ -298,7 +298,7 @@ void AstVariableDeclaration::resolve_forward_references(
         ? this->get_annotated_type().value()
         : this->get_initial_value()->get_type();
 
-    llvm::Type* var_type = type_to_llvm_type(type, module);
+    llvm::Type* var_type = type->get_llvm_type(module);
     if (!var_type)
     {
         return;
@@ -442,10 +442,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     }
 
     // Get the LLVM type for the variable
-    llvm::Type* variable_ty = type_to_llvm_type(
-        type,
-        module
-    );
+    llvm::Type* variable_ty = type->get_llvm_type(module);
 
     if (variable_ty == nullptr)
     {

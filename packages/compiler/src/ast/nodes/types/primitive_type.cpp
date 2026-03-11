@@ -3,6 +3,9 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Module.h>
+
 using namespace stride::ast;
 
 size_t stride::ast::get_primitive_bit_count(const PrimitiveType type)
@@ -322,6 +325,38 @@ bool AstPrimitiveType::is_castable_to_impl(IAstType* other)
             is_fp());
     }
     return false;
+}
+
+llvm::Type* AstPrimitiveType::get_llvm_type_impl(llvm::Module* module)
+{
+    switch (this->_type)
+    {
+    case PrimitiveType::INT8:
+    case PrimitiveType::UINT8:
+        return llvm::Type::getInt8Ty(module->getContext());
+    case PrimitiveType::INT16:
+    case PrimitiveType::UINT16:
+        return llvm::Type::getInt16Ty(module->getContext());
+    case PrimitiveType::INT32:
+    case PrimitiveType::UINT32:
+        return llvm::Type::getInt32Ty(module->getContext());
+    case PrimitiveType::INT64:
+    case PrimitiveType::UINT64:
+        return llvm::Type::getInt64Ty(module->getContext());
+    case PrimitiveType::FLOAT32:
+        return llvm::Type::getFloatTy(module->getContext());
+    case PrimitiveType::FLOAT64:
+        return llvm::Type::getDoubleTy(module->getContext());
+    case PrimitiveType::BOOL:
+        return llvm::Type::getInt1Ty(module->getContext());
+    case PrimitiveType::CHAR:
+        return llvm::Type::getInt8Ty(module->getContext());
+    case PrimitiveType::STRING:
+        return llvm::PointerType::get(module->getContext(), 0);
+    case PrimitiveType::VOID:
+    default:
+        return llvm::Type::getVoidTy(module->getContext());
+    }
 }
 
 bool AstPrimitiveType::is_integer_ty() const
