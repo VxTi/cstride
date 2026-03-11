@@ -209,9 +209,9 @@ void AstObjectInitializer::validate()
     for (const auto& [field_name, initializer_expr] : this->_member_initializers)
     {
         initializer_expr->validate();
-        auto found_member = object_type->get_member_field_type(field_name);
+        auto member_type = object_type->get_member_field_type(field_name);
 
-        if (!found_member.has_value())
+        if (!member_type.has_value())
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
@@ -223,15 +223,15 @@ void AstObjectInitializer::validate()
                 this->get_source_fragment());
         }
 
-        if (!initializer_expr->get_type()->equals(found_member.value()))
+        if (!initializer_expr->get_type()->equals(member_type.value()))
         {
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Type mismatch for member '{}' in object initializer '{}': expected '{}', got '{}'",
                     field_name,
-                    this->_struct_name,
-                    found_member.value()->to_string(),
+                    this->get_type()->to_string(),
+                    member_type.value()->to_string(),
                     initializer_expr->get_type()->to_string()
                 ),
                 initializer_expr->get_source_fragment()
@@ -333,7 +333,7 @@ llvm::Value* AstObjectInitializer::codegen(
             current_struct_val,
             dynamic_members[i],
             { static_cast<unsigned int>(i) },
-            "struct.build"
+            "object.construct"
         );
     }
 
