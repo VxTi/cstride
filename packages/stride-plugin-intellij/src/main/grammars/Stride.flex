@@ -47,6 +47,7 @@ STRING_LITERAL=\"([^\\\"\r\n]|\\[^\r\n])*\"
   "break"            { return StrideTypes.BREAK; }
   "continue"         { return StrideTypes.CONTINUE; }
   "const"            { return StrideTypes.CONST; }
+  "enum"             { return StrideTypes.ENUM; }
   "type"             { return StrideTypes.KW_TYPE; }
   "let"              { return StrideTypes.LET; }
   "extern"           { return StrideTypes.EXTERN; }
