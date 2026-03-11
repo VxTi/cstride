@@ -439,7 +439,17 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 }
             }
 
-            auto* llvm_fn_type = llvm::cast<llvm::FunctionType>(fn_type->get_llvm_type(module));
+            const auto llvm_fn_type = llvm::dyn_cast<llvm::FunctionType>(fn_type->get_llvm_type(module));
+
+            if (!llvm_fn_type)
+            {
+                throw parsing_error(
+                    ErrorType::COMPILATION_ERROR,
+                    std::format("Invalid function type for anonymous function call '{}'",
+                                this->get_function_name()),
+                    this->get_source_fragment()
+                );
+            }
 
             // Load the function pointer from the variable
             const auto fn_ptr = var_def->get_internal_symbol_name();
@@ -470,7 +480,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 fn_ptr_val = module->getNamedGlobal(fn_ptr);
                 if (fn_ptr_val)
                 {
-                    auto* global = llvm::cast<llvm::GlobalVariable>(fn_ptr_val);
+                    auto* global = llvm::dyn_cast<llvm::GlobalVariable>(fn_ptr_val);
                     fn_ptr_val = builder->CreateLoad(
                         global->getValueType(),
                         global,

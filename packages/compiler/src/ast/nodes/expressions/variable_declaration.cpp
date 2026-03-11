@@ -380,7 +380,9 @@ void global_var_declaration_codegen(
             !is_optional_wrapped_type(dynamic_init_value->getType()))
         {
             if (llvm::Value* wrapped = wrap_optional_value(
-                dynamic_init_value, global_var->getValueType(), &tempBuilder))
+                dynamic_init_value,
+                global_var->getValueType(),
+                &tempBuilder))
             {
                 value_to_store = wrapped;
             }
@@ -482,9 +484,11 @@ llvm::Value* AstVariableDeclaration::codegen(
                 {
                     auto* struct_ty = llvm::cast<llvm::StructType>(variable_ty);
                     llvm::Constant* has_value_const = llvm::ConstantInt::get(
-                        llvm::Type::getInt1Ty(module->getContext()), OPT_HAS_VALUE);
+                        llvm::Type::getInt1Ty(module->getContext()),
+                        OPT_HAS_VALUE);
                     initializer = llvm::ConstantStruct::get(
-                        struct_ty, {has_value_const, constant});
+                        struct_ty,
+                        { has_value_const, constant });
                 }
 
                 global_var.value()->setInitializer(initializer);
@@ -518,10 +522,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     llvm::BasicBlock* saved_block = builder->GetInsertBlock();
     const auto saved_point = builder->GetInsertPoint();
 
-    llvm::Value* init_value = this->get_initial_value()->codegen(
-        module,
-        builder
-    );
+    llvm::Value* init_value = this->get_initial_value()->codegen(module, builder);
 
     // Restore the insertion point after codegen
     if (saved_block && saved_block != builder->GetInsertBlock())

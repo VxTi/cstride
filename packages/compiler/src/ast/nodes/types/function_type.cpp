@@ -150,7 +150,7 @@ llvm::Type* AstFunctionType::get_llvm_type_impl(llvm::Module* module)
     return llvm::FunctionType::get(
         ret_type,
         param_types,
-        false
+        this->is_variadic()
     );
 }
 
