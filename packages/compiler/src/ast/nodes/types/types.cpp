@@ -305,7 +305,21 @@ std::optional<AstObjectType*> stride::ast::get_object_type_from_type(IAstType* t
         return base_struct_type;
     }
 
-    // It might be a named type
+    // For alias types, resolve through get_underlying_type() which correctly applies
+    // generic substitution (e.g., Nested -> Vector<Array<f64>, Array<f32>, Array<i32>>
+    // resolves to AstObjectType with concrete member types, not raw X/Y/Z params).
+    if (auto* alias_type = cast_type<AstAliasType*>(type))
+    {
+        if (auto* resolved = alias_type->get_underlying_type_ptr())
+        {
+            if (auto* object_type = cast_type<AstObjectType*>(resolved))
+            {
+                return object_type;
+            }
+        }
+    }
+
+    // Fall back to raw struct type lookup
     base_struct_type = type->get_context()->get_struct_type(type->get_type_name())
                             .value_or(nullptr);
 

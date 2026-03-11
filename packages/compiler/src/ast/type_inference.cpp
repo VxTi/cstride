@@ -196,7 +196,7 @@ std::unique_ptr<IAstType> stride::ast::infer_object_member_accessor_type(const A
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Struct type '{}' not found in this scope",
+                "Object type '{}' not found in this scope",
                 variable_definition->get_type()->get_type_name()),
             member_accessor_expr->get_source_fragment());
     }
@@ -215,11 +215,13 @@ std::unique_ptr<IAstType> stride::ast::infer_object_member_accessor_type(const A
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Struct type '{}' in member '{}' not found in this scope",
-                    parent_type->get_type_name(),
-                    parent_name
+                    "Expected member '{}' in '{}' to be of type 'object', got '{}'",
+                    parent_name,
+                    member_accessor_expr->get_base()->get_type()->get_type_name(),
+                    parent_type->get_type_name()
                 ),
-                member_accessor_expr->get_source_fragment());
+                member_accessor_expr->get_source_fragment()
+            );
         }
 
         // Resolve the member identifier (e.g., 'b')

@@ -3,57 +3,32 @@ import System::{
     IO::Read
 };
 
-type Array<T> = T[];
-
-type Vector<X, Y, Z> = {
-    x: X;
-    y: Y;
-    z: Z;
+type Array<T> = {
+    length: i32;
+    data: T[];
 };
 
-type Nested = Vector<
-    Array<f64>,
-    Array<f32>,
-    Array<i32>
->;
+type SomeCar = {
+    make: string;
+    model: string;
+    year: i32;
+};
 
-fn some_fn(vec: Nested): void {
-    const x = vec.x;
-    const y = vec.y;
-    const z = vec.z;
+type SomePerson = {
+    name: string;
+    age: i32;
+    cars: Array<SomeCar>;
+};
 
-    IO::Print("Vector: [x: %f, y: %f, z: %f]\n", x[0], y[0], z[0]);
+fn make_car(make: string, model: string, year: i32): SomeCar {
+    return SomeCar::{ make, model, year };
 }
 
 fn main(): i32 {
 
-    const x = 4 as f64;
+    const my_car = make_car("Toyota", "Corolla", 2020);
 
-    let vecArray: Nested = Nested::{
-        x: [
-            Vector<f32>::{
-                x,
-                y: 2.0D,
-                z: 3.0D
-            }
-        ],
-        y: [
-            Vector<f32>::{
-                x: 4.0,
-                y: 5.0,
-                z: 6.0
-            }
-        ],
-        z: [
-            Vector<i32>::{
-                x: 1,
-                y: 2,
-                z: 3,
-            }
-        ]
-    };
-
-    some_fn(vecArray);
+    IO::Print("My car is a %s %s from %d", my_car.make, my_car.model, my_car.year);
 
     return 0;
 }

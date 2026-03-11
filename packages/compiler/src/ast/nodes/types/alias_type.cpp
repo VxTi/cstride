@@ -135,6 +135,15 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
     return std::move(type);
 }
 
+IAstType* AstAliasType::get_underlying_type_ptr()
+{
+    if (!this->_underlying_type)
+    {
+        get_underlying_type();
+    }
+    return this->_underlying_type.get();
+}
+
 std::optional<std::unique_ptr<IAstType>> AstAliasType::get_underlying_type()
 {
     // Prevent reinstantiating type if it's a complex type

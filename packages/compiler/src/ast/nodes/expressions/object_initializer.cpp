@@ -320,7 +320,36 @@ llvm::Value* AstObjectInitializer::codegen(
     // This resolves the "initializer type does not match" error for globals.
     if (all_constants)
     {
-        return llvm::ConstantStruct::get(struct_type, constant_members);
+        std::vector<llvm::Constant*> casted_constant_members;
+        casted_constant_members.reserve(constant_members.size());
+
+        for (size_t i = 0; i < constant_members.size(); ++i)
+        {
+            auto* member_val = constant_members[i];
+            auto* target_type = struct_type->getElementType(i);
+
+            if (member_val->getType() != target_type)
+            {
+                if (member_val->getType()->isPointerTy() && target_type->isPointerTy())
+                {
+                    casted_constant_members.push_back(llvm::ConstantExpr::getBitCast(member_val, target_type));
+                }
+                else
+                {
+                    // For non-pointers, if they are both structs but have different names, 
+                    // LLVM doesn't allow bitcast. However, they should have been the same.
+                    // If we reach here, we might need a more complex conversion or 
+                    // there's a deeper type mismatch.
+                    casted_constant_members.push_back(member_val);
+                }
+            }
+            else
+            {
+                casted_constant_members.push_back(member_val);
+            }
+        }
+
+        return llvm::ConstantStruct::get(struct_type, casted_constant_members);
     }
 
     // CASE B: Runtime Initialization (Function Body)
@@ -329,9 +358,24 @@ llvm::Value* AstObjectInitializer::codegen(
 
     for (size_t i = 0; i < dynamic_members.size(); ++i)
     {
+        auto* member_val = dynamic_members[i];
+        auto* target_type = struct_type->getElementType(i);
+
+        if (member_val->getType() != target_type)
+        {
+            if (member_val->getType()->isPointerTy() && target_type->isPointerTy())
+            {
+                member_val = builder->CreateBitCast(member_val, target_type);
+            }
+            // Note: We cannot bitcast between different struct types in LLVM if they are values.
+            // If they are structurally identical but have different names, we might need to 
+            // use a series of extractvalue/insertvalue or just bitcast the pointer if it was 
+            // behind a pointer. But here they are values.
+        }
+
         current_struct_val = builder->CreateInsertValue(
             current_struct_val,
-            dynamic_members[i],
+            member_val,
             { static_cast<unsigned int>(i) },
             "object.construct"
         );
