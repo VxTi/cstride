@@ -216,24 +216,24 @@ namespace stride::ast
     class AstArrayMemberAccessor
         : public IAstExpression
     {
-        std::unique_ptr<AstIdentifier> _array_identifier;
+        std::unique_ptr<IAstExpression> _array_base;
         std::unique_ptr<IAstExpression> _index_accessor_expr;
 
     public:
         explicit AstArrayMemberAccessor(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstIdentifier> array_identifier,
+            std::unique_ptr<IAstExpression> array_base,
             std::unique_ptr<IAstExpression> index_expr
         ) :
             IAstExpression(source, context),
-            _array_identifier(std::move(array_identifier)),
+            _array_base(std::move(array_base)),
             _index_accessor_expr(std::move(index_expr)) {}
 
         [[nodiscard]]
-        AstIdentifier* get_array_identifier() const
+        IAstExpression* get_array_base() const
         {
-            return this->_array_identifier.get();
+            return this->_array_base.get();
         }
 
         [[nodiscard]]
@@ -257,40 +257,36 @@ namespace stride::ast
         std::unique_ptr<IAstNode> clone() override;
     };
 
-    class AstMemberAccessor
+    /// Represents a chained postfix expression: base.member, where base is any expression
+    /// and followup is an AstIdentifier (the member name). Multi-step chains like a.b.c
+    /// are represented left-recursively: ChainedExpression(ChainedExpression(a, b), c).
+    class AstChainedExpression
         : public IAstExpression
     {
-        // When adding function chaining support,
-        // these types will have to be changed to IAstExpression
-        std::unique_ptr<AstIdentifier> _base;
-        std::vector<std::unique_ptr<AstIdentifier>> _members;
+        std::unique_ptr<IAstExpression> _base;
+        std::unique_ptr<IAstExpression> _followup; // always AstIdentifier at each leaf
 
     public:
-        explicit AstMemberAccessor(
+        explicit AstChainedExpression(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::unique_ptr<AstIdentifier> base,
-            std::vector<std::unique_ptr<AstIdentifier>> members
+            std::unique_ptr<IAstExpression> base,
+            std::unique_ptr<IAstExpression> followup
         ) :
             IAstExpression(source, context),
             _base(std::move(base)),
-            _members(std::move(members)) {}
+            _followup(std::move(followup)) {}
 
         [[nodiscard]]
-        AstIdentifier* get_base() const
+        IAstExpression* get_base() const
         {
             return this->_base.get();
         }
 
         [[nodiscard]]
-        std::vector<AstIdentifier*> get_members() const;
-
-        [[nodiscard]]
-        AstIdentifier* get_last_member() const
+        IAstExpression* get_followup() const
         {
-            return this->_members.empty()
-                ? nullptr
-                : this->_members.back().get();
+            return this->_followup.get();
         }
 
         llvm::Value* codegen(
@@ -313,6 +309,59 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) const;
+    };
+
+    /// Represents an indirect (expression-based) function call: expr(args).
+    /// Used when the callee is not a simple named identifier, e.g. arr[i]() or obj.fn().
+    class AstIndirectCall
+        : public IAstExpression
+    {
+        std::unique_ptr<IAstExpression> _callee;
+        ExpressionList _args;
+
+    public:
+        explicit AstIndirectCall(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context,
+            std::unique_ptr<IAstExpression> callee,
+            ExpressionList args
+        ) :
+            IAstExpression(source, context),
+            _callee(std::move(callee)),
+            _args(std::move(args)) {}
+
+        [[nodiscard]]
+        IAstExpression* get_callee() const
+        {
+            return this->_callee.get();
+        }
+
+        [[nodiscard]]
+        const ExpressionList& get_args() const
+        {
+            return this->_args;
+        }
+
+        llvm::Value* codegen(
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder
+        ) override;
+
+        std::string to_string() override;
+
+        bool is_reducible() override
+        {
+            return false;
+        }
+
+        std::optional<std::unique_ptr<IAstNode>> reduce() override
+        {
+            return std::nullopt;
+        }
+
+        std::unique_ptr<IAstNode> clone() override;
+
+        void validate() override;
     };
 
     class AstFunctionCall
@@ -953,11 +1002,11 @@ namespace stride::ast
         int min_precedence
     );
 
-    /// This parses both function call chaining, and struct member access
-    std::unique_ptr<IAstExpression> parse_chained_member_access(
+    /// Parses a single chained member access step: consumes `.identifier` and wraps lhs
+    std::unique_ptr<AstChainedExpression> parse_chained_member_access(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        const std::unique_ptr<IAstExpression>& lhs
+        std::unique_ptr<IAstExpression> lhs
     );
 
     /// Parses a unary operator expression
@@ -972,11 +1021,18 @@ namespace stride::ast
         TokenSet& set
     );
 
-    /// Parses an array member accessor expression, e.g., <array_identifier>[<index_expression>]
-    std::unique_ptr<IAstExpression> parse_array_member_accessor(
+    /// Parses an array subscript: consumes `[<index_expression>]` and wraps the base expression
+    std::unique_ptr<AstArrayMemberAccessor> parse_array_member_accessor(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
-        std::unique_ptr<AstIdentifier> array_identifier
+        std::unique_ptr<IAstExpression> array_base
+    );
+
+    /// Parses an indirect call: consumes `(<args>)` and wraps the callee expression
+    std::unique_ptr<AstIndirectCall> parse_indirect_call(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        std::unique_ptr<IAstExpression> callee
     );
 
     /// Parses a struct initializer expression into an AstObjectInitializer node
@@ -1037,7 +1093,6 @@ namespace stride::ast
     /// This is the case if an expression starts with `{ <member> }`
     bool is_struct_initializer(const TokenSet& set);
 
-    /// Checks whether the subsequent tokens might be member accessors
-    /// e.g., <identifier>.<accessor>
-    bool is_member_accessor(IAstExpression* lhs, const TokenSet& set);
+    /// Checks whether the next tokens begin a member access: `.identifier`
+    bool is_member_accessor(const TokenSet& set);
 } // namespace stride::ast

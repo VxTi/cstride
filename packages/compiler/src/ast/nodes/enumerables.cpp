@@ -5,7 +5,6 @@
 #include "ast/tokens/token_set.h"
 
 #include <format>
-#include <sstream>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -82,8 +81,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
 )
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_ENUM);
-    const auto enumerable_name_tok = set.expect(TokenType::IDENTIFIER);
-    auto enumerable_name = enumerable_name_tok.get_lexeme();
+    const auto enumerable_name = set.expect(TokenType::IDENTIFIER).get_lexeme();
 
     context->define_symbol(
         Symbol(reference_token.get_source_fragment(),
@@ -94,7 +92,7 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
 
     auto enum_body_subset = collect_block_required(set, "Expected a block in enum declaration");
 
-    std::vector<std::unique_ptr<AstEnumerableMember>> members = {};
+    std::vector<std::unique_ptr<AstEnumerableMember>> members;
 
     auto enum_definition_context = std::make_shared<ParsingContext>(
         context,
@@ -116,9 +114,9 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
 std::unique_ptr<IAstNode> AstEnumerable::clone()
 {
     std::vector<std::unique_ptr<AstEnumerableMember>> cloned_members;
-    cloned_members.reserve(this->get_members().size());
+    cloned_members.reserve(this->_members.size());
 
-    for (const auto& member : this->get_members())
+    for (const auto& member : this->_members)
     {
         cloned_members.push_back(member->clone_as<AstEnumerableMember>());
     }
@@ -149,20 +147,15 @@ std::string AstEnumerableMember::to_string()
 
 std::string AstEnumerable::to_string()
 {
-    std::ostringstream imploded;
+    std::vector<std::string> members;
 
-    if (this->get_members().empty())
+    for (const auto& member : this->get_members())
     {
-        return std::format("Enumerable {} (empty)", this->get_name());
+        members.push_back(member->to_string());
     }
 
-    imploded << this->get_members()[0]->to_string();
-    for (size_t i = 1; i < this->get_members().size(); ++i)
-    {
-        imploded << "\n  " << this->get_members()[i]->to_string();
-    }
-
-    return std::format("Enumerable {} (\n  {}\n)",
-                       this->get_name(),
-                       imploded.str());
+    return std::format(
+        "Enumerable {} (\n  {}\n)",
+        this->get_name(),
+        join(members, ",\n  "));
 }

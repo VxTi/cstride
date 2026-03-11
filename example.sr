@@ -41,15 +41,12 @@ fn main(): i32 {
         30,
         Array<SomeCar>::{
             length: 1,
-            data: [
-                make_car("Toyota", "Corolla", 2020)
-            ]
+            data: [make_car("Toyota", "Corolla", 2020)]
         }
     );
 
 
-    const my_cars = me.cars.data;
-    const my_car = my_cars[0];
+    const my_car = me.cars[0].data[0];
 
     io::print("I am %s, age %d\n", me.name, me.age);
     io::print("My car is a %s %s from %d", my_car.make, my_car.model, my_car.year);

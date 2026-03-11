@@ -161,101 +161,88 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(const AstArray* a
     return infer_expression_type(array->get_elements().front().get());
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_object_member_accessor_type(const AstMemberAccessor* member_accessor_expr)
+std::unique_ptr<IAstType> stride::ast::infer_chained_expression_type(const AstChainedExpression* chained_expr)
 {
-    // Base must be an identifier, e.g., <identifier>.<member1>...
-    const auto base_iden = cast_expr<AstIdentifier*>(member_accessor_expr->get_base());
-    if (!base_iden)
-    {
-        throw parsing_error(
-            ErrorType::TYPE_ERROR,
-            "Member access base must be an identifier",
-            member_accessor_expr->get_source_fragment());
-    }
+    // Infer the type of the base (left side)
+    auto base_type = infer_expression_type(chained_expr->get_base());
 
-    // ---- Look up the base variable in the symbol table/context
-    const auto variable_definition = member_accessor_expr->get_context()->lookup_variable(
-        base_iden->get_name(),
-        true);
-
-    if (!variable_definition)
-    {
-        throw parsing_error(
-            ErrorType::REFERENCE_ERROR,
-            std::format("Variable '{}' not found in scope", base_iden->get_name()),
-            member_accessor_expr->get_source_fragment()
-        );
-    }
-
-    // ---- Ensure parent (base) is a struct type
-    IAstType* parent_type = get_object_type_from_type(variable_definition->get_type()).
-        value_or(nullptr);
-
-    if (!parent_type)
+    // Resolve alias types to get the underlying struct type
+    IAstType* struct_type_raw = get_object_type_from_type(base_type.get()).value_or(nullptr);
+    if (!struct_type_raw)
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Object type '{}' not found in this scope",
-                variable_definition->get_type()->get_type_name()),
-            member_accessor_expr->get_source_fragment());
+                "Member access base must be a struct type, got '{}'",
+                base_type->get_type_name()
+            ),
+            chained_expr->get_source_fragment()
+        );
     }
 
-    std::string parent_name = variable_definition->get_symbol().name;
-
-    // Iterate through all member segments (e.g., .b, .c)
-    for (const auto& members = member_accessor_expr->get_members();
-         const auto member : members)
+    const auto* struct_type = dynamic_cast<AstObjectType*>(struct_type_raw);
+    if (!struct_type)
     {
-        auto struct_type = get_object_type_from_type(parent_type);
-
-        // It's possible that the previous iteration yielded a non-struct type, and thus being nullptr.
-        if (!struct_type.has_value())
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Expected member '{}' in '{}' to be of type 'object', got '{}'",
-                    parent_name,
-                    member_accessor_expr->get_base()->get_type()->get_type_name(),
-                    parent_type->get_type_name()
-                ),
-                member_accessor_expr->get_source_fragment()
-            );
-        }
-
-        // Resolve the member identifier (e.g., 'b')
-        // For now, members are already identifiers, though this might change in the future.
-
-        const auto member_identifier = cast_expr<AstIdentifier*>(member);
-        if (!member_identifier)
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                "Member accessor must be an identifier",
-                member_accessor_expr->get_source_fragment());
-        }
-
-        const auto field_type = struct_type.value()->get_member_field_type(
-            member_identifier->get_name());
-
-        if (!field_type.has_value())
-        {
-            throw parsing_error(
-                ErrorType::TYPE_ERROR,
-                std::format(
-                    "Field '{}' not found in struct",
-                    member_identifier->get_name()),
-                member_accessor_expr->get_source_fragment());
-        }
-
-        // Update current_type for the next iteration (or for the final return)
-        parent_type = field_type.value();
-        parent_name = member->get_name();
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format("Object type '{}' not found in scope", base_type->get_type_name()),
+            chained_expr->get_source_fragment()
+        );
     }
 
-    // Return the final inferred type
-    return parent_type->clone_ty();
+    // The followup must be an identifier (the member name)
+    const auto* member_id = cast_expr<AstIdentifier*>(chained_expr->get_followup());
+    if (!member_id)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            "Chained expression followup must be an identifier",
+            chained_expr->get_source_fragment()
+        );
+    }
+
+    const auto field_type = struct_type->get_member_field_type(member_id->get_name());
+    if (!field_type.has_value())
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format("Field '{}' not found in struct '{}'",
+                        member_id->get_name(),
+                        base_type->get_type_name()),
+            chained_expr->get_source_fragment()
+        );
+    }
+
+    return field_type.value()->clone_ty();
+}
+
+std::unique_ptr<IAstType> stride::ast::infer_indirect_call_type(const AstIndirectCall* call_expr)
+{
+    auto callee_type = infer_expression_type(call_expr->get_callee());
+
+    // Unwrap alias
+    IAstType* raw_type = callee_type.get();
+    std::unique_ptr<IAstType> unwrapped;
+    if (auto* alias = cast_type<AstAliasType*>(raw_type))
+    {
+        unwrapped = alias->get_underlying_type()->clone_ty();
+        raw_type = unwrapped.get();
+    }
+
+    const auto* fn_type = dynamic_cast<AstFunctionType*>(raw_type);
+    if (!fn_type)
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Cannot call expression of type '{}' as a function",
+                callee_type->get_type_name()
+            ),
+            call_expr->get_source_fragment()
+        );
+    }
+
+    return fn_type->get_return_type()->clone_ty();
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_object_initializer_type(const AstObjectInitializer* struct_initializer)
@@ -390,8 +377,8 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
     const AstArrayMemberAccessor* accessor,
     const int recursion_guard)
 {
-    // Infer the identifier's type. We must ensure it's an array type, and then we can return the member type.
-    const auto array_type = infer_expression_type(accessor->get_array_identifier(), recursion_guard);
+    // Infer the base expression's type. We must ensure it's an array type, and then we can return the element type.
+    const auto array_type = infer_expression_type(accessor->get_array_base(), recursion_guard);
 
     // If the immediate type is an array, we can simply return the member type
     if (const auto array = cast_type<AstArrayType*>(array_type.get()))
@@ -414,13 +401,15 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
                 "Named type '{}' references a type that is not an array, cannot be used as array type",
                 alias_type->get_name()
             ),
-            accessor->get_array_identifier()->get_source_fragment()
+            accessor->get_array_base()->get_source_fragment()
         );
     }
 
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
-        "Unable to resolve array member accessor type",
+        std::format("Expected array type for member accessor, got: '{}'",
+                    accessor->get_array_base()->get_type()->get_type_name()
+        ),
         accessor->get_source_fragment()
     );
 }
@@ -503,9 +492,14 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(IAstExpression* exp
         return infer_object_initializer_type(struct_init);
     }
 
-    if (const auto* member_accessor = cast_expr<AstMemberAccessor*>(expr))
+    if (const auto* chained = cast_expr<AstChainedExpression*>(expr))
     {
-        return infer_object_member_accessor_type(member_accessor);
+        return infer_chained_expression_type(chained);
+    }
+
+    if (const auto* indirect_call = cast_expr<AstIndirectCall*>(expr))
+    {
+        return infer_indirect_call_type(indirect_call);
     }
 
     if (const auto* function_definition = cast_expr<IAstFunction*>(expr))

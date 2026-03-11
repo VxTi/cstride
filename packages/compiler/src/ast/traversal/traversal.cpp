@@ -65,7 +65,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     }
     else if (const auto* array_accessor = dynamic_cast<AstArrayMemberAccessor*>(node))
     {
-        visit_expression(visitor, array_accessor->get_array_identifier());
+        visit_expression(visitor, array_accessor->get_array_base());
         visit_expression(visitor, array_accessor->get_index());
     }
     else if (const auto* struct_init = dynamic_cast<AstObjectInitializer*>(node))
@@ -82,10 +82,10 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     {
         visit_expression(visitor, reassign->get_value());
     }
-    else if (const auto* member_access = dynamic_cast<AstMemberAccessor*>(node))
+    else if (const auto* chained = dynamic_cast<AstChainedExpression*>(node))
     {
-        // Visit the base identifier so its type is resolved before the accessor's type is inferred.
-        visit_expression(visitor, member_access->get_base());
+        // Visit the base expression so its type is resolved before the accessor's type is inferred.
+        visit_expression(visitor, chained->get_base());
     }
     else if (auto* function_node = dynamic_cast<IAstFunction*>(node))
     {
