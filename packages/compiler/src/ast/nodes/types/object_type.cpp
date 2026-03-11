@@ -19,7 +19,7 @@ void parse_object_member(
 {
     const auto struct_member_name_tok = set.expect(
         TokenType::IDENTIFIER,
-        "Expected struct member name"
+        "Expected object member name"
     );
     const auto& struct_member_name = struct_member_name_tok.get_lexeme();
 
@@ -28,11 +28,11 @@ void parse_object_member(
     auto struct_member_type = parse_type(
         context,
         set,
-        "Expected a struct member type"
+        "Expected object member type"
     );
     const auto last_token = set.expect(
         TokenType::SEMICOLON,
-        "Expected ';' after struct member declaration"
+        "Expected ';' after object member declaration"
     );
 
     const auto& last_pos = last_token.get_source_fragment();
@@ -197,7 +197,7 @@ llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Unknown internal type '{}' for struct member '{}'",
+                    "Unknown internal type '{}' for object member '{}'",
                     member_type->get_type_name(),
                     member_name
                 ),

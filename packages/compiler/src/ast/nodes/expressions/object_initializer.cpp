@@ -54,7 +54,7 @@ bool stride::ast::is_struct_initializer(const TokenSet& set)
         && set.peek_eq(TokenType::LBRACE, i + 1);
 }
 
-StructMemberInitializerPair parse_struct_member_initializer(
+StructMemberInitializerPair parse_object_member_initializer(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
@@ -130,14 +130,14 @@ std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
     TokenSet& set
 )
 {
-    const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected struct name in struct initializer");
+    const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected object name in object initializer");
     auto generic_types = parse_generic_type_arguments(context, set);
-    set.expect(TokenType::DOUBLE_COLON, "Expected '::' after struct name in struct initializer");
+    set.expect(TokenType::DOUBLE_COLON, "Expected '::' after object name in initialization");
 
     std::vector<StructMemberInitializerPair> member_map;
-    auto member_set = collect_block_required(set, "Expected struct initializer body after '{'");
+    auto member_set = collect_block_required(set, "Expected object initializer body after '{'");
 
-    member_map.emplace_back(parse_struct_member_initializer(context, member_set));
+    member_map.emplace_back(parse_object_member_initializer(context, member_set));
 
     // TODO: Handle unnamed initialization, e.g., `SomeStruct::{ 1, 3, 3 }`
 
@@ -154,7 +154,7 @@ std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
         }
 
         auto [member_iden, member_expr] =
-            parse_struct_member_initializer(context, member_set);
+            parse_object_member_initializer(context, member_set);
         member_map.emplace_back(std::move(member_iden), std::move(member_expr));
     }
 
@@ -185,7 +185,7 @@ void AstObjectInitializer::validate()
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Too {} members found in struct '{}': expected {}, got {}",
+                "Too {} members found in object '{}': expected {}, got {}",
                 object_members.size() > this->_member_initializers.size() ? "few" : "many",
                 this->_struct_name,
                 object_members.size(),
@@ -204,7 +204,7 @@ void AstObjectInitializer::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Struct '{}' has no member named '{}'",
+                    "Object type '{}' has no member named '{}'",
                     this->_struct_name,
                     field_name
                 ),
@@ -216,7 +216,7 @@ void AstObjectInitializer::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Type mismatch for member '{}' in struct initializer '{}': expected '{}', got '{}'",
+                    "Type mismatch for member '{}' in object initializer '{}': expected '{}', got '{}'",
                     field_name,
                     this->_struct_name,
                     found_member.value()->to_string(),
@@ -241,7 +241,7 @@ void AstObjectInitializer::validate()
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Struct member order mismatch at index {}: expected '{}', got '{}'",
+                    "Object member order mismatch at index {}: expected '{}', got '{}'",
                     index,
                     field_name,
                     member_name

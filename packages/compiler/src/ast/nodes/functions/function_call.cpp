@@ -439,7 +439,20 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 }
             }
 
-            const auto llvm_fn_type = llvm::dyn_cast<llvm::FunctionType>(fn_type->get_llvm_type(module));
+            // AstFunctionType always sets SRFLAG_TYPE_PTR, so get_llvm_type() returns an opaque
+            // PointerType rather than the underlying FunctionType. We must reconstruct the
+            // llvm::FunctionType directly from the AST type's parameter/return types.
+            std::vector<llvm::Type*> llvm_param_types;
+            llvm_param_types.reserve(fn_type->get_parameter_types().size());
+            for (const auto& param : fn_type->get_parameter_types())
+            {
+                llvm_param_types.push_back(param->get_llvm_type(module));
+            }
+            llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
+                fn_type->get_return_type()->get_llvm_type(module),
+                llvm_param_types,
+                fn_type->is_variadic()
+            );
 
             if (!llvm_fn_type)
             {
