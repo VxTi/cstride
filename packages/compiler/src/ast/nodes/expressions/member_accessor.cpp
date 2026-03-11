@@ -223,7 +223,7 @@ llvm::Value* AstMemberAccessor::codegen(
             throw parsing_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
-                    "Cannot access member '{}' of struct '{}': member does not exist",
+                    "Cannot access member '{}' of object type '{}': member does not exist",
                     accessor->get_name(),
                     parent_struct_type->get_type_name()
                 ),
@@ -243,7 +243,7 @@ llvm::Value* AstMemberAccessor::codegen(
                 throw parsing_error(
                     ErrorType::COMPILATION_ERROR,
                     std::format(
-                        "Struct '{}' not registered internally",
+                        "Object '{}' not registered internally",
                         parent_struct_type->get_type_name()),
                     this->get_source_fragment());
             }
@@ -272,7 +272,7 @@ llvm::Value* AstMemberAccessor::codegen(
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format(
-                    "Unknown member type '{}' in struct '{}'",
+                    "Unknown member type '{}' in object '{}'",
                     accessor->get_name(),
                     parent_struct_type->get_type_name()
                 ),

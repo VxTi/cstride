@@ -501,10 +501,6 @@ namespace stride::ast
         [[nodiscard]]
         bool equals(IAstType* other) override;
 
-        bool is_castable_to(IAstType* other) override
-        {
-            return IAstType::is_castable_to(other);
-        }
 
         [[nodiscard]]
         std::unique_ptr<IAstNode> clone() override;
