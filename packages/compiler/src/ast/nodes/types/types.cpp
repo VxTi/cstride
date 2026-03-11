@@ -15,41 +15,40 @@ using namespace stride::ast;
 std::unique_ptr<IAstType> stride::ast::parse_type(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    const std::string& error,
-    const int type_flags
+    const TypeParsingOptions& options
 )
 {
-    if (auto primitive = parse_primitive_type_optional(context, set, type_flags);
+    if (auto primitive = parse_primitive_type_optional(context, set, options);
         primitive.has_value())
     {
         return std::move(primitive.value());
     }
 
-    if (auto named_type = parse_named_type_optional(context, set, type_flags);
+    if (auto named_type = parse_named_type_optional(context, set, options);
         named_type.has_value())
     {
         return std::move(named_type.value());
     }
 
-    if (auto function_type = parse_function_type_optional(context, set, type_flags);
+    if (auto function_type = parse_function_type_optional(context, set, options);
         function_type.has_value())
     {
         return std::move(function_type.value());
     }
 
-    if (auto tuple_type = parse_tuple_type_optional(context, set, type_flags);
+    if (auto tuple_type = parse_tuple_type_optional(context, set, options);
         tuple_type.has_value())
     {
         return std::move(tuple_type.value());
     }
 
-    if (auto struct_type = parse_object_type_optional(context, set, type_flags);
+    if (auto struct_type = parse_object_type_optional(context, set, options);
         struct_type.has_value())
     {
         return std::move(struct_type.value());
     }
 
-    set.throw_error(error);
+    set.throw_error(options.error_message);
 }
 
 llvm::Type* IAstType::get_llvm_type(llvm::Module* module)

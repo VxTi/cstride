@@ -17,7 +17,7 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_type_cast_op(
 
     set.next();
 
-    auto type = parse_type(context, set, "Expected type after 'as' in type cast operation");
+    auto type = parse_type(context, set, { "Expected type after 'as' in type cast operation" });
 
     const auto source_fragment = SourceFragment::combine(lhs->get_source_fragment(), type->get_source_fragment());
 
@@ -57,6 +57,7 @@ void AstTypeCastOp::validate()
 llvm::Value* AstTypeCastOp::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     const auto value = this->_value->codegen(module, builder);
+
     if (this->_value->get_type()->equals(this->_target_type.get()))
     {
         // No cast needed, return the original value.
@@ -82,6 +83,34 @@ llvm::Value* AstTypeCastOp::codegen(llvm::Module* module, llvm::IRBuilderBase* b
         }
 
         return value;
+    }
+
+    if (value_ty->isFloatingPointTy() && target_ty->isFloatingPointTy())
+    {
+        const auto value_width = value_ty->getPrimitiveSizeInBits();
+        const auto target_width = target_ty->getPrimitiveSizeInBits();
+
+        if (value_width < target_width)
+        {
+            return builder->CreateFPExt(value, target_ty);
+        }
+
+        if (value_width > target_width)
+        {
+            return builder->CreateFPTrunc(value, target_ty);
+        }
+
+        return value;
+    }
+
+    if (value_ty->isIntegerTy() && target_ty->isFloatingPointTy())
+    {
+        return builder->CreateSIToFP(value, target_ty);
+    }
+
+    if (value_ty->isFloatingPointTy() && target_ty->isIntegerTy())
+    {
+        return builder->CreateFPToSI(value, target_ty);
     }
 
     return builder->CreateBitCast(value, target_ty);

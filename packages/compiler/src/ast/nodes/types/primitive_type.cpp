@@ -97,20 +97,22 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type, const i
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    int context_type_flags
+    const TypeParsingOptions& options
 )
 {
+    int flags = options.flags;
+
     const auto reference_token = set.peek_next();
     const bool is_ptr = set.peek_next_eq(TokenType::STAR);
     const bool is_reference = set.peek_next_eq(TokenType::AMPERSAND);
 
     if (is_ptr)
     {
-        context_type_flags |= SRFLAG_TYPE_PTR;
+        flags |= SRFLAG_TYPE_PTR;
     }
     else if (is_reference)
     {
-        context_type_flags |= SRFLAG_TYPE_REFERENCE;
+        flags |= SRFLAG_TYPE_REFERENCE;
     }
 
     // If it has flags, we'll have to offset the next token peeking by one
@@ -126,7 +128,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT8,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -136,7 +138,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT16,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -146,7 +148,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT32,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -156,7 +158,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::INT64,
-            context_type_flags);
+            flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_UINT8:
@@ -165,7 +168,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT8,
-            context_type_flags);
+            flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_UINT16:
@@ -174,7 +178,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT16,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -184,7 +188,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT32,
-            context_type_flags);
+            flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_UINT64:
@@ -193,7 +198,8 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::UINT64,
-            context_type_flags);
+            flags
+        );
     }
     break;
     case TokenType::PRIMITIVE_FLOAT32:
@@ -202,7 +208,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::FLOAT32,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -212,7 +218,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::FLOAT64,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -222,7 +228,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::BOOL,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -232,7 +238,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::CHAR,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -242,7 +248,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::STRING,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -252,7 +258,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
             reference_token.get_source_fragment(),
             context,
             PrimitiveType::VOID,
-            context_type_flags
+            flags
         );
     }
     break;
@@ -268,13 +274,13 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     return parse_type_metadata(
         std::move(result.value()),
         set,
-        context_type_flags
+        flags
     );
 }
 
 bool AstPrimitiveType::equals(IAstType* other)
 {
-    if (const auto* other_primitive = dynamic_cast<const AstPrimitiveType*>(other))
+    if (const auto* other_primitive = cast_type<const AstPrimitiveType*>(other))
     {
         // If either types is optional, and the other is NIL, they're also "equal".
         const auto is_one_optional =
@@ -285,7 +291,7 @@ bool AstPrimitiveType::equals(IAstType* other)
             is_one_optional;
     }
 
-    if (auto* struct_type = dynamic_cast<AstAliasType*>(other))
+    if (auto* struct_type = cast_type<AstAliasType*>(other))
     {
         if (this->get_primitive_type() == PrimitiveType::NIL && struct_type->is_optional())
         {
@@ -300,7 +306,7 @@ bool AstPrimitiveType::equals(IAstType* other)
 
 bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
 {
-    if (const auto other_primitive = dynamic_cast<AstPrimitiveType*>(other))
+    if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
         // Check if both sides are integers or both sides are floating-point types
         if ((this->is_integer_ty() && other_primitive->is_integer_ty()) ||
@@ -319,10 +325,10 @@ bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
 // Casting can be done both ways - Low -> Hi, and Hi -> Low
 bool AstPrimitiveType::is_castable_to_impl(IAstType* other)
 {
-    if (const auto other_primitive = dynamic_cast<AstPrimitiveType*>(other))
+    if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
-        return (this->is_integer_ty() || this->is_fp()) && (other_primitive->is_integer_ty() || other_primitive->
-            is_fp());
+        return (this->is_integer_ty() || this->is_fp())
+            && (other_primitive->is_integer_ty() || other_primitive->is_fp());
     }
     return false;
 }

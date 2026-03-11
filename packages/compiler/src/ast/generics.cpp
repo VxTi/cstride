@@ -40,14 +40,14 @@ GenericTypeList stride::ast::parse_generic_type_arguments(const std::shared_ptr<
     {
         set.next();
         generic_params.push_back(
-            parse_type(context, set, "Expected generic parameter name")
+            parse_type(context, set, { "Expected generic parameter name" })
         );
 
         while (set.peek_next_eq(TokenType::COMMA))
         {
             set.next();
             generic_params.push_back(
-                parse_type(context, set, "Expected generic parameter name")
+                parse_type(context, set, { "Expected generic parameter name" })
             );
         }
 
@@ -103,7 +103,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         );
     }
 
-    if (const auto* object_type = cast_type<AstObjectType*>(type))
+    if (auto* object_type = cast_type<AstObjectType*>(type))
     {
         const auto& members = object_type->get_members();
         ObjectTypeMemberList resolved_members;
@@ -127,6 +127,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         return std::make_unique<AstObjectType>(
             object_type->get_source_fragment(),
             object_type->get_context(),
+            object_type->get_type_name(),
             std::move(resolved_members),
             object_type->get_flags(),
             std::move(resolved_generics)
@@ -247,6 +248,7 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
     return std::make_unique<AstObjectType>(
         type->get_source_fragment(),
         type->get_context(),
+        type->get_type_name(),
         std::move(resolved_members),
         type->get_flags(),
         std::move(resolved_args)

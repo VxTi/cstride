@@ -12,7 +12,16 @@ namespace stride
         {
             out += *i++;
             for (; i != e; ++i)
-                out.append(delimiter).append(*i);
+            {
+                if (!out.empty())
+                {
+                    out.append(delimiter).append(*i);
+                }
+                else
+                {
+                    out.append(*i);
+                }
+            }
         }
         return out;
     }
