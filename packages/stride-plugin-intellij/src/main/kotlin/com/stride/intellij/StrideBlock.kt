@@ -54,7 +54,7 @@ class StrideBlock(
             }
             // Struct definition fields (within TYPE that contains a struct body)
             parentType == StrideTypes.TYPE -> {
-                if (elementType == StrideTypes.STRUCT_DEFINITION_FIELDS) {
+                if (elementType == StrideTypes.OBJECT_DEFINITION_FIELDS) {
                     Indent.getNormalIndent()
                 } else if (elementType != StrideTypes.LBRACE && elementType != StrideTypes.RBRACE) {
                     Indent.getNoneIndent()
@@ -63,18 +63,18 @@ class StrideBlock(
                 }
             }
             // Individual struct fields
-            parentType == StrideTypes.STRUCT_DEFINITION_FIELDS -> {
+            parentType == StrideTypes.OBJECT_DEFINITION_FIELDS -> {
                 Indent.getNoneIndent()
             }
             // Struct initialization fields
-            parentType == StrideTypes.STRUCT_INITIALIZATION -> {
-                if (elementType == StrideTypes.STRUCT_INIT_FIELDS) {
+            parentType == StrideTypes.OBJECT_INITIALIZATION -> {
+                if (elementType == StrideTypes.OBJECT_INIT_FIELDS) {
                     Indent.getNormalIndent()
                 } else {
                     Indent.getNoneIndent()
                 }
             }
-            parentType == StrideTypes.STRUCT_INIT_FIELDS -> {
+            parentType == StrideTypes.OBJECT_INIT_FIELDS -> {
                 Indent.getNoneIndent()
             }
             else -> Indent.getNoneIndent()

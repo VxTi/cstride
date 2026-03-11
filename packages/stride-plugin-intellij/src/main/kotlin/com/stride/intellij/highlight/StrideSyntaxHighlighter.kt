@@ -25,7 +25,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
         val TYPE = createTextAttributesKey("STRIDE_TYPE", DefaultLanguageHighlighterColors.KEYWORD)
         val FUNCTION_CALL = createTextAttributesKey("STRIDE_FUNCTION_CALL", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
         val FUNCTION_DECLARATION = createTextAttributesKey("STRIDE_FUNCTION_DECLARATION", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
-        val STRUCT_TYPE = createTextAttributesKey("STRIDE_STRUCT_TYPE", DefaultLanguageHighlighterColors.STATIC_FIELD)
+        val OBJECT_TYPE = createTextAttributesKey("STRIDE_OBJECT_TYPE", DefaultLanguageHighlighterColors.STATIC_FIELD)
         val USER_TYPE = createTextAttributesKey("STRIDE_USER_TYPE", DefaultLanguageHighlighterColors.STATIC_FIELD)
         val IDENTIFIER = createTextAttributesKey("STRIDE_IDENTIFIER", DefaultLanguageHighlighterColors.IDENTIFIER)
         val FIELD_IDENTIFIER = createTextAttributesKey("STRIDE_FIELD_IDENTIFIER", DefaultLanguageHighlighterColors.INSTANCE_FIELD)
@@ -56,7 +56,7 @@ class StrideSyntaxHighlighter : SyntaxHighlighterBase() {
     override fun getTokenHighlights(tokenType: IElementType): Array<TextAttributesKey> {
         return when (tokenType) {
             StrideTypes.MODULE, StrideTypes.PACKAGE, StrideTypes.PUBLIC,
-            StrideTypes.FN, StrideTypes.STRUCT, StrideTypes.CONST,
+            StrideTypes.FN, StrideTypes.CONST,
             StrideTypes.BREAK, StrideTypes.CONTINUE, StrideTypes.IMPORT,
             StrideTypes.LET, StrideTypes.EXTERN, StrideTypes.AS,
             StrideTypes.RETURN, StrideTypes.FOR, StrideTypes.WHILE,
