@@ -268,7 +268,11 @@ bool AstAliasType::is_assignable_to_impl(IAstType* other)
 
 llvm::Type* AstAliasType::get_llvm_type_impl(llvm::Module* module)
 {
-    if (!this->_underlying_type) return nullptr;
+    if (!this->_underlying_type)
+    {
+        if (!this->get_underlying_type().has_value())
+            return nullptr;
+    }
 
     return this->_underlying_type->get_llvm_type(module);
 }

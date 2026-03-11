@@ -142,21 +142,6 @@ std::optional<int> AstObjectType::get_member_field_index(const std::string& fiel
 /// resulting in no LLVM duplication
 std::string AstObjectType::get_internalized_name() const
 {
-    if (!this->_base_name.empty())
-    {
-        if (this->_instantiated_generics.empty())
-        {
-            return this->_base_name;
-        }
-
-        std::string name = this->_base_name;
-        for (const auto& gen : this->_instantiated_generics)
-        {
-            name += "_" + gen->get_type_name();
-        }
-        return name;
-    }
-
     std::string internalized_name;
     for (const auto& type : this->_members | std::views::values)
     {
@@ -170,7 +155,13 @@ std::string AstObjectType::get_internalized_name() const
             internalized_name += "_" + type->get_type_name();
         }
     }
-    return std::format("struct${:x}", std::hash<std::string>{}(internalized_name));
+
+    for (const auto& gen : this->_instantiated_generics)
+    {
+        internalized_name += "$" + gen->get_type_name();
+    }
+
+    return std::format("object${:x}", std::hash<std::string>{}(internalized_name));
 }
 
 llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
@@ -292,7 +283,6 @@ std::unique_ptr<IAstNode> AstObjectType::clone()
         this->get_context(),
         std::move(cloned_members),
         this->get_flags(),
-        this->_base_name,
         std::move(cloned_generics)
     );
 }
