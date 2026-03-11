@@ -109,6 +109,75 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     );
 }
 
+std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set
+)
+{
+    const auto reference_token = set.peek_next();
+    std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
+
+    int function_flags = SRFLAG_FN_TYPE_ANONYMOUS;
+    auto function_context = std::make_shared<ParsingContext>(
+        context,
+        ContextType::FUNCTION
+    );
+
+    // Parses expressions like:
+    // (<param1>: <type1>, ...): <ret_type> -> {}
+    if (auto header_definition = collect_parenthesized_block(set);
+        header_definition.has_value() && header_definition->has_next())
+    {
+        parse_function_parameters(
+            function_context,
+            header_definition.value(),
+            parameters,
+            function_flags
+        );
+    }
+
+    set.expect(TokenType::COLON, "Expected ':' after lambda function header definition");
+    auto return_type = parse_type(
+        function_context,
+        set,
+        "Expected type after anonymous function header definition"
+    );
+    const auto lambda_arrow = set.expect(
+        TokenType::RARROW,
+        "Expected '->' after lambda parameters"
+    );
+
+    auto lambda_body = parse_block(function_context, set);
+
+    static int anonymous_lambda_id = 0;
+
+    auto symbol_name = Symbol(
+        { set.get_source(),
+          reference_token.get_source_fragment().offset,
+          lambda_arrow.get_source_fragment().offset -
+          reference_token.get_source_fragment().offset },
+        ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++)
+    );
+
+    std::vector<std::unique_ptr<IAstType>> cloned_params;
+    cloned_params.reserve(parameters.size());
+    for (auto& param : parameters)
+    {
+        cloned_params.push_back(param->get_type()->clone_ty());
+    }
+
+    return std::make_unique<AstLambdaFunctionExpression>(
+        function_context,
+        symbol_name,
+        std::move(parameters),
+        std::move(lambda_body),
+        std::move(return_type),
+        VisibilityModifier::PRIVATE,
+        // Anonymous functions are always private
+        function_flags
+    );
+}
+
 std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body)
 {
     if (!body)
@@ -586,13 +655,8 @@ llvm::Value* IAstFunction::codegen(
         }
     }
 
-    if (this->is_extern())
-    {
-        return function;
-    }
-
     // If the function body has already been generated (has basic blocks), just return the function pointer
-    if (!function->empty())
+    if (this->is_extern() || !function->empty())
     {
         return function;
     }
@@ -601,11 +665,11 @@ llvm::Value* IAstFunction::codegen(
     // This is important when generating nested lambdas
     llvm::BasicBlock* saved_insert_block = builder->GetInsertBlock();
     llvm::BasicBlock::iterator saved_insert_point;
-    bool has_insert_point = false;
+    const bool has_insert_point = saved_insert_block != nullptr;
+
     if (saved_insert_block)
     {
         saved_insert_point = builder->GetInsertPoint();
-        has_insert_point = true;
     }
 
     llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(
@@ -764,124 +828,6 @@ llvm::Value* IAstFunction::codegen(
     return function;
 }
 
-llvm::FunctionType* IAstFunction::get_llvm_function_type(
-    llvm::Module* module,
-    std::vector<llvm::Type*> captured_variables
-) const
-{
-    const auto& base_parameter_types = this->get_llvm_function_parameter_types(module);
-    if (!base_parameter_types.has_value())
-    {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            "Could not get LLVM function parameter types for function: " + this->get_function_name(),
-            this->get_source_fragment()
-        );
-    }
-    std::vector<llvm::Type*> parameter_types;
-    parameter_types.reserve(base_parameter_types->size() + captured_variables.size());
-
-    // Captured variables are first in the internal LLVM function type
-    parameter_types.insert(parameter_types.end(), captured_variables.begin(), captured_variables.end());
-    parameter_types.insert(parameter_types.end(), base_parameter_types->begin(), base_parameter_types->end());
-
-    const auto return_type = this->get_return_type()->get_llvm_type(module);
-    if (!return_type)
-    {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            "Could not get LLVM return type for function: " + this->get_function_name(),
-            this->get_source_fragment()
-        );
-    }
-
-    return llvm::FunctionType::get(return_type, parameter_types, this->is_variadic());
-}
-
-llvm::FunctionType* IAstFunction::get_llvm_function_type(llvm::Module* module) const
-{
-    return this->get_llvm_function_type(module, {});
-}
-
-std::optional<std::vector<llvm::Type*>> IAstFunction::get_llvm_function_parameter_types(llvm::Module* module) const
-{
-    std::vector<llvm::Type*> param_types;
-    for (const auto& param : this->_parameters)
-    {
-        param_types.push_back(param->get_type()->get_llvm_type(module));
-    }
-    return param_types;
-}
-
-std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
-{
-    const auto reference_token = set.peek_next();
-    std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
-
-    int function_flags = SRFLAG_FN_TYPE_ANONYMOUS;
-    auto function_context = std::make_shared<ParsingContext>(
-        context,
-        ContextType::FUNCTION
-    );
-
-    // Parses expressions like:
-    // (<param1>: <type1>, ...): <ret_type> -> {}
-    if (auto header_definition = collect_parenthesized_block(set);
-        header_definition.has_value() && header_definition->has_next())
-    {
-        parse_function_parameters(
-            function_context,
-            header_definition.value(),
-            parameters,
-            function_flags
-        );
-    }
-
-    set.expect(TokenType::COLON, "Expected ':' after lambda function header definition");
-    auto return_type = parse_type(
-        function_context,
-        set,
-        "Expected type after anonymous function header definition"
-    );
-    const auto lambda_arrow = set.expect(
-        TokenType::RARROW,
-        "Expected '->' after lambda parameters"
-    );
-
-    auto lambda_body = parse_block(function_context, set);
-
-    static int anonymous_lambda_id = 0;
-
-    auto symbol_name = Symbol(
-        { set.get_source(),
-          reference_token.get_source_fragment().offset,
-          lambda_arrow.get_source_fragment().offset -
-          reference_token.get_source_fragment().offset },
-        ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++)
-    );
-
-    std::vector<std::unique_ptr<IAstType>> cloned_params;
-    cloned_params.reserve(parameters.size());
-    for (auto& param : parameters)
-    {
-        cloned_params.push_back(param->get_type()->clone_ty());
-    }
-
-    return std::make_unique<AstLambdaFunctionExpression>(
-        function_context,
-        symbol_name,
-        std::move(parameters),
-        std::move(lambda_body),
-        std::move(return_type),
-        VisibilityModifier::PRIVATE,
-        // Anonymous functions are always private
-        function_flags
-    );
-}
-
 void IAstFunction::resolve_forward_references(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
@@ -890,11 +836,8 @@ void IAstFunction::resolve_forward_references(
     // Avoid re-registering if already declared.
     // Named functions are looked up by their scoped name; anonymous functions are
     // tracked by the cached _llvm_function pointer (they have no stable string name).
-    if (this->is_anonymous())
-    {
-        if (this->_llvm_function)
-            return;
-    }
+    if (this->is_anonymous() && this->_llvm_function)
+        return;
 
     // Add captured variables as first parameters
     std::vector<llvm::Type*> captured_types;
@@ -935,6 +878,7 @@ void IAstFunction::resolve_forward_references(
     llvm::Function* created_fn = llvm::Function::Create(
         function_type,
         linkage,
+        0,
         llvm_function_name,
         module
     );
@@ -945,7 +889,39 @@ void IAstFunction::resolve_forward_references(
         this->_llvm_function = created_fn;
     }
 
-    this->get_body()->resolve_forward_references(module, builder);
+    this->_body->resolve_forward_references(module, builder);
+}
+
+llvm::FunctionType* IAstFunction::get_llvm_function_type(
+    llvm::Module* module,
+    std::vector<llvm::Type*> captured_variables
+) const
+{
+    std::vector<llvm::Type*> base_parameter_types;
+    for (const auto& param : this->_parameters)
+    {
+        base_parameter_types.push_back(param->get_type()->get_llvm_type(module));
+    }
+
+    std::vector<llvm::Type*> parameter_types;
+    parameter_types.reserve(base_parameter_types.size() + captured_variables.size());
+
+    // Captured variables are first in the internal LLVM function type
+    parameter_types.insert(parameter_types.end(), captured_variables.begin(), captured_variables.end());
+    parameter_types.insert(parameter_types.end(), base_parameter_types.begin(), base_parameter_types.end());
+
+    const auto return_type = this->get_return_type()->get_llvm_type(module);
+
+    if (!return_type)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            "Could not get LLVM return type for function: " + this->get_function_name(),
+            this->get_source_fragment()
+        );
+    }
+
+    return llvm::FunctionType::get(return_type, parameter_types, this->is_variadic());
 }
 
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()
