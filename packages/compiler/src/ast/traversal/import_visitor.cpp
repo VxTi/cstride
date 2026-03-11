@@ -80,9 +80,18 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                     );
                 }
 
+                if (definition.value()->get_visibility() != VisibilityModifier::PUBLIC)
+                {
+                    throw parsing_error(
+                        ErrorType::REFERENCE_ERROR,
+                        std::format("Variable or function '{}' is not public", import_name),
+                        node->get_source_fragment()
+                    );
+                }
+
                 // Define only if not yet present
-                if (node->get_context()->get_definition_by_internal_name(definition.value()->get_internal_symbol_name()) ==
-                    std::nullopt)
+                if (node->get_context()->get_definition_by_internal_name(definition.value()->get_internal_symbol_name())
+                    == std::nullopt)
                 {
                     node->get_context()->define(std::move(definition.value()));
                 }

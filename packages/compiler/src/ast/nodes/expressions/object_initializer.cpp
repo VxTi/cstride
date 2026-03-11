@@ -265,23 +265,8 @@ llvm::Value* AstObjectInitializer::codegen(
 
     // Retrieve the exist named struct type
     const auto object_type = this->get_instantiated_object_type();
-    const auto& actual_struct_name = object_type->get_internalized_name();
 
-    llvm::StructType* struct_type = llvm::StructType::getTypeByName(
-        module->getContext(),
-        actual_struct_name
-    );
-
-    if (!struct_type)
-    {
-        // If it's not found by name, it might not have been resolved yet.
-        // We can try to resolve it now.
-        object_type->resolve_forward_references(module, builder);
-        struct_type = llvm::StructType::getTypeByName(
-            module->getContext(),
-            actual_struct_name
-        );
-    }
+    auto* struct_type = llvm::cast<llvm::StructType>(object_type->get_llvm_type(module));
 
     if (!struct_type)
     {

@@ -458,7 +458,6 @@ namespace stride::ast
         : public IAstType
     {
         ObjectTypeMemberList _members;
-        std::string _base_name;
         GenericTypeList _instantiated_generics;
 
     public:
@@ -467,19 +466,11 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             ObjectTypeMemberList members,
             const int flags = SRFLAG_NONE,
-            std::string base_name = "",
             GenericTypeList instantiated_generics = {}
         ) :
             IAstType(source, context, flags),
             _members(std::move(members)),
-            _base_name(std::move(base_name)),
             _instantiated_generics(std::move(instantiated_generics)) {}
-
-        [[nodiscard]]
-        std::string get_base_name() const
-        {
-            return _base_name;
-        }
 
         [[nodiscard]]
         const GenericTypeList& get_instantiated_generics() const

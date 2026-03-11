@@ -97,14 +97,8 @@ llvm::Value* AstArrayMemberAccessor::codegen(
         }
     }
 
-    llvm::Value* base_ptr = this->_array_identifier->codegen(
-        module,
-        builder
-    );
-    llvm::Value* index_val = this->_index_accessor_expr->codegen(
-        module,
-        builder
-    );
+    llvm::Value* base_ptr = this->_array_identifier->codegen(module, builder);
+    llvm::Value* index_val = this->_index_accessor_expr->codegen(module, builder);
 
     // Element type, not the array type.
     // Assumes `array_iden_type` is something like "T[]" and has an element type you can extract.

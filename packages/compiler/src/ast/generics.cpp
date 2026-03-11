@@ -129,7 +129,6 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
             object_type->get_context(),
             std::move(resolved_members),
             object_type->get_flags(),
-            object_type->get_base_name(),
             std::move(resolved_generics)
         );
     }
@@ -250,7 +249,6 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
         type->get_context(),
         std::move(resolved_members),
         type->get_flags(),
-        type_definition->get_symbol().name,
         std::move(resolved_args)
     );
 }
