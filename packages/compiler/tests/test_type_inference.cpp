@@ -428,7 +428,7 @@ TEST_F(TypeInferenceTest, InferStructAndMemberAccess)
     std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> members;
     members.emplace_back("x", std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::INT32));
     members.emplace_back("y", std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::FLOAT32));
-    auto struct_ty = std::make_unique<AstObjectType>(dummy_sf(), context, std::move(members));
+    auto struct_ty = std::make_unique<AstObjectType>(dummy_sf(), context, "Point", std::move(members));
 
     context->define_type(dummy_sym("Point"), std::move(struct_ty), {}, VisibilityModifier::PUBLIC);
 
