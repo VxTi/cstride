@@ -106,7 +106,9 @@
   ]
 }
 
-StrideFile ::= [PackageStatement] ImportStatement* StandaloneItem*
+StrideFile ::= [FileHeader] StandaloneItem*
+
+FileHeader ::= (PackageStatement ImportStatement*) | ImportStatement+
 
 private StandaloneItem ::= (
     FunctionDeclaration
@@ -119,7 +121,7 @@ private StandaloneItem ::= (
 )
 
 // import some::package::{ module::TypeA, TypeB, function_c};
-ImportStatement ::= IMPORT ScopedIdentifier COLON_COLON LBRACE ScopedIdentifier (COMMA ScopedIdentifier)* RBRACE SEMICOLON
+ImportStatement ::= IMPORT ScopedIdentifier COLON_COLON LBRACE ScopedIdentifier (COMMA ScopedIdentifier)* [COMMA /* trailing */] RBRACE SEMICOLON
 
 // --- Declarations ---
 ExternFunctionDeclaration ::= [VisibilityModifier] [ASYNC] EXTERN FunctionDeclarationHeader SEMICOLON
@@ -131,7 +133,8 @@ FunctionParameter ::= IDENTIFIER COLON Type
 
 TypeDefinition ::= [VisibilityModifier] KW_TYPE IDENTIFIER [GenericTypeArguments] EQ Type SEMICOLON
 
-EnumDefinition ::= ENUM IDENTIFIER LBRACE EnumMember (COMMA EnumMember)* [COMMA /* trailing */] RBRACE
+EnumDefinition ::= ENUM IDENTIFIER EnumBody
+EnumBody ::= LBRACE EnumMember (COMMA EnumMember)* [COMMA /* trailing */] RBRACE
 
 EnumMember ::= IDENTIFIER | (IDENTIFIER EQ Expression)
 
