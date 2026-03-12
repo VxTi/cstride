@@ -111,6 +111,10 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
     );
 }
 
+void AstEnumerable::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
+{
+}
+
 std::unique_ptr<IAstNode> AstEnumerable::clone()
 {
     std::vector<std::unique_ptr<AstEnumerableMember>> cloned_members;

@@ -54,9 +54,9 @@ fn main(): i32 {
     io::print("I am %s, age %d\n", me.name, me.age);
     io::print("My car is a %s %s from %d", my_car.make, my_car.model, my_car.year);
 
-    // const some_enum_val: SomeEnum = SomeEnum::Variant2;
+    const some_enum_val: SomeEnum = SomeEnum::Variant2;
 
-//     io::print("The value of some_enum_val is: %d", some_enum_val);
+    io::print("The value of some_enum_val is: %d", some_enum_val);
 
     return 0;
 }
