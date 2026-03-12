@@ -139,7 +139,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         return std::make_unique<AstObjectType>(
             object_type->get_source_fragment(),
             object_type->get_context(),
-            object_type->get_type_name(),
+            object_type->get_base_name(),
             std::move(resolved_members),
             object_type->get_flags(),
             std::move(resolved_generics)
@@ -260,7 +260,7 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
     return std::make_unique<AstObjectType>(
         type->get_source_fragment(),
         type->get_context(),
-        type->get_type_name(),
+        type->get_base_name(),
         std::move(resolved_members),
         type->get_flags(),
         std::move(resolved_args)

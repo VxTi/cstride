@@ -7,6 +7,7 @@
 
 #include <format>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -156,6 +157,7 @@ llvm::Value* AstReturnStatement::codegen(
                 }
                 else
                 {
+                    module->print(llvm::errs(), nullptr);
                     throw parsing_error(
                         ErrorType::COMPILATION_ERROR,
                         "Cannot cast return value to function return type",

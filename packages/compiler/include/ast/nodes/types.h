@@ -283,20 +283,7 @@ namespace stride::ast
         [[nodiscard]]
         std::unique_ptr<IAstNode> clone() override;
 
-        std::string get_type_name() override
-        {
-            if (!this->_generic_types.empty())
-            {
-                std::vector<std::string> generic_names;
-                for (const auto& generic : this->_generic_types)
-                {
-                    generic_names.push_back(generic->get_type_name());
-                }
-
-                return std::format("{}<{}>", this->_name, join(generic_names, ", "));
-            }
-            return this->_name;
-        }
+        std::string get_type_name() override;
 
         std::string to_string() override;
 
@@ -488,31 +475,22 @@ namespace stride::ast
             _instantiated_generics(std::move(instantiated_generics)),
             _type_name(std::move(type_name)) {}
 
-        [[nodiscard]]
-        const GenericTypeList& get_instantiated_generics() const
-        {
-            return _instantiated_generics;
-        }
+        [[nodiscard]] const GenericTypeList& get_instantiated_generics() const;
 
-        [[nodiscard]]
-        ObjectTypeMemberList get_members() const;
+        [[nodiscard]] ObjectTypeMemberList get_members() const;
 
-        [[nodiscard]]
-        std::optional<IAstType*> get_member_field_type(const std::string& field_name) const;
+        [[nodiscard]] std::optional<IAstType*> get_member_field_type(const std::string& field_name) const;
 
-        [[nodiscard]]
-        std::optional<int> get_member_field_index(const std::string& field_name) const;
+        [[nodiscard]] std::optional<int> get_member_field_index(const std::string& field_name) const;
 
-        [[nodiscard]]
-        std::string get_type_name() override
+        [[nodiscard]] const std::string& get_base_name() const
         {
             return this->_type_name;
         }
 
-        std::string to_string() override
-        {
-            return this->get_type_name();
-        }
+        [[nodiscard]] std::string get_type_name() override;
+
+        std::string to_string() override;
 
         [[nodiscard]]
         bool equals(IAstType* other) override;

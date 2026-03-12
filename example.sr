@@ -36,7 +36,7 @@ fn main(): i32 {
     const me = make_person(
         "Alice",
         30,
-        Array<i32>::{ length: 1, data: [my_car] }
+        Array<i32>::{ length: 1, data: [123] }
     );
 
 
