@@ -86,6 +86,8 @@ namespace stride::ast
         }
 
         std::unique_ptr<IAstNode> clone() override;
+
+        void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
     };
 
     std::unique_ptr<AstEnumerableMember> parse_enumerable_member(

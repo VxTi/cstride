@@ -146,7 +146,7 @@ VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type [EQ Expression]
 VariableDeclarationStatement ::= [VisibilityModifier] (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
-Type ::= (PrimitiveType | UserType | FunctionType | StructDefinitionBody | TupleType) [ArrayNotion*] [QUESTION]
+Type ::= (PrimitiveType | UserType | FunctionType | ObjectDefinitionBody | TupleType) [ArrayNotion*] [QUESTION]
 // <module>::<type> or <type>
 PrimitiveType ::= VOID | INT8 | INT16 | INT32 | INT64 | UINT8 | UINT16 | UINT32 | UINT64 | FLOAT32 | FLOAT64 | BOOL | CHAR | STRING
 UserType ::= ScopedIdentifier [GenericTypeValueArguments] {
@@ -158,7 +158,7 @@ UserType ::= ScopedIdentifier [GenericTypeValueArguments] {
 
 TupleType ::= LPAREN Type (COMMA Type)* RPAREN
 
-private StructDefinitionBody ::= LBRACE [ObjectDefinitionFields] RBRACE
+ObjectDefinitionBody ::= LBRACE [ObjectDefinitionFields] RBRACE
 
 GenericTypeArguments ::= LT IDENTIFIER (COMMA IDENTIFIER)* GT
 GenericTypeValueArguments ::= LT Type (COMMA Type)* GT
