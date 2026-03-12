@@ -8,7 +8,7 @@ enum SomeEnum {
 
 type Array<T> = {
     length: i32;
-    data: T[];
+    data: T [];
 };
 
 type SomeCar = {
@@ -27,8 +27,8 @@ fn make_car(make: string, model: string, year: i32): SomeCar {
     return SomeCar::{ make, model, year };
 }
 
-fn make_person(name: string, age: i32, cars: Array<i32>): SomePerson<Array<i32>> {
-    return SomePerson<Array<i32>>::{ name, age, cars };
+fn make_person(name: string, age: i32, cars: Array<SomeCar>): SomePerson<Array<SomeCar>> {
+    return SomePerson<Array<SomeCar>>::{ name, age, cars };
 }
 
 fn main(): i32 {
@@ -36,7 +36,7 @@ fn main(): i32 {
     const me = make_person(
         "Alice",
         30,
-        Array<i32>::{ length: 1, data: [123] }
+        Array<SomeCar>::{ length: 1, data: [my_car] }
     );
 
 
