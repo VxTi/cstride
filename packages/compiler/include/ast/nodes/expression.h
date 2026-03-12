@@ -791,7 +791,7 @@ namespace stride::ast
     class AstObjectInitializer
         : public IAstExpression
     {
-        std::string _struct_name;
+        std::string _object_type_name;
         std::vector<StructMemberInitializerPair> _member_initializers;
         GenericTypeList _generic_type_arguments;
 
@@ -807,7 +807,7 @@ namespace stride::ast
             GenericTypeList generic_type_arguments = {}
         ) :
             IAstExpression(source, context),
-            _struct_name(std::move(struct_name)),
+            _object_type_name(std::move(struct_name)),
             _member_initializers(std::move(member_initializers)),
             _generic_type_arguments(std::move(generic_type_arguments)) {}
 
@@ -820,7 +820,7 @@ namespace stride::ast
         [[nodiscard]]
         const std::string& get_struct_name() const
         {
-            return _struct_name;
+            return _object_type_name;
         }
 
         [[nodiscard]]
