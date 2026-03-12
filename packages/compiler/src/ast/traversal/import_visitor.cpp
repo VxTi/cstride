@@ -40,7 +40,7 @@ void stride::ast::ImportVisitor::accept(AstImport* node)
 
 void stride::ast::ImportVisitor::accept(AstPackage* node)
 {
-    this->_package_file_mapping.emplace(node->get_package_name(), this->_current_file_name);
+    this->_package_file_mapping[node->get_package_name()].push_back(this->_current_file_name);
 }
 
 void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
@@ -62,16 +62,23 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                     node->get_source_fragment()
                 );
             }
-            // The Ast node from which we wish to extract the symbols
-            const auto& file_name_with_exports = this->_package_file_mapping.at(package_name);
-            const auto& node_with_exports = ast->get_files().at(file_name_with_exports);
+            // The Ast nodes from which we wish to extract the symbols
+            const auto& files_with_exports = this->_package_file_mapping.at(package_name);
 
-            // Acquire all symbols from `node_with_exports`
+            // Acquire all symbols from the package's files
             for (const auto& import_name : import_names)
             {
-                // Acquire import from node_with_exports
-                auto definition = node_with_exports->get_context()->get_definition_by_internal_name(import_name);
-                if (!definition)
+                // Search across all files that belong to this package
+                std::optional<std::unique_ptr<definition::IDefinition>> definition;
+                for (const auto& file_name_with_exports : files_with_exports)
+                {
+                    const auto& node_with_exports = ast->get_files().at(file_name_with_exports);
+                    definition = node_with_exports->get_context()->get_definition_by_internal_name(import_name);
+                    if (definition.has_value())
+                        break;
+                }
+
+                if (!definition.has_value())
                 {
                     throw parsing_error(
                         ErrorType::REFERENCE_ERROR,

@@ -40,8 +40,8 @@ namespace stride::ast
     {
         std::string _current_file_name; // temporary values
         std::map<
-            std::string, /* package_name */
-            std::string  /* file_name    */
+            std::string,             /* package_name */
+            std::vector<std::string> /* file_names   */
         > _package_file_mapping;
         std::map<
             std::string, /* file_name */

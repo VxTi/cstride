@@ -1,4 +1,6 @@
-import system::{ io::print };
+import System::{
+    io::print
+};
 
 enum SomeEnum {
     Variant1,
@@ -8,36 +10,43 @@ enum SomeEnum {
 
 type Array<T> = {
     length: i32;
-    data: T [];
+    data: T[];
 };
 
-type SomeCar = {
+type Car = {
     make: string;
     model: string;
     year: i32;
 };
 
-type SomePerson<T> = {
+type SomePerson<TSomeCar> = {
     name: string;
     age: i32;
-    cars: T;
+    cars: TSomeCar;
 };
 
-fn make_car(make: string, model: string, year: i32): SomeCar {
-    return SomeCar::{ make, model, year };
+fn make_car(make: string, model: string, year: i32): Car {
+    return Car::{
+        make,
+        model,
+        year
+    };
 }
 
-fn make_person(name: string, age: i32, cars: Array<SomeCar>): SomePerson<Array<SomeCar>> {
-    return SomePerson<Array<SomeCar>>::{ name, age, cars };
+fn make_person(name: string, age: i32, cars: Array<Car>): SomePerson<Array<Car>> {
+    return SomePerson<Array<Car>>::{
+        name,
+        age,
+        cars
+    };
 }
 
 fn main(): i32 {
     const my_car = make_car("Honda", "Civic", 2018);
-    const me = make_person(
-        "Alice",
-        30,
-        Array<SomeCar>::{ length: 1, data: [my_car] }
-    );
+    const me = make_person("Alice", 30, Array<Car>::{
+        length: 1,
+        data: [my_car]
+    });
 
 
     const my_car = me.cars.data[0];
@@ -47,7 +56,7 @@ fn main(): i32 {
 
     // const some_enum_val: SomeEnum = SomeEnum::Variant2;
 
-    //    io::print("The value of some_enum_val is: %d", some_enum_val);
+//     io::print("The value of some_enum_val is: %d", some_enum_val);
 
     return 0;
 }
