@@ -10,6 +10,9 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.stride.intellij.psi.StrideArrayDeclarationExpression
 import com.stride.intellij.psi.StrideBlockStatement
 import com.stride.intellij.psi.StrideObjectDefinitionBody
+import com.stride.intellij.psi.StrideEnumBody
+import com.stride.intellij.psi.StrideFileHeader
+import com.stride.intellij.psi.StrideTypes
 
 class StrideFoldingBuilder : FoldingBuilderEx() {
 
@@ -18,7 +21,17 @@ class StrideFoldingBuilder : FoldingBuilderEx() {
 
         PsiTreeUtil.processElements(root) { element ->
             when (element) {
+                is StrideFileHeader -> {
+                    if (element.textLength > 0) {
+                        descriptors.add(FoldingDescriptor(element.node, element.textRange))
+                    }
+                }
                 is StrideBlockStatement -> {
+                    if (element.textLength > 2) {
+                        descriptors.add(FoldingDescriptor(element.node, element.textRange))
+                    }
+                }
+                is StrideEnumBody -> {
                     if (element.textLength > 2) {
                         descriptors.add(FoldingDescriptor(element.node, element.textRange))
                     }
@@ -41,13 +54,20 @@ class StrideFoldingBuilder : FoldingBuilderEx() {
     }
 
     override fun getPlaceholderText(node: ASTNode): String {
-        return when (node.psi) {
-            is StrideBlockStatement -> "{...}"
-            is StrideObjectDefinitionBody -> "{...}"
-            is StrideArrayDeclarationExpression -> "[...]"
+        return when {
+            node.psi is StrideFileHeader -> "..."
+            node.psi is StrideBlockStatement -> "{...}"
+            node.psi is StrideObjectDefinitionBody -> "{...}"
+            node.psi is StrideEnumBody -> "{...}"
+            node.psi is StrideArrayDeclarationExpression -> "[...]"
             else -> "..."
         }
     }
 
-    override fun isCollapsedByDefault(node: ASTNode): Boolean = false
+    override fun isCollapsedByDefault(node: ASTNode): Boolean {
+        return when {
+          node.psi is StrideFileHeader -> true
+          else -> false
+         }
+    }
 }

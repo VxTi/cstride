@@ -1,3 +1,4 @@
+package somePkg;
 import System::{
     io::print
 };
