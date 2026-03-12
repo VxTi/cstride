@@ -143,14 +143,7 @@ std::optional<int> AstObjectType::get_member_field_index(const std::string& fiel
 /// resulting in no LLVM duplication
 std::string AstObjectType::get_internalized_name()
 {
-    std::string scoped_name = resolve_internal_name({ this->get_context()->get_name(), this->get_type_name() });
-    
-    for (const auto& generic : this->_instantiated_generics)
-    {
-        scoped_name += "$" + generic->get_type_name();
-    }
-
-    return scoped_name;
+    return this->get_type_name();
 }
 
 llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
@@ -203,6 +196,30 @@ llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
     struct_type->setBody(member_types, /*isPacked=*/false);
 
     return struct_type;
+}
+
+const GenericTypeList& AstObjectType::get_instantiated_generics() const
+{
+    return _instantiated_generics;
+}
+
+std::string AstObjectType::get_type_name()
+{
+    if (!this->_instantiated_generics.empty())
+    {
+        std::vector<std::string> generic_names;
+        for (const auto& generic : this->_instantiated_generics)
+        {
+            generic_names.push_back(generic->get_type_name());
+        }
+        return std::format("{}<{}>", this->_type_name, join(generic_names, ", "));
+    }
+    return this->_type_name;
+}
+
+std::string AstObjectType::to_string()
+{
+    return this->get_type_name();
 }
 
 bool AstObjectType::equals(IAstType* other)
@@ -270,7 +287,7 @@ std::unique_ptr<IAstNode> AstObjectType::clone()
     return std::make_unique<AstObjectType>(
         this->get_source_fragment(),
         this->get_context(),
-        this->get_type_name(),
+        this->_type_name,
         std::move(cloned_members),
         this->get_flags(),
         std::move(cloned_generics)

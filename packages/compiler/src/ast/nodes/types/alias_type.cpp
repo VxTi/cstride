@@ -98,7 +98,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         return std::make_unique<AstObjectType>(
             object_type->get_source_fragment(),
             object_type->get_context(),
-            object_type->get_type_name(),
+            object_type->get_base_name(),
             std::move(resolved_members),
             object_type->get_flags(),
             std::move(resolved_generics)
@@ -325,6 +325,21 @@ bool AstAliasType::equals(IAstType* other)
     }
 
     return false;
+}
+
+std::string AstAliasType::get_type_name()
+{
+    if (!this->_generic_types.empty())
+    {
+        std::vector<std::string> generic_names;
+        for (const auto& generic : this->_generic_types)
+        {
+            generic_names.push_back(generic->get_type_name());
+        }
+
+        return std::format("{}<{}>", this->_name, join(generic_names, ", "));
+    }
+    return this->_name;
 }
 
 std::unique_ptr<IAstNode> AstAliasType::clone()
