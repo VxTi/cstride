@@ -129,7 +129,7 @@ private FunctionDeclarationHeader ::= FN IDENTIFIER [GenericTypeArguments] LPARE
 FunctionParameterList ::= (FunctionParameter (COMMA FunctionParameter)* [COMMA ELLIPSIS]) | [ELLIPSIS]
 FunctionParameter ::= IDENTIFIER COLON Type
 
-TypeDefinition ::= KW_TYPE IDENTIFIER [GenericTypeArguments] EQ Type SEMICOLON
+TypeDefinition ::= [VisibilityModifier] KW_TYPE IDENTIFIER [GenericTypeArguments] EQ Type SEMICOLON
 
 EnumDefinition ::= ENUM IDENTIFIER LBRACE EnumMember (COMMA EnumMember)* [COMMA /* trailing */] RBRACE
 
