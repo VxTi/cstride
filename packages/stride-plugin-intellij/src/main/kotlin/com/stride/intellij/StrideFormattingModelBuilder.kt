@@ -85,8 +85,8 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             // Array notation: T[]
             .betweenInside(StrideTypes.LSQUARE_BRACKET, StrideTypes.RSQUARE_BRACKET, StrideTypes.TYPE).spaceIf(false)
 
-            .afterInside(StrideTypes.LBRACE, StrideTypes.TYPE).lineBreakInCode()
-            .beforeInside(StrideTypes.RBRACE, StrideTypes.TYPE).lineBreakInCode()
+            .afterInside(StrideTypes.LBRACE, StrideTypes.OBJECT_DEFINITION_BODY).lineBreakInCode()
+            .beforeInside(StrideTypes.RBRACE, StrideTypes.OBJECT_DEFINITION_BODY).lineBreakInCode()
             .afterInside(StrideTypes.LBRACE, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
             .beforeInside(StrideTypes.RBRACE, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
             .afterInside(StrideTypes.LBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
@@ -101,7 +101,7 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             .afterInside(StrideTypes.LPAREN, StrideTypes.FOR).spaceIf(false)
             .beforeInside(StrideTypes.LBRACE, StrideTypes.MODULE_STATEMENT).spaceIf(true)
             .beforeInside(StrideTypes.LBRACE, StrideTypes.BLOCK_STATEMENT).spaceIf(true)
-            .beforeInside(StrideTypes.LBRACE, StrideTypes.TYPE).spaceIf(true)
+            .beforeInside(StrideTypes.LBRACE, StrideTypes.OBJECT_DEFINITION_BODY).spaceIf(true)
             .beforeInside(StrideTypes.LBRACE, StrideTypes.OBJECT_INITIALIZATION).spaceIf(false)
 
             // Module items should be on separate lines
@@ -116,9 +116,7 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             // Statements should be on separate lines - use STATEMENT wrapper
             .afterInside(StrideTypes.STATEMENT, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
 
-            .afterInside(StrideTypes.LBRACE, StrideTypes.OBJECT_INITIALIZATION).lineBreakInCode()
-            .beforeInside(StrideTypes.RBRACE, StrideTypes.OBJECT_INITIALIZATION).lineBreakInCode()
-            .beforeInside(StrideTypes.OBJECT_INIT_FIELD, StrideTypes.OBJECT_INIT_FIELDS).lineBreakInCode()
+            .between(StrideTypes.OBJECT_FIELD, StrideTypes.OBJECT_FIELD).lineBreakInCode()
 
             .between(StrideTypes.TYPE_DEFINITION, StrideTypes.TYPE_DEFINITION).blankLines(1)
             .between(StrideTypes.FUNCTION_DECLARATION, StrideTypes.FUNCTION_DECLARATION).blankLines(1)

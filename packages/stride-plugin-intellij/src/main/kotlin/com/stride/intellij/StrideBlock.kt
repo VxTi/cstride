@@ -52,12 +52,10 @@ class StrideBlock(
                     Indent.getNoneIndent()
                 }
             }
-            // Struct definition fields (within TYPE that contains a struct body)
-            parentType == StrideTypes.TYPE -> {
+            // Struct definition fields (within OBJECT_DEFINITION_BODY)
+            parentType == StrideTypes.OBJECT_DEFINITION_BODY -> {
                 if (elementType == StrideTypes.OBJECT_DEFINITION_FIELDS) {
                     Indent.getNormalIndent()
-                } else if (elementType != StrideTypes.LBRACE && elementType != StrideTypes.RBRACE) {
-                    Indent.getNoneIndent()
                 } else {
                     Indent.getNoneIndent()
                 }
