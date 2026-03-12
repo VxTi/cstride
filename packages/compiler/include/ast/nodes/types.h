@@ -285,7 +285,17 @@ namespace stride::ast
 
         std::string get_type_name() override
         {
-            return this->get_name();
+            if (!this->_generic_types.empty())
+            {
+                std::vector<std::string> generic_names;
+                for (const auto& generic : this->_generic_types)
+                {
+                    generic_names.push_back(generic->get_type_name());
+                }
+
+                return std::format("{}<{}>", this->_name, join(generic_names, ", "));
+            }
+            return this->_name;
         }
 
         std::string to_string() override;

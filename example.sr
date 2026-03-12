@@ -17,36 +17,30 @@ type SomeCar = {
     year: i32;
 };
 
-type SomePerson = {
+type SomePerson<T> = {
     name: string;
     age: i32;
-    cars: Array<SomeCar>;
+    cars: T;
 };
 
 fn make_car(make: string, model: string, year: i32): SomeCar {
     return SomeCar::{ make, model, year };
 }
 
-fn make_person(name: string, age: i32, cars: Array<SomeCar>): SomePerson {
-    return SomePerson::{
-        name,
-        age,
-        cars
-    };
+fn make_person(name: string, age: i32, cars: Array<i32>): SomePerson<Array<i32>> {
+    return SomePerson<Array<i32>>::{ name, age, cars };
 }
 
 fn main(): i32 {
+    const my_car = make_car("Honda", "Civic", 2018);
     const me = make_person(
         "Alice",
         30,
-        Array<SomeCar>::{
-            length: 1,
-            data: [make_car("Toyota", "Corolla", 2020)]
-        }
+        Array<i32>::{ length: 1, data: [my_car] }
     );
 
 
-    const my_car = me.cars[0].data[0];
+    const my_car = me.cars.data[0];
 
     io::print("I am %s, age %d\n", me.name, me.age);
     io::print("My car is a %s %s from %d", my_car.make, my_car.model, my_car.year);

@@ -86,15 +86,31 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
         return this->_object_type->clone_as<AstObjectType>();
     }
 
-    const auto type_def = this->get_context()->get_type_definition(this->_struct_name);
+    const auto type_def = this->get_context()->get_type_definition(this->_object_type_name);
 
     if (!type_def.has_value())
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
-            std::format("Struct type '{}' is undefined", this->_struct_name),
+            std::format("Object type '{}' is undefined", this->_object_type_name),
             this->get_source_fragment()
         );
+    }
+
+    if (!this->_generic_type_arguments.empty() && !type_def.value()->get_generics_parameters().empty())
+    {
+        if (this->_generic_type_arguments.size() != type_def.value()->get_generics_parameters().size())
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format("Invalid instantiation of object type '{}': expected {} generic arguments, got {}",
+                            this->_object_type_name,
+                            type_def.value()->get_generics_parameters().size(),
+                            this->_generic_type_arguments.size()
+                ),
+                this->get_source_fragment()
+            );
+        }
     }
 
     if (const auto* object_def = cast_type<AstObjectType*>(type_def.value()->get_type()))
@@ -122,7 +138,7 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
 
     throw parsing_error(
         ErrorType::COMPILATION_ERROR,
-        std::format("Type '{}' is not an object", this->_struct_name),
+        std::format("Type '{}' is not an object", this->_object_type_name),
         this->get_source_fragment()
     );
 }
@@ -189,7 +205,7 @@ void AstObjectInitializer::validate()
             std::format(
                 "Too {} members found in object '{}': expected {}, got {}",
                 object_members.size() > this->_member_initializers.size() ? "few" : "many",
-                this->_struct_name,
+                this->_object_type_name,
                 object_members.size(),
                 this->_member_initializers.size()),
             this->get_source_fragment()
@@ -207,7 +223,7 @@ void AstObjectInitializer::validate()
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Object type '{}' has no member named '{}'",
-                    this->_struct_name,
+                    this->_object_type_name,
                     field_name
                 ),
                 this->get_source_fragment());
@@ -298,7 +314,7 @@ llvm::Value* AstObjectInitializer::codegen(
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
-            std::format("Struct type '{}' is undefined", this->_struct_name),
+            std::format("Struct type '{}' is undefined", this->_object_type_name),
             this->get_source_fragment()
         );
     }
@@ -396,7 +412,7 @@ std::unique_ptr<IAstNode> AstObjectInitializer::clone()
     return std::make_unique<AstObjectInitializer>(
         this->get_source_fragment(),
         this->get_context(),
-        this->_struct_name,
+        this->_object_type_name,
         std::move(member_initializers),
         std::move(member_generic_types)
     );
