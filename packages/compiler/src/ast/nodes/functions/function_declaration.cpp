@@ -108,6 +108,28 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     );
 }
 
+std::unique_ptr<AstBlock> consume_anonymous_fn_body(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set)
+{
+    if (!set.peek_next_eq(TokenType::LBRACE))
+    {
+        auto expr = parse_inline_expression(context, set);
+
+        const auto src_frag = expr->get_source_fragment();
+        std::vector<std::unique_ptr<IAstNode>> body_nodes;
+        body_nodes.push_back(std::move(expr));
+
+        return std::make_unique<AstBlock>(
+            src_frag,
+            context,
+            std::move(body_nodes)
+        );
+    }
+
+    return parse_block(context, set);
+}
+
 std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
@@ -146,7 +168,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
         "Expected '->' after lambda parameters"
     );
 
-    auto lambda_body = parse_block(function_context, set);
+    auto lambda_body = consume_anonymous_fn_body(function_context, set);
 
     static int anonymous_lambda_id = 0;
 
