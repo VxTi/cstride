@@ -442,6 +442,8 @@ namespace stride::ast
         [[nodiscard]]
         std::string get_formatted_call() const;
 
+        void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+
     private:
         [[nodiscard]]
         std::string format_function_name() const;

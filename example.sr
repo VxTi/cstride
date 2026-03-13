@@ -8,38 +8,30 @@ enum SomeEnum {
     Variant3
 }
 
-type Promise<T> = {
-    then: () -> Promise<T>?;
-};
+type Callback<T> = (T) -> void;
 
 type Array<T> = {
     length: i32;
     data: T[];
 };
 
-fn do_something(): Promise<void> {
-    return Promise<void>::{
-        then: (): void -> {
-            io::print("Doing something...");
-            return nil;
-        }
-    };
+extern fn sleep(seconds: i32): void;
+
+fn timeout(seconds: i32, cb: () -> void): void {
+    sleep(seconds);
+    cb();
 }
 
 fn main(): i32 {
-     const my_car: Car = make_car("Honda", "Civic", 2018);
-    const me = make_person("Alice", 30, Array<Car>::{
-        length: 1,
-        data: [my_car]
-    });
-
-     me.shout();
-
     // const some_enum_val: SomeEnum = SomeEnum::Variant2;
 
     // io::print("The value of some_enum_val is: %d", some_enum_val);
 
-    do_something();
+    io::print("Doing something v1");
+
+    timeout(2, (): void -> {
+        io::print("Done doing something");
+    });
 
     return 0;
 }

@@ -340,10 +340,22 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
 {
     // Variables are stored by their declaration name, not with function signatures
     // So we lookup using the raw function name only
-    if (const auto* var_def =
-        this->get_context()->lookup_variable(this->get_scoped_function_name(), true))
+    if (const auto var_def = this->get_function_name_identifier()->get_definition();
+        var_def.has_value())
     {
-        auto base_type = var_def->get_type()->clone_ty();
+        const auto field_def = dynamic_cast<const FieldDefinition*>(var_def.value());
+
+        if (!field_def)
+        {
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format("Anonymous function call to non-function '{}'",
+                            this->get_function_name()),
+                this->get_source_fragment()
+            );
+        }
+
+        auto base_type = field_def->get_type()->clone_ty();
         if (auto* alias_ty = cast_type<AstAliasType*>(base_type.get()))
         {
             base_type = alias_ty->get_underlying_type()->clone_ty();
@@ -355,11 +367,10 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
             // symbol table with a matching type signature. If so, call it directly without
             // any pointer indirection.
             if (this->get_context()->get_function_definition(
-                var_def->get_internal_symbol_name(),
-                var_def->get_type()).has_value())
+                field_def->get_internal_symbol_name(),
+                field_def->get_type()).has_value())
             {
-                if (llvm::Function* callee =
-                    module->getFunction(var_def->get_internal_symbol_name()))
+                if (llvm::Function* callee = module->getFunction(field_def->get_internal_symbol_name()))
                 {
                     std::vector<llvm::Value*> args_v;
                     for (const auto& arg : this->get_arguments())
@@ -451,7 +462,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
             }
 
             // Load the function pointer from the variable
-            const auto fn_ptr = var_def->get_internal_symbol_name();
+            const auto fn_ptr = field_def->get_internal_symbol_name();
             llvm::Value* fn_ptr_val = nullptr;
 
             if (const auto block = builder->GetInsertBlock())
@@ -594,6 +605,14 @@ void AstFunctionCall::validate()
     for (const auto& arg : this->_arguments)
     {
         arg->validate();
+    }
+}
+
+void AstFunctionCall::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
+{
+    for (const auto& arg : this->_arguments)
+    {
+        arg->resolve_forward_references(module, builder);
     }
 }
 
