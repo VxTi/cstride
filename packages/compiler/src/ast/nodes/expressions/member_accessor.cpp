@@ -332,8 +332,6 @@ llvm::Value* AstIndirectCall::codegen(
     if (llvm::Function* lambda_fn =
         closures::find_lambda_function(module, llvm_fn_type))
     {
-        call_fn_type = lambda_fn->getFunctionType();
-
         const size_t num_captures = lambda_fn->arg_size()
             - fn_type->get_parameter_types().size();
 
@@ -344,6 +342,8 @@ llvm::Value* AstIndirectCall::codegen(
 
             if (capture_args.size() == num_captures)
             {
+                call_fn_type = lambda_fn->getFunctionType();
+
                 // Extract the actual function pointer from offset 0 of the closure env
                 actual_fn_ptr = builder->CreateLoad(
                     lambda_fn->getType(),

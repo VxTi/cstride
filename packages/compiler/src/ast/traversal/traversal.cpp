@@ -102,12 +102,12 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     }
     else if (auto* indirect_call = cast_expr<AstIndirectCall*>(node))
     {
-        visitor->accept(indirect_call);
-        visit_expression(visitor, indirect_call->get_callee());
         for (const auto& arg : indirect_call->get_args())
         {
             visit_expression(visitor, arg.get());
         }
+        visit_expression(visitor, indirect_call->get_callee());
+        visitor->accept(indirect_call);
     }
 
     // AstLiteral, AstIdentifier, AstVariadicArgReference,

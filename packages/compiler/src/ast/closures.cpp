@@ -102,6 +102,9 @@ namespace stride::ast::closures
         // 1. Return type must match
         // 2. The LAST N parameters must match (where N = declared params)
         // 3. The lambda should have >= N parameters
+        // Prefer an exact match (no captures) over a partial match (with captures)
+
+        llvm::Function* best_match = nullptr;
 
         for (auto& fn : module->functions())
         {
@@ -138,11 +141,21 @@ namespace stride::ast::closures
 
                 if (params_match)
                 {
-                    return &fn;
+                    // Exact match (same param count = no captures) — return immediately
+                    if (lambda_params == num_declared)
+                    {
+                        return &fn;
+                    }
+
+                    // Otherwise remember as a fallback (has captures)
+                    if (!best_match)
+                    {
+                        best_match = &fn;
+                    }
                 }
             }
         }
-        return nullptr;
+        return best_match;
     }
 
     std::vector<llvm::Value*> generate_capture_arguments(

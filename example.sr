@@ -30,6 +30,7 @@ fn make_car(make: string, model: string, year: i32): Car {
     return Car::{ make, model, year };
 }
 
+
 fn make_person(name: string, age: i32, cars: Array<Car>): SomePerson<Array<Car>> {
     return SomePerson<Array<Car>>::{
         name,
@@ -47,18 +48,28 @@ fn make_person(name: string, age: i32, cars: Array<Car>): SomePerson<Array<Car>>
     };
 }
 
+fn test_chained(): () -> () -> void {
+    return (): () -> void -> {
+        return (): void -> {
+            io::print("Three chained calls");
+        };
+    };
+}
+
 fn main(): i32 {
-    const my_car: Car = make_car("Honda", "Civic", 2018);
+     const my_car: Car = make_car("Honda", "Civic", 2018);
     const me = make_person("Alice", 30, Array<Car>::{
         length: 1,
         data: [my_car]
     });
 
-    me.shout();
+     me.shout();
 
     // const some_enum_val: SomeEnum = SomeEnum::Variant2;
 
     // io::print("The value of some_enum_val is: %d", some_enum_val);
+
+    test_chained()()();
 
     return 0;
 }
