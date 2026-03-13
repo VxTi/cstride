@@ -2,6 +2,7 @@ import System::{
     io::print,
 };
 
+/*
 enum SomeEnum {
     Variant1,
     Variant2,
@@ -72,4 +73,12 @@ fn main(): i32 {
     test_chained()()();
 
     return 0;
+}*/
+
+type Point = { x: i32; y: i32; };
+fn main(): void {
+    const pts: Point[] = [ Point::{ x: 1, y: 2 } ];
+    const x = pts[0].x;
+
+    io::print("The x coordinate of the first point is: %d", x);
 }

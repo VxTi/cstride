@@ -7,6 +7,7 @@
 #include "ast/tokens/token_set.h"
 
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
@@ -85,10 +86,9 @@ llvm::Value* AstArrayMemberAccessor::codegen(
         array_base_type = named_ty->get_underlying_type()->clone_ty();
     }
 
-    llvm::Value* base_ptr = this->_array_base->codegen(module, builder);
+    llvm::Value* base_val = this->_array_base->codegen(module, builder);
     llvm::Value* index_val = this->_index_accessor_expr->codegen(module, builder);
 
-    // Element type, not the array type.
     const auto* array_ty = cast_type<AstArrayType*>(array_base_type.get());
     if (!array_ty)
     {
@@ -100,16 +100,52 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 
     llvm::Type* elem_llvm_ty = array_ty->get_element_type()->get_llvm_type(module);
 
-    // Treat base_ptr as elem*
-    llvm::Value* typed_base_ptr = builder->CreateBitCast(
-        base_ptr,
-        llvm::PointerType::getUnqual(module->getContext()),
-        "array_base_cast"
-    );
+    // Ensure we have a pointer to GEP into. The base expression's codegen may
+    // have produced a non-pointer value (e.g. identifier codegen loads the
+    // alloca's allocated type which can be [0 x T] for dynamically-sized arrays).
+    // In that case, look through the load to recover the source pointer.
+    llvm::Value* base_ptr = base_val;
+    if (!base_ptr->getType()->isPointerTy())
+    {
+        if (auto* load_inst = llvm::dyn_cast<llvm::LoadInst>(base_val))
+        {
+            base_ptr = load_inst->getPointerOperand();
+            load_inst->eraseFromParent();
+        }
+    }
 
+    // If the base is a pointer to an alloca of array type, load the stored
+    // pointer first (arrays are always behind a pointer in stride).
+    if (base_ptr->getType()->isPointerTy())
+    {
+        if (const auto* alloca_inst = llvm::dyn_cast<llvm::AllocaInst>(base_ptr))
+        {
+            llvm::Type* allocated_ty = alloca_inst->getAllocatedType();
+            if (allocated_ty->isArrayTy())
+            {
+                // The alloca holds a pointer to the array data. Load it.
+                llvm::Value* array_ptr = builder->CreateLoad(
+                    llvm::PointerType::getUnqual(module->getContext()),
+                    base_ptr,
+                    "array_ptr"
+                );
+
+                llvm::Value* element_ptr = builder->CreateInBoundsGEP(
+                    elem_llvm_ty,
+                    array_ptr,
+                    index_val,
+                    "array_elem_ptr"
+                );
+
+                return builder->CreateLoad(elem_llvm_ty, element_ptr, "array_load");
+            }
+        }
+    }
+
+    // Opaque pointer or decayed pointer-to-element: single-index GEP.
     llvm::Value* element_ptr = builder->CreateInBoundsGEP(
         elem_llvm_ty,
-        typed_base_ptr,
+        base_ptr,
         index_val,
         "array_elem_ptr"
     );
