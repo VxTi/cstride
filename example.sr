@@ -23,6 +23,7 @@ type SomePerson<TSomeCar> = {
     name: string;
     age: i32;
     cars: TSomeCar;
+    shout: () -> void;
 };
 
 fn make_car(make: string, model: string, year: i32): Car {
@@ -30,7 +31,14 @@ fn make_car(make: string, model: string, year: i32): Car {
 }
 
 fn make_person(name: string, age: i32, cars: Array<Car>): SomePerson<Array<Car>> {
-    return SomePerson<Array<Car>>::{ name, age, cars };
+    return SomePerson<Array<Car>>::{
+        name,
+        age,
+        cars,
+        shout: (): void -> {
+            io::print("Hello, I am %s and I have %d cars!", name, cars.length);
+        }
+    };
 }
 
 fn main(): i32 {
@@ -44,6 +52,8 @@ fn main(): i32 {
 
     io::print("I am %s, age %d\n", me.name, me.age);
     io::print("My car is a %s %s from %d", my_car.make, my_car.model, my_car.year);
+
+    me.shout();
 
     // const some_enum_val: SomeEnum = SomeEnum::Variant2;
 

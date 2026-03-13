@@ -5,7 +5,8 @@
 #include "errors.h"
 #include "ast/symbols.h"
 
-namespace llvm {
+namespace llvm
+{
     class Function;
 }
 
@@ -461,7 +462,7 @@ namespace stride::ast
             llvm::Function* callee,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
-        );
+        ) const;
     };
 
     class AstVariableDeclaration
@@ -873,6 +874,8 @@ namespace stride::ast
         void validate() override;
 
         std::unique_ptr<IAstNode> clone() override;
+
+        void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
     private:
         std::unique_ptr<AstObjectType> get_instantiated_object_type();

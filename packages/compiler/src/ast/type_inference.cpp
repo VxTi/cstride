@@ -283,19 +283,19 @@ std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* e
 
 std::unique_ptr<IAstType> stride::ast::infer_identifier_type(const AstIdentifier* identifier)
 {
-    const auto reference_sym = identifier->get_context()->lookup_symbol(identifier->get_name());
+    const auto identifier_def = identifier->get_definition();
 
-    if (!reference_sym)
+    if (!identifier_def.has_value())
     {
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
             std::format(
-                "Unable to infer expression type for '{}': variable or function not found",
+                "Unable to infer expression type for field '{}': variable or function not found",
                 identifier->get_name()),
             identifier->get_source_fragment());
     }
 
-    if (const auto callable = dynamic_cast<FunctionDefinition*>(reference_sym))
+    if (const auto callable = dynamic_cast<const FunctionDefinition*>(identifier_def.value()))
     {
         std::vector<std::unique_ptr<IAstType>> param_types;
         for (const auto& param :
@@ -312,7 +312,7 @@ std::unique_ptr<IAstType> stride::ast::infer_identifier_type(const AstIdentifier
         );
     }
 
-    if (const auto field = dynamic_cast<FieldDefinition*>(reference_sym))
+    if (const auto field = dynamic_cast<const FieldDefinition*>(identifier_def.value()))
     {
         return field->get_type()->clone_ty();
     }

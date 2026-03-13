@@ -217,6 +217,12 @@ namespace stride::ast
                 return this->_flags;
             }
 
+            [[nodiscard]]
+            bool is_variadic() const
+            {
+                return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
+            }
+
             ~FunctionDefinition() override = default;
 
             bool matches_type_signature(const std::string& name, const AstFunctionType* signature) const;

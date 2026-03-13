@@ -1,5 +1,6 @@
 #include "ast/nodes/traversal.h"
 
+#include "ast/casting.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
@@ -34,69 +35,79 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         return;
 
     // IAstFunction is an expression but needs special handling (body traversal + params)
-    if (auto* fn = dynamic_cast<IAstFunction*>(node))
+    if (auto* fn = cast_expr<IAstFunction*>(node))
     {
         visitor->accept(fn);
         visit_block(visitor, fn->get_body());
     }
-    else if (const auto* binary = dynamic_cast<IBinaryOp*>(node))
+    else if (const auto* binary = cast_expr<IBinaryOp*>(node))
     {
         visit_expression(visitor, binary->get_left());
         visit_expression(visitor, binary->get_right());
     }
-    else if (const auto* unary = dynamic_cast<AstUnaryOp*>(node))
+    else if (const auto* unary = cast_expr<AstUnaryOp*>(node))
     {
         visit_expression(visitor, &unary->get_operand());
     }
-    else if (const auto* var_decl = dynamic_cast<AstVariableDeclaration*>(node))
+    else if (const auto* var_decl = cast_expr<AstVariableDeclaration*>(node))
     {
         if (var_decl->get_initial_value())
             visit_expression(visitor, var_decl->get_initial_value());
     }
-    else if (const auto* fn_call = dynamic_cast<AstFunctionCall*>(node))
+    else if (const auto* fn_call = cast_expr<AstFunctionCall*>(node))
     {
         for (const auto& arg : fn_call->get_arguments())
             visit_expression(visitor, arg.get());
     }
-    else if (const auto* array = dynamic_cast<AstArray*>(node))
+    else if (const auto* array = cast_expr<AstArray*>(node))
     {
         for (const auto& elem : array->get_elements())
             visit_expression(visitor, elem.get());
     }
-    else if (const auto* array_accessor = dynamic_cast<AstArrayMemberAccessor*>(node))
+    else if (const auto* array_accessor = cast_expr<AstArrayMemberAccessor*>(node))
     {
         visit_expression(visitor, array_accessor->get_array_base());
         visit_expression(visitor, array_accessor->get_index());
     }
-    else if (const auto* struct_init = dynamic_cast<AstObjectInitializer*>(node))
+    else if (const auto* struct_init = cast_expr<AstObjectInitializer*>(node))
     {
         for (const auto& val : struct_init->get_initializers() | std::views::values)
             visit_expression(visitor, val.get());
     }
-    else if (const auto* tuple_init = dynamic_cast<AstTupleInitializer*>(node))
+    else if (const auto* tuple_init = cast_expr<AstTupleInitializer*>(node))
     {
         for (const auto& member : tuple_init->get_members())
             visit_expression(visitor, member.get());
     }
-    else if (const auto* reassign = dynamic_cast<AstVariableReassignment*>(node))
+    else if (const auto* reassign = cast_expr<AstVariableReassignment*>(node))
     {
         visit_expression(visitor, reassign->get_identifier());
         visit_expression(visitor, reassign->get_value());
     }
-    else if (const auto* chained = dynamic_cast<AstChainedExpression*>(node))
+    else if (const auto* chained = cast_expr<AstChainedExpression*>(node))
     {
         // Visit the base expression so its type is resolved before the accessor's type is inferred.
         visit_expression(visitor, chained->get_base());
+        // visit_expression(visitor, chained->get_followup());
     }
-    else if (auto* function_node = dynamic_cast<IAstFunction*>(node))
+    else if (auto* function_node = cast_expr<IAstFunction*>(node))
     {
-        visitor->accept(function_node);
         visit_block(visitor, function_node->get_body());
+        visitor->accept(function_node);
     }
-    else if (auto* type_cast = dynamic_cast<AstTypeCastOp*>(node))
+    else if (auto* type_cast = cast_expr<AstTypeCastOp*>(node))
     {
-        visitor->accept(type_cast);
         visit_expression(visitor, type_cast->get_value());
+        visitor->accept(type_cast);
+    }
+    else if (auto* indirect_call = cast_expr<AstIndirectCall*>(node))
+    {
+        visitor->accept(indirect_call);
+        visit_expression(visitor, indirect_call->get_callee());
+        for (const auto& arg : indirect_call->get_args())
+        {
+            visit_expression(visitor, arg.get());
+        }
     }
 
     // AstLiteral, AstIdentifier, AstVariadicArgReference,
