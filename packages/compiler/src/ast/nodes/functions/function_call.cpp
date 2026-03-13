@@ -159,9 +159,8 @@ llvm::Value* AstFunctionCall::codegen(
     }
 
     const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(this->get_function_name());
-    const auto suggested_alternative = suggested_alternative_symbol
-        ? std::format("Did you mean '{}'?",
-                      format_suggestion(suggested_alternative_symbol))
+    const auto suggested_alternative = suggested_alternative_symbol != nullptr
+        ? std::format("Did you mean '{}'?", format_suggestion(suggested_alternative_symbol))
         : "";
 
     throw parsing_error(
@@ -505,9 +504,6 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                 // If we found the lambda function, handle captured variables
                 if (lambda_fn)
                 {
-                    // Use the lambda's actual function type which includes captures
-                    call_fn_type = lambda_fn->getFunctionType();
-
                     const size_t num_captures = lambda_fn->arg_size()
                         - fn_type->get_parameter_types().size();
 
@@ -524,6 +520,9 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
                         // If closure extraction succeeded, extract the actual function pointer
                         if (capture_args.size() == num_captures)
                         {
+                            // Use the lambda's actual function type which includes captures
+                            call_fn_type = lambda_fn->getFunctionType();
+
                             // Extract the function pointer from the closure (first element)
                             llvm::Value* closure_ptr = builder->CreatePointerCast(
                                 fn_ptr_val,
@@ -551,6 +550,8 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
 
                             if (capture_args_old.size() == num_captures)
                             {
+                                call_fn_type = lambda_fn->getFunctionType();
+
                                 args_v.insert(
                                     args_v.end(),
                                     capture_args_old.begin(),
