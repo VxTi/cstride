@@ -1,7 +1,5 @@
 package System;
 
-import System::{ Result, Result::Ok, Result::Err };
-
 module io {
 
     pub const stdout_fd: i32 = 0;
@@ -21,15 +19,6 @@ module io {
      */
     pub fn read(bytes: i32): string {
         return _read_in_internal(bytes);
-    }
-
-    pub fn read_file(path: string): Result<string> {
-        let content = _read_file_internal(path);
-        if (content == nil) {
-            return Result::Err<string>("Failed to read file");
-        }
-
-        return Result::Ok<string>(content);
     }
 }
 

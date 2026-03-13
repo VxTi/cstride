@@ -21,37 +21,56 @@ class StrideColorSettingsPage : ColorSettingsPage {
 
     override fun getDemoText(): String = """
             package System;
-
             import System::{
-                IO::Print,
-                Time::Sleep
+                io::print,
+                time::sleep
             };
 
-            type <usertype>Array</usertype><<generic>T</generic>>; = <generic>T</generic>[];
-            type <usertype>IArray</usertype> = <usertype>Array</usertype><i32>;
+            type <usertype>Array</usertype><<generic>T</generic>> = <generic>T</generic>[];
+            type <usertype>IntArray</usertype> = <usertype>Array</usertype><i32>;
 
             /**
              * Prints the given string and sleeps for the specified duration.
              */
             pub async fn <func>delayed_print</func>(msg: string, ms: i32): void {
-                IO::<func>Print</func>(msg);
-                Time::<func>Sleep</func>(ms);
+                io::<func>print</func>(msg);
+                time::<func>sleep</func>(ms);
             }
 
-            struct Point {
-                x: f32,
-                y: f32
+            type Func = () -> void;
+
+            type Point = {
+                x: f32;
+                y: f32;
+                print: <usertype>Func</usertype>;
+            }
+
+            fn make_point(x: f32, y: f32): Point {
+                return Point::{
+                    x,
+                    y,
+                    print: (): void -> io::print("Point at %f, %f", x, y)
+                };
             }
 
             async fn <func>main</func>(): i32 {
-                const p: Point = Point::{ x: 1.0, y: 2.0 };
-                const numbers: <usertype>IArray</usertype> = [1, 2, 3, 4, 5];
+                const p: <usertype>Point</usertype> = <usertype>Point</usertype>::{ x: 1.0, y: 2.0 };
+                const numbers: <usertype>IntArray</usertype> = [1, 2, 3, 4, 5];
                 let msg: string = "Hello, Stride!";
 
-                if (p.x > 0.0 && true) {
+                p.<func>print</func>();
+
+                if (p.x > 0.0) {
                     <func>delayed_print</func>(msg, 1000);
                 }
                 return 0;
+            }
+
+            // Create a module with a function to test highlighting in modules
+            module Test {
+                fn test_func(): void {
+                    // Do something here
+                }
             }
         """.trimIndent()
 

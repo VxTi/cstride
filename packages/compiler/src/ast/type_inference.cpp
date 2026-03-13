@@ -290,7 +290,7 @@ std::unique_ptr<IAstType> stride::ast::infer_identifier_type(const AstIdentifier
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
             std::format(
-                "Unable to infer expression type for field '{}': variable or function not found",
+                "Unable to infer expression type for symbol '{}': symbol not found",
                 identifier->get_name()),
             identifier->get_source_fragment());
     }
