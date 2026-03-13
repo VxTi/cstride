@@ -80,6 +80,13 @@ tasks {
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+tasks.named("compileKotlin") {
     dependsOn(generateStrideParser, generateStrideLexer)
+}
+
+tasks.named<Test>("test") {
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }

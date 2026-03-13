@@ -19,4 +19,4 @@ printf "${BLUE}| ${WHITE}Running tests for stride-plugin-intellij...  ${BLUE}|${
 printf "${BLUE}|                                              |${RESET}\n"
 printf "${BLUE}+----------------------------------------------+${RESET}\n"
 
-cd "${PROJECT_ROOT}/packages/stride-plugin-intellij"; ./gradlew :test
+cd "${PROJECT_ROOT}/packages/stride-plugin-intellij"; ./gradlew clean test
