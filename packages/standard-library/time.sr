@@ -8,19 +8,19 @@ module Time {
      * Pauses the execution of the current thread for the specified duration.
      * @param milliseconds The duration to sleep in milliseconds.
      */
-    fn Sleep(milliseconds: i32): void {
+    fn sleep(milliseconds: i32): void {
         sleep(milliseconds);
     }
 
-    fn CurrentMs(): u64 {
+    fn current_time_ms(): u64 {
         return _system_time_ms_internal();
     }
 
-    fn CurrentUs(): u64 {
+    fn current_time_us(): u64 {
         return _system_time_us_internal();
     }
 
-    fn CurrentNs(): u64 {
+    fn current_time_ns(): u64 {
         return _system_time_ns_internal();
     }
 }

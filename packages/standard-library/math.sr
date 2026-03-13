@@ -1,4 +1,4 @@
-package stl;
+package std;
 
 extern fn cosl(x: f64): f64;
 extern fn cosf(x: f32): f32;

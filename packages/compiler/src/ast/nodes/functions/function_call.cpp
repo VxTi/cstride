@@ -26,7 +26,7 @@ using namespace stride::ast::definition;
 
 std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     const std::shared_ptr<ParsingContext>& context,
-    const SymbolNameSegments& function_name_segments,
+    AstIdentifier* identifier,
     TokenSet& set
 )
 {
@@ -92,16 +92,9 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
         }
     }
 
-    const auto& ref_pos = reference_token.get_source_fragment();
-
-    // TODO: Fix symbol position, as this is now incorrect for scoped variables.
     return std::make_unique<AstFunctionCall>(
         context,
-        resolve_internal_name(
-            /* context_name = */"",
-                                ref_pos,
-                                function_name_segments
-        ),
+        identifier->clone_as<AstIdentifier>(),
         std::move(function_arg_nodes),
         function_call_flags
     );
@@ -245,9 +238,9 @@ llvm::Value* AstFunctionCall::codegen(
 
     // When propagating varargs via '...', the va_list is appended as an extra argument
     // at codegen time, so the caller's declared arg count is one less than the callee expects.
-    const auto effective_provided = this->get_arguments().size() + (this->is_variadic() ? 1 : 0);
 
-    if (effective_provided < minimum_arg_count)
+    if (const auto effective_provided = this->get_arguments().size() + (this->is_variadic() ? 1 : 0);
+        effective_provided < minimum_arg_count)
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
@@ -638,7 +631,7 @@ std::unique_ptr<IAstNode> AstFunctionCall::clone()
 
     return std::make_unique<AstFunctionCall>(
         this->get_context(),
-        this->_symbol,
+        this->get_function_name_identifier()->clone_as<AstIdentifier>(),
         std::move(cloned_args),
         this->_flags
     );

@@ -103,7 +103,7 @@ MutativeAssignmentType parse_mutative_assignment_type(const Token& token)
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
     const std::shared_ptr<ParsingContext>& context,
-    const std::string& variable_name,
+    AstIdentifier* identifier,
     TokenSet& set
 )
 {
@@ -132,7 +132,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     return std::make_unique<AstVariableReassignment>(
         reference_token.get_source_fragment(),
         context,
-        variable_name,
+        identifier->clone_as<AstIdentifier>(),
         operation,
         std::move(expression)
     );
@@ -141,9 +141,10 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
 void AstVariableReassignment::validate()
 {
     this->_value->validate();
-    const auto identifier_def = this->get_context()->lookup_variable(this->get_variable_name(), true);
 
-    if (!identifier_def)
+    const auto definition = this->get_identifier()->get_definition();
+
+    if (!definition.has_value())
     {
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
@@ -153,11 +154,12 @@ void AstVariableReassignment::validate()
             this->get_source_fragment());
     }
 
-    this->_internal_name = identifier_def->get_internal_symbol_name();
+    this->_internal_name = definition.value()->get_internal_symbol_name();
+    const auto& identifier_ty = this->get_identifier()->get_type();
 
-    if (is_bitwise_mutative_operation(this->_operator) &&
-        this->_value->get_type()->is_primitive() &&
-        cast_type<AstPrimitiveType*>(this->_value->get_type())->is_fp())
+    if (is_bitwise_mutative_operation(this->get_operator()) &&
+        this->get_value()->get_type()->is_primitive() &&
+        cast_type<AstPrimitiveType*>(this->get_value()->get_type())->is_fp())
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
@@ -167,7 +169,7 @@ void AstVariableReassignment::validate()
             this->get_source_fragment());
     }
 
-    if (!identifier_def->get_type()->is_mutable())
+    if (!identifier_ty->is_mutable())
     {
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
@@ -177,14 +179,14 @@ void AstVariableReassignment::validate()
             this->get_source_fragment());
     }
 
-    if (!identifier_def->get_type()->equals(this->get_value()->get_type()))
+    if (!identifier_ty->is_assignable_to(this->get_value()->get_type()))
     {
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Type mismatch when reassigning variable '{}', expected type '{}', got type '{}'",
                 this->get_variable_name(),
-                identifier_def->get_type()->to_string(),
+                identifier_ty->to_string(),
                 this->get_value()->get_type()->to_string()
             ),
             this->get_source_fragment()
@@ -197,28 +199,7 @@ llvm::Value* AstVariableReassignment::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    const auto internal_name = this->_internal_name.value();
-
-    // Locate the variable (AllocaInst or GlobalVariable)
-    llvm::Value* variable = builder->GetInsertBlock()->getValueSymbolTable()->lookup(internal_name);
-    if (!variable)
-    {
-        variable = module->getNamedGlobal(this->get_variable_name());
-    }
-
-    if (!variable)
-    {
-        variable = module->getNamedGlobal(internal_name);
-    }
-
-    if (!variable)
-    {
-        throw parsing_error(
-            ErrorType::REFERENCE_ERROR,
-            std::format("Variable '{}' not found", this->get_variable_name()),
-            this->get_source_fragment()
-        );
-    }
+    llvm::Value* variable = this->get_identifier()->codegen(module, builder);
 
     // Save the insertion point before codegen, as callable types (lambdas) may change it
     llvm::BasicBlock* saved_block = builder->GetInsertBlock();
@@ -328,7 +309,7 @@ std::unique_ptr<IAstNode> AstVariableReassignment::clone()
     return std::make_unique<AstVariableReassignment>(
         this->get_source_fragment(),
         this->get_context(),
-        this->get_variable_name(),
+        this->get_identifier()->clone_as<AstIdentifier>(),
         this->get_operator(),
         this->get_value()->clone_as<IAstExpression>()
     );
@@ -341,18 +322,18 @@ bool AstVariableReassignment::is_reducible()
 
 std::optional<std::unique_ptr<IAstNode>> AstVariableReassignment::reduce()
 {
-    if (!this->get_value()->is_reducible())
+    if (!this->_value->is_reducible())
         return std::nullopt;
 
-    const auto reduced = this->get_value()->reduce();
+    const auto reduced = this->_value->reduce();
 
     if (auto* reduced_expr = dynamic_cast<IAstExpression*>(reduced.value().get()))
     {
         return std::make_unique<AstVariableReassignment>(
             this->get_source_fragment(),
             this->get_context(),
-            this->get_variable_name(),
-            this->get_operator(),
+            this->_identifier->clone_as<AstIdentifier>(),
+            this->_operator,
             std::unique_ptr<IAstExpression>(reduced_expr)
         );
     }

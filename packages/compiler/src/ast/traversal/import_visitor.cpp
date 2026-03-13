@@ -7,13 +7,17 @@
 
 void stride::ast::ImportVisitor::accept(AstImport* node)
 {
-    const auto& [package_name, module_import_symbols] = node->get_dependency();
-    std::vector<std::string> submodules;
-    submodules.reserve(module_import_symbols.size());
+    const auto& package_identifier = node->get_package_identifier();
+    const auto& import_identifiers = node->get_import_list();
 
-    for (const auto& import_symbol : module_import_symbols)
+    const auto& pkg_name = package_identifier->get_scoped_name();
+
+    std::vector<std::string> import_list;
+    import_list.reserve(import_identifiers.size());
+
+    for (const auto& import_symbol : import_identifiers)
     {
-        submodules.push_back(import_symbol.internal_name);
+        import_list.push_back(import_symbol->get_scoped_name());
     }
 
     if (this->_import_registry.contains(this->_current_file_name))
@@ -21,11 +25,11 @@ void stride::ast::ImportVisitor::accept(AstImport* node)
         // Aggregate existing imports
         auto& package_imports = this->_import_registry.at(this->_current_file_name);
         package_imports
-           .at(package_name.name)
+           .at(pkg_name)
            .insert(
-                package_imports.at(package_name.name).end(),
-                submodules.begin(),
-                submodules.end()
+                package_imports.at(pkg_name).end(),
+                import_list.begin(),
+                import_list.end()
             );
     }
     // If the import list for this file isn't yet constructed, we create a
@@ -33,7 +37,7 @@ void stride::ast::ImportVisitor::accept(AstImport* node)
     else
     {
         std::map<std::string, std::vector<std::string>> package_imports;
-        package_imports.emplace(package_name.name, std::move(submodules));
+        package_imports.emplace(pkg_name, std::move(import_list));
         this->_import_registry.emplace(this->_current_file_name, package_imports);
     }
 }
