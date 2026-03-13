@@ -272,6 +272,14 @@ void AstObjectInitializer::validate()
     }
 }
 
+void AstObjectInitializer::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
+{
+    for (const auto& val : this->_member_initializers | std::views::values)
+    {
+        val->resolve_forward_references(module, builder);
+    }
+}
+
 llvm::Value* AstObjectInitializer::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder

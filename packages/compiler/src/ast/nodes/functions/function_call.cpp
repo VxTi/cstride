@@ -158,12 +158,6 @@ llvm::Value* AstFunctionCall::codegen(
         return indirect_call;
     }
 
-    // No way to find it :(
-    for (const auto& defined_function : module->getFunctionList())
-    {
-        std::cout << defined_function.getName().str() << std::endl;
-    }
-
     const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(this->get_function_name());
     const auto suggested_alternative = suggested_alternative_symbol
         ? std::format("Did you mean '{}'?",
@@ -184,10 +178,10 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module) co
             this->get_context()->get_function_definition(this->get_scoped_function_name(), this->get_argument_types());
         definition.has_value())
     {
-        llvm::Function* callee = module->getFunction(definition.value()->get_internal_symbol_name());
-
-        if (callee)
+        if (llvm::Function* callee = module->getFunction(definition.value()->get_internal_symbol_name()))
+        {
             return callee;
+        }
 
         const auto fn_def = definition.value();
         const auto fn_type = fn_def->get_type();
@@ -204,15 +198,14 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module) co
         // When propagating varargs (call has '...'), the callee receives the caller's
         // va_list as an extra fixed pointer argument rather than as true variadic args.
         // This lets the callee forward the va_list directly to vprintf/vscanf-style APIs.
-        bool llvm_is_variadic;
+        bool llvm_is_variadic = false;
         if (this->is_variadic())
         {
             param_types.push_back(llvm::PointerType::get(module->getContext(), 0));
-            llvm_is_variadic = false;
         }
         else
         {
-            llvm_is_variadic = (fn_def->get_flags() & SRFLAG_FN_TYPE_VARIADIC) != 0;
+            llvm_is_variadic = fn_def->is_variadic();
         }
 
         llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
@@ -239,7 +232,7 @@ llvm::Value* AstFunctionCall::codegen_regular_function_call(
     llvm::Function* callee,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
-)
+) const
 {
     const auto minimum_arg_count = callee->arg_size();
 
@@ -277,10 +270,8 @@ llvm::Value* AstFunctionCall::codegen_regular_function_call(
             // Do nothing, we'll append the va_list_ptr later if it exists
             continue;
         }
-        else
-        {
-            arg_val = arguments[i]->codegen(module, builder);
-        }
+
+        arg_val = arguments[i]->codegen(module, builder);
 
         if (!arg_val)
         {

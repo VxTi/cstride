@@ -12,10 +12,6 @@
 
 using namespace stride::ast;
 
-// ---------------------------------------------------------------------------
-// Parsing helpers
-// ---------------------------------------------------------------------------
-
 /// Checks whether the next two tokens begin a member access (`.identifier`).
 bool stride::ast::is_member_accessor(const TokenSet& set)
 {
@@ -83,10 +79,6 @@ std::unique_ptr<AstIndirectCall> stride::ast::parse_indirect_call(
         std::move(args)
     );
 }
-
-// ---------------------------------------------------------------------------
-// AstChainedExpression
-// ---------------------------------------------------------------------------
 
 llvm::Value* AstChainedExpression::codegen_global_member_accessor(
     llvm::Module* module,
@@ -286,16 +278,12 @@ bool AstChainedExpression::is_reducible()
     return false;
 }
 
-// ---------------------------------------------------------------------------
-// AstIndirectCall
-// ---------------------------------------------------------------------------
-
 llvm::Value* AstIndirectCall::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Value* callee_val = this->_callee->codegen(module, builder);
+    llvm::Value* callee_val = this->get_callee()->codegen(module, builder);
     if (!callee_val)
     {
         throw parsing_error(
@@ -306,7 +294,7 @@ llvm::Value* AstIndirectCall::codegen(
     }
 
     // Derive the LLVM function type from the callee's AST type
-    auto callee_ast_type = this->_callee->get_type()->clone_ty();
+    auto callee_ast_type = this->get_callee()->get_type()->clone_ty();
     if (auto* alias_ty = cast_type<AstAliasType*>(callee_ast_type.get()))
     {
         callee_ast_type = alias_ty->get_underlying_type()->clone_ty();
@@ -336,8 +324,8 @@ llvm::Value* AstIndirectCall::codegen(
     );
 
     std::vector<llvm::Value*> args_v;
-    args_v.reserve(this->_args.size());
-    for (const auto& arg : this->_args)
+    args_v.reserve(this->get_args().size());
+    for (const auto& arg : this->get_args())
     {
         llvm::Value* arg_val = arg->codegen(module, builder);
         if (!arg_val)
@@ -354,8 +342,8 @@ llvm::Value* AstIndirectCall::codegen(
 std::unique_ptr<IAstNode> AstIndirectCall::clone()
 {
     ExpressionList cloned_args;
-    cloned_args.reserve(this->_args.size());
-    for (const auto& arg : this->_args)
+    cloned_args.reserve(this->get_args().size());
+    for (const auto& arg : this->get_args())
     {
         cloned_args.push_back(arg->clone_as<IAstExpression>());
     }
@@ -370,8 +358,8 @@ std::unique_ptr<IAstNode> AstIndirectCall::clone()
 
 void AstIndirectCall::validate()
 {
-    this->_callee->validate();
-    for (const auto& arg : this->_args)
+    this->get_callee()->validate();
+    for (const auto& arg : this->get_args())
     {
         arg->validate();
     }
@@ -380,8 +368,8 @@ void AstIndirectCall::validate()
 std::string AstIndirectCall::to_string()
 {
     std::vector<std::string> arg_strs;
-    arg_strs.reserve(this->_args.size());
-    for (const auto& arg : this->_args)
+    arg_strs.reserve(this->get_args().size());
+    for (const auto& arg : this->get_args())
     {
         arg_strs.push_back(arg->to_string());
     }
