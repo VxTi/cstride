@@ -195,10 +195,21 @@ std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
     // Ensure we instantiate the type with the correct amount of parameters
     if (instantiated_types.size() != generic_param_names.size())
     {
+        if (generic_param_names.empty())
+        {
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
+                std::format(
+                    "Failed to resolve generic for type '{}': type is not generic",
+                    alias_type->get_name()
+                ),
+                alias_type->get_source_fragment()
+            );
+        }
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Failed to instantiate generic type type '{}': expected {} parameters, got {}",
+                "Failed to instantiate generic type '{}': expected {} parameters, got {}",
                 alias_type->get_name(),
                 generic_param_names.size(),
                 instantiated_types.size()

@@ -33,7 +33,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     const auto reference_token = set.peek(-1);
     auto function_parameter_set = collect_parenthesized_block(set);
 
-    ExpressionList function_arg_nodes = {};
+    ExpressionList function_arg_nodes;
 
     int function_call_flags = SRFLAG_NONE;
 

@@ -1,0 +1,31 @@
+package System;
+
+pub type Result<T> = {
+    success: bool;
+    value: T?;
+    error: string?;
+};
+
+module Result {
+    pub fn Ok<T>(value: T): Result<T> {
+        return Result<T>::{ success: true, value, error: nil };
+    }
+
+    pub fn Err<T>(error: string): Result<T> {
+        return Result<T>::{ success: false, value: nil, error };
+    }
+}
+
+pub type Array<T> = {
+    length: i32;
+    data: T [];
+};
+
+pub type MapEntry<K, V> = {
+    key: K;
+    value: V;
+};
+
+pub type Map<K, V> = {
+    entries: Array<MapEntry<K, V>>;
+};
