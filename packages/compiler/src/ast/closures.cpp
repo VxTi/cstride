@@ -89,7 +89,8 @@ namespace stride::ast::closures
 
     llvm::Function* find_lambda_function(
         llvm::Module* module,
-        const llvm::FunctionType* fn_type
+        const llvm::FunctionType* fn_type,
+        const bool prefer_captures
     )
     {
         if (!module || !fn_type)
@@ -102,9 +103,13 @@ namespace stride::ast::closures
         // 1. Return type must match
         // 2. The LAST N parameters must match (where N = declared params)
         // 3. The lambda should have >= N parameters
-        // Prefer an exact match (no captures) over a partial match (with captures)
+        //
+        // prefer_captures controls disambiguation when multiple lambdas match:
+        //   true  → prefer match WITH captures (callee is a closure env, e.g. struct field)
+        //   false → prefer match WITHOUT captures (callee is a raw fn ptr)
 
-        llvm::Function* best_match = nullptr;
+        llvm::Function* exact_match = nullptr;
+        llvm::Function* capture_match = nullptr;
 
         for (auto& fn : module->functions())
         {
@@ -141,21 +146,24 @@ namespace stride::ast::closures
 
                 if (params_match)
                 {
-                    // Exact match (same param count = no captures) — return immediately
                     if (lambda_params == num_declared)
                     {
-                        return &fn;
+                        if (!exact_match)
+                            exact_match = &fn;
                     }
-
-                    // Otherwise remember as a fallback (has captures)
-                    if (!best_match)
+                    else
                     {
-                        best_match = &fn;
+                        if (!capture_match)
+                            capture_match = &fn;
                     }
                 }
             }
         }
-        return best_match;
+
+        if (prefer_captures)
+            return capture_match ? capture_match : exact_match;
+
+        return exact_match ? exact_match : capture_match;
     }
 
     std::vector<llvm::Value*> generate_capture_arguments(

@@ -328,9 +328,16 @@ llvm::Value* AstIndirectCall::codegen(
     llvm::FunctionType* call_fn_type = llvm_fn_type;
     llvm::Value* actual_fn_ptr = callee_val;
 
+    // When the callee is a struct field access, the value is likely a closure
+    // env ptr (heap-allocated {fn_ptr, captures...}). Prefer the lambda with
+    // captures so we extract them correctly. For other callees (e.g. return
+    // values from function calls), prefer the exact-match lambda.
+    const bool callee_is_field_access =
+        cast_expr<AstChainedExpression*>(this->get_callee()) != nullptr;
+
     // Check if this is a closure call that needs capture extraction
     if (llvm::Function* lambda_fn =
-        closures::find_lambda_function(module, llvm_fn_type))
+        closures::find_lambda_function(module, llvm_fn_type, callee_is_field_access))
     {
         const size_t num_captures = lambda_fn->arg_size()
             - fn_type->get_parameter_types().size();

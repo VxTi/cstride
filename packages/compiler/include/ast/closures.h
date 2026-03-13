@@ -60,7 +60,8 @@ namespace stride::ast::closures
      */
     llvm::Function* find_lambda_function(
         llvm::Module* module,
-        const llvm::FunctionType* fn_type
+        const llvm::FunctionType* fn_type,
+        bool prefer_captures = false
     );
 
     /**
