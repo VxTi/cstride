@@ -38,8 +38,6 @@ llvm::Value* AstIdentifier::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Value* val = nullptr;
-
     const auto definition = this->get_definition();
 
     if (!definition.has_value())
@@ -52,6 +50,7 @@ llvm::Value* AstIdentifier::codegen(
     }
 
     const std::string internal_name = definition.value()->get_internal_symbol_name();
+    llvm::Value* val = nullptr;
 
     if (const auto block = builder->GetInsertBlock())
     {
@@ -81,6 +80,11 @@ llvm::Value* AstIdentifier::codegen(
                         global,
                         internal_name
                     );
+                }
+
+                if (auto* arg = llvm::dyn_cast_or_null<llvm::Argument>(val))
+                {
+                    return arg;
                 }
 
                 throw parsing_error(

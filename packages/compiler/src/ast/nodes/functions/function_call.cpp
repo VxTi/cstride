@@ -263,15 +263,14 @@ llvm::Value* AstFunctionCall::codegen_regular_function_call(
 
     for (size_t i = 0; i < arguments.size(); ++i)
     {
-        llvm::Value* arg_val = nullptr;
 
         if (cast_expr<AstVariadicArgReference*>(arguments[i].get()))
         {
             // Do nothing, we'll append the va_list_ptr later if it exists
-            continue;
+            break;
         }
 
-        arg_val = arguments[i]->codegen(module, builder);
+        llvm::Value* arg_val = arguments[i]->codegen(module, builder);
 
         if (!arg_val)
         {
