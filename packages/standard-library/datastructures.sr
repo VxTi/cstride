@@ -1,26 +1,19 @@
 package System;
 
+pub type Array<T> = {
+    length: i32;
+    data: T [];
+};
 
-module Structures {
+pub type MapEntry<K, V> = {
+    key: K;
+    value: V;
+};
 
-    pub type Array<T> = {
-        length: i32;
-        data: T [];
-    };
+pub type Map<K, V> = {
+    entries: MapEntry<K, V>[];
+};
 
-    pub type MapEntry<K, V> = {
-        key: K;
-        value: V;
-    };
-
-    pub type Map<K, V> = {
-        entries: MapEntry<K, V>[];
-    };
-
-    pub fn arrayOf<T>(members: T[]): Structures::Array<T> {
-        return Array<T>::{
-            length: members.length,
-            data: members
-        };
-    }
+pub fn arrayOf<T>(members: T[]): Array<T> {
+    return Array<T>::{ length: members.length, data: members };
 }

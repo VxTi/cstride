@@ -130,11 +130,9 @@ class StrideBlock(
             // Find the OBJECT_INITIALIZATION ancestor
             val objInitNode = myNode.treeParent
             if (objInitNode != null && objInitNode.elementType == StrideTypes.OBJECT_INITIALIZATION) {
-                val wrap = shouldWrap(objInitNode)
-                if (wrap && child1Type == StrideTypes.COMMA) {
-                    return lineBreakSpacing()
+                if (child1Type == StrideTypes.COMMA) {
+                    return if (shouldWrap(objInitNode)) lineBreakSpacing() else singleSpacing()
                 }
-                // Single-line comma spacing is handled by the SpacingBuilder
             }
         }
 
@@ -162,9 +160,8 @@ class StrideBlock(
 
             val funcCallNode = myNode.treeParent
             if (funcCallNode != null && funcCallNode.elementType == StrideTypes.FUNCTION_CALL_EXPRESSION) {
-                val wrap = shouldWrap(funcCallNode)
-                if (wrap && child1Type == StrideTypes.COMMA) {
-                    return lineBreakSpacing()
+                if (child1Type == StrideTypes.COMMA) {
+                    return if (shouldWrap(funcCallNode)) lineBreakSpacing() else singleSpacing()
                 }
             }
         }
