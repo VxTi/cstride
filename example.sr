@@ -36,7 +36,13 @@ fn make_person(name: string, age: i32, cars: Array<Car>): SomePerson<Array<Car>>
         age,
         cars,
         shout: (): void -> {
-            io::print("Hello, I am %s and I have %d cars! I drive a %s from %d", name, cars.length, cars.data[0].make, cars.data[0].year);
+            io::print(
+                "Hello, I am %s and I have %d cars! I drive a %s from %d",
+                name,
+                cars.length,
+                cars.data[0].make,
+                cars.data[0].year
+            );
         }
     };
 }

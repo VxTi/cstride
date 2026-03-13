@@ -65,15 +65,16 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
         set.expect(TokenType::RPAREN, "Expected secondary ')' after function type notation");
     }
 
-    auto fn_type = std::make_unique<AstFunctionType>(
-        reference_token.get_source_fragment(),
-        context,
-        std::move(parameters),
-        std::move(return_type),
-        flags
+    return parse_type_metadata(
+        std::make_unique<AstFunctionType>(
+            reference_token.get_source_fragment(),
+            context,
+            std::move(parameters),
+            std::move(return_type),
+            flags
+        ),
+        set
     );
-
-    return parse_type_metadata(std::move(fn_type), set, flags);
 }
 
 std::unique_ptr<IAstNode> AstFunctionType::clone()

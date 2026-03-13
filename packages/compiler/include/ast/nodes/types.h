@@ -589,8 +589,7 @@ namespace stride::ast
 
     std::unique_ptr<IAstType> parse_type_metadata(
         std::unique_ptr<IAstType> base_type,
-        TokenSet& set,
-        int context_type_flags
+        TokenSet& set
     );
 
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(

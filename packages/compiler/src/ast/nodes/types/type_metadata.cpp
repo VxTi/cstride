@@ -14,10 +14,10 @@ bool is_array_notation(const TokenSet& set)
 
 std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
     std::unique_ptr<IAstType> base_type,
-    TokenSet& set,
-    int context_type_flags
+    TokenSet& set
 )
 {
+    int base_flags = base_type->get_flags();
     const auto src_pos = set.peek_next().get_source_fragment();
     int offset = 0;
 
@@ -42,10 +42,10 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
     if (set.peek_next_eq(TokenType::QUESTION))
     {
         set.skip(1);
-        context_type_flags |= SRFLAG_TYPE_OPTIONAL;
+        base_flags |= SRFLAG_TYPE_OPTIONAL;
     }
 
-    base_type->set_flags(base_type->get_flags() | context_type_flags);
+    base_type->set_flags(base_flags);
 
     return std::move(base_type);
 }

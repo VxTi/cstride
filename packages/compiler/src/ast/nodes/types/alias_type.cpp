@@ -14,9 +14,9 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
 )
 {
     if (!set.peek_next_eq(TokenType::IDENTIFIER))
-    {
         return std::nullopt;
-    }
+
+    int flags = options.flags;
 
     // Parses an alias type instantiation, like `Module::SomeType<i32>`
     //
@@ -30,11 +30,10 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
             identifier_name->get_source_fragment(),
             context,
             identifier_name->get_scoped_name(),
-            options.flags,
+            flags,
             std::move(generic_types)
         ),
-        set,
-        options.flags
+        set
     );
 }
 
@@ -79,7 +78,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         );
     }
 
-    if (auto* object_type = cast_type<AstObjectType*>(type.get()))
+    if (const auto* object_type = cast_type<AstObjectType*>(type.get()))
     {
         ObjectTypeMemberList resolved_members;
         for (const auto& [name, member_type] : object_type->get_members())
