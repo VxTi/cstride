@@ -1,4 +1,3 @@
-package somePkg;
 import System::{
     io::print
 };
@@ -27,11 +26,7 @@ type SomePerson<TSomeCar> = {
 };
 
 fn make_car(make: string, model: string, year: i32): Car {
-    return Car::{
-        make,
-        model,
-        year
-    };
+    return Car::{ make, model, year };
 }
 
 fn make_person(name: string, age: i32, cars: Array<Car>): SomePerson<Array<Car>> {
@@ -44,7 +39,6 @@ fn main(): i32 {
         length: 1,
         data: [my_car]
     });
-
 
     const my_car = me.cars.data[0];
 

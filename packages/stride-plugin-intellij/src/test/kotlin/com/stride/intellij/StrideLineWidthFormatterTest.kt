@@ -103,6 +103,56 @@ class StrideLineWidthFormatterTest : BasePlatformTestCase() {
         myFixture.checkResult(after)
     }
 
+    fun testObjectInitWithValuesFitsOnOneLine() {
+        getStrideSettings().MAX_LINE_WIDTH = 120
+        val before = """
+            const obj = SomeType::{ field: value, field2: value2, field3: value3 };
+        """.trimIndent()
+        val after = """
+            const obj = SomeType::{ field: value, field2: value2, field3: value3 };
+        """.trimIndent()
+        myFixture.configureByText("test.sr", before)
+        myFixture.performEditorAction("ReformatCode")
+        myFixture.checkResult(after)
+    }
+
+    fun testObjectInitWithValuesExceedsLineWidth() {
+        getStrideSettings().MAX_LINE_WIDTH = 40
+        val before = """
+            const obj = SomeType::{ field: value, field2: value2, field3: value3 };
+        """.trimIndent()
+        val after = """
+            const obj = SomeType::{
+                field: value,
+                field2: value2,
+                field3: value3
+            };
+        """.trimIndent()
+        myFixture.configureByText("test.sr", before)
+        myFixture.performEditorAction("ReformatCode")
+        myFixture.checkResult(after)
+    }
+
+    fun testGenericObjectInitWrapping() {
+        getStrideSettings().MAX_LINE_WIDTH = 120
+        val before = """
+            pub fn arrayOf<T>(members: T[]): Array<T> {
+                return Array<T>::{
+                    length: members.length,
+                    data: members
+                };
+            }
+        """.trimIndent()
+        val after = """
+            pub fn arrayOf<T>(members: T[]): Array<T> {
+                return Array<T>::{ length: members.length, data: members };
+            }
+        """.trimIndent()
+        myFixture.configureByText("test.sr", before)
+        myFixture.performEditorAction("ReformatCode")
+        myFixture.checkResult(after)
+    }
+
     fun testCustomIndentSize() {
         getStrideSettings().MAX_LINE_WIDTH = 30
         setIndentSize(2)
