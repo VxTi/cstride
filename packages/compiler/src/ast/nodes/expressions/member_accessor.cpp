@@ -1,6 +1,7 @@
 #include "errors.h"
 #include "formatting.h"
 #include "ast/casting.h"
+#include "ast/closures.h"
 #include "ast/parsing_context.h"
 #include "ast/nodes/enumerables.h"
 #include "ast/nodes/expression.h"
@@ -324,7 +325,38 @@ llvm::Value* AstIndirectCall::codegen(
     );
 
     std::vector<llvm::Value*> args_v;
-    args_v.reserve(this->get_args().size());
+    llvm::FunctionType* call_fn_type = llvm_fn_type;
+    llvm::Value* actual_fn_ptr = callee_val;
+
+    // Check if this is a closure call that needs capture extraction
+    if (llvm::Function* lambda_fn =
+        closures::find_lambda_function(module, llvm_fn_type))
+    {
+        call_fn_type = lambda_fn->getFunctionType();
+
+        const size_t num_captures = lambda_fn->arg_size()
+            - fn_type->get_parameter_types().size();
+
+        if (num_captures > 0)
+        {
+            auto capture_args = closures::extract_closure_captures(
+                module, builder, callee_val, lambda_fn);
+
+            if (capture_args.size() == num_captures)
+            {
+                // Extract the actual function pointer from offset 0 of the closure env
+                actual_fn_ptr = builder->CreateLoad(
+                    lambda_fn->getType(),
+                    callee_val,
+                    "closure_fn_ptr"
+                );
+
+                args_v.insert(args_v.end(), capture_args.begin(), capture_args.end());
+            }
+        }
+    }
+
+    // Add the user-provided arguments
     for (const auto& arg : this->get_args())
     {
         llvm::Value* arg_val = arg->codegen(module, builder);
@@ -334,9 +366,9 @@ llvm::Value* AstIndirectCall::codegen(
     }
 
     const auto instruction_name =
-        llvm_fn_type->getReturnType()->isVoidTy() ? "" : "indcalltmp";
+        call_fn_type->getReturnType()->isVoidTy() ? "" : "indcalltmp";
 
-    return builder->CreateCall(llvm_fn_type, callee_val, args_v, instruction_name);
+    return builder->CreateCall(call_fn_type, actual_fn_ptr, args_v, instruction_name);
 }
 
 std::unique_ptr<IAstNode> AstIndirectCall::clone()
