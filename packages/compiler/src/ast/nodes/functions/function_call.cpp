@@ -147,93 +147,100 @@ llvm::Value* AstFunctionCall::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Function* callee = nullptr;
+    if (llvm::Function* callee = this->resolve_regular_callee(module))
+    {
+        return this->codegen_regular_function_call(callee, module, builder);
+    }
 
+    // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
+    if (auto* indirect_call = this->codegen_anonymous_function_call(module, builder))
+    {
+        return indirect_call;
+    }
+
+    // No way to find it :(
+    for (const auto& defined_function : module->getFunctionList())
+    {
+        std::cout << defined_function.getName().str() << std::endl;
+    }
+
+    const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(this->get_function_name());
+    const auto suggested_alternative = suggested_alternative_symbol
+        ? std::format("Did you mean '{}'?",
+                      format_suggestion(suggested_alternative_symbol))
+        : "";
+
+    throw parsing_error(
+        ErrorType::REFERENCE_ERROR,
+        std::format("Function '{}' was not found in this scope", this->format_function_name()),
+        this->get_source_fragment(),
+        suggested_alternative
+    );
+}
+
+llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module) const
+{
     if (const auto definition =
             this->get_context()->get_function_definition(this->get_scoped_function_name(), this->get_argument_types());
         definition.has_value())
     {
-        callee = module->getFunction(definition.value()->get_internal_symbol_name());
+        llvm::Function* callee = module->getFunction(definition.value()->get_internal_symbol_name());
 
-        // If the symbol exists in the semantic context but not yet in the IR module,
-        // declare it as an external function now.
-        if (!callee)
+        if (callee)
+            return callee;
+
+        const auto fn_def = definition.value();
+        const auto fn_type = fn_def->get_type();
+        std::vector<llvm::Type*> param_types;
+        param_types.reserve(fn_type->get_parameter_types().size());
+
+        for (const auto& param : fn_type->get_parameter_types())
         {
-            const auto fn_def = definition.value();
-            const auto fn_type = fn_def->get_type();
-            std::vector<llvm::Type*> param_types;
-            param_types.reserve(fn_type->get_parameter_types().size());
-
-            for (const auto& param : fn_type->get_parameter_types())
-            {
-                param_types.push_back(param->get_llvm_type(module));
-            }
-
-            llvm::Type* ret_type = fn_type->get_return_type()->get_llvm_type(module);
-
-            // When propagating varargs (call has '...'), the callee receives the caller's
-            // va_list as an extra fixed pointer argument rather than as true variadic args.
-            // This lets the callee forward the va_list directly to vprintf/vscanf-style APIs.
-            bool llvm_is_variadic;
-            if (this->is_variadic())
-            {
-                param_types.push_back(llvm::PointerType::get(module->getContext(), 0));
-                llvm_is_variadic = false;
-            }
-            else
-            {
-                llvm_is_variadic = (fn_def->get_flags() & SRFLAG_FN_TYPE_VARIADIC) != 0;
-            }
-
-            llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
-                ret_type,
-                param_types,
-                llvm_is_variadic
-            );
-
-            // If we are calling a variadic function and propagating '...', 
-            // the callee is actually a non-variadic function that takes a va_list.
-            // But we should use the actual function name for the lookup.
-            auto callee_cand = module->getOrInsertFunction(
-                fn_def->get_internal_symbol_name(),
-                llvm_fn_type
-            );
-
-            callee = llvm::dyn_cast<llvm::Function>(callee_cand.getCallee());
-        }
-    }
-
-    // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
-    if (!callee)
-    {
-        if (auto* indirect_call = this->codegen_anonymous_function_call(module, builder))
-        {
-            return indirect_call;
-        }
-    }
-
-    // No way to find it :(
-    if (!callee)
-    {
-        for (const auto& defined_function : module->getFunctionList())
-        {
-            std::cout << defined_function.getName().str() << std::endl;
+            param_types.push_back(param->get_llvm_type(module));
         }
 
-        const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(this->get_function_name());
-        const auto suggested_alternative = suggested_alternative_symbol
-            ? std::format("Did you mean '{}'?",
-                          format_suggestion(suggested_alternative_symbol))
-            : "";
+        llvm::Type* ret_type = fn_type->get_return_type()->get_llvm_type(module);
 
-        throw parsing_error(
-            ErrorType::REFERENCE_ERROR,
-            std::format("Function '{}' was not found in this scope", this->format_function_name()),
-            this->get_source_fragment(),
-            suggested_alternative
+        // When propagating varargs (call has '...'), the callee receives the caller's
+        // va_list as an extra fixed pointer argument rather than as true variadic args.
+        // This lets the callee forward the va_list directly to vprintf/vscanf-style APIs.
+        bool llvm_is_variadic;
+        if (this->is_variadic())
+        {
+            param_types.push_back(llvm::PointerType::get(module->getContext(), 0));
+            llvm_is_variadic = false;
+        }
+        else
+        {
+            llvm_is_variadic = (fn_def->get_flags() & SRFLAG_FN_TYPE_VARIADIC) != 0;
+        }
+
+        llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
+            ret_type,
+            param_types,
+            llvm_is_variadic
         );
+
+        // If we are calling a variadic function and propagating '...',
+        // the callee is actually a non-variadic function that takes a va_list.
+        // But we should use the actual function name for the lookup.
+        auto callee_cand = module->getOrInsertFunction(
+            fn_def->get_internal_symbol_name(),
+            llvm_fn_type
+        );
+
+        return llvm::dyn_cast<llvm::Function>(callee_cand.getCallee());
     }
 
+    return nullptr;
+}
+
+llvm::Value* AstFunctionCall::codegen_regular_function_call(
+    llvm::Function* callee,
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder
+)
+{
     const auto minimum_arg_count = callee->arg_size();
 
     // When propagating varargs via '...', the va_list is appended as an extra argument
