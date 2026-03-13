@@ -31,6 +31,8 @@
                               implementationClass="com.stride.intellij.editor.StrideFoldingBuilder"/>
 
         <lang.formatter language="Stride" implementationClass="com.stride.intellij.StrideFormattingModelBuilder"/>
+        <codeStyleSettingsProvider implementation="com.stride.intellij.StrideCodeStyleSettingsProvider"/>
+        <langCodeStyleSettingsProvider implementation="com.stride.intellij.StrideLanguageCodeStyleSettingsProvider"/>
         <configurationType implementation="com.stride.intellij.run.StrideRunConfigurationType"/>
         <runConfigurationProducer implementation="com.stride.intellij.run.StrideRunConfigurationProducer"/>
     </extensions>

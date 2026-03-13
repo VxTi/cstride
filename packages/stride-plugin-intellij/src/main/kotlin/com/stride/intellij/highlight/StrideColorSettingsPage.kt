@@ -27,8 +27,8 @@ class StrideColorSettingsPage : ColorSettingsPage {
                 Time::Sleep
             };
 
-            type <usertype>Array</usertype>&lt;<generic>T</generic>&gt; = <generic>T</generic>[];
-            type <usertype>IArray</usertype> = <usertype>Array</usertype>&lt;i32&gt;;
+            type <usertype>Array</usertype><<generic>T</generic>>; = <generic>T</generic>[];
+            type <usertype>IArray</usertype> = <usertype>Array</usertype><i32>;
 
             /**
              * Prints the given string and sleeps for the specified duration.

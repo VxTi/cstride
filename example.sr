@@ -35,11 +35,7 @@ fn make_car(make: string, model: string, year: i32): Car {
 }
 
 fn make_person(name: string, age: i32, cars: Array<Car>): SomePerson<Array<Car>> {
-    return SomePerson<Array<Car>>::{
-        name,
-        age,
-        cars
-    };
+    return SomePerson<Array<Car>>::{ name, age, cars };
 }
 
 fn main(): i32 {
