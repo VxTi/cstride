@@ -8,16 +8,11 @@ enum SomeEnum {
     Variant3
 }
 
-type Callback<T> = (T) -> void;
-
-type Array<T> = {
-    length: i32;
-    data: T[];
-};
+type Callback = () -> void;
 
 extern fn sleep(seconds: i32): void;
 
-fn timeout(seconds: i32, cb: Callback<void>): void {
+fn timeout(seconds: i32, cb: Callback): void {
     sleep(seconds);
     cb();
 }
@@ -27,9 +22,17 @@ fn main(): i32 {
 
     // io::print("The value of some_enum_val is: %d", some_enum_val);
 
-    io::print("Doing something v1");
+    io::print("Doing something v1\n");
 
-    timeout(2, (): void -> io::print("Done doing something"));
+//    timeout(2, (): void -> io::print("Done doing something\n"));
+
+    const result = io::read_file("nonexistent_file.txt");
+
+    if (!result.success) {
+        io::print("Error reading file: %s\n", result.error);
+    } else {
+        io::print("File content: %s\n", result.value);
+    }
 
     return 0;
 }
