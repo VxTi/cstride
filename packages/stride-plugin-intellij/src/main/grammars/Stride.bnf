@@ -268,7 +268,7 @@ ArgumentList ::= Expression (COMMA Expression)*
 ParenthesizedExpression ::= LambdaExpression | (LPAREN Expression RPAREN)
 
 // (p: i32) -> i32 { ... }
-LambdaExpression ::= LPAREN FunctionParameterList RPAREN COLON Type ARROW BlockStatement
+LambdaExpression ::= LPAREN FunctionParameterList RPAREN COLON Type ARROW (BlockStatement | Expression)
 
 // some::field
 ScopedIdentifier ::= IDENTIFIER (COLON_COLON IDENTIFIER)* {

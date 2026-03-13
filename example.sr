@@ -17,7 +17,7 @@ type Array<T> = {
 
 extern fn sleep(seconds: i32): void;
 
-fn timeout(seconds: i32, cb: () -> void): void {
+fn timeout(seconds: i32, cb: Callback<void>): void {
     sleep(seconds);
     cb();
 }
@@ -29,9 +29,7 @@ fn main(): i32 {
 
     io::print("Doing something v1");
 
-    timeout(2, (): void -> {
-        io::print("Done doing something");
-    });
+    timeout(2, (): void -> io::print("Done doing something"));
 
     return 0;
 }
