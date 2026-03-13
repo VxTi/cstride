@@ -92,6 +92,17 @@ const
 
     for (size_t i = 0; i < self_params.size(); i++)
     {
+        if (auto* other_alias = cast_type<AstAliasType*>(other_parameter_types[i].get()))
+        {
+            if (auto* self_alias = cast_type<AstAliasType*>(self_params[i].get()))
+            {
+                if (self_alias->is_assignable_to(other_alias))
+                {
+                    // Alias types match if their underlying types match, which is checked with `is_assignable_to`
+                    continue;
+                }
+            }
+        }
         // Strict equality check - parameters must match exactly,
         // otherwise named overloading with different signatures wouldn't work.
         if (!self_params[i]->equals(other_parameter_types[i].get()))

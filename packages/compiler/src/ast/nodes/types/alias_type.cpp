@@ -68,9 +68,12 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         );
     }
 
-    if (auto* named = cast_type<AstAliasType*>(type.get()))
+    if (cast_type<AstAliasType*>(type.get()))
     {
-        return named->get_underlying_type()->clone_ty();
+        // Don't eagerly resolve alias types here — they may be self-referencing
+        // (e.g., Promise<T> = { then: () -> Promise<T> }) and would cause infinite
+        // recursion. Leave them as aliases to be lazily resolved when accessed.
+        return std::move(type);
     }
 
     if (const auto* array = cast_type<AstArrayType*>(type.get()))

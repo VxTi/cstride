@@ -52,8 +52,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     auto reference_token = set.expect(TokenType::KEYWORD_FN);
 
     // Here we expect to receive the function name
-    const auto fn_name_tok = set.expect(TokenType::IDENTIFIER,
-                                        "Expected function name after 'fn'");
+    const auto fn_name_tok = set.expect(TokenType::IDENTIFIER, "Expected function name");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
     auto function_context = std::make_shared<ParsingContext>(context, ContextType::FUNCTION);
@@ -61,7 +60,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     GenericParameterList generic_parameter_names = parse_generic_declaration(set);
 
     set.expect(TokenType::LPAREN, "Expected '(' after function name");
-    std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
+    std::vector<std::unique_ptr<AstFunctionParameter>> parameters;
 
     // Parameter parsing
     if (!set.peek_next_eq(TokenType::RPAREN))
@@ -80,7 +79,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     set.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(context, set, {"Expected return type in function header"});
+    auto return_type = parse_type(context, set, { "Expected return type in function header" });
 
     const auto& position = reference_token.get_source_fragment();
     auto sym_function_name = Symbol(position, context->get_name(), fn_name);
@@ -140,7 +139,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     auto return_type = parse_type(
         function_context,
         set,
-        {"Expected type after anonymous function header definition"}
+        { "Expected type after anonymous function header definition" }
     );
     const auto lambda_arrow = set.expect(
         TokenType::RARROW,
@@ -338,6 +337,9 @@ void collect_free_variables(
     // Handle function calls
     if (const auto* fn_call = cast_expr<AstFunctionCall*>(node))
     {
+        // Capture the "function name" if it's actually a variable (anonymous call)
+        capture_variable(fn_call->get_function_name());
+
         for (const auto& arg : fn_call->get_arguments())
         {
             collect_free_variables(arg.get(), lambda_context, outer_context, captures);
@@ -531,8 +533,7 @@ void IAstFunction::validate()
     const auto return_statements = collect_return_statements(this->get_body());
 
     // For void types, we only disallow returning expressions, as this is redundant.
-    if (const auto void_ret = cast_type<AstPrimitiveType*>(
-            this->get_return_type());
+    if (const auto void_ret = cast_type<AstPrimitiveType*>(this->get_return_type());
         void_ret != nullptr && void_ret->get_primitive_type() == PrimitiveType::VOID)
     {
         for (const auto& return_stmt : return_statements)
@@ -542,9 +543,22 @@ void IAstFunction::validate()
                 throw parsing_error(
                     ErrorType::TYPE_ERROR,
                     std::format(
-                        "Function '{}' has return type 'void' and cannot return a value.",
-                        this->get_function_name()),
-                    return_stmt->get_source_fragment());
+                        "{} has return type 'void' and cannot return a value.",
+                        this->is_anonymous()
+                        ? "Anonymous function"
+                        : std::format("Function '{}'", this->get_function_name())),
+                    {
+                        ErrorSourceReference(
+                            "unexpected return value",
+                            return_stmt->get_source_fragment()
+                        ),
+                        ErrorSourceReference(
+                            "Function returning void type",
+                            this->get_source_fragment()
+                        )
+                    }
+
+                );
             }
         }
         return;
