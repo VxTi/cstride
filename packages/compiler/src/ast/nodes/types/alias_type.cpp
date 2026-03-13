@@ -57,8 +57,17 @@ std::optional<std::unique_ptr<IAstType>> AstAliasType::get_reference_type() cons
     return std::nullopt;
 }
 
-static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr<IAstType> type)
+static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr<IAstType> type, int recursion_guard)
 {
+    if (++recursion_guard > MAX_RECURSION_DEPTH)
+    {
+        throw stride::parsing_error(
+            stride::ErrorType::COMPILATION_ERROR,
+            "Exceeded maximum recursion depth while resolving nested underlying types",
+            type->get_source_fragment()
+        );
+    }
+
     if (auto* named = cast_type<AstAliasType*>(type.get()))
     {
         return named->get_underlying_type()->clone_ty();
@@ -67,7 +76,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
     if (const auto* array = cast_type<AstArrayType*>(type.get()))
     {
         auto element_type = array->get_element_type()->clone_ty();
-        auto resolved_element = resolve_nested_underlying_types(std::move(element_type));
+        auto resolved_element = resolve_nested_underlying_types(std::move(element_type), recursion_guard);
 
         return std::make_unique<AstArrayType>(
             array->get_source_fragment(),
@@ -83,13 +92,16 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         ObjectTypeMemberList resolved_members;
         for (const auto& [name, member_type] : object_type->get_members())
         {
-            resolved_members.emplace_back(name, resolve_nested_underlying_types(member_type->clone_ty()));
+            resolved_members.emplace_back(
+                name,
+                resolve_nested_underlying_types(member_type->clone_ty(), recursion_guard)
+            );
         }
 
         GenericTypeList resolved_generics;
         for (const auto& gen : object_type->get_instantiated_generics())
         {
-            resolved_generics.push_back(resolve_nested_underlying_types(gen->clone_ty()));
+            resolved_generics.push_back(resolve_nested_underlying_types(gen->clone_ty(), recursion_guard));
         }
 
         return std::make_unique<AstObjectType>(
@@ -107,7 +119,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         std::vector<std::unique_ptr<IAstType>> resolved_members;
         for (const auto& member : tuple->get_members())
         {
-            resolved_members.push_back(resolve_nested_underlying_types(member->clone_ty()));
+            resolved_members.push_back(resolve_nested_underlying_types(member->clone_ty(), recursion_guard));
         }
 
         return std::make_unique<AstTupleType>(
@@ -123,10 +135,10 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         std::vector<std::unique_ptr<IAstType>> resolved_params;
         for (const auto& param : func->get_parameter_types())
         {
-            resolved_params.push_back(resolve_nested_underlying_types(param->clone_ty()));
+            resolved_params.push_back(resolve_nested_underlying_types(param->clone_ty(), recursion_guard));
         }
 
-        auto resolved_return = resolve_nested_underlying_types(func->get_return_type()->clone_ty());
+        auto resolved_return = resolve_nested_underlying_types(func->get_return_type()->clone_ty(), recursion_guard);
 
         return std::make_unique<AstFunctionType>(
             func->get_source_fragment(),
@@ -180,6 +192,17 @@ IAstType* AstAliasType::get_underlying_type()
 
     while (true)
     {
+        if (++recursion_guard > MAX_RECURSION_DEPTH)
+        {
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format(
+                    "Exceeded maximum recursion depth while resolving base type of '{}'",
+                    this->get_name()),
+                this->get_source_fragment()
+            );
+        }
+
         if (const auto* named_reference = cast_type<AstAliasType*>(base_type.get()))
         {
             if (named_reference->is_generic_overload())
@@ -210,24 +233,13 @@ IAstType* AstAliasType::get_underlying_type()
         else
         {
             // If it's not a named type, it might still contain named types (like Wrap<T>[])
-            base_type = resolve_nested_underlying_types(std::move(base_type));
+            base_type = resolve_nested_underlying_types(std::move(base_type), recursion_guard);
 
             if (cast_type<AstAliasType*>(base_type.get()))
             {
                 continue;
             }
             break;
-        }
-
-        if (++recursion_guard > MAX_RECURSION_DEPTH)
-        {
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                std::format(
-                    "Exceeded maximum recursion depth while resolving base type of '{}'",
-                    this->get_name()),
-                this->get_source_fragment()
-            );
         }
     }
 

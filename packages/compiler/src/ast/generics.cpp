@@ -184,9 +184,9 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
 
 std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
     const AstAliasType* alias_type,
-    const definition::TypeDefinition* type_definition
-)
+    const definition::TypeDefinition* type_definition)
 {
+
     const auto& instantiated_types = alias_type->get_instantiated_generic_types();
     const auto& generic_param_names = type_definition->get_generics_parameters();
 
