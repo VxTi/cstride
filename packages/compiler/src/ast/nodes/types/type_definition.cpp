@@ -21,7 +21,11 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_definition(
 
     set.expect(TokenType::EQUALS);
 
-    auto type = parse_type(context, set, { "Expected type definition", type_name });
+    auto type = parse_type(
+        context,
+        set,
+        { "Expected type definition", type_name, SRFLAG_NONE, generic_params }
+    );
     const auto& last_token = set.expect(TokenType::SEMICOLON, "Expected ';' after type definition");
     const auto& last_pos = last_token.get_source_fragment();
 

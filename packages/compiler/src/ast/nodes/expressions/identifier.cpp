@@ -77,8 +77,7 @@ llvm::Value* AstIdentifier::codegen(
                 {
                     return builder->CreateLoad(
                         global->getValueType(),
-                        global,
-                        internal_name
+                        global
                     );
                 }
 
@@ -101,14 +100,18 @@ llvm::Value* AstIdentifier::codegen(
         return arg;
     }
 
+    if (auto* load = llvm::dyn_cast_or_null<llvm::LoadInst>(val))
+    {
+        return load;
+    }
+
     if (auto* alloca = llvm::dyn_cast_or_null<llvm::AllocaInst>(val))
     {
         // Load the value from the allocated variable
         // Note: This is safe because 'val' is only found if GetInsertBlock() was not null
         return builder->CreateLoad(
             alloca->getAllocatedType(),
-            alloca,
-            internal_name
+            alloca
         );
     }
 
@@ -119,8 +122,7 @@ llvm::Value* AstIdentifier::codegen(
         {
             return builder->CreateLoad(
                 global->getValueType(),
-                global,
-                internal_name
+                global
             );
         }
 

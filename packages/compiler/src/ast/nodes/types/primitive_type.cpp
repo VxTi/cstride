@@ -271,11 +271,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
 
     set.skip(offset + 1);
 
-    return parse_type_metadata(
-        std::move(result.value()),
-        set,
-        flags
-    );
+    return parse_type_metadata(std::move(result.value()), set);
 }
 
 bool AstPrimitiveType::equals(IAstType* other)

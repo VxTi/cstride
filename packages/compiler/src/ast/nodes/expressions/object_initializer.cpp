@@ -391,8 +391,7 @@ llvm::Value* AstObjectInitializer::codegen(
         current_struct_val = builder->CreateInsertValue(
             current_struct_val,
             member_val,
-            { static_cast<unsigned int>(i) },
-            "object.construct"
+            { static_cast<unsigned int>(i) }
         );
     }
 

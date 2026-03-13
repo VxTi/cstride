@@ -14,14 +14,14 @@ using namespace stride::ast;
 void parse_object_member(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
-    ObjectTypeMemberList& fields
+    ObjectTypeMemberList& fields,
+    const TypeParsingOptions& options
 )
 {
-    const auto struct_member_name_tok = set.expect(
-        TokenType::IDENTIFIER,
-        "Expected object member name"
-    );
-    const auto& struct_member_name = struct_member_name_tok.get_lexeme();
+    const auto& struct_member_name =
+        set
+       .expect(TokenType::IDENTIFIER, "Expected object member name")
+       .get_lexeme();
 
     set.expect(TokenType::COLON);
 
@@ -30,19 +30,26 @@ void parse_object_member(
         set,
         { "Expected object member type" }
     );
-    const auto last_token = set.expect(
-        TokenType::SEMICOLON,
-        "Expected ';' after object member declaration"
-    );
 
-    const auto& last_pos = last_token.get_source_fragment();
-    const auto& mem_pos = struct_member_name_tok.get_source_fragment();
+    // Ensure that if the field value is
+    if (const auto named_ty = cast_type<AstAliasType*>(struct_member_type.get());
+        named_ty != nullptr
+        // Ensure we're not referencing another type with the same name as the generic overload.
+        // This prioritizes named types with generic parameters over the generic overload, which is the most intuitive behavior for users.
+        && named_ty->is_generic_overload()
+        && !options.generic_types.empty())
+    {
+        for (const auto& generic_name : options.generic_types)
+        {
+            if (named_ty->get_name() == generic_name)
+            {
+                struct_member_type->set_flags(struct_member_type->get_flags() | SRFLAG_TYPE_GENERIC_REF);
+                break;
+            }
+        }
+    }
 
-    const auto position = stride::SourceFragment(
-        set.get_source(),
-        mem_pos.offset,
-        last_pos.offset + last_pos.length - mem_pos.offset
-    );
+    set.expect(TokenType::SEMICOLON, "Expected ';' after object member declaration");
 
     fields.emplace_back(struct_member_name, std::move(struct_member_type));
 }
@@ -73,15 +80,13 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional
 
     auto struct_body_set = collect_block_required(set, "A struct must have at least 1 member");
 
-    ObjectTypeMemberList struct_fields = {};
-    const auto struct_type_context = std::make_shared<ParsingContext>(
-        context,
-        context->get_context_type());
+    ObjectTypeMemberList struct_fields;
+    const auto struct_type_context = std::make_shared<ParsingContext>(context, context->get_context_type());
 
     // Parse fields
     while (struct_body_set.has_next())
     {
-        parse_object_member(struct_type_context, struct_body_set, struct_fields);
+        parse_object_member(struct_type_context, struct_body_set, struct_fields, options);
     }
 
     // Re-verification
@@ -98,7 +103,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional
         options.flags
     );
 
-    return parse_type_metadata(std::move(struct_ty), set, options.flags);
+    return parse_type_metadata(std::move(struct_ty), set);
 }
 
 std::optional<IAstType*> AstObjectType::get_member_field_type(const std::string& field_name) const
