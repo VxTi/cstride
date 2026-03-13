@@ -143,9 +143,6 @@ std::optional<int> AstObjectType::get_member_field_index(const std::string& fiel
     return std::nullopt;
 }
 
-/// Produces a name based on the field types,
-/// so that all structs with the same fields have the same name,
-/// resulting in no LLVM duplication
 std::string AstObjectType::get_internalized_name()
 {
     return this->get_type_name();

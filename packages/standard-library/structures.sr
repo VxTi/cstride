@@ -7,13 +7,13 @@ pub type Result<T> = {
 };
 
 module Result {
-    pub fn Ok<T>(value: T): Result<T> {
+    /* pub fn Ok<T>(value: T): Result<T> {
         return Result<T>::{ success: true, value, error: nil };
     }
 
     pub fn Err<T>(error: string): Result<T> {
         return Result<T>::{ success: false, value: nil, error };
-    }
+    }*/
 }
 
 pub type Array<T> = {
