@@ -80,6 +80,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     }
     else if (const auto* reassign = dynamic_cast<AstVariableReassignment*>(node))
     {
+        visit_expression(visitor, reassign->get_identifier());
         visit_expression(visitor, reassign->get_value());
     }
     else if (const auto* chained = dynamic_cast<AstChainedExpression*>(node))

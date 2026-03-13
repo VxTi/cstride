@@ -566,6 +566,18 @@ namespace stride::ast
         std::string error_message;
         std::string type_name;
         int flags;
+        const std::vector<std::string>& generic_types;
+
+        TypeParsingOptions(
+            std::string error_message,
+            std::string type_name = "",
+            const int flags = SRFLAG_NONE,
+            const std::vector<std::string>& generic_types = {}
+        ) :
+            error_message(std::move(error_message)),
+            type_name(std::move(type_name)),
+            flags(flags),
+            generic_types(generic_types) {}
     };
 
     std::unique_ptr<IAstType> parse_type(
@@ -586,7 +598,7 @@ namespace stride::ast
         TokenSet& set,
         const TypeParsingOptions& options);
 
-    std::optional<std::unique_ptr<IAstType>> parse_named_type_optional(
+    std::optional<std::unique_ptr<IAstType>> parse_alias_type_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const TypeParsingOptions& options);

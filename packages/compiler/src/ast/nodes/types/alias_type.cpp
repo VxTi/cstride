@@ -7,36 +7,34 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<IAstType>> stride::ast::parse_named_type_optional(
+std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
     const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
 {
-    int flags = options.flags;
-    // Custom types are identifiers in the type position.
-    const auto reference_token = set.peek_next();
-
-    if (reference_token.get_type() != TokenType::IDENTIFIER)
+    if (!set.peek_next_eq(TokenType::IDENTIFIER))
     {
         return std::nullopt;
     }
 
-    const auto segments = parse_segmented_identifier(set, "Expected identifier for named type");
+    // Parses an alias type instantiation, like `Module::SomeType<i32>`
+    //
+    // - Parses `Module::SomeType`
+    const auto identifier_name = parse_segmented_identifier(context, set, "Expected identifier for named type");
+    // - Parses `<i32>`
     auto generic_types = parse_generic_type_arguments(context, set);
-
-    const auto name = resolve_internal_name(segments);
 
     return parse_type_metadata(
         std::make_unique<AstAliasType>(
-            reference_token.get_source_fragment(),
+            identifier_name->get_source_fragment(),
             context,
-            name,
-            flags,
+            identifier_name->get_scoped_name(),
+            options.flags,
             std::move(generic_types)
         ),
         set,
-        flags
+        options.flags
     );
 }
 

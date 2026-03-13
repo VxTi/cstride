@@ -14,51 +14,50 @@ using namespace stride::ast;
  * This function expects a double colon (::) followed by one or more identifiers.
  * It parses the identifiers and returns them as a vector of Symbol objects.
  */
-std::vector<Symbol> consume_import_submodules(TokenSet& set)
+std::vector<std::unique_ptr<AstIdentifier>> consume_import_submodules(
+    const std::shared_ptr<ParsingContext>& context,
+    TokenSet& set
+)
 {
     set.expect(TokenType::DOUBLE_COLON, "Expected a '::' before import submodule list");
     set.expect(TokenType::LBRACE, "Expected opening brace with modules after '::'");
 
-    const auto initial_import_reference_token = set.peek(0);
-    const auto initial_import_segments = parse_segmented_identifier(
+    std::vector<std::unique_ptr<AstIdentifier>> import_list;
+    import_list.push_back(parse_segmented_identifier(
+        context,
         set,
         "Expected module name after '::' in import list"
-    );
-    const auto initial_import_name = resolve_internal_name(initial_import_segments);
-
-    std::vector submodules = {
-        Symbol(initial_import_reference_token.get_source_fragment(), initial_import_name)
-    };
+    ));
 
     while (set.peek(0) == TokenType::COMMA && set.peek(1) ==
         TokenType::IDENTIFIER)
     {
         set.expect(TokenType::COMMA, "Expected comma between module names in import list");
-        const auto submodule_reference_token = set.peek(0);
-        const auto submodule_identifier_segments = parse_segmented_identifier(
-            set,
-            "Expected module name after '::' in import list"
-        );
-        const auto submodule_iden = resolve_internal_name(
-            submodule_identifier_segments
-        );
 
-        // TODO: Fix source fragment positioning; currently only base identifier instead of whole
-        submodules.emplace_back(
-            submodule_reference_token.get_source_fragment(),
-            submodule_iden
+        import_list.emplace_back(
+            parse_segmented_identifier(
+                context,
+                set,
+                "Expected module name after '::' in import list"
+            )
         );
     }
 
-    set.expect(TokenType::RBRACE, "Expected closing brace after import list");
+    // Consume optional trailing comma
+    if (set.peek_next_eq(TokenType::COMMA))
+    {
+        set.next();
+    }
+
+    set.expect(TokenType::RBRACE, "Expected closing brace or comma after import list");
     set.expect(TokenType::SEMICOLON, "Expected semicolon after import list");
 
-    if (submodules.empty())
+    if (import_list.empty())
     {
         set.throw_error("Expected at least one symbol in import submodule list");
     }
 
-    return submodules;
+    return std::move(import_list);
 }
 
 /**
@@ -66,31 +65,24 @@ std::vector<Symbol> consume_import_submodules(TokenSet& set)
  */
 std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+    TokenSet& set
+)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IMPORT);
-    // With the guard clause, this will always be the case.
 
-    const auto import_package_segments = parse_segmented_identifier(
+    auto package_identifier = parse_segmented_identifier(
+        context,
         set,
-        "Expected module name after '::'");
-
-    const auto import_module = resolve_internal_name(
-        context->get_name(),
-        reference_token.get_source_fragment(),
-        import_package_segments
+        "Expected module name after '::'"
     );
-    const auto import_list = consume_import_submodules(set);
 
-    const Dependency dependency = {
-        .package_name = import_module,
-        .submodules  = import_list
-    };
+    auto import_list = consume_import_submodules(context, set);
 
     return std::make_unique<AstImport>(
-        reference_token.get_source_fragment(),
+        SourceFragment::combine(reference_token.get_source_fragment(), package_identifier->get_source_fragment()),
         context,
-        dependency
+        std::move(package_identifier),
+        std::move(import_list)
     );
 }
 
@@ -112,20 +104,33 @@ void AstImport::validate()
 
 std::unique_ptr<IAstNode> AstImport::clone()
 {
-    return std::make_unique<AstImport>(*this);
+    std::vector<std::unique_ptr<AstIdentifier>> cloned_submodules;
+    cloned_submodules.reserve(this->_import_list.size());
+
+    for (const auto& submodule : this->_import_list)
+    {
+        cloned_submodules.push_back(submodule->clone_as<AstIdentifier>());
+    }
+
+    return std::make_unique<AstImport>(
+        this->get_source_fragment(),
+        this->get_context(),
+        this->_package_identifier->clone_as<AstIdentifier>(),
+        std::move(cloned_submodules)
+    );
 }
 
 std::string AstImport::to_string()
 {
     std::vector<std::string> modules;
-    modules.reserve(this->get_submodules().size());
+    modules.reserve(this->_import_list.size());
 
-    for (const auto& module : this->get_submodules())
+    for (const auto& import_entry : this->_import_list)
     {
-        modules.push_back(module.name);
+        modules.push_back(import_entry->get_scoped_name());
     }
     return std::format(
         "Import [{}] {{ {} }}",
-        this->get_module().name,
+        this->get_package_identifier()->get_scoped_name(),
         join(modules, ", "));
 };

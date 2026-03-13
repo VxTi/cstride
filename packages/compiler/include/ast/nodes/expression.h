@@ -182,6 +182,9 @@ namespace stride::ast
             _symbol(std::move(symbol)) {}
 
         [[nodiscard]]
+        std::optional<const definition::IDefinition*> get_definition() const;
+
+        [[nodiscard]]
         const std::string& get_name() const
         {
             return this->_symbol.name;
@@ -368,19 +371,19 @@ namespace stride::ast
         : public IAstExpression
     {
         ExpressionList _arguments;
-        const Symbol _symbol;
+        std::unique_ptr<AstIdentifier> _function_name_identifier;
         int _flags;
 
     public:
         explicit AstFunctionCall(
             const std::shared_ptr<ParsingContext>& context,
-            Symbol function_call_sym,
+            std::unique_ptr<AstIdentifier> function_name_identifier,
             ExpressionList arguments,
             const int flags = SRFLAG_NONE
         ) :
-            IAstExpression(function_call_sym.symbol_position, context),
+            IAstExpression(function_name_identifier->get_source_fragment(), context),
             _arguments(std::move(arguments)),
-            _symbol(std::move(function_call_sym)),
+            _function_name_identifier(std::move(function_name_identifier)),
             _flags(flags) {}
 
         [[nodiscard]]
@@ -395,13 +398,19 @@ namespace stride::ast
         [[nodiscard]]
         const std::string& get_function_name() const
         {
-            return this->_symbol.name;
+            return this->_function_name_identifier->get_name();
         }
 
         [[nodiscard]]
         const std::string& get_scoped_function_name() const
         {
-            return this->_symbol.internal_name;
+            return this->_function_name_identifier->get_scoped_name();
+        }
+
+        [[nodiscard]]
+        AstIdentifier* get_function_name_identifier() const
+        {
+            return this->_function_name_identifier.get();
         }
 
         [[nodiscard]]
@@ -425,6 +434,7 @@ namespace stride::ast
 
         void validate() override;
 
+        [[nodiscard]]
         std::string get_formatted_call() const;
 
     private:
@@ -730,7 +740,7 @@ namespace stride::ast
     class AstVariableReassignment
         : public IAstExpression
     {
-        const std::string _variable_name;
+        std::unique_ptr<AstIdentifier> _identifier;
         std::unique_ptr<IAstExpression> _value;
         MutativeAssignmentType _operator;
 
@@ -740,25 +750,31 @@ namespace stride::ast
         explicit AstVariableReassignment(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            std::string variable_name,
+            std::unique_ptr<AstIdentifier> identifier,
             const MutativeAssignmentType op,
             std::unique_ptr<IAstExpression> value
         ) :
             IAstExpression(source, context),
-            _variable_name(std::move(variable_name)),
+            _identifier(std::move(identifier)),
             _value(std::move(value)),
             _operator(op) {}
 
         [[nodiscard]]
         const std::string& get_variable_name() const
         {
-            return _variable_name;
+            return this->_identifier->get_name();
         }
 
         [[nodiscard]]
         IAstExpression* get_value() const
         {
             return this->_value.get();
+        }
+
+        [[nodiscard]]
+        AstIdentifier* get_identifier() const
+        {
+            return this->_identifier.get();
         }
 
         [[nodiscard]]
@@ -983,14 +999,14 @@ namespace stride::ast
     /// Parses a function invocation into an AstFunctionCall expression node
     std::unique_ptr<IAstExpression> parse_function_call(
         const std::shared_ptr<ParsingContext>& context,
-        const SymbolNameSegments& function_name_segments,
+        AstIdentifier* identifier,
         TokenSet& set);
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>>
     parse_variable_reassignment(
         const std::shared_ptr<ParsingContext>& context,
-        const std::string& variable_name,
+        AstIdentifier* identifier,
         TokenSet& set);
 
     /// Parses a binary arithmetic operation using precedence climbing
@@ -1042,7 +1058,11 @@ namespace stride::ast
     );
 
     /// Parses a dot-separated identifier into its individual name segments, e.g., `foo::bar::baz`
-    SymbolNameSegments parse_segmented_identifier(TokenSet& set, const std::string& error_message);
+    std::unique_ptr<AstIdentifier> parse_segmented_identifier(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        const std::string& error_message
+    );
 
     /// Parses a lambda function literal into an expression node
     std::unique_ptr<IAstExpression> parse_anonymous_fn_expression(

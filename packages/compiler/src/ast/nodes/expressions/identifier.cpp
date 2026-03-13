@@ -8,6 +8,31 @@
 
 using namespace stride::ast;
 
+std::optional<const definition::IDefinition*> AstIdentifier::get_definition() const
+{
+    const std::string internal_name = this->get_scoped_name();
+
+    if (const auto var_def = this->get_context()->lookup_variable(internal_name, false))
+    {
+        return var_def;
+    }
+
+    // Fall back to name-based lookup, which resolves short names to their internal
+    // names (e.g. `x` → `x.0` for locals with a counter suffix).
+    if (const auto symbol_definition = this->get_context()->lookup_symbol(internal_name))
+    {
+        return symbol_definition;
+    }
+
+    // Last resort: raw name match (handles captured variables).
+    if (const auto definition = this->get_context()->lookup_variable(internal_name, true))
+    {
+        return definition;
+    }
+
+    return std::nullopt;
+}
+
 llvm::Value* AstIdentifier::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
@@ -15,29 +40,18 @@ llvm::Value* AstIdentifier::codegen(
 {
     llvm::Value* val = nullptr;
 
-    std::string internal_name = this->get_scoped_name();
+    const auto definition = this->get_definition();
 
-    // Prefer exact internal-name match first. This ensures that an unqualified
-    // reference like `field` resolves to the global `field` (internal_name="field")
-    // rather than a same-named symbol in a sibling module like `Foo__field`.
-    if (const auto var_def = this->get_context()->lookup_variable(internal_name, false))
+    if (!definition.has_value())
     {
-        internal_name = var_def->get_internal_symbol_name();
+        throw parsing_error(
+            ErrorType::REFERENCE_ERROR,
+            std::format("Identifier '{}' not found in this scope", this->get_name()),
+            this->get_source_fragment()
+        );
     }
-    // Fall back to name-based lookup, which resolves short names to their internal
-    // names (e.g. `x` → `x.0` for locals with a counter suffix).
-    else if (const auto symbol_definition = this->get_context()->lookup_symbol(internal_name))
-    {
-        internal_name = symbol_definition->get_internal_symbol_name();
-    }
-    else
-    {
-        // Last resort: raw name match (handles captured variables).
-        if (const auto definition = this->get_context()->lookup_variable(internal_name, true))
-        {
-            internal_name = definition->get_internal_symbol_name();
-        }
-    }
+
+    const std::string internal_name = definition.value()->get_internal_symbol_name();
 
     if (const auto block = builder->GetInsertBlock())
     {

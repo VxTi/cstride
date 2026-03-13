@@ -24,7 +24,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
         return std::move(primitive.value());
     }
 
-    if (auto named_type = parse_named_type_optional(context, set, options);
+    if (auto named_type = parse_alias_type_optional(context, set, options);
         named_type.has_value())
     {
         return std::move(named_type.value());

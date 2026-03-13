@@ -50,16 +50,13 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
     {
         const auto reference_token = set.peek_next();
         // Mangled name including module, e.g., `Math__PI`
-        const SymbolNameSegments name_segments = parse_segmented_identifier(
-            set,
-            "Expected identifier in expression");
-        const auto internal_name = resolve_internal_name(name_segments);
-
-        auto identifier = std::make_unique<AstIdentifier>(
+        auto identifier = parse_segmented_identifier(
             context,
-            Symbol(reference_token.get_source_fragment(), internal_name));
+            set,
+            "Expected identifier in expression"
+        );
 
-        if (auto reassignment = parse_variable_reassignment(context, internal_name, set);
+        if (auto reassignment = parse_variable_reassignment(context, identifier.get(), set);
             reassignment.has_value())
         {
             return std::move(reassignment.value());
@@ -68,7 +65,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
         // Named function invocations, e.g., `<identifier>(...)` or `<module>::<identifier>(...)`
         if (set.peek_next_eq(TokenType::LPAREN))
         {
-            result = parse_function_call(context, name_segments, set);
+            result = parse_function_call(context, identifier.get(), set);
         }
         else
         {
@@ -314,13 +311,17 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression(
     return parse_expression_internal(context, set);
 }
 
-SymbolNameSegments stride::ast::parse_segmented_identifier(
+std::unique_ptr<AstIdentifier> stride::ast::parse_segmented_identifier(
+    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const std::string& error_message)
 {
     std::vector<std::string> segments;
 
-    segments.push_back(set.expect(TokenType::IDENTIFIER, error_message).get_lexeme());
+    const auto initial_identifier = set.expect(TokenType::IDENTIFIER, error_message);
+    segments.push_back(initial_identifier.get_lexeme());
+
+    std::optional<SourceFragment> last_fragment = std::nullopt;
 
     while (set.peek_eq(TokenType::DOUBLE_COLON, 0)
         && set.peek_eq(TokenType::IDENTIFIER, 1))
@@ -331,7 +332,15 @@ SymbolNameSegments stride::ast::parse_segmented_identifier(
             error_message
         );
         segments.push_back(subseq_iden.get_lexeme());
+        last_fragment = subseq_iden.get_source_fragment();
     }
 
-    return segments;
+    const auto source_pos = last_fragment.has_value()
+        ? SourceFragment::combine(initial_identifier.get_source_fragment(), last_fragment.value())
+        : initial_identifier.get_source_fragment();
+
+    return std::make_unique<AstIdentifier>(
+        context,
+        Symbol(source_pos, resolve_internal_name(segments))
+    );
 }

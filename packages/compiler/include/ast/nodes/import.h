@@ -1,5 +1,6 @@
 #pragma once
 
+#include "expression.h"
 #include "ast/symbols.h"
 #include "ast/nodes/ast_node.h"
 
@@ -19,32 +20,31 @@ namespace stride::ast
     class AstImport
         : public IAstNode
     {
-        const Dependency _dependency;
+
+        std::unique_ptr<AstIdentifier> _package_identifier;
+        std::vector<std::unique_ptr<AstIdentifier>> _import_list;
 
     public:
         explicit AstImport(
             const SourceFragment& source,
             const std::shared_ptr<ParsingContext>& context,
-            Dependency dependency) :
+            std::unique_ptr<AstIdentifier> package_identifier,
+            std::vector<std::unique_ptr<AstIdentifier>> import_list
+        ) :
             IAstNode(source, context),
-            _dependency(std::move(dependency)) {}
+            _package_identifier(std::move(package_identifier)),
+            _import_list(std::move(import_list)) {}
 
         [[nodiscard]]
-        const Symbol& get_module() const
+        AstIdentifier* get_package_identifier() const
         {
-            return this->_dependency.package_name;
+            return this->_package_identifier.get();
         }
 
         [[nodiscard]]
-        const Dependency& get_dependency() const
+        const std::vector<std::unique_ptr<AstIdentifier>>& get_import_list() const
         {
-            return this->_dependency;
-        }
-
-        [[nodiscard]]
-        const std::vector<Symbol>& get_submodules() const
-        {
-            return this->_dependency.submodules;
+            return this->_import_list;
         }
 
         void validate() override;
