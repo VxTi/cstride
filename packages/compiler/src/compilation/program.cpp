@@ -32,6 +32,8 @@ Program Program::from_sources(const std::vector<std::string>& files)
 
     auto ast = ast::Ast::parse_files(files);
 
+    ast->print();
+
     return Program(std::move(ast));
 }
 

@@ -36,22 +36,17 @@ fn make_person(name: string, age: i32, cars: Array<Car>): SomePerson<Array<Car>>
         age,
         cars,
         shout: (): void -> {
-            io::print("Hello, I am %s and I have %d cars!", name, cars.length);
+            io::print("Hello, I am %s and I have %d cars! I drive a %s from %d", name, cars.length, cars.data[0].make, cars.data[0].year);
         }
     };
 }
 
 fn main(): i32 {
-    const my_car = make_car("Honda", "Civic", 2018);
+    const my_car: Car = make_car("Honda", "Civic", 2018);
     const me = make_person("Alice", 30, Array<Car>::{
         length: 1,
         data: [my_car]
     });
-
-    const my_car = me.cars.data[0];
-
-    io::print("I am %s, age %d\n", me.name, me.age);
-    io::print("My car is a %s %s from %d", my_car.make, my_car.model, my_car.year);
 
     me.shout();
 

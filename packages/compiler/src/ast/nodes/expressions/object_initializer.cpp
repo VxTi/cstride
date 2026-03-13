@@ -428,5 +428,23 @@ std::unique_ptr<IAstNode> AstObjectInitializer::clone()
 
 std::string AstObjectInitializer::to_string()
 {
-    return std::format("StructInit{{...}}");
+    const auto object_name = this->_object_type_name;
+    std::string members;
+
+    for (const auto& [name, expr] : this->_member_initializers)
+    {
+        members += std::format("{}: {}, ", name, expr->to_string());
+    }
+
+    if (!this->_generic_type_arguments.empty())
+    {
+        std::vector<std::string> generic_names;
+        for (const auto& generic : this->_generic_type_arguments)
+        {
+            generic_names.push_back(generic->to_string());
+        }
+        return std::format("(Object) {}<{}>{{ {} }}", object_name, join(generic_names, ", "), members);
+    }
+
+    return std::format("Object {}{{ {} }}", object_name, members);
 }
