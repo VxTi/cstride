@@ -9,6 +9,8 @@ import com.intellij.openapi.util.Ref
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
+import com.intellij.psi.codeStyle.CodeStyleSettingsManager
+import com.stride.intellij.StrideLanguage
 import com.stride.intellij.psi.StrideFile
 
 class StrideEnterHandlerDelegate : EnterHandlerDelegate {
@@ -34,6 +36,9 @@ class StrideEnterHandlerDelegate : EnterHandlerDelegate {
 
         val project = editor.project ?: return Result.Continue
         val document = editor.document
+        val indentSize = CodeStyleSettingsManager.getSettings(project)
+            .getCommonSettings(StrideLanguage).indentOptions?.INDENT_SIZE ?: 4
+        val indentString = " ".repeat(indentSize)
 
         // Commit document to ensure PSI is up to date
         PsiDocumentManager.getInstance(project).commitDocument(document)
@@ -63,7 +68,7 @@ class StrideEnterHandlerDelegate : EnterHandlerDelegate {
 
         // Calculate target indentation
         val targetIndent = if (shouldIndent) {
-            baseIndent + "    " // Add 4 spaces for one indent level
+            baseIndent + indentString
         } else {
             baseIndent
         }

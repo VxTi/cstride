@@ -8,15 +8,7 @@ class StrideStructInitFormatterTest : BasePlatformTestCase() {
             const player = Entity::{ id: 1, name: "Player1", position: Vec3::{ x: 10, y: 20, z: 30 }, };
         """.trimIndent()
         val after = """
-            const player = Entity::{
-                id: 1,
-                name: "Player1",
-                position: Vec3::{
-                    x: 10,
-                    y: 20,
-                    z: 30
-                },
-            };
+            const player = Entity::{ id: 1, name: "Player1", position: Vec3::{ x: 10, y: 20, z: 30 }, };
         """.trimIndent()
         myFixture.configureByText("test.sr", before)
         myFixture.performEditorAction("ReformatCode")

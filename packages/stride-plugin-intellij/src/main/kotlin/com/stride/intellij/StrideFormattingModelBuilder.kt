@@ -8,10 +8,11 @@ import com.stride.intellij.psi.StrideTypes
 
 class StrideFormattingModelBuilder : FormattingModelBuilder {
     override fun createModel(element: PsiElement, settings: CodeStyleSettings): FormattingModel {
+        val strideSettings = settings.getCustomSettings(StrideCodeStyleSettings::class.java)
         val spacingBuilder = createSpaceBuilder(settings)
         return FormattingModelProvider.createFormattingModelForPsiFile(
             element.containingFile,
-            StrideBlock(element.node, null, null, settings, spacingBuilder),
+            StrideBlock(element.node, null, null, settings, spacingBuilder, strideSettings),
             settings
         )
     }
@@ -74,10 +75,6 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
 
             .after(StrideTypes.COLON).spaceIf(true)
             .before(StrideTypes.COLON).spaceIf(false)
-            // Specific comma rules must come before the general .after(COMMA) rule
-            // because SpacingBuilder uses first-match semantics
-            .afterInside(StrideTypes.COMMA, StrideTypes.OBJECT_INIT_FIELDS).lineBreakInCode()
-
             .after(StrideTypes.COMMA).spaceIf(true)
             .before(StrideTypes.COMMA).spaceIf(false)
             .before(StrideTypes.SEMICOLON).spaceIf(false)
@@ -91,8 +88,8 @@ class StrideFormattingModelBuilder : FormattingModelBuilder {
             .beforeInside(StrideTypes.RBRACE, StrideTypes.BLOCK_STATEMENT).lineBreakInCode()
             .afterInside(StrideTypes.LBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
             .beforeInside(StrideTypes.RBRACE, StrideTypes.MODULE_STATEMENT).lineBreakInCode()
-            .afterInside(StrideTypes.LBRACE, StrideTypes.OBJECT_INITIALIZATION).lineBreakInCode()
-            .beforeInside(StrideTypes.RBRACE, StrideTypes.OBJECT_INITIALIZATION).lineBreakInCode()
+            // Object initialization brace/comma wrapping is handled dynamically in StrideBlock
+            // based on line width settings
 
             .afterInside(StrideTypes.SCOPED_IDENTIFIER, StrideTypes.MODULE_STATEMENT).spaceIf(true)
             .afterInside(StrideTypes.COLON_COLON, StrideTypes.OBJECT_INITIALIZATION).spaceIf(false)
