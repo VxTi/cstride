@@ -35,6 +35,11 @@ protected:
     {
         return Symbol(dummy_sf(), name);
     }
+
+    std::unique_ptr<AstIdentifier> dummy_iden(const std::string& name)
+    {
+        return std::make_unique<AstIdentifier>(context, dummy_sym(name));
+    }
 };
 
 TEST_F(TypeInferenceTest, InferLiteralTypes)
@@ -369,7 +374,7 @@ TEST_F(TypeInferenceTest, RecursionGuard)
         current = std::make_unique<AstVariableReassignment>(
             dummy_sf(),
             context,
-            "v",
+            dummy_iden("x"),
             MutativeAssignmentType::ASSIGN,
             std::move(prev));
     }
@@ -380,7 +385,6 @@ TEST_F(TypeInferenceTest, RecursionGuard)
 TEST_F(TypeInferenceTest, InferFunctionCall)
 {
     // Normal function call
-    Symbol fn_sym = dummy_sym("foo");
     std::vector<std::unique_ptr<IAstType>> params;
     params.push_back(std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::INT32));
     auto fn_ty = std::make_unique<AstFunctionType>(
@@ -391,18 +395,21 @@ TEST_F(TypeInferenceTest, InferFunctionCall)
             dummy_sf(),
             context,
             PrimitiveType::FLOAT32));
-    context->define_function(fn_sym, std::move(fn_ty), VisibilityModifier::PUBLIC, 0);
+    context->define_function(dummy_sym("foo"), std::move(fn_ty), VisibilityModifier::PUBLIC, 0);
 
     ExpressionList args;
     auto arg1 = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 1, 0);
     arg1->set_type(std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::INT32));
     args.push_back(std::move(arg1));
-    auto fn_call = std::make_unique<AstFunctionCall>(context, fn_sym, std::move(args), 0);
+    auto fn_call = std::make_unique<AstFunctionCall>(
+        context,
+        dummy_iden("foo"),
+        std::move(args),
+        0);
 
     EXPECT_EQ(infer_expression_type(fn_call.get())->to_string(), "f32");
 
     // Lambda in variable
-    Symbol lambda_var = dummy_sym("bar");
     std::vector<std::unique_ptr<IAstType>> l_params;
     auto l_fn_ty = std::make_unique<AstFunctionType>(
         dummy_sf(),
@@ -412,11 +419,11 @@ TEST_F(TypeInferenceTest, InferFunctionCall)
             dummy_sf(),
             context,
             PrimitiveType::INT64));
-    context->define_variable(lambda_var, std::move(l_fn_ty), VisibilityModifier::PUBLIC);
+    context->define_variable(dummy_sym("bar"), std::move(l_fn_ty), VisibilityModifier::PUBLIC);
 
     auto l_fn_call = std::make_unique<AstFunctionCall>(
         context,
-        lambda_var,
+        dummy_iden("bar"),
         ExpressionList{},
         0);
     EXPECT_EQ(infer_expression_type(l_fn_call.get())->to_string(), "i64");

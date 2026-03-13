@@ -5,6 +5,10 @@
 #include "errors.h"
 #include "ast/symbols.h"
 
+namespace llvm {
+    class Function;
+}
+
 namespace stride::ast
 {
     enum class VisibilityModifier;
@@ -447,6 +451,17 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) const;
+
+        [[nodiscard]]
+        llvm::Function* resolve_regular_callee(
+            llvm::Module* module
+        ) const;
+
+        llvm::Value* codegen_regular_function_call(
+            llvm::Function* callee,
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder
+        );
     };
 
     class AstVariableDeclaration
