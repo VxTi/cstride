@@ -2,39 +2,17 @@ import System::{
     io::print,
 };
 
-enum SomeEnum {
-    Variant1,
-    Variant2,
-    Variant3
-}
-
-type Callback = () -> void;
-
-extern fn sleep(seconds: i32): void;
-
-fn timeout(seconds: i32, cb: Callback): void {
-    sleep(seconds);
-    cb();
+enum Test {
+    First: 123,
+    Second: 456,
+    Third: 789
 }
 
 fn main(): i32 {
-    // const some_enum_val: SomeEnum = SomeEnum::Variant2;
 
-    // io::print("The value of some_enum_val is: %d", some_enum_val);
+    const k: Test = Test::First;
 
-    io::print("Doing something v1\n");
-
-    let k = [0, 1, 2][1];
-
-    timeout(1, (): void -> io::print("Done doing something: %d\n", k));
-
-//    const result = io::read_file("nonexistent_file.txt");
-
-    /*if (!result.success) {
-        io::print("Error reading file: %s\n", result.error);
-    } else {
-        io::print("File content: %s\n", result.value);
-    }*/
+    io::print("k[0] = %d", k);
 
     return 0;
 }

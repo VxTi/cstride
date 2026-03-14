@@ -15,8 +15,9 @@ TokenSet TokenSet::create_subset(const int64_t offset,
 {
     const auto start = offset;
 
-    if (const auto end = offset + length - 1; start > end || end >= this->
-        size())
+    if (const auto end = offset + length - 1;
+        start > end ||
+        end >= this->size())
     {
         throw std::out_of_range("Invalid range for TokenSet copy");
     }

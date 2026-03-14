@@ -120,7 +120,7 @@ private StandaloneItem ::= (
     | SEMICOLON
 )
 
-// import some::package::{ module::TypeA, TypeB, function_c};
+// import some::package::{ module::TypeA, TypeB, function_c };
 ImportStatement ::= IMPORT ScopedIdentifier COLON_COLON LBRACE ScopedIdentifier (COMMA ScopedIdentifier)* [COMMA /* trailing */] RBRACE SEMICOLON
 
 // --- Declarations ---
@@ -135,17 +135,10 @@ TypeDefinition ::= [VisibilityModifier] KW_TYPE IDENTIFIER [GenericTypeArguments
 
 EnumDefinition ::= ENUM IDENTIFIER EnumBody
 EnumBody ::= LBRACE EnumMember (COMMA EnumMember)* [COMMA /* trailing */] RBRACE
-
-EnumMember ::= IDENTIFIER | (IDENTIFIER EQ Expression)
-
-// Ensure structs have at least 1 field
-ObjectDefinitionFields ::= ObjectField+
-// field: i32
-ObjectField ::= IDENTIFIER COLON Type SEMICOLON
+EnumMember ::= (IDENTIFIER COLON LiteralExpression) | IDENTIFIER
 
 VariableDeclarationInferredType ::= (CONST | LET) IDENTIFIER EQ Expression
 VariableDeclaration ::= (CONST | LET) IDENTIFIER COLON Type [EQ Expression]
-
 VariableDeclarationStatement ::= [VisibilityModifier] (VariableDeclaration | VariableDeclarationInferredType) SEMICOLON
 
 // --- Types ---
@@ -162,6 +155,10 @@ UserType ::= ScopedIdentifier [GenericTypeValueArguments] {
 TupleType ::= LPAREN Type (COMMA Type)* RPAREN
 
 ObjectDefinitionBody ::= LBRACE [ObjectDefinitionFields] RBRACE
+// Ensure structs have at least 1 field
+ObjectDefinitionFields ::= ObjectField+
+// field: i32
+ObjectField ::= IDENTIFIER COLON Type SEMICOLON
 
 GenericTypeArguments ::= LT IDENTIFIER (COMMA IDENTIFIER)* GT
 GenericTypeValueArguments ::= LT Type (COMMA Type)* GT

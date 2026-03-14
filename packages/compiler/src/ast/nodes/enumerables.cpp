@@ -33,15 +33,9 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
         SymbolType::ENUM_MEMBER
     );
 
+    // Using index as element value if no explicit value is provided, and allowing optional trailing comma
     if (!set.has_next() || !set.peek_next_eq(TokenType::COLON))
     {
-        // Using index as element value
-        if (set.has_next() && set.peek_next_eq(TokenType::COMMA))
-        {
-            // Consume optional trailing comma
-            set.next();
-        }
-
         return std::make_unique<AstEnumerableMember>(
             member_name_tok.get_source_fragment(),
             context,
@@ -60,11 +54,7 @@ std::unique_ptr<AstEnumerableMember> stride::ast::parse_enumerable_member(
     auto value = parse_literal_optional(context, set);
 
     if (!value.has_value())
-    {
         set.throw_error("Expected a literal value for enum member");
-    }
-
-    set.expect(TokenType::COMMA, "Expected a comma after enum member value");
 
     return std::make_unique<AstEnumerableMember>(
         member_name_tok.get_source_fragment(),
@@ -98,8 +88,11 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
         context,
         context->get_context_type());
 
-    for (size_t i = 0; enum_body_subset.has_next(); ++i)
+    members.push_back(parse_enumerable_member(enum_definition_context, enum_body_subset, 0));
+
+    for (size_t i = 1; enum_body_subset.has_next(); ++i)
     {
+        enum_body_subset.expect(TokenType::COMMA, "Expected a comma between enum members");
         members.push_back(parse_enumerable_member(enum_definition_context, enum_body_subset, i));
     }
 
@@ -113,6 +106,10 @@ std::unique_ptr<AstEnumerable> stride::ast::parse_enumerable_declaration(
 
 void AstEnumerable::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
+    for (const auto& member : this->_members)
+    {
+        member->resolve_forward_references(module, builder);
+    }
 }
 
 std::unique_ptr<IAstNode> AstEnumerable::clone()
