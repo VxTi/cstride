@@ -4,11 +4,13 @@
 #include "formatting.h"
 #include "ast/flags.h"
 #include "ast/generics.h"
+#include "ast/modifiers.h"
 
 #include <format>
 #include <memory>
 #include <optional>
 #include <utility>
+#include <variant>
 
 namespace llvm
 {
@@ -18,6 +20,9 @@ namespace llvm
 
 namespace stride::ast
 {
+    enum class VisibilityModifier;
+    class AstLiteral;
+
     namespace definition
     {
         class TypeDefinition;
@@ -27,6 +32,9 @@ namespace stride::ast
 
     using ObjectTypeMemberPair = std::pair<std::string, std::unique_ptr<IAstType>>;
     using ObjectTypeMemberList = std::vector<ObjectTypeMemberPair>;
+
+    using EnumMemberValueTy = std::unique_ptr<IAstNode>;
+    using EnumMemberPair = std::pair<std::string, EnumMemberValueTy>;
 
     enum class PrimitiveType
     {
@@ -440,11 +448,6 @@ namespace stride::ast
         [[nodiscard]]
         bool equals(IAstType* other) override;
 
-        bool is_castable_to(IAstType* other) override
-        {
-            return IAstType::is_castable_to(other);
-        }
-
     private:
         bool is_assignable_to_impl(IAstType* other) override;
 
@@ -506,6 +509,58 @@ namespace stride::ast
         llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
+    class AstEnumType
+        : public IAstType
+    {
+
+        std::vector<EnumMemberPair> _members;
+        std::string _name;
+
+    public:
+        explicit AstEnumType(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context,
+            std::string enum_name,
+            std::vector<EnumMemberPair> members,
+            int flags = SRFLAG_NONE
+        );
+
+        [[nodiscard]]
+        std::unique_ptr<IAstNode> clone() override;
+
+        [[nodiscard]]
+        const std::vector<EnumMemberPair>& get_members() const
+        {
+            return _members;
+        }
+
+        [[nodiscard]]
+        const std::string& get_name() const
+        {
+            return _name;
+        }
+
+        [[nodiscard]]
+        std::string get_type_name() override
+        {
+            return _name;
+        }
+
+        [[nodiscard]]
+        bool equals(IAstType* other) override;
+
+        std::string to_string() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+
+        void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+
+    private:
+        bool is_assignable_to_impl(IAstType* other) override;
+
+        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+    };
+
     class AstTupleType
         : public IAstType
     {
@@ -539,11 +594,6 @@ namespace stride::ast
 
         [[nodiscard]]
         bool equals(IAstType* other) override;
-
-        bool is_castable_to(IAstType* other) override
-        {
-            return IAstType::is_castable_to(other);
-        }
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 

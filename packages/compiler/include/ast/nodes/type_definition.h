@@ -6,7 +6,7 @@
 #include <format>
 #include <utility>
 
-namespace stride:: ast
+namespace stride::ast
 {
     enum class VisibilityModifier;
     class TokenSet;
@@ -26,7 +26,7 @@ namespace stride:: ast
             std::string name,
             std::unique_ptr<IAstType> type,
             const VisibilityModifier visibility,
-            GenericParameterList  generic_parameters
+            GenericParameterList generic_parameters = {}
         ) :
             IAstNode(source, context),
             _name(std::move(name)),
@@ -83,4 +83,15 @@ namespace stride:: ast
         TokenSet& set,
         VisibilityModifier modifier
     );
+
+    EnumMemberPair parse_enumerable_member(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        size_t element_index
+    );
+
+    std::unique_ptr<AstTypeDefinition> parse_enum_type_definition(
+        const std::shared_ptr<ParsingContext>& context,
+        TokenSet& set,
+        VisibilityModifier modifier);
 }

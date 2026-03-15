@@ -418,8 +418,6 @@ namespace stride::ast
         [[nodiscard]]
         bool is_type_defined(const std::string& type_name) const;
 
-        void define_symbol(const Symbol& symbol_name, definition::SymbolType type);
-
         void define(std::unique_ptr<definition::IDefinition> definition);
 
         /// Checks whether the provided variable name is defined in the current context.

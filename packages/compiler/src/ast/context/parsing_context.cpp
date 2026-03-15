@@ -37,13 +37,6 @@ const ParsingContext& ParsingContext::traverse_to_root() const
     return *current;
 }
 
-void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType type)
-{
-    this->_symbols.push_back(
-        std::make_unique<IdentifiableSymbolDef>(type, symbol_name)
-    );
-}
-
 void ParsingContext::define(std::unique_ptr<IDefinition> definition)
 {
     this->_symbols.push_back(std::move(definition));
