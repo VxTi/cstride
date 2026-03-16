@@ -101,7 +101,7 @@ namespace stride::ast
             std::unique_ptr<IAstType> return_type,
             const VisibilityModifier visibility,
             const int flags,
-            GenericParameterList  generic_parameters
+            GenericParameterList generic_parameters
         ) :
             IAstExpression(source, context),
             _body(std::move(body)),
@@ -309,7 +309,10 @@ namespace stride::ast
 
         ~AstLambdaFunctionExpression() override = default;
 
-        std::string get_mangled_name() const { return ""; }; // TODO: Implement
+        std::string get_mangled_name() const
+        {
+            return "";
+        }; // TODO: Implement
     };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(

@@ -10,7 +10,7 @@ using namespace stride::ast::definition;
 std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
     const std::string& function_name,
     const std::vector<std::unique_ptr<IAstType>>& parameter_types,
-    size_t instantiated_generic_count
+    const size_t instantiated_generic_count
 ) const
 {
     for (const auto& global_scope = this->traverse_to_root();

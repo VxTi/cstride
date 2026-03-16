@@ -1,18 +1,25 @@
 import System::{
-    io::print,
+io::print
 };
 
-enum Test {
-    First: 123,
-    Second: 456,
-    Third: 789
+type Array<T> = T[];
+
+type Car = {
+    drive: () -> void;
+    names: Array<string>;
+};
+
+fn makeCar(): Car {
+    const names = ["Toyota", "Honda", "Ford"];
+    return Car::{ drive: (): void -> {
+        io::print("Driving: %s, %s, %s", names[0], names[1], names[2]);
+    }, names, };
 }
 
 fn main(): i32 {
 
-    const k: Test = Test::First;
-
-    io::print("k[0] = %d", k);
+    const myCar = makeCar();
+    myCar.drive();
 
     return 0;
 }
