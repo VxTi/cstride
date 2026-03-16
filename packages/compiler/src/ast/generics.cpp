@@ -76,7 +76,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         throw parsing_error(
             ErrorType::TYPE_ERROR,
             std::format(
-                "Failed to resolve generic type: expected {} parameters, got ",
+                "Failed to resolve generic type: expected {} parameters, got {}",
                 param_names.size(),
                 instantiated_types.size()),
             type->get_source_fragment()

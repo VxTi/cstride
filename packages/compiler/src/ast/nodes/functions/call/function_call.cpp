@@ -180,14 +180,6 @@ std::string AstFunctionCall::format_function_name() const
     return std::format("{}({})", this->get_function_name(), join(arg_types, ", "));
 }
 
-void AstFunctionCall::validate()
-{
-    for (const auto& arg : this->_arguments)
-    {
-        arg->validate();
-    }
-}
-
 std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() const
 {
     if (this->_arguments.empty())

@@ -68,7 +68,7 @@ void IAstFunction::validate()
             std::move(instantiated_return_ty),
             this->get_visibility(),
             this->_flags,
-            this->get_generic_parameters()
+            EMPTY_GENERIC_PARAMETER_LIST // Omit generics - They've been resolved
         );
 
         validate_candidate(node.get());
@@ -77,7 +77,6 @@ void IAstFunction::validate()
 
 void IAstFunction::validate_candidate(IAstFunction* candidate)
 {
-    candidate->get_body()->validate();
 
     const auto& ret_ty = candidate->get_return_type();
     const auto return_statements = collect_return_statements(candidate->get_body());
@@ -182,6 +181,8 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
             );
         }
     }
+
+    candidate->get_body()->validate();
 }
 
 std::vector<AstReturnStatement*> IAstFunction::collect_return_statements(const AstBlock* body)
