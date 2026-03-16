@@ -90,7 +90,9 @@ const
     // different generic parameter overloads.
     //
     // For generic overloads, we just check whether the name and generic count is equal.
-    if (!this->_function_type->get_generic_parameter_names().empty() && generic_argument_count > 0)
+    if (!this->_function_type->get_generic_parameter_names().empty() &&
+        generic_argument_count > 0 &&
+        this->_function_type->get_generic_parameter_names().size() == generic_argument_count)
         return true;
 
     const auto& self_params = this->_function_type->get_parameter_types();
@@ -169,6 +171,11 @@ bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique
         bool all_equal = true;
         for (size_t i = 0; i < generic_types.size(); i++)
         {
+            if (instantiated_generic_types.size() != generic_types.size())
+            {
+                continue;
+            }
+
             if (!instantiated_generic_types[i]->equals(generic_types[i].get()))
             {
                 all_equal = false;
@@ -202,6 +209,11 @@ llvm::Function* FunctionDefinition::get_generic_overload_llvm_function(const Gen
         bool all_equal = true;
         for (size_t i = 0; i < generic_types.size(); i++)
         {
+            if (instantiated_generic_types.size() != generic_types.size())
+            {
+                continue;
+            }
+
             if (!instantiated_generic_types[i]->equals(generic_types[i].get()))
             {
                 all_equal = false;
