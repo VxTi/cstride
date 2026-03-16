@@ -63,6 +63,15 @@ bool FunctionDefinition::matches_type_signature(
     const AstFunctionType* signature
 ) const
 {
+    if (this->get_internal_symbol_name() != name)
+        return false;
+
+    // Handle matching for generic functions
+    if (this->get_type()->is_generic() && signature->is_generic())
+    {
+        return this->get_type()->get_generic_parameter_names().size() == signature->get_generic_parameter_names().size();
+    }
+
     if (!this->_function_type->get_return_type()->equals(signature->get_return_type().get()))
         return false;
 

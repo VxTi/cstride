@@ -78,12 +78,27 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
     std::vector<llvm::Type*> param_types;
     param_types.reserve(fn_type->get_parameter_types().size());
 
-    for (const auto& param : fn_type->get_parameter_types())
-    {
-        param_types.push_back(param->get_llvm_type(module));
-    }
+    llvm::Type* ret_type = nullptr;
 
-    llvm::Type* ret_type = fn_type->get_return_type()->get_llvm_type(module);
+    if (!this->_generic_type_arguments.empty())
+    {
+        const auto& param_names = fn_type->get_generic_parameter_names();
+        for (const auto& param : fn_type->get_parameter_types())
+        {
+            auto resolved = resolve_generics(param.get(), param_names, this->_generic_type_arguments);
+            param_types.push_back(resolved->get_llvm_type(module));
+        }
+        auto resolved_ret = resolve_generics(fn_type->get_return_type().get(), param_names, this->_generic_type_arguments);
+        ret_type = resolved_ret->get_llvm_type(module);
+    }
+    else
+    {
+        for (const auto& param : fn_type->get_parameter_types())
+        {
+            param_types.push_back(param->get_llvm_type(module));
+        }
+        ret_type = fn_type->get_return_type()->get_llvm_type(module);
+    }
 
     // When propagating varargs (call has '...'), the callee receives the caller's
     // va_list as an extra fixed pointer argument rather than as true variadic args.
