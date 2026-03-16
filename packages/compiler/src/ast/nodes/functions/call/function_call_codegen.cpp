@@ -32,7 +32,7 @@ llvm::Value* AstFunctionCall::codegen(
         : "";
 
     throw parsing_error(
-        ErrorType::REFERENCE_ERROR,
+        ErrorType::COMPILATION_ERROR,
         std::format("Function '{}' was not found in this scope", this->format_function_name()),
         this->get_source_fragment(),
         suggested_alternative
@@ -41,21 +41,40 @@ llvm::Value* AstFunctionCall::codegen(
 
 llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
 {
-    const auto& fn_def = this->get_function_definition();
+    const auto& definition = this->get_function_definition();
 
-    if (this->_generic_type_arguments.empty())
+    const AstFunctionType* fn_type = nullptr;
+
+    if (const auto* fn_definition = dynamic_cast<definition::FunctionDefinition*>(definition))
     {
-        if (llvm::Function* callee = module->getFunction(fn_def->get_internal_symbol_name()))
+        fn_type = fn_definition->get_type();
+        if (this->_generic_type_arguments.empty())
         {
-            return callee;
+            if (llvm::Function* callee = fn_definition->get_llvm_function())
+            {
+                return callee;
+            }
         }
-    }
-    else if (auto* llvm_func = fn_def->get_generic_overload_llvm_function(this->_generic_type_arguments))
+        else if (auto* llvm_func = fn_definition->get_generic_overload_llvm_function(this->_generic_type_arguments))
+        {
+            return llvm_func;
+        }
+    } else if (dynamic_cast<definition::FieldDefinition*>(definition))
     {
-        return llvm_func;
+        // Callable variables (function pointers, lambdas) are handled by
+        // codegen_anonymous_function_call, not as regular callees.
+        return nullptr;
     }
 
-    const auto fn_type = fn_def->get_type();
+    if (fn_type == nullptr)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Function '{}' is not a function", this->format_function_name()),
+            this->get_source_fragment()
+        );
+    }
+
     std::vector<llvm::Type*> param_types;
     param_types.reserve(fn_type->get_parameter_types().size());
 
@@ -76,7 +95,7 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
     }
     else
     {
-        llvm_is_variadic = fn_def->is_variadic();
+        llvm_is_variadic = fn_type->is_variadic();
     }
 
     llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
@@ -89,7 +108,7 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
     // the callee is actually a non-variadic function that takes a va_list.
     // But we should use the actual function name for the lookup.
     auto callee_cand = module->getOrInsertFunction(
-        fn_def->get_internal_symbol_name(),
+        definition->get_internal_symbol_name(),
         llvm_fn_type
     );
 

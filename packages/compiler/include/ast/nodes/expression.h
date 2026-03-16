@@ -20,6 +20,7 @@ namespace stride::ast
 
     namespace definition
     {
+        class FieldDefinition;
         class FunctionDefinition;
         class IDefinition;
     }
@@ -392,7 +393,7 @@ namespace stride::ast
         GenericTypeList _generic_type_arguments;
         int _flags;
 
-        definition::FunctionDefinition* _definition = nullptr;
+        definition::IDefinition* _definition =  nullptr;
 
     public:
         explicit AstFunctionCall(
@@ -409,7 +410,7 @@ namespace stride::ast
             _flags(flags) {}
 
         [[nodiscard]]
-        definition::FunctionDefinition* get_function_definition();
+        definition::IDefinition* get_function_definition();
 
         [[nodiscard]]
         const ExpressionList& get_arguments() const

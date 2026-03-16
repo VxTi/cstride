@@ -14,6 +14,10 @@ fn arrayOf<T>(elements: T[], count: i32): Array<T> {
     };
 }
 
+const increment: (i32) -> i32 = (x: i32): i32 -> {
+    return x + 1;
+};
+
 type Callback = () -> void;
 
 fn makeCb(): Callback {
@@ -25,6 +29,8 @@ fn makeCb(): Callback {
 fn main(): i32 {
 
     makeCb()();
+
+    const result: i32 = increment(10);
 
     return 0;
 }

@@ -1,3 +1,4 @@
+#include "ast/casting.h"
 #include "ast/parsing_context.h"
 #include "ast/type_inference.h"
 #include "ast/visitor.h"
@@ -16,12 +17,12 @@ void ExpressionVisitor::accept(IAstExpression* expr)
     {
         // Use the initial value's type (already set by bottom-up traversal) as the
         // canonical type registered in context, which is what identifier lookups rely on.
-        const auto canonical_type = var_decl->get_type();
-        canonical_type->set_flags(var_decl->get_flags()); // Ensure type flags are preserved
+        const auto inferred_type = var_decl->get_type();
+        inferred_type->set_flags(var_decl->get_flags()); // Ensure type flags are preserved
 
         var_decl->get_context()->define_variable(
             var_decl->get_symbol(),
-            canonical_type->clone_ty(),
+            inferred_type->clone_ty(),
             var_decl->get_visibility()
         );
     }
@@ -30,9 +31,12 @@ void ExpressionVisitor::accept(IAstExpression* expr)
         !function_call->get_generic_type_arguments().empty()
     )
     {
-        const auto& definition = function_call->get_function_definition();
-        definition->add_generic_overload(
-            copy_generic_type_list(function_call->get_generic_type_arguments())
-        );
+        auto* definition = function_call->get_function_definition();
+        if (auto* fn_def = dynamic_cast<definition::FunctionDefinition*>(definition))
+        {
+            fn_def->add_generic_overload(
+                copy_generic_type_list(function_call->get_generic_type_arguments())
+            );
+        }
     }
 }

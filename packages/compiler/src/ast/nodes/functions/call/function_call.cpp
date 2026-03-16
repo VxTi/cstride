@@ -206,9 +206,9 @@ const GenericTypeList& AstFunctionCall::get_generic_type_arguments()
     return this->_generic_type_arguments;
 }
 
-FunctionDefinition* AstFunctionCall::get_function_definition()
+IDefinition* AstFunctionCall::get_function_definition()
 {
-    if (this->_definition != nullptr)
+    if (this->_definition)
         return this->_definition;
 
     if (const auto def = this->get_context()->get_function_definition(
@@ -219,6 +219,15 @@ FunctionDefinition* AstFunctionCall::get_function_definition()
         def.has_value())
     {
         this->_definition = def.value();
+        return this->_definition;
+    }
+
+    if (const auto field_def = this->get_context()->get_variable_def(
+        this->get_scoped_function_name(),
+        true
+    ))
+    {
+        this->_definition = field_def;
         return this->_definition;
     }
 
