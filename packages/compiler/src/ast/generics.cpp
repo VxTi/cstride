@@ -159,6 +159,8 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
             func_type->get_context(),
             std::move(resolved_params),
             resolve_generics(func_type->get_return_type().get(), param_names, instantiated_types),
+            EMPTY_GENERIC_PARAMETER_LIST,
+            // No more generics; they're resolved.
             func_type->get_flags()
         );
     }
@@ -287,4 +289,24 @@ GenericTypeList stride::ast::copy_generic_type_list(const GenericTypeList& list)
         copy.push_back(type->clone_as<IAstType>());
     }
     return copy;
+}
+
+std::string stride::ast::get_overloaded_function_name(std::string function_name, const GenericTypeList& overload_types)
+{
+    if (overload_types.empty())
+        return function_name;
+
+    std::vector<std::string> generic_instantiation_type_names;
+    generic_instantiation_type_names.reserve(overload_types.size());
+
+    for (const auto& type : overload_types)
+    {
+        generic_instantiation_type_names.push_back(type->get_type_name());
+    }
+
+    return std::format(
+        "{}${}",
+        function_name,
+        join(generic_instantiation_type_names, "_")
+    );
 }

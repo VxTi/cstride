@@ -63,7 +63,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
         }
 
         // Named function invocations, e.g., `<identifier>(...)` or `<module>::<identifier>(...)`
-        if (set.peek_next_eq(TokenType::LPAREN))
+        if (is_direct_function_call(set))
         {
             result = parse_function_call(context, identifier.get(), set);
         }

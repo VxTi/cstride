@@ -156,11 +156,17 @@ namespace stride::ast
             }
         };
 
+        struct GenericFunctionOverload
+        {
+            GenericTypeList types;
+            mutable llvm::Function* function;
+        };
+
         class FunctionDefinition
             : public IDefinition
         {
             std::unique_ptr<AstFunctionType> _function_type;
-            std::vector<GenericTypeList> _generic_type_overloads{};
+            std::vector<GenericFunctionOverload> _generic_type_overloads{};
             int _flags;
 
             llvm::Function* _llvm_function = nullptr;
@@ -200,10 +206,10 @@ namespace stride::ast
                 return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
             }
 
-            void add_generic_instantiation(GenericTypeList generic_types);
+            void add_generic_instantiation(GenericTypeList generic_overload_types);
 
             [[nodiscard]]
-            const std::vector<GenericTypeList>& get_generic_instantiations() const
+            const std::vector<GenericFunctionOverload>& get_generic_instantiations() const
             {
                 return this->_generic_type_overloads;
             }

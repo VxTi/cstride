@@ -65,12 +65,15 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
         set.expect(TokenType::RPAREN, "Expected secondary ')' after function type notation");
     }
 
+    // TODO: Resolve generic parameters in type resolution
+
     return parse_type_metadata(
         std::make_unique<AstFunctionType>(
             reference_token.get_source_fragment(),
             context,
             std::move(parameters),
             std::move(return_type),
+            EMPTY_GENERIC_PARAMETER_LIST,
             flags
         ),
         set
@@ -80,17 +83,27 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
 std::unique_ptr<IAstNode> AstFunctionType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> parameters;
+    GenericParameterList generic_parameters_clone;
+
     parameters.reserve(this->_parameters.size());
+    generic_parameters_clone.reserve(this->_generic_param_names.size());
+
     for (const auto& p : this->_parameters)
     {
         parameters.push_back(p->clone_ty());
     }
 
+    generic_parameters_clone.insert(
+        generic_parameters_clone.end(),
+        this->_generic_param_names.begin(),
+        this->_generic_param_names.end());
+
     return std::make_unique<AstFunctionType>(
         this->get_source_fragment(),
         this->get_context(),
         std::move(parameters),
-        this->_return_type->clone_ty(),
+        this->get_return_type()->clone_ty(),
+        std::move(generic_parameters_clone),
         this->get_flags()
     );
 }

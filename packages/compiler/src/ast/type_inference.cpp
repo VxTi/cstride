@@ -267,21 +267,23 @@ std::unique_ptr<IAstType> stride::ast::infer_object_initializer_type(const AstOb
     );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* expression)
+std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* function)
 {
     std::vector<std::unique_ptr<IAstType>> param_types;
-    param_types.reserve(expression->get_parameters().size());
+    param_types.reserve(function->get_parameters().size());
 
-    for (const auto& param : expression->get_parameters())
+    for (const auto& param : function->get_parameters())
     {
         param_types.emplace_back(param->get_type()->clone_ty());
     }
 
     return std::make_unique<AstFunctionType>(
-        expression->get_source_fragment(),
-        expression->get_context(),
+        function->get_source_fragment(),
+        function->get_context(),
         std::move(param_types),
-        expression->get_return_type()->clone_ty()
+        function->get_return_type()->clone_ty(),
+        function->get_generic_parameters(),
+        function->get_flags()
     );
 }
 
@@ -312,7 +314,8 @@ std::unique_ptr<IAstType> stride::ast::infer_identifier_type(const AstIdentifier
             identifier->get_source_fragment(),
             identifier->get_context(),
             std::move(param_types),
-            callable->get_type()->get_return_type()->clone_ty()
+            callable->get_type()->get_return_type()->clone_ty(),
+            callable->get_type()->get_generic_parameter_names()
         );
     }
 

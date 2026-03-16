@@ -47,4 +47,6 @@ namespace stride::ast
     );
 
     GenericTypeList copy_generic_type_list(const GenericTypeList& list);
+
+    std::string get_overloaded_function_name(std::string function_name, const GenericTypeList& overload_types);
 }

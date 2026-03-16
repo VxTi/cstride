@@ -31,6 +31,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
 )
 {
     const auto reference_token = set.peek(-1);
+    auto generic_types = parse_generic_type_arguments(context, set);
     auto function_parameter_set = collect_parenthesized_block(set);
 
     ExpressionList function_arg_nodes;
@@ -96,8 +97,51 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
         context,
         identifier->clone_as<AstIdentifier>(),
         std::move(function_arg_nodes),
+        std::move(generic_types),
         function_call_flags
     );
+}
+
+// The previous token must be an identifier, otherwise this is not a function call
+// This logic is not handled here.
+bool stride::ast::is_direct_function_call(const TokenSet& set)
+{
+    // Function call for sure, "identifier::other(`
+    if (set.peek_next_eq(TokenType::LPAREN))
+        return true;
+
+    // If the subsequent token is a LT, it might just be a generic function instantiation
+    // We have to do some lookahead to make sure this is the case
+    if (set.peek_next_eq(TokenType::LT))
+    {
+        int depth = 0;
+        for (size_t offset = 0; set.position() + offset < set.size(); offset++)
+        {
+            switch (const auto next_token = set.at(set.position() + offset);
+                next_token.get_type())
+            {
+            case TokenType::LT:
+                ++depth;
+                break;
+            case TokenType::GT:
+                --depth;
+                break;
+
+            default:
+                // Optimization, where we know for sure it can't be part of a generic instantiation
+                if (!next_token.is_type_token() && next_token.get_type() != TokenType::COMMA)
+                {
+                    return false;
+                }
+            }
+
+            if (depth == 0)
+            {
+                return set.peek_eq(TokenType::LPAREN, offset + 1);
+            }
+        }
+    }
+    return false;
 }
 
 std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
@@ -653,8 +697,12 @@ FunctionDefinition* AstFunctionCall::get_function_definition()
     if (this->_definition != nullptr)
         return this->_definition;
 
+    const auto& internal_function_name = get_overloaded_function_name(
+        this->get_scoped_function_name(),
+        this->get_generic_type_arguments());
+
     if (const auto def = this->get_context()->get_function_definition(
-            this->get_scoped_function_name(),
+            internal_function_name,
             this->get_argument_types(),
             this->get_generic_type_arguments().size()
         );
@@ -674,16 +722,26 @@ FunctionDefinition* AstFunctionCall::get_function_definition()
 std::unique_ptr<IAstNode> AstFunctionCall::clone()
 {
     ExpressionList cloned_args;
+    GenericTypeList generic_type_list_cloned;
+
+    generic_type_list_cloned.reserve(this->_generic_type_arguments.size());
     cloned_args.reserve(this->get_arguments().size());
+
     for (const auto& arg : this->get_arguments())
     {
         cloned_args.push_back(arg->clone_as<IAstExpression>());
+    }
+
+    for (const auto& generic_arg : this->get_generic_type_arguments())
+    {
+        generic_type_list_cloned.push_back(generic_arg->clone_ty());
     }
 
     return std::make_unique<AstFunctionCall>(
         this->get_context(),
         this->get_function_name_identifier()->clone_as<AstIdentifier>(),
         std::move(cloned_args),
+        std::move(generic_type_list_cloned),
         this->_flags
     );
 }
@@ -706,9 +764,27 @@ std::string AstFunctionCall::get_formatted_call() const
     std::vector<std::string> arg_names;
     arg_names.reserve(this->_arguments.size());
 
+    std::vector<std::string> formatted_generics;
+    formatted_generics.reserve(this->_generic_type_arguments.size());
+
+    for (const auto& generic_arg : this->_generic_type_arguments)
+    {
+        formatted_generics.push_back(generic_arg->get_type_name());
+    }
+
     for (const auto& arg : this->_arguments)
     {
         arg_names.push_back(arg->get_type()->get_type_name());
+    }
+
+    if (!formatted_generics.empty())
+    {
+        return std::format(
+            "{}<{}>({})",
+            this->get_function_name(),
+            join(formatted_generics, ", "),
+            join(arg_names, ", ")
+        );
     }
 
     return std::format(

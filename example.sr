@@ -1,5 +1,5 @@
 import System::{
-io::print
+    io::print
 };
 
 type Array<T> = T[];
@@ -9,10 +9,15 @@ type Car = {
     names: Array<string>;
 };
 
+fn some_comparison<T>(a: T, b: T): bool {
+    return a == b;
+}
+
 fn makeCar(): Car {
-    const names = ["Toyota", "Honda", "Ford"];
+    const names = ["Toyota", "Honda", "Ford", "Toyota"];
+
     return Car::{ drive: (): void -> {
-        io::print("Driving: %s, %s, %s", names[0], names[1], names[2]);
+        io::print("\x1b[32mDriving the car");
     }, names, };
 }
 
@@ -20,6 +25,9 @@ fn main(): i32 {
 
     const myCar = makeCar();
     myCar.drive();
+    io::print("Driving: %s, %s, %s", myCar.names[0], myCar.names[1], myCar.names[2]);
+
+    io::print("Compared: %b", some_comparison<i32>(5, 5));
 
     return 0;
 }

@@ -68,6 +68,13 @@ namespace stride::ast
      *                Function declaration definitions             *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    struct GenericFunctionMetadata
+    {
+        std::string overload_function_name;
+        llvm::Function* llvm_function;
+    };
+
     class IAstFunction
         : public IAstContainer,
           public IAstExpression
@@ -81,12 +88,6 @@ namespace stride::ast
         GenericParameterList _generic_parameters;
         definition::FunctionDefinition* _function_definition = nullptr;
         int _flags;
-
-        /// Cached LLVM function pointer for anonymous functions.
-        /// Named functions are always looked up by their scoped name in the module,
-        /// but anonymous functions are created with an empty name (LLVM auto-assigns
-        /// a numeric ID), so we must track them by pointer instead.
-        llvm::Function* _llvm_function = nullptr;
 
         friend class AstFunctionDeclaration;
         friend class AstFunctionParameter;
@@ -127,14 +128,11 @@ namespace stride::ast
             return this->_symbol.internal_name;
         }
 
-        /// Returns a list of overlaods for this function. For example, whenever the
-        /// function is defined with generic parameters, there will be several overlaods generated
-        /// for each generic instantiation. The internalized name of each overload is returned by this function.
+        /// Returns a list of overloads for this function. For example, whenever the
+        /// function is defined with generic parameters, there will be several overloads generated
+        /// for each generic instantiation. This function returns the internalized name of each overload.
         [[nodiscard]]
-        std::vector<std::string> get_internalized_overload_names();
-
-        [[nodiscard]]
-        std::string get_internalized_overload_name(const GenericTypeList& overload) const;
+        std::vector<GenericFunctionMetadata> get_function_overload_metadata();
 
         [[nodiscard]]
         AstBlock* get_body() override
@@ -239,7 +237,7 @@ namespace stride::ast
         std::unique_ptr<IAstNode> clone() override;
 
     private:
-        llvm::FunctionType* get_overloaded_llvm_function_type(
+        llvm::FunctionType* get_generic_instantiated_llvm_function_type(
             llvm::Module* module,
             std::vector<llvm::Type*> captured_variables,
             const GenericTypeList& generic_instantiation_types = {}

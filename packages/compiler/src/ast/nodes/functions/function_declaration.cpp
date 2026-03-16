@@ -674,209 +674,203 @@ llvm::Value* IAstFunction::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    // Anonymous functions are tracked by their cached pointer (they have no stable
-    // string name in the module). Named functions are looked up the normal way.
     llvm::Function* function = nullptr;
-    if (this->is_anonymous())
+
+    for (const auto& [function_name, llvm_function_val] : this->get_function_overload_metadata())
     {
-        function = this->_llvm_function;
-        if (!function)
+        if (!llvm_function_val)
         {
-            module->print(llvm::errs(), nullptr);
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                "Anonymous function pointer missing — resolve_forward_references must run first",
+                std::format("Function symbol '{}' missing", function_name),
                 this->get_source_fragment()
             );
         }
-    }
-    else
-    {
-        function = module->getFunction(this->get_internalized_function_name());
-        if (!function)
+
+
+        // If the function body has already been generated (has basic blocks), just return the function pointer
+        if (this->is_extern() || !llvm_function_val->empty())
         {
-            module->print(llvm::errs(), nullptr);
-            throw parsing_error(
-                ErrorType::COMPILATION_ERROR,
-                std::format("Function symbol '{}' missing", this->get_internalized_function_name()),
-                this->get_source_fragment()
-            );
+            return llvm_function_val;
         }
-    }
 
-    // If the function body has already been generated (has basic blocks), just return the function pointer
-    if (this->is_extern() || !function->empty())
-    {
-        return function;
-    }
+        // Save the current insert point to restore it later
+        // This is important when generating nested lambdas
+        llvm::BasicBlock* saved_insert_block = builder->GetInsertBlock();
+        llvm::BasicBlock::iterator saved_insert_point;
+        const bool has_insert_point = saved_insert_block != nullptr;
 
-    // Save the current insert point to restore it later
-    // This is important when generating nested lambdas
-    llvm::BasicBlock* saved_insert_block = builder->GetInsertBlock();
-    llvm::BasicBlock::iterator saved_insert_point;
-    const bool has_insert_point = saved_insert_block != nullptr;
-
-    if (saved_insert_block)
-    {
-        saved_insert_point = builder->GetInsertPoint();
-    }
-
-    llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(
-        module->getContext(),
-        "entry",
-        function
-    );
-    builder->SetInsertPoint(entry_bb);
-
-    // We create a new builder for the prologue to ensure allocas are at the very top
-    llvm::IRBuilder prologue_builder(&function->getEntryBlock(), function->getEntryBlock().begin());
-
-    //
-    // Captured variable handling
-    // Map captured variables to function arguments with __capture_ prefix
-    //
-    auto fn_parameter_argument = function->arg_begin();
-    for (const auto& capture : this->_captured_variables)
-    {
-        if (fn_parameter_argument != function->arg_end())
+        if (saved_insert_block)
         {
-            fn_parameter_argument->setName(closures::format_captured_variable_name(capture.internal_name));
-
-            // Create alloca with __capture_ prefix so identifier lookup can find it
-            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
-                fn_parameter_argument->getType(),
-                nullptr,
-                closures::format_captured_variable_name_internal(capture.internal_name)
-            );
-
-            builder->CreateStore(fn_parameter_argument, alloca);
-            ++fn_parameter_argument;
+            saved_insert_point = builder->GetInsertPoint();
         }
-    }
 
-    //
-    // Function parameter handling
-    // Here we define the parameters on the stack as memory slots for the function
-    //
-    for (const auto& param : this->_parameters)
-    {
-        if (fn_parameter_argument != function->arg_end())
+        llvm::BasicBlock* entry_bb = llvm::BasicBlock::Create(
+            module->getContext(),
+            "entry",
+            llvm_function_val
+        );
+        builder->SetInsertPoint(entry_bb);
+
+        // We create a new builder for the prologue to ensure allocas are at the very top
+        llvm::IRBuilder prologue_builder(
+            &llvm_function_val->getEntryBlock(),
+            llvm_function_val->getEntryBlock().begin()
+        );
+
+        //
+        // Captured variable handling
+        // Map captured variables to function arguments with __capture_ prefix
+        //
+        auto fn_parameter_argument = llvm_function_val->arg_begin();
+        for (const auto& capture : this->_captured_variables)
         {
-            fn_parameter_argument->setName(param->get_name() + ".arg");
+            if (fn_parameter_argument != llvm_function_val->arg_end())
+            {
+                fn_parameter_argument->setName(closures::format_captured_variable_name(capture.internal_name));
 
-            // Create a memory slot on the stack for the parameter
-            llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
-                fn_parameter_argument->getType(),
-                nullptr,
-                param->get_name()
-            );
+                // Create alloca with __capture_ prefix so identifier lookup can find it
+                llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
+                    fn_parameter_argument->getType(),
+                    nullptr,
+                    closures::format_captured_variable_name_internal(capture.internal_name)
+                );
 
-            // Store the initial argument value into the alloca
-            builder->CreateStore(fn_parameter_argument, alloca);
-
-            ++fn_parameter_argument;
+                builder->CreateStore(fn_parameter_argument, alloca);
+                ++fn_parameter_argument;
+            }
         }
-    }
 
-    // Generate Body
-    llvm::Value* function_body_value = this->_body->codegen(module, builder);
+        //
+        // Function parameter handling
+        // Here we define the parameters on the stack as memory slots for the function
+        //
+        for (const auto& param : this->_parameters)
+        {
+            if (fn_parameter_argument != llvm_function_val->arg_end())
+            {
+                fn_parameter_argument->setName(param->get_name() + ".arg");
 
-    // Final Safety: Implicit Return
-    // If the get_body didn't explicitly return (no terminator found), add one.
-    if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();
-        current_bb && !current_bb->getTerminator())
-    {
-        if (llvm::Type* ret_type = function->getReturnType();
-            ret_type->isVoidTy())
-        {
-            builder->CreateRetVoid();
+                // Create a memory slot on the stack for the parameter
+                llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
+                    fn_parameter_argument->getType(),
+                    nullptr,
+                    param->get_name()
+                );
+
+                // Store the initial argument value into the alloca
+                builder->CreateStore(fn_parameter_argument, alloca);
+
+                ++fn_parameter_argument;
+            }
         }
-        else if (function_body_value && function_body_value->getType() == ret_type)
+
+        // Generate Body
+        llvm::Value* function_body_value = this->_body->codegen(module, builder);
+
+        // Final Safety: Implicit Return
+        // If the get_body didn't explicitly return (no terminator found), add one.
+        if (llvm::BasicBlock* current_bb = builder->GetInsertBlock();
+            current_bb && !current_bb->getTerminator())
         {
-            builder->CreateRet(function_body_value);
-        }
-        else
-        {
+            if (llvm::Type* ret_type = llvm_function_val->getReturnType();
+                ret_type->isVoidTy())
+            {
+                builder->CreateRetVoid();
+            }
+            else if (function_body_value && function_body_value->getType() == ret_type)
+            {
+                builder->CreateRet(function_body_value);
+            }
             // Default return to keep IR valid (useful for main or incomplete functions)
-            if (ret_type->isFloatingPointTy())
-            {
-                builder->CreateRet(llvm::ConstantFP::get(ret_type, 0.0));
-            }
-            else if (ret_type->isIntegerTy())
-            {
-                builder->CreateRet(llvm::ConstantInt::get(ret_type, 0));
-            }
             else
             {
-                throw parsing_error(
-                    ErrorType::COMPILATION_ERROR,
-                    std::format(
-                        "Function '{}' is missing a return path.",
-                        this->get_function_name()
-                    ),
-                    this->get_source_fragment()
-                );
+                if (ret_type->isFloatingPointTy())
+                {
+                    builder->CreateRet(llvm::ConstantFP::get(ret_type, 0.0));
+                }
+                else if (ret_type->isIntegerTy())
+                {
+                    builder->CreateRet(llvm::ConstantInt::get(ret_type, 0));
+                }
+                else
+                {
+                    throw parsing_error(
+                        ErrorType::COMPILATION_ERROR,
+                        std::format(
+                            "Function '{}' is missing a return path.",
+                            this->get_function_name()
+                        ),
+                        this->get_source_fragment()
+                    );
+                }
             }
         }
-    }
 
-    if (llvm::verifyFunction(*function, &llvm::errs()))
-    {
-        module->print(llvm::errs(), nullptr);
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            "LLVM Function Verification Failed for: " + this->get_function_name(),
-            this->get_source_fragment()
-        );
-    }
-
-    // Restore the previous insert point for nested lambda generation
-    if (has_insert_point && saved_insert_block)
-    {
-        builder->SetInsertPoint(saved_insert_block, saved_insert_point);
-    }
-
-    // For anonymous lambdas with captured variables, create a closure structure
-    // that bundles the function pointer with the current values of captured variables
-    if (this->is_anonymous())
-    {
-        // Collect the current values of captured variables from the enclosing scope
-        std::vector<llvm::Value*> captured_values;
-        for (const auto& capture : this->get_captured_variables())
+        if (llvm::verifyFunction(*llvm_function_val, &llvm::errs()))
         {
-            if (const auto block = builder->GetInsertBlock())
-            {
-                llvm::Function* current_fn = block->getParent();
-                llvm::Value* captured_val = closures::lookup_variable_or_capture(current_fn, capture.internal_name);
-
-                if (!captured_val)
-                {
-                    captured_val = closures::lookup_variable_by_base_name(current_fn, capture.name);
-                }
-
-                if (captured_val)
-                {
-                    // Load the value if it's an alloca
-                    if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
-                    {
-                        captured_val = builder->CreateLoad(
-                            alloca->getAllocatedType(),
-                            alloca,
-                            capture.internal_name
-                        );
-                    }
-                    captured_values.push_back(captured_val);
-                }
-            }
+            module->print(llvm::errs(), nullptr);
+            throw parsing_error(
+                ErrorType::COMPILATION_ERROR,
+                "LLVM Function Verification Failed for: " + this->get_function_name(),
+                this->get_source_fragment()
+            );
         }
 
-        // Create and return a closure instead of the raw function pointer
-        return closures::create_closure(module, builder, function, captured_values);
+        // Restore the previous insert point for nested lambda generation
+        if (has_insert_point && saved_insert_block)
+        {
+            builder->SetInsertPoint(saved_insert_block, saved_insert_point);
+        }
+
+        // For anonymous lambdas with captured variables, create a closure structure
+        // that bundles the function pointer with the current values of captured variables
+        if (this->is_anonymous())
+        {
+            // Collect the current values of captured variables from the enclosing scope
+            std::vector<llvm::Value*> captured_values;
+            for (const auto& capture : this->get_captured_variables())
+            {
+                if (const auto block = builder->GetInsertBlock())
+                {
+                    llvm::Function* current_fn = block->getParent();
+                    llvm::Value* captured_val = closures::lookup_variable_or_capture(current_fn, capture.internal_name);
+
+                    if (!captured_val)
+                    {
+                        captured_val = closures::lookup_variable_by_base_name(current_fn, capture.name);
+                    }
+
+                    if (captured_val)
+                    {
+                        // Load the value if it's an alloca
+                        if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(captured_val))
+                        {
+                            captured_val = builder->CreateLoad(
+                                alloca->getAllocatedType(),
+                                alloca,
+                                capture.internal_name
+                            );
+                        }
+                        captured_values.push_back(captured_val);
+                    }
+                }
+            }
+
+            // Create and return a closure instead of the raw function pointer
+            return closures::create_closure(module, builder, llvm_function_val, captured_values);
+        }
+
+        function = llvm_function_val;
     }
 
     return function;
 }
 
+
+/**
+ * Here we define the function in the symbol table, so it can be looked up in the codegen phase.
+ */
 void IAstFunction::resolve_forward_references(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
@@ -885,7 +879,7 @@ void IAstFunction::resolve_forward_references(
     // Avoid re-registering if already declared.
     // Named functions are looked up by their scoped name; anonymous functions are
     // tracked by the cached _llvm_function pointer (they have no stable string name).
-    if (this->is_anonymous() && this->_llvm_function)
+    if (this->is_anonymous() && this->get_function_definition()->get_llvm_function() != nullptr)
         return;
 
     // Add captured variables as first parameters
@@ -905,19 +899,20 @@ void IAstFunction::resolve_forward_references(
         ? llvm::Function::PrivateLinkage
         : llvm::Function::ExternalLinkage;
 
+    // --- Generic function instantiation
     if (const auto& definition = this->get_function_definition();
         !definition->get_generic_instantiations().empty())
     {
-        for (const auto& overload : definition->get_generic_instantiations())
+        for (const auto& [types, function] : definition->get_generic_instantiations())
         {
-            const auto overloaded_fn_name = get_internalized_overload_name(overload);
-            llvm::FunctionType* generic_function_type = this->get_overloaded_llvm_function_type(
+            const auto overloaded_fn_name = get_overloaded_function_name(this->get_internalized_function_name(), types);
+            llvm::FunctionType* generic_function_type = this->get_generic_instantiated_llvm_function_type(
                 module,
                 captured_types,
-                overload
+                types
             );
 
-            llvm::Function* generic_function = llvm::Function::Create(
+            function = llvm::Function::Create(
                 generic_function_type,
                 linkage,
                 overloaded_fn_name,
@@ -925,10 +920,7 @@ void IAstFunction::resolve_forward_references(
             );
 
             if (this->is_anonymous())
-            {
-                generic_function->addFnAttr("stride.anonymous");
-                this->_llvm_function = generic_function;
-            }
+                function->addFnAttr("stride.anonymous");
         }
     }
     else
@@ -937,7 +929,7 @@ void IAstFunction::resolve_forward_references(
         // so they are easily findable in the module without ambiguity.
         const std::string llvm_function_name = this->get_internalized_function_name();
 
-        llvm::FunctionType* function_type = this->get_overloaded_llvm_function_type(module, captured_types);
+        llvm::FunctionType* function_type = this->get_generic_instantiated_llvm_function_type(module, captured_types);
 
         llvm::Function* function = llvm::Function::Create(
             function_type,
@@ -949,14 +941,14 @@ void IAstFunction::resolve_forward_references(
         if (this->is_anonymous())
         {
             function->addFnAttr("stride.anonymous");
-            this->_llvm_function = function;
+            definition->set_llvm_function(function);
         }
     }
 
     this->_body->resolve_forward_references(module, builder);
 }
 
-llvm::FunctionType* IAstFunction::get_overloaded_llvm_function_type(
+llvm::FunctionType* IAstFunction::get_generic_instantiated_llvm_function_type(
     llvm::Module* module,
     std::vector<llvm::Type*> captured_variables,
     const GenericTypeList& generic_instantiation_types
@@ -1046,43 +1038,30 @@ FunctionDefinition* IAstFunction::get_function_definition()
     return this->_function_definition;
 }
 
-std::string IAstFunction::get_internalized_overload_name(const GenericTypeList& overload) const
-{
-    std::vector<std::string> generic_instantiation_type_names;
-    generic_instantiation_type_names.reserve(overload.size());
-
-    for (const auto& type : overload)
-    {
-        generic_instantiation_type_names.push_back(type->get_type_name());
-    }
-
-    return std::format(
-        "{}${}",
-        this->get_internalized_function_name(),
-        join(generic_instantiation_type_names, "_")
-    );
-}
-
-std::vector<std::string> IAstFunction::get_internalized_overload_names()
+std::vector<GenericFunctionMetadata> IAstFunction::get_function_overload_metadata()
 {
     const auto& definition = this->get_function_definition();
 
     // If the function is not generic, we just return a singular name (the regular internalized name)
     if (!definition->get_type()->is_generic())
     {
-        return { this->get_internalized_function_name() };
+        return {
+            GenericFunctionMetadata{ this->get_internalized_function_name(), definition->get_llvm_function() }
+        };
     }
 
-    std::vector<std::string> overload_names;
+    std::vector<GenericFunctionMetadata> metadata;
 
-    for (const auto& overload : definition->get_generic_instantiations())
+
+    for (const auto& [types, llvm_function] : definition->get_generic_instantiations())
     {
-        overload_names.push_back(
-            get_internalized_overload_name(overload)
+        metadata.emplace_back(
+            get_overloaded_function_name(this->get_internalized_function_name(), types),
+            llvm_function
         );
     }
 
-    return overload_names;
+    return metadata;
 }
 
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()

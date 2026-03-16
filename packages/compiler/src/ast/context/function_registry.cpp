@@ -88,8 +88,10 @@ const
     // Ensure we have the right generic overload variant of this function.
     // This allows us to create several functions with the same signature / name, but with
     // different generic parameter overloads.
-    if (this->_function_type->get_generic_parameter_names().size() != generic_argument_count)
-        return false;
+    //
+    // For generic overloads, we just check whether the name and generic count is equal.
+    if (!this->_function_type->get_generic_parameter_names().empty() && generic_argument_count > 0)
+        return true;
 
     const auto& self_params = this->_function_type->get_parameter_types();
 
@@ -162,12 +164,12 @@ bool ParsingContext::is_function_defined_globally(
 
 bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique_ptr<IAstType>>& generic_types) const
 {
-    for (const auto& instantiation : this->_generic_type_overloads)
+    for (const auto& [types, function] : this->_generic_type_overloads)
     {
         bool all_equal = true;
         for (size_t i = 0; i < generic_types.size(); i++)
         {
-            if (!instantiation[i]->equals(generic_types[i].get()))
+            if (!types[i]->equals(generic_types[i].get()))
             {
                 all_equal = false;
                 break;
@@ -181,10 +183,10 @@ bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique
     return false;
 }
 
-void FunctionDefinition::add_generic_instantiation(GenericTypeList generic_types)
+void FunctionDefinition::add_generic_instantiation(GenericTypeList generic_overload_types)
 {
-    if (has_generic_instantiation(generic_types))
+    if (has_generic_instantiation(generic_overload_types))
         return; // Already instantiated
 
-    this->_generic_type_overloads.push_back(std::move(generic_types));
+    this->_generic_type_overloads.push_back({std::move(generic_overload_types)});
 }

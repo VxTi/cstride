@@ -378,7 +378,7 @@ namespace stride::ast
     {
         ExpressionList _arguments;
         std::unique_ptr<AstIdentifier> _function_name_identifier;
-        GenericTypeList _generic_type_arguments{};
+        GenericTypeList _generic_type_arguments;
         int _flags;
 
         definition::FunctionDefinition* _definition = nullptr;
@@ -388,11 +388,13 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> function_name_identifier,
             ExpressionList arguments,
+            GenericTypeList generic_type_arguments,
             const int flags = SRFLAG_NONE
         ) :
             IAstExpression(function_name_identifier->get_source_fragment(), context),
             _arguments(std::move(arguments)),
             _function_name_identifier(std::move(function_name_identifier)),
+            _generic_type_arguments(std::move(generic_type_arguments)),
             _flags(flags) {}
 
         [[nodiscard]]
@@ -1033,15 +1035,13 @@ namespace stride::ast
         TokenSet& set);
 
     /// Parses a variable assignment statement
-    std::optional<std::unique_ptr<AstVariableReassignment>>
-    parse_variable_reassignment(
+    std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
         const std::shared_ptr<ParsingContext>& context,
         AstIdentifier* identifier,
         TokenSet& set);
 
     /// Parses a binary arithmetic operation using precedence climbing
-    std::optional<std::unique_ptr<IAstExpression>>
-    parse_arithmetic_binary_operation_optional(
+    std::optional<std::unique_ptr<IAstExpression>> parse_arithmetic_binary_operation_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> lhs,
@@ -1145,4 +1145,8 @@ namespace stride::ast
 
     /// Checks whether the next tokens begin a member access: `.identifier`
     bool is_member_accessor(const TokenSet& set);
+
+    /// Checks whether the subsequent tokens can be considered a function call, after an identifier
+    /// An example would be <code>function_name()</code> or <code>function_name<type>()</code>
+    bool is_direct_function_call(const TokenSet& set);
 } // namespace stride::ast
