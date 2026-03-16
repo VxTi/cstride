@@ -1000,7 +1000,7 @@ void IAstFunction::resolve_forward_references(
             );
         }
 
-        auto candidate_node = std::make_unique<AstFunctionDeclaration>(
+        node = std::make_unique<AstFunctionDeclaration>(
             this->get_context(),
             this->_symbol,
             std::move(instantiated_function_params),
@@ -1010,8 +1010,6 @@ void IAstFunction::resolve_forward_references(
             this->_flags,
             this->get_generic_parameters()
         );
-
-        node = std::move(candidate_node);
 
         const auto overloaded_fn_name = get_overloaded_function_name(this->get_registered_function_name(), types);
         llvm::FunctionType* generic_function_type = this->get_llvm_function_type(
@@ -1026,6 +1024,17 @@ void IAstFunction::resolve_forward_references(
             overloaded_fn_name,
             module
         );
+
+        for (const auto &param : instantiated_function_params)
+        {
+            const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
+            this->get_context()->define_variable(
+                param_symbol,
+                param->get_type()->clone_ty(),
+                VisibilityModifier::PRIVATE,
+                true
+            );
+        }
 
         if (this->is_anonymous())
             llvm_function->addFnAttr("stride.anonymous");

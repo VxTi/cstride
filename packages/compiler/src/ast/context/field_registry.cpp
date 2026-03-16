@@ -59,11 +59,28 @@ bool ParsingContext::is_field_defined_globally(
 void ParsingContext::define_variable_globally(
     Symbol variable_symbol,
     std::unique_ptr<IAstType> type,
-    VisibilityModifier visibility
+    VisibilityModifier visibility,
+    const bool overwrite
 ) const
 {
     if (is_field_defined_globally(variable_symbol.internal_name))
     {
+        if (overwrite)
+        {
+            for (auto& symbol_def : this->_symbols)
+            {
+                if (auto* var_def = dynamic_cast<definition::FieldDefinition*>(symbol_def.get());
+                    var_def != nullptr &&
+                    var_def->get_internal_symbol_name() == variable_symbol.internal_name)
+                {
+                    var_def->set_type(std::move(type));
+                    var_def->set_visibility(visibility);
+                    return;
+                }
+            }
+            return;
+        }
+
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Variable '{}' is already defined in global scope", variable_symbol.name),
@@ -84,7 +101,8 @@ void ParsingContext::define_variable_globally(
 void ParsingContext::define_variable(
     Symbol variable_sym,
     std::unique_ptr<IAstType> type,
-    VisibilityModifier visibility
+    VisibilityModifier visibility,
+    const bool overwrite
 )
 {
     if (this->is_global_scope())
@@ -92,13 +110,30 @@ void ParsingContext::define_variable(
         this->define_variable_globally(
             std::move(variable_sym),
             std::move(type),
-            visibility
+            visibility,
+            overwrite
         );
         return;
     }
 
     if (is_field_defined_in_scope(variable_sym.internal_name))
     {
+        if (overwrite)
+        {
+            for (auto& symbol_def : this->_symbols)
+            {
+                if (auto* var_def = dynamic_cast<definition::FieldDefinition*>(symbol_def.get());
+                    var_def != nullptr &&
+                    var_def->get_internal_symbol_name() == variable_sym.internal_name)
+                {
+                    var_def->set_type(std::move(type));
+                    var_def->set_visibility(visibility);
+                    return;
+                }
+            }
+            return;
+        }
+
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Variable '{}' is already defined in this scope", variable_sym.name),

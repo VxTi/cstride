@@ -78,6 +78,11 @@ namespace stride::ast
 
             [[nodiscard]]
             virtual std::unique_ptr<IDefinition> clone() const = 0;
+
+            void set_visibility(const VisibilityModifier visibility)
+            {
+                this->_visibility = visibility;
+            }
         };
 
         class TypeDefinition
@@ -156,6 +161,11 @@ namespace stride::ast
             std::unique_ptr<IDefinition> clone() const override
             {
                 return std::make_unique<FieldDefinition>(get_symbol(), _type->clone_ty(), get_visibility());
+            }
+
+            void set_type(std::unique_ptr<IAstType> type)
+            {
+                this->_type = std::move(type);
             }
         };
     } // namespace definition
@@ -300,13 +310,15 @@ namespace stride::ast
         void define_variable(
             Symbol variable_sym,
             std::unique_ptr<IAstType> type,
-            VisibilityModifier visibility
+            VisibilityModifier visibility,
+            bool overwrite = false
         );
 
         void define_variable_globally(
             Symbol variable_symbol,
             std::unique_ptr<IAstType> type,
-            VisibilityModifier visibility
+            VisibilityModifier visibility,
+            bool overwrite = false
         ) const;
 
         [[nodiscard]]
