@@ -111,12 +111,12 @@ void IAstFunction::resolve_forward_references(
 
         node = std::make_unique<AstFunctionDeclaration>(
             this->get_context(),
-            this->_symbol,
+            this->get_symbol(),
             std::move(instantiated_function_params),
             this->_body->clone_as<AstBlock>(),
             std::move(instantiated_return_ty),
             this->get_visibility(),
-            this->_flags,
+            this->get_flags(),
             this->get_generic_parameters()
         );
 

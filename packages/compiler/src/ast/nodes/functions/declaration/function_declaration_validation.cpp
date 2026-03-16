@@ -48,11 +48,23 @@ void IAstFunction::validate()
             );
         }
 
+        // Clone the body and resolve generic types on every expression within it.
+        // The cloned body's expressions have no types set (clone does not preserve inferred types),
+        // so resolve_generics_in_body re-infers each expression's type from context (which still
+        // carries the generic parameter names, e.g. T) and then substitutes them with the concrete
+        // instantiated types (e.g. i32).
+        auto resolved_body = this->_body->clone_as<AstBlock>();
+        resolve_generics_in_body(
+            resolved_body.get(),
+            this->_generic_parameters,
+            instantiated_generic_types
+        );
+
         node = std::make_unique<AstFunctionDeclaration>(
             this->get_context(),
             this->_symbol,
             std::move(instantiated_function_params),
-            this->_body->clone_as<AstBlock>(),
+            std::move(resolved_body),
             std::move(instantiated_return_ty),
             this->get_visibility(),
             this->_flags,

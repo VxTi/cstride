@@ -1,29 +1,22 @@
-#include "ast/definitions/function_definition.h"
+#include "ast/nodes/function_declaration.h"
 
 #include "errors.h"
-#include "ast/casting.h"
 #include "ast/closures.h"
 #include "ast/modifiers.h"
 #include "ast/parsing_context.h"
 #include "ast/symbols.h"
+#include "ast/definitions/function_definition.h"
 #include "ast/nodes/blocks.h"
-#include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/for_loop.h"
-#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/return_statement.h"
-#include "ast/nodes/while_loop.h"
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
 #include <ranges>
-#include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
-#include <llvm/Support/raw_ostream.h>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -258,29 +251,29 @@ FunctionDefinition* IAstFunction::get_function_definition()
     return this->_function_definition;
 }
 
-std::vector<GenericFunctionMetadata> IAstFunction::get_generic_function_metadata()
+std::vector<FunctionImplementation> IAstFunction::get_function_implementation_data()
 {
     const auto& definition = this->get_function_definition();
 
     // If the function is not generic, we just return a singular name (the regular internalized name)
-    if (!definition->get_type()->is_generic())
+    if (definition->get_generic_overloads().empty())
     {
         return {
-            GenericFunctionMetadata{ this->get_registered_function_name(), definition->get_llvm_function() }
+            FunctionImplementation{ this->get_registered_function_name(), definition->get_llvm_function() }
         };
     }
 
-    std::vector<GenericFunctionMetadata> metadata;
+    std::vector<FunctionImplementation> implementations;
 
     for (const auto& [types, llvm_function, node] : definition->get_generic_overloads())
     {
-        metadata.emplace_back(
+        implementations.emplace_back(
             get_overloaded_function_name(node->get_registered_function_name(), types),
             llvm_function
         );
     }
 
-    return metadata;
+    return implementations;
 }
 
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()

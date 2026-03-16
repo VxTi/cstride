@@ -7,6 +7,8 @@
 
 using namespace stride::ast;
 
+
+
 llvm::Value* IAstFunction::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
@@ -14,7 +16,7 @@ llvm::Value* IAstFunction::codegen(
 {
     llvm::Function* function = nullptr;
 
-    for (const auto& [function_name, llvm_function_val] : this->get_generic_function_metadata())
+    for (const auto& [function_name, llvm_function_val] : this->get_function_implementation_data())
     {
         if (!llvm_function_val)
         {

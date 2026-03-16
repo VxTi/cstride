@@ -73,7 +73,7 @@ namespace stride::ast
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-    struct GenericFunctionMetadata
+    struct FunctionImplementation
     {
         std::string overload_function_name;
         llvm::Function* llvm_function;
@@ -136,7 +136,7 @@ namespace stride::ast
         /// function is defined with generic parameters, there will be several overloads generated
         /// for each generic instantiation. This function returns the internalized name of each overload.
         [[nodiscard]]
-        std::vector<GenericFunctionMetadata> get_generic_function_metadata();
+        std::vector<FunctionImplementation> get_function_implementation_data();
 
         [[nodiscard]]
         AstBlock* get_body() override

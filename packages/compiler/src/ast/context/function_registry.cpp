@@ -164,7 +164,7 @@ bool ParsingContext::is_function_defined_globally(
 
 bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique_ptr<IAstType>>& generic_types) const
 {
-    for (const auto& [instantiated_generic_types, llvm_function, node] : this->_generic_overloads)
+    for (const auto& [instantiated_generic_types, llvm_function, _node] : this->_generic_overloads)
     {
         bool all_equal = true;
         for (size_t i = 0; i < generic_types.size(); i++)

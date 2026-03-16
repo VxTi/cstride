@@ -3,10 +3,19 @@
 #include "errors.h"
 #include "ast/casting.h"
 #include "ast/parsing_context.h"
+#include "ast/type_inference.h"
+#include "ast/nodes/blocks.h"
+#include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/expression.h"
+#include "ast/nodes/for_loop.h"
+#include "ast/nodes/function_declaration.h"
+#include "ast/nodes/return_statement.h"
 #include "ast/nodes/types.h"
+#include "ast/nodes/while_loop.h"
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
+
+#include <ranges>
 
 using namespace stride::ast;
 
@@ -114,7 +123,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         );
     }
 
-    if (auto* object_type = cast_type<AstObjectType*>(type))
+    if (const auto* object_type = cast_type<AstObjectType*>(type))
     {
         const auto& members = object_type->get_members();
         ObjectTypeMemberList resolved_members;
@@ -199,7 +208,6 @@ std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
     const AstAliasType* alias_type,
     const definition::TypeDefinition* type_definition)
 {
-
     const auto& instantiated_types = alias_type->get_instantiated_generic_types();
     const auto& generic_param_names = type_definition->get_generics_parameters();
 
@@ -320,4 +328,155 @@ std::string stride::ast::get_overloaded_function_name(std::string function_name,
         function_name,
         join(generic_instantiation_type_names, "_")
     );
+}
+
+/**
+ * Resolves an expression's type by re-inferring it (from context) and then substituting
+ * any generic parameter names with the concrete instantiated types.
+ */
+static void resolve_expression_type(
+    stride::ast::IAstExpression* expr,
+    const stride::ast::GenericParameterList& param_names,
+    const stride::ast::GenericTypeList& instantiated_types
+)
+{
+    auto inferred_type = stride::ast::infer_expression_type(expr);
+    expr->set_type(
+        stride::ast::resolve_generics(inferred_type.get(), param_names, instantiated_types)
+    );
+}
+
+void stride::ast::resolve_generics_in_body(
+    IAstNode* node,
+    const GenericParameterList& param_names,
+    const GenericTypeList& instantiated_types
+)
+{
+    if (!node || param_names.empty())
+        return;
+
+    //
+    // Statement / container nodes — recurse into children first (bottom-up).
+    //
+
+    if (auto* block = dynamic_cast<AstBlock*>(node))
+    {
+        for (const auto& child : block->get_children())
+            resolve_generics_in_body(child.get(), param_names, instantiated_types);
+        return;
+    }
+
+    if (auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
+    {
+        if (return_stmt->get_return_expression().has_value())
+            resolve_generics_in_body(
+                return_stmt->get_return_expression().value().get(),
+                param_names, instantiated_types);
+        return;
+    }
+
+    if (auto* conditional = dynamic_cast<AstConditionalStatement*>(node))
+    {
+        resolve_generics_in_body(conditional->get_condition(), param_names, instantiated_types);
+        resolve_generics_in_body(conditional->get_body(), param_names, instantiated_types);
+        if (conditional->get_else_body())
+            resolve_generics_in_body(conditional->get_else_body(), param_names, instantiated_types);
+        return;
+    }
+
+    if (auto* while_loop = dynamic_cast<AstWhileLoop*>(node))
+    {
+        if (while_loop->get_condition())
+            resolve_generics_in_body(while_loop->get_condition(), param_names, instantiated_types);
+        resolve_generics_in_body(while_loop->get_body(), param_names, instantiated_types);
+        return;
+    }
+
+    if (auto* for_loop = dynamic_cast<AstForLoop*>(node))
+    {
+        if (for_loop->get_initializer())
+            resolve_generics_in_body(for_loop->get_initializer(), param_names, instantiated_types);
+        if (for_loop->get_condition())
+            resolve_generics_in_body(for_loop->get_condition(), param_names, instantiated_types);
+        if (for_loop->get_incrementor())
+            resolve_generics_in_body(for_loop->get_incrementor(), param_names, instantiated_types);
+        resolve_generics_in_body(for_loop->get_body(), param_names, instantiated_types);
+        return;
+    }
+
+    //
+    // Expression nodes — recurse into sub-expressions first, then resolve this node's type.
+    //
+
+    auto* expr = dynamic_cast<IAstExpression*>(node);
+    if (!expr)
+        return;
+
+    // --- Recurse into child expressions (bottom-up order) ---
+
+    if (auto* binary = cast_expr<IBinaryOp*>(expr))
+    {
+        resolve_generics_in_body(binary->get_left(), param_names, instantiated_types);
+        resolve_generics_in_body(binary->get_right(), param_names, instantiated_types);
+    }
+    else if (auto* unary = cast_expr<AstUnaryOp*>(expr))
+    {
+        resolve_generics_in_body(&unary->get_operand(), param_names, instantiated_types);
+    }
+    else if (auto* var_decl = cast_expr<AstVariableDeclaration*>(expr))
+    {
+        if (var_decl->get_initial_value())
+            resolve_generics_in_body(var_decl->get_initial_value(), param_names, instantiated_types);
+    }
+    else if (auto* fn_call = cast_expr<AstFunctionCall*>(expr))
+    {
+        for (const auto& arg : fn_call->get_arguments())
+            resolve_generics_in_body(arg.get(), param_names, instantiated_types);
+    }
+    else if (auto* array = cast_expr<AstArray*>(expr))
+    {
+        for (const auto& elem : array->get_elements())
+            resolve_generics_in_body(elem.get(), param_names, instantiated_types);
+    }
+    else if (auto* array_accessor = cast_expr<AstArrayMemberAccessor*>(expr))
+    {
+        resolve_generics_in_body(array_accessor->get_array_base(), param_names, instantiated_types);
+        resolve_generics_in_body(array_accessor->get_index(), param_names, instantiated_types);
+    }
+    else if (auto* struct_init = cast_expr<AstObjectInitializer*>(expr))
+    {
+        for (const auto& val : struct_init->get_initializers() | std::views::values)
+            resolve_generics_in_body(val.get(), param_names, instantiated_types);
+    }
+    else if (auto* tuple_init = cast_expr<AstTupleInitializer*>(expr))
+    {
+        for (const auto& member : tuple_init->get_members())
+            resolve_generics_in_body(member.get(), param_names, instantiated_types);
+    }
+    else if (auto* reassign = cast_expr<AstVariableReassignment*>(expr))
+    {
+        resolve_generics_in_body(reassign->get_identifier(), param_names, instantiated_types);
+        resolve_generics_in_body(reassign->get_value(), param_names, instantiated_types);
+    }
+    else if (auto* chained = cast_expr<AstChainedExpression*>(expr))
+    {
+        resolve_generics_in_body(chained->get_base(), param_names, instantiated_types);
+    }
+    else if (auto* type_cast = cast_expr<AstTypeCastOp*>(expr))
+    {
+        resolve_generics_in_body(type_cast->get_value(), param_names, instantiated_types);
+    }
+    else if (auto* indirect_call = cast_expr<AstIndirectCall*>(expr))
+    {
+        for (const auto& arg : indirect_call->get_args())
+            resolve_generics_in_body(arg.get(), param_names, instantiated_types);
+        resolve_generics_in_body(indirect_call->get_callee(), param_names, instantiated_types);
+    }
+    else if (auto* function_node = cast_expr<IAstFunction*>(expr))
+    {
+        resolve_generics_in_body(function_node->get_body(), param_names, instantiated_types);
+    }
+
+    // --- Now resolve the type for this expression node ---
+    resolve_expression_type(expr, param_names, instantiated_types);
 }
