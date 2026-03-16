@@ -374,7 +374,7 @@ namespace stride::ast
         [[nodiscard]]
         bool is_generic() const
         {
-            return this->_generic_param_names.empty();
+            return !this->_generic_param_names.empty();
         }
 
         [[nodiscard]]

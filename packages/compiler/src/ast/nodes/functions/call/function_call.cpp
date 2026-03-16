@@ -123,7 +123,12 @@ bool stride::ast::is_direct_function_call(const TokenSet& set)
 
             default:
                 // Optimization, where we know for sure it can't be part of a generic instantiation
-                if (!next_token.is_type_token() && next_token.get_type() != TokenType::COMMA)
+                if (!next_token.is_type_token() &&
+                    next_token.get_type() != TokenType::COMMA &&
+                    next_token.get_type() != TokenType::DOUBLE_COLON
+                    && next_token.get_type() != TokenType::LSQUARE_BRACKET
+                    && next_token.get_type() != TokenType::RSQUARE_BRACKET
+                    && next_token.get_type() != TokenType::QUESTION)
                 {
                     return false;
                 }
