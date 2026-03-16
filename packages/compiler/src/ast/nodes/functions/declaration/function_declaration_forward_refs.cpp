@@ -76,12 +76,17 @@ void IAstFunction::resolve_forward_references(
             {}
         );
 
-        definition->set_llvm_function(llvm::Function::Create(
+        auto* llvm_func = llvm::Function::Create(
             generic_function_type,
             linkage,
             this->get_registered_function_name(),
             module
-        ));
+        );
+        definition->set_llvm_function(llvm_func);
+
+        if (this->is_anonymous())
+            llvm_func->addFnAttr("stride.anonymous");
+
         this->_body->resolve_forward_references(module, builder);
 
         return;
@@ -418,6 +423,38 @@ void IAstFunction::collect_free_variables(
     if (const auto* chained = cast_expr<AstChainedExpression*>(node))
     {
         collect_free_variables(chained->get_base(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle array member access (e.g., arr[0], names.elements[1])
+    if (const auto* array_access = cast_expr<AstArrayMemberAccessor*>(node))
+    {
+        collect_free_variables(array_access->get_array_base(), lambda_context, outer_context, captures);
+        collect_free_variables(array_access->get_index(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle indirect calls (calling function pointers / lambdas stored in variables)
+    if (const auto* indirect_call = cast_expr<AstIndirectCall*>(node))
+    {
+        collect_free_variables(indirect_call->get_callee(), lambda_context, outer_context, captures);
+        for (const auto& arg : indirect_call->get_args())
+            collect_free_variables(arg.get(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle type casts
+    if (const auto* type_cast = cast_expr<AstTypeCastOp*>(node))
+    {
+        collect_free_variables(type_cast->get_value(), lambda_context, outer_context, captures);
+        return;
+    }
+
+    // Handle tuple initializers
+    if (const auto* tuple_init = cast_expr<AstTupleInitializer*>(node))
+    {
+        for (const auto& member : tuple_init->get_members())
+            collect_free_variables(member.get(), lambda_context, outer_context, captures);
         return;
     }
 
