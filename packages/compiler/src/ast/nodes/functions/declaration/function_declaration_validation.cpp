@@ -25,12 +25,12 @@ void IAstFunction::validate()
     //
     // create a copy of this function with the parameters instantiated
     for (const auto definition = this->get_function_definition();
-         const auto& [types, function, node] : definition->get_generic_overloads())
+         const auto& [instantiated_generic_types, function, node] : definition->get_generic_overloads())
     {
         auto instantiated_return_ty = resolve_generics(
             this->_annotated_return_type.get(),
             this->_generic_parameters,
-            types
+            instantiated_generic_types
         );
 
         std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
@@ -43,7 +43,7 @@ void IAstFunction::validate()
                     param->get_source_fragment(),
                     param->get_context(),
                     param->get_name(),
-                    resolve_generics(param->get_type(), this->_generic_parameters, types)
+                    resolve_generics(param->get_type(), this->_generic_parameters, instantiated_generic_types)
                 )
             );
         }

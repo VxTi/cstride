@@ -25,7 +25,6 @@ llvm::Value* IAstFunction::codegen(
             );
         }
 
-
         // If the function body has already been generated (has basic blocks), just return the function pointer
         if (this->is_extern() || !llvm_function_val->empty())
         {

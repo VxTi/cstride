@@ -87,6 +87,7 @@ namespace stride::ast
         std::unique_ptr<IAstType> _type;
 
         friend class IAstFunction;
+        friend class AstIdentifier;
 
     public:
         explicit IAstExpression(
@@ -94,6 +95,16 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context
         ) :
             IAstNode(source_position, context) {}
+
+        explicit IAstExpression(
+            const SourceFragment& source_position,
+            const std::shared_ptr<ParsingContext>& context,
+            std::unique_ptr<IAstType> type
+        ) :
+            IAstExpression(source_position, context)
+        {
+            this->_type = std::move(type);
+        }
 
         ~IAstExpression() override = default;
 

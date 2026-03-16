@@ -188,24 +188,6 @@ void AstFunctionCall::validate()
     }
 }
 
-void AstFunctionCall::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    // Add generic types to function definition's generic instantiations
-    if (!this->_generic_type_arguments.empty())
-    {
-        const auto& definition = this->get_function_definition();
-
-        definition->add_generic_instantiation(
-            copy_generic_type_list(this->_generic_type_arguments)
-        );
-    }
-
-    for (const auto& arg : this->_arguments)
-    {
-        arg->resolve_forward_references(module, builder);
-    }
-}
-
 std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() const
 {
     if (this->_arguments.empty())
