@@ -184,7 +184,7 @@ bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique
     return false;
 }
 
-void FunctionDefinition::add_generic_instantiation(GenericTypeList generic_overload_types)
+void FunctionDefinition::add_generic_overload(GenericTypeList generic_overload_types)
 {
     if (has_generic_instantiation(generic_overload_types))
         return; // Already instantiated
@@ -193,4 +193,26 @@ void FunctionDefinition::add_generic_instantiation(GenericTypeList generic_overl
     this->_generic_overloads.push_back({
         std::move(generic_overload_types)
     });
+}
+
+llvm::Function* FunctionDefinition::get_generic_overload_llvm_function(const GenericTypeList& generic_types) const
+{
+    for (const auto& [instantiated_generic_types, llvm_function, _node] : this->_generic_overloads)
+    {
+        bool all_equal = true;
+        for (size_t i = 0; i < generic_types.size(); i++)
+        {
+            if (!instantiated_generic_types[i]->equals(generic_types[i].get()))
+            {
+                all_equal = false;
+                break;
+            }
+        }
+        if (all_equal)
+        {
+            return llvm_function;
+        }
+    }
+
+    return nullptr;
 }

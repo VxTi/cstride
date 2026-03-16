@@ -15,6 +15,26 @@ namespace stride::ast
     class IAstExpression;
     class Ast;
 
+    /// Visitor interface for expression nodes.
+    /// Implementations receive each expression after all its child expressions
+    /// have already been visited (bottom-up, post-order traversal).
+    class IVisitor
+    {
+    public:
+        virtual ~IVisitor() = default;
+
+        /// Called for every expression node, after its sub-expressions have been visited.
+        virtual void accept(IAstExpression* expr) {};
+
+        virtual void accept(IAstFunction* expr) {};
+
+        virtual void accept(AstImport* node) {}
+
+        virtual void accept(AstPackage* node) {}
+
+        virtual void accept(AstFunctionCall* function_call) {}
+    };
+
     /// Visitor that infers and assigns types to every expression node in the AST.
     ///
     /// Used together with AstNodeTraverser: the traverser drives bottom-up traversal,

@@ -41,14 +41,20 @@ llvm::Value* AstFunctionCall::codegen(
 
 llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
 {
-    const auto& function_definition = this->get_function_definition();
+    const auto& fn_def = this->get_function_definition();
 
-    if (llvm::Function* callee = module->getFunction(function_definition->get_internal_symbol_name()))
+    if (this->_generic_type_arguments.empty())
     {
-        return callee;
+        if (llvm::Function* callee = module->getFunction(fn_def->get_internal_symbol_name()))
+        {
+            return callee;
+        }
+    }
+    else if (auto* llvm_func = fn_def->get_generic_overload_llvm_function(this->_generic_type_arguments))
+    {
+        return llvm_func;
     }
 
-    const auto fn_def = function_definition;
     const auto fn_type = fn_def->get_type();
     std::vector<llvm::Type*> param_types;
     param_types.reserve(fn_type->get_parameter_types().size());

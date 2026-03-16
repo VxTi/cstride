@@ -58,7 +58,7 @@ namespace stride::ast::definition
             return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
         }
 
-        void add_generic_instantiation(GenericTypeList generic_overload_types);
+        void add_generic_overload(GenericTypeList generic_overload_types);
 
         [[nodiscard]]
         const std::vector<GenericFunctionOverload>& get_generic_overloads() const
@@ -68,6 +68,8 @@ namespace stride::ast::definition
 
         [[nodiscard]]
         bool has_generic_instantiation(const GenericTypeList& generic_types) const;
+
+        llvm::Function* get_generic_overload_llvm_function(const GenericTypeList& generic_types) const;
 
         ~FunctionDefinition() override = default;
 

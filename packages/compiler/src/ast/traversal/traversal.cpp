@@ -2,6 +2,7 @@
 
 #include "ast/casting.h"
 #include "ast/parsing_context.h"
+#include "ast/visitor.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/conditional_statement.h"
