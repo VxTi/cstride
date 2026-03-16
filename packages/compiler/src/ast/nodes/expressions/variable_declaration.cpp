@@ -561,7 +561,9 @@ std::unique_ptr<IAstNode> AstVariableDeclaration::clone()
     return std::make_unique<AstVariableDeclaration>(
         this->get_context(),
         this->_symbol,
-        this->has_annotated_type() ? this->_annotated_type.value()->clone_ty() : nullptr,
+        this->has_annotated_type()
+            ? std::optional<std::unique_ptr<IAstType>>(this->_annotated_type.value()->clone_ty())
+            : std::nullopt,
         this->_initial_value->clone_as<IAstExpression>(),
         this->_visibility
     );

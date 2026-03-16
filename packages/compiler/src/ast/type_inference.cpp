@@ -100,6 +100,19 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(IBinaryOp* operation
         return std::move(lhs);
     }
 
+    // If either operand is an unresolved generic parameter (e.g. T),
+    // return it as the result type — it will be resolved when the generic is instantiated.
+    if (auto* lhs_alias = cast_type<AstAliasType*>(lhs.get());
+        lhs_alias && !lhs_alias->get_type_definition().has_value())
+    {
+        return std::move(lhs);
+    }
+    if (auto* rhs_alias = cast_type<AstAliasType*>(rhs.get());
+        rhs_alias && !rhs_alias->get_type_definition().has_value())
+    {
+        return std::move(rhs);
+    }
+
     // --- Pointers have priority
     if (lhs->is_pointer() && !rhs->is_pointer())
     {

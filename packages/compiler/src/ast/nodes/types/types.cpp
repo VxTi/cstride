@@ -154,6 +154,13 @@ AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
 
     if (const auto named = cast_type<AstAliasType*>(type))
     {
+        // If this is an unresolved generic parameter (no type definition),
+        // we can't extract primitive reference types from it.
+        if (!named->get_type_definition().has_value())
+        {
+            return nullptr;
+        }
+
         const auto ref_type = named->get_underlying_type();
 
         return extract_primitive_reference_types(ref_type);

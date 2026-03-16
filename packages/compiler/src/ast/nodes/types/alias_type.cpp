@@ -254,6 +254,12 @@ IAstType* AstAliasType::get_underlying_type()
 
 bool AstAliasType::is_castable_to_impl(IAstType* other)
 {
+    // Unresolved generic parameters cannot be cast
+    if (!this->get_type_definition().has_value())
+    {
+        return false;
+    }
+
     const auto self_reference_type = get_underlying_type();
 
     // Check our base type is a primitive, and whether that type is castable to `other`
@@ -288,6 +294,13 @@ bool AstAliasType::is_assignable_to_impl(IAstType* other)
     // type SomePrimitive = i32[]
     // const someVar: SomePrimitive = [1, 2, 3];
     // In this case, `[1, 2, 3]` should be assignable to the base types of `SomePrimitive`
+    // If this is an unresolved generic parameter (no type definition),
+    // we can't resolve its underlying type.
+    if (!this->get_type_definition().has_value())
+    {
+        return false;
+    }
+
     if (const auto self_base_type = get_underlying_type())
     {
         return self_base_type->is_assignable_to(other);
@@ -330,6 +343,13 @@ bool AstAliasType::equals(IAstType* other)
             }
         }
         return true;
+    }
+
+    // If this is an unresolved generic parameter (no type definition),
+    // we can't resolve its underlying type — just compare by name.
+    if (!this->get_type_definition().has_value())
+    {
+        return false;
     }
 
     if (const auto self_base = this->get_underlying_type())
