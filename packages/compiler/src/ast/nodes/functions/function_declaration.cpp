@@ -38,6 +38,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 )
 {
     int function_flags = 0;
+    const auto reference_token = set.peek_next();
     if (set.peek_next_eq(TokenType::KEYWORD_EXTERN))
     {
         set.next();
@@ -50,7 +51,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
         function_flags |= SRFLAG_FN_TYPE_ASYNC;
     }
 
-    auto reference_token = set.expect(TokenType::KEYWORD_FN);
+    set.expect(TokenType::KEYWORD_FN);
 
     // Here we expect to receive the function name
     const auto fn_name_tok = set.expect(TokenType::IDENTIFIER, "Expected function name");
@@ -87,7 +88,9 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // Return type doesn't have the same flags as the function, hence NONE
     auto return_type = parse_type(context, set, { "Expected return type in function header" });
 
-    const auto& position = reference_token.get_source_fragment();
+    const auto& position = SourceFragment::join(
+        reference_token.get_source_fragment(),
+        return_type->get_source_fragment());
     auto sym_function_name = Symbol(position, context->get_name(), fn_name);
 
     std::unique_ptr<AstBlock> body = nullptr;
@@ -555,7 +558,7 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
                         "{} has return type 'void' and cannot return a value.",
                         candidate->is_anonymous()
                         ? "Anonymous function"
-                        : std::format("Function '{}'", candidate->get_function_name())),
+                        : std::format("Function '{}'", candidate->get_plain_function_name())),
                     {
                         ErrorSourceReference(
                             "unexpected return value",
@@ -581,7 +584,7 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' returns a struct type, but no return statement is present.",
-                    candidate->get_function_name()),
+                    candidate->get_plain_function_name()),
                 candidate->get_source_fragment());
         }
 
@@ -591,7 +594,7 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
                 "{} is missing a return statement.",
                 candidate->is_anonymous()
                 ? "Anonymous function"
-                : std::format("Function '{}'", candidate->get_function_name())),
+                : std::format("Function '{}'", candidate->get_plain_function_name())),
             candidate->get_source_fragment()
         );
     }
@@ -606,7 +609,7 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Function '{}' returns a value of type '{}', but no return statement is present.",
-                        candidate->is_anonymous() ? "<anonymous function>" : candidate->get_function_name(),
+                        candidate->is_anonymous() ? "<anonymous function>" : candidate->get_plain_function_name(),
                         ret_ty->to_string()),
                     return_stmt->get_source_fragment()
                 );
@@ -634,7 +637,7 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' expected a return type of '{}', but received '{}'.",
-                    candidate->is_anonymous() ? "<anonymous function>" : candidate->get_function_name(),
+                    candidate->is_anonymous() ? "<anonymous function>" : candidate->get_plain_function_name(),
                     ret_ty->get_type_name(),
                     ret_expr->get_type()->get_type_name()),
                 { error_fragment }
@@ -830,7 +833,7 @@ llvm::Value* IAstFunction::codegen(
                         ErrorType::COMPILATION_ERROR,
                         std::format(
                             "Function '{}' is missing a return path.",
-                            this->get_function_name()
+                            this->get_plain_function_name()
                         ),
                         this->get_source_fragment()
                     );
@@ -843,7 +846,7 @@ llvm::Value* IAstFunction::codegen(
             module->print(llvm::errs(), nullptr);
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                "LLVM Function Verification Failed for: " + this->get_function_name(),
+                "LLVM Function Verification Failed for: " + this->get_plain_function_name(),
                 this->get_source_fragment()
             );
         }
@@ -948,12 +951,33 @@ void IAstFunction::resolve_forward_references(
         }
     }
 
+    const auto& definition = this->get_function_definition();
+
     const auto linkage = this->_visibility == VisibilityModifier::PRIVATE
         ? llvm::Function::PrivateLinkage
         : llvm::Function::ExternalLinkage;
 
-    for (const auto& definition = this->get_function_definition();
-         const auto& [types, llvm_function, node] : definition->get_generic_overloads())
+    if (!this->is_generic())
+    {
+        const auto overloaded_fn_name = this->get_registered_function_name();
+        llvm::FunctionType* generic_function_type = this->get_llvm_function_type(
+            module,
+            captured_types,
+            {}
+        );
+
+        definition->set_llvm_function(llvm::Function::Create(
+            generic_function_type,
+            linkage,
+            overloaded_fn_name,
+            module
+        ));
+        this->_body->resolve_forward_references(module, builder);
+
+        return;
+    }
+
+    for (const auto& [types, llvm_function, node] : definition->get_generic_overloads())
     {
         auto instantiated_return_ty = resolve_generics(
             this->_annotated_return_type.get(),
@@ -989,8 +1013,8 @@ void IAstFunction::resolve_forward_references(
 
         node = std::move(candidate_node);
 
-        const auto overloaded_fn_name = get_overloaded_function_name(node->get_internalized_function_name(), types);
-        llvm::FunctionType* generic_function_type = node->get_llvm_function_type(
+        const auto overloaded_fn_name = get_overloaded_function_name(this->get_registered_function_name(), types);
+        llvm::FunctionType* generic_function_type = this->get_llvm_function_type(
             module,
             captured_types,
             types
@@ -1003,7 +1027,7 @@ void IAstFunction::resolve_forward_references(
             module
         );
 
-        if (node->is_anonymous())
+        if (this->is_anonymous())
             llvm_function->addFnAttr("stride.anonymous");
 
         this->_body->resolve_forward_references(module, builder);
@@ -1057,21 +1081,21 @@ llvm::FunctionType* IAstFunction::get_llvm_function_type(
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
-            "Could not get LLVM return type for function: " + this->get_function_name(),
+            "Could not get LLVM return type for function: " + this->get_plain_function_name(),
             this->get_source_fragment()
         );
     }
 
     const auto& llvm_function_ty = llvm::FunctionType::get(return_type, parameter_types, this->is_variadic());;
 
-    if (const auto fn = module->getFunction(this->get_internalized_function_name());
+    if (const auto fn = module->getFunction(this->get_registered_function_name());
         fn != nullptr && fn->getFunctionType() != llvm_function_ty)
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
             std::format(
                 "Function symbol '{}' already exists with a different signature",
-                this->get_internalized_function_name()
+                this->get_registered_function_name()
             ),
             this->get_source_fragment()
         );
@@ -1099,7 +1123,7 @@ FunctionDefinition* IAstFunction::get_function_definition()
         return this->_function_definition;
 
     const auto& definition = this->get_context()->get_function_definition(
-        this->get_function_name(),
+        this->get_registered_function_name(),
         this->get_parameter_types(),
         this->get_generic_parameters().size()
     );
@@ -1108,7 +1132,7 @@ FunctionDefinition* IAstFunction::get_function_definition()
     {
         throw parsing_error(
             ErrorType::REFERENCE_ERROR,
-            std::format("Function definition for '{}' not found in context", this->get_internalized_function_name()),
+            std::format("Function definition for '{}' not found in context", this->get_registered_function_name()),
             this->get_source_fragment()
         );
     }
@@ -1125,7 +1149,7 @@ std::vector<GenericFunctionMetadata> IAstFunction::get_function_overload_metadat
     if (!definition->get_type()->is_generic())
     {
         return {
-            GenericFunctionMetadata{ this->get_internalized_function_name(), definition->get_llvm_function() }
+            GenericFunctionMetadata{ this->get_registered_function_name(), definition->get_llvm_function() }
         };
     }
 
@@ -1134,7 +1158,7 @@ std::vector<GenericFunctionMetadata> IAstFunction::get_function_overload_metadat
     for (const auto& [types, llvm_function, node] : definition->get_generic_overloads())
     {
         metadata.emplace_back(
-            get_overloaded_function_name(node->get_internalized_function_name(), types),
+            get_overloaded_function_name(node->get_registered_function_name(), types),
             llvm_function
         );
     }
@@ -1191,8 +1215,8 @@ std::string IAstFunction::to_string()
 
     return std::format(
         "Function(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
-        this->is_anonymous() ? "<anonymous>" : this->get_function_name(),
-        this->get_internalized_function_name(),
+        this->is_anonymous() ? "<anonymous>" : this->get_plain_function_name(),
+        this->get_registered_function_name(),
         params,
         body_str,
         this->is_extern() ? " (extern)" : "",

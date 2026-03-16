@@ -698,12 +698,8 @@ FunctionDefinition* AstFunctionCall::get_function_definition()
     if (this->_definition != nullptr)
         return this->_definition;
 
-    const auto& internal_function_name = get_overloaded_function_name(
-        this->get_scoped_function_name(),
-        this->get_generic_type_arguments());
-
     if (const auto def = this->get_context()->get_function_definition(
-            internal_function_name,
+            this->get_scoped_function_name(),
             this->get_argument_types(),
             this->get_generic_type_arguments().size()
         );

@@ -117,7 +117,7 @@ namespace stride::ast
             _flags(flags) {}
 
         [[nodiscard]]
-        const std::string& get_function_name() const
+        const std::string& get_plain_function_name() const
         {
             return this->_symbol.name;
         }
@@ -126,7 +126,7 @@ namespace stride::ast
         std::vector<std::unique_ptr<IAstType>> get_parameter_types() const;
 
         [[nodiscard]]
-        const std::string& get_internalized_function_name() const
+        const std::string& get_registered_function_name() const
         {
             return this->_symbol.internal_name;
         }
