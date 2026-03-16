@@ -18,7 +18,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(const AstLi
     return std::make_unique<AstPrimitiveType>(
         literal->get_source_fragment(),
         literal->get_context(),
-        literal->get_primitive_type());
+        literal->get_primitive_type()
+    );
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(AstFunctionCall* fn_call)
@@ -26,8 +27,11 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(AstFuncti
     /// --- Basic function lookup, find based on parameter signature (ignoring return type)
     const auto& context = fn_call->get_context();
 
-    if (const auto fn_def =
-            context->get_function_definition(fn_call->get_scoped_function_name(), fn_call->get_argument_types());
+    if (const auto fn_def = context->get_function_definition(
+            fn_call->get_scoped_function_name(),
+            fn_call->get_argument_types(),
+            fn_call->get_generic_type_arguments().size()
+        );
         fn_def.has_value())
     {
         return fn_def.value()->get_type()->get_return_type()->clone_ty();

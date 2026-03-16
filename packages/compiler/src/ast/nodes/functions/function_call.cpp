@@ -171,60 +171,54 @@ llvm::Value* AstFunctionCall::codegen(
     );
 }
 
-llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module) const
+llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
 {
-    if (const auto definition =
-            this->get_context()->get_function_definition(this->get_scoped_function_name(), this->get_argument_types());
-        definition.has_value())
+    const auto& function_definition = this->get_function_definition();
+    if (llvm::Function* callee = module->getFunction(function_definition->get_internal_symbol_name()))
     {
-        if (llvm::Function* callee = module->getFunction(definition.value()->get_internal_symbol_name()))
-        {
-            return callee;
-        }
-
-        const auto fn_def = definition.value();
-        const auto fn_type = fn_def->get_type();
-        std::vector<llvm::Type*> param_types;
-        param_types.reserve(fn_type->get_parameter_types().size());
-
-        for (const auto& param : fn_type->get_parameter_types())
-        {
-            param_types.push_back(param->get_llvm_type(module));
-        }
-
-        llvm::Type* ret_type = fn_type->get_return_type()->get_llvm_type(module);
-
-        // When propagating varargs (call has '...'), the callee receives the caller's
-        // va_list as an extra fixed pointer argument rather than as true variadic args.
-        // This lets the callee forward the va_list directly to vprintf/vscanf-style APIs.
-        bool llvm_is_variadic = false;
-        if (this->is_variadic())
-        {
-            param_types.push_back(llvm::PointerType::get(module->getContext(), 0));
-        }
-        else
-        {
-            llvm_is_variadic = fn_def->is_variadic();
-        }
-
-        llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
-            ret_type,
-            param_types,
-            llvm_is_variadic
-        );
-
-        // If we are calling a variadic function and propagating '...',
-        // the callee is actually a non-variadic function that takes a va_list.
-        // But we should use the actual function name for the lookup.
-        auto callee_cand = module->getOrInsertFunction(
-            fn_def->get_internal_symbol_name(),
-            llvm_fn_type
-        );
-
-        return llvm::dyn_cast<llvm::Function>(callee_cand.getCallee());
+        return callee;
     }
 
-    return nullptr;
+    const auto fn_def = function_definition;
+    const auto fn_type = fn_def->get_type();
+    std::vector<llvm::Type*> param_types;
+    param_types.reserve(fn_type->get_parameter_types().size());
+
+    for (const auto& param : fn_type->get_parameter_types())
+    {
+        param_types.push_back(param->get_llvm_type(module));
+    }
+
+    llvm::Type* ret_type = fn_type->get_return_type()->get_llvm_type(module);
+
+    // When propagating varargs (call has '...'), the callee receives the caller's
+    // va_list as an extra fixed pointer argument rather than as true variadic args.
+    // This lets the callee forward the va_list directly to vprintf/vscanf-style APIs.
+    bool llvm_is_variadic = false;
+    if (this->is_variadic())
+    {
+        param_types.push_back(llvm::PointerType::get(module->getContext(), 0));
+    }
+    else
+    {
+        llvm_is_variadic = fn_def->is_variadic();
+    }
+
+    llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
+        ret_type,
+        param_types,
+        llvm_is_variadic
+    );
+
+    // If we are calling a variadic function and propagating '...',
+    // the callee is actually a non-variadic function that takes a va_list.
+    // But we should use the actual function name for the lookup.
+    auto callee_cand = module->getOrInsertFunction(
+        fn_def->get_internal_symbol_name(),
+        llvm_fn_type
+    );
+
+    return llvm::dyn_cast<llvm::Function>(callee_cand.getCallee());
 }
 
 llvm::Value* AstFunctionCall::codegen_regular_function_call(
@@ -366,6 +360,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
             // First: check if the variable's internal name maps to a named function in the
             // symbol table with a matching type signature. If so, call it directly without
             // any pointer indirection.
+            // We sadly cannot use `get_function_definition` here
             if (this->get_context()->get_function_definition(
                 field_def->get_internal_symbol_name(),
                 field_def->get_type()).has_value())
@@ -610,6 +605,17 @@ void AstFunctionCall::validate()
 
 void AstFunctionCall::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
+    // Add generic types to function definition's generic instantiations
+    if (!this->_generic_type_arguments.empty())
+    {
+        const auto& definition = this->get_function_definition();
+
+        definition->add_generic_instantiation(
+            copy_generic_type_list(this->_generic_type_arguments)
+        );
+        // nice, got that over with
+    }
+
     for (const auto& arg : this->_arguments)
     {
         arg->resolve_forward_references(module, builder);
@@ -635,6 +641,34 @@ std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() con
         param_types.push_back(arg->get_type()->clone_ty());
     }
     return param_types;
+}
+
+const GenericTypeList& AstFunctionCall::get_generic_type_arguments()
+{
+    return this->_generic_type_arguments;
+}
+
+FunctionDefinition* AstFunctionCall::get_function_definition()
+{
+    if (this->_definition != nullptr)
+        return this->_definition;
+
+    if (const auto def = this->get_context()->get_function_definition(
+            this->get_scoped_function_name(),
+            this->get_argument_types(),
+            this->get_generic_type_arguments().size()
+        );
+        def.has_value())
+    {
+        this->_definition = def.value();
+        return this->_definition;
+    }
+
+    throw parsing_error(
+        ErrorType::REFERENCE_ERROR,
+        std::format("Function '{}' was not found in this scope", this->format_function_name()),
+        this->get_source_fragment()
+    );
 }
 
 std::unique_ptr<IAstNode> AstFunctionCall::clone()

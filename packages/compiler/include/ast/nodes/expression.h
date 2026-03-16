@@ -20,6 +20,7 @@ namespace stride::ast
 
     namespace definition
     {
+        class FunctionDefinition;
         class IDefinition;
     }
 
@@ -377,7 +378,10 @@ namespace stride::ast
     {
         ExpressionList _arguments;
         std::unique_ptr<AstIdentifier> _function_name_identifier;
+        GenericTypeList _generic_type_arguments{};
         int _flags;
+
+        definition::FunctionDefinition* _definition = nullptr;
 
     public:
         explicit AstFunctionCall(
@@ -390,6 +394,9 @@ namespace stride::ast
             _arguments(std::move(arguments)),
             _function_name_identifier(std::move(function_name_identifier)),
             _flags(flags) {}
+
+        [[nodiscard]]
+        definition::FunctionDefinition* get_function_definition();
 
         [[nodiscard]]
         const ExpressionList& get_arguments() const
@@ -444,6 +451,9 @@ namespace stride::ast
 
         void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
+        [[nodiscard]]
+        const GenericTypeList& get_generic_type_arguments();
+
     private:
         [[nodiscard]]
         std::string format_function_name() const;
@@ -458,7 +468,7 @@ namespace stride::ast
         [[nodiscard]]
         llvm::Function* resolve_regular_callee(
             llvm::Module* module
-        ) const;
+        );
 
         llvm::Value* codegen_regular_function_call(
             llvm::Function* callee,

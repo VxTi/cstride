@@ -1,4 +1,5 @@
 #pragma once
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,8 +19,7 @@ namespace stride::ast
     class IAstType;
     class TokenSet;
 
-    using GenericParameter = std::string;
-    using GenericParameterList = std::vector<GenericParameter>;
+    using GenericParameterList = std::vector<std::string>;
     using GenericTypeList = std::vector<std::unique_ptr<IAstType>>;
 
 #define EMPTY_GENERIC_PARAMETER_LIST (GenericParameterList{})
@@ -45,4 +45,6 @@ namespace stride::ast
         AstObjectType* type,
         const definition::TypeDefinition* type_definition
     );
+
+    GenericTypeList copy_generic_type_list(const GenericTypeList& list);
 }

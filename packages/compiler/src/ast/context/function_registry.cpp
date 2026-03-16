@@ -9,7 +9,8 @@ using namespace stride::ast::definition;
 
 std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
     const std::string& function_name,
-    const std::vector<std::unique_ptr<IAstType>>& parameter_types
+    const std::vector<std::unique_ptr<IAstType>>& parameter_types,
+    size_t instantiated_generic_count
 ) const
 {
     for (const auto& global_scope = this->traverse_to_root();
@@ -17,7 +18,10 @@ std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
     {
         if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
         {
-            if (fn_def->matches_parameter_signature(function_name, parameter_types))
+            if (fn_def->matches_parameter_signature(
+                function_name,
+                parameter_types,
+                instantiated_generic_count))
             {
                 return fn_def;
             }
@@ -28,6 +32,7 @@ std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
 
 std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
     const std::string& function_name,
+    // We might call this function with an anonymous type, hence not having `AstFunctionType`
     IAstType* function_type
 ) const
 {
@@ -62,17 +67,28 @@ bool FunctionDefinition::matches_type_signature(
 
     const auto& other_params = signature->get_parameter_types();
 
-    return matches_parameter_signature(name, other_params);
+    return matches_parameter_signature(
+        name,
+        other_params,
+        signature->get_generic_parameter_names().size()
+    );
 
 }
 
 bool FunctionDefinition::matches_parameter_signature(
     const std::string& internal_function_name,
-    const std::vector<std::unique_ptr<IAstType>>& other_parameter_types
+    const std::vector<std::unique_ptr<IAstType>>& other_parameter_types,
+    const size_t generic_argument_count
 )
 const
 {
     if (this->get_internal_symbol_name() != internal_function_name)
+        return false;
+
+    // Ensure we have the right generic overload variant of this function.
+    // This allows us to create several functions with the same signature / name, but with
+    // different generic parameter overloads.
+    if (this->_function_type->get_generic_parameter_names().size() != generic_argument_count)
         return false;
 
     const auto& self_params = this->_function_type->get_parameter_types();
@@ -81,7 +97,6 @@ const
     {
         if (other_parameter_types.size() < self_params.size())
             return false;
-
     }
     else
     {
@@ -142,4 +157,34 @@ bool ParsingContext::is_function_defined_globally(
             return false;
         }
     );
+}
+
+
+bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique_ptr<IAstType>>& generic_types) const
+{
+    for (const auto& instantiation : this->_generic_type_overloads)
+    {
+        bool all_equal = true;
+        for (size_t i = 0; i < generic_types.size(); i++)
+        {
+            if (!instantiation[i]->equals(generic_types[i].get()))
+            {
+                all_equal = false;
+                break;
+            }
+        }
+        if (all_equal)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void FunctionDefinition::add_generic_instantiation(GenericTypeList generic_types)
+{
+    if (has_generic_instantiation(generic_types))
+        return; // Already instantiated
+
+    this->_generic_type_overloads.push_back(std::move(generic_types));
 }

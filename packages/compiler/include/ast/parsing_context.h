@@ -77,31 +77,6 @@ namespace stride::ast
             virtual std::unique_ptr<IDefinition> clone() const = 0;
         };
 
-        class IdentifiableSymbolDef : public IDefinition
-        {
-            SymbolType _type;
-
-        public:
-            explicit IdentifiableSymbolDef(
-                const SymbolType type,
-                const Symbol& symbol
-            ) :
-                IDefinition(symbol, VisibilityModifier::PRIVATE),
-                _type(type) {}
-
-            [[nodiscard]]
-            SymbolType get_symbol_type() const
-            {
-                return this->_type;
-            }
-
-            [[nodiscard]]
-            std::unique_ptr<IDefinition> clone() const override
-            {
-                return std::make_unique<IdentifiableSymbolDef>(_type, get_symbol());
-            }
-        };
-
         class TypeDefinition
             : public IDefinition
         {
@@ -185,7 +160,9 @@ namespace stride::ast
             : public IDefinition
         {
             std::unique_ptr<AstFunctionType> _function_type;
+            std::vector<GenericTypeList> _generic_type_overloads{};
             int _flags;
+
             llvm::Function* _llvm_function = nullptr;
 
         public:
@@ -223,6 +200,17 @@ namespace stride::ast
                 return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
             }
 
+            void add_generic_instantiation(GenericTypeList generic_types);
+
+            [[nodiscard]]
+            const std::vector<GenericTypeList>& get_generic_instantiations() const
+            {
+                return this->_generic_type_overloads;
+            }
+
+            [[nodiscard]]
+            bool has_generic_instantiation(const GenericTypeList& generic_types) const;
+
             ~FunctionDefinition() override = default;
 
             bool matches_type_signature(const std::string& name, const AstFunctionType* signature) const;
@@ -241,7 +229,8 @@ namespace stride::ast
             [[nodiscard]]
             bool matches_parameter_signature(
                 const std::string& internal_function_name,
-                const std::vector<std::unique_ptr<IAstType>>& other_parameter_types
+                const std::vector<std::unique_ptr<IAstType>>& other_parameter_types,
+                size_t generic_argument_count
             ) const;
 
             [[nodiscard]]
@@ -269,8 +258,7 @@ namespace stride::ast
 
         // Stack of loop blocks for break and continue: pair<continue_block, break_block>
         // This isn't used during parsing, hence it not needing to be moved when creating a new ParsingContext.
-        static inline
-        std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> control_flow_loop_blocks;
+        static inline std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> control_flow_loop_blocks;
 
     public:
         explicit ParsingContext(
@@ -342,7 +330,8 @@ namespace stride::ast
         [[nodiscard]]
         std::optional<definition::FunctionDefinition*> get_function_definition(
             const std::string& function_name,
-            const std::vector<std::unique_ptr<IAstType>>& parameter_types
+            const std::vector<std::unique_ptr<IAstType>>& parameter_types,
+            size_t instantiated_generic_count = 0
         ) const;
 
         std::optional<definition::FunctionDefinition*> get_function_definition(
@@ -357,11 +346,6 @@ namespace stride::ast
 
         [[nodiscard]]
         std::optional<AstObjectType*> get_object_type(const std::string& name) const;
-
-        [[nodiscard]]
-        const definition::IdentifiableSymbolDef* get_symbol_def(
-            const std::string& symbol_name
-        ) const;
 
         [[nodiscard]]
         std::optional<std::unique_ptr<definition::IDefinition>> get_definition_by_internal_name(

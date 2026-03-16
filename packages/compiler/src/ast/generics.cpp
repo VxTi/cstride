@@ -277,3 +277,14 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
         std::move(resolved_args)
     );
 }
+
+GenericTypeList stride::ast::copy_generic_type_list(const GenericTypeList& list)
+{
+    GenericTypeList copy;
+    copy.reserve(list.size());
+    for (const auto& type : list)
+    {
+        copy.push_back(type->clone_as<IAstType>());
+    }
+    return copy;
+}

@@ -4,6 +4,7 @@
 #include "blocks.h"
 #include "expression.h"
 #include "ast/modifiers.h"
+#include "ast/parsing_context.h"
 
 #include <utility>
 
@@ -78,6 +79,7 @@ namespace stride::ast
         std::vector<Symbol> _captured_variables;
         VisibilityModifier _visibility;
         GenericParameterList _generic_parameters;
+        definition::FunctionDefinition* _function_definition = nullptr;
         int _flags;
 
         /// Cached LLVM function pointer for anonymous functions.
@@ -99,7 +101,7 @@ namespace stride::ast
             std::unique_ptr<IAstType> return_type,
             const VisibilityModifier visibility,
             const int flags,
-            const GenericParameterList& generic_parameters
+            GenericParameterList  generic_parameters
         ) :
             IAstExpression(source, context),
             _body(std::move(body)),
@@ -107,7 +109,7 @@ namespace stride::ast
             _parameters(std::move(parameters)),
             _annotated_return_type(std::move(return_type)),
             _visibility(visibility),
-            _generic_parameters(generic_parameters),
+            _generic_parameters(std::move(generic_parameters)),
             _flags(flags) {}
 
         [[nodiscard]]
@@ -117,10 +119,22 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::string& get_scoped_function_name() const
+        std::vector<std::unique_ptr<IAstType>> get_parameter_types() const;
+
+        [[nodiscard]]
+        const std::string& get_internalized_function_name() const
         {
             return this->_symbol.internal_name;
         }
+
+        /// Returns a list of overlaods for this function. For example, whenever the
+        /// function is defined with generic parameters, there will be several overlaods generated
+        /// for each generic instantiation. The internalized name of each overload is returned by this function.
+        [[nodiscard]]
+        std::vector<std::string> get_internalized_overload_names();
+
+        [[nodiscard]]
+        std::string get_internalized_overload_name(const GenericTypeList& overload) const;
 
         [[nodiscard]]
         AstBlock* get_body() override
@@ -129,18 +143,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::vector<std::unique_ptr<AstFunctionParameter>> get_parameters() const
-        {
-            std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
-            cloned_params.reserve(this->_parameters.size());
-
-            for (const auto& param : this->_parameters)
-            {
-                cloned_params.push_back(param->clone_as<AstFunctionParameter>());
-            }
-
-            return cloned_params;
-        }
+        std::vector<std::unique_ptr<AstFunctionParameter>> get_parameters() const;
 
         /// Returns a non-owning const reference to the parameter list, avoiding the
         /// clone overhead of get_parameters() when only read access is needed.
@@ -221,6 +224,8 @@ namespace stride::ast
             this->_captured_variables.push_back(symbol);
         }
 
+        definition::FunctionDefinition* get_function_definition();
+
         llvm::Value* codegen(
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
@@ -234,9 +239,10 @@ namespace stride::ast
         std::unique_ptr<IAstNode> clone() override;
 
     private:
-        llvm::FunctionType* get_llvm_function_type(
+        llvm::FunctionType* get_overloaded_llvm_function_type(
             llvm::Module* module,
-            std::vector<llvm::Type*> captured_variables
+            std::vector<llvm::Type*> captured_variables,
+            const GenericTypeList& generic_instantiation_types = {}
         ) const;
     };
 

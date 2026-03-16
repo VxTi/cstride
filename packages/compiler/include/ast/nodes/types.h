@@ -4,13 +4,11 @@
 #include "formatting.h"
 #include "ast/flags.h"
 #include "ast/generics.h"
-#include "ast/modifiers.h"
 
 #include <format>
 #include <memory>
 #include <optional>
 #include <utility>
-#include <variant>
 
 namespace llvm
 {
@@ -343,6 +341,7 @@ namespace stride::ast
     {
         std::vector<std::unique_ptr<IAstType>> _parameters;
         std::unique_ptr<IAstType> _return_type;
+        GenericParameterList _generic_param_names;
 
     public:
         explicit AstFunctionType(
@@ -350,16 +349,30 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
+            GenericParameterList generic_parameter_names = {},
             const int flags = SRFLAG_NONE
         ) :
             IAstType(source, context, flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
             _parameters(std::move(parameters)),
-            _return_type(std::move(return_type)) {}
+            _return_type(std::move(return_type)),
+            _generic_param_names(std::move(generic_parameter_names)) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstType>>& get_parameter_types() const
         {
             return _parameters;
+        }
+
+        [[nodiscard]]
+        const GenericParameterList& get_generic_parameter_names() const
+        {
+            return this->_generic_param_names;
+        }
+
+        [[nodiscard]]
+        bool is_generic() const
+        {
+            return this->_generic_param_names.empty();
         }
 
         [[nodiscard]]

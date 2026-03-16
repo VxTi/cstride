@@ -59,23 +59,6 @@ std::optional<std::unique_ptr<IDefinition>> ParsingContext::get_definition_by_in
     return std::nullopt;
 }
 
-const IdentifiableSymbolDef* ParsingContext::get_symbol_def(
-    const std::string& symbol_name) const
-{
-    for (const auto& symbol_def : this->_symbols)
-    {
-        if (const auto* identifier_def =
-            dynamic_cast<const IdentifiableSymbolDef*>(symbol_def.get()))
-        {
-            if (identifier_def->get_internal_symbol_name() == symbol_name)
-            {
-                return identifier_def;
-            }
-        }
-    }
-    return nullptr;
-}
-
 static size_t levenshtein_distance(const std::string& a, const std::string& b)
 {
     const size_t len_a = a.size();

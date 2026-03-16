@@ -515,6 +515,19 @@ void collect_free_variables(
     }
 }
 
+std::vector<std::unique_ptr<AstFunctionParameter>> IAstFunction::get_parameters() const
+{
+    std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
+    cloned_params.reserve(this->_parameters.size());
+
+    for (const auto& param : this->_parameters)
+    {
+        cloned_params.push_back(param->clone_as<AstFunctionParameter>());
+    }
+
+    return cloned_params;
+}
+
 void IAstFunction::validate()
 {
     if (this->is_anonymous())
@@ -679,13 +692,13 @@ llvm::Value* IAstFunction::codegen(
     }
     else
     {
-        function = module->getFunction(this->get_scoped_function_name());
+        function = module->getFunction(this->get_internalized_function_name());
         if (!function)
         {
             module->print(llvm::errs(), nullptr);
             throw parsing_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format("Function symbol '{}' missing", this->get_scoped_function_name()),
+                std::format("Function symbol '{}' missing", this->get_internalized_function_name()),
                 this->get_source_fragment()
             );
         }
@@ -722,22 +735,22 @@ llvm::Value* IAstFunction::codegen(
     // Captured variable handling
     // Map captured variables to function arguments with __capture_ prefix
     //
-    auto arg_it = function->arg_begin();
+    auto fn_parameter_argument = function->arg_begin();
     for (const auto& capture : this->_captured_variables)
     {
-        if (arg_it != function->arg_end())
+        if (fn_parameter_argument != function->arg_end())
         {
-            arg_it->setName(closures::format_captured_variable_name(capture.internal_name));
+            fn_parameter_argument->setName(closures::format_captured_variable_name(capture.internal_name));
 
             // Create alloca with __capture_ prefix so identifier lookup can find it
             llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
-                arg_it->getType(),
+                fn_parameter_argument->getType(),
                 nullptr,
                 closures::format_captured_variable_name_internal(capture.internal_name)
             );
 
-            builder->CreateStore(arg_it, alloca);
-            ++arg_it;
+            builder->CreateStore(fn_parameter_argument, alloca);
+            ++fn_parameter_argument;
         }
     }
 
@@ -747,21 +760,21 @@ llvm::Value* IAstFunction::codegen(
     //
     for (const auto& param : this->_parameters)
     {
-        if (arg_it != function->arg_end())
+        if (fn_parameter_argument != function->arg_end())
         {
-            arg_it->setName(param->get_name() + ".arg");
+            fn_parameter_argument->setName(param->get_name() + ".arg");
 
             // Create a memory slot on the stack for the parameter
             llvm::AllocaInst* alloca = prologue_builder.CreateAlloca(
-                arg_it->getType(),
+                fn_parameter_argument->getType(),
                 nullptr,
                 param->get_name()
             );
 
             // Store the initial argument value into the alloca
-            builder->CreateStore(arg_it, alloca);
+            builder->CreateStore(fn_parameter_argument, alloca);
 
-            ++arg_it;
+            ++fn_parameter_argument;
         }
     }
 
@@ -888,54 +901,76 @@ void IAstFunction::resolve_forward_references(
         }
     }
 
-    llvm::FunctionType* function_type = this->get_llvm_function_type(module, captured_types);
-
-    if (const auto fn = module->getFunction(this->get_scoped_function_name());
-        fn != nullptr && fn->getFunctionType() != function_type)
-    {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            std::format(
-                "Function symbol '{}' already exists with a different signature",
-                this->get_scoped_function_name()
-            ),
-            this->get_source_fragment()
-        );
-    }
-
     const auto linkage = this->_visibility == VisibilityModifier::PRIVATE
         ? llvm::Function::PrivateLinkage
         : llvm::Function::ExternalLinkage;
 
-    // Anonymous functions are created with a stable name prefix and a numeric ID
-    // so they are easily findable in the module without ambiguity.
-    const std::string llvm_function_name = this->get_scoped_function_name();
-
-    llvm::Function* created_fn = llvm::Function::Create(
-        function_type,
-        linkage,
-        llvm_function_name,
-        module
-    );
-
-    if (this->is_anonymous())
+    if (const auto& definition = this->get_function_definition();
+        !definition->get_generic_instantiations().empty())
     {
-        created_fn->addFnAttr("stride.anonymous");
-        this->_llvm_function = created_fn;
+        for (const auto& overload : definition->get_generic_instantiations())
+        {
+            const auto overloaded_fn_name = get_internalized_overload_name(overload);
+            llvm::FunctionType* generic_function_type = this->get_overloaded_llvm_function_type(
+                module,
+                captured_types,
+                overload
+            );
+
+            llvm::Function* generic_function = llvm::Function::Create(
+                generic_function_type,
+                linkage,
+                overloaded_fn_name,
+                module
+            );
+
+            if (this->is_anonymous())
+            {
+                generic_function->addFnAttr("stride.anonymous");
+                this->_llvm_function = generic_function;
+            }
+        }
+    }
+    else
+    {
+        // Anonymous functions are created with a stable name prefix and a numeric ID
+        // so they are easily findable in the module without ambiguity.
+        const std::string llvm_function_name = this->get_internalized_function_name();
+
+        llvm::FunctionType* function_type = this->get_overloaded_llvm_function_type(module, captured_types);
+
+        llvm::Function* function = llvm::Function::Create(
+            function_type,
+            linkage,
+            llvm_function_name,
+            module
+        );
+
+        if (this->is_anonymous())
+        {
+            function->addFnAttr("stride.anonymous");
+            this->_llvm_function = function;
+        }
     }
 
     this->_body->resolve_forward_references(module, builder);
 }
 
-llvm::FunctionType* IAstFunction::get_llvm_function_type(
+llvm::FunctionType* IAstFunction::get_overloaded_llvm_function_type(
     llvm::Module* module,
-    std::vector<llvm::Type*> captured_variables
+    std::vector<llvm::Type*> captured_variables,
+    const GenericTypeList& generic_instantiation_types
 ) const
 {
     std::vector<llvm::Type*> base_parameter_types;
     for (const auto& param : this->_parameters)
     {
-        base_parameter_types.push_back(param->get_type()->get_llvm_type(module));
+        const auto& resolved_generic_param_type = resolve_generics(
+            param->get_type(),
+            this->_generic_parameters,
+            generic_instantiation_types
+        );
+        base_parameter_types.push_back(resolved_generic_param_type->get_llvm_type(module));
     }
 
     std::vector<llvm::Type*> parameter_types;
@@ -956,7 +991,98 @@ llvm::FunctionType* IAstFunction::get_llvm_function_type(
         );
     }
 
-    return llvm::FunctionType::get(return_type, parameter_types, this->is_variadic());
+    const auto& llvm_function_ty = llvm::FunctionType::get(return_type, parameter_types, this->is_variadic());;
+
+    if (const auto fn = module->getFunction(this->get_internalized_function_name());
+        fn != nullptr && fn->getFunctionType() != llvm_function_ty)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format(
+                "Function symbol '{}' already exists with a different signature",
+                this->get_internalized_function_name()
+            ),
+            this->get_source_fragment()
+        );
+    }
+
+    return llvm_function_ty;
+}
+
+std::vector<std::unique_ptr<IAstType>> IAstFunction::get_parameter_types() const
+{
+    std::vector<std::unique_ptr<IAstType>> types;
+    types.reserve(this->_parameters.size());
+
+    for (const auto& param : this->_parameters)
+    {
+        types.push_back(param->get_type()->clone_ty());
+    }
+
+    return types;
+}
+
+FunctionDefinition* IAstFunction::get_function_definition()
+{
+    if (this->_function_definition != nullptr)
+        return this->_function_definition;
+
+    const auto& definition = this->get_context()->get_function_definition(
+        this->get_function_name(),
+        this->get_parameter_types(),
+        this->get_generic_parameters().size()
+    );
+
+    if (!definition.has_value())
+    {
+        throw parsing_error(
+            ErrorType::REFERENCE_ERROR,
+            std::format("Function definition for '{}' not found in context", this->get_internalized_function_name()),
+            this->get_source_fragment()
+        );
+    }
+
+    this->_function_definition = definition.value();
+    return this->_function_definition;
+}
+
+std::string IAstFunction::get_internalized_overload_name(const GenericTypeList& overload) const
+{
+    std::vector<std::string> generic_instantiation_type_names;
+    generic_instantiation_type_names.reserve(overload.size());
+
+    for (const auto& type : overload)
+    {
+        generic_instantiation_type_names.push_back(type->get_type_name());
+    }
+
+    return std::format(
+        "{}${}",
+        this->get_internalized_function_name(),
+        join(generic_instantiation_type_names, "_")
+    );
+}
+
+std::vector<std::string> IAstFunction::get_internalized_overload_names()
+{
+    const auto& definition = this->get_function_definition();
+
+    // If the function is not generic, we just return a singular name (the regular internalized name)
+    if (!definition->get_type()->is_generic())
+    {
+        return { this->get_internalized_function_name() };
+    }
+
+    std::vector<std::string> overload_names;
+
+    for (const auto& overload : definition->get_generic_instantiations())
+    {
+        overload_names.push_back(
+            get_internalized_overload_name(overload)
+        );
+    }
+
+    return overload_names;
 }
 
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()
@@ -1009,7 +1135,7 @@ std::string AstFunctionDeclaration::to_string()
     return std::format(
         "FunctionDeclaration(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
         this->get_function_name(),
-        this->get_scoped_function_name(),
+        this->get_internalized_function_name(),
         params,
         body_str,
         this->is_extern() ? " (extern)" : "",
