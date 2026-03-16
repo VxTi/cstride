@@ -62,6 +62,17 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
     const GenericTypeList& instantiated_types
 )
 {
+    if (param_names.size() != instantiated_types.size())
+    {
+        throw parsing_error(
+            ErrorType::TYPE_ERROR,
+            std::format(
+                "Failed to resolve generic type: expected {} parameters, got ",
+                param_names.size(),
+                instantiated_types.size()),
+            type->get_source_fragment()
+        );
+    }
     if (auto* named_type = cast_type<AstAliasType*>(type))
     {
         for (size_t i = 0; i < param_names.size(); i++)

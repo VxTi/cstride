@@ -39,7 +39,10 @@ namespace stride::ast
             _name(std::move(param_name)),
             _type(std::move(param_type)) {}
 
-        std::string to_string() override;
+        std::string to_string() override
+        {
+            return std::format("{}({})", this->get_name(), this->get_type()->get_type_name());
+        }
 
         [[nodiscard]]
         const std::string& get_name() const
@@ -166,19 +169,19 @@ namespace stride::ast
         [[nodiscard]]
         bool is_extern() const
         {
-            return this->_flags & SRFLAG_FN_TYPE_EXTERN;
+            return (this->_flags & SRFLAG_FN_TYPE_EXTERN) != 0;
         }
 
         [[nodiscard]]
         bool is_variadic() const
         {
-            return this->_flags & SRFLAG_FN_TYPE_VARIADIC;
+            return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
         }
 
         [[nodiscard]]
         bool is_anonymous() const
         {
-            return this->_flags & SRFLAG_FN_TYPE_ANONYMOUS;
+            return (this->_flags & SRFLAG_FN_TYPE_ANONYMOUS) != 0;
         }
 
         [[nodiscard]]
@@ -206,7 +209,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool is_generic_function() const
+        bool is_generic() const
         {
             return !this->_generic_parameters.empty();
         }
@@ -236,12 +239,16 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
+        std::string to_string() override;
+
     private:
         llvm::FunctionType* get_generic_instantiated_llvm_function_type(
             llvm::Module* module,
             std::vector<llvm::Type*> captured_variables,
             const GenericTypeList& generic_instantiation_types = {}
         ) const;
+
+        static void validate_candidate(IAstFunction* candidate);
     };
 
     class AstFunctionDeclaration
@@ -249,8 +256,6 @@ namespace stride::ast
           public IAstStatement
     {
     public:
-        using IAstStatement::IAstStatement;
-
         explicit AstFunctionDeclaration(
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
@@ -272,8 +277,6 @@ namespace stride::ast
                 flags,
                 generic_parameters
             ) {}
-
-        std::string to_string() override;
 
         ~AstFunctionDeclaration() override = default;
     };
@@ -303,14 +306,7 @@ namespace stride::ast
                 {}
             ) {}
 
-        std::string to_string() override;
-
         ~AstLambdaFunctionExpression() override = default;
-
-        std::string get_mangled_name() const
-        {
-            return "";
-        }; // TODO: Implement
     };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(

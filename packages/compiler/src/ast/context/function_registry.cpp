@@ -1,6 +1,7 @@
 #include "errors.h"
 #include "ast/casting.h"
 #include "ast/parsing_context.h"
+#include "ast/definitions/function_definition.h"
 
 #include <algorithm>
 
@@ -164,12 +165,12 @@ bool ParsingContext::is_function_defined_globally(
 
 bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique_ptr<IAstType>>& generic_types) const
 {
-    for (const auto& [types, function] : this->_generic_type_overloads)
+    for (const auto& [instantiated_generic_types, function, declaration] : this->_function_candidates)
     {
         bool all_equal = true;
         for (size_t i = 0; i < generic_types.size(); i++)
         {
-            if (!types[i]->equals(generic_types[i].get()))
+            if (!instantiated_generic_types[i]->equals(generic_types[i].get()))
             {
                 all_equal = false;
                 break;
@@ -188,5 +189,5 @@ void FunctionDefinition::add_generic_instantiation(GenericTypeList generic_overl
     if (has_generic_instantiation(generic_overload_types))
         return; // Already instantiated
 
-    this->_generic_type_overloads.push_back({std::move(generic_overload_types)});
+    this->_function_candidates.push_back({ std::move(generic_overload_types) });
 }

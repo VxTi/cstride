@@ -2,7 +2,7 @@
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
-#include "ast/nodes/function_declaration.h"
+#include "ast/nodes/function_definition.h"
 #include "ast/parsing_context.h"
 #include "ast/symbols.h"
 #include "errors.h"

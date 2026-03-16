@@ -33,7 +33,7 @@ namespace stride::ast
     class FunctionVisitor : public IVisitor
     {
     public:
-        void accept(IAstFunction* fn_declaration) override;
+        void accept(IAstFunction* function) override;
     };
 
     class ImportVisitor : public IVisitor

@@ -6,6 +6,7 @@
 #include "ast/optionals.h"
 #include "ast/parsing_context.h"
 #include "ast/symbols.h"
+#include "ast/definitions/function_definition.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
@@ -218,6 +219,7 @@ llvm::Value* AstFunctionCall::codegen(
 llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
 {
     const auto& function_definition = this->get_function_definition();
+
     if (llvm::Function* callee = module->getFunction(function_definition->get_internal_symbol_name()))
     {
         return callee;
