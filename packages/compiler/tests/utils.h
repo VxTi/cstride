@@ -39,7 +39,6 @@ namespace stride::tests
         traverser.visit_block(&import_visitor, node.get());
 
         traverser.visit_block(&function_visitor, node.get());
-        // import_visitor.cross_register_symbols(this->_ast.get());
 
         traverser.visit_block(&expression_visitor, node.get());
 
