@@ -34,7 +34,7 @@ std::unique_ptr<AstChainedExpression> stride::ast::parse_chained_member_access(
         Symbol(member_tok.get_source_fragment(), member_tok.get_lexeme())
     );
 
-    const auto source = SourceFragment::combine(lhs->get_source_fragment(), member_tok.get_source_fragment());
+    const auto source = SourceFragment::join(lhs->get_source_fragment(), member_tok.get_source_fragment());
 
     return std::make_unique<AstChainedExpression>(
         source,
@@ -70,7 +70,7 @@ std::unique_ptr<AstIndirectCall> stride::ast::parse_indirect_call(
     }
 
     const auto close_src = set.peek(-1).get_source_fragment();
-    const auto source = SourceFragment::combine(callee_src, close_src);
+    const auto source = SourceFragment::join(callee_src, close_src);
 
     return std::make_unique<AstIndirectCall>(
         source,

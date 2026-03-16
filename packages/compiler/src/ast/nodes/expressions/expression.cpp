@@ -187,7 +187,7 @@ std::unique_ptr<IAstExpression> parse_comparison_tier(
         const auto token = set.next();
         auto rhs = parse_arithmetic_tier(context, set);
         lhs = std::make_unique<AstComparisonOp>(
-            token.get_source_fragment(),
+            stride::SourceFragment::join(lhs->get_source_fragment(), rhs->get_source_fragment()),
             context,
             std::move(lhs),
             op.value(),
@@ -209,7 +209,7 @@ std::unique_ptr<IAstExpression> parse_logical_tier(
         const auto token = set.next();
         auto rhs = parse_comparison_tier(context, set);
         lhs = std::make_unique<AstLogicalOp>(
-            token.get_source_fragment(),
+            stride::SourceFragment::join(lhs->get_source_fragment(), rhs->get_source_fragment()),
             context,
             std::move(lhs),
             op.value(),
@@ -336,7 +336,7 @@ std::unique_ptr<AstIdentifier> stride::ast::parse_segmented_identifier(
     }
 
     const auto source_pos = last_fragment.has_value()
-        ? SourceFragment::combine(initial_identifier.get_source_fragment(), last_fragment.value())
+        ? SourceFragment::join(initial_identifier.get_source_fragment(), last_fragment.value())
         : initial_identifier.get_source_fragment();
 
     return std::make_unique<AstIdentifier>(

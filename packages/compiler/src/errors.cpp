@@ -252,20 +252,20 @@ std::string stride::make_source_error(
                 // Line for the right-hand reference (placed first in order to be above the left message).
                 // right_line: pipe connector (for left_ref) + message (for right_ref)
                 std::string right_line(base_padding + col1, ' ');
-                right_line += "┃";
+                right_line += "│";
                 right_line += std::string(col2 - col1 - 1, ' ');
-                right_line += "┗ ";
+                right_line += "└ ";
                 right_line += right_ref.message;
                 result += std::format("\n\033[0;31m┃ {}", right_line);
 
                 // Connector line: vertical pipe for left reference.
                 std::string connector(base_padding + col1, ' ');
-                connector += "┃";
+                connector += "│";
                 result += std::format("\n\033[0;31m┃ {}", connector);
 
                 // Line for the left-hand reference message.
                 std::string left_line(base_padding + col1, ' ');
-                left_line += "┗ " + left_ref.message;
+                left_line += "└─ " + left_ref.message;
                 result += std::format("\n\033[0;31m┃ {}", left_line);
             }
             else

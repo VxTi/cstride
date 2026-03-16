@@ -93,7 +93,10 @@ void AstComparisonOp::validate()
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
         "Comparison operation operands must be used on primitive or optional types",
-        this->get_source_fragment()
+        {
+            ErrorSourceReference("type " + lhs_type->get_type_name(), _lhs->get_source_fragment()),
+            ErrorSourceReference("type " + rhs_type->get_type_name(), _rhs->get_source_fragment())
+        }
     );
 }
 

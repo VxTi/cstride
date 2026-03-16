@@ -67,7 +67,9 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(IBinaryOp* operation
     if (cast_expr<AstLogicalOp*>(operation) || cast_expr<AstComparisonOp*>(operation))
     {
         return std::make_unique<AstPrimitiveType>(
-            operation->get_source_fragment(),
+            SourceFragment::join(
+                operation->get_left()->get_source_fragment(),
+                operation->get_right()->get_source_fragment()),
             operation->get_context(),
             PrimitiveType::BOOL
         );
