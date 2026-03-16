@@ -77,6 +77,7 @@ namespace stride::ast
     {
         std::string overload_function_name;
         llvm::Function* llvm_function;
+        AstBlock* body = nullptr; // Non-null for generic overloads (resolved body)
     };
 
     class IAstFunction

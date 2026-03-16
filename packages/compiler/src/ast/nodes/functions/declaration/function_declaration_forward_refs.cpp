@@ -1,5 +1,6 @@
 #include "ast/casting.h"
 #include "ast/definitions/function_definition.h"
+#include "ast/generics.h"
 #include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/function_declaration.h"
@@ -167,7 +168,7 @@ void IAstFunction::resolve_forward_references(
         if (this->is_anonymous())
             llvm_function->addFnAttr("stride.anonymous");
 
-        this->_body->resolve_forward_references(module, builder);
+        node->get_body()->resolve_forward_references(module, builder);
     }
 }
 

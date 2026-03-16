@@ -16,7 +16,7 @@ llvm::Value* IAstFunction::codegen(
 {
     llvm::Function* function = nullptr;
 
-    for (const auto& [function_name, llvm_function_val] : this->get_function_implementation_data())
+    for (const auto& [function_name, llvm_function_val, overload_body] : this->get_function_implementation_data())
     {
         if (!llvm_function_val)
         {
@@ -104,8 +104,9 @@ llvm::Value* IAstFunction::codegen(
             }
         }
 
-        // Generate Body
-        llvm::Value* function_body_value = this->_body->codegen(module, builder);
+        // Generate Body — use resolved body for generic overloads
+        AstBlock* body_to_codegen = overload_body ? overload_body : this->_body.get();
+        llvm::Value* function_body_value = body_to_codegen->codegen(module, builder);
 
         // Final Safety: Implicit Return
         // If the get_body didn't explicitly return (no terminator found), add one.

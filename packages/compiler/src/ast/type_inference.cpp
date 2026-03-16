@@ -3,6 +3,7 @@
 #include "errors.h"
 #include "ast/casting.h"
 #include "ast/flags.h"
+#include "ast/generics.h"
 #include "ast/parsing_context.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/function_declaration.h"
@@ -35,7 +36,22 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(AstFuncti
         );
         fn_def.has_value())
     {
-        return fn_def.value()->get_type()->get_return_type()->clone_ty();
+        auto return_type = fn_def.value()->get_type()->get_return_type()->clone_ty();
+
+        // For generic function calls, resolve the return type by substituting
+        // generic parameter names with the concrete type arguments from the call site.
+        // e.g. arrayOf<string>(...) has return type Array<T> → Array<string>
+        if (const auto& generic_args = fn_call->get_generic_type_arguments();
+            !generic_args.empty())
+        {
+            const auto& param_names = fn_def.value()->get_type()->get_generic_parameter_names();
+            if (param_names.size() == generic_args.size())
+            {
+                return_type = resolve_generics(return_type.get(), param_names, generic_args);
+            }
+        }
+
+        return return_type;
     }
 
     /// --- Handling lambda functions that might be assigned to variables

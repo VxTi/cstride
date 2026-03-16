@@ -269,7 +269,8 @@ std::vector<FunctionImplementation> IAstFunction::get_function_implementation_da
     {
         implementations.emplace_back(
             get_overloaded_function_name(node->get_registered_function_name(), types),
-            llvm_function
+            llvm_function,
+            node->get_body()
         );
     }
 

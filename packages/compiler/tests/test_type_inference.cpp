@@ -2,7 +2,7 @@
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
-#include "ast/nodes/function_definition.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/parsing_context.h"
 #include "ast/symbols.h"
 #include "errors.h"
@@ -405,6 +405,7 @@ TEST_F(TypeInferenceTest, InferFunctionCall)
         context,
         dummy_iden("foo"),
         std::move(args),
+        EMPTY_GENERIC_TYPE_LIST,
         0);
 
     EXPECT_EQ(infer_expression_type(fn_call.get())->to_string(), "f32");
@@ -425,6 +426,7 @@ TEST_F(TypeInferenceTest, InferFunctionCall)
         context,
         dummy_iden("bar"),
         ExpressionList{},
+        EMPTY_GENERIC_TYPE_LIST,
         0);
     EXPECT_EQ(infer_expression_type(l_fn_call.get())->to_string(), "i64");
 }
