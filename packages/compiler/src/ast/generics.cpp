@@ -445,6 +445,19 @@ void stride::ast::resolve_generics_in_body(
     }
     else if (auto* struct_init = cast_expr<AstObjectInitializer*>(expr))
     {
+        // Resolve generic type arguments on the object initializer itself
+        // e.g. Array<T>::{ ... } → Array<string>::{ ... }
+        if (struct_init->has_generic_type_arguments())
+        {
+            GenericTypeList resolved_args;
+            resolved_args.reserve(struct_init->get_generic_type_arguments().size());
+            for (const auto& arg : struct_init->get_generic_type_arguments())
+            {
+                resolved_args.push_back(resolve_generics(arg.get(), param_names, instantiated_types));
+            }
+            struct_init->set_generic_type_arguments(std::move(resolved_args));
+        }
+
         for (const auto& val : struct_init->get_initializers() | std::views::values)
             resolve_generics_in_body(val.get(), param_names, instantiated_types);
     }

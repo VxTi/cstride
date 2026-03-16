@@ -892,6 +892,12 @@ namespace stride::ast
             return !this->_generic_type_arguments.empty();
         }
 
+        void set_generic_type_arguments(GenericTypeList generic_type_arguments)
+        {
+            this->_generic_type_arguments = std::move(generic_type_arguments);
+            this->_object_type = nullptr; // Reset cached type so it re-resolves
+        }
+
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;

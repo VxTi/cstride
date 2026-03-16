@@ -119,15 +119,22 @@ void IAstFunction::resolve_forward_references(
             );
         }
 
+        auto resolved_body = this->_body->clone_as<AstBlock>();
+        resolve_generics_in_body(
+            resolved_body.get(),
+            this->_generic_parameters,
+            instantiated_generic_types
+        );
+
         node = std::make_unique<AstFunctionDeclaration>(
             this->get_context(),
             this->get_symbol(),
             std::move(instantiated_function_params),
-            this->_body->clone_as<AstBlock>(),
+            std::move(resolved_body),
             std::move(instantiated_return_ty),
             this->get_visibility(),
             this->get_flags(),
-            this->get_generic_parameters()
+            EMPTY_GENERIC_PARAMETER_LIST
         );
 
         const auto overloaded_fn_name = get_overloaded_function_name(
@@ -477,7 +484,20 @@ llvm::FunctionType* IAstFunction::get_llvm_function_type(
     parameter_types.insert(parameter_types.end(), captured_variables.begin(), captured_variables.end());
     parameter_types.insert(parameter_types.end(), base_parameter_types.begin(), base_parameter_types.end());
 
-    const auto return_type = this->get_return_type()->get_llvm_type(module);
+    llvm::Type* return_type;
+    if (!generic_instantiation_types.empty())
+    {
+        auto resolved_return_ty = resolve_generics(
+            this->_annotated_return_type.get(),
+            this->_generic_parameters,
+            generic_instantiation_types
+        );
+        return_type = resolved_return_ty->get_llvm_type(module);
+    }
+    else
+    {
+        return_type = this->get_return_type()->get_llvm_type(module);
+    }
 
     if (!return_type)
     {

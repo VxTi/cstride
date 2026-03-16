@@ -2,30 +2,29 @@ import System::{
     io::print
 };
 
-type Array<T> = T[];
-
-type Car = {
-    drive: () -> void;
-    names: Array<string>;
+type Array<T> = {
+    elements: T[];
+    count: i32;
 };
 
-fn some_comparison<A, B>(a: A, b: B): bool {
-    return a == b;
+fn arrayOf<T>(elements: T[], count: i32): Array<T> {
+    return Array<T>::{
+        elements,
+        count,
+    };
 }
 
-fn makeCar(): Car {
-    const names = ["Toyota", "Honda", "Ford", "Toyota"];
+type Callback = () -> void;
 
-    return Car::{ drive: (): void -> io::print("\x1b[32mDriving the car"), names };
+fn makeCb(): Callback {
+    const names = arrayOf<string>(["Toyota", "Honda", "Ford", "Toyota"], 4);
+
+    return (): void -> io::print("\x1b[32mDriving the car: %s", names.elements[1]);
 }
 
 fn main(): i32 {
 
-    const myCar = makeCar();
-    myCar.drive();
-    io::print("Driving: %s, %s, %s", myCar.names[0], myCar.names[1], myCar.names[2]);
-
-    io::print("Compared: %b", some_comparison<i32, string>(5, 5));
+    makeCb()();
 
     return 0;
 }
