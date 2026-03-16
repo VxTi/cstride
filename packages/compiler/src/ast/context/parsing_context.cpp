@@ -2,6 +2,7 @@
 
 #include "errors.h"
 #include "ast/symbols.h"
+#include "ast/definitions/function_definition.h"
 
 #include <algorithm>
 #include <ranges>

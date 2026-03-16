@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ast/parsing_context.h"
-#include "ast/nodes/function_definition.h"
+#include "ast/nodes/function_declaration.h"
 
 #include <vector>
 
@@ -9,15 +9,16 @@ namespace stride::ast::definition
 {
     struct GenericFunctionOverload
     {
+        std::vector<std::unique_ptr<IAstType>> generic_overload_types;
         mutable llvm::Function* function;
-        std::unique_ptr<AstFunctionDeclaration> node;
+        mutable std::unique_ptr<AstFunctionDeclaration> node;
     };
 
     class FunctionDefinition
         : public IDefinition
     {
         std::unique_ptr<AstFunctionType> _function_type;
-        std::vector<GenericFunctionOverload> _function_candidates{};
+        std::vector<GenericFunctionOverload> _generic_overloads{};
         int _flags;
 
         llvm::Function* _llvm_function = nullptr;
@@ -60,9 +61,9 @@ namespace stride::ast::definition
         void add_generic_instantiation(GenericTypeList generic_overload_types);
 
         [[nodiscard]]
-        const std::vector<GenericFunctionOverload>& get_instantiations() const
+        const std::vector<GenericFunctionOverload>& get_generic_overloads() const
         {
-            return this->_function_candidates;
+            return this->_generic_overloads;
         }
 
         [[nodiscard]]

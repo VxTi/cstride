@@ -73,7 +73,6 @@ bool FunctionDefinition::matches_type_signature(
         other_params,
         signature->get_generic_parameter_names().size()
     );
-
 }
 
 bool FunctionDefinition::matches_parameter_signature(
@@ -165,7 +164,7 @@ bool ParsingContext::is_function_defined_globally(
 
 bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique_ptr<IAstType>>& generic_types) const
 {
-    for (const auto& [instantiated_generic_types, function, declaration] : this->_function_candidates)
+    for (const auto& [instantiated_generic_types, llvm_function, node] : this->_generic_overloads)
     {
         bool all_equal = true;
         for (size_t i = 0; i < generic_types.size(); i++)
@@ -181,6 +180,7 @@ bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique
             return true;
         }
     }
+
     return false;
 }
 
@@ -189,5 +189,8 @@ void FunctionDefinition::add_generic_instantiation(GenericTypeList generic_overl
     if (has_generic_instantiation(generic_overload_types))
         return; // Already instantiated
 
-    this->_function_candidates.push_back({ std::move(generic_overload_types) });
+    // All other fields will be populated in later stages
+    this->_generic_overloads.push_back({
+        std::move(generic_overload_types)
+    });
 }

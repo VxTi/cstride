@@ -13,7 +13,7 @@
 #include "ast/tokens/token_set.h"
 
 #include <format>
-#include <iostream>
+#include <ranges>
 #include <sstream>
 #include <vector>
 #include <llvm/IR/Function.h>
@@ -659,7 +659,6 @@ void AstFunctionCall::resolve_forward_references(llvm::Module* module, llvm::IRB
         definition->add_generic_instantiation(
             copy_generic_type_list(this->_generic_type_arguments)
         );
-        // nice, got that over with
     }
 
     for (const auto& arg : this->_arguments)

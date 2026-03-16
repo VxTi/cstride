@@ -1,13 +1,16 @@
 #include "ast/parsing_context.h"
+#include "ast/type_inference.h"
 #include "ast/visitor.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/function_definition.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/types.h"
 
 using namespace stride::ast;
 
 void FunctionVisitor::accept(IAstFunction* function)
 {
+    function->set_type(infer_function_type(function));
+
     // Define parameters in the function's own context BEFORE traversing the body,
     // so that identifiers referencing params resolve correctly inside the body.
     for (const auto& param : function->get_parameters_ref())

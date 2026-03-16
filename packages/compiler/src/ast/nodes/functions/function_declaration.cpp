@@ -1,4 +1,4 @@
-#include "ast/nodes/function_definition.h"
+#include "ast/definitions/function_definition.h"
 
 #include "errors.h"
 #include "ast/casting.h"
@@ -6,17 +6,16 @@
 #include "ast/modifiers.h"
 #include "ast/parsing_context.h"
 #include "ast/symbols.h"
-#include "ast/definitions/function_definition.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/for_loop.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/return_statement.h"
 #include "ast/nodes/while_loop.h"
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
-#include <iostream>
 #include <ranges>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
@@ -550,19 +549,19 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
         {
             if (return_stmt->get_return_expression().has_value())
             {
-                throw stride::parsing_error(
-                    stride::ErrorType::TYPE_ERROR,
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
                     std::format(
                         "{} has return type 'void' and cannot return a value.",
                         candidate->is_anonymous()
                         ? "Anonymous function"
                         : std::format("Function '{}'", candidate->get_function_name())),
                     {
-                        stride::ErrorSourceReference(
+                        ErrorSourceReference(
                             "unexpected return value",
                             return_stmt->get_source_fragment()
                         ),
-                        stride::ErrorSourceReference(
+                        ErrorSourceReference(
                             "Function returning void type",
                             candidate->get_source_fragment()
                         )
@@ -578,16 +577,16 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
     {
         if (cast_type<AstAliasType*>(ret_ty))
         {
-            throw stride::parsing_error(
-                stride::ErrorType::TYPE_ERROR,
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' returns a struct type, but no return statement is present.",
                     candidate->get_function_name()),
                 candidate->get_source_fragment());
         }
 
-        throw stride::parsing_error(
-            stride::ErrorType::COMPILATION_ERROR,
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
             std::format(
                 "{} is missing a return statement.",
                 candidate->is_anonymous()
@@ -603,8 +602,8 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
         {
             if (!ret_ty->is_void_ty())
             {
-                throw stride::parsing_error(
-                    stride::ErrorType::TYPE_ERROR,
+                throw parsing_error(
+                    ErrorType::TYPE_ERROR,
                     std::format(
                         "Function '{}' returns a value of type '{}', but no return statement is present.",
                         candidate->is_anonymous() ? "<anonymous function>" : candidate->get_function_name(),
@@ -619,7 +618,7 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
             !ret_expr->get_type()->equals(ret_ty) &&
             !ret_expr->get_type()->is_assignable_to(ret_ty))
         {
-            const auto error_fragment = stride::ErrorSourceReference(
+            const auto error_fragment = ErrorSourceReference(
                 std::format(
                     "expected {}{}",
                     candidate->get_return_type()->is_primitive()
@@ -631,8 +630,8 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
                 ret_expr->get_source_fragment()
             );
 
-            throw stride::parsing_error(
-                stride::ErrorType::TYPE_ERROR,
+            throw parsing_error(
+                ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' expected a return type of '{}', but received '{}'.",
                     candidate->is_anonymous() ? "<anonymous function>" : candidate->get_function_name(),
@@ -650,7 +649,11 @@ void IAstFunction::validate()
     if (this->is_extern())
         return;
 
-    std::vector<std::unique_ptr<IAstFunction>> validatable_candidates;
+    if (!this->is_generic())
+    {
+        validate_candidate(this);
+        return;
+    }
 
     //
     // For generic functions, we create a new copy of the function with all parameters resolved, and do validation
@@ -659,7 +662,7 @@ void IAstFunction::validate()
     //
     // create a copy of this function with the parameters instantiated
     for (const auto definition = this->get_function_definition();
-         const auto& [types, function, node] : definition->get_instantiations())
+         const auto& [types, function, node] : definition->get_generic_overloads())
     {
         auto instantiated_return_ty = resolve_generics(
             this->_annotated_return_type.get(),
@@ -949,24 +952,51 @@ void IAstFunction::resolve_forward_references(
         ? llvm::Function::PrivateLinkage
         : llvm::Function::ExternalLinkage;
 
-    const auto& definition = this->get_function_definition();
+    for (const auto& definition = this->get_function_definition();
+         const auto& [types, llvm_function, node] : definition->get_generic_overloads())
+    {
+        auto instantiated_return_ty = resolve_generics(
+            this->_annotated_return_type.get(),
+            this->_generic_parameters,
+            types
+        );
 
-    if (definition->get_instantiations().empty())
-    {
-        std::cerr << "Warning: No instantiations found for function '" << this->get_function_name() <<
-            "'. This function will not be emitted in the LLVM IR.\n";
-        return;
-    }
-    for (const auto& [types, instantiation_fn, node] : definition->get_instantiations())
-    {
+        std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
+        instantiated_function_params.reserve(this->_parameters.size());
+
+        for (const auto& param : this->_parameters)
+        {
+            instantiated_function_params.push_back(
+                std::make_unique<AstFunctionParameter>(
+                    param->get_source_fragment(),
+                    param->get_context(),
+                    param->get_name(),
+                    resolve_generics(param->get_type(), this->_generic_parameters, types)
+                )
+            );
+        }
+
+        auto candidate_node = std::make_unique<AstFunctionDeclaration>(
+            this->get_context(),
+            this->_symbol,
+            std::move(instantiated_function_params),
+            this->_body->clone_as<AstBlock>(),
+            std::move(instantiated_return_ty),
+            this->get_visibility(),
+            this->_flags,
+            this->get_generic_parameters()
+        );
+
+        node = std::move(candidate_node);
+
         const auto overloaded_fn_name = get_overloaded_function_name(node->get_internalized_function_name(), types);
-        llvm::FunctionType* generic_function_type = node->get_generic_instantiated_llvm_function_type(
+        llvm::FunctionType* generic_function_type = node->get_llvm_function_type(
             module,
             captured_types,
             types
         );
 
-        instantiation_fn = llvm::Function::Create(
+        llvm_function = llvm::Function::Create(
             generic_function_type,
             linkage,
             overloaded_fn_name,
@@ -974,13 +1004,13 @@ void IAstFunction::resolve_forward_references(
         );
 
         if (node->is_anonymous())
-            instantiation_fn->addFnAttr("stride.anonymous");
+            llvm_function->addFnAttr("stride.anonymous");
 
         this->_body->resolve_forward_references(module, builder);
     }
 }
 
-llvm::FunctionType* IAstFunction::get_generic_instantiated_llvm_function_type(
+llvm::FunctionType* IAstFunction::get_llvm_function_type(
     llvm::Module* module,
     std::vector<llvm::Type*> captured_variables,
     const GenericTypeList& generic_instantiation_types
@@ -1007,7 +1037,10 @@ llvm::FunctionType* IAstFunction::get_generic_instantiated_llvm_function_type(
                 this->_generic_parameters,
                 generic_instantiation_types
             );
-            base_parameter_types.push_back(resolved_generic_param_type->get_llvm_type(module));
+            if (llvm::Type* param_type = resolved_generic_param_type->get_llvm_type(module))
+            {
+                base_parameter_types.push_back(param_type);
+            }
         }
     }
 
@@ -1098,7 +1131,7 @@ std::vector<GenericFunctionMetadata> IAstFunction::get_function_overload_metadat
 
     std::vector<GenericFunctionMetadata> metadata;
 
-    for (const auto& [types, llvm_function, node] : definition->get_instantiations())
+    for (const auto& [types, llvm_function, node] : definition->get_generic_overloads())
     {
         metadata.emplace_back(
             get_overloaded_function_name(node->get_internalized_function_name(), types),

@@ -242,7 +242,7 @@ namespace stride::ast
         std::string to_string() override;
 
     private:
-        llvm::FunctionType* get_generic_instantiated_llvm_function_type(
+        llvm::FunctionType* get_llvm_function_type(
             llvm::Module* module,
             std::vector<llvm::Type*> captured_variables,
             const GenericTypeList& generic_instantiation_types = {}

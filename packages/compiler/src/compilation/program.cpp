@@ -52,25 +52,32 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     ast::FunctionVisitor function_visitor;
     ast::ImportVisitor import_visitor;
 
+    /// --- First step - Cross-file symbol registration (imports and function signatures)
     for (const auto& [file_name, node] : this->_ast->get_files())
     {
         import_visitor.set_current_file_name(file_name);
         traverser.visit_block(&import_visitor, node.get());
 
-        traverser.visit_block(&function_visitor, node.get());
+        traverser.visit_block(&function_visitor, node.get()); // Ensures functions are defined in our symbol table
     }
     import_visitor.cross_register_symbols(this->_ast.get());
 
+    /// --- Second step - Type resolution and symbol forward declarations
     for (const auto& node : this->_ast->get_files() | std::views::values)
     {
         runtime::register_runtime_symbols(node->get_context());
         traverser.visit_block(&type_visitor, node.get());
 
-        node->validate();
         node->resolve_forward_references(
             module.get(),
             &builder
         );
+    }
+
+    /// --- Final step - LLVM IR validation and code generation
+    for (const auto& node : this->_ast->get_files() | std::views::values)
+    {
+        node->validate();
         node->codegen(module.get(), &builder);
     }
 

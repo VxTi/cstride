@@ -34,6 +34,8 @@ namespace stride::ast
     using EnumMemberValueTy = std::unique_ptr<IAstNode>;
     using EnumMemberPair = std::pair<std::string, EnumMemberValueTy>;
 
+    using FunctionParameters = std::vector<std::pair<std::string, std::unique_ptr<IAstType>>>;
+
     enum class PrimitiveType
     {
         INT8,

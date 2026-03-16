@@ -1,7 +1,7 @@
 #include "ast/nodes/blocks.h"
 
 #include "ast/ast.h"
-#include "ast/nodes/function_definition.h"
+#include "ast/nodes/function_declaration.h"
 #include "ast/tokens/token_set.h"
 
 #include <iostream>
