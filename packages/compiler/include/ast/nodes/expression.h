@@ -188,7 +188,7 @@ namespace stride::ast
             _symbol(std::move(symbol)) {}
 
         [[nodiscard]]
-        std::optional<const definition::IDefinition*> get_definition() const;
+        std::optional<definition::IDefinition*> get_definition() const;
 
         [[nodiscard]]
         const std::string& get_name() const

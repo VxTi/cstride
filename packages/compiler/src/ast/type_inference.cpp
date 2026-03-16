@@ -322,7 +322,7 @@ std::unique_ptr<IAstType> stride::ast::infer_identifier_type(const AstIdentifier
         );
     }
 
-    if (const auto field = dynamic_cast<const FieldDefinition*>(identifier_def.value()))
+    if (const auto field = dynamic_cast<FieldDefinition*>(identifier_def.value()))
     {
         return field->get_type()->clone_ty();
     }

@@ -2,6 +2,7 @@
 
 namespace stride::ast
 {
+    class AstFunctionCall;
     class AstPackage;
     class AstImport;
     class IAstNode;
@@ -30,6 +31,8 @@ namespace stride::ast
         virtual void accept(AstImport* node) {}
 
         virtual void accept(AstPackage* node) {}
+
+        virtual void accept(AstFunctionCall* function_call) {}
     };
 
     /// Traverses an AST tree and invokes an IVisitor for each expression node.

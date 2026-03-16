@@ -246,7 +246,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const definition::FieldDefinition* get_variable_def(
+        definition::FieldDefinition* get_variable_def(
             const std::string& variable_name,
             bool use_raw_name = false
         ) const;
@@ -284,7 +284,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const definition::FieldDefinition* lookup_variable(
+        definition::FieldDefinition* lookup_variable(
             const std::string& name,
             bool use_raw_name = false
         ) const;

@@ -5,14 +5,14 @@
 
 using namespace stride::ast;
 
-const definition::FieldDefinition* ParsingContext::get_variable_def(
+definition::FieldDefinition* ParsingContext::get_variable_def(
     const std::string& variable_name,
     const bool use_raw_name
 ) const
 {
     for (const auto& symbol_def : this->_symbols)
     {
-        if (const auto* field_definition = dynamic_cast<const definition::FieldDefinition*>(
+        if (auto* field_definition = dynamic_cast<definition::FieldDefinition*>(
             symbol_def.get()))
         {
             if (field_definition->get_internal_symbol_name() == variable_name
@@ -149,7 +149,7 @@ void ParsingContext::define_variable(
     );
 }
 
-const definition::FieldDefinition* ParsingContext::lookup_variable(
+definition::FieldDefinition* ParsingContext::lookup_variable(
     const std::string& name,
     const bool use_raw_name
 )
@@ -158,7 +158,7 @@ const
     auto current = this;
     while (current != nullptr)
     {
-        if (const auto def = current->get_variable_def(name, use_raw_name))
+        if (auto def = current->get_variable_def(name, use_raw_name))
         {
             return def;
         }

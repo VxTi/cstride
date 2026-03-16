@@ -8,6 +8,7 @@
 
 namespace stride::ast
 {
+    class AstFunctionCall;
     class AstImport;
     class AstPackage;
     class AstFunctionDeclaration;

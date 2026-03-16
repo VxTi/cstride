@@ -66,8 +66,11 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     for (const auto& node : this->_ast->get_files() | std::views::values)
     {
         runtime::register_runtime_symbols(node->get_context());
+
+        // Type resolution
         traverser.visit_block(&type_visitor, node.get());
 
+        // Resolving forward references - Ensures symbols certain symbols are available before implementation
         node->resolve_forward_references(
             module.get(),
             &builder

@@ -15,6 +15,7 @@ namespace llvm
 
 namespace stride::ast
 {
+    class AstReturnStatement;
 #define MAX_FUNCTION_PARAMETERS (32)
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -135,7 +136,7 @@ namespace stride::ast
         /// function is defined with generic parameters, there will be several overloads generated
         /// for each generic instantiation. This function returns the internalized name of each overload.
         [[nodiscard]]
-        std::vector<GenericFunctionMetadata> get_function_overload_metadata();
+        std::vector<GenericFunctionMetadata> get_generic_function_metadata();
 
         [[nodiscard]]
         AstBlock* get_body() override
@@ -249,6 +250,15 @@ namespace stride::ast
         ) const;
 
         static void validate_candidate(IAstFunction* candidate);
+
+        static void collect_free_variables(
+            IAstNode* node,
+            const std::shared_ptr<ParsingContext>& lambda_context,
+            const std::shared_ptr<ParsingContext>& outer_context,
+            std::vector<Symbol>& captures
+        );
+
+        static std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body);
     };
 
     class AstFunctionDeclaration
