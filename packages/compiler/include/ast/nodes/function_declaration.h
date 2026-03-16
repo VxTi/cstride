@@ -4,6 +4,7 @@
 #include "blocks.h"
 #include "expression.h"
 #include "ast/modifiers.h"
+#include "ast/parsing_context.h"
 
 #include <utility>
 
@@ -14,6 +15,7 @@ namespace llvm
 
 namespace stride::ast
 {
+    class AstReturnStatement;
 #define MAX_FUNCTION_PARAMETERS (32)
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -38,7 +40,10 @@ namespace stride::ast
             _name(std::move(param_name)),
             _type(std::move(param_type)) {}
 
-        std::string to_string() override;
+        std::string to_string() override
+        {
+            return std::format("{}({})", this->get_name(), this->get_type()->get_type_name());
+        }
 
         [[nodiscard]]
         const std::string& get_name() const
@@ -67,6 +72,14 @@ namespace stride::ast
      *                Function declaration definitions             *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+    struct FunctionImplementation
+    {
+        std::string overload_function_name;
+        llvm::Function* llvm_function;
+        AstBlock* body = nullptr; // Non-null for generic overloads (resolved body)
+    };
+
     class IAstFunction
         : public IAstContainer,
           public IAstExpression
@@ -78,13 +91,8 @@ namespace stride::ast
         std::vector<Symbol> _captured_variables;
         VisibilityModifier _visibility;
         GenericParameterList _generic_parameters;
+        definition::FunctionDefinition* _function_definition = nullptr;
         int _flags;
-
-        /// Cached LLVM function pointer for anonymous functions.
-        /// Named functions are always looked up by their scoped name in the module,
-        /// but anonymous functions are created with an empty name (LLVM auto-assigns
-        /// a numeric ID), so we must track them by pointer instead.
-        llvm::Function* _llvm_function = nullptr;
 
         friend class AstFunctionDeclaration;
         friend class AstFunctionParameter;
@@ -99,7 +107,7 @@ namespace stride::ast
             std::unique_ptr<IAstType> return_type,
             const VisibilityModifier visibility,
             const int flags,
-            const GenericParameterList& generic_parameters
+            GenericParameterList generic_parameters
         ) :
             IAstExpression(source, context),
             _body(std::move(body)),
@@ -107,20 +115,29 @@ namespace stride::ast
             _parameters(std::move(parameters)),
             _annotated_return_type(std::move(return_type)),
             _visibility(visibility),
-            _generic_parameters(generic_parameters),
+            _generic_parameters(std::move(generic_parameters)),
             _flags(flags) {}
 
         [[nodiscard]]
-        const std::string& get_function_name() const
+        const std::string& get_plain_function_name() const
         {
             return this->_symbol.name;
         }
 
         [[nodiscard]]
-        const std::string& get_scoped_function_name() const
+        std::vector<std::unique_ptr<IAstType>> get_parameter_types() const;
+
+        [[nodiscard]]
+        const std::string& get_registered_function_name() const
         {
             return this->_symbol.internal_name;
         }
+
+        /// Returns a list of overloads for this function. For example, whenever the
+        /// function is defined with generic parameters, there will be several overloads generated
+        /// for each generic instantiation. This function returns the internalized name of each overload.
+        [[nodiscard]]
+        std::vector<FunctionImplementation> get_function_implementation_data();
 
         [[nodiscard]]
         AstBlock* get_body() override
@@ -129,18 +146,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::vector<std::unique_ptr<AstFunctionParameter>> get_parameters() const
-        {
-            std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;
-            cloned_params.reserve(this->_parameters.size());
-
-            for (const auto& param : this->_parameters)
-            {
-                cloned_params.push_back(param->clone_as<AstFunctionParameter>());
-            }
-
-            return cloned_params;
-        }
+        std::vector<std::unique_ptr<AstFunctionParameter>> get_parameters() const;
 
         /// Returns a non-owning const reference to the parameter list, avoiding the
         /// clone overhead of get_parameters() when only read access is needed.
@@ -165,19 +171,19 @@ namespace stride::ast
         [[nodiscard]]
         bool is_extern() const
         {
-            return this->_flags & SRFLAG_FN_TYPE_EXTERN;
+            return (this->_flags & SRFLAG_FN_TYPE_EXTERN) != 0;
         }
 
         [[nodiscard]]
         bool is_variadic() const
         {
-            return this->_flags & SRFLAG_FN_TYPE_VARIADIC;
+            return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
         }
 
         [[nodiscard]]
         bool is_anonymous() const
         {
-            return this->_flags & SRFLAG_FN_TYPE_ANONYMOUS;
+            return (this->_flags & SRFLAG_FN_TYPE_ANONYMOUS) != 0;
         }
 
         [[nodiscard]]
@@ -205,7 +211,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool is_generic_function() const
+        bool is_generic() const
         {
             return !this->_generic_parameters.empty();
         }
@@ -221,6 +227,8 @@ namespace stride::ast
             this->_captured_variables.push_back(symbol);
         }
 
+        definition::FunctionDefinition* get_function_definition();
+
         llvm::Value* codegen(
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
@@ -233,11 +241,25 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
+        std::string to_string() override;
+
     private:
         llvm::FunctionType* get_llvm_function_type(
             llvm::Module* module,
-            std::vector<llvm::Type*> captured_variables
+            std::vector<llvm::Type*> captured_variables,
+            const GenericTypeList& generic_instantiation_types = {}
         ) const;
+
+        static void validate_candidate(IAstFunction* candidate);
+
+        static void collect_free_variables(
+            IAstNode* node,
+            const std::shared_ptr<ParsingContext>& lambda_context,
+            const std::shared_ptr<ParsingContext>& outer_context,
+            std::vector<Symbol>& captures
+        );
+
+        static std::vector<AstReturnStatement*> collect_return_statements(const AstBlock* body);
     };
 
     class AstFunctionDeclaration
@@ -245,8 +267,6 @@ namespace stride::ast
           public IAstStatement
     {
     public:
-        using IAstStatement::IAstStatement;
-
         explicit AstFunctionDeclaration(
             const std::shared_ptr<ParsingContext>& context,
             Symbol symbol,
@@ -268,8 +288,6 @@ namespace stride::ast
                 flags,
                 generic_parameters
             ) {}
-
-        std::string to_string() override;
 
         ~AstFunctionDeclaration() override = default;
     };
@@ -299,11 +317,7 @@ namespace stride::ast
                 {}
             ) {}
 
-        std::string to_string() override;
-
         ~AstLambdaFunctionExpression() override = default;
-
-        std::string get_mangled_name() const { return ""; }; // TODO: Implement
     };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(

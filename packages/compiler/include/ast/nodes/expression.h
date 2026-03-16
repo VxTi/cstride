@@ -20,6 +20,8 @@ namespace stride::ast
 
     namespace definition
     {
+        class FieldDefinition;
+        class FunctionDefinition;
         class IDefinition;
     }
 
@@ -86,6 +88,7 @@ namespace stride::ast
         std::unique_ptr<IAstType> _type;
 
         friend class IAstFunction;
+        friend class AstIdentifier;
 
     public:
         explicit IAstExpression(
@@ -93,6 +96,16 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context
         ) :
             IAstNode(source_position, context) {}
+
+        explicit IAstExpression(
+            const SourceFragment& source_position,
+            const std::shared_ptr<ParsingContext>& context,
+            std::unique_ptr<IAstType> type
+        ) :
+            IAstExpression(source_position, context)
+        {
+            this->_type = std::move(type);
+        }
 
         ~IAstExpression() override = default;
 
@@ -187,7 +200,7 @@ namespace stride::ast
             _symbol(std::move(symbol)) {}
 
         [[nodiscard]]
-        std::optional<const definition::IDefinition*> get_definition() const;
+        std::optional<definition::IDefinition*> get_definition() const;
 
         [[nodiscard]]
         const std::string& get_name() const
@@ -377,19 +390,27 @@ namespace stride::ast
     {
         ExpressionList _arguments;
         std::unique_ptr<AstIdentifier> _function_name_identifier;
+        GenericTypeList _generic_type_arguments;
         int _flags;
+
+        definition::IDefinition* _definition =  nullptr;
 
     public:
         explicit AstFunctionCall(
             const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> function_name_identifier,
             ExpressionList arguments,
+            GenericTypeList generic_type_arguments,
             const int flags = SRFLAG_NONE
         ) :
             IAstExpression(function_name_identifier->get_source_fragment(), context),
             _arguments(std::move(arguments)),
             _function_name_identifier(std::move(function_name_identifier)),
+            _generic_type_arguments(std::move(generic_type_arguments)),
             _flags(flags) {}
+
+        [[nodiscard]]
+        definition::IDefinition* get_function_definition();
 
         [[nodiscard]]
         const ExpressionList& get_arguments() const
@@ -444,6 +465,9 @@ namespace stride::ast
 
         void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
+        [[nodiscard]]
+        const GenericTypeList& get_generic_type_arguments();
+
     private:
         [[nodiscard]]
         std::string format_function_name() const;
@@ -458,7 +482,7 @@ namespace stride::ast
         [[nodiscard]]
         llvm::Function* resolve_regular_callee(
             llvm::Module* module
-        ) const;
+        );
 
         llvm::Value* codegen_regular_function_call(
             llvm::Function* callee,
@@ -869,6 +893,12 @@ namespace stride::ast
             return !this->_generic_type_arguments.empty();
         }
 
+        void set_generic_type_arguments(GenericTypeList generic_type_arguments)
+        {
+            this->_generic_type_arguments = std::move(generic_type_arguments);
+            this->_object_type = nullptr; // Reset cached type so it re-resolves
+        }
+
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
@@ -1023,15 +1053,13 @@ namespace stride::ast
         TokenSet& set);
 
     /// Parses a variable assignment statement
-    std::optional<std::unique_ptr<AstVariableReassignment>>
-    parse_variable_reassignment(
+    std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
         const std::shared_ptr<ParsingContext>& context,
         AstIdentifier* identifier,
         TokenSet& set);
 
     /// Parses a binary arithmetic operation using precedence climbing
-    std::optional<std::unique_ptr<IAstExpression>>
-    parse_arithmetic_binary_operation_optional(
+    std::optional<std::unique_ptr<IAstExpression>> parse_arithmetic_binary_operation_optional(
         const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> lhs,
@@ -1135,4 +1163,8 @@ namespace stride::ast
 
     /// Checks whether the next tokens begin a member access: `.identifier`
     bool is_member_accessor(const TokenSet& set);
+
+    /// Checks whether the subsequent tokens can be considered a function call, after an identifier
+    /// An example would be <code>function_name()</code> or <code>function_name<type>()</code>
+    bool is_direct_function_call(const TokenSet& set);
 } // namespace stride::ast

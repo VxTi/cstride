@@ -466,6 +466,32 @@ namespace stride::ast
         {
             return _type == other;
         }
+
+        bool is_type_token() const
+        {
+            switch (this->_type)
+            {
+            case TokenType::PRIMITIVE_UINT8:
+            case TokenType::PRIMITIVE_UINT16:
+            case TokenType::PRIMITIVE_UINT32:
+            case TokenType::PRIMITIVE_UINT64:
+            case TokenType::PRIMITIVE_INT8:
+            case TokenType::PRIMITIVE_INT16:
+            case TokenType::PRIMITIVE_INT32:
+            case TokenType::PRIMITIVE_INT64:
+            case TokenType::PRIMITIVE_FLOAT32:
+            case TokenType::PRIMITIVE_FLOAT64:
+            case TokenType::PRIMITIVE_BOOL:
+            case TokenType::PRIMITIVE_STRING:
+            case TokenType::PRIMITIVE_CHAR:
+            case TokenType::PRIMITIVE_VOID:
+            case TokenType::PRIMITIVE_AUTO:
+            case TokenType::IDENTIFIER:
+                return true;
+            default:
+                return false;
+            }
+        }
     };
 
     extern std::vector<TokenDefinition> tokenTypes;

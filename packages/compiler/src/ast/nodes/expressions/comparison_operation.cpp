@@ -59,12 +59,27 @@ void AstComparisonOp::validate()
     const auto lhs_type = this->get_left()->get_type();
     const auto rhs_type = this->get_right()->get_type();
 
-    // Both sides are primitives
-    if (lhs_type->is_primitive() && rhs_type->is_primitive())
-        return;
-
     const auto lhs_primitive = cast_type<AstPrimitiveType*>(lhs_type);
     const auto rhs_primitive = cast_type<AstPrimitiveType*>(rhs_type);
+
+    // Both sides are primitives
+    if (lhs_type->is_primitive() && rhs_type->is_primitive())
+    {
+        if (lhs_primitive->get_primitive_type() == PrimitiveType::STRING || rhs_primitive->get_primitive_type() ==
+            PrimitiveType::STRING)
+        {
+            throw parsing_error(
+                ErrorType::SEMANTIC_ERROR,
+                "Cannot compare string literals",
+                {
+                    ErrorSourceReference(lhs_type->get_type_name(), _lhs->get_source_fragment()),
+                    ErrorSourceReference(rhs_type->get_type_name(), _rhs->get_source_fragment())
+                }
+            );
+        }
+        return;
+    }
+
 
     // If LHS is NIL and RHS is valid, allow the comparison (nil checks)
     if (lhs_primitive && rhs_primitive
@@ -93,7 +108,10 @@ void AstComparisonOp::validate()
     throw parsing_error(
         ErrorType::SEMANTIC_ERROR,
         "Comparison operation operands must be used on primitive or optional types",
-        this->get_source_fragment()
+        {
+            ErrorSourceReference("type " + lhs_type->get_type_name(), _lhs->get_source_fragment()),
+            ErrorSourceReference("type " + rhs_type->get_type_name(), _rhs->get_source_fragment())
+        }
     );
 }
 

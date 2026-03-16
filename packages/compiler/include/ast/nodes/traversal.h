@@ -2,6 +2,8 @@
 
 namespace stride::ast
 {
+    class IVisitor;
+    class AstFunctionCall;
     class AstPackage;
     class AstImport;
     class IAstNode;
@@ -13,24 +15,6 @@ namespace stride::ast
     class AstConditionalStatement;
     class AstReturnStatement;
     class AstBlock;
-
-    /// Visitor interface for expression nodes.
-    /// Implementations receive each expression after all its child expressions
-    /// have already been visited (bottom-up, post-order traversal).
-    class IVisitor
-    {
-    public:
-        virtual ~IVisitor() = default;
-
-        /// Called for every expression node, after its sub-expressions have been visited.
-        virtual void accept(IAstExpression* expr) {};
-
-        virtual void accept(IAstFunction* expr) {};
-
-        virtual void accept(AstImport* node) {}
-
-        virtual void accept(AstPackage* node) {}
-    };
 
     /// Traverses an AST tree and invokes an IVisitor for each expression node.
     /// Traversal is bottom-up (children are visited before their parent expression),

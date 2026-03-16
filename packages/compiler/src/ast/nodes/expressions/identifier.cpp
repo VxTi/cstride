@@ -8,11 +8,11 @@
 
 using namespace stride::ast;
 
-std::optional<const definition::IDefinition*> AstIdentifier::get_definition() const
+std::optional<definition::IDefinition*> AstIdentifier::get_definition() const
 {
     const std::string internal_name = this->get_scoped_name();
 
-    if (const auto var_def = this->get_context()->lookup_variable(internal_name, false))
+    if (auto var_def = this->get_context()->lookup_variable(internal_name, false))
     {
         return var_def;
     }

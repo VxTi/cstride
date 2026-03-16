@@ -19,7 +19,7 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_type_cast_op(
 
     auto type = parse_type(context, set, { "Expected type after 'as' in type cast operation" });
 
-    const auto source_fragment = SourceFragment::combine(lhs->get_source_fragment(), type->get_source_fragment());
+    const auto source_fragment = SourceFragment::join(lhs->get_source_fragment(), type->get_source_fragment());
 
     return std::make_unique<AstTypeCastOp>(
         source_fragment,

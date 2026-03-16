@@ -1,18 +1,36 @@
 import System::{
-    io::print,
+    io::print
 };
 
-enum Test {
-    First: 123,
-    Second: 456,
-    Third: 789
+type Array<T> = {
+    elements: T[];
+    count: i32;
+};
+
+fn arrayOf<T>(elements: T[], count: i32): Array<T> {
+    return Array<T>::{
+        elements,
+        count,
+    };
+}
+
+const increment: (i32) -> i32 = (x: i32): i32 -> {
+    return x + 1;
+};
+
+type Callback = () -> void;
+
+fn makeCb(): Callback {
+    const names = arrayOf<string>(["Toyota", "Honda", "Ford", "Toyota"], 4);
+
+    return (): void -> io::print("\x1b[32mDriving the car: %s", names.elements[1]);
 }
 
 fn main(): i32 {
 
-    const k: Test = Test::First;
+    makeCb()();
 
-    io::print("k[0] = %d", k);
+    const result: i32 = increment(10);
 
     return 0;
 }

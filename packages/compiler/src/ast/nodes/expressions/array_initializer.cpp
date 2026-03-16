@@ -45,7 +45,7 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
     const auto& last_token_pos = set.peek(-1).get_source_fragment();
     // `]` is already consumed, so we peek back at it
 
-    const auto position = SourceFragment::combine(reference_token.get_source_fragment(), last_token_pos);
+    const auto position = SourceFragment::join(reference_token.get_source_fragment(), last_token_pos);
 
     return std::make_unique<AstArray>(
         position,

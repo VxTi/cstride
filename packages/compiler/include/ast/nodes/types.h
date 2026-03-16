@@ -18,6 +18,9 @@ namespace llvm
 
 namespace stride::ast
 {
+    enum class VisibilityModifier;
+    class AstLiteral;
+
     namespace definition
     {
         class TypeDefinition;
@@ -27,6 +30,11 @@ namespace stride::ast
 
     using ObjectTypeMemberPair = std::pair<std::string, std::unique_ptr<IAstType>>;
     using ObjectTypeMemberList = std::vector<ObjectTypeMemberPair>;
+
+    using EnumMemberValueTy = std::unique_ptr<IAstNode>;
+    using EnumMemberPair = std::pair<std::string, EnumMemberValueTy>;
+
+    using FunctionParameters = std::vector<std::pair<std::string, std::unique_ptr<IAstType>>>;
 
     enum class PrimitiveType
     {
@@ -335,6 +343,7 @@ namespace stride::ast
     {
         std::vector<std::unique_ptr<IAstType>> _parameters;
         std::unique_ptr<IAstType> _return_type;
+        GenericParameterList _generic_param_names;
 
     public:
         explicit AstFunctionType(
@@ -342,16 +351,30 @@ namespace stride::ast
             const std::shared_ptr<ParsingContext>& context,
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
+            GenericParameterList generic_parameter_names = {},
             const int flags = SRFLAG_NONE
         ) :
             IAstType(source, context, flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
             _parameters(std::move(parameters)),
-            _return_type(std::move(return_type)) {}
+            _return_type(std::move(return_type)),
+            _generic_param_names(std::move(generic_parameter_names)) {}
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstType>>& get_parameter_types() const
         {
             return _parameters;
+        }
+
+        [[nodiscard]]
+        const GenericParameterList& get_generic_parameter_names() const
+        {
+            return this->_generic_param_names;
+        }
+
+        [[nodiscard]]
+        bool is_generic() const
+        {
+            return !this->_generic_param_names.empty();
         }
 
         [[nodiscard]]
@@ -440,11 +463,6 @@ namespace stride::ast
         [[nodiscard]]
         bool equals(IAstType* other) override;
 
-        bool is_castable_to(IAstType* other) override
-        {
-            return IAstType::is_castable_to(other);
-        }
-
     private:
         bool is_assignable_to_impl(IAstType* other) override;
 
@@ -506,6 +524,58 @@ namespace stride::ast
         llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
 
+    class AstEnumType
+        : public IAstType
+    {
+
+        std::vector<EnumMemberPair> _members;
+        std::string _name;
+
+    public:
+        explicit AstEnumType(
+            const SourceFragment& source,
+            const std::shared_ptr<ParsingContext>& context,
+            std::string enum_name,
+            std::vector<EnumMemberPair> members,
+            int flags = SRFLAG_NONE
+        );
+
+        [[nodiscard]]
+        std::unique_ptr<IAstNode> clone() override;
+
+        [[nodiscard]]
+        const std::vector<EnumMemberPair>& get_members() const
+        {
+            return _members;
+        }
+
+        [[nodiscard]]
+        const std::string& get_name() const
+        {
+            return _name;
+        }
+
+        [[nodiscard]]
+        std::string get_type_name() override
+        {
+            return _name;
+        }
+
+        [[nodiscard]]
+        bool equals(IAstType* other) override;
+
+        std::string to_string() override;
+
+        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+
+        void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+
+    private:
+        bool is_assignable_to_impl(IAstType* other) override;
+
+        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+    };
+
     class AstTupleType
         : public IAstType
     {
@@ -539,11 +609,6 @@ namespace stride::ast
 
         [[nodiscard]]
         bool equals(IAstType* other) override;
-
-        bool is_castable_to(IAstType* other) override
-        {
-            return IAstType::is_castable_to(other);
-        }
 
         llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
 

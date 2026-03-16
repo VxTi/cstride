@@ -79,7 +79,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(
     auto import_list = consume_import_submodules(context, set);
 
     return std::make_unique<AstImport>(
-        SourceFragment::combine(reference_token.get_source_fragment(), package_identifier->get_source_fragment()),
+        SourceFragment::join(reference_token.get_source_fragment(), package_identifier->get_source_fragment()),
         context,
         std::move(package_identifier),
         std::move(import_list)

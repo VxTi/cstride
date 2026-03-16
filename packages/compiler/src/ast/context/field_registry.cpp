@@ -5,14 +5,14 @@
 
 using namespace stride::ast;
 
-const definition::FieldDefinition* ParsingContext::get_variable_def(
+definition::FieldDefinition* ParsingContext::get_variable_def(
     const std::string& variable_name,
     const bool use_raw_name
 ) const
 {
     for (const auto& symbol_def : this->_symbols)
     {
-        if (const auto* field_definition = dynamic_cast<const definition::FieldDefinition*>(
+        if (auto* field_definition = dynamic_cast<definition::FieldDefinition*>(
             symbol_def.get()))
         {
             if (field_definition->get_internal_symbol_name() == variable_name
@@ -59,11 +59,28 @@ bool ParsingContext::is_field_defined_globally(
 void ParsingContext::define_variable_globally(
     Symbol variable_symbol,
     std::unique_ptr<IAstType> type,
-    VisibilityModifier visibility
+    VisibilityModifier visibility,
+    const bool overwrite
 ) const
 {
     if (is_field_defined_globally(variable_symbol.internal_name))
     {
+        if (overwrite)
+        {
+            for (auto& symbol_def : this->_symbols)
+            {
+                if (auto* var_def = dynamic_cast<definition::FieldDefinition*>(symbol_def.get());
+                    var_def != nullptr &&
+                    var_def->get_internal_symbol_name() == variable_symbol.internal_name)
+                {
+                    var_def->set_type(std::move(type));
+                    var_def->set_visibility(visibility);
+                    return;
+                }
+            }
+            return;
+        }
+
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Variable '{}' is already defined in global scope", variable_symbol.name),
@@ -84,7 +101,8 @@ void ParsingContext::define_variable_globally(
 void ParsingContext::define_variable(
     Symbol variable_sym,
     std::unique_ptr<IAstType> type,
-    VisibilityModifier visibility
+    VisibilityModifier visibility,
+    const bool overwrite
 )
 {
     if (this->is_global_scope())
@@ -92,13 +110,30 @@ void ParsingContext::define_variable(
         this->define_variable_globally(
             std::move(variable_sym),
             std::move(type),
-            visibility
+            visibility,
+            overwrite
         );
         return;
     }
 
     if (is_field_defined_in_scope(variable_sym.internal_name))
     {
+        if (overwrite)
+        {
+            for (auto& symbol_def : this->_symbols)
+            {
+                if (auto* var_def = dynamic_cast<definition::FieldDefinition*>(symbol_def.get());
+                    var_def != nullptr &&
+                    var_def->get_internal_symbol_name() == variable_sym.internal_name)
+                {
+                    var_def->set_type(std::move(type));
+                    var_def->set_visibility(visibility);
+                    return;
+                }
+            }
+            return;
+        }
+
         throw parsing_error(
             ErrorType::SEMANTIC_ERROR,
             std::format("Variable '{}' is already defined in this scope", variable_sym.name),
@@ -114,7 +149,7 @@ void ParsingContext::define_variable(
     );
 }
 
-const definition::FieldDefinition* ParsingContext::lookup_variable(
+definition::FieldDefinition* ParsingContext::lookup_variable(
     const std::string& name,
     const bool use_raw_name
 )
@@ -123,7 +158,7 @@ const
     auto current = this;
     while (current != nullptr)
     {
-        if (const auto def = current->get_variable_def(name, use_raw_name))
+        if (auto def = current->get_variable_def(name, use_raw_name))
         {
             return def;
         }

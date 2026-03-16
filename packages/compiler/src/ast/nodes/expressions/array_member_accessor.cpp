@@ -33,7 +33,7 @@ std::unique_ptr<AstArrayMemberAccessor> stride::ast::parse_array_member_accessor
 
     auto index_expression = parse_inline_expression(context, expression_block.value());
 
-    const auto source_pos = SourceFragment::combine(array_base->get_source_fragment(), last_src_pos);
+    const auto source_pos = SourceFragment::join(array_base->get_source_fragment(), last_src_pos);
 
     return std::make_unique<AstArrayMemberAccessor>(
         source_pos,

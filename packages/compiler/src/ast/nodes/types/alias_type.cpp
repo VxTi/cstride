@@ -148,6 +148,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
             func->get_context(),
             std::move(resolved_params),
             std::move(resolved_return),
+            func->get_generic_parameter_names(),
             func->get_flags()
         );
     }

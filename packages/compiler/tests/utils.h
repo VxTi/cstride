@@ -29,17 +29,18 @@ namespace stride::tests
         auto node = parse_sequential(context, tokens);
 
         ast::AstNodeTraverser traverser;
-        ast::ExpressionVisitor type_visitor;
+        ast::ExpressionVisitor expression_visitor;
         ast::FunctionVisitor function_visitor;
         ast::ImportVisitor import_visitor;
+
+        runtime::register_runtime_symbols(node->get_context());
 
         import_visitor.set_current_file_name("test.sr");
         traverser.visit_block(&import_visitor, node.get());
 
         traverser.visit_block(&function_visitor, node.get());
 
-        runtime::register_runtime_symbols(node->get_context());
-        traverser.visit_block(&type_visitor, node.get());
+        traverser.visit_block(&expression_visitor, node.get());
 
         node->validate();
 

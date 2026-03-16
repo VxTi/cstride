@@ -2,6 +2,7 @@
 
 #include "errors.h"
 #include "ast/symbols.h"
+#include "ast/definitions/function_definition.h"
 
 #include <algorithm>
 #include <ranges>
@@ -37,13 +38,6 @@ const ParsingContext& ParsingContext::traverse_to_root() const
     return *current;
 }
 
-void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType type)
-{
-    this->_symbols.push_back(
-        std::make_unique<IdentifiableSymbolDef>(type, symbol_name)
-    );
-}
-
 void ParsingContext::define(std::unique_ptr<IDefinition> definition)
 {
     this->_symbols.push_back(std::move(definition));
@@ -64,23 +58,6 @@ std::optional<std::unique_ptr<IDefinition>> ParsingContext::get_definition_by_in
         current = current->_parent_registry.get();
     }
     return std::nullopt;
-}
-
-const IdentifiableSymbolDef* ParsingContext::get_symbol_def(
-    const std::string& symbol_name) const
-{
-    for (const auto& symbol_def : this->_symbols)
-    {
-        if (const auto* identifier_def =
-            dynamic_cast<const IdentifiableSymbolDef*>(symbol_def.get()))
-        {
-            if (identifier_def->get_internal_symbol_name() == symbol_name)
-            {
-                return identifier_def;
-            }
-        }
-    }
-    return nullptr;
 }
 
 static size_t levenshtein_distance(const std::string& a, const std::string& b)

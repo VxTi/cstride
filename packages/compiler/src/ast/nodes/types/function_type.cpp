@@ -2,6 +2,7 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <ranges>
 #include <llvm/IR/DerivedTypes.h>
 
 using namespace stride::ast;
@@ -38,13 +39,11 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
 
     while (set.has_next() && !set.peek_next_eq(TokenType::RPAREN))
     {
-        parameters.push_back(
-            parse_type(
-                context,
-                set,
-                { "Expected parameter type", options.type_name, flags }
-            )
-        );
+        parameters.emplace_back(parse_type(
+            context,
+            set,
+            { "Expected parameter type", options.type_name, flags }
+        ));
         if (set.peek_next_eq(TokenType::RPAREN))
         {
             break;
@@ -65,12 +64,15 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
         set.expect(TokenType::RPAREN, "Expected secondary ')' after function type notation");
     }
 
+    // TODO: Resolve generic parameters in type resolution
+
     return parse_type_metadata(
         std::make_unique<AstFunctionType>(
             reference_token.get_source_fragment(),
             context,
             std::move(parameters),
             std::move(return_type),
+            EMPTY_GENERIC_PARAMETER_LIST,
             flags
         ),
         set
@@ -80,17 +82,27 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
 std::unique_ptr<IAstNode> AstFunctionType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> parameters;
+    GenericParameterList generic_parameters_clone;
+
     parameters.reserve(this->_parameters.size());
-    for (const auto& p : this->_parameters)
+    generic_parameters_clone.reserve(this->_generic_param_names.size());
+
+    for (const auto& param_ty : this->_parameters)
     {
-        parameters.push_back(p->clone_ty());
+        parameters.emplace_back(param_ty->clone_ty());
     }
+
+    generic_parameters_clone.insert(
+        generic_parameters_clone.end(),
+        this->_generic_param_names.begin(),
+        this->_generic_param_names.end());
 
     return std::make_unique<AstFunctionType>(
         this->get_source_fragment(),
         this->get_context(),
         std::move(parameters),
-        this->_return_type->clone_ty(),
+        this->get_return_type()->clone_ty(),
+        std::move(generic_parameters_clone),
         this->get_flags()
     );
 }
@@ -138,9 +150,9 @@ llvm::Type* AstFunctionType::get_llvm_type_impl(llvm::Module* module)
     std::vector<llvm::Type*> param_types;
     param_types.reserve(this->_parameters.size());
 
-    for (const auto& param : this->_parameters)
+    for (const auto& param_ty : this->_parameters)
     {
-        param_types.push_back(param->get_llvm_type(module));
+        param_types.push_back(param_ty->get_llvm_type(module));
     }
 
     llvm::Type* ret_type = this->_return_type->get_llvm_type(module);
@@ -156,8 +168,8 @@ std::string AstFunctionType::get_type_name()
     std::vector<std::string> param_strings;
     param_strings.reserve(this->_parameters.size());
 
-    for (const auto& p : this->_parameters)
-        param_strings.push_back(p->to_string());
+    for (const auto& param_ty : this->_parameters)
+        param_strings.push_back(param_ty->to_string());
 
     return std::format(
         "({}) -> {}",

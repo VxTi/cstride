@@ -57,5 +57,5 @@ namespace stride::ast
     std::unique_ptr<IAstType> infer_array_accessor_type(const AstArrayMemberAccessor* accessor, int recursion_guard);
 
     std::unique_ptr<IAstType> infer_function_type(
-        const IAstFunction* expression);
+        const IAstFunction* function);
 }

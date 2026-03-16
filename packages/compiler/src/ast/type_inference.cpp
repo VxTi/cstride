@@ -3,7 +3,9 @@
 #include "errors.h"
 #include "ast/casting.h"
 #include "ast/flags.h"
+#include "ast/generics.h"
 #include "ast/parsing_context.h"
+#include "ast/definitions/function_definition.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
@@ -18,7 +20,8 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(const AstLi
     return std::make_unique<AstPrimitiveType>(
         literal->get_source_fragment(),
         literal->get_context(),
-        literal->get_primitive_type());
+        literal->get_primitive_type()
+    );
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(AstFunctionCall* fn_call)
@@ -26,11 +29,29 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(AstFuncti
     /// --- Basic function lookup, find based on parameter signature (ignoring return type)
     const auto& context = fn_call->get_context();
 
-    if (const auto fn_def =
-            context->get_function_definition(fn_call->get_scoped_function_name(), fn_call->get_argument_types());
+    if (const auto fn_def = context->get_function_definition(
+            fn_call->get_scoped_function_name(),
+            fn_call->get_argument_types(),
+            fn_call->get_generic_type_arguments().size()
+        );
         fn_def.has_value())
     {
-        return fn_def.value()->get_type()->get_return_type()->clone_ty();
+        auto return_type = fn_def.value()->get_type()->get_return_type()->clone_ty();
+
+        // For generic function calls, resolve the return type by substituting
+        // generic parameter names with the concrete type arguments from the call site.
+        // e.g. arrayOf<string>(...) has return type Array<T> → Array<string>
+        if (const auto& generic_args = fn_call->get_generic_type_arguments();
+            !generic_args.empty())
+        {
+            const auto& param_names = fn_def.value()->get_type()->get_generic_parameter_names();
+            if (param_names.size() == generic_args.size())
+            {
+                return_type = resolve_generics(return_type.get(), param_names, generic_args);
+            }
+        }
+
+        return return_type;
     }
 
     /// --- Handling lambda functions that might be assigned to variables
@@ -63,7 +84,9 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(IBinaryOp* operation
     if (cast_expr<AstLogicalOp*>(operation) || cast_expr<AstComparisonOp*>(operation))
     {
         return std::make_unique<AstPrimitiveType>(
-            operation->get_source_fragment(),
+            SourceFragment::join(
+                operation->get_left()->get_source_fragment(),
+                operation->get_right()->get_source_fragment()),
             operation->get_context(),
             PrimitiveType::BOOL
         );
@@ -263,21 +286,23 @@ std::unique_ptr<IAstType> stride::ast::infer_object_initializer_type(const AstOb
     );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* expression)
+std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* function)
 {
     std::vector<std::unique_ptr<IAstType>> param_types;
-    param_types.reserve(expression->get_parameters().size());
+    param_types.reserve(function->get_parameters().size());
 
-    for (const auto& param : expression->get_parameters())
+    for (const auto& param : function->get_parameters())
     {
         param_types.emplace_back(param->get_type()->clone_ty());
     }
 
     return std::make_unique<AstFunctionType>(
-        expression->get_source_fragment(),
-        expression->get_context(),
+        function->get_source_fragment(),
+        function->get_context(),
         std::move(param_types),
-        expression->get_return_type()->clone_ty()
+        function->get_return_type()->clone_ty(),
+        function->get_generic_parameters(),
+        function->get_flags()
     );
 }
 
@@ -308,11 +333,12 @@ std::unique_ptr<IAstType> stride::ast::infer_identifier_type(const AstIdentifier
             identifier->get_source_fragment(),
             identifier->get_context(),
             std::move(param_types),
-            callable->get_type()->get_return_type()->clone_ty()
+            callable->get_type()->get_return_type()->clone_ty(),
+            callable->get_type()->get_generic_parameter_names()
         );
     }
 
-    if (const auto field = dynamic_cast<const FieldDefinition*>(identifier_def.value()))
+    if (const auto field = dynamic_cast<FieldDefinition*>(identifier_def.value()))
     {
         return field->get_type()->clone_ty();
     }

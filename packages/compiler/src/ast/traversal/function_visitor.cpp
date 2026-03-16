@@ -7,16 +7,16 @@
 
 using namespace stride::ast;
 
-void FunctionVisitor::accept(IAstFunction* fn_declaration)
+void FunctionVisitor::accept(IAstFunction* function)
 {
-    fn_declaration->set_type(infer_expression_type(fn_declaration));
+    function->set_type(infer_function_type(function));
 
     // Define parameters in the function's own context BEFORE traversing the body,
     // so that identifiers referencing params resolve correctly inside the body.
-    for (const auto& param : fn_declaration->get_parameters_ref())
+    for (const auto& param : function->get_parameters_ref())
     {
         const auto param_symbol = Symbol(param->get_source_fragment(), param->get_name());
-        fn_declaration->get_context()->define_variable(
+        function->get_context()->define_variable(
             param_symbol,
             param->get_type()->clone_ty(),
             VisibilityModifier::PRIVATE
@@ -24,13 +24,10 @@ void FunctionVisitor::accept(IAstFunction* fn_declaration)
     }
 
     // Forward declare the function in the symbol registry
-    if (dynamic_cast<AstFunctionDeclaration*>(fn_declaration))
-    {
-        fn_declaration->get_context()->define_function(
-            fn_declaration->get_symbol(),
-            fn_declaration->get_type()->clone_as<AstFunctionType>(),
-            fn_declaration->get_visibility(),
-            fn_declaration->get_flags()
-        );
-    }
+    function->get_context()->define_function(
+        function->get_symbol(),
+        function->get_type()->clone_as<AstFunctionType>(),
+        function->get_visibility(),
+        function->get_flags()
+    );
 }

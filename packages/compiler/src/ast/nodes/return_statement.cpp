@@ -45,7 +45,7 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
        .get_source_fragment();
 
     return std::make_unique<AstReturnStatement>(
-        SourceFragment::combine(ref_pos, end_pos),
+        SourceFragment::join(ref_pos, end_pos),
         context,
         std::move(return_value)
     );

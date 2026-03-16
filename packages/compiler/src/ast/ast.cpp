@@ -6,7 +6,6 @@
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/control_flow_statements.h"
-#include "ast/nodes/enumerables.h"
 #include "ast/nodes/for_loop.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/import.h"
@@ -156,7 +155,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
     case TokenType::KEYWORD_TYPE:
         return parse_type_definition(context, set, visibility_modifier);
     case TokenType::KEYWORD_ENUM:
-        return parse_enumerable_declaration(context, set, visibility_modifier);
+        return parse_enum_type_definition(context, set, visibility_modifier);
     case TokenType::KEYWORD_FOR:
         return parse_for_loop_statement(context, set, visibility_modifier);
     case TokenType::KEYWORD_WHILE:

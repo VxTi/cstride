@@ -1,146 +1,14 @@
-#include "errors.h"
-#include "formatting.h"
 #include "ast/casting.h"
 #include "ast/closures.h"
-#include "ast/flags.h"
 #include "ast/optionals.h"
 #include "ast/parsing_context.h"
-#include "ast/symbols.h"
-#include "ast/nodes/blocks.h"
+#include "ast/definitions/function_definition.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/types.h"
-#include "ast/tokens/token_set.h"
 
-#include <format>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include <llvm/IR/Value.h>
-#include <llvm/TargetParser/Triple.h>
 
 using namespace stride::ast;
-using namespace stride::ast::definition;
-
-std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
-    const std::shared_ptr<ParsingContext>& context,
-    AstIdentifier* identifier,
-    TokenSet& set
-)
-{
-    const auto reference_token = set.peek(-1);
-    auto function_parameter_set = collect_parenthesized_block(set);
-
-    ExpressionList function_arg_nodes;
-
-    int function_call_flags = SRFLAG_NONE;
-
-    // Parsing function parameter values
-    if (function_parameter_set.has_value())
-    {
-        auto subset = function_parameter_set.value();
-
-        if (auto initial_arg = parse_inline_expression(context, subset))
-        {
-            function_arg_nodes.push_back(std::move(initial_arg));
-
-            // Consume next parameters
-            while (subset.has_next())
-            {
-                const auto preceding = subset.expect(
-                    TokenType::COMMA,
-                    "Expected ',' between function arguments"
-                );
-
-                auto function_argument = parse_inline_expression(context, subset);
-
-                if (!function_argument)
-                {
-                    // Since the RParen is already consumed, we have to manually extract its
-                    // position with the following assumption It's possible this yields END_OF_FILE
-                    const auto len =
-                        set.peek(-1).get_source_fragment().offset - 1 -
-                        preceding.get_source_fragment().offset;
-                    throw parsing_error(
-                        ErrorType::SYNTAX_ERROR,
-                        "Expected expression for function argument",
-                        SourceFragment(
-                            subset.get_source(),
-                            preceding.get_source_fragment().offset + 1,
-                            len)
-                    );
-                }
-
-                // If the next argument is a variadic argument reference, we stop parsing more arguments and mark this function call as variadic
-                if (cast_expr<AstVariadicArgReference*>(function_argument.get()))
-                {
-                    if (subset.has_next())
-                    {
-                        subset.throw_error(
-                            "Variadic argument propagation must be the last parameter in a function call"
-                        );
-                    }
-                    function_call_flags |= SRFLAG_FN_TYPE_VARIADIC;
-
-                    break;
-                }
-
-                function_arg_nodes.push_back(std::move(function_argument));
-            }
-        }
-    }
-
-    return std::make_unique<AstFunctionCall>(
-        context,
-        identifier->clone_as<AstIdentifier>(),
-        std::move(function_arg_nodes),
-        function_call_flags
-    );
-}
-
-std::string AstFunctionCall::format_suggestion(const IDefinition* suggestion)
-{
-    if (const auto fn_call = dynamic_cast<const FunctionDefinition*>(suggestion))
-    {
-        // We'll format the arguments
-        std::vector<std::string> arg_types;
-
-        for (const auto& arg : fn_call->get_type()->get_parameter_types())
-        {
-            arg_types.push_back(arg->get_type_name());
-        }
-
-        if (arg_types.empty())
-            arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
-
-        return std::format("{}({})",
-                           fn_call->get_symbol().name,
-                           join(arg_types, ", "));
-    }
-
-    return suggestion->get_internal_symbol_name();
-}
-
-std::string AstFunctionCall::format_function_name() const
-{
-    std::vector<std::string> arg_types;
-
-    arg_types.reserve(this->_arguments.size());
-
-    for (const auto& arg : this->_arguments)
-    {
-        arg_types.push_back(arg->get_type()->to_string());
-    }
-
-    if (arg_types.empty())
-    {
-        arg_types.push_back(primitive_type_to_str(PrimitiveType::VOID));
-    }
-
-    return std::format("{}({})", this->get_function_name(), join(arg_types, ", "));
-}
 
 llvm::Value* AstFunctionCall::codegen(
     llvm::Module* module,
@@ -164,67 +32,87 @@ llvm::Value* AstFunctionCall::codegen(
         : "";
 
     throw parsing_error(
-        ErrorType::REFERENCE_ERROR,
+        ErrorType::COMPILATION_ERROR,
         std::format("Function '{}' was not found in this scope", this->format_function_name()),
         this->get_source_fragment(),
         suggested_alternative
     );
 }
 
-llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module) const
+llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
 {
-    if (const auto definition =
-            this->get_context()->get_function_definition(this->get_scoped_function_name(), this->get_argument_types());
-        definition.has_value())
+    const auto& definition = this->get_function_definition();
+
+    const AstFunctionType* fn_type = nullptr;
+
+    if (const auto* fn_definition = dynamic_cast<definition::FunctionDefinition*>(definition))
     {
-        if (llvm::Function* callee = module->getFunction(definition.value()->get_internal_symbol_name()))
+        fn_type = fn_definition->get_type();
+        if (this->_generic_type_arguments.empty())
         {
-            return callee;
+            if (llvm::Function* callee = fn_definition->get_llvm_function())
+            {
+                return callee;
+            }
         }
-
-        const auto fn_def = definition.value();
-        const auto fn_type = fn_def->get_type();
-        std::vector<llvm::Type*> param_types;
-        param_types.reserve(fn_type->get_parameter_types().size());
-
-        for (const auto& param : fn_type->get_parameter_types())
+        else if (auto* llvm_func = fn_definition->get_generic_overload_llvm_function(this->_generic_type_arguments))
         {
-            param_types.push_back(param->get_llvm_type(module));
+            return llvm_func;
         }
-
-        llvm::Type* ret_type = fn_type->get_return_type()->get_llvm_type(module);
-
-        // When propagating varargs (call has '...'), the callee receives the caller's
-        // va_list as an extra fixed pointer argument rather than as true variadic args.
-        // This lets the callee forward the va_list directly to vprintf/vscanf-style APIs.
-        bool llvm_is_variadic = false;
-        if (this->is_variadic())
-        {
-            param_types.push_back(llvm::PointerType::get(module->getContext(), 0));
-        }
-        else
-        {
-            llvm_is_variadic = fn_def->is_variadic();
-        }
-
-        llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
-            ret_type,
-            param_types,
-            llvm_is_variadic
-        );
-
-        // If we are calling a variadic function and propagating '...',
-        // the callee is actually a non-variadic function that takes a va_list.
-        // But we should use the actual function name for the lookup.
-        auto callee_cand = module->getOrInsertFunction(
-            fn_def->get_internal_symbol_name(),
-            llvm_fn_type
-        );
-
-        return llvm::dyn_cast<llvm::Function>(callee_cand.getCallee());
+    } else if (dynamic_cast<definition::FieldDefinition*>(definition))
+    {
+        // Callable variables (function pointers, lambdas) are handled by
+        // codegen_anonymous_function_call, not as regular callees.
+        return nullptr;
     }
 
-    return nullptr;
+    if (fn_type == nullptr)
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Function '{}' is not a function", this->format_function_name()),
+            this->get_source_fragment()
+        );
+    }
+
+    std::vector<llvm::Type*> param_types;
+    param_types.reserve(fn_type->get_parameter_types().size());
+
+    for (const auto& param : fn_type->get_parameter_types())
+    {
+        param_types.push_back(param->get_llvm_type(module));
+    }
+
+    llvm::Type* ret_type = fn_type->get_return_type()->get_llvm_type(module);
+
+    // When propagating varargs (call has '...'), the callee receives the caller's
+    // va_list as an extra fixed pointer argument rather than as true variadic args.
+    // This lets the callee forward the va_list directly to vprintf/vscanf-style APIs.
+    bool llvm_is_variadic = false;
+    if (this->is_variadic())
+    {
+        param_types.push_back(llvm::PointerType::get(module->getContext(), 0));
+    }
+    else
+    {
+        llvm_is_variadic = fn_type->is_variadic();
+    }
+
+    llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
+        ret_type,
+        param_types,
+        llvm_is_variadic
+    );
+
+    // If we are calling a variadic function and propagating '...',
+    // the callee is actually a non-variadic function that takes a va_list.
+    // But we should use the actual function name for the lookup.
+    auto callee_cand = module->getOrInsertFunction(
+        definition->get_internal_symbol_name(),
+        llvm_fn_type
+    );
+
+    return llvm::dyn_cast<llvm::Function>(callee_cand.getCallee());
 }
 
 llvm::Value* AstFunctionCall::codegen_regular_function_call(
@@ -343,7 +231,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     if (const auto var_def = this->get_function_name_identifier()->get_definition();
         var_def.has_value())
     {
-        const auto field_def = dynamic_cast<const FieldDefinition*>(var_def.value());
+        const auto field_def = dynamic_cast<definition::FieldDefinition*>(var_def.value());
 
         if (!field_def)
         {
@@ -366,6 +254,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
             // First: check if the variable's internal name maps to a named function in the
             // symbol table with a matching type signature. If so, call it directly without
             // any pointer indirection.
+            // We sadly cannot use `get_function_definition` here
             if (this->get_context()->get_function_definition(
                 field_def->get_internal_symbol_name(),
                 field_def->get_type()).has_value())
@@ -598,105 +487,4 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     }
 
     return nullptr;
-}
-
-void AstFunctionCall::validate()
-{
-    for (const auto& arg : this->_arguments)
-    {
-        arg->validate();
-    }
-}
-
-void AstFunctionCall::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    for (const auto& arg : this->_arguments)
-    {
-        arg->resolve_forward_references(module, builder);
-    }
-}
-
-std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() const
-{
-    if (this->_arguments.empty())
-        return {};
-
-    std::vector<std::unique_ptr<IAstType>> param_types;
-    param_types.reserve(this->_arguments.size());
-    for (const auto& arg : this->_arguments)
-    {
-        // The last parameter should be the variadic argument reference,
-        // which is not included in the type list, as this is dynamically expanded
-        // Additionally, this would mess with function lookup by signature
-        if (cast_expr<AstVariadicArgReference*>(arg.get()))
-        {
-            break;
-        }
-        param_types.push_back(arg->get_type()->clone_ty());
-    }
-    return param_types;
-}
-
-std::unique_ptr<IAstNode> AstFunctionCall::clone()
-{
-    ExpressionList cloned_args;
-    cloned_args.reserve(this->get_arguments().size());
-    for (const auto& arg : this->get_arguments())
-    {
-        cloned_args.push_back(arg->clone_as<IAstExpression>());
-    }
-
-    return std::make_unique<AstFunctionCall>(
-        this->get_context(),
-        this->get_function_name_identifier()->clone_as<AstIdentifier>(),
-        std::move(cloned_args),
-        this->_flags
-    );
-}
-
-bool AstFunctionCall::is_reducible()
-{
-    // TODO: implement
-    // Function calls can be reducible if the function returns
-    // a constant value or if all arguments are reducible.
-    return false;
-}
-
-std::optional<std::unique_ptr<IAstNode>> AstFunctionCall::reduce()
-{
-    return std::nullopt;
-}
-
-std::string AstFunctionCall::get_formatted_call() const
-{
-    std::vector<std::string> arg_names;
-    arg_names.reserve(this->_arguments.size());
-
-    for (const auto& arg : this->_arguments)
-    {
-        arg_names.push_back(arg->get_type()->get_type_name());
-    }
-
-    return std::format(
-        "{}({})",
-        this->get_function_name(),
-        join(arg_names, ", ")
-    );
-}
-
-std::string AstFunctionCall::to_string()
-{
-    std::ostringstream oss;
-
-    std::vector<std::string> arg_types;
-    for (const auto& arg : this->get_arguments())
-    {
-        arg_types.push_back(arg->to_string());
-    }
-
-    return std::format(
-        "FunctionCall({} [{}])",
-        this->get_function_name(),
-        join(arg_types, ", ")
-    );
 }
