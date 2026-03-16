@@ -199,7 +199,7 @@ llvm::Value* AstVariableReassignment::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Value* variable = this->get_identifier()->codegen(module, builder);
+    llvm::Value* variable = this->_identifier->codegen_ptr(module, builder);
 
     // Save the insertion point before codegen, as callable types (lambdas) may change it
     llvm::BasicBlock* saved_block = builder->GetInsertBlock();

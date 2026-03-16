@@ -219,6 +219,11 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
+        llvm::Value* codegen_ptr(
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder
+        );
+
         std::string to_string() override;
 
         bool is_reducible() override
@@ -555,6 +560,11 @@ namespace stride::ast
                 return this->_annotated_type->get();
 
             return std::nullopt;
+        }
+
+        void set_annotated_type(std::unique_ptr<IAstType> type)
+        {
+            this->_annotated_type = std::move(type);
         }
 
         [[nodiscard]]

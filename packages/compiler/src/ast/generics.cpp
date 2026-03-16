@@ -88,7 +88,9 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         {
             if (param_names[i] == named_type->get_name())
             {
-                return instantiated_types[i]->clone_ty();
+                auto resolved = instantiated_types[i]->clone_ty();
+                resolved->set_flags(resolved->get_flags() | named_type->get_flags());
+                return resolved;
             }
         }
 
@@ -425,6 +427,13 @@ void stride::ast::resolve_generics_in_body(
     }
     else if (auto* var_decl = cast_expr<AstVariableDeclaration*>(expr))
     {
+        if (var_decl->has_annotated_type())
+        {
+            var_decl->set_annotated_type(
+                resolve_generics(var_decl->get_annotated_type().value(), param_names, instantiated_types)
+            );
+        }
+
         if (var_decl->get_initial_value())
             resolve_generics_in_body(var_decl->get_initial_value(), param_names, instantiated_types);
     }

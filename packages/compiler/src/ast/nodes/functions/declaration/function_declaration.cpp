@@ -255,26 +255,28 @@ std::vector<FunctionImplementation> IAstFunction::get_function_implementation_da
 {
     const auto& definition = this->get_function_definition();
 
-    // If the function is not generic, we just return a singular name (the regular internalized name)
-    if (definition->get_generic_overloads().empty())
+    // If the function is generic, we return its instantiated overloads.
+    // If it's generic but has no overloads, return empty list.
+    if (this->is_generic())
     {
-        return {
-            FunctionImplementation{ this->get_registered_function_name(), definition->get_llvm_function() }
-        };
+        std::vector<FunctionImplementation> implementations;
+
+        for (const auto& [types, llvm_function, node] : definition->get_generic_overloads())
+        {
+            implementations.emplace_back(
+                get_overloaded_function_name(node->get_registered_function_name(), types),
+                llvm_function,
+                node->get_body()
+            );
+        }
+
+        return implementations;
     }
 
-    std::vector<FunctionImplementation> implementations;
-
-    for (const auto& [types, llvm_function, node] : definition->get_generic_overloads())
-    {
-        implementations.emplace_back(
-            get_overloaded_function_name(node->get_registered_function_name(), types),
-            llvm_function,
-            node->get_body()
-        );
-    }
-
-    return implementations;
+    // For non-generic functions, return the single implementation.
+    return {
+        FunctionImplementation{ this->get_registered_function_name(), definition->get_llvm_function() }
+    };
 }
 
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()

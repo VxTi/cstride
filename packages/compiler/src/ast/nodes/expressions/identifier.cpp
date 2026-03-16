@@ -33,7 +33,7 @@ std::optional<definition::IDefinition*> AstIdentifier::get_definition() const
     return std::nullopt;
 }
 
-llvm::Value* AstIdentifier::codegen(
+llvm::Value* AstIdentifier::codegen_ptr(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -75,15 +75,7 @@ llvm::Value* AstIdentifier::codegen(
 
                 if (auto* global = module->getNamedGlobal(internal_name))
                 {
-                    return builder->CreateLoad(
-                        global->getValueType(),
-                        global
-                    );
-                }
-
-                if (auto* arg = llvm::dyn_cast_or_null<llvm::Argument>(val))
-                {
-                    return arg;
+                    return global;
                 }
 
                 throw parsing_error(
@@ -94,16 +86,34 @@ llvm::Value* AstIdentifier::codegen(
         }
     }
 
-    // Check if it's a function argument
-    if (auto* arg = llvm::dyn_cast_or_null<llvm::Argument>(val))
+    if (!val)
     {
-        return arg;
+        if (const auto global = module->getNamedGlobal(internal_name))
+        {
+            return global;
+        }
+
+        if (auto* function = module->getFunction(internal_name))
+        {
+            return function;
+        }
+
+        throw parsing_error(
+            ErrorType::REFERENCE_ERROR,
+            std::format("Identifier '{}' not found in this scope", this->get_name()),
+            this->get_source_fragment()
+        );
     }
 
-    if (auto* load = llvm::dyn_cast_or_null<llvm::LoadInst>(val))
-    {
-        return load;
-    }
+    return val;
+}
+
+llvm::Value* AstIdentifier::codegen(
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder
+)
+{
+    llvm::Value* val = this->codegen_ptr(module, builder);
 
     if (auto* alloca = llvm::dyn_cast_or_null<llvm::AllocaInst>(val))
     {
@@ -115,33 +125,24 @@ llvm::Value* AstIdentifier::codegen(
         );
     }
 
-    if (const auto global = module->getNamedGlobal(internal_name))
+    if (const auto* global = llvm::dyn_cast_or_null<llvm::GlobalVariable>(val))
     {
         // Only generate a Load instruction if we are inside a BasicBlock (Function context).
         if (builder->GetInsertBlock())
         {
             return builder->CreateLoad(
                 global->getValueType(),
-                global
+                val
             );
         }
 
         // If we are in Global context (initializing a global variable), we cannot generate
         // instructions. We return the GlobalVariable* itself. This allows parent nodes (like
         // MemberAccessor) to perform Constant Folding or ConstantExpr GEPs on the address.
-        return global;
+        return val;
     }
 
-    if (auto* function = module->getFunction(internal_name))
-    {
-        return function;
-    }
-
-    throw parsing_error(
-        ErrorType::REFERENCE_ERROR,
-        std::format("Identifier '{}' not found in this scope", this->get_name()),
-        this->get_source_fragment()
-    );
+    return val;
 }
 
 std::unique_ptr<IAstNode> AstIdentifier::clone()

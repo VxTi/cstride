@@ -95,11 +95,7 @@ void IAstFunction::resolve_forward_references(
     if (const auto& overloads = definition->get_generic_overloads();
         overloads.empty())
     {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            std::format("Generic function '{}' has no instantiations", this->get_plain_function_name()),
-            this->get_source_fragment()
-        );
+        return;
     }
 
     for (const auto& [instantiated_generic_types, llvm_function, node] : definition->get_generic_overloads())
