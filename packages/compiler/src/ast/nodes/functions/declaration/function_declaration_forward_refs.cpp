@@ -200,6 +200,20 @@ void IAstFunction::collect_free_variables(
         // Not local to the lambda - check if it's in an outer scope (and is a variable, not a function)
         if (const auto outer_symbol = outer_context->lookup_variable(name, true))
         {
+            // Global variables don't need capturing - they're accessible directly
+            // Walk up contexts to find which scope owns the variable; skip if global
+            auto* ctx = outer_context.get();
+            while (ctx != nullptr)
+            {
+                if (ctx->get_variable_def(outer_symbol->get_internal_symbol_name()))
+                {
+                    if (ctx->is_global_scope())
+                        return;
+                    break;
+                }
+                ctx = ctx->get_parent_context().get();
+            }
+
             // Check if we haven't already captured this variable
             bool already_captured = false;
             for (const auto& cap : captures)

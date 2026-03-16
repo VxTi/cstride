@@ -222,7 +222,7 @@ IDefinition* AstFunctionCall::get_function_definition()
         return this->_definition;
     }
 
-    if (const auto field_def = this->get_context()->get_variable_def(
+    if (const auto field_def = this->get_context()->lookup_variable(
         this->get_scoped_function_name(),
         true
     ))

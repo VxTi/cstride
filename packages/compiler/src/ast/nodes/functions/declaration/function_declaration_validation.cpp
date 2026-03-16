@@ -110,6 +110,7 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
                 );
             }
         }
+        candidate->get_body()->validate();
         return;
     }
 
