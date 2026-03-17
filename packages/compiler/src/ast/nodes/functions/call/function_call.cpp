@@ -12,7 +12,6 @@
 
 #include <format>
 #include <ranges>
-#include <sstream>
 #include <vector>
 
 using namespace stride::ast;
@@ -270,14 +269,6 @@ std::unique_ptr<IAstNode> AstFunctionCall::clone()
     );
 }
 
-bool AstFunctionCall::is_reducible()
-{
-    // TODO: implement
-    // Function calls can be reducible if the function returns
-    // a constant value or if all arguments are reducible.
-    return false;
-}
-
 std::optional<std::unique_ptr<IAstNode>> AstFunctionCall::reduce()
 {
     return std::nullopt;
@@ -320,8 +311,6 @@ std::string AstFunctionCall::get_formatted_call() const
 
 std::string AstFunctionCall::to_string()
 {
-    std::ostringstream oss;
-
     std::vector<std::string> arg_types;
     for (const auto& arg : this->get_arguments())
     {

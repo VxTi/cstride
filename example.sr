@@ -5,32 +5,27 @@ import System::{
 type Array<T> = {
     elements: T[];
     count: i32;
+    at: (i32) -> T;
 };
 
 fn arrayOf<T>(elements: T[], count: i32): Array<T> {
     return Array<T>::{
         elements,
         count,
+        at: (index: i32): T -> elements[index]
     };
 }
-
-const increment: (i32) -> i32 = (x: i32): i32 -> {
-    return x + 1;
-};
 
 type Callback = () -> void;
 
 fn makeCb(): Callback {
     const names = arrayOf<string>(["Toyota", "Honda", "Ford", "Toyota"], 4);
 
-    return (): void -> io::print("\x1b[32mDriving the car: %s", names.elements[1]);
+    return (): void -> io::print("\x1b[32mDriving the car: %s", names.at(1));
 }
 
 fn main(): i32 {
-
     makeCb()();
-
-    const result: i32 = increment(10);
 
     return 0;
 }

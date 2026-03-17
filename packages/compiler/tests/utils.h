@@ -5,7 +5,7 @@
 #include "ast/parsing_context.h"
 #include "ast/visitor.h"
 #include "ast/nodes/blocks.h"
-#include "ast/nodes/traversal.h"
+#include "../include/ast/traversal.h"
 #include "ast/tokens/tokenizer.h"
 #include "runtime/symbols.h"
 
@@ -31,6 +31,7 @@ namespace stride::tests
         ast::AstNodeTraverser traverser;
         ast::ExpressionVisitor expression_visitor;
         ast::FunctionVisitor function_visitor;
+        ast::FunctionCallVisitor function_call_visitor;
         ast::ImportVisitor import_visitor;
 
         runtime::register_runtime_symbols(node->get_context());
@@ -39,6 +40,7 @@ namespace stride::tests
         traverser.visit_block(&import_visitor, node.get());
 
         traverser.visit_block(&function_visitor, node.get());
+        traverser.visit_block(&function_call_visitor, node.get());
 
         traverser.visit_block(&expression_visitor, node.get());
 

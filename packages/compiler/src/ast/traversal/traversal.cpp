@@ -1,4 +1,4 @@
-#include "ast/nodes/traversal.h"
+#include "../../../include/ast/traversal.h"
 
 #include "ast/casting.h"
 #include "ast/parsing_context.h"
@@ -55,10 +55,12 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         if (var_decl->get_initial_value())
             visit_expression(visitor, var_decl->get_initial_value());
     }
-    else if (const auto* fn_call = cast_expr<AstFunctionCall*>(node))
+    else if (auto* fn_call = cast_expr<AstFunctionCall*>(node))
     {
         for (const auto& arg : fn_call->get_arguments())
             visit_expression(visitor, arg.get());
+
+        visitor->accept(fn_call);
     }
     else if (const auto* array = cast_expr<AstArray*>(node))
     {

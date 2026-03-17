@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nodes/traversal.h"
+#include "traversal.h"
 
 #include <map>
 #include <string>
@@ -55,6 +55,12 @@ namespace stride::ast
     {
     public:
         void accept(IAstFunction* function) override;
+    };
+
+    class FunctionCallVisitor : public IVisitor
+    {
+    public:
+        void accept(AstFunctionCall* function_call) override;
     };
 
     class ImportVisitor : public IVisitor

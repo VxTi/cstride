@@ -26,17 +26,4 @@ void ExpressionVisitor::accept(IAstExpression* expr)
             var_decl->get_visibility()
         );
     }
-    else if (auto* function_call = dynamic_cast<AstFunctionCall*>(expr);
-        function_call != nullptr &&
-        !function_call->get_generic_type_arguments().empty()
-    )
-    {
-        auto* definition = function_call->get_function_definition();
-        if (auto* fn_def = dynamic_cast<definition::FunctionDefinition*>(definition))
-        {
-            fn_def->add_generic_overload(
-                copy_generic_type_list(function_call->get_generic_type_arguments())
-            );
-        }
-    }
 }

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "ast/parsing_context.h"
+#include "ast/definitions/definitions.h"
 #include "ast/nodes/function_declaration.h"
 
+#include <memory>
 #include <vector>
 
 namespace stride::ast::definition
@@ -58,7 +59,7 @@ namespace stride::ast::definition
             return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
         }
 
-        void add_generic_overload(GenericTypeList generic_overload_types);
+        void add_generic_instantiation(GenericTypeList generic_overload_types);
 
         [[nodiscard]]
         const std::vector<GenericFunctionOverload>& get_generic_overloads() const

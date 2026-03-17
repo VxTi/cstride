@@ -337,12 +337,12 @@ std::string stride::ast::get_overloaded_function_name(std::string function_name,
  * any generic parameter names with the concrete instantiated types.
  */
 static void resolve_expression_type(
-    stride::ast::IAstExpression* expr,
-    const stride::ast::GenericParameterList& param_names,
-    const stride::ast::GenericTypeList& instantiated_types
+    IAstExpression* expr,
+    const GenericParameterList& param_names,
+    const GenericTypeList& instantiated_types
 )
 {
-    auto inferred_type = stride::ast::infer_expression_type(expr);
+    auto inferred_type = infer_expression_type(expr);
     expr->set_type(
         stride::ast::resolve_generics(inferred_type.get(), param_names, instantiated_types)
     );

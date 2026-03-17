@@ -457,8 +457,6 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        bool is_reducible() override;
-
         std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         std::unique_ptr<IAstNode> clone() override;

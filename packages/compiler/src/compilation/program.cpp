@@ -2,7 +2,7 @@
 
 #include "ast/ast.h"
 #include "ast/visitor.h"
-#include "ast/nodes/traversal.h"
+#include "../../include/ast/traversal.h"
 #include "runtime/symbols.h"
 
 #include <iostream>
@@ -50,6 +50,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     ast::AstNodeTraverser traverser;
     ast::ExpressionVisitor expression_visitor;
     ast::FunctionVisitor function_visitor;
+    ast::FunctionCallVisitor function_call_visitor;
     ast::ImportVisitor import_visitor;
 
     //
@@ -71,7 +72,15 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     import_visitor.cross_register_symbols(this->_ast.get());
 
     //
-    // Second step - Type resolution and symbol forward declarations
+    // Generic resolution - Instantiates functions that have generic arguments
+    //
+    for (const auto& node : this->_ast->get_files() | std::views::values)
+    {
+        traverser.visit_block(&function_call_visitor, node.get());
+    }
+
+    //
+    // Third step - Type resolution and symbol forward declarations
     //
     for (const auto& node : this->_ast->get_files() | std::views::values)
     {

@@ -8,7 +8,6 @@
 using namespace stride::ast;
 
 
-
 llvm::Value* IAstFunction::codegen(
     llvm::Module* module,
     llvm::IRBuilderBase* builder
@@ -16,7 +15,21 @@ llvm::Value* IAstFunction::codegen(
 {
     llvm::Function* function = nullptr;
 
-    for (const auto& [function_name, llvm_function_val, overload_body] : this->get_function_implementation_data())
+    const auto& implementations = get_function_implementation_data();
+
+    if (implementations.empty())
+    {
+        throw parsing_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format(
+                "No instantiations for function '{}' found",
+                this->get_plain_function_name()
+            ),
+            this->get_source_fragment()
+        );
+    }
+
+    for (const auto& [function_name, llvm_function_val, overload_body] : implementations)
     {
         if (!llvm_function_val)
         {
