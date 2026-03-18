@@ -117,6 +117,12 @@ namespace stride::ast
             size_t instantiated_generic_count = 0
         ) const;
 
+        [[nodiscard]]
+        std::optional<definition::FunctionDefinition*> get_generic_function_definition(
+            const std::string& function_name,
+            size_t instantiated_generic_count = 0
+        ) const;
+
         std::optional<definition::FunctionDefinition*> get_function_definition(
             const std::string& function_name,
             IAstType* function_type

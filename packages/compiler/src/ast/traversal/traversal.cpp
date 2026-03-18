@@ -38,8 +38,8 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     // IAstFunction is an expression but needs special handling (body traversal + params)
     if (auto* fn = cast_expr<IAstFunction*>(node))
     {
-        visitor->accept(fn);
         visit_block(visitor, fn->get_body());
+        visitor->accept(fn);
     }
     else if (const auto* binary = cast_expr<IBinaryOp*>(node))
     {

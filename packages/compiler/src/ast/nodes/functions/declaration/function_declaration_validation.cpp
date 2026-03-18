@@ -19,71 +19,65 @@ void IAstFunction::validate()
     }
 
     //
-        // For generic functions, we create a new copy of the function with all parameters resolved, and do validation
-        // on that copy. This is because we want to validate the function body with the actual types that will be used in
-        // the function, rather than the generic placeholders.
-        //
-        // create a copy of this function with the parameters instantiated
-        for (const auto definition = this->get_function_definition();
-             const auto& [instantiated_generic_types, function, node] : definition->get_generic_overloads())
+    // For generic functions, we create a new copy of the function with all parameters resolved, and do validation
+    // on that copy. This is because we want to validate the function body with the actual types that will be used in
+    // the function, rather than the generic placeholders.
+    //
+    // create a copy of this function with the parameters instantiated
+    for (const auto definition = this->get_function_definition();
+         const auto& [instantiated_generic_types, function, node] : definition->get_generic_overloads())
+    {
+        auto instantiated_return_ty = resolve_generics(
+            this->_annotated_return_type.get(),
+            this->_generic_parameters,
+            instantiated_generic_types
+        );
+
+        std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
+        instantiated_function_params.reserve(this->_parameters.size());
+
+        // Temporarily update parameter types in the context so resolve_generics_in_body
+        // and subsequent validation can find the concrete types.
+        std::vector<std::pair<definition::FieldDefinition*, std::unique_ptr<IAstType>>> old_param_types;
+        for (const auto& param : this->_parameters)
         {
-            auto instantiated_return_ty = resolve_generics(
-                this->_annotated_return_type.get(),
-                this->_generic_parameters,
-                instantiated_generic_types
-            );
-
-            std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
-            instantiated_function_params.reserve(this->_parameters.size());
-
-            // Temporarily update parameter types in the context so resolve_generics_in_body
-            // and subsequent validation can find the concrete types.
-            std::vector<std::pair<definition::FieldDefinition*, std::unique_ptr<IAstType>>> old_param_types;
-            for (const auto& param : this->_parameters)
+            if (auto def = this->get_context()->lookup_variable(param->get_name(), true))
             {
-                if (auto def = this->get_context()->lookup_variable(param->get_name(), true))
-                {
-                    old_param_types.push_back({ def, def->get_type()->clone_ty() });
-                    def->set_type(resolve_generics(def->get_type(), this->_generic_parameters, instantiated_generic_types));
-                }
-
-                instantiated_function_params.push_back(
-                    std::make_unique<AstFunctionParameter>(
-                        param->get_source_fragment(),
-                        param->get_context(),
-                        param->get_name(),
-                        resolve_generics(param->get_type(), this->_generic_parameters, instantiated_generic_types)
-                    )
-                );
+                old_param_types.push_back({ def, def->get_type()->clone_ty() });
+                def->set_type(resolve_generics(def->get_type(), this->_generic_parameters, instantiated_generic_types));
             }
 
-            // Clone the body and resolve generic types on every expression within it.
-            auto resolved_body = this->_body->clone_as<AstBlock>();
-            resolve_generics_in_body(
-                resolved_body.get(),
-                this->_generic_parameters,
-                instantiated_generic_types
+            instantiated_function_params.push_back(
+                std::make_unique<AstFunctionParameter>(
+                    param->get_source_fragment(),
+                    param->get_context(),
+                    param->get_name(),
+                    resolve_generics(param->get_type(), this->_generic_parameters, instantiated_generic_types)
+                )
             );
-
-            node = std::make_unique<AstFunctionDeclaration>(
-                this->get_context(),
-                this->_symbol,
-                std::move(instantiated_function_params),
-                std::move(resolved_body),
-                std::move(instantiated_return_ty),
-                this->get_visibility(),
-                this->_flags,
-                EMPTY_GENERIC_PARAMETER_LIST // Omit generics - They've been resolved
-            );
-
-            validate_candidate(node.get());
-
-            // Restore original parameter types in the context
-            for (auto& [def, old_type] : old_param_types)
-            {
-                def->set_type(std::move(old_type));
-            }
         }
+
+        // Clone the body and resolve generic types on every expression within it.
+
+        node = std::make_unique<AstFunctionDeclaration>(
+            this->get_context(),
+            this->_symbol,
+            std::move(instantiated_function_params),
+            this->_body->clone_as<AstBlock>(),
+            std::move(instantiated_return_ty),
+            this->get_visibility(),
+            this->_flags,
+            EMPTY_GENERIC_PARAMETER_LIST // Omit generics - They've been resolved
+        );
+
+        validate_candidate(node.get());
+
+        // Restore original parameter types in the context
+        for (auto& [def, old_type] : old_param_types)
+        {
+            def->set_type(std::move(old_type));
+        }
+    }
 }
 
 void IAstFunction::validate_candidate(IAstFunction* candidate)

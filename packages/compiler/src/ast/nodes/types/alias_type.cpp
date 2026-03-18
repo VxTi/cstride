@@ -160,9 +160,7 @@ IAstType* AstAliasType::get_underlying_type()
 {
     // Prevent reinstantiating type if it's a complex type
     if (this->_underlying_type != nullptr)
-    {
         return this->_underlying_type.get();
-    }
 
     const auto& reference_type_definition = this->get_type_definition();
 

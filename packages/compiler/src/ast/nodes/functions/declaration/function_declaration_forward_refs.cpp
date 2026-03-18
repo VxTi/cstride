@@ -122,11 +122,6 @@ void IAstFunction::resolve_forward_references(
         }
 
         auto resolved_body = this->_body->clone_as<AstBlock>();
-        resolve_generics_in_body(
-            resolved_body.get(),
-            this->_generic_parameters,
-            instantiated_generic_types
-        );
 
         node = std::make_unique<AstFunctionDeclaration>(
             this->get_context(),
