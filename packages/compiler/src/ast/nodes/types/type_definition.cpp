@@ -1,19 +1,18 @@
 #include "ast/nodes/type_definition.h"
 
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
 using namespace stride::ast;
 
 std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_definition(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     VisibilityModifier modifier
 )
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_TYPE);
-    const auto& ref_pos = reference_token.get_source_fragment();
+    const auto& ref_pos = reference_token.get_source_position();
 
     const auto type_name = set.expect(TokenType::IDENTIFIER, "Expected type name").get_lexeme();
 
@@ -22,30 +21,14 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_definition(
     set.expect(TokenType::EQUALS);
 
     auto type = parse_type(
-        context,
         set,
         { "Expected type definition", type_name, SRFLAG_NONE, generic_params }
     );
     const auto& last_token = set.expect(TokenType::SEMICOLON, "Expected ';' after type definition");
-    const auto& last_pos = last_token.get_source_fragment();
-
-    const auto source_fragment = SourceFragment::join(ref_pos, last_pos);
-    const auto type_name_symbol = resolve_internal_name(
-        context->get_name(),
-        source_fragment,
-        { type_name }
-    );
-
-    context->define_type(
-        type_name_symbol,
-        type->clone_ty(),
-        generic_params,
-        modifier
-    );
+    const auto& last_pos = last_token.get_source_position();
 
     return std::make_unique<AstTypeDefinition>(
-        source_fragment,
-        context,
+        SourcePosition::join(ref_pos, last_pos),
         type_name,
         std::move(type),
         modifier,
@@ -54,22 +37,22 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_definition(
 }
 
 void AstTypeDefinition::resolve_forward_references(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
-    this->_type->resolve_forward_references(module, builder);
+    this->_type->resolve_forward_references(symbol_table, module, builder);
 }
 
-llvm::Value* AstTypeDefinition::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstTypeDefinition::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
-    return this->_type->codegen(module, builder);
+    return this->_type->codegen(symbol_table, module, builder);
 }
 
 std::unique_ptr<IAstNode> AstTypeDefinition::clone()
 {
     return std::make_unique<AstTypeDefinition>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_name,
         this->_type->clone_ty(),
         this->_visibility,

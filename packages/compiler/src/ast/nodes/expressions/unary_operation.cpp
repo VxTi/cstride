@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
@@ -54,13 +54,10 @@ bool requires_identifier_operand(const UnaryOpType op)
     }
 }
 
-std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_op(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_op(TokenSet& set)
 {
     const auto& op_type_tok = set.peek_next();
-    const auto& op_type_pos = op_type_tok.get_source_fragment();
+    const auto& op_type_pos = op_type_tok.get_source_position();
 
     // -- Infix parsing
     if (const auto op_type = get_unary_op_type(op_type_tok.get_type(), /*is_infix = */ true);
@@ -69,7 +66,7 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
         set.next(); // Consume operator
 
         // Recursive call to handle chained unaries like !!x or - -x etc.
-        auto rhs_expr = parse_binary_unary_op(context, set);
+        auto rhs_expr = parse_binary_unary_op(set);
         if (!rhs_expr)
         {
             set.throw_error("Expected expression after unary operator");
@@ -82,23 +79,21 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
             set.throw_error("Unary operator requires identifier operand");
         }
 
-        const auto rhs_expr_pos = rhs_expr->get()->get_source_fragment();
-        const auto source = SourceFragment(
-            op_type_pos.source,
+        const auto rhs_expr_pos = rhs_expr->get()->get_source_position();
+        const auto source = SourcePosition(
             op_type_pos.offset,
             rhs_expr_pos.offset + rhs_expr_pos.length - op_type_pos.offset
         );
 
         return std::make_unique<AstUnaryOp>(
             source,
-            context,
             op_type.value(),
             std::move(rhs_expr.value())
         );
     }
 
     // Parse Atom (Primary Expression)
-    auto expr = parse_inline_expression_part(context, set);
+    auto expr = parse_inline_expression_part(set);
 
     // Postfix Parsing
     if (set.peek_next_eq(TokenType::DOUBLE_PLUS) || set.peek_next_eq(TokenType::DOUBLE_MINUS))
@@ -113,16 +108,14 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
             set.throw_error("Postfix operator requires identifier operand");
         }
 
-        const auto& expr_pos = expr->get_source_fragment();
-        const auto source = SourceFragment(
-            expr_pos.source,
+        const auto& expr_pos = expr->get_source_position();
+        const auto source = SourcePosition(
             expr_pos.offset,
             expr_pos.offset + expr_pos.length - op_type_pos.offset
         );
 
         expr = std::make_unique<AstUnaryOp>(
             source,
-            context,
             type,
             std::move(expr)
         );
@@ -157,9 +150,9 @@ std::optional<UnaryOpType> stride::ast::get_unary_op_type(const TokenType type, 
     return std::nullopt;
 }
 
-void AstUnaryOp::validate()
+void AstUnaryOp::validate(const SymbolTable* symbol_table)
 {
-    this->_operand->validate();
+    this->_operand->validate(symbol_table);
     const auto operand_type = this->_operand->get_type();
 
     const auto op = this->get_op_type();
@@ -171,10 +164,10 @@ void AstUnaryOp::validate()
     {
         if (!operand_type->is_mutable())
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 "Cannot modify immutable value",
-                this->get_source_fragment()
+                this->get_source_position()
             );
         }
     }
@@ -185,13 +178,13 @@ void AstUnaryOp::validate()
         if (const auto prim = cast_type<AstPrimitiveType*>(operand_type);
             !prim || (!prim->is_integer_ty() && !prim->is_fp()))
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format("Invalid type '{}' for {} operand",
                             operand_type->to_string(),
                             op == UnaryOpType::PLUS ? "unary plus" : "negation"
                 ),
-                this->get_source_fragment()
+                this->get_source_position()
             );
         }
     }
@@ -208,24 +201,24 @@ void AstUnaryOp::validate()
         case UnaryOpType::NEGATE:
             if (!is_int && !is_fp)
             {
-                throw parsing_error(
+                throw stride_error(
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Invalid type '{}' for {} operand",
                         operand_type->to_string(),
                         op == UnaryOpType::PLUS ? "unary plus" : "negation"
                     ),
-                    this->get_source_fragment());
+                    this->get_source_position());
             }
             break;
         case UnaryOpType::COMPLEMENT:
             if (!is_int)
             {
-                throw parsing_error(
+                throw stride_error(
                     ErrorType::TYPE_ERROR,
                     std::format("Invalid type '{}' for bitwise complement",
                                 operand_type->to_string()),
-                    this->get_source_fragment());
+                    this->get_source_position());
             }
             break;
         case UnaryOpType::DECREMENT_INFIX:
@@ -242,10 +235,10 @@ void AstUnaryOp::validate()
                     ? "infix decrement"
                     : "postfix decrement";
 
-                throw parsing_error(
+                throw stride_error(
                     ErrorType::TYPE_ERROR,
                     std::format("Invalid type '{}' for {} operand", operand_type->to_string(), operand_name),
-                    this->get_source_fragment());
+                    this->get_source_position());
             }
             break;
         default:
@@ -255,6 +248,7 @@ void AstUnaryOp::validate()
 }
 
 llvm::Value* AstUnaryOp::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -267,15 +261,15 @@ llvm::Value* AstUnaryOp::codegen(
 
         if (!identifier)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 "Operand must be an identifier for this operation",
-                this->get_source_fragment());
+                this->get_source_position());
         }
 
         auto internal_name = identifier->get_scoped_name();
 
-        if (const auto definition = this->get_context()->lookup_variable(
+        if (const auto definition = symbol_table->lookup_variable(
             identifier->get_name(),
             true))
         {
@@ -301,10 +295,10 @@ llvm::Value* AstUnaryOp::codegen(
         // Welp, that's it I guess
         if (!var_addr)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format("Unknown variable '{}'", internal_name),
-                this->get_source_fragment());
+                this->get_source_position());
         }
 
         // Address Of (&x) just returns the address
@@ -324,10 +318,10 @@ llvm::Value* AstUnaryOp::codegen(
         }
         else
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format("Cannot determine type of variable '{}'",internal_name),
-                this->get_source_fragment());
+                std::format("Cannot determine type of variable '{}'", internal_name),
+                this->get_source_position());
         }
 
         // Increment / Decrement
@@ -360,7 +354,7 @@ llvm::Value* AstUnaryOp::codegen(
         return this->is_postfix_operation() ? loaded_val : new_val;
     }
 
-    auto* val = get_operand().codegen(module, builder);
+    auto* val = get_operand().codegen(symbol_table, module, builder);
 
     if (!val)
     {
@@ -411,10 +405,10 @@ llvm::Value* AstUnaryOp::codegen(
         return builder->CreateNot(val, "not");
     case UnaryOpType::DEREFERENCE:
         // Requires type system to know what we are pointing to
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             "Dereference not implemented yet due to opaque pointers",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     default:
         return nullptr;
@@ -424,8 +418,7 @@ llvm::Value* AstUnaryOp::codegen(
 std::unique_ptr<IAstNode> AstUnaryOp::clone()
 {
     return std::make_unique<AstUnaryOp>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_op_type(),
         this->_operand->clone_as<IAstExpression>()
     );

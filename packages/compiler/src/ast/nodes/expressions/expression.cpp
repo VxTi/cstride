@@ -12,10 +12,11 @@
 using namespace stride::ast;
 
 llvm::Value* IAstExpression::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
-    throw parsing_error(
+    throw stride_error(
         "Expression codegen not implemented, this must be implemented by subclasses");
 }
 
@@ -25,25 +26,25 @@ std::string IAstExpression::to_string()
 }
 
 std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
     std::unique_ptr<IAstExpression> result;
 
-    if (auto lit = parse_literal_optional(context, set); lit.has_value())
+    if (auto lit = parse_literal_optional(set);
+        lit.has_value())
     {
         result = std::move(lit.value());
     }
     // Will try to parse <name>::{ ... }
     else if (is_struct_initializer(set))
     {
-        result = parse_object_initializer(context, set);
+        result = parse_object_initializer(set);
     }
     // Will try to parse [ ... ]
     else if (is_array_initializer(set))
     {
-        result = parse_array_initializer(context, set);
+        result = parse_array_initializer(set);
     }
     // Could either be a function call, or object/array access
     else if (set.peek_next_eq(TokenType::IDENTIFIER))
@@ -51,12 +52,11 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
         const auto reference_token = set.peek_next();
         // Mangled name including module, e.g., `Math__PI`
         auto identifier = parse_segmented_identifier(
-            context,
             set,
             "Expected identifier in expression"
         );
 
-        if (auto reassignment = parse_variable_reassignment(context, identifier.get(), set);
+        if (auto reassignment = parse_variable_reassignment(identifier.get(), set);
             reassignment.has_value())
         {
             return std::move(reassignment.value());
@@ -65,7 +65,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
         // Named function invocations, e.g., `<identifier>(...)` or `<module>::<identifier>(...)`
         if (is_direct_function_call(set))
         {
-            result = parse_function_call(context, identifier.get(), set);
+            result = parse_function_call(identifier.get(), set);
         }
         else
         {
@@ -81,14 +81,14 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
             || (set.peek_eq(TokenType::RPAREN, 1) && // Checks for "():"
                 set.peek_eq(TokenType::COLON, 2)))
         {
-            result = parse_anonymous_fn_expression(context, set);
+            result = parse_anonymous_fn_expression(set);
         }
         else
         {
             set.next();
             // Fixed: Use parse_inline_expression (full expression parser) instead of
             // parse_inline_expression_part to allow binary operations inside parentheses.
-            auto expr = parse_inline_expression(context, set);
+            auto expr = parse_inline_expression(set);
             // TODO: If we have a comma next, it might be a tuple expression
             set.expect(TokenType::RPAREN, "Expected ')' after expression");
             result = std::move(expr);
@@ -97,10 +97,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
     else if (set.peek_next_eq(TokenType::THREE_DOTS))
     {
         const auto& ref = set.next();
-        result = std::make_unique<AstVariadicArgReference>(
-            ref.get_source_fragment(),
-            context
-        );
+        result = std::make_unique<AstVariadicArgReference>(ref.get_source_position());
     }
     else
     {
@@ -115,15 +112,15 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
     {
         if (is_member_accessor(set))
         {
-            result = parse_chained_member_access(context, set, std::move(result));
+            result = parse_chained_member_access(set, std::move(result));
         }
         else if (set.peek_next_eq(TokenType::LSQUARE_BRACKET))
         {
-            result = parse_array_member_accessor(context, set, std::move(result));
+            result = parse_array_member_accessor(set, std::move(result));
         }
         else if (set.peek_next_eq(TokenType::LPAREN))
         {
-            result = parse_indirect_call(context, set, std::move(result));
+            result = parse_indirect_call(set, std::move(result));
         }
         else
         {
@@ -143,13 +140,10 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
  * Hierarchy: Logical > Comparison > Arithmetic > Unary > Atom
  */
 
-std::unique_ptr<IAstExpression> parse_arithmetic_tier(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::unique_ptr<IAstExpression> parse_arithmetic_tier(TokenSet& set)
 {
     // 1. Term (Unary / Primary)
-    auto lhs_opt = parse_binary_unary_op(context, set);
+    auto lhs_opt = parse_binary_unary_op(set);
     if (!lhs_opt)
     {
         set.throw_error("Expected expression");
@@ -157,17 +151,13 @@ std::unique_ptr<IAstExpression> parse_arithmetic_tier(
     auto lhs = std::move(lhs_opt.value());
 
     // Highest precedence: Type Cast (as)
-    while (auto cast_expr = parse_type_cast_op(context, set, lhs.get()))
+    while (auto cast_expr = parse_type_cast_op(set, lhs.get()))
     {
         lhs = std::move(cast_expr.value());
     }
 
     // 2. Arithmetic Loop (handled by parse_arithmetic_binary_operation_optional)
-    if (auto arith = parse_arithmetic_binary_operation_optional(
-        context,
-        set,
-        std::move(lhs),
-        1)
+    if (auto arith = parse_arithmetic_binary_operation_optional(set, std::move(lhs), 1)
     )
     {
         return std::move(arith.value());
@@ -176,19 +166,17 @@ std::unique_ptr<IAstExpression> parse_arithmetic_tier(
 }
 
 std::unique_ptr<IAstExpression> parse_comparison_tier(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
-    auto lhs = parse_arithmetic_tier(context, set);
+    auto lhs = parse_arithmetic_tier(set);
 
     while (auto op = get_comparative_op_type(set.peek_next_type()))
     {
         const auto token = set.next();
-        auto rhs = parse_arithmetic_tier(context, set);
+        auto rhs = parse_arithmetic_tier(set);
         lhs = std::make_unique<AstComparisonOp>(
-            stride::SourceFragment::join(lhs->get_source_fragment(), rhs->get_source_fragment()),
-            context,
+            stride::SourcePosition::join(lhs->get_source_position(), rhs->get_source_position()),
             std::move(lhs),
             op.value(),
             std::move(rhs)
@@ -197,20 +185,16 @@ std::unique_ptr<IAstExpression> parse_comparison_tier(
     return lhs;
 }
 
-std::unique_ptr<IAstExpression> parse_logical_tier(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::unique_ptr<IAstExpression> parse_logical_tier(TokenSet& set)
 {
-    auto lhs = parse_comparison_tier(context, set);
+    auto lhs = parse_comparison_tier(set);
 
     while (auto op = get_logical_op_type(set.peek_next_type()))
     {
         const auto token = set.next();
-        auto rhs = parse_comparison_tier(context, set);
+        auto rhs = parse_comparison_tier(set);
         lhs = std::make_unique<AstLogicalOp>(
-            stride::SourceFragment::join(lhs->get_source_fragment(), rhs->get_source_fragment()),
-            context,
+            stride::SourcePosition::join(lhs->get_source_position(), rhs->get_source_position()),
             std::move(lhs),
             op.value(),
             std::move(rhs)
@@ -222,7 +206,6 @@ std::unique_ptr<IAstExpression> parse_logical_tier(
 // Kept for backward compatibility / external usage if any, but now updated to use correct tiers for
 // RHS
 std::optional<std::unique_ptr<IAstExpression>> parse_logical_operation_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> lhs)
 {
@@ -233,12 +216,11 @@ std::optional<std::unique_ptr<IAstExpression>> parse_logical_operation_optional(
     {
         set.next();
 
-        auto rhs = parse_comparison_tier(context, set);
+        auto rhs = parse_comparison_tier(set);
         // Note: calling parse_comparison_tier here is safer than parse_inline_expression_part
 
         return std::make_unique<AstLogicalOp>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             std::move(lhs),
             logical_op.value(),
             std::move(rhs));
@@ -249,7 +231,6 @@ std::optional<std::unique_ptr<IAstExpression>> parse_logical_operation_optional(
 
 // Kept for backward compatibility / external usage if any
 std::optional<std::unique_ptr<IAstExpression>> parse_comparative_operation_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> lhs)
 {
@@ -261,11 +242,10 @@ std::optional<std::unique_ptr<IAstExpression>> parse_comparative_operation_optio
     {
         set.next();
 
-        auto rhs = parse_arithmetic_tier(context, set);
+        auto rhs = parse_arithmetic_tier(set);
 
         return std::make_unique<AstComparisonOp>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             std::move(lhs),
             comparative_op.value(),
             std::move(rhs)
@@ -275,28 +255,24 @@ std::optional<std::unique_ptr<IAstExpression>> parse_comparative_operation_optio
     return lhs;
 }
 
-std::unique_ptr<IAstExpression> parse_expression_internal(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::unique_ptr<IAstExpression> parse_expression_internal(TokenSet& set)
 {
     if (!set.has_next())
     {
         set.throw_error("Unexpected end of input while parsing expression");
     }
 
-    return parse_logical_tier(context, set);
+    return parse_logical_tier(set);
 }
 
 /**
  * General expression parsing. These can occur in global / function scopes
  */
 std::unique_ptr<IAstExpression> stride::ast::parse_standalone_expression(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
-    auto expr = parse_expression_internal(context, set);
+    auto expr = parse_expression_internal(set);
 
     set.expect(TokenType::SEMICOLON, "Expected ';' after expression");
 
@@ -304,15 +280,13 @@ std::unique_ptr<IAstExpression> stride::ast::parse_standalone_expression(
 }
 
 std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
-    return parse_expression_internal(context, set);
+    return parse_expression_internal(set);
 }
 
 std::unique_ptr<AstIdentifier> stride::ast::parse_segmented_identifier(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const std::string& error_message)
 {
@@ -321,7 +295,7 @@ std::unique_ptr<AstIdentifier> stride::ast::parse_segmented_identifier(
     const auto initial_identifier = set.expect(TokenType::IDENTIFIER, error_message);
     segments.push_back(initial_identifier.get_lexeme());
 
-    std::optional<SourceFragment> last_fragment = std::nullopt;
+    std::optional<SourcePosition> last_fragment = std::nullopt;
 
     while (set.peek_eq(TokenType::DOUBLE_COLON, 0)
         && set.peek_eq(TokenType::IDENTIFIER, 1))
@@ -332,15 +306,14 @@ std::unique_ptr<AstIdentifier> stride::ast::parse_segmented_identifier(
             error_message
         );
         segments.push_back(subseq_iden.get_lexeme());
-        last_fragment = subseq_iden.get_source_fragment();
+        last_fragment = subseq_iden.get_source_position();
     }
 
     const auto source_pos = last_fragment.has_value()
-        ? SourceFragment::join(initial_identifier.get_source_fragment(), last_fragment.value())
-        : initial_identifier.get_source_fragment();
+        ? SourcePosition::join(initial_identifier.get_source_position(), last_fragment.value())
+        : initial_identifier.get_source_position();
 
     return std::make_unique<AstIdentifier>(
-        context,
         Symbol(source_pos, resolve_internal_name(segments))
     );
 }

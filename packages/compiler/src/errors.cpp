@@ -27,78 +27,9 @@ std::string stride::error_type_to_string(const ErrorType error_type)
 std::string stride::make_source_error(
     const ErrorType error_type,
     const std::string& error,
-    const SourceFragment& source_position,
-    const std::string& suggestion)
-{
-    const auto error_type_str = error_type_to_string(error_type);
-    const auto source_file = source_position.source;
-
-    if (source_file->source.empty() || source_position.offset >= source_file->
-                                                                 source.length())
-    {
-        return std::format(
-            "\n\033[0;31m┃ in {}\n\033[0;31m┃ {}\n\033[0;31m┃ \x1b[31m{}\x1b[0m\n\033[0;31m┃\n\033[0;31m{}",
-            source_file->path.empty() ? "unknown" : source_file->path,
-            error_type_str,
-            error,
-            suggestion.empty() ? "" : std::format("┃ {}", suggestion));
-    }
-
-    size_t line_start = source_position.offset;
-    while (line_start > 0 && source_file->source[line_start - 1] != '\n')
-    {
-        line_start--;
-    }
-
-    size_t line_end = source_position.offset;
-    while (line_end < source_file->source.length() && source_file->source[
-        line_end] != '\n')
-    {
-        line_end++;
-    }
-
-    size_t line_number = 1;
-    for (size_t i = 0; i < line_start; i++)
-    {
-        if (source_file->source[i] == '\n')
-        {
-            line_number++;
-        }
-    }
-
-    // Not static: must reflect the current call's source/offset.
-    const std::string line_str = source_file->source.substr(
-        line_start,
-        line_end - line_start);
-
-    const auto line_nr_str = std::to_string(line_number);
-    const size_t column_in_line = source_position.offset - line_start;
-
-    // Clamp underline length to the current line.
-    const size_t max_len =
-        line_str.size() > column_in_line
-        ? (line_str.size() - column_in_line)
-        : 0;
-    const size_t underline_len = std::min(source_position.length, max_len);
-
-    const size_t column_offset = column_in_line + line_nr_str.length() - 1;
-
-    return std::format(
-        "\n\033[0;31m┃ {} in \x1b[4m{}\x1b[0m\n\033[0;31m┃\n\033[0;31m┃ {}\n\033[0;31m┃\n\033[0;31m┃ \x1b[0;97m{} \x1b[37m{}\x1b[0m\n\033[0;31m┃  {} {}{}",
-        error_type_str,
-        source_file->path,
-        error,
-        line_nr_str,
-        line_str,
-        std::string(column_offset, ' '),
-        std::string(underline_len, '^'),
-        suggestion.empty() ? "" : std::format("\n┃ {}", suggestion));
-}
-
-std::string stride::make_source_error(
-    const ErrorType error_type,
-    const std::string& error,
-    const std::vector<ErrorSourceReference>& references)
+    const std::vector<ErrorSourceReference>& references,
+    const std::string& src
+    )
 {
     if (references.empty())
     {
@@ -119,8 +50,6 @@ std::string stride::make_source_error(
             source_file->path,
             error);
     }
-
-    const auto& src = source_file->source;
 
     // Compute line start, end, and 1-based number for a source offset.
     struct LineInfo

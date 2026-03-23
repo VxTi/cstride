@@ -3,8 +3,7 @@
 #include "errors.h"
 #include "ast/closures.h"
 #include "ast/modifiers.h"
-#include "ast/parsing_context.h"
-#include "ast/symbols.h"
+#include "ast/symbol_table.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
@@ -16,7 +15,6 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include <llvm/IR/Verifier.h>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -25,7 +23,6 @@ using namespace stride::ast::definition;
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     VisibilityModifier modifier
 )
@@ -50,8 +47,6 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const auto fn_name_tok = set.expect(TokenType::IDENTIFIER, "Expected function name");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
-    auto function_context = std::make_shared<ParsingContext>(context, ContextType::FUNCTION);
-
     GenericParameterList generic_parameter_names = parse_generic_declaration(set);
 
     if (function_flags & SRFLAG_FN_TYPE_EXTERN && !generic_parameter_names.empty())
@@ -65,7 +60,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     // Parameter parsing
     if (!set.peek_next_eq(TokenType::RPAREN))
     {
-        parse_function_parameters(function_context, set, parameters, function_flags);
+        parse_function_parameters(set, parameters, function_flags);
 
         if (!set.peek_next_eq(TokenType::RPAREN))
         {
@@ -79,28 +74,28 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     set.expect(TokenType::COLON, "Expected a colon after function definition");
 
     // Return type doesn't have the same flags as the function, hence NONE
-    auto return_type = parse_type(context, set, { "Expected return type in function header" });
+    auto return_type = parse_type(set, { "Expected return type in function header" });
 
-    const auto& position = SourceFragment::join(
-        reference_token.get_source_fragment(),
-        return_type->get_source_fragment());
-    auto sym_function_name = Symbol(position, context->get_name(), fn_name);
+    const auto position = SourcePosition::join(
+        reference_token.get_source_position(),
+        return_type->get_source_position()
+    );
 
     std::unique_ptr<AstBlock> body = nullptr;
 
     if (function_flags & SRFLAG_FN_TYPE_EXTERN)
     {
         set.expect(TokenType::SEMICOLON, "Expected ';' after extern function declaration");
-        body = AstBlock::create_empty(function_context, position);
+        body = AstBlock::create_empty(position);
     }
     else
     {
-        body = parse_block(function_context, set);
+        body = parse_block(set);
     }
 
     return std::make_unique<AstFunctionDeclaration>(
-        function_context,
-        sym_function_name,
+        position,
+        fn_name,
         std::move(parameters),
         std::move(body),
         std::move(return_type),
@@ -110,30 +105,26 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     );
 }
 
-std::unique_ptr<AstBlock> consume_anonymous_fn_body(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+std::unique_ptr<AstBlock> consume_anonymous_fn_body(TokenSet& set)
 {
     if (!set.peek_next_eq(TokenType::LBRACE))
     {
-        auto expr = parse_inline_expression(context, set);
+        auto expr = parse_inline_expression(set);
 
-        const auto src_frag = expr->get_source_fragment();
+        const auto src_frag = expr->get_source_position();
         std::vector<std::unique_ptr<IAstNode>> body_nodes;
         body_nodes.push_back(std::move(expr));
 
         return std::make_unique<AstBlock>(
             src_frag,
-            context,
             std::move(body_nodes)
         );
     }
 
-    return parse_block(context, set);
+    return parse_block(set);
 }
 
 std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -141,10 +132,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
     int function_flags = SRFLAG_FN_TYPE_ANONYMOUS;
-    auto function_context = std::make_shared<ParsingContext>(
-        context,
-        ContextType::FUNCTION
-    );
 
     // Parses expressions like:
     // (<param1>: <type1>, ...): <ret_type> -> {}
@@ -152,7 +139,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
         header_definition.has_value() && header_definition->has_next())
     {
         parse_function_parameters(
-            function_context,
             header_definition.value(),
             parameters,
             function_flags
@@ -161,7 +147,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
 
     set.expect(TokenType::COLON, "Expected ':' after lambda function header definition");
     auto return_type = parse_type(
-        function_context,
         set,
         { "Expected type after anonymous function header definition" }
     );
@@ -170,17 +155,11 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
         "Expected '->' after lambda parameters"
     );
 
-    auto lambda_body = consume_anonymous_fn_body(function_context, set);
+    auto lambda_body = consume_anonymous_fn_body(set);
 
     static int anonymous_lambda_id = 0;
 
-    auto symbol_name = Symbol(
-        { set.get_source(),
-          reference_token.get_source_fragment().offset,
-          lambda_arrow.get_source_fragment().offset -
-          reference_token.get_source_fragment().offset },
-        ANONYMOUS_FN_PREFIX + std::to_string(anonymous_lambda_id++)
-    );
+    const auto lambda_function_name = std::format("{}{}", ANONYMOUS_FN_PREFIX, anonymous_lambda_id++);
 
     std::vector<std::unique_ptr<IAstType>> cloned_params;
     cloned_params.reserve(parameters.size());
@@ -190,8 +169,8 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     }
 
     return std::make_unique<AstLambdaFunctionExpression>(
-        function_context,
-        symbol_name,
+        SourcePosition::join(reference_token.get_source_position(), lambda_arrow.get_source_position()),
+        lambda_function_name,
         std::move(parameters),
         std::move(lambda_body),
         std::move(return_type),
@@ -227,23 +206,23 @@ std::vector<std::unique_ptr<IAstType>> IAstFunction::get_parameter_types() const
     return types;
 }
 
-FunctionDefinition* IAstFunction::get_function_definition()
+FunctionDefinition* IAstFunction::get_function_definition(const SymbolTable* symbol_table)
 {
     if (this->_function_definition != nullptr)
         return this->_function_definition;
 
-    const auto& definition = this->get_context()->get_function_definition(
-        this->get_registered_function_name(),
+    const auto& definition = symbol_table->get_function_definition(
+        this->get_function_name(),
         this->get_parameter_types(),
         this->get_generic_parameters().size()
     );
 
     if (!definition.has_value())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::REFERENCE_ERROR,
-            std::format("Function definition for '{}' not found in context", this->get_registered_function_name()),
-            this->get_source_fragment()
+            std::format("Function definition for '{}' not found in context", this->get_function_name()),
+            this->get_source_position()
         );
     }
 
@@ -251,9 +230,9 @@ FunctionDefinition* IAstFunction::get_function_definition()
     return this->_function_definition;
 }
 
-std::vector<FunctionImplementation> IAstFunction::get_function_implementation_data()
+std::vector<FunctionImplementation> IAstFunction::get_function_implementation_data(const SymbolTable* symbol_table)
 {
-    const auto& definition = this->get_function_definition();
+    const auto& definition = this->get_function_definition(symbol_table);
 
     // If the function is generic, we return its instantiated overloads.
     // If it's generic but has no overloads, return empty list.
@@ -264,7 +243,7 @@ std::vector<FunctionImplementation> IAstFunction::get_function_implementation_da
         for (const auto& [types, llvm_function, node] : definition->get_generic_overloads())
         {
             implementations.emplace_back(
-                get_overloaded_function_name(node->get_registered_function_name(), types),
+                get_overloaded_function_name(node->get_function_name(), types),
                 llvm_function,
                 node->get_body()
             );
@@ -275,15 +254,14 @@ std::vector<FunctionImplementation> IAstFunction::get_function_implementation_da
 
     // For non-generic functions, return the single implementation.
     return {
-        FunctionImplementation{ this->get_registered_function_name(), definition->get_llvm_function() }
+        FunctionImplementation{ this->get_function_name(), definition->get_llvm_function() }
     };
 }
 
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()
 {
     return std::make_unique<AstFunctionParameter>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_name(),
         this->get_type()->clone_ty()
     );
@@ -300,9 +278,8 @@ std::unique_ptr<IAstNode> IAstFunction::clone()
     }
 
     return std::make_unique<IAstFunction>(
-        this->get_source_fragment(),
-        this->get_context(),
-        this->_symbol,
+        this->get_source_position(),
+        this->get_function_name(),
         std::move(cloned_params),
         this->_body->clone_as<AstBlock>(),
         this->_annotated_return_type->clone_ty(),
@@ -328,8 +305,8 @@ std::string IAstFunction::to_string()
 
     return std::format(
         "Function(name: {}(internal: {}), params: [{}], body: {}{} -> {})",
-        this->is_anonymous() ? "<anonymous>" : this->get_plain_function_name(),
-        this->get_registered_function_name(),
+        this->is_anonymous() ? "<anonymous>" : this->get_function_name(),
+        this->get_function_name(),
         params,
         body_str,
         this->is_extern() ? " (extern)" : "",

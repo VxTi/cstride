@@ -1,7 +1,8 @@
 #include "../../../include/ast/traversal.h"
 
+#include "ast/ast.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/visitor.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
@@ -13,16 +14,44 @@
 #include "ast/nodes/module.h"
 #include "ast/nodes/package.h"
 #include "ast/nodes/return_statement.h"
+#include "ast/nodes/type_definition.h"
 #include "ast/nodes/while_loop.h"
 
+#include <iostream>
 #include <ranges>
 
 using namespace stride::ast;
 
-void AstNodeTraverser::visit_block(IVisitor* visitor, const AstBlock* node)
+#define CONTEXT_NAME_DELIMITER ("::")
+
+void AstNodeTraverser::traverse(IVisitor* visitor, const AstBranch* branch)
+{
+    this->_context_name = "";
+    this->_current_context_type = ContextType::GLOBAL;
+    this->_current_symbol_table = this->_root_symbol_table;
+
+    try
+    {
+        this->visit(visitor, branch->get_node());
+    } catch (const stride_error& e)
+    {
+        std::cerr << make_source_error(e.error_type, e.error, e.references, branch->get_file_content()) << std::endl;
+    }
+}
+
+void AstNodeTraverser::visit_block(IVisitor* visitor, AstBlock* node)
 {
     if (!node)
         return;
+
+    if (node->get_symbol_table() == nullptr)
+    {
+        node->set_symbol_table(
+            std::make_unique<SymbolTable>(_context_name, _current_context_type, _current_symbol_table)
+        );
+    }
+
+    _current_symbol_table = node->get_symbol_table();
 
     for (const auto& child : node->get_children())
     {
@@ -36,12 +65,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         return;
 
     // IAstFunction is an expression but needs special handling (body traversal + params)
-    if (auto* fn = cast_expr<IAstFunction*>(node))
-    {
-        visit_block(visitor, fn->get_body());
-        visitor->accept(fn);
-    }
-    else if (const auto* binary = cast_expr<IBinaryOp*>(node))
+    if (const auto* binary = cast_expr<IBinaryOp*>(node))
     {
         visit_expression(visitor, binary->get_left());
         visit_expression(visitor, binary->get_right());
@@ -60,7 +84,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         for (const auto& arg : fn_call->get_arguments())
             visit_expression(visitor, arg.get());
 
-        visitor->accept(fn_call);
+        visitor->accept_function_call_node(this->_current_symbol_table.get(), fn_call);
     }
     else if (const auto* array = cast_expr<AstArray*>(node))
     {
@@ -91,70 +115,26 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     {
         // Visit the base expression so its type is resolved before the accessor's type is inferred.
         visit_expression(visitor, chained->get_base());
-        // visit_expression(visitor, chained->get_followup());
     }
     else if (auto* function_node = cast_expr<IAstFunction*>(node))
     {
         visit_block(visitor, function_node->get_body());
-        visitor->accept(function_node);
+        visitor->accept_function_node(this->_current_symbol_table.get(), function_node);
     }
-    else if (auto* type_cast = cast_expr<AstTypeCastOp*>(node))
+    else if (const auto* type_cast = cast_expr<AstTypeCastOp*>(node))
     {
         visit_expression(visitor, type_cast->get_value());
-        visitor->accept(type_cast);
     }
-    else if (auto* indirect_call = cast_expr<AstIndirectCall*>(node))
+    else if (const auto* indirect_call = cast_expr<AstIndirectCall*>(node))
     {
         for (const auto& arg : indirect_call->get_args())
         {
             visit_expression(visitor, arg.get());
         }
         visit_expression(visitor, indirect_call->get_callee());
-        visitor->accept(indirect_call);
     }
 
-    // AstLiteral, AstIdentifier, AstVariadicArgReference,
-    // AstArrayMemberAccessor (base/index already handled above) — leaf nodes, no children.
-
-    visitor->accept(node);
-}
-
-void AstNodeTraverser::visit_conditional_statement(IVisitor* visitor, AstConditionalStatement* node)
-{
-    visit_expression(visitor, node->get_condition());
-    visit_block(visitor, node->get_body());
-    if (node->get_else_body())
-        visit_block(visitor, node->get_else_body());
-}
-
-void AstNodeTraverser::visit_while_loop(IVisitor* visitor, AstWhileLoop* node)
-{
-    if (node->get_condition())
-        visit_expression(visitor, node->get_condition());
-    visit_block(visitor, node->get_body());
-}
-
-void AstNodeTraverser::visit_for_loop(IVisitor* visitor, AstForLoop* node)
-{
-    if (node->get_initializer())
-        visit_expression(visitor, node->get_initializer());
-    if (node->get_condition())
-        visit_expression(visitor, node->get_condition());
-    if (node->get_incrementor())
-        visit_expression(visitor, node->get_incrementor());
-    visit_block(visitor, node->get_body());
-}
-
-void AstNodeTraverser::visit_return_statement(IVisitor* visitor, const AstReturnStatement* node)
-{
-    if (node->get_return_expression().has_value())
-        visit_expression(visitor, node->get_return_expression().value().get());
-}
-
-void AstNodeTraverser::visit_variable_declaration(IVisitor* visitor, AstVariableDeclaration* node)
-{
-    visitor->accept(node);
-    visit_expression(visitor, node->get_initial_value());
+    visitor->accept(this->_current_symbol_table.get(), node);
 }
 
 void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
@@ -166,42 +146,69 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
 
     if (auto* conditional = dynamic_cast<AstConditionalStatement*>(node))
     {
-        visit_conditional_statement(visitor, conditional);
+        visit(visitor, conditional->get_condition());
+        visit(visitor, conditional->get_body());
+
+        if (conditional->get_else_body())
+            visit(visitor, conditional->get_else_body());
     }
     else if (auto* while_loop = dynamic_cast<AstWhileLoop*>(node))
     {
-        visit_while_loop(visitor, while_loop);
+        if (while_loop->get_condition())
+            visit(visitor, while_loop->get_condition());
+
+        visit(visitor, while_loop->get_body());
     }
     else if (auto* for_loop = dynamic_cast<AstForLoop*>(node))
     {
-        visit_for_loop(visitor, for_loop);
+        if (for_loop->get_initializer())
+            visit(visitor, for_loop->get_initializer());
+
+        if (for_loop->get_condition())
+            visit(visitor, for_loop->get_condition());
+
+        if (for_loop->get_incrementor())
+            visit(visitor, for_loop->get_incrementor());
+
+        visit_block(visitor, for_loop->get_body());
     }
     else if (const auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
     {
-        visit_return_statement(visitor, return_stmt);
+        if (return_stmt->get_return_expression().has_value())
+            visit(visitor, return_stmt->get_return_expression().value().get());
+    }
+    else if (auto* import = dynamic_cast<AstImport*>(node))
+    {
+        visitor->accept_import_node(this->_current_symbol_table.get(), import);
+    }
+    else if (auto* package = dynamic_cast<AstPackage*>(node))
+    {
+        visitor->accept_package_node(this->_current_symbol_table.get(), package);
+    }
+    else if (auto* type_def = dynamic_cast<AstTypeDefinition*>(node))
+    {
+        visitor->accept_type_definition_node(this->_current_symbol_table.get(), type_def);
     }
     else if (auto* module = dynamic_cast<AstModule*>(node))
     {
-        visit_block(visitor, module->get_body());
+        const auto& previous_context_name = this->_context_name;
+
+        this->_current_context_type = ContextType::MODULE;
+        this->_context_name = join(
+            { previous_context_name, module->get_name() },
+            CONTEXT_NAME_DELIMITER
+        );
+        visit(visitor, module->get_body());
     }
-    else if (const auto* block = dynamic_cast<AstBlock*>(node))
+    else if (auto* block = dynamic_cast<AstBlock*>(node))
     {
         visit_block(visitor, block);
     }
     else if (auto* expr = dynamic_cast<IAstExpression*>(node))
     {
         visit_expression(visitor, expr);
+        return;
     }
-    else if (auto* variable_declaration = dynamic_cast<AstVariableDeclaration*>(node))
-    {
-        visit_variable_declaration(visitor, variable_declaration);
-    }
-    else if (auto* import_node = dynamic_cast<AstImport*>(node))
-    {
-        visitor->accept(import_node);
-    }
-    else if (auto* package_node = dynamic_cast<AstPackage*>(node))
-    {
-        visitor->accept(package_node);
-    }
+
+    visitor->accept(this->_current_symbol_table.get(), node);
 }

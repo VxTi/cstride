@@ -2,7 +2,7 @@
 
 #include "files.h"
 #include "ast/modifiers.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/control_flow_statements.h"
@@ -25,7 +25,7 @@ std::unique_ptr<Ast> Ast::parse_files(const std::vector<FilePath>& files)
 {
     auto ast = std::make_unique<Ast>();
 
-    std::vector<std::future<std::pair<FilePath, std::unique_ptr<AstBlock>>>> futures;
+    std::vector<std::future<std::pair<std::string, std::unique_ptr<AstBranch>>>> futures;
     futures.reserve(files.size());
 
     for (const auto& file : files)
@@ -45,39 +45,44 @@ std::unique_ptr<Ast> Ast::parse_files(const std::vector<FilePath>& files)
     {
         auto [file_path, node] = future.get();
 
-        ast->_files.emplace(file_path, std::move(node));
+        ast->_branches.emplace(file_path, std::move(node));
     }
 
     return ast;
 }
 
-std::pair<FilePath, std::unique_ptr<AstBlock>> Ast::parse_file(const FilePath& path)
+std::pair<FilePath, std::unique_ptr<AstBranch>> Ast::parse_file(const FilePath& path)
 {
-    const auto source_file = read_file(path);
-    auto tokens = tokenizer::tokenize(source_file);
+    auto source_file = read_file(path);
+    auto tokens = tokenizer::tokenize(source_file.get());
 
-    const auto context = std::make_shared<ParsingContext>();
+    const auto context = std::make_shared<SymbolTable>();
 
-    auto file_node = parse_sequential(context, tokens);
+    auto file_node = parse_sequential(tokens);
 
-    return { path, std::move(file_node) };
+    return {
+        path, std::make_unique<AstBranch>(
+            std::move(source_file),
+            std::move(file_node)
+        )
+    };
 }
 
 void Ast::print() const
 {
-    for (const auto& [file_name, node] : this->_files)
+    for (const auto& [file_name, branch] : this->_branches)
     {
         std::cout << "--- " << file_name << " --- " << std::endl;
-        std::cout << node->to_string() << std::endl;
+        std::cout << branch->get_node()->to_string() << std::endl;
     }
 }
 
 void Ast::optimize()
 {
-    for (const auto& [file_name, node] : this->_files)
+    for (const auto& [file_name, branch] : this->_branches)
     {
         std::vector<std::unique_ptr<IAstNode>> new_children;
-        for (auto& child_ptr : node->get_children())
+        for (auto& child_ptr : branch->get_node()->get_children())
         {
             IAstNode* child = child_ptr.get();
 
@@ -95,20 +100,23 @@ void Ast::optimize()
             }
             // If not reducible or reduction failed, move the original node
             // This requires changing the loop to take ownership or clone
-            new_children.push_back(std::unique_ptr<ast::IAstNode>(child));
+            new_children.push_back(std::unique_ptr<IAstNode>(child));
         }
 
-        this->_files[file_name] = std::make_unique<AstBlock>(
-            node->get_source_fragment(),
-            node->get_context(),
+        auto reduced_block = std::make_unique<AstBlock>(
+            branch->get_node()->get_source_position(),
             std::move(new_children)
+        );
+        reduced_block->set_symbol_table(branch->get_node()->get_symbol_table());
+
+        this->_branches[file_name] = std::make_unique<AstBranch>(
+            std::unique_ptr<SourceFile>(branch->get_source_file()),
+            std::move(reduced_block)
         );
     }
 }
 
-std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+std::unique_ptr<IAstNode> stride::ast::parse_next_statement(TokenSet& set)
 {
     // Phase 1 - These sequences are simple to parse; they have no visibility modifiers, hence we
     // can just assume that their first keyword determines their body.
@@ -117,19 +125,19 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
     switch (set.peek_next().get_type())
     {
     case TokenType::KEYWORD_IF:
-        return parse_if_statement(context, set);
+        return parse_if_statement(set);
     case TokenType::KEYWORD_RETURN:
-        return parse_return_statement(context, set);
+        return parse_return_statement(set);
     case TokenType::KEYWORD_MODULE:
-        return parse_module_statement(context, set);
+        return parse_module_statement(set);
     case TokenType::KEYWORD_PACKAGE:
-        return parse_package_declaration(context, set);
+        return parse_package_declaration(set);
     case TokenType::KEYWORD_IMPORT:
-        return parse_import_statement(context, set);
+        return parse_import_statement(set);
     case TokenType::KEYWORD_CONTINUE:
-        return parse_continue_statement(context, set);
+        return parse_continue_statement(set);
     case TokenType::KEYWORD_BREAK:
-        return parse_break_statement(context, set);
+        return parse_break_statement(set);
 
     // Modifiers. These are used in the next phase of parsing.
     case TokenType::KEYWORD_PUBLIC:
@@ -151,29 +159,26 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
     case TokenType::KEYWORD_ASYNC:
     case TokenType::KEYWORD_FN:
     case TokenType::KEYWORD_EXTERN:
-        return parse_fn_declaration(context, set, visibility_modifier);
+        return parse_fn_declaration(set, visibility_modifier);
     case TokenType::KEYWORD_TYPE:
-        return parse_type_definition(context, set, visibility_modifier);
+        return parse_type_definition(set, visibility_modifier);
     case TokenType::KEYWORD_ENUM:
-        return parse_enum_type_definition(context, set, visibility_modifier);
+        return parse_enum_type_definition(set, visibility_modifier);
     case TokenType::KEYWORD_FOR:
-        return parse_for_loop_statement(context, set, visibility_modifier);
+        return parse_for_loop_statement(set, visibility_modifier);
     case TokenType::KEYWORD_WHILE:
-        return parse_while_loop_statement(context, set, visibility_modifier);
+        return parse_while_loop_statement(set, visibility_modifier);
     case TokenType::KEYWORD_LET:
     case TokenType::KEYWORD_CONST:
-        return parse_variable_declaration(context, set, visibility_modifier);
+        return parse_variable_declaration(set, visibility_modifier);
     default:
         break;
     }
 
-    return parse_standalone_expression(context, set);
+    return parse_standalone_expression(set);
 }
 
-std::unique_ptr<AstBlock> stride::ast::parse_sequential(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::unique_ptr<AstBlock> stride::ast::parse_sequential(TokenSet& set)
 {
     std::vector<std::unique_ptr<IAstNode>> nodes = {};
 
@@ -181,14 +186,13 @@ std::unique_ptr<AstBlock> stride::ast::parse_sequential(
 
     while (set.has_next())
     {
-        if (auto result = parse_next_statement(context, set))
+        if (auto result = parse_next_statement(set))
         {
             nodes.push_back(std::move(result));
         }
     }
 
     return std::make_unique<AstBlock>(
-        initial_token.get_source_fragment(),
-        context,
+        initial_token.get_source_position(),
         std::move(nodes));
 }

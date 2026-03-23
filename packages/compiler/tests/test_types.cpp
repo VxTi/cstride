@@ -1,4 +1,4 @@
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "utils.h"
 
 #include <gtest/gtest.h>

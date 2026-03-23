@@ -3,8 +3,8 @@
 
 using namespace stride::ast;
 
-void AstFunctionCall::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
+void AstFunctionCall::resolve_forward_references(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     for (const auto& arg : this->_arguments)
-        arg->resolve_forward_references(module, builder);
+        arg->resolve_forward_references(symbol_table, module, builder);
 }

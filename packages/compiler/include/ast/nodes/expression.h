@@ -1,9 +1,13 @@
 #pragma once
 
-#include <utility>
-
+#include "ast_node.h"
 #include "errors.h"
+#include "ast/flags.h"
+#include "ast/generics.h"
 #include "ast/symbols.h"
+#include "ast/nodes/types.h"
+
+#include <utility>
 
 namespace llvm
 {
@@ -16,7 +20,7 @@ namespace stride::ast
     enum class TokenType;
     class AstLiteral;
     class AstFunctionParameter;
-    class ParsingContext;
+    class SymbolTable;
 
     namespace definition
     {
@@ -91,25 +95,20 @@ namespace stride::ast
         friend class AstIdentifier;
 
     public:
-        explicit IAstExpression(
-            const SourceFragment& source_position,
-            const std::shared_ptr<ParsingContext>& context
-        ) :
-            IAstNode(source_position, context) {}
+        explicit IAstExpression(const SourcePosition& source_position) :
+            IAstNode(source_position) {}
 
         explicit IAstExpression(
-            const SourceFragment& source_position,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& position,
             std::unique_ptr<IAstType> type
         ) :
-            IAstExpression(source_position, context)
-        {
-            this->_type = std::move(type);
-        }
+            IAstNode(position),
+            _type(std::move(type)) {}
 
         ~IAstExpression() override = default;
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
@@ -120,10 +119,10 @@ namespace stride::ast
         {
             if (!this->_type)
             {
-                throw parsing_error(
+                throw stride_error(
                     ErrorType::COMPILATION_ERROR,
                     "Unable to deduce type for expression",
-                    this->get_source_fragment()
+                    this->get_source_position()
                 );
             }
             return this->_type.get();
@@ -156,11 +155,10 @@ namespace stride::ast
 
     public:
         explicit AstArray(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             ExpressionList elements
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _elements(std::move(elements)) {}
 
         [[nodiscard]]
@@ -170,13 +168,13 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
 
-        void validate() override;
-
         void resolve_forward_references(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
@@ -190,17 +188,18 @@ namespace stride::ast
         : public IAstExpression
     {
         Symbol _symbol;
+        definition::IDefinition* _definition = nullptr;
 
     public:
-        explicit AstIdentifier(
-            const std::shared_ptr<ParsingContext>& context,
-            Symbol symbol
-        ) :
-            IAstExpression(symbol.symbol_position, context),
+        explicit AstIdentifier(Symbol symbol) :
+            IAstExpression(symbol.symbol_position),
             _symbol(std::move(symbol)) {}
 
         [[nodiscard]]
-        std::optional<definition::IDefinition*> get_definition() const;
+        definition::IDefinition* get_definition() const
+        {
+            return this->_definition;
+        }
 
         [[nodiscard]]
         const std::string& get_name() const
@@ -215,14 +214,15 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
 
         llvm::Value* codegen_ptr(
             llvm::Module* module,
-            llvm::IRBuilderBase* builder
-        );
+            const llvm::IRBuilderBase* builder
+        ) const;
 
         std::string to_string() override;
 
@@ -237,6 +237,8 @@ namespace stride::ast
         }
 
         std::unique_ptr<IAstNode> clone() override;
+
+        void resolve_definition(const SymbolTable* symbol_table);
     };
 
     class AstArrayMemberAccessor
@@ -247,12 +249,11 @@ namespace stride::ast
 
     public:
         explicit AstArrayMemberAccessor(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> array_base,
             std::unique_ptr<IAstExpression> index_expr
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _array_base(std::move(array_base)),
             _index_accessor_expr(std::move(index_expr)) {}
 
@@ -269,6 +270,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
@@ -278,7 +280,7 @@ namespace stride::ast
 
         std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -294,12 +296,11 @@ namespace stride::ast
 
     public:
         explicit AstChainedExpression(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> base,
             std::unique_ptr<IAstExpression> followup
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _base(std::move(base)),
             _followup(std::move(followup)) {}
 
@@ -316,6 +317,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
@@ -328,10 +330,11 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
     private:
         llvm::Value* codegen_global_member_accessor(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) const;
@@ -347,12 +350,11 @@ namespace stride::ast
 
     public:
         explicit AstIndirectCall(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> callee,
             ExpressionList args
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _callee(std::move(callee)),
             _args(std::move(args)) {}
 
@@ -369,6 +371,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
@@ -387,7 +390,7 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
     };
 
     class AstFunctionCall
@@ -398,24 +401,23 @@ namespace stride::ast
         GenericTypeList _generic_type_arguments;
         int _flags;
 
-        definition::IDefinition* _definition =  nullptr;
+        definition::IDefinition* _definition = nullptr;
 
     public:
         explicit AstFunctionCall(
-            const std::shared_ptr<ParsingContext>& context,
             std::unique_ptr<AstIdentifier> function_name_identifier,
             ExpressionList arguments,
             GenericTypeList generic_type_arguments,
             const int flags = SRFLAG_NONE
         ) :
-            IAstExpression(function_name_identifier->get_source_fragment(), context),
+            IAstExpression(function_name_identifier->get_source_position()),
             _arguments(std::move(arguments)),
             _function_name_identifier(std::move(function_name_identifier)),
             _generic_type_arguments(std::move(generic_type_arguments)),
             _flags(flags) {}
 
         [[nodiscard]]
-        definition::IDefinition* get_function_definition();
+        definition::IDefinition* get_function_definition(const SymbolTable* symbol_table);
 
         [[nodiscard]]
         const ExpressionList& get_arguments() const
@@ -453,6 +455,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
@@ -461,12 +464,13 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate() override;
-
         [[nodiscard]]
         std::string get_formatted_call() const;
 
-        void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        void resolve_forward_references(
+            SymbolTable* symbol_table,
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder) override;
 
         [[nodiscard]]
         const GenericTypeList& get_generic_type_arguments();
@@ -478,16 +482,19 @@ namespace stride::ast
         static std::string format_suggestion(const definition::IDefinition* suggestion);
 
         llvm::Value* codegen_anonymous_function_call(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) const;
 
         [[nodiscard]]
         llvm::Function* resolve_regular_callee(
+            const SymbolTable* symbol_table,
             llvm::Module* module
         );
 
         llvm::Value* codegen_regular_function_call(
+            SymbolTable* symbol_table,
             llvm::Function* callee,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
@@ -501,48 +508,36 @@ namespace stride::ast
         std::unique_ptr<IAstExpression> _initial_value;
         const VisibilityModifier _visibility;
 
-        const Symbol _symbol;
+        std::string _variable_name;
 
         const int _flags;
 
     public:
         explicit AstVariableDeclaration(
-            const std::shared_ptr<ParsingContext>& context,
-            Symbol symbol,
+            const SourcePosition& position,
+            std::string variable_name,
             std::optional<std::unique_ptr<IAstType>> variable_type,
             std::unique_ptr<IAstExpression> initial_value,
-            VisibilityModifier visibility,
+            const VisibilityModifier visibility,
             const int flags = SRFLAG_NONE
         ) :
-            IAstExpression(symbol.symbol_position, context),
+            IAstExpression(position),
+            _variable_name(std::move(variable_name)),
             _annotated_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)),
             _visibility(visibility),
-            _symbol(std::move(symbol)),
             _flags(flags) {}
 
         [[nodiscard]]
         const std::string& get_variable_name() const
         {
-            return this->_symbol.name;
+            return this->_variable_name;
         }
 
         [[nodiscard]]
         const VisibilityModifier& get_visibility() const
         {
             return this->_visibility;
-        }
-
-        [[nodiscard]]
-        Symbol get_symbol() const
-        {
-            return this->_symbol;
-        }
-
-        [[nodiscard]]
-        const std::string& get_internal_name() const
-        {
-            return this->_symbol.internal_name;
         }
 
         [[nodiscard]]
@@ -574,14 +569,16 @@ namespace stride::ast
         std::string to_string() override;
 
         void resolve_forward_references(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -605,12 +602,11 @@ namespace stride::ast
         friend class AstComparisonOp;
 
         explicit IBinaryOp(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> lsh,
             std::unique_ptr<IAstExpression> rsh
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _lhs(std::move(lsh)),
             _rhs(std::move(rsh)) {}
 
@@ -634,18 +630,12 @@ namespace stride::ast
 
     public:
         explicit AstBinaryArithmeticOp(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<IAstExpression> right
         ) :
-            IBinaryOp(
-                source,
-                context,
-                std::move(left),
-                std::move(right)
-            ),
+            IBinaryOp(source, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -655,6 +645,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
@@ -665,8 +656,6 @@ namespace stride::ast
         std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
         std::unique_ptr<IAstNode> clone() override;
-
-        void validate() override;
     };
 
     class AstLogicalOp
@@ -676,13 +665,12 @@ namespace stride::ast
 
     public:
         explicit AstLogicalOp(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<IAstExpression> right
         ) :
-            IBinaryOp(source, context, std::move(left), std::move(right)),
+            IBinaryOp(source, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -692,12 +680,13 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -709,13 +698,12 @@ namespace stride::ast
 
     public:
         explicit AstComparisonOp(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<IAstExpression> right
         ) :
-            IBinaryOp(source, context, std::move(left), std::move(right)),
+            IBinaryOp(source, std::move(left), std::move(right)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -725,12 +713,13 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -743,12 +732,11 @@ namespace stride::ast
 
     public:
         explicit AstUnaryOp(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             const UnaryOpType op,
             std::unique_ptr<IAstExpression> operand
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _op_type(op),
             _operand(std::move(operand)) {}
 
@@ -772,6 +760,7 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
@@ -782,7 +771,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -798,13 +787,12 @@ namespace stride::ast
 
     public:
         explicit AstVariableReassignment(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<AstIdentifier> identifier,
             const MutativeAssignmentType op,
             std::unique_ptr<IAstExpression> value
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _identifier(std::move(identifier)),
             _value(std::move(value)),
             _operator(op) {}
@@ -834,11 +822,13 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
 
         void resolve_forward_references(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
@@ -849,7 +839,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -866,13 +856,12 @@ namespace stride::ast
 
     public:
         explicit AstObjectInitializer(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string struct_name,
             std::vector<StructMemberInitializerPair> member_initializers,
             GenericTypeList generic_type_arguments = {}
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _object_type_name(std::move(struct_name)),
             _member_initializers(std::move(member_initializers)),
             _generic_type_arguments(std::move(generic_type_arguments)) {}
@@ -907,30 +896,31 @@ namespace stride::ast
             this->_object_type = nullptr; // Reset cached type so it re-resolves
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        void resolve_forward_references(SymbolTable* symbol_table,
+                                        llvm::Module* module,
+                                        llvm::IRBuilderBase* builder) override;
 
     private:
-        std::unique_ptr<AstObjectType> get_instantiated_object_type();
+        std::unique_ptr<AstObjectType> get_instantiated_object_type(const SymbolTable* symbol_table);
     };
 
     class AstVariadicArgReference
         : public IAstExpression
     {
     public:
-        explicit AstVariadicArgReference(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context) :
-            IAstExpression(source, context) {}
+        explicit AstVariadicArgReference(const SourcePosition& source) :
+            IAstExpression(source) {}
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
@@ -957,11 +947,10 @@ namespace stride::ast
 
     public:
         explicit AstTupleInitializer(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             ExpressionList members
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _members(std::move(members)) {}
 
         [[nodiscard]]
@@ -971,14 +960,13 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
         std::unique_ptr<IAstNode> clone() override;
-
-        void validate() override;
     };
 
     class AstTypeCastOp
@@ -989,12 +977,11 @@ namespace stride::ast
 
     public:
         explicit AstTypeCastOp(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> value,
             std::unique_ptr<IAstType> target_type
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _value(std::move(value)),
             _target_type(std::move(target_type)) {}
 
@@ -1011,12 +998,13 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -1028,47 +1016,36 @@ namespace stride::ast
      * # * # * # * # * # * # * # * # * # * # * # * # * # * # * # */
 
     /// Parses a complete standalone expression from tokens
-    std::unique_ptr<IAstExpression> parse_standalone_expression(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::unique_ptr<IAstExpression> parse_standalone_expression(TokenSet& set);
 
     /// Parses an expression that appears inline, e.g., within a statement or as a sub-expression
-    std::unique_ptr<IAstExpression> parse_inline_expression(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::unique_ptr<IAstExpression> parse_inline_expression(TokenSet& set);
 
     /// Parses a single part of a standalone expression
-    std::unique_ptr<IAstExpression> parse_inline_expression_part(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::unique_ptr<IAstExpression> parse_inline_expression_part(TokenSet& set);
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         VisibilityModifier modifier);
 
     /// Parses a variable declaration that appears inline within a larger expression context
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration_inline(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         VisibilityModifier modifier);
 
     /// Parses a function invocation into an AstFunctionCall expression node
     std::unique_ptr<IAstExpression> parse_function_call(
-        const std::shared_ptr<ParsingContext>& context,
         AstIdentifier* identifier,
         TokenSet& set);
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
-        const std::shared_ptr<ParsingContext>& context,
         AstIdentifier* identifier,
         TokenSet& set);
 
     /// Parses a binary arithmetic operation using precedence climbing
     std::optional<std::unique_ptr<IAstExpression>> parse_arithmetic_binary_operation_optional(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> lhs,
         int min_precedence
@@ -1076,58 +1053,41 @@ namespace stride::ast
 
     /// Parses a single chained member access step: consumes `.identifier` and wraps lhs
     std::unique_ptr<AstChainedExpression> parse_chained_member_access(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> lhs
     );
 
     /// Parses a unary operator expression
-    std::optional<std::unique_ptr<IAstExpression>> parse_binary_unary_op(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
+    std::optional<std::unique_ptr<IAstExpression>> parse_binary_unary_op(TokenSet& set);
 
     /// Parses an array initializer expression, e.g., [1, 2, 3]
-    std::unique_ptr<AstArray> parse_array_initializer(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
+    std::unique_ptr<AstArray> parse_array_initializer(TokenSet& set);
 
     /// Parses an array subscript: consumes `[<index_expression>]` and wraps the base expression
     std::unique_ptr<AstArrayMemberAccessor> parse_array_member_accessor(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> array_base
     );
 
     /// Parses an indirect call: consumes `(<args>)` and wraps the callee expression
     std::unique_ptr<AstIndirectCall> parse_indirect_call(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> callee
     );
 
     /// Parses a struct initializer expression into an AstObjectInitializer node
-    std::unique_ptr<AstObjectInitializer> parse_object_initializer(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
+    std::unique_ptr<AstObjectInitializer> parse_object_initializer(TokenSet& set);
 
     /// Parses a dot-separated identifier into its individual name segments, e.g., `foo::bar::baz`
     std::unique_ptr<AstIdentifier> parse_segmented_identifier(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const std::string& error_message
     );
 
     /// Parses a lambda function literal into an expression node
-    std::unique_ptr<IAstExpression> parse_anonymous_fn_expression(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
+    std::unique_ptr<IAstExpression> parse_anonymous_fn_expression(TokenSet& set);
 
     std::optional<std::unique_ptr<IAstExpression>> parse_type_cast_op(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         IAstExpression* lhs
     );

@@ -9,23 +9,23 @@ using namespace stride::ast;
 
 
 llvm::Value* IAstFunction::codegen(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder
 )
 {
     llvm::Function* function = nullptr;
 
-    const auto& implementations = get_function_implementation_data();
+    const auto& implementations = get_function_implementation_data(symbol_table);
 
     if (implementations.empty())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format(
                 "No instantiations for function '{}' found",
-                this->get_plain_function_name()
+                this->get_function_name()
             ),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -33,10 +33,10 @@ llvm::Value* IAstFunction::codegen(
     {
         if (!llvm_function_val)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format("Function symbol '{}' missing", function_name),
-                this->get_source_fragment()
+                this->get_source_position()
             );
         }
 
@@ -119,7 +119,7 @@ llvm::Value* IAstFunction::codegen(
 
         // Generate Body — use resolved body for generic overloads
         AstBlock* body_to_codegen = overload_body ? overload_body : this->_body.get();
-        llvm::Value* function_body_value = body_to_codegen->codegen(module, builder);
+        llvm::Value* function_body_value = body_to_codegen->codegen(symbol_table, module, builder);
 
         // Final Safety: Implicit Return
         // If the get_body didn't explicitly return (no terminator found), add one.
@@ -148,13 +148,13 @@ llvm::Value* IAstFunction::codegen(
                 }
                 else
                 {
-                    throw parsing_error(
+                    throw stride_error(
                         ErrorType::COMPILATION_ERROR,
                         std::format(
                             "Function '{}' is missing a return path.",
-                            this->get_plain_function_name()
+                            this->get_function_name()
                         ),
-                        this->get_source_fragment()
+                        this->get_source_position()
                     );
                 }
             }
@@ -163,10 +163,10 @@ llvm::Value* IAstFunction::codegen(
         if (llvm::verifyFunction(*llvm_function_val, &llvm::errs()))
         {
             module->print(llvm::errs(), nullptr);
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
-                "LLVM Function Verification Failed for: " + this->get_plain_function_name(),
-                this->get_source_fragment()
+                "LLVM Function Verification Failed for: " + this->get_function_name(),
+                this->get_source_position()
             );
         }
 

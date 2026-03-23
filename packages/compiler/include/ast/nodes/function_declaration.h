@@ -4,7 +4,7 @@
 #include "blocks.h"
 #include "expression.h"
 #include "ast/modifiers.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include <utility>
 
@@ -31,12 +31,11 @@ namespace stride::ast
 
     public:
         explicit AstFunctionParameter(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string param_name,
             std::unique_ptr<IAstType> param_type
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _name(std::move(param_name)),
             _type(std::move(param_type)) {}
 
@@ -59,7 +58,7 @@ namespace stride::ast
 
         ~AstFunctionParameter() override = default;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
         }
@@ -85,7 +84,7 @@ namespace stride::ast
           public IAstExpression
     {
         std::unique_ptr<AstBlock> _body;
-        Symbol _symbol;
+        std::string _function_name;
         std::vector<std::unique_ptr<AstFunctionParameter>> _parameters;
         std::unique_ptr<IAstType> _annotated_return_type;
         std::vector<Symbol> _captured_variables;
@@ -99,9 +98,8 @@ namespace stride::ast
 
     public:
         explicit IAstFunction(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
-            Symbol symbol,
+            const SourcePosition& source,
+            std::string function_name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<IAstType> return_type,
@@ -109,9 +107,9 @@ namespace stride::ast
             const int flags,
             GenericParameterList generic_parameters
         ) :
-            IAstExpression(source, context),
+            IAstExpression(source),
             _body(std::move(body)),
-            _symbol(std::move(symbol)),
+            _function_name(std::move(function_name)),
             _parameters(std::move(parameters)),
             _annotated_return_type(std::move(return_type)),
             _visibility(visibility),
@@ -119,25 +117,19 @@ namespace stride::ast
             _flags(flags) {}
 
         [[nodiscard]]
-        const std::string& get_plain_function_name() const
+        const std::string& get_function_name() const
         {
-            return this->_symbol.name;
+            return this->_function_name;
         }
 
         [[nodiscard]]
         std::vector<std::unique_ptr<IAstType>> get_parameter_types() const;
 
-        [[nodiscard]]
-        const std::string& get_registered_function_name() const
-        {
-            return this->_symbol.internal_name;
-        }
-
         /// Returns a list of overloads for this function. For example, whenever the
         /// function is defined with generic parameters, there will be several overloads generated
         /// for each generic instantiation. This function returns the internalized name of each overload.
         [[nodiscard]]
-        std::vector<FunctionImplementation> get_function_implementation_data();
+        std::vector<FunctionImplementation> get_function_implementation_data(const SymbolTable* symbol_table);
 
         [[nodiscard]]
         AstBlock* get_body() override
@@ -154,12 +146,6 @@ namespace stride::ast
         const std::vector<std::unique_ptr<AstFunctionParameter>>& get_parameters_ref() const
         {
             return this->_parameters;
-        }
-
-        [[nodiscard]]
-        Symbol get_symbol() const
-        {
-            return this->_symbol;
         }
 
         [[nodiscard]]
@@ -227,17 +213,20 @@ namespace stride::ast
             this->_captured_variables.push_back(symbol);
         }
 
-        definition::FunctionDefinition* get_function_definition();
+        definition::FunctionDefinition* get_function_definition(const SymbolTable* symbol_table);
 
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         void resolve_forward_references(
+            SymbolTable* symbol_table,
             llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            llvm::IRBuilderBase* builder
+        ) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -250,12 +239,12 @@ namespace stride::ast
             const GenericTypeList& generic_instantiation_types = {}
         ) const;
 
-        static void validate_candidate(IAstFunction* candidate);
+        static void validate_candidate(const SymbolTable* symbol_table, IAstFunction* candidate);
 
         static void collect_free_variables(
             IAstNode* node,
-            const std::shared_ptr<ParsingContext>& lambda_context,
-            const std::shared_ptr<ParsingContext>& outer_context,
+            SymbolTable* lambda_symbol_table,
+            SymbolTable* outer_symbol_table,
             std::vector<Symbol>& captures
         );
 
@@ -268,8 +257,8 @@ namespace stride::ast
     {
     public:
         explicit AstFunctionDeclaration(
-            const std::shared_ptr<ParsingContext>& context,
-            Symbol symbol,
+            const SourcePosition& position,
+            std::string function_name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<IAstType> return_type,
@@ -278,9 +267,8 @@ namespace stride::ast
             const GenericParameterList& generic_parameters
         ) :
             IAstFunction(
-                symbol.symbol_position,
-                context,
-                std::move(symbol),
+                position,
+                std::move(function_name),
                 std::move(parameters),
                 std::move(body),
                 std::move(return_type),
@@ -297,8 +285,8 @@ namespace stride::ast
     {
     public:
         explicit AstLambdaFunctionExpression(
-            const std::shared_ptr<ParsingContext>& context,
-            Symbol symbol,
+            const SourcePosition& position,
+            std::string function_name,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<IAstType> return_type,
@@ -306,9 +294,8 @@ namespace stride::ast
             const int flags
         ) :
             IAstFunction(
-                symbol.symbol_position,
-                context,
-                std::move(symbol),
+                position,
+                std::move(function_name),
                 std::move(parameters),
                 std::move(body),
                 std::move(return_type),
@@ -321,19 +308,16 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         VisibilityModifier modifier
     );
 
     void parse_standalone_fn_param(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
     void parse_function_parameters(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters,
         int& function_flags

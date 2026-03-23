@@ -13,7 +13,6 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstArrayMemberAccessor> stride::ast::parse_array_member_accessor(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> array_base)
 {
@@ -29,24 +28,23 @@ std::unique_ptr<AstArrayMemberAccessor> stride::ast::parse_array_member_accessor
     }
 
     // If `expression_block` has content, we can safely access `set.peek(-1)` for the source fragment of the closing ']'.
-    const auto last_src_pos = set.peek(-1).get_source_fragment();
+    const auto last_src_pos = set.peek(-1).get_source_position();
 
-    auto index_expression = parse_inline_expression(context, expression_block.value());
+    auto index_expression = parse_inline_expression(expression_block.value());
 
-    const auto source_pos = SourceFragment::join(array_base->get_source_fragment(), last_src_pos);
+    const auto source_pos = SourcePosition::join(array_base->get_source_position(), last_src_pos);
 
     return std::make_unique<AstArrayMemberAccessor>(
         source_pos,
-        context,
         std::move(array_base),
         std::move(index_expression)
     );
 }
 
-void AstArrayMemberAccessor::validate()
+void AstArrayMemberAccessor::validate(const SymbolTable* symbol_table)
 {
-    this->_array_base->validate();
-    this->_index_accessor_expr->validate();
+    this->_array_base->validate(symbol_table);
+    this->_index_accessor_expr->validate(symbol_table);
 
     const auto index_accessor_type = this->_index_accessor_expr->get_type();
 
@@ -54,27 +52,28 @@ void AstArrayMemberAccessor::validate()
     {
         if (!primitive_type->is_integer_ty())
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::SEMANTIC_ERROR,
                 std::format(
                     "Array index accessor must be of type int, got '{}'",
                     primitive_type->to_string()),
-                this->get_source_fragment());
+                this->get_source_position());
         }
 
         return;
     }
 
-    throw parsing_error(
+    throw stride_error(
         ErrorType::SEMANTIC_ERROR,
         std::format(
             "Array index accessor must be of type int, got '{}'",
             index_accessor_type->to_string()),
-        this->get_source_fragment()
+        this->get_source_position()
     );
 }
 
 llvm::Value* AstArrayMemberAccessor::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -86,16 +85,16 @@ llvm::Value* AstArrayMemberAccessor::codegen(
         array_base_type = named_ty->get_underlying_type()->clone_ty();
     }
 
-    llvm::Value* base_val = this->_array_base->codegen(module, builder);
-    llvm::Value* index_val = this->_index_accessor_expr->codegen(module, builder);
+    llvm::Value* base_val = this->_array_base->codegen(symbol_table, module, builder);
+    llvm::Value* index_val = this->_index_accessor_expr->codegen(symbol_table, module, builder);
 
     const auto* array_ty = cast_type<AstArrayType*>(array_base_type.get());
     if (!array_ty)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::SEMANTIC_ERROR,
             "Array member accessor used on non-array type",
-            this->get_source_fragment());
+            this->get_source_position());
     }
 
     llvm::Type* elem_llvm_ty = array_ty->get_element_type()->get_llvm_type(module);
@@ -156,8 +155,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 std::unique_ptr<IAstNode> AstArrayMemberAccessor::clone()
 {
     return std::make_unique<AstArrayMemberAccessor>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_array_base->clone_as<IAstExpression>(),
         this->_index_accessor_expr->clone_as<IAstExpression>()
     );

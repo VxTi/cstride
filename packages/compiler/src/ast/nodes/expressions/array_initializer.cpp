@@ -4,16 +4,12 @@
 
 using namespace stride::ast;
 
-
 bool stride::ast::is_array_initializer(const TokenSet& set)
 {
     return set.peek_next_eq(TokenType::LSQUARE_BRACKET);
 }
 
-std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::unique_ptr<AstArray> stride::ast::parse_array_initializer(TokenSet& set)
 {
     const auto reference_token = set.peek_next();
     const auto expression_block = collect_block_variant(
@@ -29,27 +25,25 @@ std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
         auto subset = expression_block.value();
 
         /// Here we'll parse the subset of tokens (the actual array initializer)
-        if (auto first_initializer = parse_inline_expression(context, subset))
+        if (auto first_initializer = parse_inline_expression(subset))
         {
             elements.push_back(std::move(first_initializer));
         }
 
         while (subset.has_next())
         {
-            subset.expect(TokenType::COMMA,
-                          "Expected ',' between array elements");
-            elements.push_back(parse_inline_expression(context, subset));
+            subset.expect(TokenType::COMMA, "Expected ',' between array elements");
+            elements.push_back(parse_inline_expression(subset));
         }
     }
 
-    const auto& last_token_pos = set.peek(-1).get_source_fragment();
+    const auto& last_token_pos = set.peek(-1).get_source_position();
     // `]` is already consumed, so we peek back at it
 
-    const auto position = SourceFragment::join(reference_token.get_source_fragment(), last_token_pos);
+    const auto position = SourcePosition::join(reference_token.get_source_position(), last_token_pos);
 
     return std::make_unique<AstArray>(
         position,
-        context,
         std::move(elements)
     );
 }

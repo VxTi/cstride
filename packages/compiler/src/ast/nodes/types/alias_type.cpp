@@ -1,5 +1,5 @@
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token.h"
@@ -8,7 +8,6 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
@@ -21,14 +20,13 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
     // Parses an alias type instantiation, like `Module::SomeType<i32>`
     //
     // - Parses `Module::SomeType`
-    const auto identifier_name = parse_segmented_identifier(context, set, "Expected identifier for named type");
+    const auto identifier_name = parse_segmented_identifier(set, "Expected identifier for named type");
     // - Parses `<i32>`
-    auto generic_types = parse_generic_type_arguments(context, set);
+    auto generic_types = parse_generic_type_arguments(set);
 
     return parse_type_metadata(
         std::make_unique<AstAliasType>(
-            identifier_name->get_source_fragment(),
-            context,
+            identifier_name->get_source_position(),
             identifier_name->get_scoped_name(),
             flags,
             std::move(generic_types)
@@ -37,34 +35,14 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
     );
 }
 
-std::optional<definition::TypeDefinition*> AstAliasType::get_type_definition() const
-{
-    if (const auto ref_def = this->get_context()->get_type_definition(this->get_name());
-        ref_def.has_value())
-    {
-        return ref_def.value();
-    }
-    return std::nullopt;
-}
-
-std::optional<std::unique_ptr<IAstType>> AstAliasType::get_reference_type() const
-{
-    if (const auto ref_def = this->get_type_definition();
-        ref_def.has_value())
-    {
-        return ref_def.value()->get_type()->clone_ty();
-    }
-    return std::nullopt;
-}
-
 static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr<IAstType> type, int recursion_guard)
 {
     if (++recursion_guard > MAX_RECURSION_DEPTH)
     {
-        throw stride::parsing_error(
+        throw stride::stride_error(
             stride::ErrorType::COMPILATION_ERROR,
             "Exceeded maximum recursion depth while resolving nested underlying types",
-            type->get_source_fragment()
+            type->get_source_position()
         );
     }
 
@@ -82,8 +60,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         auto resolved_element = resolve_nested_underlying_types(std::move(element_type), recursion_guard);
 
         return std::make_unique<AstArrayType>(
-            array->get_source_fragment(),
-            array->get_context(),
+            array->get_source_position(),
             std::move(resolved_element),
             array->get_initial_length(),
             array->get_flags()
@@ -108,8 +85,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         }
 
         return std::make_unique<AstObjectType>(
-            object_type->get_source_fragment(),
-            object_type->get_context(),
+            object_type->get_source_position(),
             object_type->get_base_name(),
             std::move(resolved_members),
             object_type->get_flags(),
@@ -126,8 +102,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         }
 
         return std::make_unique<AstTupleType>(
-            tuple->get_source_fragment(),
-            tuple->get_context(),
+            tuple->get_source_position(),
             std::move(resolved_members),
             tuple->get_flags()
         );
@@ -144,8 +119,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         auto resolved_return = resolve_nested_underlying_types(func->get_return_type()->clone_ty(), recursion_guard);
 
         return std::make_unique<AstFunctionType>(
-            func->get_source_fragment(),
-            func->get_context(),
+            func->get_source_position(),
             std::move(resolved_params),
             std::move(resolved_return),
             func->get_generic_parameter_names(),
@@ -156,37 +130,41 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
     return std::move(type);
 }
 
-IAstType* AstAliasType::get_underlying_type()
+void AstAliasType::resolve_type_definition(const SymbolTable* symbol_table)
 {
-    // Prevent reinstantiating type if it's a complex type
-    if (this->_underlying_type != nullptr)
-        return this->_underlying_type.get();
+    if (this->_type_definition != nullptr)
+        return;
 
-    const auto& reference_type_definition = this->get_type_definition();
-
-    if (!reference_type_definition.has_value())
+    if (const auto ref_def = symbol_table->get_type_definition(this->get_name());
+        ref_def.has_value())
     {
-        throw parsing_error(
-            ErrorType::COMPILATION_ERROR,
-            std::format(
-                "Could not find definition for type '{}'",
-                this->get_name()),
-            this->get_source_fragment()
-        );
+        this->_type_definition = ref_def.value();
     }
+    throw stride_error(
+        ErrorType::COMPILATION_ERROR,
+        std::format(
+            "Could not find definition for type '{}'",
+            this->get_name()),
+        this->get_source_position()
+    );
+}
+
+void AstAliasType::resolve_underlying_type()
+{
+    const auto& type_def = this->get_type_definition();
 
     std::unique_ptr<IAstType> base_type = this->is_generic_overload()
-        ? instantiate_generic_type(this, reference_type_definition.value())
+        ? instantiate_generic_type(this, type_def)
         : this->get_reference_type().value_or(nullptr);
 
     if (!base_type)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format(
                 "Could not find underlying type for type '{}'",
                 this->get_name()),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -196,12 +174,12 @@ IAstType* AstAliasType::get_underlying_type()
     {
         if (++recursion_guard > MAX_RECURSION_DEPTH)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format(
                     "Exceeded maximum recursion depth while resolving base type of '{}'",
                     this->get_name()),
-                this->get_source_fragment()
+                this->get_source_position()
             );
         }
 
@@ -209,10 +187,9 @@ IAstType* AstAliasType::get_underlying_type()
         {
             if (named_reference->is_generic_overload())
             {
-                if (const auto next_def = named_reference->get_type_definition();
-                    next_def.has_value())
+                if (const auto next_def = named_reference->get_type_definition())
                 {
-                    base_type = instantiate_generic_type(named_reference, next_def.value());
+                    base_type = instantiate_generic_type(named_reference, next_def);
                 }
                 else
                 {
@@ -247,17 +224,20 @@ IAstType* AstAliasType::get_underlying_type()
 
     this->_underlying_type = std::move(base_type);
 
-    return this->_underlying_type.get();
+    if (!this->_underlying_type)
+    {
+        throw stride_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format(
+                "Could not resolve underlying type for type '{}'",
+                this->get_name()),
+            this->get_source_position()
+        );
+    }
 }
 
 bool AstAliasType::is_castable_to_impl(IAstType* other)
 {
-    // Unresolved generic parameters cannot be cast
-    if (!this->get_type_definition().has_value())
-    {
-        return false;
-    }
-
     const auto self_reference_type = get_underlying_type();
 
     // Check our base type is a primitive, and whether that type is castable to `other`
@@ -292,13 +272,6 @@ bool AstAliasType::is_assignable_to_impl(IAstType* other)
     // type SomePrimitive = i32[]
     // const someVar: SomePrimitive = [1, 2, 3];
     // In this case, `[1, 2, 3]` should be assignable to the base types of `SomePrimitive`
-    // If this is an unresolved generic parameter (no type definition),
-    // we can't resolve its underlying type.
-    if (!this->get_type_definition().has_value())
-    {
-        return false;
-    }
-
     if (const auto self_base_type = get_underlying_type())
     {
         return self_base_type->is_assignable_to(other);
@@ -343,13 +316,6 @@ bool AstAliasType::equals(IAstType* other)
         return true;
     }
 
-    // If this is an unresolved generic parameter (no type definition),
-    // we can't resolve its underlying type — just compare by name.
-    if (!this->get_type_definition().has_value())
-    {
-        return false;
-    }
-
     if (const auto self_base = this->get_underlying_type())
     {
         return self_base->equals(other);
@@ -382,8 +348,7 @@ std::unique_ptr<IAstNode> AstAliasType::clone()
         generic_types.push_back(generic_type->clone_ty());
     }
     return std::make_unique<AstAliasType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_name,
         this->get_flags(),
         std::move(generic_types)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast/casting.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/expression.h"
 
@@ -17,11 +18,10 @@ namespace stride::ast
 
     public:
         explicit AstLiteral(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& position,
             const PrimitiveType type
         ) :
-            IAstExpression(source, context),
+            IAstExpression(position),
             _primitive_type(type) {}
 
         ~AstLiteral() override = default;
@@ -49,12 +49,11 @@ namespace stride::ast
 
     public:
         explicit IAstLiteralBase(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             const PrimitiveType type,
             T value
         ) :
-            AstLiteral(source, context, type),
+            AstLiteral(source, type),
             _value(std::move(value)) {}
 
         [[nodiscard]]
@@ -69,21 +68,20 @@ namespace stride::ast
     {
     public:
         explicit AstStringLiteral(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string val
         ) :
             // Strings are only considered to be a single byte,
             // as they're pointing to a memory location
-            IAstLiteralBase(source, context, PrimitiveType::STRING, std::move(val)) {}
+            IAstLiteralBase(source, PrimitiveType::STRING, std::move(val)) {}
 
         ~AstStringLiteral() override = default;
 
         std::string to_string() override;
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -95,13 +93,12 @@ namespace stride::ast
 
     public:
         explicit AstIntLiteral(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             const PrimitiveType type,
             const int64_t value,
             const int flags = SRFLAG_TYPE_INT_SIGNED
         ) :
-            IAstLiteralBase(source, context, type, value),
+            IAstLiteralBase(source, type, value),
             _flags(flags) {}
 
         [[nodiscard]]
@@ -119,8 +116,8 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -130,18 +127,17 @@ namespace stride::ast
     {
     public:
         explicit AstFpLiteral(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             const PrimitiveType type,
             const long double value
         ) :
-            IAstLiteralBase(source, context, type, value) {}
+            IAstLiteralBase(source, type, value) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder
         ) override;
 
         std::unique_ptr<IAstNode> clone() override;
@@ -152,17 +148,16 @@ namespace stride::ast
     {
     public:
         explicit AstBooleanLiteral(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             const bool value
         ) :
-            IAstLiteralBase(source, context, PrimitiveType::BOOL, value) {}
+            IAstLiteralBase(source, PrimitiveType::BOOL, value) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder
         ) override;
 
         std::unique_ptr<IAstNode> clone() override;
@@ -172,17 +167,16 @@ namespace stride::ast
     {
     public:
         explicit AstCharLiteral(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             const char value
         ) :
-            IAstLiteralBase(source, context, PrimitiveType::CHAR, value) {}
+            IAstLiteralBase(source, PrimitiveType::CHAR, value) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder
         ) override;
 
         std::unique_ptr<IAstNode> clone() override;
@@ -192,11 +186,8 @@ namespace stride::ast
         : public AstLiteral
     {
     public:
-        AstNilLiteral(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
-        ) :
-            AstLiteral(source, context, PrimitiveType::NIL) {}
+        explicit AstNilLiteral(const SourcePosition& source) :
+            AstLiteral(source, PrimitiveType::NIL) {}
 
         std::string to_string() override
         {
@@ -204,39 +195,27 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder
         ) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(TokenSet& set);
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(TokenSet& set);
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_float_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::optional<std::unique_ptr<AstLiteral>> parse_float_literal_optional(TokenSet& set);
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::optional<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(TokenSet& set);
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_string_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::optional<std::unique_ptr<AstLiteral>> parse_string_literal_optional(TokenSet& set);
 
-    std::optional<std::unique_ptr<AstLiteral>> parse_char_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::optional<std::unique_ptr<AstLiteral>> parse_char_literal_optional(TokenSet& set);
 
     inline bool is_literal_ast_node(IAstNode* node)
     {
-        return dynamic_cast<AstLiteral*>(node) != nullptr;
+        return cast_expr<AstLiteral*>(node) != nullptr;
     }
 } // namespace stride::ast

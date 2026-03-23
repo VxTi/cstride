@@ -17,7 +17,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/symbols.h"
 #include "errors.h"
 #include "files.h"
@@ -204,12 +204,12 @@ TEST(ChainedAccessor, ArraySubscriptInFunctionArg)
 class ChainedAccessorTypeTest : public ::testing::Test
 {
 protected:
-    std::shared_ptr<ParsingContext> context;
+    std::shared_ptr<SymbolTable> context;
     std::shared_ptr<SourceFile> source;
 
     void SetUp() override
     {
-        context = std::make_shared<ParsingContext>();
+        context = std::make_shared<SymbolTable>();
         source = std::make_shared<SourceFile>("test.sr", "");
 
         // Define a Point struct: { x: i32, y: f32 }
@@ -262,7 +262,7 @@ protected:
         context->define_function(sym("make_point"), std::move(fn_ty), VisibilityModifier::PUBLIC, 0);
     }
 
-    [[nodiscard]] SourceFragment sf() const
+    [[nodiscard]] SourcePosition sf() const
     {
         return { source, 0, 0 };
     }
@@ -415,26 +415,26 @@ TEST_F(ChainedAccessorTypeTest, ErrorMemberAccessOnNonStruct)
         VisibilityModifier::PUBLIC);
 
     auto expr = chain(id("n"), "x");
-    EXPECT_THROW(infer_expression_type(expr.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(expr.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorUndefinedBaseVariable)
 {
     const auto expr = chain(id("does_not_exist"), "x");
-    EXPECT_THROW(infer_expression_type(expr.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(expr.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorMemberNotInStruct)
 {
     const auto expr = chain(id("p"), "z"); // Point has x, y — not z
-    EXPECT_THROW(infer_expression_type(expr.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(expr.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorMemberNotInStructAtDepth2)
 {
     auto inner = chain(id("w"), "pt");                   // w.pt is a Point
     auto outer = chain(std::move(inner), "nonexistent"); // Point has no such field
-    EXPECT_THROW(infer_expression_type(outer.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(outer.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorIndirectCallOnNonFunction)
@@ -443,7 +443,7 @@ TEST_F(ChainedAccessorTypeTest, ErrorIndirectCallOnNonFunction)
     // Set type to a non-function type
     callee->set_type(std::make_unique<AstAliasType>(sf(), context, "Point"));
     auto call = std::make_unique<AstIndirectCall>(sf(), context, std::move(callee), ExpressionList{});
-    EXPECT_THROW(infer_expression_type(call.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(call.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorArraySubscriptOnNonArray)
@@ -451,7 +451,7 @@ TEST_F(ChainedAccessorTypeTest, ErrorArraySubscriptOnNonArray)
     // Access p[0] where p is a Point (not an array) → type error
     auto index = std::make_unique<AstIntLiteral>(sf(), context, PrimitiveType::INT32, 0, 0);
     auto expr = std::make_unique<AstArrayMemberAccessor>(sf(), context, id("p"), std::move(index));
-    EXPECT_THROW(infer_expression_type(expr.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(expr.get()), stride_error);
 }
 
 // =============================================================================

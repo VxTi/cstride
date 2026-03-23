@@ -16,22 +16,21 @@ namespace stride::ast
 
     public:
         explicit AstForLoop(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> initiator,
             std::unique_ptr<IAstExpression> condition,
             std::unique_ptr<IAstExpression> increment,
             std::unique_ptr<AstBlock> body
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _body(std::move(body)),
             _initializer(std::move(initiator)),
             _condition(std::move(condition)),
             _incrementor(std::move(increment)) {}
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::string to_string() override;
 
@@ -59,13 +58,12 @@ namespace stride::ast
             return _incrementor.get();
         }
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
 
     std::unique_ptr<AstForLoop> parse_for_loop_statement(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         VisibilityModifier modifier);
 } // namespace stride::ast

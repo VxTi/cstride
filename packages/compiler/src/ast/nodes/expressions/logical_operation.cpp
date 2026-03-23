@@ -33,19 +33,19 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
     }
 }
 
-void AstLogicalOp::validate()
+void AstLogicalOp::validate(const SymbolTable* symbol_table)
 {
-    this->_lhs->validate();
-    this->_rhs->validate();
+    this->_lhs->validate(symbol_table);
+    this->_rhs->validate(symbol_table);
 }
 
 llvm::Value* AstLogicalOp::codegen(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder
 )
 {
     // Implementation following short-circuiting logic
-    llvm::Value* lhs_value = this->get_left()->codegen(module, builder);
+    llvm::Value* lhs_value = this->get_left()->codegen(symbol_table, module, builder);
 
     if (!lhs_value)
     {
@@ -117,7 +117,7 @@ llvm::Value* AstLogicalOp::codegen(
 
     // Emit Right block
     builder->SetInsertPoint(eval_right_bb);
-    llvm::Value* r = this->get_right()->codegen(module, builder);
+    llvm::Value* r = this->get_right()->codegen(symbol_table, module, builder);
     if (!r)
     {
         return nullptr;
@@ -159,8 +159,7 @@ llvm::Value* AstLogicalOp::codegen(
 std::unique_ptr<IAstNode> AstLogicalOp::clone()
 {
     return std::make_unique<AstLogicalOp>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_left()->clone_as<IAstExpression>(),
         this->get_op_type(),
         this->get_right()->clone_as<IAstExpression>()

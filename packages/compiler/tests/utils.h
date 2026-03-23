@@ -2,7 +2,7 @@
 
 #include "files.h"
 #include "ast/ast.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/visitor.h"
 #include "ast/nodes/blocks.h"
 #include "../include/ast/traversal.h"
@@ -19,22 +19,22 @@
 
 namespace stride::tests
 {
-    inline std::pair<std::unique_ptr<ast::AstBlock>, std::shared_ptr<ast::ParsingContext>> parse_code_with_context(
+    inline std::pair<std::unique_ptr<ast::AstBlock>, std::shared_ptr<ast::SymbolTable>> parse_code_with_context(
         const std::string& code)
     {
         const auto source = std::make_shared<SourceFile>("test.sr", code);
         auto tokens = ast::tokenizer::tokenize(source);
-        const auto context = std::make_shared<ast::ParsingContext>();
+        const auto context = std::make_shared<ast::SymbolTable>();
 
         auto node = parse_sequential(context, tokens);
 
         ast::AstNodeTraverser traverser;
-        ast::ExpressionVisitor expression_visitor;
+        ast::TypeInferenceVisitor expression_visitor;
         ast::FunctionVisitor function_visitor;
         ast::FunctionCallVisitor function_call_visitor;
         ast::ImportVisitor import_visitor;
 
-        runtime::register_runtime_symbols(node->get_context());
+        runtime::register_runtime_symbols(node->get_symbol_table());
 
         import_visitor.set_current_file_name("test.sr");
         traverser.visit_block(&import_visitor, node.get());
@@ -44,7 +44,7 @@ namespace stride::tests
 
         traverser.visit_block(&expression_visitor, node.get());
 
-        node->validate();
+        node->validate(symbol_table);
 
         return std::make_pair(std::move(node), context);
     }
@@ -79,9 +79,9 @@ namespace stride::tests
         module.setTargetTriple(target_machine->getTargetTriple());
         llvm::IRBuilder<> builder(llvm_context);
 
-        block->resolve_forward_references(&module, &builder);
-        block->validate();
-        block->codegen(&module, &builder);
+        block->resolve_forward_references(symbol_table, &module, &builder);
+        block->validate(symbol_table);
+        block->codegen(symbol_table, &module, &builder);
     }
 
     inline void assert_throws(const std::string& code)

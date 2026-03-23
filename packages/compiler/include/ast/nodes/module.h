@@ -18,12 +18,11 @@ namespace stride::ast
         std::string to_string() override;
 
         explicit AstModule(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string name,
             std::unique_ptr<AstBlock> body
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _name(std::move(name)),
             _body(std::move(body)) {}
 
@@ -40,20 +39,19 @@ namespace stride::ast
         }
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder
         ) override;
 
         void resolve_forward_references(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
     };
 
     std::unique_ptr<AstModule> parse_module_statement(
-        const std::shared_ptr<ParsingContext>&,
         TokenSet& set);
 } // namespace stride::ast

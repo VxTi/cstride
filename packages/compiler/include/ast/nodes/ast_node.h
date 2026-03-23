@@ -17,26 +17,21 @@ namespace stride::ast
 {
 
     class AstBlock;
-    class ParsingContext;
+    class SymbolTable;
 
     class IAstNode
     {
-        const SourceFragment _source_position;
-        const std::shared_ptr<ParsingContext> _context;
+        const SourcePosition _source_position;
 
     public:
-        explicit IAstNode(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
-        ) :
-            _source_position(source),
-            _context(context) {}
+        explicit IAstNode(const SourcePosition& source) :
+            _source_position(source) {}
 
         virtual ~IAstNode() = default;
 
         virtual std::string to_string() = 0;
 
-        virtual void validate() {}
+        virtual void validate(const SymbolTable* symbol_table) {}
 
         [[nodiscard]]
         std::shared_ptr<SourceFile> get_source() const
@@ -45,24 +40,20 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::shared_ptr<ParsingContext> get_context() const
-        {
-            return this->_context;
-        }
-
-        [[nodiscard]]
-        SourceFragment get_source_fragment() const
+        SourcePosition get_source_position() const
         {
             return this->_source_position;
         }
 
         virtual llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) = 0;
 
         /// Utility function for defining symbols before they're referenced.
         virtual void resolve_forward_references(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) {}

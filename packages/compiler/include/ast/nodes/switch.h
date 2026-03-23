@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ast_node.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/tokens/token_set.h"
 
 #include <utility>
@@ -14,8 +14,8 @@ namespace stride::ast
     {
     public:
         AstSwitchBranch(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context) :
+            const SourcePosition& source,
+            const std::shared_ptr<SymbolTable>& context) :
             IAstNode(source, context) {}
     };
 
@@ -27,8 +27,8 @@ namespace stride::ast
 
     public:
         explicit AstSwitch(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
+            const std::shared_ptr<SymbolTable>& context,
             std::string name) :
             IAstNode(source, context),
             _name(std::move(name)) {}
@@ -36,7 +36,7 @@ namespace stride::ast
         std::string to_string() override;
 
         llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+            SymbolTable* symbol_table,
+            llvm::Module* module, llvm::IRBuilderBase* builder) override;
     };
 } // namespace stride::ast

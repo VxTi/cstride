@@ -20,7 +20,7 @@ bool should_ignore_token_type(const TokenType type)
     }
 }
 
-TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
+TokenSet tokenizer::tokenize(const SourceFile* source_file)
 {
     auto tokens = std::vector<Token>();
 
@@ -60,9 +60,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
 
                     tokens.emplace_back(
                         TokenType::STRING_LITERAL,
-                        SourceFragment(source_file,
-                                       string_start - 1,
-                                       length + 2),
+                        SourcePosition(string_start - 1, length + 2),
                         val);
 
                     is_string = false;
@@ -109,7 +107,7 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
                 {
                     tokens.emplace_back(
                         tokenDefinition.type,
-                        SourceFragment(source_file, i, lexeme.length()),
+                        SourcePosition(i, lexeme.length()),
                         lexeme);
                 }
 
@@ -121,14 +119,14 @@ TokenSet tokenizer::tokenize(const std::shared_ptr<SourceFile>& source_file)
 
         if (!matched)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::SYNTAX_ERROR,
                 "Unexpected character encountered",
-                SourceFragment(source_file, i, 1));
+                SourcePosition( i, 1));
         }
     }
 
-    return TokenSet(source_file, tokens);
+    return TokenSet(tokens);
 }
 
 // This allows one to type `\0` in a string and have it actually

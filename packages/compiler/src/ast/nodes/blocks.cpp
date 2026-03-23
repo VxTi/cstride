@@ -1,7 +1,6 @@
 #include "ast/nodes/blocks.h"
 
 #include "ast/ast.h"
-#include "ast/nodes/function_declaration.h"
 #include "ast/tokens/token_set.h"
 
 #include <iostream>
@@ -11,7 +10,6 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstBlock> stride::ast::parse_block(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -19,10 +17,10 @@ std::unique_ptr<AstBlock> stride::ast::parse_block(
 
     if (!collected_subset.has_value())
     {
-        return AstBlock::create_empty(context, set.peek_next().get_source_fragment());
+        return AstBlock::create_empty(set.peek_next().get_source_position());
     }
 
-    return parse_sequential(context, collected_subset.value());
+    return parse_sequential(collected_subset.value());
 }
 
 std::optional<TokenSet> stride::ast::collect_until_token(
@@ -119,36 +117,28 @@ void AstBlock::aggregate_block(AstBlock* other)
 }
 
 void AstBlock::resolve_forward_references(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder
 )
 {
     for (const auto& child : this->_children)
     {
-        child->resolve_forward_references(module, builder);
+        child->resolve_forward_references(symbol_table, module, builder);
     }
 }
 
 llvm::Value* AstBlock::codegen(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder)
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     llvm::Value* last_value = nullptr;
 
     for (const auto& child : this->_children)
     {
-        last_value = child->codegen(module, builder);
+        last_value = child->codegen(symbol_table, module, builder);
     }
 
     return last_value;
-}
-
-void AstBlock::validate()
-{
-    for (const auto& child : this->_children)
-    {
-        child->validate();
-    }
 }
 
 std::unique_ptr<IAstNode> AstBlock::clone()
@@ -162,8 +152,7 @@ std::unique_ptr<IAstNode> AstBlock::clone()
     }
 
     return std::make_unique<AstBlock>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         std::move(cloned_children)
     );
 }

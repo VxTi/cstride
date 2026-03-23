@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-void IAstFunction::validate()
+void IAstFunction::validate(const SymbolTable* symbol_table)
 {
     // Extern functions have no body to validate
     if (this->is_extern())
@@ -14,7 +14,7 @@ void IAstFunction::validate()
 
     if (!this->is_generic())
     {
-        validate_candidate(this);
+        validate_candidate(symbol_table, this);
         return;
     }
 
@@ -24,7 +24,7 @@ void IAstFunction::validate()
     // the function, rather than the generic placeholders.
     //
     // create a copy of this function with the parameters instantiated
-    for (const auto definition = this->get_function_definition();
+    for (const auto definition = this->get_function_definition(symbol_table);
          const auto& [instantiated_generic_types, function, node] : definition->get_generic_overloads())
     {
         auto instantiated_return_ty = resolve_generics(
@@ -41,7 +41,7 @@ void IAstFunction::validate()
         std::vector<std::pair<definition::FieldDefinition*, std::unique_ptr<IAstType>>> old_param_types;
         for (const auto& param : this->_parameters)
         {
-            if (auto def = this->get_context()->lookup_variable(param->get_name(), true))
+            if (auto def = symbol_table->lookup_variable(param->get_name(), true))
             {
                 old_param_types.push_back({ def, def->get_type()->clone_ty() });
                 def->set_type(resolve_generics(def->get_type(), this->_generic_parameters, instantiated_generic_types));
@@ -49,8 +49,7 @@ void IAstFunction::validate()
 
             instantiated_function_params.push_back(
                 std::make_unique<AstFunctionParameter>(
-                    param->get_source_fragment(),
-                    param->get_context(),
+                    param->get_source_position(),
                     param->get_name(),
                     resolve_generics(param->get_type(), this->_generic_parameters, instantiated_generic_types)
                 )
@@ -60,8 +59,8 @@ void IAstFunction::validate()
         // Clone the body and resolve generic types on every expression within it.
 
         node = std::make_unique<AstFunctionDeclaration>(
-            this->get_context(),
-            this->_symbol,
+            this->get_source_position(),
+            this->get_function_name(),
             std::move(instantiated_function_params),
             this->_body->clone_as<AstBlock>(),
             std::move(instantiated_return_ty),
@@ -70,7 +69,7 @@ void IAstFunction::validate()
             EMPTY_GENERIC_PARAMETER_LIST // Omit generics - They've been resolved
         );
 
-        validate_candidate(node.get());
+        validate_candidate(symbol_table, node.get());
 
         // Restore original parameter types in the context
         for (auto& [def, old_type] : old_param_types)
@@ -80,7 +79,7 @@ void IAstFunction::validate()
     }
 }
 
-void IAstFunction::validate_candidate(IAstFunction* candidate)
+void IAstFunction::validate_candidate(const SymbolTable* symbol_table, IAstFunction* candidate)
 {
 
     const auto& ret_ty = candidate->get_return_type();
@@ -94,28 +93,28 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
         {
             if (return_stmt->get_return_expression().has_value())
             {
-                throw parsing_error(
+                throw stride_error(
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "{} has return type 'void' and cannot return a value.",
                         candidate->is_anonymous()
                         ? "Anonymous function"
-                        : std::format("Function '{}'", candidate->get_plain_function_name())),
+                        : std::format("Function '{}'", candidate->get_function_name())),
                     {
                         ErrorSourceReference(
                             "unexpected return value",
-                            return_stmt->get_source_fragment()
+                            return_stmt->get_source_position()
                         ),
                         ErrorSourceReference(
                             "Function returning void type",
-                            candidate->get_source_fragment()
+                            candidate->get_source_position()
                         )
                     }
 
                 );
             }
         }
-        candidate->get_body()->validate();
+        candidate->get_body()->validate(symbol_table);
         return;
     }
 
@@ -123,22 +122,22 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
     {
         if (cast_type<AstAliasType*>(ret_ty))
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' returns a struct type, but no return statement is present.",
-                    candidate->get_plain_function_name()),
-                candidate->get_source_fragment());
+                    candidate->get_function_name()),
+                candidate->get_source_position());
         }
 
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format(
                 "{} is missing a return statement.",
                 candidate->is_anonymous()
                 ? "Anonymous function"
-                : std::format("Function '{}'", candidate->get_plain_function_name())),
-            candidate->get_source_fragment()
+                : std::format("Function '{}'", candidate->get_function_name())),
+            candidate->get_source_position()
         );
     }
 
@@ -148,13 +147,13 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
         {
             if (!ret_ty->is_void_ty())
             {
-                throw parsing_error(
+                throw stride_error(
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Function '{}' returns a value of type '{}', but no return statement is present.",
-                        candidate->is_anonymous() ? "<anonymous function>" : candidate->get_plain_function_name(),
+                        candidate->is_anonymous() ? "<anonymous function>" : candidate->get_function_name(),
                         ret_ty->to_string()),
-                    return_stmt->get_source_fragment()
+                    return_stmt->get_source_position()
                 );
             }
             return;
@@ -173,14 +172,14 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
                     ? "function-type "
                     : "struct-type ",
                     candidate->get_return_type()->to_string()),
-                ret_expr->get_source_fragment()
+                ret_expr->get_source_position()
             );
 
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Function '{}' expected a return type of '{}', but received '{}'.",
-                    candidate->is_anonymous() ? "<anonymous function>" : candidate->get_plain_function_name(),
+                    candidate->is_anonymous() ? "<anonymous function>" : candidate->get_function_name(),
                     ret_ty->get_type_name(),
                     ret_expr->get_type()->get_type_name()),
                 { error_fragment }
@@ -188,7 +187,7 @@ void IAstFunction::validate_candidate(IAstFunction* candidate)
         }
     }
 
-    candidate->get_body()->validate();
+    candidate->get_body()->validate(symbol_table);
 }
 
 std::vector<AstReturnStatement*> IAstFunction::collect_return_statements(const AstBlock* body)

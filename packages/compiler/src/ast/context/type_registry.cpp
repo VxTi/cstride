@@ -1,18 +1,18 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include <ranges>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-bool ParsingContext::is_type_defined(const std::string& type_name) const
+bool SymbolTable::is_type_defined(const std::string& type_name) const
 {
     return get_type_definition(type_name).has_value();
 }
 
-bool ParsingContext::is_struct_type_defined(const std::string& struct_name) const
+bool SymbolTable::is_struct_type_defined(const std::string& struct_name) const
 {
     const auto type_def = get_type_definition(struct_name);
 
@@ -20,7 +20,7 @@ bool ParsingContext::is_struct_type_defined(const std::string& struct_name) cons
         cast_type<AstObjectType*>(type_def.value()->get_type()) != nullptr;
 }
 
-std::optional<TypeDefinition*> ParsingContext::get_type_definition(const std::string& name) const
+std::optional<TypeDefinition*> SymbolTable::get_type_definition(const std::string& name) const
 {
     auto current = this;
 
@@ -52,7 +52,7 @@ std::optional<TypeDefinition*> ParsingContext::get_type_definition(const std::st
 
 /// Gets the root struct type layout for <code>name</code>.
 /// Will recursively look up the parent struct definition if <code>name</code> is a reference struct type.
-std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string& name) const
+std::optional<AstObjectType*> SymbolTable::get_object_type(const std::string& name) const
 {
     const auto type_def = get_type_definition(name);
 
@@ -93,7 +93,7 @@ std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string&
 
         if (++recursion_depth > MAX_RECURSION_DEPTH)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format("Exceeded maximum recursion depth of {} while resolving struct type '{}'",
                             MAX_RECURSION_DEPTH,
@@ -101,7 +101,7 @@ std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string&
                 {
                     ErrorSourceReference(
                         "Type definition here",
-                        type_def.value()->get_type()->get_source_fragment()
+                        type_def.value()->get_type()->get_source_position()
                     )
                 }
             );
@@ -111,25 +111,25 @@ std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string&
     return std::nullopt;
 }
 
-void ParsingContext::define_type(
+void SymbolTable::define_type(
     const Symbol& type_name,
     std::unique_ptr<IAstType> type,
     GenericParameterList generics,
     const VisibilityModifier visibility
 ) const
 {
-    auto& root_context = const_cast<ParsingContext&>(this->traverse_to_root());
+    auto& root_context = const_cast<SymbolTable&>(this->traverse_to_root());
 
     if (const auto existing_def = root_context.get_type_definition(type_name.internal_name);
         existing_def.has_value())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Type '{}' is already defined in this scope", type_name.name),
             {
                 ErrorSourceReference(
                     "Previous definition here",
-                    existing_def.value()->get_type()->get_source_fragment()
+                    existing_def.value()->get_type()->get_source_position()
                 )
             }
         );

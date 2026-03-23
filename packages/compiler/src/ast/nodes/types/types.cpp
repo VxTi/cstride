@@ -2,7 +2,7 @@
 
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
@@ -13,36 +13,35 @@
 using namespace stride::ast;
 
 std::unique_ptr<IAstType> stride::ast::parse_type(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
 {
-    if (auto primitive = parse_primitive_type_optional(context, set, options);
+    if (auto primitive = parse_primitive_type_optional(set, options);
         primitive.has_value())
     {
         return std::move(primitive.value());
     }
 
-    if (auto named_type = parse_alias_type_optional(context, set, options);
+    if (auto named_type = parse_alias_type_optional(set, options);
         named_type.has_value())
     {
         return std::move(named_type.value());
     }
 
-    if (auto function_type = parse_function_type_optional(context, set, options);
+    if (auto function_type = parse_function_type_optional(set, options);
         function_type.has_value())
     {
         return std::move(function_type.value());
     }
 
-    if (auto tuple_type = parse_tuple_type_optional(context, set, options);
+    if (auto tuple_type = parse_tuple_type_optional(set, options);
         tuple_type.has_value())
     {
         return std::move(tuple_type.value());
     }
 
-    if (auto struct_type = parse_object_type_optional(context, set, options);
+    if (auto struct_type = parse_object_type_optional(set, options);
         struct_type.has_value())
     {
         return std::move(struct_type.value());
@@ -154,13 +153,6 @@ AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
 
     if (const auto named = cast_type<AstAliasType*>(type))
     {
-        // If this is an unresolved generic parameter (no type definition),
-        // we can't extract primitive reference types from it.
-        if (!named->get_type_definition().has_value())
-        {
-            return nullptr;
-        }
-
         const auto ref_type = named->get_underlying_type();
 
         return extract_primitive_reference_types(ref_type);
@@ -181,8 +173,6 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     IAstType* rhs
 )
 {
-    const auto& context = lhs->get_context();
-
     // Resolves LHS and RHS into possibly primitive types, if they reference so
     const auto& lhs_primitive_ty = extract_primitive_reference_types(lhs);
     const auto& rhs_primitive_ty = extract_primitive_reference_types(rhs);
@@ -190,12 +180,12 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // Check whether we're mixing types, e.g., `10 + <struct>`
     if ((!lhs_primitive_ty && rhs_primitive_ty) || (lhs_primitive_ty && !rhs_primitive_ty))
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             "Cannot mix primitive type with named type",
             {
-                ErrorSourceReference(lhs->get_type_name(), lhs->get_source_fragment()),
-                ErrorSourceReference(rhs->get_type_name(), rhs->get_source_fragment())
+                ErrorSourceReference(lhs->get_type_name(), lhs->get_source_position()),
+                ErrorSourceReference(rhs->get_type_name(), rhs->get_source_position())
             }
         );
     }
@@ -226,10 +216,10 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
             }
         }
 
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             "Cannot compute dominant type for non-primitive types",
-            !lhs_primitive_ty ? lhs->get_source_fragment() : rhs->get_source_fragment()
+            !lhs_primitive_ty ? lhs->get_source_position() : rhs->get_source_position()
         );
     }
 
@@ -273,8 +263,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         {
             // RHS is dominant
             return std::make_unique<AstPrimitiveType>(
-                rhs->get_source_fragment(),
-                context,
+                rhs->get_source_position(),
                 PrimitiveType::FLOAT64,
                 rhs->get_flags()
             );
@@ -286,18 +275,18 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     }
 
     const std::vector references = {
-        ErrorSourceReference(lhs->to_string(), lhs->get_source_fragment()),
-        ErrorSourceReference(rhs->get_type_name(), rhs->get_source_fragment())
+        ErrorSourceReference(lhs->to_string(), lhs->get_source_position()),
+        ErrorSourceReference(rhs->get_type_name(), rhs->get_source_position())
     };
 
-    throw parsing_error(
+    throw stride_error(
         ErrorType::TYPE_ERROR,
         "Cannot compute dominant type for incompatible primitive types",
         references
     );
 }
 
-std::optional<AstObjectType*> stride::ast::get_object_type_from_type(IAstType* type)
+std::optional<AstObjectType*> stride::ast::get_object_type_from_type(const SymbolTable* symbol_table, IAstType* type)
 {
     auto base_struct_type = cast_type<AstObjectType*>(type);
 
@@ -318,7 +307,7 @@ std::optional<AstObjectType*> stride::ast::get_object_type_from_type(IAstType* t
     }
 
     // Fall back to raw struct type lookup
-    base_struct_type = type->get_context()->get_object_type(type->get_type_name())
+    base_struct_type = symbol_table->get_object_type(type->get_type_name())
                             .value_or(nullptr);
 
     if (!base_struct_type)

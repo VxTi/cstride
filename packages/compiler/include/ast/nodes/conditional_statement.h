@@ -17,13 +17,12 @@ namespace stride::ast
 
     public:
         explicit AstConditionalStatement(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstExpression> condition,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<AstBlock> else_body
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _condition(std::move(condition)),
             _body(std::move(body)),
             _else_body(std::move(else_body)) {}
@@ -48,20 +47,16 @@ namespace stride::ast
 
         ~AstConditionalStatement() override = default;
 
-        void validate() override;
-
         bool is_reducible() override;
 
         std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
         std::string to_string() override;
     };
 
-    std::unique_ptr<AstConditionalStatement> parse_if_statement(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::unique_ptr<AstConditionalStatement> parse_if_statement(TokenSet& set);
 } // namespace stride::ast

@@ -8,26 +8,20 @@ namespace stride::ast
         : public IAstNode
     {
     public:
-        explicit IAstControlFlowStatement(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
-        ) :
-            IAstNode(source, context) {}
+        explicit IAstControlFlowStatement(const SourcePosition& source) :
+            IAstNode(source) {}
     };
 
     class AstContinueStatement
         : public IAstControlFlowStatement
     {
     public:
-        explicit AstContinueStatement(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
-        ) :
-            IAstControlFlowStatement(source, context) {}
+        explicit AstContinueStatement(const SourcePosition& source) :
+            IAstControlFlowStatement(source) {}
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -41,15 +35,12 @@ namespace stride::ast
         : public IAstControlFlowStatement
     {
     public:
-        explicit AstBreakStatement(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
-        ) :
-            IAstControlFlowStatement(source, context) {}
+        explicit AstBreakStatement(const SourcePosition& source) :
+            IAstControlFlowStatement(source) {}
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -59,13 +50,7 @@ namespace stride::ast
         }
     };
 
-    std::unique_ptr<AstContinueStatement> parse_continue_statement(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
+    std::unique_ptr<AstContinueStatement> parse_continue_statement(TokenSet& set);
 
-    std::unique_ptr<AstBreakStatement> parse_break_statement(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set
-    );
+    std::unique_ptr<AstBreakStatement> parse_break_statement(TokenSet& set);
 }

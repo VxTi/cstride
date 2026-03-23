@@ -2,7 +2,7 @@
 
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/type_inference.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/conditional_statement.h"
@@ -42,21 +42,21 @@ GenericParameterList stride::ast::parse_generic_declaration(TokenSet& set)
     return generic_params;
 }
 
-GenericTypeList stride::ast::parse_generic_type_arguments(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
+GenericTypeList stride::ast::parse_generic_type_arguments(TokenSet& set)
 {
     GenericTypeList generic_params;
     if (set.peek_next_eq(TokenType::LT))
     {
         set.next();
         generic_params.push_back(
-            parse_type(context, set, { "Expected generic parameter name" })
+            parse_type(set, { "Expected generic parameter name" })
         );
 
         while (set.peek_next_eq(TokenType::COMMA))
         {
             set.next();
             generic_params.push_back(
-                parse_type(context, set, { "Expected generic parameter name" })
+                parse_type(set, { "Expected generic parameter name" })
             );
         }
 
@@ -73,13 +73,13 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
 {
     if (param_names.size() != instantiated_types.size())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Failed to resolve generic type: expected {} parameters, got {}",
                 param_names.size(),
                 instantiated_types.size()),
-            type->get_source_fragment()
+            type->get_source_position()
         );
     }
     if (auto* named_type = cast_type<AstAliasType*>(type))
@@ -103,8 +103,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
             }
 
             return std::make_unique<AstAliasType>(
-                named_type->get_source_fragment(),
-                named_type->get_context(),
+                named_type->get_source_position(),
                 named_type->get_name(),
                 named_type->get_flags(),
                 std::move(resolved_params)
@@ -117,8 +116,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
     if (const auto* array_type = cast_type<AstArrayType*>(type))
     {
         return std::make_unique<AstArrayType>(
-            array_type->get_source_fragment(),
-            array_type->get_context(),
+            array_type->get_source_position(),
             resolve_generics(array_type->get_element_type(), param_names, instantiated_types),
             array_type->get_initial_length(),
             array_type->get_flags()
@@ -159,8 +157,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         }
 
         return std::make_unique<AstObjectType>(
-            object_type->get_source_fragment(),
-            object_type->get_context(),
+            object_type->get_source_position(),
             object_type->get_base_name(),
             std::move(resolved_members),
             object_type->get_flags(),
@@ -177,8 +174,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         }
 
         return std::make_unique<AstFunctionType>(
-            func_type->get_source_fragment(),
-            func_type->get_context(),
+            func_type->get_source_position(),
             std::move(resolved_params),
             resolve_generics(func_type->get_return_type().get(), param_names, instantiated_types),
             EMPTY_GENERIC_PARAMETER_LIST,
@@ -196,8 +192,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         }
 
         return std::make_unique<AstTupleType>(
-            tuple_type->get_source_fragment(),
-            tuple_type->get_context(),
+            tuple_type->get_source_position(),
             std::move(resolved_members),
             tuple_type->get_flags()
         );
@@ -220,16 +215,16 @@ std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
     {
         if (generic_param_names.empty())
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Failed to resolve generic for type '{}': type is not generic",
                     alias_type->get_name()
                 ),
-                alias_type->get_source_fragment()
+                alias_type->get_source_position()
             );
         }
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Failed to instantiate generic type '{}': expected {} parameters, got {}",
@@ -237,7 +232,7 @@ std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
                 generic_param_names.size(),
                 instantiated_types.size()
             ),
-            alias_type->get_source_fragment()
+            alias_type->get_source_position()
         );
     }
 
@@ -261,7 +256,7 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
 
     if (generic_param_names.size() != instantiated_types.size())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Failed to instantiate generic type type '{}': expected {} parameters, got {}",
@@ -269,7 +264,7 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
                 generic_param_names.size(),
                 instantiated_types.size()
             ),
-            object->get_source_fragment()
+            object->get_source_position()
         );
     }
 
@@ -292,8 +287,7 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
     }
 
     return std::make_unique<AstObjectType>(
-        type->get_source_fragment(),
-        type->get_context(),
+        type->get_source_position(),
         type->get_base_name(),
         std::move(resolved_members),
         type->get_flags(),
@@ -329,21 +323,5 @@ std::string stride::ast::get_overloaded_function_name(std::string function_name,
         "{}${}",
         function_name,
         join(generic_instantiation_type_names, "_")
-    );
-}
-
-/**
- * Resolves an expression's type by re-inferring it (from context) and then substituting
- * any generic parameter names with the concrete instantiated types.
- */
-static void resolve_expression_type(
-    IAstExpression* expr,
-    const GenericParameterList& param_names,
-    const GenericTypeList& instantiated_types
-)
-{
-    auto inferred_type = infer_expression_type(expr);
-    expr->set_type(
-        stride::ast::resolve_generics(inferred_type.get(), param_names, instantiated_types)
     );
 }

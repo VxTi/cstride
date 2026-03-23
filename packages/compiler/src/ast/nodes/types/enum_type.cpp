@@ -1,5 +1,5 @@
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
@@ -14,13 +14,12 @@
 using namespace stride::ast;
 
 AstEnumType::AstEnumType(
-    const SourceFragment& source,
-    const std::shared_ptr<ParsingContext>& context,
+    const SourcePosition& source,
     std::string enum_name,
     std::vector<EnumMemberPair> members,
     const int flags
 ) :
-    IAstType(source, context, flags),
+    IAstType(source, flags),
     _members(std::move(members)),
     _name(std::move(enum_name)) {}
 
@@ -31,7 +30,6 @@ AstEnumType::AstEnumType(
  * </code>
  */
 EnumMemberPair stride::ast::parse_enumerable_member(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     size_t element_index
 )
@@ -43,11 +41,10 @@ EnumMemberPair stride::ast::parse_enumerable_member(
     if (!set.has_next() || !set.peek_next_eq(TokenType::COLON))
     {
         auto value = std::make_unique<AstIntLiteral>(
-                member_name_tok.get_source_fragment(),
-                context,
-                PrimitiveType::INT32,
-                element_index
-            );
+            member_name_tok.get_source_position(),
+            PrimitiveType::INT32,
+            element_index
+        );
 
         return {
             member_name,
@@ -57,7 +54,7 @@ EnumMemberPair stride::ast::parse_enumerable_member(
 
     set.expect(TokenType::COLON, "Expected a colon after enum member name");
 
-    auto value = parse_literal_optional(context, set);
+    auto value = parse_literal_optional(set);
 
     if (!value.has_value())
         set.throw_error("Expected a literal value for enum member");
@@ -69,7 +66,6 @@ EnumMemberPair stride::ast::parse_enumerable_member(
 }
 
 std::unique_ptr<AstTypeDefinition> stride::ast::parse_enum_type_definition(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     [[maybe_unused]] VisibilityModifier modifier
 )
@@ -81,33 +77,22 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_enum_type_definition(
 
     std::vector<EnumMemberPair> members;
 
-    members.push_back(parse_enumerable_member(context, enum_body_subset, 0));
+    members.push_back(parse_enumerable_member(enum_body_subset, 0));
 
     for (size_t i = 1; enum_body_subset.has_next(); ++i)
     {
         enum_body_subset.expect(TokenType::COMMA, "Expected a comma between enum members");
-        members.push_back(parse_enumerable_member(context, enum_body_subset, i));
+        members.push_back(parse_enumerable_member(enum_body_subset, i));
     }
 
     auto type = std::make_unique<AstEnumType>(
-        reference_token.get_source_fragment(),
-        context,
+        reference_token.get_source_position(),
         enumerable_name,
         std::move(members)
     );
 
-    context->define_type(
-        Symbol(reference_token.get_source_fragment(),
-               context->get_name(),
-               enumerable_name),
-        type->clone_ty(),
-        {},
-        modifier
-    );
-
     return std::make_unique<AstTypeDefinition>(
-        reference_token.get_source_fragment(),
-        context,
+        reference_token.get_source_position(),
         enumerable_name,
         std::move(type),
         modifier
@@ -126,15 +111,14 @@ std::unique_ptr<IAstNode> AstEnumType::clone()
     }
 
     return std::make_unique<AstEnumType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_name(),
         std::move(cloned_members),
         this->get_flags()
     );
 }
 
-llvm::Value* AstEnumType::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstEnumType::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     return nullptr;
 }
@@ -150,10 +134,10 @@ bool AstEnumType::equals(IAstType* other)
 
 llvm::Type* AstEnumType::get_llvm_type_impl(llvm::Module* module)
 {
-   throw parsing_error(
-       ErrorType::COMPILATION_ERROR,
+    throw stride_error(
+        ErrorType::COMPILATION_ERROR,
         std::format("Cannot get LLVM type for enum type '{}'", this->get_name()),
-        this->get_source_fragment()
+        this->get_source_position()
     );
 }
 
@@ -162,11 +146,14 @@ bool AstEnumType::is_assignable_to_impl(IAstType* other)
     return false; // Already managed by `AstType` (equality check)
 }
 
-void AstEnumType::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
+void AstEnumType::resolve_forward_references(
+    SymbolTable* symbol_table,
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder)
 {
     for (const auto& val : this->_members | std::views::values)
     {
-        val->resolve_forward_references(module, builder);
+        val->resolve_forward_references(symbol_table, module, builder);
     }
 }
 

@@ -30,62 +30,68 @@ namespace
         );
     }
 
-llvm::Type* get_va_list_type(const llvm::Module* module) {
-    const llvm::Triple& triple(module->getTargetTriple());
+    llvm::Type* get_va_list_type(const llvm::Module* module)
+    {
+        const llvm::Triple& triple(module->getTargetTriple());
 
-    // x86_64 System V ABI (Linux, macOS, BSD)
-    if (triple.getArch() == llvm::Triple::x86_64 && !triple.isOSWindows()) {
-        // struct __va_list_tag {
-        //   i32 gp_offset;
-        //   i32 fp_offset;
-        //   i8* overflow_arg_area;
-        //   i8* reg_save_area;
-        // };
-        llvm::Type* i32_ty = llvm::Type::getInt32Ty(module->getContext());
-        llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
+        // x86_64 System V ABI (Linux, macOS, BSD)
+        if (triple.getArch() == llvm::Triple::x86_64 && !triple.isOSWindows())
+        {
+            // struct __va_list_tag {
+            //   i32 gp_offset;
+            //   i32 fp_offset;
+            //   i8* overflow_arg_area;
+            //   i8* reg_save_area;
+            // };
+            llvm::Type* i32_ty = llvm::Type::getInt32Ty(module->getContext());
+            llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
 
-        llvm::StructType* va_list_struct = llvm::StructType::create(module->getContext(), "struct.__va_list_tag");
-        va_list_struct->setBody({i32_ty, i32_ty, i8_ptr_ty, i8_ptr_ty});
+            llvm::StructType* va_list_struct = llvm::StructType::create(module->getContext(), "struct.__va_list_tag");
+            va_list_struct->setBody({ i32_ty, i32_ty, i8_ptr_ty, i8_ptr_ty });
 
-        // This ABI usually passes va_list as an array of 1 of this struct
-        return llvm::ArrayType::get(va_list_struct, 1);
-    }
-
-    // AArch64 (ARM64)
-    if (triple.getArch() == llvm::Triple::aarch64) {
-        if (triple.isOSDarwin()) {
-            // Apple ARM64 (Darwin ABI): va_list is simply char* (single pointer).
-            // All variadic arguments are placed on the stack; va_start sets this
-            // pointer to the address of the first variadic argument.
-            return llvm::PointerType::get(module->getContext(), 0);
+            // This ABI usually passes va_list as an array of 1 of this struct
+            return llvm::ArrayType::get(va_list_struct, 1);
         }
 
-        // AAPCS64 (Linux, etc.)
-        // struct __va_list {
-        //    void *__stack;
-        //    void *__gr_top;
-        //    void *__vr_top;
-        //    int   __gr_offs;
-        //    int   __vr_offs;
-        // };
-        llvm::Type* i32_ty = llvm::Type::getInt32Ty(module->getContext());
-        llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
+        // AArch64 (ARM64)
+        if (triple.getArch() == llvm::Triple::aarch64)
+        {
+            if (triple.isOSDarwin())
+            {
+                // Apple ARM64 (Darwin ABI): va_list is simply char* (single pointer).
+                // All variadic arguments are placed on the stack; va_start sets this
+                // pointer to the address of the first variadic argument.
+                return llvm::PointerType::get(module->getContext(), 0);
+            }
 
-        return llvm::StructType::get(module->getContext(), {i8_ptr_ty, i8_ptr_ty, i8_ptr_ty, i32_ty, i32_ty});
+            // AAPCS64 (Linux, etc.)
+            // struct __va_list {
+            //    void *__stack;
+            //    void *__gr_top;
+            //    void *__vr_top;
+            //    int   __gr_offs;
+            //    int   __vr_offs;
+            // };
+            llvm::Type* i32_ty = llvm::Type::getInt32Ty(module->getContext());
+            llvm::Type* i8_ptr_ty = llvm::PointerType::get(module->getContext(), 0);
+
+            return llvm::StructType::get(module->getContext(), { i8_ptr_ty, i8_ptr_ty, i8_ptr_ty, i32_ty, i32_ty });
+        }
+
+        // Default (Windows x64, 32-bit x86, many others) - simple char* pointer
+        return llvm::PointerType::get(module->getContext(), 0);
     }
 
-    // Default (Windows x64, 32-bit x86, many others) - simple char* pointer
-    return llvm::PointerType::get(module->getContext(), 0);
 }
 
-}
-
-llvm::Value* AstVariadicArgReference::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstVariadicArgReference::codegen(SymbolTable* symbol_table,
+                                              llvm::Module* module,
+                                              llvm::IRBuilderBase* builder)
 {
-    throw parsing_error(
+    throw stride_error(
         ErrorType::COMPILATION_ERROR,
         "Variadic argument reference '...' cannot be directly codegened",
-        this->get_source_fragment()
+        this->get_source_position()
     );
 }
 
@@ -126,7 +132,10 @@ llvm::Value* AstVariadicArgReference::init_variadic_reference(llvm::Module* modu
     return va_list_ptr;
 }
 
-void AstVariadicArgReference::end_variadic_reference(llvm::Module* module, llvm::IRBuilderBase* builder, llvm::Value* va_list_ptr)
+void AstVariadicArgReference::end_variadic_reference(
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder,
+    llvm::Value* va_list_ptr)
 {
     if (!va_list_ptr)
         return;
@@ -143,10 +152,7 @@ void AstVariadicArgReference::end_variadic_reference(llvm::Module* module, llvm:
 
 std::unique_ptr<IAstNode> AstVariadicArgReference::clone()
 {
-    return std::make_unique<AstVariadicArgReference>(
-        this->get_source_fragment(),
-        this->get_context()
-    );
+    return std::make_unique<AstVariadicArgReference>(this->get_source_position());
 }
 
 std::string AstVariadicArgReference::to_string()

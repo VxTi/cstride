@@ -18,7 +18,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
 )
 {
     int base_flags = base_type->get_flags();
-    const auto src_pos = set.peek_next().get_source_fragment();
+    const auto src_pos = set.peek_next().get_source_position();
     int offset = 0;
 
     while (is_array_notation(set))
@@ -26,11 +26,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
         offset += 2;
         set.skip(2);
         base_type = std::make_unique<AstArrayType>(
-            SourceFragment(
-                base_type->get_source(),
-                src_pos.offset,
-                src_pos.length + offset),
-            base_type->get_context(),
+            SourcePosition(src_pos.offset, src_pos.length + offset),
             std::move(base_type),
             0
         );
@@ -53,8 +49,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
 std::unique_ptr<IAstNode> AstArrayType::clone()
 {
     return std::make_unique<AstArrayType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_element_type->clone_ty(),
         this->_initial_length,
         this->get_flags()

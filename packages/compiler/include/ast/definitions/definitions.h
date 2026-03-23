@@ -1,6 +1,6 @@
 #pragma once
 #include "ast/symbols.h"
-
+#include "ast/nodes/types.h"
 
 namespace stride::ast::definition
 {

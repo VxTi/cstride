@@ -1,6 +1,6 @@
 #include "ast/optionals.h"
 
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>

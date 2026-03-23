@@ -51,10 +51,10 @@ std::string comparison_op_to_str(const ComparisonOpType op)
     }
 }
 
-void AstComparisonOp::validate()
+void AstComparisonOp::validate(const SymbolTable* symbol_table)
 {
-    this->_lhs->validate();
-    this->_rhs->validate();
+    this->_lhs->validate(symbol_table);
+    this->_rhs->validate(symbol_table);
 
     const auto lhs_type = this->get_left()->get_type();
     const auto rhs_type = this->get_right()->get_type();
@@ -68,12 +68,12 @@ void AstComparisonOp::validate()
         if (lhs_primitive->get_primitive_type() == PrimitiveType::STRING || rhs_primitive->get_primitive_type() ==
             PrimitiveType::STRING)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::SEMANTIC_ERROR,
                 "Cannot compare string literals",
                 {
-                    ErrorSourceReference(lhs_type->get_type_name(), _lhs->get_source_fragment()),
-                    ErrorSourceReference(rhs_type->get_type_name(), _rhs->get_source_fragment())
+                    ErrorSourceReference(lhs_type->get_type_name(), _lhs->get_source_position()),
+                    ErrorSourceReference(rhs_type->get_type_name(), _rhs->get_source_position())
                 }
             );
         }
@@ -105,23 +105,23 @@ void AstComparisonOp::validate()
         lhs_primitive->get_primitive_type() == PrimitiveType::NIL)
         return;
 
-    throw parsing_error(
+    throw stride_error(
         ErrorType::SEMANTIC_ERROR,
         "Comparison operation operands must be used on primitive or optional types",
         {
-            ErrorSourceReference("type " + lhs_type->get_type_name(), _lhs->get_source_fragment()),
-            ErrorSourceReference("type " + rhs_type->get_type_name(), _rhs->get_source_fragment())
+            ErrorSourceReference("type " + lhs_type->get_type_name(), _lhs->get_source_position()),
+            ErrorSourceReference("type " + rhs_type->get_type_name(), _rhs->get_source_position())
         }
     );
 }
 
 llvm::Value* AstComparisonOp::codegen(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder
 )
 {
-    llvm::Value* left = this->get_left()->codegen(module, builder);
-    llvm::Value* right = this->get_right()->codegen(module, builder);
+    llvm::Value* left = this->get_left()->codegen(symbol_table, module, builder);
+    llvm::Value* right = this->get_right()->codegen(symbol_table, module, builder);
 
     if (!left || !right)
     {
@@ -146,10 +146,10 @@ llvm::Value* AstComparisonOp::codegen(
 
         if (!struct_val)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 "Cannot compare a non-optional value with nil",
-                this->get_source_fragment()
+                this->get_source_position()
             );
         }
 
@@ -269,8 +269,7 @@ llvm::Value* AstComparisonOp::codegen(
 std::unique_ptr<IAstNode> AstComparisonOp::clone()
 {
     return std::make_unique<AstComparisonOp>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_left()->clone_as<IAstExpression>(),
         this->_op_type,
         this->get_right()->clone_as<IAstExpression>()

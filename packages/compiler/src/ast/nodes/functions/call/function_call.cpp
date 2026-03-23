@@ -2,7 +2,7 @@
 #include "formatting.h"
 #include "ast/casting.h"
 #include "ast/flags.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/symbols.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/blocks.h"
@@ -18,13 +18,12 @@ using namespace stride::ast;
 using namespace stride::ast::definition;
 
 std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
-    const std::shared_ptr<ParsingContext>& context,
     AstIdentifier* identifier,
     TokenSet& set
 )
 {
     const auto reference_token = set.peek(-1);
-    auto generic_types = parse_generic_type_arguments(context, set);
+    auto generic_types = parse_generic_type_arguments(set);
     auto function_parameter_set = collect_parenthesized_block(set);
 
     ExpressionList function_arg_nodes;
@@ -36,7 +35,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     {
         auto subset = function_parameter_set.value();
 
-        if (auto initial_arg = parse_inline_expression(context, subset))
+        if (auto initial_arg = parse_inline_expression(subset))
         {
             function_arg_nodes.push_back(std::move(initial_arg));
 
@@ -48,22 +47,19 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
                     "Expected ',' between function arguments"
                 );
 
-                auto function_argument = parse_inline_expression(context, subset);
+                auto function_argument = parse_inline_expression(subset);
 
                 if (!function_argument)
                 {
                     // Since the RParen is already consumed, we have to manually extract its
                     // position with the following assumption It's possible this yields END_OF_FILE
                     const auto len =
-                        set.peek(-1).get_source_fragment().offset - 1 -
-                        preceding.get_source_fragment().offset;
-                    throw parsing_error(
+                        set.peek(-1).get_source_position().offset - 1 -
+                        preceding.get_source_position().offset;
+                    throw stride_error(
                         ErrorType::SYNTAX_ERROR,
                         "Expected expression for function argument",
-                        SourceFragment(
-                            subset.get_source(),
-                            preceding.get_source_fragment().offset + 1,
-                            len)
+                        SourcePosition(preceding.get_source_position().offset + 1, len)
                     );
                 }
 
@@ -87,7 +83,6 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     }
 
     return std::make_unique<AstFunctionCall>(
-        context,
         identifier->clone_as<AstIdentifier>(),
         std::move(function_arg_nodes),
         std::move(generic_types),
@@ -210,12 +205,12 @@ const GenericTypeList& AstFunctionCall::get_generic_type_arguments()
     return this->_generic_type_arguments;
 }
 
-IDefinition* AstFunctionCall::get_function_definition()
+IDefinition* AstFunctionCall::get_function_definition(const SymbolTable* symbol_table)
 {
     if (this->_definition)
         return this->_definition;
 
-    if (const auto def = this->get_context()->get_function_definition(
+    if (const auto def = symbol_table->get_function_definition(
             this->get_scoped_function_name(),
             this->get_argument_types(),
             this->get_generic_type_arguments().size()
@@ -226,7 +221,7 @@ IDefinition* AstFunctionCall::get_function_definition()
         return this->_definition;
     }
 
-    if (const auto field_def = this->get_context()->lookup_variable(
+    if (const auto field_def = symbol_table->lookup_variable(
         this->get_scoped_function_name(),
         true
     ))
@@ -235,10 +230,10 @@ IDefinition* AstFunctionCall::get_function_definition()
         return this->_definition;
     }
 
-    throw parsing_error(
+    throw stride_error(
         ErrorType::REFERENCE_ERROR,
         std::format("Function '{}' was not found in this scope", this->format_function_name()),
-        this->get_source_fragment()
+        this->get_source_position()
     );
 }
 
@@ -261,7 +256,6 @@ std::unique_ptr<IAstNode> AstFunctionCall::clone()
     }
 
     return std::make_unique<AstFunctionCall>(
-        this->get_context(),
         this->get_function_name_identifier()->clone_as<AstIdentifier>(),
         std::move(cloned_args),
         std::move(generic_type_list_cloned),

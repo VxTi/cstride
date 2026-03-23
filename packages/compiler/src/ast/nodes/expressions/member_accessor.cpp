@@ -2,7 +2,7 @@
 #include "formatting.h"
 #include "ast/casting.h"
 #include "ast/closures.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
@@ -21,7 +21,6 @@ bool stride::ast::is_member_accessor(const TokenSet& set)
 
 /// Consumes `.identifier` and wraps `lhs` in an AstChainedExpression.
 std::unique_ptr<AstChainedExpression> stride::ast::parse_chained_member_access(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> lhs
 )
@@ -30,15 +29,13 @@ std::unique_ptr<AstChainedExpression> stride::ast::parse_chained_member_access(
     const auto member_tok = set.expect(TokenType::IDENTIFIER, "Expected identifier after '.' in member access");
 
     auto member_id = std::make_unique<AstIdentifier>(
-        context,
-        Symbol(member_tok.get_source_fragment(), member_tok.get_lexeme())
+        Symbol(member_tok.get_source_position(), member_tok.get_lexeme())
     );
 
-    const auto source = SourceFragment::join(lhs->get_source_fragment(), member_tok.get_source_fragment());
+    const auto source = SourcePosition::join(lhs->get_source_position(), member_tok.get_source_position());
 
     return std::make_unique<AstChainedExpression>(
         source,
-        context,
         std::move(lhs),
         std::move(member_id)
     );
@@ -46,46 +43,45 @@ std::unique_ptr<AstChainedExpression> stride::ast::parse_chained_member_access(
 
 /// Consumes `(<args>)` and wraps `callee` in an AstIndirectCall.
 std::unique_ptr<AstIndirectCall> stride::ast::parse_indirect_call(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> callee
 )
 {
-    const auto callee_src = callee->get_source_fragment();
-    auto param_block = collect_parenthesized_block(set);
+    const auto callee_src = callee->get_source_position();
+    const auto param_block = collect_parenthesized_block(set);
 
     ExpressionList args;
     if (param_block.has_value())
     {
-        auto subset = param_block.value();
-        if (subset.has_next())
+        if (auto subset = param_block.value();
+            subset.has_next())
         {
-            args.push_back(parse_inline_expression(context, subset));
+            args.push_back(parse_inline_expression(subset));
             while (subset.has_next())
             {
                 subset.expect(TokenType::COMMA, "Expected ',' between arguments");
-                args.push_back(parse_inline_expression(context, subset));
+                args.push_back(parse_inline_expression(subset));
             }
         }
     }
 
-    const auto close_src = set.peek(-1).get_source_fragment();
-    const auto source = SourceFragment::join(callee_src, close_src);
+    const auto close_src = set.peek(-1).get_source_position();
+    const auto source = SourcePosition::join(callee_src, close_src);
 
     return std::make_unique<AstIndirectCall>(
         source,
-        context,
         std::move(callee),
         std::move(args)
     );
 }
 
 llvm::Value* AstChainedExpression::codegen_global_member_accessor(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 ) const
 {
-    llvm::Value* base_val = this->_base->codegen(module, builder);
+    llvm::Value* base_val = this->_base->codegen(symbol_table, module, builder);
     IAstType* current_type = this->_base->get_type();
     std::string current_struct_name = current_type->get_type_name();
 
@@ -103,7 +99,7 @@ llvm::Value* AstChainedExpression::codegen_global_member_accessor(
         return nullptr;
     }
 
-    auto struct_def_opt = this->get_context()->get_object_type(current_struct_name);
+    auto struct_def_opt = symbol_table->get_object_type(current_struct_name);
     if (!struct_def_opt.has_value())
         return nullptr;
 
@@ -115,10 +111,10 @@ llvm::Value* AstChainedExpression::codegen_global_member_accessor(
     current_const = current_const->getAggregateElement(member_index.value());
     if (!current_const)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Invalid member access on constant '{}'", current_struct_name),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -126,38 +122,39 @@ llvm::Value* AstChainedExpression::codegen_global_member_accessor(
 }
 
 llvm::Value* AstChainedExpression::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
     if (!builder->GetInsertBlock())
     {
-        return codegen_global_member_accessor(module, builder);
+        return codegen_global_member_accessor(symbol_table, module, builder);
     }
 
-    llvm::Value* current_val = this->_base->codegen(module, builder);
+    llvm::Value* current_val = this->_base->codegen(symbol_table, module, builder);
     if (!current_val)
     {
         return nullptr;
     }
 
-    const auto base_struct_type = get_object_type_from_type(this->_base->get_type());
+    const auto base_struct_type = get_object_type_from_type(symbol_table, this->_base->get_type());
     if (!base_struct_type.has_value())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             "Member access base must be a struct type",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
     const auto* member_id = cast_expr<AstIdentifier*>(this->_followup.get());
     if (!member_id)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             "Chained expression followup must be an identifier (member name)",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -166,16 +163,16 @@ llvm::Value* AstChainedExpression::codegen(
 
     const bool is_pointer_ty = current_val->getType()->isPointerTy();
 
-    auto parent_struct_type_opt = get_object_type_from_type(parent_type);
+    auto parent_struct_type_opt = get_object_type_from_type(symbol_table, parent_type);
     if (!parent_struct_type_opt.has_value())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Cannot access member '{}' of non-struct type",
                 member_id->get_name()
             ),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -185,14 +182,14 @@ llvm::Value* AstChainedExpression::codegen(
     const auto member_index = parent_struct_type->get_member_field_index(member_id->get_name());
     if (!member_index.has_value())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Cannot access member '{}' of object type '{}': member does not exist",
                 member_id->get_name(),
                 parent_struct_type->get_type_name()
             ),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -204,10 +201,10 @@ llvm::Value* AstChainedExpression::codegen(
         );
         if (!struct_llvm_type)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format("Object '{}' not registered internally", parent_struct_type->get_type_name()),
-                this->get_source_fragment()
+                this->get_source_position()
             );
         }
 
@@ -221,11 +218,12 @@ llvm::Value* AstChainedExpression::codegen(
         auto member_field_type = parent_struct_type->get_member_field_type(member_id->get_name());
         if (!member_field_type.has_value())
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format("Unknown member type '{}' in object '{}'",
-                    member_id->get_name(), parent_struct_type->get_type_name()),
-                this->get_source_fragment()
+                            member_id->get_name(),
+                            parent_struct_type->get_type_name()),
+                this->get_source_position()
             );
         }
 
@@ -246,17 +244,16 @@ llvm::Value* AstChainedExpression::codegen(
 std::unique_ptr<IAstNode> AstChainedExpression::clone()
 {
     return std::make_unique<AstChainedExpression>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_base->clone_as<IAstExpression>(),
         this->_followup->clone_as<IAstExpression>()
     );
 }
 
-void AstChainedExpression::validate()
+void AstChainedExpression::validate(const SymbolTable* symbol_table)
 {
-    this->_base->validate();
-    this->_followup->validate();
+    this->_base->validate(symbol_table);
+    this->_followup->validate(symbol_table);
 }
 
 std::string AstChainedExpression::to_string()
@@ -279,17 +276,18 @@ bool AstChainedExpression::is_reducible()
 }
 
 llvm::Value* AstIndirectCall::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Value* callee_val = this->get_callee()->codegen(module, builder);
+    llvm::Value* callee_val = this->get_callee()->codegen(symbol_table, module, builder);
     if (!callee_val)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             "Indirect call: could not evaluate callee expression",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -303,10 +301,10 @@ llvm::Value* AstIndirectCall::codegen(
     const auto* fn_type = dynamic_cast<AstFunctionType*>(callee_ast_type.get());
     if (!fn_type)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             "Indirect call: callee expression does not have a function type",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -344,7 +342,10 @@ llvm::Value* AstIndirectCall::codegen(
         if (num_captures > 0)
         {
             auto capture_args = closures::extract_closure_captures(
-                module, builder, callee_val, lambda_fn);
+                module,
+                builder,
+                callee_val,
+                lambda_fn);
 
             if (capture_args.size() == num_captures)
             {
@@ -365,7 +366,7 @@ llvm::Value* AstIndirectCall::codegen(
     // Add the user-provided arguments
     for (const auto& arg : this->get_args())
     {
-        llvm::Value* arg_val = arg->codegen(module, builder);
+        llvm::Value* arg_val = arg->codegen(symbol_table, module, builder);
         if (!arg_val)
             return nullptr;
         args_v.push_back(arg_val);
@@ -387,19 +388,18 @@ std::unique_ptr<IAstNode> AstIndirectCall::clone()
     }
 
     return std::make_unique<AstIndirectCall>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_callee->clone_as<IAstExpression>(),
         std::move(cloned_args)
     );
 }
 
-void AstIndirectCall::validate()
+void AstIndirectCall::validate(const SymbolTable* symbol_table)
 {
-    this->get_callee()->validate();
+    this->get_callee()->validate(symbol_table);
     for (const auto& arg : this->get_args())
     {
-        arg->validate();
+        arg->validate(symbol_table);
     }
 }
 

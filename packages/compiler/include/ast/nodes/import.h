@@ -9,7 +9,7 @@
 namespace stride::ast
 {
     class TokenSet;
-    class ParsingContext;
+    class SymbolTable;
 
     typedef struct Dependency
     {
@@ -26,12 +26,11 @@ namespace stride::ast
 
     public:
         explicit AstImport(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<AstIdentifier> package_identifier,
             std::vector<std::unique_ptr<AstIdentifier>> import_list
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _package_identifier(std::move(package_identifier)),
             _import_list(std::move(import_list)) {}
 
@@ -47,9 +46,9 @@ namespace stride::ast
             return this->_import_list;
         }
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
         }
@@ -60,7 +59,6 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstImport> parse_import_statement(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set
     );
 } // namespace stride::ast

@@ -21,11 +21,6 @@ namespace stride::ast
     enum class VisibilityModifier;
     class AstLiteral;
 
-    namespace definition
-    {
-        class TypeDefinition;
-    }
-
     class TokenSet;
 
     using ObjectTypeMemberPair = std::pair<std::string, std::unique_ptr<IAstType>>;
@@ -68,11 +63,10 @@ namespace stride::ast
 
     public:
         explicit IAstType(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             const int flags
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _flags(flags) {}
 
         ~IAstType() override = default;
@@ -160,7 +154,7 @@ namespace stride::ast
             return false;
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
         }
@@ -189,12 +183,11 @@ namespace stride::ast
 
     public:
         explicit AstPrimitiveType(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             const PrimitiveType type,
             const int flags = SRFLAG_NONE
         ) :
-            IAstType(source, context, flags),
+            IAstType(source, flags),
             _type(type) {}
 
         ~AstPrimitiveType() override = default;
@@ -269,16 +262,17 @@ namespace stride::ast
         GenericTypeList _generic_types;
 
         std::unique_ptr<IAstType> _underlying_type = nullptr;
+        definition::TypeDefinition* _type_definition = nullptr;
+        std::unique_ptr<IAstType> _base_reference_type = nullptr;
 
     public:
         explicit AstAliasType(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string name,
             const int flags = SRFLAG_NONE,
             GenericTypeList generic_parameters = EMPTY_GENERIC_TYPE_LIST
         ) :
-            IAstType(source, context, flags),
+            IAstType(source, flags),
             _name(std::move(name)),
             _generic_types(std::move(generic_parameters)) {}
 
@@ -316,7 +310,12 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::optional<std::unique_ptr<IAstType>> get_reference_type() const;
+        std::optional<std::unique_ptr<IAstType>> get_reference_type() const
+        {
+            if (this->_base_reference_type == nullptr) return std::nullopt;
+
+            return this->_base_reference_type->clone_ty();
+        }
 
         /// Returns the super base type of the reference, e.g., if we have:
         /// type RootType = i32;
@@ -325,10 +324,20 @@ namespace stride::ast
         /// Then, calling `get_base_reference_type` on `LeafType` will return `i32`.
         /// Throws an exception if no underlying type can be resolved.
         [[nodiscard]]
-        IAstType* get_underlying_type();
+        IAstType* get_underlying_type() const
+        {
+            return this->_underlying_type.get();
+        }
 
         [[nodiscard]]
-        std::optional<definition::TypeDefinition*> get_type_definition() const;
+        definition::TypeDefinition* get_type_definition() const
+        {
+            return this->_type_definition;
+        }
+
+        void resolve_underlying_type();
+
+        void resolve_type_definition(const SymbolTable *symbol_table);
 
     private:
         bool is_assignable_to_impl(IAstType* other) override;
@@ -347,14 +356,13 @@ namespace stride::ast
 
     public:
         explicit AstFunctionType(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
             GenericParameterList generic_parameter_names = {},
             const int flags = SRFLAG_NONE
         ) :
-            IAstType(source, context, flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
+            IAstType(source, flags | SRFLAG_TYPE_FUNCTION | SRFLAG_TYPE_PTR),
             _parameters(std::move(parameters)),
             _return_type(std::move(return_type)),
             _generic_param_names(std::move(generic_parameter_names)) {}
@@ -420,15 +428,13 @@ namespace stride::ast
 
     public:
         explicit AstArrayType(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::unique_ptr<IAstType> element_type,
             const size_t initial_length,
             const int flags = SRFLAG_NONE
         ) :
             IAstType(
                 source,
-                context,
                 (element_type ? element_type->get_flags() : 0)
                 | flags
                 | SRFLAG_TYPE_PTR
@@ -481,14 +487,13 @@ namespace stride::ast
 
     public:
         explicit AstObjectType(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string type_name,
             ObjectTypeMemberList members,
             const int flags = SRFLAG_NONE,
             GenericTypeList instantiated_generics = {}
         ) :
-            IAstType(source, context, flags),
+            IAstType(source, flags),
             _members(std::move(members)),
             _instantiated_generics(std::move(instantiated_generics)),
             _type_name(std::move(type_name)) {}
@@ -533,8 +538,7 @@ namespace stride::ast
 
     public:
         explicit AstEnumType(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string enum_name,
             std::vector<EnumMemberPair> members,
             int flags = SRFLAG_NONE
@@ -566,9 +570,9 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        void resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        void resolve_forward_references(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
     private:
         bool is_assignable_to_impl(IAstType* other) override;
@@ -583,12 +587,11 @@ namespace stride::ast
 
     public:
         explicit AstTupleType(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::vector<std::unique_ptr<IAstType>> members,
             const int flags = SRFLAG_NONE
         ) :
-            IAstType(source, context, flags),
+            IAstType(source, flags),
             _members(std::move(members)) {}
 
         [[nodiscard]]
@@ -610,7 +613,7 @@ namespace stride::ast
         [[nodiscard]]
         bool equals(IAstType* other) override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
     private:
         bool is_assignable_to_impl(IAstType* other) override
@@ -646,7 +649,6 @@ namespace stride::ast
     };
 
     std::unique_ptr<IAstType> parse_type(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
@@ -658,32 +660,30 @@ namespace stride::ast
     );
 
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_alias_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_object_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_tuple_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     /// Will extract the struct type from a named type if possible, otherwise,
     /// will attempt to cast the type directly into a struct type.
     /// This function will never return nullptrs.
-    std::optional<AstObjectType*> get_object_type_from_type(IAstType* type);
+    std::optional<AstObjectType*> get_object_type_from_type(
+        const SymbolTable* symbol_table,
+        IAstType* type
+    );
 } // namespace stride::ast

@@ -7,7 +7,6 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_type_cast_op(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     IAstExpression* lhs
 )
@@ -17,46 +16,45 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_type_cast_op(
 
     set.next();
 
-    auto type = parse_type(context, set, { "Expected type after 'as' in type cast operation" });
+    auto type = parse_type(set, { "Expected type after 'as' in type cast operation" });
 
-    const auto source_fragment = SourceFragment::join(lhs->get_source_fragment(), type->get_source_fragment());
+    const auto source_fragment = SourcePosition::join(lhs->get_source_position(), type->get_source_position());
 
     return std::make_unique<AstTypeCastOp>(
         source_fragment,
-        context,
         lhs->clone_as<IAstExpression>(),
         std::move(type)
     );
 }
 
-void AstTypeCastOp::validate()
+void AstTypeCastOp::validate(const SymbolTable* symbol_table)
 {
     if (!this->_value)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             "Type cast operation is missing a value to cast",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
     if (!this->_value->get_type()->is_castable_to(this->_target_type.get()))
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Cannot cast value of type '{}' to incompatible type '{}'",
                 this->_value->get_type()->to_string(),
                 this->_target_type->to_string()
             ),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 }
 
-llvm::Value* AstTypeCastOp::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstTypeCastOp::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
-    const auto value = this->_value->codegen(module, builder);
+    const auto value = this->_value->codegen(symbol_table, module, builder);
 
     if (this->_value->get_type()->equals(this->_target_type.get()))
     {
@@ -119,8 +117,7 @@ llvm::Value* AstTypeCastOp::codegen(llvm::Module* module, llvm::IRBuilderBase* b
 std::unique_ptr<IAstNode> AstTypeCastOp::clone()
 {
     return std::make_unique<AstTypeCastOp>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_value->clone_as<IAstExpression>(),
         this->_target_type->clone_ty()
     );

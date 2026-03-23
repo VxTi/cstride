@@ -13,11 +13,10 @@ namespace stride::ast
 
     public:
         explicit AstPackage(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string package_name
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _name(std::move(package_name)) {}
 
         [[nodiscard]]
@@ -26,9 +25,9 @@ namespace stride::ast
             return this->_name;
         }
 
-        void validate() override;
+        void validate(const SymbolTable* symbol_table) override;
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override
         {
             return nullptr;
         }
@@ -41,6 +40,5 @@ namespace stride::ast
     bool is_package_declaration(const TokenSet& set);
 
     std::unique_ptr<AstPackage> parse_package_declaration(
-        const std::shared_ptr<ParsingContext>& context,
         TokenSet& set);
 } // namespace stride::ast

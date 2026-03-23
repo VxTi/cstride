@@ -429,14 +429,14 @@ namespace stride::ast
 
     class Token
     {
-        SourceFragment _position;
+        SourcePosition _position;
         std::string _lexeme{};
         TokenType _type;
 
     public:
         explicit Token(
             const TokenType type,
-            const SourceFragment& position,
+            const SourcePosition& position,
             std::string lexeme) :
             _position(position),
             _lexeme(std::move(lexeme)),
@@ -457,7 +457,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const SourceFragment& get_source_fragment() const
+        const SourcePosition& get_source_position() const
         {
             return _position;
         }
@@ -467,6 +467,7 @@ namespace stride::ast
             return _type == other;
         }
 
+        [[nodiscard]]
         bool is_type_token() const
         {
             switch (this->_type)
@@ -496,8 +497,8 @@ namespace stride::ast
 
     extern std::vector<TokenDefinition> tokenTypes;
 
-    static auto END_OF_FILE =
-        Token(TokenType::END_OF_FILE,
-              { nullptr, static_cast<size_t>(-1), 0 },
-              "");
+    static auto END_OF_FILE = Token(
+        TokenType::END_OF_FILE,
+        { static_cast<size_t>(-1), 0 },
+        "");
 } // namespace stride::ast

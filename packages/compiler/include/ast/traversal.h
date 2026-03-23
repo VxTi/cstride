@@ -1,7 +1,11 @@
 #pragma once
+#include "symbol_table.h"
+
+#include <memory>
 
 namespace stride::ast
 {
+    class AstBranch;
     class IVisitor;
     class AstFunctionCall;
     class AstPackage;
@@ -21,21 +25,28 @@ namespace stride::ast
     /// ensuring that child expression types are available when the parent is visited.
     class AstNodeTraverser
     {
+        std::shared_ptr<SymbolTable> _root_symbol_table;
+        std::shared_ptr<SymbolTable> _current_symbol_table;
+
+        std::string _context_name;
+        ContextType _current_context_type;
+
     public:
+        explicit AstNodeTraverser(
+            std::shared_ptr<SymbolTable> root_symbol_table
+        ) :
+            _root_symbol_table(std::move(root_symbol_table)),
+            _current_symbol_table(root_symbol_table),
+            _context_name(""),
+            _current_context_type(ContextType::GLOBAL) {}
+
+        void traverse(IVisitor* visitor, const AstBranch *branch);
+
+    private:
         void visit(IVisitor* visitor, IAstNode* node);
-
-        void visit_variable_declaration(IVisitor* visitor, AstVariableDeclaration* node);
-
-        void visit_for_loop(IVisitor* visitor, AstForLoop* node);
-
-        void visit_while_loop(IVisitor* visitor, AstWhileLoop* node);
 
         void visit_expression(IVisitor* visitor, IAstExpression* node);
 
-        void visit_conditional_statement(IVisitor* visitor, AstConditionalStatement* node);
-
-        void visit_return_statement(IVisitor* visitor, const AstReturnStatement* node);
-
-        void visit_block(IVisitor* visitor, const AstBlock* node);
+        void visit_block(IVisitor* visitor, AstBlock* node);
     };
 }

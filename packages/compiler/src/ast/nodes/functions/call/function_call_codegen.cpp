@@ -1,7 +1,7 @@
 #include "ast/casting.h"
 #include "ast/closures.h"
 #include "ast/optionals.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/expression.h"
 
@@ -11,37 +11,37 @@
 using namespace stride::ast;
 
 llvm::Value* AstFunctionCall::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
-    if (llvm::Function* callee = this->resolve_regular_callee(module))
+    if (llvm::Function* callee = this->resolve_regular_callee(symbol_table, module))
     {
-        return this->codegen_regular_function_call(callee, module, builder);
+        return this->codegen_regular_function_call(symbol_table, callee, module, builder);
     }
 
     // Indirect call via a function-pointer variable (e.g. a variable holding a lambda).
-    if (auto* indirect_call = this->codegen_anonymous_function_call(module, builder))
+    if (auto* indirect_call = this->codegen_anonymous_function_call(symbol_table, module, builder))
     {
         return indirect_call;
     }
 
-    const auto suggested_alternative_symbol = this->get_context()->fuzzy_find(this->get_function_name());
+    const auto suggested_alternative_symbol = symbol_table->fuzzy_find(this->get_function_name());
     const auto suggested_alternative = suggested_alternative_symbol != nullptr
         ? std::format("Did you mean '{}'?", format_suggestion(suggested_alternative_symbol))
         : "";
 
-    throw parsing_error(
+    throw stride_error(
         ErrorType::COMPILATION_ERROR,
         std::format("Function '{}' was not found in this scope", this->format_function_name()),
-        this->get_source_fragment(),
-        suggested_alternative
+        { ErrorSourceReference{ suggested_alternative, this->get_source_position() } }
     );
 }
 
-llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
+llvm::Function* AstFunctionCall::resolve_regular_callee(const SymbolTable* symbol_table, llvm::Module* module)
 {
-    const auto& definition = this->get_function_definition();
+    const auto& definition = this->get_function_definition(symbol_table);
 
     const AstFunctionType* fn_type = nullptr;
 
@@ -59,7 +59,8 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
         {
             return llvm_func;
         }
-    } else if (dynamic_cast<definition::FieldDefinition*>(definition))
+    }
+    else if (dynamic_cast<definition::FieldDefinition*>(definition))
     {
         // Callable variables (function pointers, lambdas) are handled by
         // codegen_anonymous_function_call, not as regular callees.
@@ -68,10 +69,10 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
 
     if (fn_type == nullptr)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Function '{}' is not a function", this->format_function_name()),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -88,7 +89,9 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
             auto resolved = resolve_generics(param.get(), param_names, this->_generic_type_arguments);
             param_types.push_back(resolved->get_llvm_type(module));
         }
-        auto resolved_ret = resolve_generics(fn_type->get_return_type().get(), param_names, this->_generic_type_arguments);
+        auto resolved_ret = resolve_generics(fn_type->get_return_type().get(),
+                                             param_names,
+                                             this->_generic_type_arguments);
         ret_type = resolved_ret->get_llvm_type(module);
     }
     else
@@ -131,6 +134,7 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(llvm::Module* module)
 }
 
 llvm::Value* AstFunctionCall::codegen_regular_function_call(
+    SymbolTable* symbol_table,
     llvm::Function* callee,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
@@ -144,13 +148,13 @@ llvm::Value* AstFunctionCall::codegen_regular_function_call(
     if (const auto effective_provided = this->get_arguments().size() + (this->is_variadic() ? 1 : 0);
         effective_provided < minimum_arg_count)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Incorrect arguments passed for function '{}', expected {}, got {}",
                         this->get_function_name(),
                         minimum_arg_count,
                         effective_provided),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -172,7 +176,7 @@ llvm::Value* AstFunctionCall::codegen_regular_function_call(
             break;
         }
 
-        llvm::Value* arg_val = arguments[i]->codegen(module, builder);
+        llvm::Value* arg_val = arguments[i]->codegen(symbol_table, module, builder);
 
         if (!arg_val)
         {
@@ -237,267 +241,267 @@ llvm::Value* AstFunctionCall::codegen_regular_function_call(
 }
 
 llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 ) const
 {
     // Variables are stored by their declaration name, not with function signatures
     // So we lookup using the raw function name only
-    if (const auto var_def = this->get_function_name_identifier()->get_definition();
-        var_def.has_value())
+    const auto var_def = this->get_function_name_identifier()->get_definition();
+    const auto field_def = dynamic_cast<definition::FieldDefinition*>(var_def);
+
+    if (!field_def)
     {
-        const auto field_def = dynamic_cast<definition::FieldDefinition*>(var_def.value());
+        throw stride_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Anonymous function call to non-function '{}'",
+                        this->get_function_name()),
+            this->get_source_position()
+        );
+    }
 
-        if (!field_def)
+    auto base_type = field_def->get_type()->clone_ty();
+    if (auto* alias_ty = cast_type<AstAliasType*>(base_type.get()))
+    {
+        base_type = alias_ty->get_underlying_type()->clone_ty();
+    }
+
+    if (const auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))
+    {
+        // First: check if the variable's internal name maps to a named function in the
+        // symbol table with a matching type signature. If so, call it directly without
+        // any pointer indirection.
+        // We sadly cannot use `get_function_definition` here
+        if (symbol_table->get_function_definition(
+            field_def->get_internal_symbol_name(),
+            field_def->get_type()).has_value())
         {
-            throw parsing_error(
+            if (llvm::Function* callee = module->getFunction(field_def->get_internal_symbol_name()))
+            {
+                std::vector<llvm::Value*> args_v;
+                for (const auto& arg : this->get_arguments())
+                {
+                    auto* arg_val = arg->codegen(symbol_table, module, builder);
+                    if (!arg_val)
+                        return nullptr;
+                    args_v.push_back(unwrap_optional_value(arg_val, builder));
+                }
+                const auto instruction_name =
+                    callee->getReturnType()->isVoidTy() ? "" : "indcalltmp";
+                return builder->CreateCall(callee, args_v, instruction_name);
+            }
+        }
+
+        // Otherwise: assume the value is a function pointer and make a generic pointer call.
+
+        // Validate argument count matches lambda signature
+        const auto expected_param_count = fn_type->get_parameter_types().size();
+
+        if (const auto provided_arg_count = this->get_arguments().size();
+            provided_arg_count != expected_param_count)
+        {
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
-                std::format("Anonymous function call to non-function '{}'",
-                            this->get_function_name()),
-                this->get_source_fragment()
+                std::format(
+                    "Incorrect number of arguments for lambda call to '{}': expected {}, got {}",
+                    this->get_function_name(),
+                    expected_param_count,
+                    provided_arg_count),
+                { ErrorSourceReference(
+                    std::format("Lambda expects {} parameter(s)", expected_param_count),
+                    this->get_source_position()
+                ) }
             );
         }
 
-        auto base_type = field_def->get_type()->clone_ty();
-        if (auto* alias_ty = cast_type<AstAliasType*>(base_type.get()))
+        // Validate argument types match lambda signature
+        for (size_t i = 0; i < expected_param_count; ++i)
         {
-            base_type = alias_ty->get_underlying_type()->clone_ty();
-        }
+            const auto arg_type = this->get_arguments()[i]->get_type();
 
-        if (const auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))
-        {
-            // First: check if the variable's internal name maps to a named function in the
-            // symbol table with a matching type signature. If so, call it directly without
-            // any pointer indirection.
-            // We sadly cannot use `get_function_definition` here
-            if (this->get_context()->get_function_definition(
-                field_def->get_internal_symbol_name(),
-                field_def->get_type()).has_value())
+            if (const auto expected_type = fn_type->get_parameter_types()[i].get();
+                !arg_type->equals(expected_type))
             {
-                if (llvm::Function* callee = module->getFunction(field_def->get_internal_symbol_name()))
-                {
-                    std::vector<llvm::Value*> args_v;
-                    for (const auto& arg : this->get_arguments())
-                    {
-                        auto* arg_val = arg->codegen(module, builder);
-                        if (!arg_val)
-                            return nullptr;
-                        args_v.push_back(unwrap_optional_value(arg_val, builder));
-                    }
-                    const auto instruction_name =
-                        callee->getReturnType()->isVoidTy() ? "" : "indcalltmp";
-                    return builder->CreateCall(callee, args_v, instruction_name);
-                }
-            }
-
-            // Otherwise: assume the value is a function pointer and make a generic pointer call.
-
-            // Validate argument count matches lambda signature
-            const auto expected_param_count = fn_type->get_parameter_types().size();
-
-            if (const auto provided_arg_count = this->get_arguments().size();
-                provided_arg_count != expected_param_count)
-            {
-                throw parsing_error(
-                    ErrorType::COMPILATION_ERROR,
+                throw stride_error(
+                    ErrorType::TYPE_ERROR,
                     std::format(
-                        "Incorrect number of arguments for lambda call to '{}': expected {}, got {}",
+                        "Type mismatch for argument {} in anonymous function call '{}': expected type '{}', got '{}'",
+                        i + 1,
                         this->get_function_name(),
-                        expected_param_count,
-                        provided_arg_count),
-                    this->get_source_fragment(),
-                    std::format("Lambda expects {} parameter(s)", expected_param_count)
-                );
-            }
-
-            // Validate argument types match lambda signature
-            for (size_t i = 0; i < expected_param_count; ++i)
-            {
-                const auto arg_type = this->get_arguments()[i]->get_type();
-
-                if (const auto expected_type = fn_type->get_parameter_types()[i].get();
-                    !arg_type->equals(expected_type))
-                {
-                    throw parsing_error(
-                        ErrorType::TYPE_ERROR,
-                        std::format(
-                            "Type mismatch for argument {} in anonymous function call '{}': expected type '{}', got '{}'",
-                            i + 1,
-                            this->get_function_name(),
-                            expected_type->get_type_name(),
-                            arg_type->get_type_name()
-                        ),
-                        {
-                            ErrorSourceReference(
-                                std::format(
-                                    "Expected type: {}",
-                                    expected_type->get_type_name()
-                                ),
-                                arg_type->get_source_fragment()
-                            )
-                        }
-                    );
-                }
-            }
-
-            // AstFunctionType always sets SRFLAG_TYPE_PTR, so get_llvm_type() returns an opaque
-            // PointerType rather than the underlying FunctionType. We must reconstruct the
-            // llvm::FunctionType directly from the AST type's parameter/return types.
-            std::vector<llvm::Type*> llvm_param_types;
-            llvm_param_types.reserve(fn_type->get_parameter_types().size());
-            for (const auto& param : fn_type->get_parameter_types())
-            {
-                llvm_param_types.push_back(param->get_llvm_type(module));
-            }
-            llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
-                fn_type->get_return_type()->get_llvm_type(module),
-                llvm_param_types,
-                fn_type->is_variadic()
-            );
-
-            if (!llvm_fn_type)
-            {
-                throw parsing_error(
-                    ErrorType::COMPILATION_ERROR,
-                    std::format("Invalid function type for anonymous function call '{}'",
-                                this->get_function_name()),
-                    this->get_source_fragment()
-                );
-            }
-
-            // Load the function pointer from the variable
-            const auto fn_ptr = field_def->get_internal_symbol_name();
-            llvm::Value* fn_ptr_val = nullptr;
-
-            if (const auto block = builder->GetInsertBlock())
-            {
-                llvm::Function* current_fn = block->getParent();
-                // Use helper to lookup variable or capture
-                fn_ptr_val = closures::lookup_variable_or_capture(current_fn, fn_ptr);
-
-                if (fn_ptr_val)
-                {
-                    if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(fn_ptr_val))
+                        expected_type->get_type_name(),
+                        arg_type->get_type_name()
+                    ),
                     {
-                        fn_ptr_val = builder->CreateLoad(
-                            alloca->getAllocatedType(),
-                            alloca,
-                            fn_ptr
-                        );
+                        ErrorSourceReference(
+                            std::format(
+                                "Expected type: {}",
+                                expected_type->get_type_name()
+                            ),
+                            arg_type->get_source_position()
+                        )
                     }
-                }
+                );
             }
+        }
 
-            // Maybe it's globally defined
-            if (!fn_ptr_val)
+        // AstFunctionType always sets SRFLAG_TYPE_PTR, so get_llvm_type() returns an opaque
+        // PointerType rather than the underlying FunctionType. We must reconstruct the
+        // llvm::FunctionType directly from the AST type's parameter/return types.
+        std::vector<llvm::Type*> llvm_param_types;
+        llvm_param_types.reserve(fn_type->get_parameter_types().size());
+        for (const auto& param : fn_type->get_parameter_types())
+        {
+            llvm_param_types.push_back(param->get_llvm_type(module));
+        }
+        llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
+            fn_type->get_return_type()->get_llvm_type(module),
+            llvm_param_types,
+            fn_type->is_variadic()
+        );
+
+        if (!llvm_fn_type)
+        {
+            throw stride_error(
+                ErrorType::COMPILATION_ERROR,
+                std::format("Invalid function type for anonymous function call '{}'",
+                            this->get_function_name()),
+                this->get_source_position()
+            );
+        }
+
+        // Load the function pointer from the variable
+        const auto fn_ptr = field_def->get_internal_symbol_name();
+        llvm::Value* fn_ptr_val = nullptr;
+
+        if (const auto block = builder->GetInsertBlock())
+        {
+            llvm::Function* current_fn = block->getParent();
+            // Use helper to lookup variable or capture
+            fn_ptr_val = closures::lookup_variable_or_capture(current_fn, fn_ptr);
+
+            if (fn_ptr_val)
             {
-                fn_ptr_val = module->getNamedGlobal(fn_ptr);
-                if (fn_ptr_val)
+                if (auto* alloca = llvm::dyn_cast<llvm::AllocaInst>(fn_ptr_val))
                 {
-                    auto* global = llvm::dyn_cast<llvm::GlobalVariable>(fn_ptr_val);
                     fn_ptr_val = builder->CreateLoad(
-                        global->getValueType(),
-                        global,
+                        alloca->getAllocatedType(),
+                        alloca,
                         fn_ptr
                     );
                 }
             }
+        }
 
+        // Maybe it's globally defined
+        if (!fn_ptr_val)
+        {
+            fn_ptr_val = module->getNamedGlobal(fn_ptr);
             if (fn_ptr_val)
             {
-                // Generate arguments for the lambda call
-                std::vector<llvm::Value*> args_v;
+                auto* global = llvm::dyn_cast<llvm::GlobalVariable>(fn_ptr_val);
+                fn_ptr_val = builder->CreateLoad(
+                    global->getValueType(),
+                    global,
+                    fn_ptr
+                );
+            }
+        }
 
-                // Find the lambda function to determine if it has captured variables
-                llvm::Function* lambda_fn =
-                    closures::find_lambda_function(module, llvm_fn_type);
+        if (fn_ptr_val)
+        {
+            // Generate arguments for the lambda call
+            std::vector<llvm::Value*> args_v;
 
-                // Determine the actual function type to use for the call
-                llvm::FunctionType* call_fn_type = llvm_fn_type;
-                llvm::Value* actual_fn_ptr = fn_ptr_val;
+            // Find the lambda function to determine if it has captured variables
+            llvm::Function* lambda_fn =
+                closures::find_lambda_function(module, llvm_fn_type);
 
-                // If we found the lambda function, handle captured variables
-                if (lambda_fn)
+            // Determine the actual function type to use for the call
+            llvm::FunctionType* call_fn_type = llvm_fn_type;
+            llvm::Value* actual_fn_ptr = fn_ptr_val;
+
+            // If we found the lambda function, handle captured variables
+            if (lambda_fn)
+            {
+                const size_t num_captures = lambda_fn->arg_size()
+                    - fn_type->get_parameter_types().size();
+
+                if (num_captures > 0)
                 {
-                    const size_t num_captures = lambda_fn->arg_size()
-                        - fn_type->get_parameter_types().size();
+                    // This might be a closure - try to extract captures from it
+                    auto capture_args = closures::extract_closure_captures(
+                        module,
+                        builder,
+                        fn_ptr_val,
+                        lambda_fn
+                    );
 
-                    if (num_captures > 0)
+                    // If closure extraction succeeded, extract the actual function pointer
+                    if (capture_args.size() == num_captures)
                     {
-                        // This might be a closure - try to extract captures from it
-                        auto capture_args = closures::extract_closure_captures(
-                            module,
-                            builder,
+                        // Use the lambda's actual function type which includes captures
+                        call_fn_type = lambda_fn->getFunctionType();
+
+                        // Extract the function pointer from the closure (first element)
+                        llvm::Value* closure_ptr = builder->CreatePointerCast(
                             fn_ptr_val,
-                            lambda_fn
+                            llvm::PointerType::get(module->getContext(), 0)
+                        );
+                        actual_fn_ptr = builder->CreateLoad(
+                            lambda_fn->getType(),
+                            closure_ptr,
+                            "closure_fn_ptr"
                         );
 
-                        // If closure extraction succeeded, extract the actual function pointer
-                        if (capture_args.size() == num_captures)
-                        {
-                            // Use the lambda's actual function type which includes captures
-                            call_fn_type = lambda_fn->getFunctionType();
+                        args_v.insert(
+                            args_v.end(),
+                            capture_args.begin(),
+                            capture_args.end());
+                    }
+                    else
+                    {
+                        // Try the old method: look up captures in the current scope
+                        auto capture_args_old = closures::generate_capture_arguments(
+                            builder,
+                            lambda_fn,
+                            fn_type->get_parameter_types().size()
+                        );
 
-                            // Extract the function pointer from the closure (first element)
-                            llvm::Value* closure_ptr = builder->CreatePointerCast(
-                                fn_ptr_val,
-                                llvm::PointerType::get(module->getContext(), 0)
-                            );
-                            actual_fn_ptr = builder->CreateLoad(
-                                lambda_fn->getType(),
-                                closure_ptr,
-                                "closure_fn_ptr"
-                            );
+                        if (capture_args_old.size() == num_captures)
+                        {
+                            call_fn_type = lambda_fn->getFunctionType();
 
                             args_v.insert(
                                 args_v.end(),
-                                capture_args.begin(),
-                                capture_args.end());
-                        }
-                        else
-                        {
-                            // Try the old method: look up captures in the current scope
-                            auto capture_args_old = closures::generate_capture_arguments(
-                                builder,
-                                lambda_fn,
-                                fn_type->get_parameter_types().size()
-                            );
-
-                            if (capture_args_old.size() == num_captures)
-                            {
-                                call_fn_type = lambda_fn->getFunctionType();
-
-                                args_v.insert(
-                                    args_v.end(),
-                                    capture_args_old.begin(),
-                                    capture_args_old.end());
-                            }
+                                capture_args_old.begin(),
+                                capture_args_old.end());
                         }
                     }
                 }
-
-                // Add the declared arguments
-                for (const auto& arguments = this->get_arguments();
-                     const auto& argument : arguments)
-                {
-                    auto* arg_val = argument->codegen(module, builder);
-                    if (!arg_val)
-                    {
-                        return nullptr;
-                    }
-
-                    args_v.push_back(unwrap_optional_value(arg_val, builder));
-                }
-
-                const auto instruction_name =
-                    call_fn_type->getReturnType()->isVoidTy() ? "" : "indcalltmp";
-                return builder->CreateCall(
-                    call_fn_type,
-                    actual_fn_ptr,
-                    args_v,
-                    instruction_name
-                );
             }
+
+            // Add the declared arguments
+            for (const auto& arguments = this->get_arguments();
+                 const auto& argument : arguments)
+            {
+                auto* arg_val = argument->codegen(symbol_table, module, builder);
+                if (!arg_val)
+                {
+                    return nullptr;
+                }
+
+                args_v.push_back(unwrap_optional_value(arg_val, builder));
+            }
+
+            const auto instruction_name =
+                call_fn_type->getReturnType()->isVoidTy() ? "" : "indcalltmp";
+            return builder->CreateCall(
+                call_fn_type,
+                actual_fn_ptr,
+                args_v,
+                instruction_name
+            );
         }
     }
 

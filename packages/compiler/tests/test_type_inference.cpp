@@ -3,7 +3,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
 #include "ast/nodes/function_declaration.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/symbols.h"
 #include "errors.h"
 #include "files.h"
@@ -17,16 +17,16 @@ using namespace stride::tests;
 class TypeInferenceTest : public ::testing::Test
 {
 protected:
-    std::shared_ptr<ParsingContext> context;
+    std::shared_ptr<SymbolTable> context;
     std::shared_ptr<SourceFile> source;
 
     void SetUp() override
     {
-        context = std::make_shared<ParsingContext>();
+        context = std::make_shared<SymbolTable>();
         source = std::make_shared<SourceFile>("test.sr", "");
     }
 
-    SourceFragment dummy_sf()
+    SourcePosition dummy_sf()
     {
         return { source, 0, 0 };
     }
@@ -46,40 +46,40 @@ TEST_F(TypeInferenceTest, InferLiteralTypes)
 {
     // Int literals
     auto i32_lit = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 42, 0);
-    auto i32_ty = infer_expression_type(i32_lit.get());
+    auto i32_ty = infer_expression_type(symbol_table, i32_lit.get());
     EXPECT_EQ(i32_ty->to_string(), "i32");
 
     auto i64_lit = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT64, 42, 0);
-    auto i64_ty = infer_expression_type(i64_lit.get());
+    auto i64_ty = infer_expression_type(symbol_table, i64_lit.get());
     EXPECT_EQ(i64_ty->to_string(), "i64");
 
     // Float literals
     auto f32_lit = std::make_unique<AstFpLiteral>(dummy_sf(), context, PrimitiveType::FLOAT32, 3.14f);
-    auto f32_ty = infer_expression_type(f32_lit.get());
+    auto f32_ty = infer_expression_type(symbol_table, f32_lit.get());
     EXPECT_EQ(f32_ty->to_string(), "f32");
 
     auto f64_lit = std::make_unique<AstFpLiteral>(dummy_sf(), context, PrimitiveType::FLOAT64, 3.14);
-    auto f64_ty = infer_expression_type(f64_lit.get());
+    auto f64_ty = infer_expression_type(symbol_table, f64_lit.get());
     EXPECT_EQ(f64_ty->to_string(), "f64");
 
     // Bool literal
     auto bool_lit = std::make_unique<AstBooleanLiteral>(dummy_sf(), context, true);
-    auto bool_ty = infer_expression_type(bool_lit.get());
+    auto bool_ty = infer_expression_type(symbol_table, bool_lit.get());
     EXPECT_EQ(bool_ty->to_string(), "bool");
 
     // String literal
     auto str_lit = std::make_unique<AstStringLiteral>(dummy_sf(), context, "hello");
-    auto str_ty = infer_expression_type(str_lit.get());
+    auto str_ty = infer_expression_type(symbol_table, str_lit.get());
     EXPECT_EQ(str_ty->to_string(), "string");
 
     // Char literal
     auto char_lit = std::make_unique<AstCharLiteral>(dummy_sf(), context, 'a');
-    auto char_ty = infer_expression_type(char_lit.get());
+    auto char_ty = infer_expression_type(symbol_table, char_lit.get());
     EXPECT_EQ(char_ty->to_string(), "char");
 
     // Nil literal
     auto nil_lit = std::make_unique<AstNilLiteral>(dummy_sf(), context);
-    auto nil_ty = infer_expression_type(nil_lit.get());
+    auto nil_ty = infer_expression_type(symbol_table, nil_lit.get());
     EXPECT_EQ(nil_ty->to_string(), "nil");
 }
 
@@ -93,7 +93,7 @@ TEST_F(TypeInferenceTest, InferIdentifierTypes)
         VisibilityModifier::PUBLIC);
 
     auto iden = std::make_unique<AstIdentifier>(context, var_sym);
-    auto ty = infer_expression_type(iden.get());
+    auto ty = infer_expression_type(symbol_table, iden.get());
     EXPECT_EQ(ty->to_string(), "i32");
 
     // Function lookup (as identifier)
@@ -111,12 +111,12 @@ TEST_F(TypeInferenceTest, InferIdentifierTypes)
     context->define_function(fn_sym, std::move(fn_ty), VisibilityModifier::PUBLIC, 0);
 
     auto fn_iden = std::make_unique<AstIdentifier>(context, fn_sym);
-    auto fn_res_ty = infer_expression_type(fn_iden.get());
+    auto fn_res_ty = infer_expression_type(symbol_table, fn_iden.get());
     EXPECT_EQ(fn_res_ty->to_string(), "(i32) -> f32");
 
     // Symbol not found
     auto unknown_iden = std::make_unique<AstIdentifier>(context, dummy_sym("unknown"));
-    EXPECT_THROW(infer_expression_type(unknown_iden.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(unknown_iden.get()), stride_error);
 }
 
 TEST_F(TypeInferenceTest, InferTypeCast)
@@ -125,7 +125,7 @@ TEST_F(TypeInferenceTest, InferTypeCast)
     auto target_ty = std::make_unique<AstPrimitiveType>(dummy_sf(), context, PrimitiveType::FLOAT64);
     auto cast = std::make_unique<AstTypeCastOp>(dummy_sf(), context, std::move(lit), std::move(target_ty));
 
-    auto ty = infer_expression_type(cast.get());
+    auto ty = infer_expression_type(symbol_table, cast.get());
     EXPECT_EQ(ty->to_string(), "f64");
 }
 
@@ -267,7 +267,7 @@ TEST_F(TypeInferenceTest, InferVariableDeclaration)
         std::move(val3),
         VisibilityModifier::PUBLIC,
         0);
-    EXPECT_THROW(infer_expression_type(decl3.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(decl3.get()), stride_error);
 }
 
 TEST_F(TypeInferenceTest, InferArrayAndAccessor)
@@ -312,7 +312,7 @@ TEST_F(TypeInferenceTest, InferArrayAccessorErrors)
     auto iden = std::make_unique<AstIdentifier>(context, dummy_sym("not_arr"));
     auto idx = std::make_unique<AstIntLiteral>(dummy_sf(), context, PrimitiveType::INT32, 0, 0);
     auto access = std::make_unique<AstArrayMemberAccessor>(dummy_sf(), context, std::move(iden), std::move(idx));
-    EXPECT_THROW(infer_expression_type(access.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(access.get()), stride_error);
 }
 
 TEST_F(TypeInferenceTest, InferTuple)
@@ -379,7 +379,7 @@ TEST_F(TypeInferenceTest, RecursionGuard)
             std::move(prev));
     }
 
-    EXPECT_THROW(infer_expression_type(current.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(current.get()), stride_error);
 }
 
 TEST_F(TypeInferenceTest, InferFunctionCall)
@@ -474,7 +474,7 @@ TEST_F(TypeInferenceTest, InferChainedExpressionErrors)
     auto base = std::make_unique<AstIdentifier>(context, dummy_sym("unknown_var"));
     auto member = std::make_unique<AstIdentifier>(context, dummy_sym("x"));
     auto access = std::make_unique<AstChainedExpression>(dummy_sf(), context, std::move(base), std::move(member));
-    EXPECT_THROW(infer_expression_type(access.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(access.get()), stride_error);
 
     // Base is not a struct
     context->define_variable(dummy_sym("i"),
@@ -483,10 +483,10 @@ TEST_F(TypeInferenceTest, InferChainedExpressionErrors)
     auto base2 = std::make_unique<AstIdentifier>(context, dummy_sym("i"));
     auto member2 = std::make_unique<AstIdentifier>(context, dummy_sym("x"));
     auto access2 = std::make_unique<AstChainedExpression>(dummy_sf(), context, std::move(base2), std::move(member2));
-    EXPECT_THROW(infer_expression_type(access2.get()), parsing_error);
+    EXPECT_THROW(infer_expression_type(access2.get()), stride_error);
 }
 
 TEST_F(TypeInferenceTest, InferNullExpression)
 {
-    EXPECT_THROW(infer_expression_type(nullptr), parsing_error);
+    EXPECT_THROW(infer_expression_type(nullptr), stride_error);
 }

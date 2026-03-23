@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/closures.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 
 #include <llvm/IR/Module.h>
@@ -8,48 +8,46 @@
 
 using namespace stride::ast;
 
-std::optional<definition::IDefinition*> AstIdentifier::get_definition() const
+void AstIdentifier::resolve_definition(const SymbolTable* symbol_table)
 {
     const std::string internal_name = this->get_scoped_name();
 
-    if (auto var_def = this->get_context()->lookup_variable(internal_name, false))
+    if (const auto var_def = symbol_table->lookup_variable(internal_name, false))
     {
-        return var_def;
+        this->_definition = var_def;
+        return;
     }
 
     // Fall back to name-based lookup, which resolves short names to their internal
     // names (e.g. `x` → `x.0` for locals with a counter suffix).
-    if (const auto symbol_definition = this->get_context()->lookup_symbol(internal_name))
+    if (const auto symbol_definition = symbol_table->lookup_symbol(internal_name))
     {
-        return symbol_definition;
+        this->_definition = symbol_definition;
+        return;
     }
 
     // Last resort: raw name match (handles captured variables).
-    if (const auto definition = this->get_context()->lookup_variable(internal_name, true))
+    if (const auto definition = symbol_table->lookup_variable(internal_name, true))
     {
-        return definition;
+        this->_definition = definition;
+        return;
     }
 
-    return std::nullopt;
+    throw stride_error(
+        ErrorType::REFERENCE_ERROR,
+        std::format("Identifier '{}' not found in this scope", this->get_name()),
+        this->get_source_position()
+    );
 }
 
 llvm::Value* AstIdentifier::codegen_ptr(
     llvm::Module* module,
-    llvm::IRBuilderBase* builder
-)
+    const llvm::IRBuilderBase* builder
+) const
 {
     const auto definition = this->get_definition();
 
-    if (!definition.has_value())
-    {
-        throw parsing_error(
-            ErrorType::REFERENCE_ERROR,
-            std::format("Identifier '{}' not found in this scope", this->get_name()),
-            this->get_source_fragment()
-        );
-    }
-
-    const std::string internal_name = definition.value()->get_internal_symbol_name();
+    const std::string internal_name = definition->get_internal_symbol_name();
     llvm::Value* val = nullptr;
 
     if (const auto block = builder->GetInsertBlock())
@@ -78,10 +76,10 @@ llvm::Value* AstIdentifier::codegen_ptr(
                     return global;
                 }
 
-                throw parsing_error(
+                throw stride_error(
                     ErrorType::REFERENCE_ERROR,
                     std::format("Identifier '{}' not found in this scope", this->get_name()),
-                    this->get_source_fragment());
+                    this->get_source_position());
             }
         }
     }
@@ -98,10 +96,10 @@ llvm::Value* AstIdentifier::codegen_ptr(
             return function;
         }
 
-        throw parsing_error(
+        throw stride_error(
             ErrorType::REFERENCE_ERROR,
             std::format("Identifier '{}' not found in this scope", this->get_name()),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -109,6 +107,7 @@ llvm::Value* AstIdentifier::codegen_ptr(
 }
 
 llvm::Value* AstIdentifier::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -147,10 +146,7 @@ llvm::Value* AstIdentifier::codegen(
 
 std::unique_ptr<IAstNode> AstIdentifier::clone()
 {
-    return std::make_unique<AstIdentifier>(
-        this->get_context(),
-        this->_symbol
-    );
+    return std::make_unique<AstIdentifier>(this->_symbol);
 }
 
 std::string AstIdentifier::to_string()

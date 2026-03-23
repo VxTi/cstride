@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-void AstPackage::validate() {}
+void AstPackage::validate(const SymbolTable* symbol_table) {}
 
 std::string AstPackage::to_string()
 {
@@ -18,9 +18,7 @@ bool stride::ast::is_package_declaration(const TokenSet& set)
     return set.peek_next_eq(TokenType::KEYWORD_PACKAGE);
 }
 
-std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(TokenSet& set)
 {
     const size_t initial_offset = set.position();
     const auto reference_token = set.expect(TokenType::KEYWORD_PACKAGE);
@@ -35,8 +33,7 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
     const auto& last_pos = set.expect(TokenType::SEMICOLON, "Expected semicolon after package declaration");
 
     return std::make_unique<AstPackage>(
-        SourceFragment::join(reference_token.get_source_fragment(), last_pos.get_source_fragment()),
-        context,
+        SourcePosition::join(reference_token.get_source_position(), last_pos.get_source_position()),
         package_name
     );
 }
@@ -44,8 +41,7 @@ std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
 std::unique_ptr<IAstNode> AstPackage::clone()
 {
     return std::make_unique<AstPackage>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_package_name()
     );
 }

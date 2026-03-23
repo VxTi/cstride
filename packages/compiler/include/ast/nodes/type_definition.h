@@ -21,14 +21,13 @@ namespace stride::ast
 
     public:
         explicit AstTypeDefinition(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::string name,
             std::unique_ptr<IAstType> type,
             const VisibilityModifier visibility,
             GenericParameterList generic_parameters = {}
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _name(std::move(name)),
             _type(std::move(type)),
             _visibility(visibility),
@@ -41,7 +40,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const IAstType* get_type() const
+        IAstType* get_type() const
         {
             return this->_type.get();
         }
@@ -52,9 +51,10 @@ namespace stride::ast
             return this->_visibility;
         }
 
-        llvm::Value* codegen(llvm::Module* module, llvm::IRBuilderBase* builder) override;
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
         void resolve_forward_references(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
@@ -78,20 +78,9 @@ namespace stride::ast
         }
     };
 
-    std::unique_ptr<AstTypeDefinition> parse_type_definition(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set,
-        VisibilityModifier modifier
-    );
+    std::unique_ptr<AstTypeDefinition> parse_type_definition(TokenSet& set, VisibilityModifier modifier);
 
-    EnumMemberPair parse_enumerable_member(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set,
-        size_t element_index
-    );
+    EnumMemberPair parse_enumerable_member(TokenSet& set, size_t element_index);
 
-    std::unique_ptr<AstTypeDefinition> parse_enum_type_definition(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set,
-        VisibilityModifier modifier);
+    std::unique_ptr<AstTypeDefinition> parse_enum_type_definition(TokenSet& set, VisibilityModifier modifier);
 }

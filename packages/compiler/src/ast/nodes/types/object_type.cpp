@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token.h"
@@ -12,7 +12,6 @@
 using namespace stride::ast;
 
 void parse_object_member(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     ObjectTypeMemberList& fields,
     const TypeParsingOptions& options
@@ -26,7 +25,6 @@ void parse_object_member(
     set.expect(TokenType::COLON);
 
     auto struct_member_type = parse_type(
-        context,
         set,
         { "Expected object member type" }
     );
@@ -65,7 +63,6 @@ void parse_object_member(
  * </code>
  */
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
@@ -81,12 +78,11 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional
     auto struct_body_set = collect_block_required(set, "A struct must have at least 1 member");
 
     ObjectTypeMemberList struct_fields;
-    const auto struct_type_context = std::make_shared<ParsingContext>(context, context->get_context_type());
 
     // Parse fields
     while (struct_body_set.has_next())
     {
-        parse_object_member(struct_type_context, struct_body_set, struct_fields, options);
+        parse_object_member(struct_body_set, struct_fields, options);
     }
 
     // Re-verification
@@ -96,8 +92,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional
     }
 
     auto struct_ty = std::make_unique<AstObjectType>(
-        reference_token.get_source_fragment(),
-        struct_type_context,
+        reference_token.get_source_position(),
         options.type_name,
         std::move(struct_fields),
         options.flags
@@ -178,14 +173,14 @@ llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
         {
             // Note: If you support pointers to self (recursive structs), usually
             // you would find the opaque type created in step 1 here.
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Unknown internal type '{}' for object member '{}'",
                     member_type->get_type_name(),
                     member_name
                 ),
-                member_type->get_source_fragment()
+                member_type->get_source_position()
             );
         }
 
@@ -287,8 +282,7 @@ std::unique_ptr<IAstNode> AstObjectType::clone()
     }
 
     return std::make_unique<AstObjectType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_type_name,
         std::move(cloned_members),
         this->get_flags(),

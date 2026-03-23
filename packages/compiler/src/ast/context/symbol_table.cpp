@@ -1,4 +1,4 @@
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include "errors.h"
 #include "ast/symbols.h"
@@ -28,22 +28,22 @@ std::string stride::ast::scope_type_to_str(const ContextType& scope_type)
     return "unknown";
 }
 
-const ParsingContext& ParsingContext::traverse_to_root() const
+const SymbolTable& SymbolTable::traverse_to_root() const
 {
     auto current = this;
-    while (current->_parent_registry)
+    while (current != nullptr && current->_parent_registry)
     {
         current = current->_parent_registry.get();
     }
     return *current;
 }
 
-void ParsingContext::define(std::unique_ptr<IDefinition> definition)
+void SymbolTable::define(std::unique_ptr<IDefinition> definition)
 {
     this->_symbols.push_back(std::move(definition));
 }
 
-std::optional<std::unique_ptr<IDefinition>> ParsingContext::get_definition_by_internal_name(const std::string& internal_name) const
+std::optional<std::unique_ptr<IDefinition>> SymbolTable::get_definition_by_internal_name(const std::string& internal_name) const
 {
     auto current = this;
     while (current != nullptr)
@@ -85,7 +85,7 @@ static size_t levenshtein_distance(const std::string& a, const std::string& b)
     return prev[len_b];
 }
 
-IDefinition* ParsingContext::fuzzy_find(const std::string& symbol_name) const
+IDefinition* SymbolTable::fuzzy_find(const std::string& symbol_name) const
 {
     IDefinition* best_match = nullptr;
     size_t best_distance = std::numeric_limits<size_t>::max();
@@ -154,7 +154,7 @@ IDefinition* ParsingContext::fuzzy_find(const std::string& symbol_name) const
     return nullptr;
 }
 
-IDefinition* ParsingContext::lookup_symbol(const std::string& symbol_name) const
+IDefinition* SymbolTable::lookup_symbol(const std::string& symbol_name) const
 {
     auto current = this;
     while (current != nullptr)

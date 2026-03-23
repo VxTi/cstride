@@ -2,7 +2,7 @@
 
 #include "errors.h"
 #include "ast/optionals.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/tokens/token_set.h"
 
 #include <format>
@@ -12,27 +12,17 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(TokenSet& set)
 {
-    // We can just do a quick check here, as we don't know yet whether in what context it's used.
-    if (context->get_context_type() == ContextType::GLOBAL ||
-        context->get_context_type() == ContextType::MODULE)
-    {
-        set.throw_error(
-            "Return statements are not allowed outside of functions");
-    }
     const auto reference_token = set.next();
-    const auto& ref_pos = reference_token.get_source_fragment();
+    const auto& ref_pos = reference_token.get_source_position();
 
     std::optional<std::unique_ptr<IAstExpression>> return_value = std::nullopt;
 
     // If we don't see a semicolon immediately after, we expect a return expression.
     if (!set.peek_next_eq(TokenType::SEMICOLON))
     {
-        return_value = parse_inline_expression(context, set);
+        return_value = parse_inline_expression(set);
         if (!return_value)
         {
             set.throw_error("Expected expression after return keyword");
@@ -42,34 +32,31 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
     const auto& end_pos =
         set
        .expect(TokenType::SEMICOLON, "Expected ';' after return statement")
-       .get_source_fragment();
+       .get_source_position();
 
     return std::make_unique<AstReturnStatement>(
-        SourceFragment::join(ref_pos, end_pos),
-        context,
+        SourcePosition::join(ref_pos, end_pos),
         std::move(return_value)
     );
 }
 
-void AstReturnStatement::validate()
+void AstReturnStatement::validate(const SymbolTable* symbol_table)
 {
-    auto context = this->get_context();
-
-    while (context->get_context_type() != ContextType::FUNCTION &&
-        context->get_parent_context() != nullptr)
+    while (symbol_table->get_context_type() != ContextType::FUNCTION &&
+        symbol_table->get_parent_context() != nullptr)
     {
-        context = context->get_parent_context();
+        symbol_table = symbol_table->get_parent_context();
     }
-    if (context->get_context_type() != ContextType::FUNCTION)
+    if (symbol_table->get_context_type() != ContextType::FUNCTION)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::SYNTAX_ERROR,
             "Return statement cannot appear outside of functions",
-            this->get_source_fragment());
+            this->get_source_position());
     }
 
     if (this->get_return_expression().has_value())
-        this->get_return_expression().value()->validate();
+        this->get_return_expression().value()->validate(symbol_table);
 }
 
 std::string AstReturnStatement::to_string()
@@ -83,19 +70,19 @@ std::string AstReturnStatement::to_string()
 }
 
 void AstReturnStatement::resolve_forward_references(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder
 )
 {
     if (this->get_return_expression().has_value())
     {
-        this->get_return_expression().value()->resolve_forward_references(module, builder);
+        this->get_return_expression().value()->resolve_forward_references(symbol_table, module, builder);
     }
 }
 
 llvm::Value* AstReturnStatement::codegen(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder
 )
 {
     // If no return expression is provided, default to void
@@ -105,17 +92,17 @@ llvm::Value* AstReturnStatement::codegen(
     }
 
     llvm::Value* return_value = this->get_return_expression().value()->codegen(
-        module,
-        builder
+        symbol_table,
+        module, builder
     );
 
     llvm::BasicBlock* cur_bb = builder->GetInsertBlock();
     if (!return_value || !cur_bb)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             "Cannot return from a function that has no basic block",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -157,10 +144,10 @@ llvm::Value* AstReturnStatement::codegen(
                 }
                 else
                 {
-                    throw parsing_error(
+                    throw stride_error(
                         ErrorType::COMPILATION_ERROR,
                         "Cannot cast return value to function return type",
-                        this->get_source_fragment()
+                        this->get_source_position()
                     );
                 }
             }
@@ -168,10 +155,10 @@ llvm::Value* AstReturnStatement::codegen(
     }
     else
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             "Cannot determine the function return type for return statement",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -182,8 +169,7 @@ llvm::Value* AstReturnStatement::codegen(
 std::unique_ptr<IAstNode> AstReturnStatement::clone()
 {
     return std::make_unique<AstReturnStatement>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_value.has_value()
         ? std::make_optional(this->_value.value()->clone_as<IAstExpression>())
         : std::nullopt

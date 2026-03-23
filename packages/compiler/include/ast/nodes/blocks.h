@@ -1,5 +1,7 @@
 #pragma once
 
+#include "errors.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/ast_node.h"
 
 #include <optional>
@@ -14,31 +16,42 @@ namespace stride::ast
         : public IAstNode
     {
         std::vector<std::unique_ptr<IAstNode>> _children;
+        std::shared_ptr<SymbolTable> _symbol_table;
 
     public:
         explicit AstBlock(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const SourcePosition& source,
             std::vector<std::unique_ptr<IAstNode>> children
         ) :
-            IAstNode(source, context),
+            IAstNode(source),
             _children(std::move(children)) {}
 
         std::string to_string() override;
 
-        void validate() override;
-
         llvm::Value* codegen(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
 
         void resolve_forward_references(
+            SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder
         ) override;
 
         void aggregate_block(AstBlock* other);
+
+        [[nodiscard]]
+        std::shared_ptr<SymbolTable> get_symbol_table() const
+        {
+            return this->_symbol_table;
+        }
+
+        void set_symbol_table(std::shared_ptr<SymbolTable> symbol_table)
+        {
+            this->_symbol_table = std::move(symbol_table);
+        }
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstNode>>& get_children() const
@@ -49,19 +62,19 @@ namespace stride::ast
         ~AstBlock() override = default;
 
         static std::unique_ptr<AstBlock> create_empty(
-            const std::shared_ptr<ParsingContext>& context,
-            const SourceFragment& source
+            const SourcePosition& source
         )
         {
-            return std::make_unique<AstBlock>(source, context, std::vector<std::unique_ptr<IAstNode>>{});
+            return std::make_unique<AstBlock>(
+                source,
+                std::vector<std::unique_ptr<IAstNode>>{}
+            );
         }
 
         std::unique_ptr<IAstNode> clone() override;
     };
 
-    std::unique_ptr<AstBlock> parse_block(
-        const std::shared_ptr<ParsingContext>& context,
-        TokenSet& set);
+    std::unique_ptr<AstBlock> parse_block(TokenSet& set);
 
     std::optional<TokenSet> collect_block(TokenSet& set);
 

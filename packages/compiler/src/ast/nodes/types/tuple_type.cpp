@@ -9,7 +9,6 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
@@ -31,7 +30,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
 
     members.push_back(
         parse_type(
-            context,
             type_set.value(),
             { "Expected types in tuple type declaration" }
         )
@@ -42,7 +40,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
         set.next();
         members.push_back(
             parse_type(
-                context,
                 type_set.value(),
                 { "Expected types in tuple type declaration" }
             )
@@ -50,24 +47,22 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
     }
 
     const auto last_pos = type_set.has_value()
-        ? type_set->last().get_source_fragment()
-        : reference_token.get_source_fragment();
+        ? type_set->last().get_source_position()
+        : reference_token.get_source_position();
 
-    const auto source = SourceFragment(
-        set.get_source(),
-        reference_token.get_source_fragment().offset,
-        last_pos.offset + last_pos.length - reference_token.get_source_fragment().offset
+    const auto source = SourcePosition(
+        reference_token.get_source_position().offset,
+        last_pos.offset + last_pos.length - reference_token.get_source_position().offset
     );
 
     return std::make_unique<AstTupleType>(
         source,
-        context,
         std::move(members),
         options.flags
     );
 }
 
-llvm::Value* AstTupleType::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstTupleType::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     return nullptr;
 }
@@ -95,8 +90,7 @@ std::unique_ptr<IAstNode> AstTupleType::clone()
     }
 
     return std::make_unique<AstTupleType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         std::move(members),
         this->get_flags()
     );

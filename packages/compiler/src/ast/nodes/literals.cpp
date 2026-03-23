@@ -6,35 +6,33 @@
 
 using namespace stride::ast;
 
-std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(TokenSet& set)
 {
-    if (auto str = parse_string_literal_optional(context, set); str.
-        has_value())
+    if (auto str = parse_string_literal_optional(set);
+        str.has_value())
     {
         return str;
     }
 
-    if (auto int_lit = parse_integer_literal_optional(context, set); int_lit.
-        has_value())
+    if (auto int_lit = parse_integer_literal_optional(set);
+        int_lit.has_value())
     {
         return int_lit;
     }
 
-    if (auto float_lit = parse_float_literal_optional(context, set);
+    if (auto float_lit = parse_float_literal_optional(set);
         float_lit.has_value())
     {
         return float_lit;
     }
 
-    if (auto char_lit = parse_char_literal_optional(context, set); char_lit.
-        has_value())
+    if (auto char_lit = parse_char_literal_optional(set);
+        char_lit.has_value())
     {
         return char_lit;
     }
 
-    if (auto bool_lit = parse_boolean_literal_optional(context, set);
+    if (auto bool_lit = parse_boolean_literal_optional(set);
         bool_lit.has_value())
     {
         return bool_lit;
@@ -43,18 +41,13 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
     if (set.peek_next_eq(TokenType::KEYWORD_NIL))
     {
         const auto reference_token = set.next();
-        return std::make_unique<AstNilLiteral>(
-            reference_token.get_source_fragment(),
-            context);
+        return std::make_unique<AstNilLiteral>(reference_token.get_source_position());
     }
 
     return std::nullopt;
 }
 
-std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_optional(TokenSet& set)
 {
     if (const auto reference_token = set.peek_next();
         reference_token.get_type() == TokenType::STRING_LITERAL)
@@ -62,18 +55,14 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_opt
         const auto str_tok = set.next();
 
         return std::make_unique<AstStringLiteral>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             str_tok.get_lexeme()
         );
     }
     return std::nullopt;
 }
 
-std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(TokenSet& set)
 {
     if (const auto reference_token = set.peek_next();
         reference_token.get_type() == TokenType::DOUBLE_LITERAL)
@@ -83,8 +72,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
         // Remove the trailing D
 
         return std::make_unique<AstFpLiteral>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::FLOAT64,
             std::stod(numeric)
         );
@@ -94,8 +82,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
     {
         const auto next = set.next();
         return std::make_unique<AstFpLiteral>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::FLOAT32,
             std::stof(next.get_lexeme())
         );
@@ -103,10 +90,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
     return std::nullopt;
 }
 
-std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_optional(TokenSet& set)
 {
     if (const auto reference_token = set.peek_next();
         reference_token.get_type() == TokenType::BOOLEAN_LITERAL)
@@ -114,18 +98,12 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_op
         const auto next = set.next();
         const bool value = next.get_lexeme() == "true";
 
-        return std::make_unique<AstBooleanLiteral>(
-            reference_token.get_source_fragment(),
-            context,
-            value);
+        return std::make_unique<AstBooleanLiteral>(reference_token.get_source_position(), value);
     }
     return std::nullopt;
 }
 
-std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optional(TokenSet& set)
 {
     if (const auto reference_token = set.peek_next();
         reference_token.get_type() == TokenType::CHAR_LITERAL)
@@ -133,10 +111,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optio
         const auto next = set.next();
         const char value = next.get_lexeme()[0];
 
-        return std::make_unique<AstCharLiteral>(
-            reference_token.get_source_fragment(),
-            context,
-            value);
+        return std::make_unique<AstCharLiteral>(reference_token.get_source_position(), value);
     }
     return std::nullopt;
 }
@@ -165,10 +140,7 @@ std::string format_int_conversion_error(
     return error; // "Unknown error";
 }
 
-std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_optional(TokenSet& set)
 {
     const auto reference_token = set.peek_next();
 
@@ -194,15 +166,15 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
                 ? PrimitiveType::INT64
                 : PrimitiveType::INT32;
 
-            return std::make_unique<AstIntLiteral>(reference_token.get_source_fragment(), context, type, value);
+            return std::make_unique<AstIntLiteral>(reference_token.get_source_position(), type, value);
         }
         catch (const std::exception& e)
         {
             const auto reason = format_int_conversion_error(e.what(), token_type);
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::SEMANTIC_ERROR,
                 reason,
-                reference_token.get_source_fragment());
+                reference_token.get_source_position());
         }
     }
     default:
@@ -212,7 +184,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_op
 
 // --- codegen of literals
 
-llvm::Value* AstCharLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstCharLiteral::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     return llvm::ConstantInt::get(
         module->getContext(),
@@ -220,7 +192,7 @@ llvm::Value* AstCharLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* 
     );
 }
 
-llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstStringLiteral::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     // Check if a global variable already exists with the same value
     // If it does, we'll return a pointer to the existing global string
@@ -250,7 +222,7 @@ llvm::Value* AstStringLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase
     return builder->CreateGlobalString(this->value(), "", 0, module);
 }
 
-llvm::Value* AstFpLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstFpLiteral::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     if (this->get_primitive_type() == PrimitiveType::FLOAT64)
     {
@@ -259,7 +231,7 @@ llvm::Value* AstFpLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* bu
     return llvm::ConstantFP::get(builder->getFloatTy(), this->value());
 }
 
-llvm::Value* AstBooleanLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstBooleanLiteral::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     return llvm::ConstantInt::get(
         module->getContext(),
@@ -267,12 +239,12 @@ llvm::Value* AstBooleanLiteral::codegen(llvm::Module* module, llvm::IRBuilderBas
     );
 }
 
-llvm::Value* AstNilLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstNilLiteral::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     return llvm::Constant::getNullValue(builder->getPtrTy());
 }
 
-llvm::Value* AstIntLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstIntLiteral::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     return llvm::ConstantInt::get(
         module->getContext(),
@@ -284,18 +256,13 @@ llvm::Value* AstIntLiteral::codegen(llvm::Module* module, llvm::IRBuilderBase* b
 
 std::unique_ptr<IAstNode> AstBooleanLiteral::clone()
 {
-    return std::make_unique<AstBooleanLiteral>(
-        this->get_source_fragment(),
-        this->get_context(),
-        this->value()
-    );
+    return std::make_unique<AstBooleanLiteral>(this->get_source_position(), this->value());
 }
 
 std::unique_ptr<IAstNode> AstFpLiteral::clone()
 {
     return std::make_unique<AstFpLiteral>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_primitive_type(),
         this->value()
     );
@@ -304,8 +271,7 @@ std::unique_ptr<IAstNode> AstFpLiteral::clone()
 std::unique_ptr<IAstNode> AstStringLiteral::clone()
 {
     return std::make_unique<AstStringLiteral>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->value()
     );
 }
@@ -313,8 +279,7 @@ std::unique_ptr<IAstNode> AstStringLiteral::clone()
 std::unique_ptr<IAstNode> AstCharLiteral::clone()
 {
     return std::make_unique<AstCharLiteral>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->value()
     );
 }
@@ -322,8 +287,7 @@ std::unique_ptr<IAstNode> AstCharLiteral::clone()
 std::unique_ptr<IAstNode> AstIntLiteral::clone()
 {
     return std::make_unique<AstIntLiteral>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_primitive_type(),
         this->value(),
         this->get_flags()
@@ -333,8 +297,7 @@ std::unique_ptr<IAstNode> AstIntLiteral::clone()
 std::unique_ptr<IAstNode> AstNilLiteral::clone()
 {
     return std::make_unique<AstNilLiteral>(
-        this->get_source_fragment(),
-        this->get_context()
+        this->get_source_position()
     );
 }
 
@@ -347,9 +310,10 @@ std::string AstCharLiteral::to_string()
 
 std::string AstFpLiteral::to_string()
 {
-    return std::format("FpLiteral({} ({} bit))",
-                       this->value(),
-                       this->get_bit_count());
+    return std::format(
+        "FpLiteral({} ({} bit))",
+        this->value(),
+        this->get_bit_count());
 }
 
 std::string AstBooleanLiteral::to_string()

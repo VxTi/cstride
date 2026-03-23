@@ -2,7 +2,7 @@
 
 #include "ast/conditionals.h"
 #include "ast/modifiers.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
@@ -12,9 +12,7 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::unique_ptr<IAstExpression> collect_initiator(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+std::unique_ptr<IAstExpression> collect_initiator(TokenSet& set)
 {
     auto initiator = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -24,15 +22,12 @@ std::unique_ptr<IAstExpression> collect_initiator(
     }
 
     return parse_variable_declaration_inline(
-        context,
         initiator.value(),
         VisibilityModifier::PRIVATE // Irrelevant here
     );
 }
 
-std::unique_ptr<IAstExpression> collect_condition(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+std::unique_ptr<IAstExpression> collect_condition(TokenSet& set)
 {
     auto condition = collect_until_token(set, TokenType::SEMICOLON);
 
@@ -42,22 +37,19 @@ std::unique_ptr<IAstExpression> collect_condition(
     }
 
     // This one doesn't allow variable declarations
-    return parse_inline_expression(context, condition.value());
+    return parse_inline_expression(condition.value());
 }
 
-std::unique_ptr<IAstExpression> collect_incrementor(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set)
+std::unique_ptr<IAstExpression> collect_incrementor(TokenSet& set)
 {
     if (!set.has_next())
         return nullptr;
     // If there's no incrementor statement, we don't need to parse it.
 
-    return parse_inline_expression(context, set);
+    return parse_inline_expression(set);
 }
 
 std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     [[maybe_unused]] VisibilityModifier modifier
 )
@@ -71,21 +63,17 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     }
 
     auto header_body = header_body_opt.value();
-    const auto for_body_context = std::make_shared<ParsingContext>(
-        context,
-        ContextType::CONTROL_FLOW);
 
     // We can potentially parse a for (<identifier> .. <identifier> { ... }
 
-    auto initiator = collect_initiator(for_body_context, header_body);
-    auto condition = collect_condition(for_body_context, header_body);
-    auto increment = collect_incrementor(for_body_context, header_body);
+    auto initiator = collect_initiator(header_body);
+    auto condition = collect_condition(header_body);
+    auto increment = collect_incrementor(header_body);
 
-    auto body = parse_block(for_body_context, set);
+    auto body = parse_block(set);
 
     return std::make_unique<AstForLoop>(
-        reference_token.get_source_fragment(),
-        for_body_context,
+        reference_token.get_source_position(),
         std::move(initiator),
         std::move(condition),
         std::move(increment),
@@ -94,6 +82,7 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
 }
 
 llvm::Value* AstForLoop::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
@@ -110,24 +99,24 @@ llvm::Value* AstForLoop::codegen(
 
     if (this->get_initializer())
     {
-        this->get_initializer()->codegen(module, builder);
+        this->get_initializer()->codegen(symbol_table, module, builder);
     }
 
     builder->CreateBr(loop_cond_bb);
     builder->SetInsertPoint(loop_cond_bb);
 
-    llvm::Value* condValue = codegen_conditional_value(module, builder, this->get_condition());
+    llvm::Value* condValue = codegen_conditional_value(symbol_table, module, builder, this->get_condition());
 
     builder->CreateCondBr(condValue, loop_body_bb, loop_end_bb);
     builder->SetInsertPoint(loop_body_bb);
 
     if (this->get_body())
     {
-        ParsingContext::push_control_flow_block(loop_continue_bb, loop_end_bb);
+        SymbolTable::push_control_flow_block(loop_continue_bb, loop_end_bb);
 
-        this->get_body()->codegen(module, builder);
+        this->get_body()->codegen(symbol_table, module, builder);
 
-        ParsingContext::pop_control_flow_block();
+        SymbolTable::pop_control_flow_block();
     }
 
     // If we already have a terminator (e.g., from a break or continue),
@@ -141,7 +130,7 @@ llvm::Value* AstForLoop::codegen(
 
     if (get_incrementor())
     {
-        this->get_incrementor()->codegen(module, builder);
+        this->get_incrementor()->codegen(symbol_table, module, builder);
     }
 
     builder->CreateBr(loop_cond_bb);
@@ -150,25 +139,24 @@ llvm::Value* AstForLoop::codegen(
     return nullptr;
 }
 
-void AstForLoop::validate()
+void AstForLoop::validate(const SymbolTable* symbol_table)
 {
     if (this->_initializer)
-        this->_initializer->validate();
+        this->_initializer->validate(symbol_table);
 
     if (this->_condition)
-        this->_condition->validate();
+        this->_condition->validate(symbol_table);
 
     if (this->_incrementor)
-        this->_incrementor->validate();
+        this->_incrementor->validate(symbol_table);
 
-    this->_body->validate();
+    this->_body->validate(symbol_table);
 }
 
 std::unique_ptr<IAstNode> AstForLoop::clone()
 {
     return std::make_unique<AstForLoop>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_initializer ? this->_initializer->clone_as<IAstExpression>() : nullptr,
         this->_condition ? this->_condition->clone_as<IAstExpression>() : nullptr,
         this->_incrementor ? this->_incrementor->clone_as<IAstExpression>() : nullptr,

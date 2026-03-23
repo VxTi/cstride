@@ -8,7 +8,6 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
@@ -40,7 +39,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     while (set.has_next() && !set.peek_next_eq(TokenType::RPAREN))
     {
         parameters.emplace_back(parse_type(
-            context,
             set,
             { "Expected parameter type", options.type_name, flags }
         ));
@@ -54,7 +52,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     set.expect(TokenType::RPAREN, "Expected ')' after function type notation");
     set.expect(TokenType::RARROW, "Expected '->' between function parameters and return type");
     auto return_type = parse_type(
-        context,
         set,
         { "Expected return type", options.type_name, flags }
     );
@@ -68,8 +65,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
 
     return parse_type_metadata(
         std::make_unique<AstFunctionType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             std::move(parameters),
             std::move(return_type),
             EMPTY_GENERIC_PARAMETER_LIST,
@@ -98,8 +94,7 @@ std::unique_ptr<IAstNode> AstFunctionType::clone()
         this->_generic_param_names.end());
 
     return std::make_unique<AstFunctionType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         std::move(parameters),
         this->get_return_type()->clone_ty(),
         std::move(generic_parameters_clone),

@@ -5,7 +5,6 @@
 using namespace stride::ast;
 
 void stride::ast::parse_function_parameters(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters,
     int& function_flags
@@ -19,7 +18,7 @@ void stride::ast::parse_function_parameters(
         return;
     }
 
-    parse_standalone_fn_param(context, set, parameters);
+    parse_standalone_fn_param(set, parameters);
 
     int recursion_depth = 0;
     while (set.peek_next_eq(TokenType::COMMA))
@@ -29,10 +28,10 @@ void stride::ast::parse_function_parameters(
 
         if (parameters.size() > MAX_FUNCTION_PARAMETERS)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::SYNTAX_ERROR,
                 std::format("Function cannot have more than {} parameters", MAX_FUNCTION_PARAMETERS),
-                next.get_source_fragment()
+                next.get_source_position()
             );
         }
 
@@ -45,7 +44,7 @@ void stride::ast::parse_function_parameters(
             break;
         }
 
-        parse_standalone_fn_param(context, set, parameters);
+        parse_standalone_fn_param(set, parameters);
 
         if (recursion_depth++ > MAX_RECURSION_DEPTH)
         {
@@ -57,7 +56,6 @@ void stride::ast::parse_function_parameters(
 }
 
 void stride::ast::parse_standalone_fn_param(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )
@@ -75,7 +73,6 @@ void stride::ast::parse_standalone_fn_param(
     set.expect(TokenType::COLON);
 
     std::unique_ptr<IAstType> fn_param_type = parse_type(
-        context,
         set,
         { "Expected function parameter type", "", flags }
     );
@@ -99,10 +96,11 @@ void stride::ast::parse_standalone_fn_param(
         );
     }
 
-    parameters.push_back(std::make_unique<AstFunctionParameter>(
-        reference_token.get_source_fragment(),
-        context,
-        param_name,
-        std::move(fn_param_type)
-    ));
+    parameters.push_back(
+        std::make_unique<AstFunctionParameter>(
+            reference_token.get_source_position(),
+            param_name,
+            std::move(fn_param_type)
+        )
+    );
 }

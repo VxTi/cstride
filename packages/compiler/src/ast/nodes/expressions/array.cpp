@@ -9,22 +9,14 @@
 
 using namespace stride::ast;
 
-void AstArray::validate()
-{
-    for (const auto& element : this->_elements)
-    {
-        element->validate();
-    }
-}
-
 void AstArray::resolve_forward_references(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder
 )
 {
     for (const auto& element : this->get_elements())
     {
-        element->resolve_forward_references(module, builder);
+        element->resolve_forward_references(symbol_table, module, builder);
     }
 }
 
@@ -39,8 +31,7 @@ std::unique_ptr<IAstNode> AstArray::clone()
     }
 
     return std::make_unique<AstArray>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         std::move(elements_clone)
     );
 }
@@ -51,8 +42,8 @@ std::string AstArray::to_string()
 }
 
 llvm::Value* AstArray::codegen(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
+    SymbolTable* symbol_table,
+    llvm::Module* module, llvm::IRBuilderBase* builder
 )
 {
     const auto resolved_type = this->get_type();
@@ -78,10 +69,10 @@ llvm::Value* AstArray::codegen(
         }
         else
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 "Codegen failed: Array literal must have a valid array type.",
-                this->get_source_fragment()
+                this->get_source_position()
             );
         }
     }
@@ -105,7 +96,7 @@ llvm::Value* AstArray::codegen(
 
     for (size_t i = 0; i < array_size; ++i)
     {
-        llvm::Value* v = this->get_elements()[i]->codegen(module, builder);
+        llvm::Value* v = this->get_elements()[i]->codegen(symbol_table, module, builder);
 
         // Restore insert point after each element (in case it's a lambda)
         builder->SetInsertPoint(saved_block);
@@ -149,8 +140,8 @@ llvm::Value* AstArray::codegen(
         llvm::BasicBlock* saved_ib = builder->GetInsertBlock();
 
         llvm::Value* element_value = this->get_elements()[i]->codegen(
-            module,
-            builder);
+            symbol_table,
+            module, builder);
 
         // Restore the insert point after element codegen
         builder->SetInsertPoint(saved_ib);
