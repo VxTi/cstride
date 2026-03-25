@@ -8,7 +8,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )

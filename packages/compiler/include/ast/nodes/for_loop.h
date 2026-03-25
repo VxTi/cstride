@@ -17,7 +17,7 @@ namespace stride::ast
     public:
         explicit AstForLoop(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> initiator,
             std::unique_ptr<IAstExpression> condition,
             std::unique_ptr<IAstExpression> increment,
@@ -65,7 +65,7 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstForLoop> parse_for_loop_statement(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         VisibilityModifier modifier);
 } // namespace stride::ast

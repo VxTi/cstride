@@ -2,7 +2,7 @@
 
 #include "errors.h"
 #include "formatting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
@@ -15,7 +15,7 @@ using namespace stride::ast;
  * It parses the identifiers and returns them as a vector of Symbol objects.
  */
 std::vector<std::unique_ptr<AstIdentifier>> consume_import_submodules(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -64,7 +64,7 @@ std::vector<std::unique_ptr<AstIdentifier>> consume_import_submodules(
  * Attempts to parse an import expression from the given TokenSet.
  */
 std::unique_ptr<AstImport> stride::ast::parse_import_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {

@@ -1,7 +1,7 @@
 #pragma once
 #include "cli.h"
 #include "ast/ast.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
 

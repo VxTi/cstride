@@ -1,5 +1,5 @@
 #pragma once
-#include "parsing_context.h"
+#include "symbol_table.h"
 
 #include <map>
 #include <memory>
@@ -41,12 +41,12 @@ namespace stride::ast
     };
 
     std::unique_ptr<IAstNode> parse_next_statement(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set
     );
 
     std::unique_ptr<AstBlock> parse_sequential(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set
     );
 }

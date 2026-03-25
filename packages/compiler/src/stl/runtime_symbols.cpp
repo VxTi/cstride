@@ -1,5 +1,5 @@
 #include "ast/flags.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "runtime/stride_runtime.h"
 #include "runtime/symbols.h"
 
@@ -9,7 +9,7 @@
 
 using namespace stride::runtime;
 
-void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::ParsingContext>& context)
+void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::SymbolTable>& context)
 {
     const auto fragment = SourceFragment(nullptr, 0, 0);
     std::vector<std::unique_ptr<ast::IAstType>> args;

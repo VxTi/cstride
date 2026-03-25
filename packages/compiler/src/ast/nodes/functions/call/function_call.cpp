@@ -2,7 +2,7 @@
 #include "formatting.h"
 #include "ast/casting.h"
 #include "ast/flags.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/symbols.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/blocks.h"
@@ -18,7 +18,7 @@ using namespace stride::ast;
 using namespace stride::ast::definition;
 
 std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     AstIdentifier* identifier,
     TokenSet& set
 )

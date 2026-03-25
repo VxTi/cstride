@@ -2,7 +2,7 @@
 
 #include "errors.h"
 #include "ast/optionals.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/tokens/token_set.h"
 
 #include <format>
@@ -13,7 +13,7 @@ using namespace stride::ast;
 using namespace stride::ast::definition;
 
 std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {

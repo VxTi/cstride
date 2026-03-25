@@ -1,7 +1,7 @@
 #include "ast/casting.h"
 #include "ast/closures.h"
 #include "ast/optionals.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/expression.h"
 

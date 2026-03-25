@@ -2,7 +2,7 @@
 
 #include "ast/conditionals.h"
 #include "ast/modifiers.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
@@ -13,7 +13,7 @@ using namespace stride::ast;
 using namespace stride::ast::definition;
 
 std::unique_ptr<IAstExpression> collect_initiator(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set)
 {
     auto initiator = collect_until_token(set, TokenType::SEMICOLON);
@@ -31,7 +31,7 @@ std::unique_ptr<IAstExpression> collect_initiator(
 }
 
 std::unique_ptr<IAstExpression> collect_condition(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set)
 {
     auto condition = collect_until_token(set, TokenType::SEMICOLON);
@@ -46,7 +46,7 @@ std::unique_ptr<IAstExpression> collect_condition(
 }
 
 std::unique_ptr<IAstExpression> collect_incrementor(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set)
 {
     if (!set.has_next())
@@ -57,7 +57,7 @@ std::unique_ptr<IAstExpression> collect_incrementor(
 }
 
 std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     [[maybe_unused]] VisibilityModifier modifier
 )
@@ -71,7 +71,7 @@ std::unique_ptr<AstForLoop> stride::ast::parse_for_loop_statement(
     }
 
     auto header_body = header_body_opt.value();
-    const auto for_body_context = std::make_shared<ParsingContext>(
+    const auto for_body_context = std::make_shared<SymbolTable>(
         context,
         ContextType::CONTROL_FLOW);
 
@@ -123,11 +123,11 @@ llvm::Value* AstForLoop::codegen(
 
     if (this->get_body())
     {
-        ParsingContext::push_control_flow_block(loop_continue_bb, loop_end_bb);
+        SymbolTable::push_control_flow_block(loop_continue_bb, loop_end_bb);
 
         this->get_body()->codegen(module, builder);
 
-        ParsingContext::pop_control_flow_block();
+        SymbolTable::pop_control_flow_block();
     }
 
     // If we already have a terminator (e.g., from a break or continue),

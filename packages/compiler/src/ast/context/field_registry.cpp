@@ -1,11 +1,11 @@
 #include "errors.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include <algorithm>
 
 using namespace stride::ast;
 
-definition::FieldDefinition* ParsingContext::get_variable_def(
+definition::FieldDefinition* SymbolTable::get_variable_def(
     const std::string& variable_name,
     const bool use_raw_name
 ) const
@@ -25,7 +25,7 @@ definition::FieldDefinition* ParsingContext::get_variable_def(
     return nullptr;
 }
 
-bool ParsingContext::is_field_defined_in_scope(
+bool SymbolTable::is_field_defined_in_scope(
     const std::string& variable_name) const
 {
     return std::ranges::any_of(
@@ -41,7 +41,7 @@ bool ParsingContext::is_field_defined_in_scope(
         });
 }
 
-bool ParsingContext::is_field_defined_globally(
+bool SymbolTable::is_field_defined_globally(
     const std::string& field_name) const
 {
     auto current = this;
@@ -56,7 +56,7 @@ bool ParsingContext::is_field_defined_globally(
     return false;
 }
 
-void ParsingContext::define_variable_globally(
+void SymbolTable::define_variable_globally(
     Symbol variable_symbol,
     std::unique_ptr<IAstType> type,
     VisibilityModifier visibility,
@@ -88,7 +88,7 @@ void ParsingContext::define_variable_globally(
         );
     }
 
-    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
+    auto& global_scope = const_cast<SymbolTable&>(this->traverse_to_root());
     global_scope._symbols.push_back(
         std::make_unique<definition::FieldDefinition>(
             std::move(variable_symbol),
@@ -98,7 +98,7 @@ void ParsingContext::define_variable_globally(
     );
 }
 
-void ParsingContext::define_variable(
+void SymbolTable::define_variable(
     Symbol variable_sym,
     std::unique_ptr<IAstType> type,
     VisibilityModifier visibility,
@@ -149,7 +149,7 @@ void ParsingContext::define_variable(
     );
 }
 
-definition::FieldDefinition* ParsingContext::lookup_variable(
+definition::FieldDefinition* SymbolTable::lookup_variable(
     const std::string& name,
     const bool use_raw_name
 )

@@ -11,7 +11,7 @@ bool stride::ast::is_array_initializer(const TokenSet& set)
 }
 
 std::unique_ptr<AstArray> stride::ast::parse_array_initializer(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {

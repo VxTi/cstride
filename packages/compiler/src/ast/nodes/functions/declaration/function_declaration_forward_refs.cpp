@@ -170,8 +170,8 @@ void IAstFunction::resolve_forward_references(
 
 void IAstFunction::collect_free_variables(
     IAstNode* node,
-    const std::shared_ptr<ParsingContext>& lambda_context,
-    const std::shared_ptr<ParsingContext>& outer_context,
+    const std::shared_ptr<SymbolTable>& lambda_context,
+    const std::shared_ptr<SymbolTable>& outer_context,
     std::vector<Symbol>& captures
 )
 {

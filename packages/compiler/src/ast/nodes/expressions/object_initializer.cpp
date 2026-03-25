@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
@@ -55,7 +55,7 @@ bool stride::ast::is_struct_initializer(const TokenSet& set)
 }
 
 StructMemberInitializerPair parse_object_member_initializer(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -144,7 +144,7 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
 }
 
 std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {

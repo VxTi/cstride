@@ -1,7 +1,7 @@
 #include "ast/symbols.h"
 
 #include "formatting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include <ranges>
 
@@ -13,7 +13,7 @@ using namespace stride::ast;
  * clashes between different contexts.
  */
 Symbol stride::ast::resolve_internal_function_name(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     const SourceFragment& position,
     const SymbolNameSegments& function_name_segments,
     const std::vector<IAstType*>& parameter_types)

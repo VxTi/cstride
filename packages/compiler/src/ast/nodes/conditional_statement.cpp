@@ -3,7 +3,7 @@
 #include "errors.h"
 #include "ast/ast.h"
 #include "ast/conditionals.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/tokens/token_set.h"
 
 #include <memory>
@@ -14,7 +14,7 @@ using namespace stride::ast;
 using namespace stride::ast::definition;
 
 std::unique_ptr<AstBlock> parse_else_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -24,7 +24,7 @@ std::unique_ptr<AstBlock> parse_else_optional(
     }
 
     const auto reference_token = set.next();
-    const auto else_block_context = std::make_shared<ParsingContext>(
+    const auto else_block_context = std::make_shared<SymbolTable>(
         context,
         context->get_context_type()
     );
@@ -33,7 +33,7 @@ std::unique_ptr<AstBlock> parse_else_optional(
     // have to parse_file the block separately
     if (set.peek_next_eq(TokenType::LBRACE))
     {
-        const auto else_context = std::make_shared<ParsingContext>(
+        const auto else_context = std::make_shared<SymbolTable>(
             context,
             context->get_context_type());
         return parse_block(else_context, set);
@@ -51,13 +51,13 @@ std::unique_ptr<AstBlock> parse_else_optional(
 }
 
 std::unique_ptr<AstConditionalStatement> stride::ast::parse_if_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IF);
 
-    auto conditional_context = std::make_shared<ParsingContext>(
+    auto conditional_context = std::make_shared<SymbolTable>(
         context,
         context->get_context_type());
     auto if_header_body = collect_parenthesized_block(set);

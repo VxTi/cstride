@@ -19,7 +19,7 @@ bool stride::ast::is_package_declaration(const TokenSet& set)
 }
 
 std::unique_ptr<AstPackage> stride::ast::parse_package_declaration(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set)
 {
     const size_t initial_offset = set.position();

@@ -1,7 +1,7 @@
 #include "errors.h"
 #include "ast/casting.h"
 #include "ast/optionals.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
@@ -102,7 +102,7 @@ MutativeAssignmentType parse_mutative_assignment_type(const Token& token)
 }
 
 std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_variable_reassignment(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     AstIdentifier* identifier,
     TokenSet& set
 )

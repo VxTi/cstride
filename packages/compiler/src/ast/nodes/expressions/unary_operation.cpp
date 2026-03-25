@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
@@ -55,7 +55,7 @@ bool requires_identifier_operand(const UnaryOpType op)
 }
 
 std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_op(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {

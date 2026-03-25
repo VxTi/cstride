@@ -18,7 +18,7 @@ namespace stride::ast
     public:
         explicit AstConditionalStatement(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> condition,
             std::unique_ptr<AstBlock> body,
             std::unique_ptr<AstBlock> else_body
@@ -62,6 +62,6 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstConditionalStatement> parse_if_statement(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 } // namespace stride::ast

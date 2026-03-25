@@ -1,5 +1,5 @@
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token.h"
@@ -8,7 +8,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )

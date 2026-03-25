@@ -27,7 +27,7 @@ namespace stride::ast
         CONTROL_FLOW
     };
 
-    class ParsingContext
+    class SymbolTable
     {
         /**
          * Name of the context. This can be used for function name mangling,
@@ -35,7 +35,7 @@ namespace stride::ast
          */
         std::string _context_name;
         ContextType _context_type;
-        std::shared_ptr<ParsingContext> _parent_registry;
+        std::shared_ptr<SymbolTable> _parent_registry;
 
         std::vector<std::unique_ptr<definition::IDefinition>> _symbols;
 
@@ -44,27 +44,27 @@ namespace stride::ast
         static inline std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> control_flow_loop_blocks;
 
     public:
-        explicit ParsingContext(
+        explicit SymbolTable(
             std::string context_name,
             const ContextType type,
-            std::shared_ptr<ParsingContext> parent) :
+            std::shared_ptr<SymbolTable> parent) :
             _context_name(std::move(context_name)),
             _context_type(type),
             _parent_registry(std::move(parent)) {}
 
         /// Non-specific scope context definitions, e.g., for/while-loop blocks
-        explicit ParsingContext(
-            std::shared_ptr<ParsingContext> parent,
+        explicit SymbolTable(
+            std::shared_ptr<SymbolTable> parent,
             const ContextType type
         ) :
             // Context gets the same name as the parent
-            ParsingContext(parent->_context_name, type, std::move(parent)) {}
+            SymbolTable(parent->_context_name, type, std::move(parent)) {}
 
         /// Root node initialization
-        explicit ParsingContext() :
-            ParsingContext("", ContextType::GLOBAL, nullptr) {}
+        explicit SymbolTable() :
+            SymbolTable("", ContextType::GLOBAL, nullptr) {}
 
-        ParsingContext& operator=(const ParsingContext&) = delete;
+        SymbolTable& operator=(const SymbolTable&) = delete;
 
         [[nodiscard]]
         ContextType get_context_type() const
@@ -141,7 +141,7 @@ namespace stride::ast
             const std::string& internal_name) const;
 
         [[nodiscard]]
-        std::shared_ptr<ParsingContext> get_parent_context() const
+        std::shared_ptr<SymbolTable> get_parent_context() const
         {
             return this->_parent_registry;
         }
@@ -219,7 +219,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const ParsingContext& traverse_to_root() const;
+        const SymbolTable& traverse_to_root() const;
     };
 
     std::string scope_type_to_str(const ContextType& scope_type);

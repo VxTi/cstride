@@ -4,7 +4,7 @@
 #include "ast/casting.h"
 #include "ast/flags.h"
 #include "ast/generics.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"

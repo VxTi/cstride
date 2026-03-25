@@ -7,7 +7,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set)
 {
     if (auto str = parse_string_literal_optional(context, set); str.
@@ -52,7 +52,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_literal_optional(
 }
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -71,7 +71,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_string_literal_opt
 }
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -104,7 +104,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_float_literal_opti
 }
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -123,7 +123,7 @@ std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_boolean_literal_op
 }
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_char_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -166,7 +166,7 @@ std::string format_int_conversion_error(
 }
 
 std::optional<std::unique_ptr<AstLiteral>> stride::ast::parse_integer_literal_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {

@@ -17,17 +17,17 @@ namespace stride::ast
 {
 
     class AstBlock;
-    class ParsingContext;
+    class SymbolTable;
 
     class IAstNode
     {
         const SourceFragment _source_position;
-        const std::shared_ptr<ParsingContext> _context;
+        const std::shared_ptr<SymbolTable> _context;
 
     public:
         explicit IAstNode(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
+            const std::shared_ptr<SymbolTable>& context
         ) :
             _source_position(source),
             _context(context) {}
@@ -45,7 +45,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::shared_ptr<ParsingContext> get_context() const
+        std::shared_ptr<SymbolTable> get_context() const
         {
             return this->_context;
         }

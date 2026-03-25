@@ -7,7 +7,7 @@
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_type_cast_op(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     IAstExpression* lhs
 )

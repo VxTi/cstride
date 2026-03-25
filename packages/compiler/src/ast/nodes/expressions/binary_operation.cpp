@@ -80,7 +80,7 @@ std::string AstBinaryArithmeticOp::to_string()
  */
 std::optional<std::unique_ptr<IAstExpression>>
 stride::ast::parse_arithmetic_binary_operation_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> lhs,
     const int min_precedence

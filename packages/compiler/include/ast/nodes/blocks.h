@@ -18,7 +18,7 @@ namespace stride::ast
     public:
         explicit AstBlock(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::vector<std::unique_ptr<IAstNode>> children
         ) :
             IAstNode(source, context),
@@ -49,7 +49,7 @@ namespace stride::ast
         ~AstBlock() override = default;
 
         static std::unique_ptr<AstBlock> create_empty(
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const SourceFragment& source
         )
         {
@@ -60,7 +60,7 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstBlock> parse_block(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     std::optional<TokenSet> collect_block(TokenSet& set);

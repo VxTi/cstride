@@ -22,7 +22,7 @@ namespace stride::ast
     public:
         explicit AstTypeDefinition(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string name,
             std::unique_ptr<IAstType> type,
             const VisibilityModifier visibility,
@@ -79,19 +79,19 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstTypeDefinition> parse_type_definition(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         VisibilityModifier modifier
     );
 
     EnumMemberPair parse_enumerable_member(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         size_t element_index
     );
 
     std::unique_ptr<AstTypeDefinition> parse_enum_type_definition(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         VisibilityModifier modifier);
 }

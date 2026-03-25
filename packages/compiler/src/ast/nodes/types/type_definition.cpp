@@ -1,13 +1,13 @@
 #include "ast/nodes/type_definition.h"
 
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
 using namespace stride::ast;
 
 std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_definition(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     VisibilityModifier modifier
 )

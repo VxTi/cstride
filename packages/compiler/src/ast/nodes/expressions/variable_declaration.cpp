@@ -3,7 +3,7 @@
 #include "ast/flags.h"
 #include "ast/modifiers.h"
 #include "ast/optionals.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
@@ -18,7 +18,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     const VisibilityModifier modifier
 )
@@ -31,7 +31,7 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration(
 }
 
 std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_inline(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     VisibilityModifier modifier
 )

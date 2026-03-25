@@ -1,5 +1,5 @@
 #include "errors.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/control_flow_statements.h"
 
 #include <llvm/IR/IRBuilder.h>
@@ -8,7 +8,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstBreakStatement> stride::ast::parse_break_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -20,7 +20,7 @@ std::unique_ptr<AstBreakStatement> stride::ast::parse_break_statement(
 
 llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
-    if (ParsingContext::get_control_flow_blocks().empty())
+    if (SymbolTable::get_control_flow_blocks().empty())
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
@@ -42,7 +42,7 @@ llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilderBas
         return nullptr;
     }
 
-    llvm::BasicBlock* break_target = ParsingContext::get_control_flow_blocks().back().second;
+    llvm::BasicBlock* break_target = SymbolTable::get_control_flow_blocks().back().second;
     if (!break_target)
     {
         return nullptr;

@@ -1,4 +1,4 @@
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/type_inference.h"
 #include "ast/visitor.h"
 #include "ast/nodes/expression.h"

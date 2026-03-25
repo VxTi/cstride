@@ -18,7 +18,7 @@ namespace stride::ast
     public:
         explicit AstLiteral(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const PrimitiveType type
         ) :
             IAstExpression(source, context),
@@ -50,7 +50,7 @@ namespace stride::ast
     public:
         explicit IAstLiteralBase(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const PrimitiveType type,
             T value
         ) :
@@ -70,7 +70,7 @@ namespace stride::ast
     public:
         explicit AstStringLiteral(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string val
         ) :
             // Strings are only considered to be a single byte,
@@ -96,7 +96,7 @@ namespace stride::ast
     public:
         explicit AstIntLiteral(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const PrimitiveType type,
             const int64_t value,
             const int flags = SRFLAG_TYPE_INT_SIGNED
@@ -131,7 +131,7 @@ namespace stride::ast
     public:
         explicit AstFpLiteral(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const PrimitiveType type,
             const long double value
         ) :
@@ -153,7 +153,7 @@ namespace stride::ast
     public:
         explicit AstBooleanLiteral(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const bool value
         ) :
             IAstLiteralBase(source, context, PrimitiveType::BOOL, value) {}
@@ -173,7 +173,7 @@ namespace stride::ast
     public:
         explicit AstCharLiteral(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const char value
         ) :
             IAstLiteralBase(source, context, PrimitiveType::CHAR, value) {}
@@ -194,7 +194,7 @@ namespace stride::ast
     public:
         AstNilLiteral(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
+            const std::shared_ptr<SymbolTable>& context
         ) :
             AstLiteral(source, context, PrimitiveType::NIL) {}
 
@@ -212,27 +212,27 @@ namespace stride::ast
     };
 
     std::optional<std::unique_ptr<AstLiteral>> parse_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     std::optional<std::unique_ptr<AstLiteral>> parse_boolean_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     std::optional<std::unique_ptr<AstLiteral>> parse_float_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     std::optional<std::unique_ptr<AstLiteral>> parse_integer_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     std::optional<std::unique_ptr<AstLiteral>> parse_string_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     std::optional<std::unique_ptr<AstLiteral>> parse_char_literal_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     inline bool is_literal_ast_node(IAstNode* node)

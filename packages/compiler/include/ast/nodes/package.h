@@ -14,7 +14,7 @@ namespace stride::ast
     public:
         explicit AstPackage(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string package_name
         ) :
             IAstNode(source, context),
@@ -41,6 +41,6 @@ namespace stride::ast
     bool is_package_declaration(const TokenSet& set);
 
     std::unique_ptr<AstPackage> parse_package_declaration(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 } // namespace stride::ast

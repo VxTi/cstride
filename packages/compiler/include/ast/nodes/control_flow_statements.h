@@ -10,7 +10,7 @@ namespace stride::ast
     public:
         explicit IAstControlFlowStatement(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
+            const std::shared_ptr<SymbolTable>& context
         ) :
             IAstNode(source, context) {}
     };
@@ -21,7 +21,7 @@ namespace stride::ast
     public:
         explicit AstContinueStatement(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
+            const std::shared_ptr<SymbolTable>& context
         ) :
             IAstControlFlowStatement(source, context) {}
 
@@ -43,7 +43,7 @@ namespace stride::ast
     public:
         explicit AstBreakStatement(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
+            const std::shared_ptr<SymbolTable>& context
         ) :
             IAstControlFlowStatement(source, context) {}
 
@@ -60,12 +60,12 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstContinueStatement> parse_continue_statement(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set
     );
 
     std::unique_ptr<AstBreakStatement> parse_break_statement(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set
     );
 }

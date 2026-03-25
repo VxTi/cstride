@@ -2,7 +2,7 @@
 
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/type_inference.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/conditional_statement.h"
@@ -42,7 +42,7 @@ GenericParameterList stride::ast::parse_generic_declaration(TokenSet& set)
     return generic_params;
 }
 
-GenericTypeList stride::ast::parse_generic_type_arguments(const std::shared_ptr<ParsingContext>& context, TokenSet& set)
+GenericTypeList stride::ast::parse_generic_type_arguments(const std::shared_ptr<SymbolTable>& context, TokenSet& set)
 {
     GenericTypeList generic_params;
     if (set.peek_next_eq(TokenType::LT))

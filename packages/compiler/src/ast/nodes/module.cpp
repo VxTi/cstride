@@ -1,6 +1,6 @@
 #include "ast/nodes/module.h"
 
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/symbols.h"
 #include "ast/nodes/blocks.h"
 #include "ast/tokens/token.h"
@@ -24,7 +24,7 @@ std::string AstModule::to_string()
 }
 
 std::unique_ptr<AstModule> stride::ast::parse_module_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_MODULE);
@@ -42,7 +42,7 @@ std::unique_ptr<AstModule> stride::ast::parse_module_statement(
 
     const auto module_name = resolve_internal_name(module_name_segments);
 
-    const auto module_context = std::make_shared<ParsingContext>(module_name, ContextType::MODULE, context);
+    const auto module_context = std::make_shared<SymbolTable>(module_name, ContextType::MODULE, context);
     auto module_body = parse_block(module_context, set);
 
     return std::make_unique<AstModule>(

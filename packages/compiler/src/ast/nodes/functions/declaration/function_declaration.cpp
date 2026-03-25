@@ -3,7 +3,7 @@
 #include "errors.h"
 #include "ast/closures.h"
 #include "ast/modifiers.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/symbols.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/blocks.h"
@@ -25,7 +25,7 @@ using namespace stride::ast::definition;
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
 std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     VisibilityModifier modifier
 )
@@ -50,7 +50,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
     const auto fn_name_tok = set.expect(TokenType::IDENTIFIER, "Expected function name");
     const auto& fn_name = fn_name_tok.get_lexeme();
 
-    auto function_context = std::make_shared<ParsingContext>(context, ContextType::FUNCTION);
+    auto function_context = std::make_shared<SymbolTable>(context, ContextType::FUNCTION);
 
     GenericParameterList generic_parameter_names = parse_generic_declaration(set);
 
@@ -111,7 +111,7 @@ std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
 }
 
 std::unique_ptr<AstBlock> consume_anonymous_fn_body(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set)
 {
     if (!set.peek_next_eq(TokenType::LBRACE))
@@ -133,7 +133,7 @@ std::unique_ptr<AstBlock> consume_anonymous_fn_body(
 }
 
 std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -141,7 +141,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
 
     int function_flags = SRFLAG_FN_TYPE_ANONYMOUS;
-    auto function_context = std::make_shared<ParsingContext>(
+    auto function_context = std::make_shared<SymbolTable>(
         context,
         ContextType::FUNCTION
     );

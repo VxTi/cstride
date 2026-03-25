@@ -1,7 +1,7 @@
 #include "ast/nodes/while_loop.h"
 
 #include "ast/conditionals.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/tokens/token_set.h"
 
@@ -18,7 +18,7 @@ void AstWhileLoop::validate()
 }
 
 std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     [[maybe_unused]] VisibilityModifier modifier
 )
@@ -31,7 +31,7 @@ std::unique_ptr<AstWhileLoop> stride::ast::parse_while_loop_statement(
         set.throw_error("Expected while loop condition");
     }
 
-    const auto while_body_context = std::make_shared<ParsingContext>(
+    const auto while_body_context = std::make_shared<SymbolTable>(
         context,
         ContextType::CONTROL_FLOW
     );
@@ -71,11 +71,11 @@ llvm::Value* AstWhileLoop::codegen(
 
     if (this->get_body())
     {
-        ParsingContext::push_control_flow_block(loop_cond_bb, loop_end_bb);
+        SymbolTable::push_control_flow_block(loop_cond_bb, loop_end_bb);
 
         this->get_body()->codegen(module, builder);
 
-        ParsingContext::pop_control_flow_block();
+        SymbolTable::pop_control_flow_block();
     }
 
     builder->CreateBr(loop_cond_bb);

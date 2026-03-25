@@ -1,5 +1,5 @@
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
@@ -15,7 +15,7 @@ using namespace stride::ast;
 
 AstEnumType::AstEnumType(
     const SourceFragment& source,
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     std::string enum_name,
     std::vector<EnumMemberPair> members,
     const int flags
@@ -31,7 +31,7 @@ AstEnumType::AstEnumType(
  * </code>
  */
 EnumMemberPair stride::ast::parse_enumerable_member(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     size_t element_index
 )
@@ -69,7 +69,7 @@ EnumMemberPair stride::ast::parse_enumerable_member(
 }
 
 std::unique_ptr<AstTypeDefinition> stride::ast::parse_enum_type_definition(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     [[maybe_unused]] VisibilityModifier modifier
 )

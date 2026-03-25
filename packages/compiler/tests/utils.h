@@ -2,7 +2,7 @@
 
 #include "files.h"
 #include "ast/ast.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/visitor.h"
 #include "ast/nodes/blocks.h"
 #include "../include/ast/traversal.h"
@@ -19,12 +19,12 @@
 
 namespace stride::tests
 {
-    inline std::pair<std::unique_ptr<ast::AstBlock>, std::shared_ptr<ast::ParsingContext>> parse_code_with_context(
+    inline std::pair<std::unique_ptr<ast::AstBlock>, std::shared_ptr<ast::SymbolTable>> parse_code_with_context(
         const std::string& code)
     {
         const auto source = std::make_shared<SourceFile>("test.sr", code);
         auto tokens = ast::tokenizer::tokenize(source);
-        const auto context = std::make_shared<ast::ParsingContext>();
+        const auto context = std::make_shared<ast::SymbolTable>();
 
         auto node = parse_sequential(context, tokens);
 

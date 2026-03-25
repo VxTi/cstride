@@ -5,7 +5,7 @@
 using namespace stride::ast;
 
 void stride::ast::parse_function_parameters(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters,
     int& function_flags
@@ -57,7 +57,7 @@ void stride::ast::parse_function_parameters(
 }
 
 void stride::ast::parse_standalone_fn_param(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
 )

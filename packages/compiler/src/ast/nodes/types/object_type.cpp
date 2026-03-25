@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token.h"
@@ -12,7 +12,7 @@
 using namespace stride::ast;
 
 void parse_object_member(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     ObjectTypeMemberList& fields,
     const TypeParsingOptions& options
@@ -65,7 +65,7 @@ void parse_object_member(
  * </code>
  */
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
@@ -81,7 +81,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_object_type_optional
     auto struct_body_set = collect_block_required(set, "A struct must have at least 1 member");
 
     ObjectTypeMemberList struct_fields;
-    const auto struct_type_context = std::make_shared<ParsingContext>(context, context->get_context_type());
+    const auto struct_type_context = std::make_shared<SymbolTable>(context, context->get_context_type());
 
     // Parse fields
     while (struct_body_set.has_next())

@@ -18,7 +18,7 @@ namespace stride
 
 namespace stride::ast
 {
-    class ParsingContext;
+    class SymbolTable;
 
     class AstReturnStatement
         : public IAstNode
@@ -28,7 +28,7 @@ namespace stride::ast
     public:
         explicit AstReturnStatement(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::optional<std::unique_ptr<IAstExpression>> value
         ) :
             IAstNode(source, context),
@@ -64,6 +64,6 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstReturnStatement> parse_return_statement(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 } // namespace stride::ast

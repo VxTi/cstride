@@ -6,7 +6,7 @@
 namespace stride::ast
 {
     class IAstNode;
-    class ParsingContext;
+    class SymbolTable;
     class TokenSet;
     enum class VisibilityModifier;
 
@@ -20,7 +20,7 @@ namespace stride::ast
     public:
         explicit AstWhileLoop(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> condition,
             std::unique_ptr<AstBlock> body
         ) :
@@ -52,7 +52,7 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstWhileLoop> parse_while_loop_statement(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         VisibilityModifier modifier);
 } // namespace stride::ast

@@ -2,7 +2,7 @@
 
 #include "files.h"
 #include "ast/modifiers.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/control_flow_statements.h"
@@ -56,7 +56,7 @@ std::pair<FilePath, std::unique_ptr<AstBlock>> Ast::parse_file(const FilePath& p
     const auto source_file = read_file(path);
     auto tokens = tokenizer::tokenize(source_file);
 
-    const auto context = std::make_shared<ParsingContext>();
+    const auto context = std::make_shared<SymbolTable>();
 
     auto file_node = parse_sequential(context, tokens);
 
@@ -107,7 +107,7 @@ void Ast::optimize()
 }
 
 std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set)
 {
     // Phase 1 - These sequences are simple to parse; they have no visibility modifiers, hence we
@@ -171,7 +171,7 @@ std::unique_ptr<IAstNode> stride::ast::parse_next_statement(
 }
 
 std::unique_ptr<AstBlock> stride::ast::parse_sequential(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {

@@ -4,7 +4,7 @@
 #include "blocks.h"
 #include "expression.h"
 #include "ast/modifiers.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include <utility>
 
@@ -32,7 +32,7 @@ namespace stride::ast
     public:
         explicit AstFunctionParameter(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string param_name,
             std::unique_ptr<IAstType> param_type
         ) :
@@ -100,7 +100,7 @@ namespace stride::ast
     public:
         explicit IAstFunction(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
@@ -254,8 +254,8 @@ namespace stride::ast
 
         static void collect_free_variables(
             IAstNode* node,
-            const std::shared_ptr<ParsingContext>& lambda_context,
-            const std::shared_ptr<ParsingContext>& outer_context,
+            const std::shared_ptr<SymbolTable>& lambda_context,
+            const std::shared_ptr<SymbolTable>& outer_context,
             std::vector<Symbol>& captures
         );
 
@@ -268,7 +268,7 @@ namespace stride::ast
     {
     public:
         explicit AstFunctionDeclaration(
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
@@ -297,7 +297,7 @@ namespace stride::ast
     {
     public:
         explicit AstLambdaFunctionExpression(
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             Symbol symbol,
             std::vector<std::unique_ptr<AstFunctionParameter>> parameters,
             std::unique_ptr<AstBlock> body,
@@ -321,19 +321,19 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstFunctionDeclaration> parse_fn_declaration(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         VisibilityModifier modifier
     );
 
     void parse_standalone_fn_param(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters
     );
 
     void parse_function_parameters(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         std::vector<std::unique_ptr<AstFunctionParameter>>& parameters,
         int& function_flags

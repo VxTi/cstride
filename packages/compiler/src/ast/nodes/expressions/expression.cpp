@@ -25,7 +25,7 @@ std::string IAstExpression::to_string()
 }
 
 std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -144,7 +144,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
  */
 
 std::unique_ptr<IAstExpression> parse_arithmetic_tier(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -176,7 +176,7 @@ std::unique_ptr<IAstExpression> parse_arithmetic_tier(
 }
 
 std::unique_ptr<IAstExpression> parse_comparison_tier(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -198,7 +198,7 @@ std::unique_ptr<IAstExpression> parse_comparison_tier(
 }
 
 std::unique_ptr<IAstExpression> parse_logical_tier(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -222,7 +222,7 @@ std::unique_ptr<IAstExpression> parse_logical_tier(
 // Kept for backward compatibility / external usage if any, but now updated to use correct tiers for
 // RHS
 std::optional<std::unique_ptr<IAstExpression>> parse_logical_operation_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> lhs)
 {
@@ -249,7 +249,7 @@ std::optional<std::unique_ptr<IAstExpression>> parse_logical_operation_optional(
 
 // Kept for backward compatibility / external usage if any
 std::optional<std::unique_ptr<IAstExpression>> parse_comparative_operation_optional(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> lhs)
 {
@@ -276,7 +276,7 @@ std::optional<std::unique_ptr<IAstExpression>> parse_comparative_operation_optio
 }
 
 std::unique_ptr<IAstExpression> parse_expression_internal(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -292,7 +292,7 @@ std::unique_ptr<IAstExpression> parse_expression_internal(
  * General expression parsing. These can occur in global / function scopes
  */
 std::unique_ptr<IAstExpression> stride::ast::parse_standalone_expression(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -304,7 +304,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_standalone_expression(
 }
 
 std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -312,7 +312,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression(
 }
 
 std::unique_ptr<AstIdentifier> stride::ast::parse_segmented_identifier(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     const std::string& error_message)
 {

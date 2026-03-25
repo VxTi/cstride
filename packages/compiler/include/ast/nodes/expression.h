@@ -16,7 +16,7 @@ namespace stride::ast
     enum class TokenType;
     class AstLiteral;
     class AstFunctionParameter;
-    class ParsingContext;
+    class SymbolTable;
 
     namespace definition
     {
@@ -93,13 +93,13 @@ namespace stride::ast
     public:
         explicit IAstExpression(
             const SourceFragment& source_position,
-            const std::shared_ptr<ParsingContext>& context
+            const std::shared_ptr<SymbolTable>& context
         ) :
             IAstNode(source_position, context) {}
 
         explicit IAstExpression(
             const SourceFragment& source_position,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstType> type
         ) :
             IAstExpression(source_position, context)
@@ -157,7 +157,7 @@ namespace stride::ast
     public:
         explicit AstArray(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             ExpressionList elements
         ) :
             IAstExpression(source, context),
@@ -193,7 +193,7 @@ namespace stride::ast
 
     public:
         explicit AstIdentifier(
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             Symbol symbol
         ) :
             IAstExpression(symbol.symbol_position, context),
@@ -248,7 +248,7 @@ namespace stride::ast
     public:
         explicit AstArrayMemberAccessor(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> array_base,
             std::unique_ptr<IAstExpression> index_expr
         ) :
@@ -295,7 +295,7 @@ namespace stride::ast
     public:
         explicit AstChainedExpression(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> base,
             std::unique_ptr<IAstExpression> followup
         ) :
@@ -348,7 +348,7 @@ namespace stride::ast
     public:
         explicit AstIndirectCall(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> callee,
             ExpressionList args
         ) :
@@ -402,7 +402,7 @@ namespace stride::ast
 
     public:
         explicit AstFunctionCall(
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<AstIdentifier> function_name_identifier,
             ExpressionList arguments,
             GenericTypeList generic_type_arguments,
@@ -507,7 +507,7 @@ namespace stride::ast
 
     public:
         explicit AstVariableDeclaration(
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             Symbol symbol,
             std::optional<std::unique_ptr<IAstType>> variable_type,
             std::unique_ptr<IAstExpression> initial_value,
@@ -606,7 +606,7 @@ namespace stride::ast
 
         explicit IBinaryOp(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> lsh,
             std::unique_ptr<IAstExpression> rsh
         ) :
@@ -635,7 +635,7 @@ namespace stride::ast
     public:
         explicit AstBinaryArithmeticOp(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> left,
             const BinaryOpType op,
             std::unique_ptr<IAstExpression> right
@@ -677,7 +677,7 @@ namespace stride::ast
     public:
         explicit AstLogicalOp(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> left,
             const LogicalOpType op,
             std::unique_ptr<IAstExpression> right
@@ -710,7 +710,7 @@ namespace stride::ast
     public:
         explicit AstComparisonOp(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> left,
             const ComparisonOpType op,
             std::unique_ptr<IAstExpression> right
@@ -744,7 +744,7 @@ namespace stride::ast
     public:
         explicit AstUnaryOp(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const UnaryOpType op,
             std::unique_ptr<IAstExpression> operand
         ) :
@@ -799,7 +799,7 @@ namespace stride::ast
     public:
         explicit AstVariableReassignment(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<AstIdentifier> identifier,
             const MutativeAssignmentType op,
             std::unique_ptr<IAstExpression> value
@@ -867,7 +867,7 @@ namespace stride::ast
     public:
         explicit AstObjectInitializer(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string struct_name,
             std::vector<StructMemberInitializerPair> member_initializers,
             GenericTypeList generic_type_arguments = {}
@@ -927,7 +927,7 @@ namespace stride::ast
     public:
         explicit AstVariadicArgReference(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context) :
+            const std::shared_ptr<SymbolTable>& context) :
             IAstExpression(source, context) {}
 
         llvm::Value* codegen(
@@ -958,7 +958,7 @@ namespace stride::ast
     public:
         explicit AstTupleInitializer(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             ExpressionList members
         ) :
             IAstExpression(source, context),
@@ -990,7 +990,7 @@ namespace stride::ast
     public:
         explicit AstTypeCastOp(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstExpression> value,
             std::unique_ptr<IAstType> target_type
         ) :
@@ -1029,46 +1029,46 @@ namespace stride::ast
 
     /// Parses a complete standalone expression from tokens
     std::unique_ptr<IAstExpression> parse_standalone_expression(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     /// Parses an expression that appears inline, e.g., within a statement or as a sub-expression
     std::unique_ptr<IAstExpression> parse_inline_expression(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     /// Parses a single part of a standalone expression
     std::unique_ptr<IAstExpression> parse_inline_expression_part(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set);
 
     /// Parses a variable declaration statement
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         VisibilityModifier modifier);
 
     /// Parses a variable declaration that appears inline within a larger expression context
     std::unique_ptr<AstVariableDeclaration> parse_variable_declaration_inline(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         VisibilityModifier modifier);
 
     /// Parses a function invocation into an AstFunctionCall expression node
     std::unique_ptr<IAstExpression> parse_function_call(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         AstIdentifier* identifier,
         TokenSet& set);
 
     /// Parses a variable assignment statement
     std::optional<std::unique_ptr<AstVariableReassignment>> parse_variable_reassignment(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         AstIdentifier* identifier,
         TokenSet& set);
 
     /// Parses a binary arithmetic operation using precedence climbing
     std::optional<std::unique_ptr<IAstExpression>> parse_arithmetic_binary_operation_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> lhs,
         int min_precedence
@@ -1076,58 +1076,58 @@ namespace stride::ast
 
     /// Parses a single chained member access step: consumes `.identifier` and wraps lhs
     std::unique_ptr<AstChainedExpression> parse_chained_member_access(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> lhs
     );
 
     /// Parses a unary operator expression
     std::optional<std::unique_ptr<IAstExpression>> parse_binary_unary_op(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set
     );
 
     /// Parses an array initializer expression, e.g., [1, 2, 3]
     std::unique_ptr<AstArray> parse_array_initializer(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set
     );
 
     /// Parses an array subscript: consumes `[<index_expression>]` and wraps the base expression
     std::unique_ptr<AstArrayMemberAccessor> parse_array_member_accessor(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> array_base
     );
 
     /// Parses an indirect call: consumes `(<args>)` and wraps the callee expression
     std::unique_ptr<AstIndirectCall> parse_indirect_call(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         std::unique_ptr<IAstExpression> callee
     );
 
     /// Parses a struct initializer expression into an AstObjectInitializer node
     std::unique_ptr<AstObjectInitializer> parse_object_initializer(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set
     );
 
     /// Parses a dot-separated identifier into its individual name segments, e.g., `foo::bar::baz`
     std::unique_ptr<AstIdentifier> parse_segmented_identifier(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         const std::string& error_message
     );
 
     /// Parses a lambda function literal into an expression node
     std::unique_ptr<IAstExpression> parse_anonymous_fn_expression(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set
     );
 
     std::optional<std::unique_ptr<IAstExpression>> parse_type_cast_op(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         IAstExpression* lhs
     );

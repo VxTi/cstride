@@ -19,7 +19,7 @@ namespace stride::ast
 
         explicit AstModule(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string name,
             std::unique_ptr<AstBlock> body
         ) :
@@ -54,6 +54,6 @@ namespace stride::ast
     };
 
     std::unique_ptr<AstModule> parse_module_statement(
-        const std::shared_ptr<ParsingContext>&,
+        const std::shared_ptr<SymbolTable>&,
         TokenSet& set);
 } // namespace stride::ast

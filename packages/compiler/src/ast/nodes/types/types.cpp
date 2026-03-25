@@ -2,7 +2,7 @@
 
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
@@ -13,7 +13,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<IAstType> stride::ast::parse_type(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )

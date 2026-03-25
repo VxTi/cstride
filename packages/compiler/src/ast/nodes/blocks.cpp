@@ -11,7 +11,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstBlock> stride::ast::parse_block(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {

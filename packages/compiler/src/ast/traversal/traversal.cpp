@@ -1,7 +1,7 @@
 #include "../../../include/ast/traversal.h"
 
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/visitor.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"

@@ -2,7 +2,7 @@
 #include "formatting.h"
 #include "ast/casting.h"
 #include "ast/closures.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
@@ -21,7 +21,7 @@ bool stride::ast::is_member_accessor(const TokenSet& set)
 
 /// Consumes `.identifier` and wraps `lhs` in an AstChainedExpression.
 std::unique_ptr<AstChainedExpression> stride::ast::parse_chained_member_access(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> lhs
 )
@@ -46,7 +46,7 @@ std::unique_ptr<AstChainedExpression> stride::ast::parse_chained_member_access(
 
 /// Consumes `(<args>)` and wraps `callee` in an AstIndirectCall.
 std::unique_ptr<AstIndirectCall> stride::ast::parse_indirect_call(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> callee
 )

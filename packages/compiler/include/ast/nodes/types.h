@@ -69,7 +69,7 @@ namespace stride::ast
     public:
         explicit IAstType(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const int flags
         ) :
             IAstNode(source, context),
@@ -190,7 +190,7 @@ namespace stride::ast
     public:
         explicit AstPrimitiveType(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             const PrimitiveType type,
             const int flags = SRFLAG_NONE
         ) :
@@ -273,7 +273,7 @@ namespace stride::ast
     public:
         explicit AstAliasType(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string name,
             const int flags = SRFLAG_NONE,
             GenericTypeList generic_parameters = EMPTY_GENERIC_TYPE_LIST
@@ -348,7 +348,7 @@ namespace stride::ast
     public:
         explicit AstFunctionType(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::vector<std::unique_ptr<IAstType>> parameters,
             std::unique_ptr<IAstType> return_type,
             GenericParameterList generic_parameter_names = {},
@@ -421,7 +421,7 @@ namespace stride::ast
     public:
         explicit AstArrayType(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::unique_ptr<IAstType> element_type,
             const size_t initial_length,
             const int flags = SRFLAG_NONE
@@ -482,7 +482,7 @@ namespace stride::ast
     public:
         explicit AstObjectType(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string type_name,
             ObjectTypeMemberList members,
             const int flags = SRFLAG_NONE,
@@ -534,7 +534,7 @@ namespace stride::ast
     public:
         explicit AstEnumType(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::string enum_name,
             std::vector<EnumMemberPair> members,
             int flags = SRFLAG_NONE
@@ -584,7 +584,7 @@ namespace stride::ast
     public:
         explicit AstTupleType(
             const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context,
+            const std::shared_ptr<SymbolTable>& context,
             std::vector<std::unique_ptr<IAstType>> members,
             const int flags = SRFLAG_NONE
         ) :
@@ -646,7 +646,7 @@ namespace stride::ast
     };
 
     std::unique_ptr<IAstType> parse_type(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
@@ -658,27 +658,27 @@ namespace stride::ast
     );
 
     std::optional<std::unique_ptr<IAstType>> parse_primitive_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_alias_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_function_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_object_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 
     std::optional<std::unique_ptr<IAstType>> parse_tuple_type_optional(
-        const std::shared_ptr<ParsingContext>& context,
+        const std::shared_ptr<SymbolTable>& context,
         TokenSet& set,
         const TypeParsingOptions& options);
 

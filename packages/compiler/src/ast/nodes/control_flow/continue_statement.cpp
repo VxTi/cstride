@@ -1,5 +1,5 @@
 #include "errors.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/control_flow_statements.h"
 
 #include <llvm/IR/IRBuilder.h>
@@ -7,7 +7,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstContinueStatement> stride::ast::parse_continue_statement(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set
 )
 {
@@ -19,7 +19,7 @@ std::unique_ptr<AstContinueStatement> stride::ast::parse_continue_statement(
 
 llvm::Value* AstContinueStatement::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
 {
-    if (ParsingContext::get_control_flow_blocks().empty())
+    if (SymbolTable::get_control_flow_blocks().empty())
     {
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
@@ -28,7 +28,7 @@ llvm::Value* AstContinueStatement::codegen(llvm::Module* module, llvm::IRBuilder
         );
     }
 
-    const auto continue_block = ParsingContext::get_control_flow_blocks().back().first;
+    const auto continue_block = SymbolTable::get_control_flow_blocks().back().first;
     builder->CreateBr(continue_block);
 
     // Since we branched, create a new block for unreachable code, but since it's a statement, return nullptr

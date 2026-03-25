@@ -13,7 +13,7 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstArrayMemberAccessor> stride::ast::parse_array_member_accessor(
-    const std::shared_ptr<ParsingContext>& context,
+    const std::shared_ptr<SymbolTable>& context,
     TokenSet& set,
     std::unique_ptr<IAstExpression> array_base)
 {

@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/definitions/function_definition.h"
 
 #include <algorithm>
@@ -8,7 +8,7 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
+std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     const std::string& function_name,
     const std::vector<std::unique_ptr<IAstType>>& parameter_types,
     const size_t instantiated_generic_count
@@ -31,7 +31,7 @@ std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
     return std::nullopt;
 }
 
-std::optional<FunctionDefinition*> ParsingContext::get_generic_function_definition(
+std::optional<FunctionDefinition*> SymbolTable::get_generic_function_definition(
     const std::string& function_name,
     const size_t instantiated_generic_count
 ) const
@@ -39,7 +39,7 @@ std::optional<FunctionDefinition*> ParsingContext::get_generic_function_definiti
     return get_function_definition(function_name, {}, instantiated_generic_count);
 }
 
-std::optional<FunctionDefinition*> ParsingContext::get_function_definition(
+std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     const std::string& function_name,
     // We might call this function with an anonymous type, hence not having `AstFunctionType`
     IAstType* function_type
@@ -140,14 +140,14 @@ const
     return true;
 }
 
-void ParsingContext::define_function(
+void SymbolTable::define_function(
     Symbol function_name,
     std::unique_ptr<AstFunctionType> function_type,
     const VisibilityModifier visibility,
     const int flags
 ) const
 {
-    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
+    auto& global_scope = const_cast<SymbolTable&>(this->traverse_to_root());
 
     if (this->is_function_defined_globally(function_name.internal_name, function_type.get()))
     {
@@ -163,7 +163,7 @@ void ParsingContext::define_function(
     );
 }
 
-bool ParsingContext::is_function_defined_globally(
+bool SymbolTable::is_function_defined_globally(
     const std::string& function_name,
     const AstFunctionType* function_type
 ) const

@@ -3,7 +3,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/types.h"
 #include "ast/nodes/function_declaration.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/symbols.h"
 #include "errors.h"
 #include "files.h"
@@ -17,12 +17,12 @@ using namespace stride::tests;
 class TypeInferenceTest : public ::testing::Test
 {
 protected:
-    std::shared_ptr<ParsingContext> context;
+    std::shared_ptr<SymbolTable> context;
     std::shared_ptr<SourceFile> source;
 
     void SetUp() override
     {
-        context = std::make_shared<ParsingContext>();
+        context = std::make_shared<SymbolTable>();
         source = std::make_shared<SourceFile>("test.sr", "");
     }
 
