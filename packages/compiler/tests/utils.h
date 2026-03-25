@@ -26,27 +26,30 @@ namespace stride::tests
         auto tokens = ast::tokenizer::tokenize(source);
         const auto context = std::make_shared<ast::SymbolTable>();
 
-        auto node = parse_sequential(context, tokens);
+        auto branch = std::make_unique<ast::AstBranch>(source, parse_sequential(context, tokens));
 
-        ast::AstNodeTraverser traverser;
+        ast::AstNodeTraverser traverser(context);
         ast::ExpressionVisitor expression_visitor;
         ast::FunctionVisitor function_visitor;
         ast::FunctionCallVisitor function_call_visitor;
         ast::ImportVisitor import_visitor;
 
-        runtime::register_runtime_symbols(node->get_context());
+        runtime::register_runtime_symbols(branch->get_node()->get_context());
 
         import_visitor.set_current_file_name("test.sr");
-        traverser.visit_block(&import_visitor, node.get());
+        traverser.traverse(&import_visitor, branch.get());
 
-        traverser.visit_block(&function_visitor, node.get());
-        traverser.visit_block(&function_call_visitor, node.get());
+        traverser.traverse(&function_visitor, branch.get());
+        traverser.traverse(&function_call_visitor, branch.get());
 
-        traverser.visit_block(&expression_visitor, node.get());
+        traverser.traverse(&expression_visitor, branch.get());
 
-        node->validate();
+        branch->get_node()->validate();
 
-        return std::make_pair(std::move(node), context);
+        return std::make_pair(
+            branch->release_node(),
+            context
+        );
     }
 
     inline std::unique_ptr<ast::AstBlock> parse_code(const std::string& code)

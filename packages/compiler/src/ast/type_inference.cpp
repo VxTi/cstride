@@ -380,6 +380,16 @@ std::unique_ptr<IAstType> stride::ast::infer_variable_declaration_type(
         return value_type->clone_ty();
     }
 
+    // If the annotated type is an unresolved alias (i.e. a generic parameter like T with no
+    // type definition in scope), accept the value type directly. This allows constructs like
+    // `const result: T = x + x;` inside a generic function body, where T is a placeholder.
+    if (const auto* alias = cast_type<AstAliasType*>(annotated_type.value());
+        alias && !alias->get_type_definition().has_value())
+    {
+        value_type->set_flags(declaration->get_flags());
+        return value_type->clone_ty();
+    }
+
     if (annotated_type.value()->equals(value_type.get()))
     {
         return annotated_type.value()->clone_ty();

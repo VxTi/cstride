@@ -19,6 +19,11 @@ llvm::Value* IAstFunction::codegen(
 
     if (implementations.empty())
     {
+        // A generic function that is never instantiated (never called with concrete type
+        // arguments) has nothing to codegen — this is valid and not an error.
+        if (this->is_generic())
+            return nullptr;
+
         throw parsing_error(
             ErrorType::COMPILATION_ERROR,
             std::format(

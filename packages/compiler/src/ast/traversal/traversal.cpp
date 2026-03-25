@@ -29,6 +29,11 @@ void AstNodeTraverser::traverse(IVisitor* visitor, const AstBranch* branch)
     this->visit(visitor, branch->get_node());
 }
 
+void AstNodeTraverser::traverse_block(IVisitor* visitor, AstBlock* block)
+{
+    this->visit_block(visitor, block);
+}
+
 void AstNodeTraverser::visit_block(IVisitor* visitor, const AstBlock* node)
 {
     if (!node)
@@ -149,7 +154,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
             visit_expression(visitor, while_loop->get_condition());
         visit_block(visitor, while_loop->get_body());
     }
-    else if (const auto* for_loop = dynamic_cast<AstForLoop*>(node))
+    else if (auto* for_loop = dynamic_cast<AstForLoop*>(node))
     {
         if (for_loop->get_initializer())
             visit_expression(visitor, for_loop->get_initializer());
@@ -157,6 +162,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
             visit_expression(visitor, for_loop->get_condition());
         if (for_loop->get_incrementor())
             visit_expression(visitor, for_loop->get_incrementor());
+        visit_block(visitor, for_loop->get_body());
     }
     else if (const auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
     {
@@ -174,11 +180,6 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     else if (auto* expr = dynamic_cast<IAstExpression*>(node))
     {
         visit_expression(visitor, expr);
-    }
-    else if (auto* variable_declaration = dynamic_cast<AstVariableDeclaration*>(node))
-    {
-        visit_expression(visitor, variable_declaration->get_initial_value());
-        visitor->accept_expression_node(variable_declaration);
     }
     else if (auto* import_node = dynamic_cast<AstImport*>(node))
     {

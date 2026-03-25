@@ -44,6 +44,8 @@ namespace stride::ast
 
         void traverse(IVisitor* visitor, const AstBranch* branch);
 
+        void traverse_block(IVisitor* visitor, AstBlock* block);
+
     private:
         void visit(IVisitor* visitor, IAstNode* node);
 

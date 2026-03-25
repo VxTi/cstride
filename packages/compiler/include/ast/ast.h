@@ -58,6 +58,11 @@ namespace stride::ast
         {
             return this->_node.get();
         }
+
+        std::unique_ptr<AstBlock> release_node()
+        {
+            return std::move(this->_node);
+        }
     };
 
     class Ast

@@ -83,14 +83,9 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
         }
 
         const auto rhs_expr_pos = rhs_expr->get()->get_source_fragment();
-        const auto source = SourceFragment(
-            op_type_pos.source,
-            op_type_pos.offset,
-            rhs_expr_pos.offset + rhs_expr_pos.length - op_type_pos.offset
-        );
 
         return std::make_unique<AstUnaryOp>(
-            source,
+            SourceFragment::join(op_type_pos,rhs_expr_pos),
             context,
             op_type.value(),
             std::move(rhs_expr.value())

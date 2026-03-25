@@ -1,8 +1,53 @@
 #include "ast/casting.h"
 #include "ast/definitions/function_definition.h"
+#include "ast/generics.h"
 #include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/return_statement.h"
+#include "ast/type_inference.h"
+#include "ast/visitor.h"
+
+namespace
+{
+    using namespace stride::ast;
+
+    /// Visitor used to set concrete types on a cloned generic function body.
+    /// Unlike ExpressionVisitor it:
+    ///   - Resolves generic param names (e.g. T → i32) in the inferred type via resolve_generics.
+    ///   - Uses overwrite=true when registering variable declarations so that re-running on a
+    ///     cloned body (sharing the same SymbolTable as the original) doesn't throw "already defined".
+    class GenericBodyExpressionVisitor final : public IVisitor
+    {
+        const GenericParameterList& _param_names;
+        const GenericTypeList& _instantiated_types;
+
+    public:
+        GenericBodyExpressionVisitor(
+            const GenericParameterList& param_names,
+            const GenericTypeList& instantiated_types
+        ) :
+            _param_names(param_names),
+            _instantiated_types(instantiated_types) {}
+
+        void accept_expression_node(IAstExpression* expr) override
+        {
+            auto inferred = infer_expression_type(expr);
+            expr->set_type(resolve_generics(inferred.get(), _param_names, _instantiated_types));
+
+            if (const auto* var_decl = dynamic_cast<AstVariableDeclaration*>(expr))
+            {
+                const auto resolved_type = var_decl->get_type();
+                resolved_type->set_flags(var_decl->get_flags());
+                var_decl->get_context()->define_variable(
+                    var_decl->get_symbol(),
+                    resolved_type->clone_ty(),
+                    var_decl->get_visibility(),
+                    true // overwrite existing registration from the original body traversal
+                );
+            }
+        }
+    };
+} // anonymous namespace
 
 using namespace stride::ast;
 
@@ -69,6 +114,20 @@ void IAstFunction::validate()
             this->_flags,
             EMPTY_GENERIC_PARAMETER_LIST // Omit generics - They've been resolved
         );
+
+        // Run type inference on the cloned body using the concrete parameter types now
+        // in context (updated above). This is necessary because clone() does not
+        // preserve the _type field set during the earlier traversal pass.
+        // Use GenericBodyExpressionVisitor so that remaining generic param names
+        // (e.g. T in `Wrapper<T>::{...}`) are also substituted with concrete types.
+        {
+            AstNodeTraverser traverser(this->get_context());
+            GenericBodyExpressionVisitor generic_expr_visitor(
+                this->_generic_parameters,
+                instantiated_generic_types
+            );
+            traverser.traverse_block(&generic_expr_visitor, node->get_body());
+        }
 
         validate_candidate(node.get());
 
