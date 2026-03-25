@@ -7,7 +7,7 @@
 
 using namespace stride::ast;
 
-void FunctionVisitor::accept(IAstFunction* function)
+void FunctionVisitor::accept_function_node(IAstFunction* function)
 {
     function->set_type(infer_function_type(function));
 

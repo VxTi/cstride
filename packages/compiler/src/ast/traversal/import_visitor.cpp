@@ -5,7 +5,7 @@
 #include "ast/nodes/import.h"
 #include "ast/nodes/package.h"
 
-void stride::ast::ImportVisitor::accept(AstImport* node)
+void stride::ast::ImportVisitor::accept_import_node(AstImport* node)
 {
     const auto& package_identifier = node->get_package_identifier();
     const auto& import_identifiers = node->get_import_list();
@@ -42,14 +42,14 @@ void stride::ast::ImportVisitor::accept(AstImport* node)
     }
 }
 
-void stride::ast::ImportVisitor::accept(AstPackage* node)
+void stride::ast::ImportVisitor::accept_package_node(AstPackage* node)
 {
     this->_package_file_mapping[node->get_package_name()].push_back(this->_current_file_name);
 }
 
 void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
 {
-    for (const auto& [file_name, node] : ast->get_files())
+    for (const auto& [file_name, branch] : ast->get_branches())
     {
         if (!this->_import_registry.contains(file_name))
             continue;
@@ -63,7 +63,7 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                 throw parsing_error(
                     ErrorType::REFERENCE_ERROR,
                     std::format("Package '{}' not found", package_name),
-                    node->get_source_fragment()
+                    branch->get_node()->get_source_fragment()
                 );
             }
             // The Ast nodes from which we wish to extract the symbols
@@ -76,8 +76,8 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                 std::optional<std::unique_ptr<definition::IDefinition>> definition;
                 for (const auto& file_name_with_exports : files_with_exports)
                 {
-                    const auto& node_with_exports = ast->get_files().at(file_name_with_exports);
-                    definition = node_with_exports->get_context()->get_definition_by_internal_name(import_name);
+                    const auto& node_with_exports = ast->get_branches().at(file_name_with_exports);
+                    definition = node_with_exports->get_node()->get_context()->get_definition_by_internal_name(import_name);
                     if (definition.has_value())
                         break;
                 }
@@ -87,7 +87,7 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                     throw parsing_error(
                         ErrorType::REFERENCE_ERROR,
                         std::format("Variable or function '{}' not found in package '{}'", import_name, package_name),
-                        node->get_source_fragment()
+                        branch->get_node()->get_source_fragment()
                     );
                 }
 
@@ -96,15 +96,15 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                     throw parsing_error(
                         ErrorType::REFERENCE_ERROR,
                         std::format("Variable or function '{}' is not public", import_name),
-                        node->get_source_fragment()
+                        branch->get_node()->get_source_fragment()
                     );
                 }
 
                 // Define only if not yet present
-                if (node->get_context()->get_definition_by_internal_name(definition.value()->get_internal_symbol_name())
+                if (branch->get_node()->get_context()->get_definition_by_internal_name(definition.value()->get_internal_symbol_name())
                     == std::nullopt)
                 {
-                    node->get_context()->define(std::move(definition.value()));
+                    branch->get_node()->get_context()->define(std::move(definition.value()));
                 }
             }
         }

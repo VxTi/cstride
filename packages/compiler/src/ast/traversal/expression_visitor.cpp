@@ -7,7 +7,7 @@
 
 using namespace stride::ast;
 
-void ExpressionVisitor::accept(IAstExpression* expr)
+void ExpressionVisitor::accept_expression_node(IAstExpression* expr)
 {
     expr->set_type(infer_expression_type(expr));
 

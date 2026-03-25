@@ -24,15 +24,15 @@ namespace stride::ast
         virtual ~IVisitor() = default;
 
         /// Called for every expression node, after its sub-expressions have been visited.
-        virtual void accept(IAstExpression* expr) {};
+        virtual void accept_expression_node(IAstExpression* expr) {};
 
-        virtual void accept(IAstFunction* expr) {};
+        virtual void accept_function_node(IAstFunction* expr) {};
 
-        virtual void accept(AstImport* node) {}
+        virtual void accept_import_node(AstImport* node) {}
 
-        virtual void accept(AstPackage* node) {}
+        virtual void accept_package_node(AstPackage* node) {}
 
-        virtual void accept(AstFunctionCall* function_call) {}
+        virtual void accept_function_call(AstFunctionCall* function_call) {}
     };
 
     /// Visitor that infers and assigns types to every expression node in the AST.
@@ -48,19 +48,19 @@ namespace stride::ast
         /// Infers the type of `expr` and stores it on the node.
         /// For AstVariableDeclaration: also registers the variable in its context.
         /// For IAstFunction: also registers the function in its context.
-        void accept(IAstExpression* expr) override;
+        void accept_expression_node(IAstExpression* expr) override;
     };
 
     class FunctionVisitor : public IVisitor
     {
     public:
-        void accept(IAstFunction* function) override;
+        void accept_function_node(IAstFunction* function) override;
     };
 
     class FunctionCallVisitor : public IVisitor
     {
     public:
-        void accept(AstFunctionCall* function_call) override;
+        void accept_function_call(AstFunctionCall* function_call) override;
     };
 
     class ImportVisitor : public IVisitor
@@ -84,9 +84,9 @@ namespace stride::ast
             this->_current_file_name = file_name;
         }
 
-        void accept(AstImport* node) override;
+        void accept_import_node(AstImport* node) override;
 
-        void accept(AstPackage* node) override;
+        void accept_package_node(AstPackage* node) override;
 
         void cross_register_symbols(Ast* ast) const;
     };

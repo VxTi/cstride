@@ -4,7 +4,7 @@
 
 using namespace stride::ast;
 
-void FunctionCallVisitor::accept(AstFunctionCall* function_call)
+void FunctionCallVisitor::accept_function_call(AstFunctionCall* function_call)
 {
     if (function_call->get_generic_type_arguments().empty())
         return;

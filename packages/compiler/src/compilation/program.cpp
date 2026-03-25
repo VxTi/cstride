@@ -47,7 +47,9 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     llvm::IRBuilder<> builder(context);
 
-    ast::AstNodeTraverser traverser;
+    auto global_symbol_table = std::make_shared<ast::SymbolTable>();
+
+    ast::AstNodeTraverser traverser(global_symbol_table);
     ast::ExpressionVisitor expression_visitor;
     ast::FunctionVisitor function_visitor;
     ast::FunctionCallVisitor function_call_visitor;
@@ -56,52 +58,52 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     //
     // First step - Cross-file symbol registration (imports and function signatures)
     //
-    for (const auto& [file_name, node] : this->_ast->get_files())
+    for (const auto& [file_name, branch] : this->_ast->get_branches())
     {
         // Populate own symbol table with stride runtime symbols
         // These are externally available functions that are linked after codegen
-        runtime::register_runtime_symbols(node->get_context());
+        runtime::register_runtime_symbols(branch->get_node()->get_context());
 
         // Resolve imports and populate local registry - Used for cross registration step
         import_visitor.set_current_file_name(file_name);
-        traverser.visit_block(&import_visitor, node.get());
+        traverser.traverse(&import_visitor, branch.get());
 
         // Ensures functions are defined in our symbol table
-        traverser.visit_block(&function_visitor, node.get());
+        traverser.traverse(&function_visitor, branch.get());
     }
     import_visitor.cross_register_symbols(this->_ast.get());
 
     //
     // Generic resolution - Instantiates functions that have generic arguments
     //
-    for (const auto& node : this->_ast->get_files() | std::views::values)
+    for (const auto& node : this->_ast->get_branches() | std::views::values)
     {
-        traverser.visit_block(&function_call_visitor, node.get());
+        traverser.traverse(&function_call_visitor, node.get());
     }
 
     //
     // Third step - Type resolution and symbol forward declarations
     //
-    for (const auto& node : this->_ast->get_files() | std::views::values)
+    for (const auto& node : this->_ast->get_branches() | std::views::values)
     {
         // Type checker - this must be executed after all external symbols have been populated
-        traverser.visit_block(&expression_visitor, node.get());
+        traverser.traverse(&expression_visitor, node.get());
     }
 
-    for (const auto& node : this->_ast->get_files() | std::views::values)
+    for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
         // Resolving forward references - Ensures symbols certain symbols are available before implementation
-        node->resolve_forward_references(
+        branch->get_node()->resolve_forward_references(
             module.get(),
             &builder
         );
     }
 
     /// --- Final step - LLVM IR validation and code generation
-    for (const auto& node : this->_ast->get_files() | std::views::values)
+    for (const auto& node : this->_ast->get_branches() | std::views::values)
     {
-        node->validate();
-        node->codegen(module.get(), &builder);
+        node->get_node()->validate();
+        node->get_node()->codegen(module.get(), &builder);
     }
 
     if (llvm::verifyModule(*module, &llvm::errs()))
