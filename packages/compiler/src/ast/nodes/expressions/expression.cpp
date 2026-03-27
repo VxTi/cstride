@@ -25,6 +25,11 @@ std::string IAstExpression::to_string()
     return "AnonymousExpression";
 }
 
+std::unique_ptr<IAstNode> IAstExpression::clone()
+{
+    throw std::runtime_error("clone() not implemented for IAstExpression");
+}
+
 std::unique_ptr<IAstExpression> stride::ast::parse_inline_expression_part(
     TokenSet& set
 )

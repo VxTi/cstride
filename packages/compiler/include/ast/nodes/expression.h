@@ -143,6 +143,8 @@ namespace stride::ast
         {
             return std::nullopt;
         }
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     using ExpressionList = std::vector<std::unique_ptr<IAstExpression>>;

@@ -56,6 +56,8 @@ namespace stride::ast
         explicit IAstNode(const SourcePosition& source) :
             _source_position(source) {}
 
+        IAstNode(const IAstNode& other) = default;
+
         ~IAstNode() override = default;
 
         virtual std::string to_string() = 0;

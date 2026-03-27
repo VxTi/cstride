@@ -61,6 +61,18 @@ namespace stride::ast
         {
             return this->_value;
         }
+
+        std::string to_string() override
+        {
+            throw std::runtime_error("to_string() not implemented for IAstLiteralBase");
+        }
+
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override
+        {
+            throw std::runtime_error("codegen() not implemented for IAstLiteralBase");
+        }
+
+        std::unique_ptr<IAstNode> clone() override = 0;
     };
 
     class AstStringLiteral
