@@ -274,7 +274,7 @@ std::unique_ptr<IAstNode> AstBinaryArithmeticOp::clone()
         this->get_left()->clone_as<IAstExpression>(),
         this->get_op_type(),
         this->get_right()->clone_as<IAstExpression>(),
-        this->get_type()->clone()
+        this->clone_type()
     );
 }
 

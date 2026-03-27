@@ -120,7 +120,7 @@ std::unique_ptr<IAstNode> AstTypeCastOp::clone()
         this->get_source_position(),
         this->_value->clone_as<IAstExpression>(),
         this->_target_type->clone(),
-        this->get_type()->clone()
+        this->clone_type()
     );
 }
 

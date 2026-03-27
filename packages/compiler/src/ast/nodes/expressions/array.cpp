@@ -33,7 +33,7 @@ std::unique_ptr<IAstNode> AstArray::clone()
     return std::make_unique<AstArray>(
         this->get_source_position(),
         std::move(elements_clone),
-        this->get_type()->clone()
+        this->clone_type()
     );
 }
 

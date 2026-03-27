@@ -33,7 +33,7 @@ std::unique_ptr<IAstNode> AstTupleInitializer::clone()
     return std::make_unique<AstTupleInitializer>(
         this->get_source_position(),
         std::move(cloned_members),
-        this->get_type()->clone()
+        this->clone_type()
     );
 }
 

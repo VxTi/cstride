@@ -422,7 +422,7 @@ std::unique_ptr<IAstNode> AstUnaryOp::clone()
         this->get_source_position(),
         this->get_op_type(),
         this->_operand->clone_as<IAstExpression>(),
-        this->get_type()->clone()
+        this->clone_type()
     );
 }
 

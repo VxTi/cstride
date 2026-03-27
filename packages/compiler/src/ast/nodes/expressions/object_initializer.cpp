@@ -417,7 +417,7 @@ std::unique_ptr<IAstNode> AstObjectInitializer::clone()
         this->_object_type_name,
         std::move(member_initializers),
         std::move(member_generic_types),
-        this->get_type()->clone()
+        this->clone_type()
     );
 }
 

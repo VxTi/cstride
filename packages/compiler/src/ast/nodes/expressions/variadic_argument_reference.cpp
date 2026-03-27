@@ -153,7 +153,7 @@ void AstVariadicArgReference::end_variadic_reference(
 
 std::unique_ptr<IAstNode> AstVariadicArgReference::clone()
 {
-    return std::make_unique<AstVariadicArgReference>(this->get_source_position(), this->get_type()->clone());
+    return std::make_unique<AstVariadicArgReference>(this->get_source_position(), this->clone_type());
 }
 
 std::string AstVariadicArgReference::to_string()

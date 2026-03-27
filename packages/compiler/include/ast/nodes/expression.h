@@ -125,6 +125,14 @@ namespace stride::ast
             return this->_type.get();
         }
 
+        [[nodiscard]]
+        std::unique_ptr<IAstType> clone_type() const
+        {
+            if (!this->_type) return nullptr;
+
+            return this->_type->clone();
+        }
+
         void set_type(std::unique_ptr<IAstType> type)
         {
             this->_type = std::move(type);
