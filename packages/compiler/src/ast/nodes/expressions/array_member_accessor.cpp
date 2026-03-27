@@ -157,7 +157,8 @@ std::unique_ptr<IAstNode> AstArrayMemberAccessor::clone()
     return std::make_unique<AstArrayMemberAccessor>(
         this->get_source_position(),
         this->_array_base->clone_as<IAstExpression>(),
-        this->_index_accessor_expr->clone_as<IAstExpression>()
+        this->_index_accessor_expr->clone_as<IAstExpression>(),
+        this->get_type()->clone()
     );
 }
 

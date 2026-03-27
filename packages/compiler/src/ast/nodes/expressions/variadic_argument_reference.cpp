@@ -84,9 +84,10 @@ namespace
 
 }
 
-llvm::Value* AstVariadicArgReference::codegen(SymbolTable* symbol_table,
-                                              llvm::Module* module,
-                                              llvm::IRBuilderBase* builder)
+llvm::Value* AstVariadicArgReference::codegen(
+    SymbolTable* symbol_table,
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder)
 {
     throw stride_error(
         ErrorType::COMPILATION_ERROR,
@@ -152,7 +153,7 @@ void AstVariadicArgReference::end_variadic_reference(
 
 std::unique_ptr<IAstNode> AstVariadicArgReference::clone()
 {
-    return std::make_unique<AstVariadicArgReference>(this->get_source_position());
+    return std::make_unique<AstVariadicArgReference>(this->get_source_position(), this->get_type()->clone());
 }
 
 std::string AstVariadicArgReference::to_string()

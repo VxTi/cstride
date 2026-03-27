@@ -421,7 +421,8 @@ std::unique_ptr<IAstNode> AstUnaryOp::clone()
     return std::make_unique<AstUnaryOp>(
         this->get_source_position(),
         this->get_op_type(),
-        this->_operand->clone_as<IAstExpression>()
+        this->_operand->clone_as<IAstExpression>(),
+        this->get_type()->clone()
     );
 }
 

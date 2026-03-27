@@ -153,10 +153,14 @@ std::unique_ptr<IAstNode> AstBlock::clone()
         cloned_children.push_back(child->clone());
     }
 
-    return std::make_unique<AstBlock>(
+    auto cloned = std::make_unique<AstBlock>(
         this->get_source_position(),
         std::move(cloned_children)
     );
+
+    cloned->set_symbol_table(this->get_symbol_table());
+
+    return cloned;
 }
 
 std::string AstBlock::to_string()

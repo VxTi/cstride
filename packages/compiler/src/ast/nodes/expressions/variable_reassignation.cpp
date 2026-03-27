@@ -300,7 +300,8 @@ std::unique_ptr<IAstNode> AstVariableReassignment::clone()
         this->get_source_position(),
         this->get_identifier()->clone_as<AstIdentifier>(),
         this->get_operator(),
-        this->get_value()->clone_as<IAstExpression>()
+        this->get_value()->clone_as<IAstExpression>(),
+        this->get_type()->clone()
     );
 }
 

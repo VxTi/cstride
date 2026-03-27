@@ -95,12 +95,9 @@ namespace stride::ast
         friend class AstIdentifier;
 
     public:
-        explicit IAstExpression(const SourcePosition& source_position) :
-            IAstNode(source_position) {}
-
         explicit IAstExpression(
             const SourcePosition& position,
-            std::unique_ptr<IAstType> type
+            std::unique_ptr<IAstType> type = nullptr
         ) :
             IAstNode(position),
             _type(std::move(type)) {}
@@ -158,9 +155,10 @@ namespace stride::ast
     public:
         explicit AstArray(
             const SourcePosition& source,
-            ExpressionList elements
+            ExpressionList elements,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _elements(std::move(elements)) {}
 
         [[nodiscard]]
@@ -190,12 +188,17 @@ namespace stride::ast
         : public IAstExpression
     {
         Symbol _symbol;
-        definition::IDefinition* _definition = nullptr;
+        definition::IDefinition* _definition;
 
     public:
-        explicit AstIdentifier(Symbol symbol) :
-            IAstExpression(symbol.symbol_position),
-            _symbol(std::move(symbol)) {}
+        explicit AstIdentifier(
+            Symbol symbol,
+            std::unique_ptr<IAstType> type = nullptr,
+            definition::IDefinition* definition = nullptr
+        ) :
+            IAstExpression(symbol.symbol_position, std::move(type)),
+            _symbol(std::move(symbol)),
+            _definition(definition) {}
 
         [[nodiscard]]
         definition::IDefinition* get_definition() const
@@ -253,9 +256,10 @@ namespace stride::ast
         explicit AstArrayMemberAccessor(
             const SourcePosition& source,
             std::unique_ptr<IAstExpression> array_base,
-            std::unique_ptr<IAstExpression> index_expr
+            std::unique_ptr<IAstExpression> index_expr,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _array_base(std::move(array_base)),
             _index_accessor_expr(std::move(index_expr)) {}
 
@@ -300,9 +304,10 @@ namespace stride::ast
         explicit AstChainedExpression(
             const SourcePosition& source,
             std::unique_ptr<IAstExpression> base,
-            std::unique_ptr<IAstExpression> followup
+            std::unique_ptr<IAstExpression> followup,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _base(std::move(base)),
             _followup(std::move(followup)) {}
 
@@ -354,9 +359,10 @@ namespace stride::ast
         explicit AstIndirectCall(
             const SourcePosition& source,
             std::unique_ptr<IAstExpression> callee,
-            ExpressionList args
+            ExpressionList args,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _callee(std::move(callee)),
             _args(std::move(args)) {}
 
@@ -410,9 +416,10 @@ namespace stride::ast
             std::unique_ptr<AstIdentifier> function_name_identifier,
             ExpressionList arguments,
             GenericTypeList generic_type_arguments,
-            const int flags = SRFLAG_NONE
+            const int flags = SRFLAG_NONE,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(function_name_identifier->get_source_position()),
+            IAstExpression(function_name_identifier->get_source_position(), std::move(type)),
             _arguments(std::move(arguments)),
             _function_name_identifier(std::move(function_name_identifier)),
             _generic_type_arguments(std::move(generic_type_arguments)),
@@ -521,13 +528,14 @@ namespace stride::ast
             std::optional<std::unique_ptr<IAstType>> variable_type,
             std::unique_ptr<IAstExpression> initial_value,
             const VisibilityModifier visibility,
-            const int flags = SRFLAG_NONE
+            const int flags = SRFLAG_NONE,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(position),
-            _variable_name(std::move(variable_name)),
+            IAstExpression(position, std::move(type)),
             _annotated_type(std::move(variable_type)),
             _initial_value(std::move(initial_value)),
             _visibility(visibility),
+            _variable_name(std::move(variable_name)),
             _flags(flags) {}
 
         [[nodiscard]]
@@ -606,9 +614,10 @@ namespace stride::ast
         explicit IBinaryOp(
             const SourcePosition& source,
             std::unique_ptr<IAstExpression> lsh,
-            std::unique_ptr<IAstExpression> rsh
+            std::unique_ptr<IAstExpression> rsh,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _lhs(std::move(lsh)),
             _rhs(std::move(rsh)) {}
 
@@ -635,9 +644,10 @@ namespace stride::ast
             const SourcePosition& source,
             std::unique_ptr<IAstExpression> left,
             const BinaryOpType op,
-            std::unique_ptr<IAstExpression> right
+            std::unique_ptr<IAstExpression> right,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IBinaryOp(source, std::move(left), std::move(right)),
+            IBinaryOp(source, std::move(left), std::move(right), std::move(type)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -670,9 +680,10 @@ namespace stride::ast
             const SourcePosition& source,
             std::unique_ptr<IAstExpression> left,
             const LogicalOpType op,
-            std::unique_ptr<IAstExpression> right
+            std::unique_ptr<IAstExpression> right,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IBinaryOp(source, std::move(left), std::move(right)),
+            IBinaryOp(source, std::move(left), std::move(right), std::move(type)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -703,9 +714,10 @@ namespace stride::ast
             const SourcePosition& source,
             std::unique_ptr<IAstExpression> left,
             const ComparisonOpType op,
-            std::unique_ptr<IAstExpression> right
+            std::unique_ptr<IAstExpression> right,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IBinaryOp(source, std::move(left), std::move(right)),
+            IBinaryOp(source, std::move(left), std::move(right), std::move(type)),
             _op_type(op) {}
 
         [[nodiscard]]
@@ -736,9 +748,10 @@ namespace stride::ast
         explicit AstUnaryOp(
             const SourcePosition& source,
             const UnaryOpType op,
-            std::unique_ptr<IAstExpression> operand
+            std::unique_ptr<IAstExpression> operand,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _op_type(op),
             _operand(std::move(operand)) {}
 
@@ -792,9 +805,10 @@ namespace stride::ast
             const SourcePosition& source,
             std::unique_ptr<AstIdentifier> identifier,
             const MutativeAssignmentType op,
-            std::unique_ptr<IAstExpression> value
+            std::unique_ptr<IAstExpression> value,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _identifier(std::move(identifier)),
             _value(std::move(value)),
             _operator(op) {}
@@ -861,9 +875,10 @@ namespace stride::ast
             const SourcePosition& source,
             std::string struct_name,
             std::vector<StructMemberInitializerPair> member_initializers,
-            GenericTypeList generic_type_arguments = {}
+            GenericTypeList generic_type_arguments = {},
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _object_type_name(std::move(struct_name)),
             _member_initializers(std::move(member_initializers)),
             _generic_type_arguments(std::move(generic_type_arguments)) {}
@@ -918,8 +933,8 @@ namespace stride::ast
         : public IAstExpression
     {
     public:
-        explicit AstVariadicArgReference(const SourcePosition& source) :
-            IAstExpression(source) {}
+        explicit AstVariadicArgReference(const SourcePosition& source, std::unique_ptr<IAstType> type = nullptr) :
+            IAstExpression(source, std::move(type)) {}
 
         llvm::Value* codegen(
             SymbolTable* symbol_table,
@@ -950,9 +965,10 @@ namespace stride::ast
     public:
         explicit AstTupleInitializer(
             const SourcePosition& source,
-            ExpressionList members
+            ExpressionList members,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _members(std::move(members)) {}
 
         [[nodiscard]]
@@ -981,9 +997,10 @@ namespace stride::ast
         explicit AstTypeCastOp(
             const SourcePosition& source,
             std::unique_ptr<IAstExpression> value,
-            std::unique_ptr<IAstType> target_type
+            std::unique_ptr<IAstType> target_type,
+            std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(source),
+            IAstExpression(source, std::move(type)),
             _value(std::move(value)),
             _target_type(std::move(target_type)) {}
 

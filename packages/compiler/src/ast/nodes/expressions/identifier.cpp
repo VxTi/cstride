@@ -146,7 +146,7 @@ llvm::Value* AstIdentifier::codegen(
 
 std::unique_ptr<IAstNode> AstIdentifier::clone()
 {
-    return std::make_unique<AstIdentifier>(this->_symbol);
+    return std::make_unique<AstIdentifier>(this->_symbol, this->get_type()->clone(), this->_definition);
 }
 
 std::string AstIdentifier::to_string()

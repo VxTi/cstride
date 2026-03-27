@@ -246,7 +246,8 @@ std::unique_ptr<IAstNode> AstChainedExpression::clone()
     return std::make_unique<AstChainedExpression>(
         this->get_source_position(),
         this->_base->clone_as<IAstExpression>(),
-        this->_followup->clone_as<IAstExpression>()
+        this->_followup->clone_as<IAstExpression>(),
+        this->get_type()->clone()
     );
 }
 

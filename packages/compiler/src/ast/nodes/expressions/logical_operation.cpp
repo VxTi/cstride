@@ -41,7 +41,8 @@ void AstLogicalOp::validate(const SymbolTable* symbol_table)
 
 llvm::Value* AstLogicalOp::codegen(
     SymbolTable* symbol_table,
-    llvm::Module* module, llvm::IRBuilderBase* builder
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder
 )
 {
     // Implementation following short-circuiting logic
@@ -162,6 +163,7 @@ std::unique_ptr<IAstNode> AstLogicalOp::clone()
         this->get_source_position(),
         this->get_left()->clone_as<IAstExpression>(),
         this->get_op_type(),
-        this->get_right()->clone_as<IAstExpression>()
+        this->get_right()->clone_as<IAstExpression>(),
+        this->get_type()->clone()
     );
 }

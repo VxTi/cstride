@@ -272,7 +272,8 @@ std::unique_ptr<IAstNode> AstComparisonOp::clone()
         this->get_source_position(),
         this->get_left()->clone_as<IAstExpression>(),
         this->_op_type,
-        this->get_right()->clone_as<IAstExpression>()
+        this->get_right()->clone_as<IAstExpression>(),
+        this->get_type()->clone()
     );
 }
 

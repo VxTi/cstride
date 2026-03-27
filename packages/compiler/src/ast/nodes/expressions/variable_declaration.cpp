@@ -550,7 +550,9 @@ std::unique_ptr<IAstNode> AstVariableDeclaration::clone()
         ? std::optional(this->_annotated_type.value()->clone())
         : std::nullopt,
         this->_initial_value->clone_as<IAstExpression>(),
-        this->_visibility
+        this->_visibility,
+        this->_flags,
+        this->get_type()->clone()
     );
 }
 

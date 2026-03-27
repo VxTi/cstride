@@ -264,9 +264,10 @@ void AstObjectInitializer::validate(const SymbolTable* symbol_table)
     }
 }
 
-void AstObjectInitializer::resolve_forward_references(SymbolTable* symbol_table,
-                                                      llvm::Module* module,
-                                                      llvm::IRBuilderBase* builder)
+void AstObjectInitializer::resolve_forward_references(
+    SymbolTable* symbol_table,
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder)
 {
     for (const auto& val : this->_member_initializers | std::views::values)
     {
@@ -415,7 +416,8 @@ std::unique_ptr<IAstNode> AstObjectInitializer::clone()
         this->get_source_position(),
         this->_object_type_name,
         std::move(member_initializers),
-        std::move(member_generic_types)
+        std::move(member_generic_types),
+        this->get_type()->clone()
     );
 }
 
