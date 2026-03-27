@@ -47,7 +47,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
         );
         fn_def.has_value())
     {
-        auto return_type = fn_def.value()->get_type()->get_return_type()->clone_ty();
+        auto return_type = fn_def.value()->get_type()->get_return_type()->clone();
 
         // For generic function calls, resolve the return type by substituting
         // generic parameter names with the concrete type arguments from the call site.
@@ -74,9 +74,9 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
             if (const auto field_fn_type =
                 cast_type<AstFunctionType*>(field_fn_like_def->get_type()))
             {
-                return field_fn_type->get_return_type()->clone_ty();
+                return field_fn_type->get_return_type()->clone();
             }
-            return field_fn_like_def->get_type()->clone_ty();
+            return field_fn_like_def->get_type()->clone();
         }
     }
 
@@ -169,7 +169,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(SymbolTable* symbol_t
             );
         }
 
-        return type->clone_ty();
+        return type->clone();
     }
     else if (op_type == UnaryOpType::LOGICAL_NOT)
     {
@@ -252,7 +252,7 @@ std::unique_ptr<IAstType> stride::ast::infer_chained_expression_type(
         );
     }
 
-    return field_type.value()->clone_ty();
+    return field_type.value()->clone();
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_indirect_call_type(
@@ -266,7 +266,7 @@ std::unique_ptr<IAstType> stride::ast::infer_indirect_call_type(
     std::unique_ptr<IAstType> unwrapped;
     if (auto* alias = cast_type<AstAliasType*>(raw_type))
     {
-        unwrapped = alias->get_underlying_type()->clone_ty();
+        unwrapped = alias->get_underlying_type()->clone();
         raw_type = unwrapped.get();
     }
 
@@ -283,7 +283,7 @@ std::unique_ptr<IAstType> stride::ast::infer_indirect_call_type(
         );
     }
 
-    return fn_type->get_return_type()->clone_ty();
+    return fn_type->get_return_type()->clone();
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_object_initializer_type(const AstObjectInitializer* struct_initializer)
@@ -292,7 +292,7 @@ std::unique_ptr<IAstType> stride::ast::infer_object_initializer_type(const AstOb
     generic_type_arguments.reserve(struct_initializer->get_generic_type_arguments().size());
     for (const auto& generic_type_argument : struct_initializer->get_generic_type_arguments())
     {
-        generic_type_arguments.emplace_back(generic_type_argument->clone_ty());
+        generic_type_arguments.emplace_back(generic_type_argument->clone());
     }
 
     return std::make_unique<AstAliasType>(
@@ -310,13 +310,13 @@ std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* f
 
     for (const auto& param : function->get_parameters())
     {
-        param_types.emplace_back(param->get_type()->clone_ty());
+        param_types.emplace_back(param->get_type()->clone());
     }
 
     return std::make_unique<AstFunctionType>(
         function->get_source_position(),
         std::move(param_types),
-        function->get_return_type()->clone_ty(),
+        function->get_return_type()->clone(),
         function->get_generic_parameters(),
         function->get_flags()
     );
@@ -336,20 +336,20 @@ std::unique_ptr<IAstType> stride::ast::infer_identifier_type(
         for (const auto& param :
              callable->get_type()->get_parameter_types())
         {
-            param_types.push_back(param->clone_ty());
+            param_types.push_back(param->clone());
         }
 
         return std::make_unique<AstFunctionType>(
             identifier->get_source_position(),
             std::move(param_types),
-            callable->get_type()->get_return_type()->clone_ty(),
+            callable->get_type()->get_return_type()->clone(),
             callable->get_type()->get_generic_parameter_names()
         );
     }
 
     if (const auto field = dynamic_cast<FieldDefinition*>(identifier_def))
     {
-        return field->get_type()->clone_ty();
+        return field->get_type()->clone();
     }
 
     throw stride_error(
@@ -375,12 +375,12 @@ std::unique_ptr<IAstType> stride::ast::infer_variable_declaration_type(
     if (!annotated_type.has_value())
     {
         value_type->set_flags(declaration->get_flags());
-        return value_type->clone_ty();
+        return value_type->clone();
     }
 
     if (annotated_type.value()->equals(value_type.get()))
     {
-        return annotated_type.value()->clone_ty();
+        return annotated_type.value()->clone();
     }
 
     if (value_type->is_assignable_to(annotated_type.value()))
@@ -390,11 +390,11 @@ std::unique_ptr<IAstType> stride::ast::infer_variable_declaration_type(
 
     const auto references = {
         ErrorSourceReference(
-            annotated_type.value()->to_string(),
+            annotated_type.value()->get_type_name(),
             annotated_type.value()->get_source_position()
         ),
         ErrorSourceReference(
-            value_type->to_string(),
+            value_type->get_type_name(),
             declaration->get_initial_value()->get_source_position()
         )
     };
@@ -403,8 +403,8 @@ std::unique_ptr<IAstType> stride::ast::infer_variable_declaration_type(
         ErrorType::TYPE_ERROR,
         std::format(
             "Type mismatch in variable declaration: cannot assign value of type '{}' to type '{}'",
-            value_type->to_string(),
-            annotated_type.value()->to_string()
+            value_type->get_type_name(),
+            annotated_type.value()->get_type_name()
         ),
         references
     );
@@ -421,7 +421,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
     // If the immediate type is an array, we can simply return the member type
     if (const auto array = cast_type<AstArrayType*>(array_type.get()))
     {
-        return array->get_element_type()->clone_ty();
+        return array->get_element_type()->clone();
     }
 
     // It's possible that we're referring to a named type, in which case we'll have to extract the base type
@@ -432,7 +432,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
             // Instantiate type if it contains generics
             if (const auto array_base_ty = cast_type<AstArrayType*>(resolved->get_underlying_type()))
             {
-                return array_base_ty->get_element_type()->clone_ty();
+                return array_base_ty->get_element_type()->clone();
             }
         }
 
@@ -476,7 +476,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     if (const auto* type_cast = cast_expr<AstTypeCastOp*>(expr))
     {
-        return type_cast->get_target_type()->clone_ty();
+        return type_cast->get_target_type()->clone();
     }
 
     if (const auto* literal = cast_expr<AstLiteral*>(expr))

@@ -120,7 +120,7 @@ std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> AstObjectType::ge
 
     for (const auto& [name, type] : this->_members)
     {
-        members.emplace_back(name, type->clone_ty());
+        members.emplace_back(name, type->clone());
     }
 
     return std::move(members);
@@ -214,11 +214,6 @@ std::string AstObjectType::get_type_name()
     return this->_type_name;
 }
 
-std::string AstObjectType::to_string()
-{
-    return this->get_type_name();
-}
-
 bool AstObjectType::equals(IAstType* other)
 {
     if (const auto other_struct_ty = cast_type<const AstObjectType*>(other))
@@ -264,21 +259,21 @@ bool AstObjectType::equals(IAstType* other)
     return false;
 }
 
-std::unique_ptr<IAstNode> AstObjectType::clone()
+std::unique_ptr<IAstType> AstObjectType::clone()
 {
     ObjectTypeMemberList cloned_members;
     cloned_members.reserve(this->_members.size());
 
     for (const auto& [name, type] : this->_members)
     {
-        cloned_members.emplace_back(name, type->clone_ty());
+        cloned_members.emplace_back(name, type->clone());
     }
 
     GenericTypeList cloned_generics;
     cloned_generics.reserve(this->_instantiated_generics.size());
     for (const auto& gen : this->_instantiated_generics)
     {
-        cloned_generics.push_back(gen->clone_ty());
+        cloned_generics.push_back(gen->clone());
     }
 
     return std::make_unique<AstObjectType>(

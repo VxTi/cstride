@@ -228,9 +228,9 @@ void AstObjectInitializer::validate(const SymbolTable* symbol_table)
                 std::format(
                     "Type mismatch for member '{}' in object initializer '{}': expected '{}', got '{}'",
                     field_name,
-                    this->get_type()->to_string(),
-                    member_type.value()->to_string(),
-                    initializer_expr->get_type()->to_string()
+                    this->get_type()->get_type_name(),
+                    member_type.value()->get_type_name(),
+                    initializer_expr->get_type()->get_type_name()
                 ),
                 initializer_expr->get_source_position()
             );
@@ -408,7 +408,7 @@ std::unique_ptr<IAstNode> AstObjectInitializer::clone()
 
     for (const auto& type : this->_generic_type_arguments)
     {
-        member_generic_types.push_back(type->clone_ty());
+        member_generic_types.push_back(type->clone());
     }
 
     return std::make_unique<AstObjectInitializer>(
@@ -434,7 +434,7 @@ std::string AstObjectInitializer::to_string()
         std::vector<std::string> generic_names;
         for (const auto& generic : this->_generic_type_arguments)
         {
-            generic_names.push_back(generic->to_string());
+            generic_names.push_back(generic->get_type_name());
         }
         return std::format("(Object) {}<{}>{{ {} }}", object_name, join(generic_names, ", "), members);
     }

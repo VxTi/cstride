@@ -5,7 +5,6 @@
 #include "ast/optionals.h"
 #include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
@@ -168,22 +167,22 @@ void AstVariableDeclaration::validate(const SymbolTable* symbol_table)
             }
 
             const std::vector references = {
-                ErrorSourceReference(annotated_type->to_string(), this->get_source_position()),
-                ErrorSourceReference(value_type->to_string(), this->get_initial_value()->get_source_position())
+                ErrorSourceReference(annotated_type->get_type_name(), this->get_source_position()),
+                ErrorSourceReference(value_type->get_type_name(), this->get_initial_value()->get_source_position())
             };
 
             throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Cannot assign nil to variable of non-optional type '{}'",
-                    annotated_type->to_string()
+                    annotated_type->get_type_name()
                 ),
                 references
             );
         }
 
-        const std::string lhs_type_str = annotated_type->to_string();
-        const std::string rhs_type_str = value_type->to_string();
+        const std::string lhs_type_str = annotated_type->get_type_name();
+        const std::string rhs_type_str = value_type->get_type_name();
 
         const std::vector references = {
             ErrorSourceReference(lhs_type_str, this->get_source_position()),
@@ -548,7 +547,7 @@ std::unique_ptr<IAstNode> AstVariableDeclaration::clone()
         this->get_source_position(),
         this->get_variable_name(),
         this->has_annotated_type()
-        ? std::optional(this->_annotated_type.value()->clone_ty())
+        ? std::optional(this->_annotated_type.value()->clone())
         : std::nullopt,
         this->_initial_value->clone_as<IAstExpression>(),
         this->_visibility
@@ -560,6 +559,6 @@ std::string AstVariableDeclaration::to_string()
     return std::format(
         "VariableDeclaration({}, {}, {})",
         get_variable_name(),
-        this->has_annotated_type() ? this->_annotated_type.value()->to_string() : "nil",
+        this->has_annotated_type() ? this->_annotated_type.value()->get_type_name() : "nil",
         this->_initial_value->to_string());
 }

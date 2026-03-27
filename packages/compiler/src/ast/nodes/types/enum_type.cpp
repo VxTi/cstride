@@ -100,7 +100,7 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_enum_type_definition(
 }
 
 
-std::unique_ptr<IAstNode> AstEnumType::clone()
+std::unique_ptr<IAstType> AstEnumType::clone()
 {
     std::vector<EnumMemberPair> cloned_members;
     cloned_members.reserve(this->_members.size());
@@ -118,10 +118,6 @@ std::unique_ptr<IAstNode> AstEnumType::clone()
     );
 }
 
-llvm::Value* AstEnumType::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    return nullptr;
-}
 
 bool AstEnumType::equals(IAstType* other)
 {
@@ -139,35 +135,4 @@ llvm::Type* AstEnumType::get_llvm_type_impl(llvm::Module* module)
         std::format("Cannot get LLVM type for enum type '{}'", this->get_name()),
         this->get_source_position()
     );
-}
-
-bool AstEnumType::is_assignable_to_impl(IAstType* other)
-{
-    return false; // Already managed by `AstType` (equality check)
-}
-
-void AstEnumType::resolve_forward_references(
-    SymbolTable* symbol_table,
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder)
-{
-    for (const auto& val : this->_members | std::views::values)
-    {
-        val->resolve_forward_references(symbol_table, module, builder);
-    }
-}
-
-std::string AstEnumType::to_string()
-{
-    std::vector<std::string> members;
-
-    for (const auto& [field_name, field_val] : this->get_members())
-    {
-        members.push_back(std::format("{} = {}", field_name, field_val->to_string()));
-    }
-
-    return std::format(
-        "Enumerable {} (\n  {}\n)",
-        this->get_name(),
-        join(members, ",\n  "));
 }

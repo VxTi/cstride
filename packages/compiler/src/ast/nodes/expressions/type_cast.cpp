@@ -44,8 +44,8 @@ void AstTypeCastOp::validate(const SymbolTable* symbol_table)
             ErrorType::TYPE_ERROR,
             std::format(
                 "Cannot cast value of type '{}' to incompatible type '{}'",
-                this->_value->get_type()->to_string(),
-                this->_target_type->to_string()
+                this->_value->get_type()->get_type_name(),
+                this->_target_type->get_type_name()
             ),
             this->get_source_position()
         );
@@ -119,11 +119,11 @@ std::unique_ptr<IAstNode> AstTypeCastOp::clone()
     return std::make_unique<AstTypeCastOp>(
         this->get_source_position(),
         this->_value->clone_as<IAstExpression>(),
-        this->_target_type->clone_ty()
+        this->_target_type->clone()
     );
 }
 
 std::string AstTypeCastOp::to_string()
 {
-    return std::format("TypeCastOp({}, {})", this->_value->to_string(), this->_target_type->to_string());
+    return std::format("TypeCastOp({}, {})", this->_value->to_string(), this->_target_type->get_type_name());
 }

@@ -165,7 +165,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     cloned_params.reserve(parameters.size());
     for (auto& param : parameters)
     {
-        cloned_params.push_back(param->get_type()->clone_ty());
+        cloned_params.push_back(param->get_type()->clone());
     }
 
     return std::make_unique<AstLambdaFunctionExpression>(
@@ -200,7 +200,7 @@ std::vector<std::unique_ptr<IAstType>> IAstFunction::get_parameter_types() const
 
     for (const auto& param : this->_parameters)
     {
-        types.push_back(param->get_type()->clone_ty());
+        types.push_back(param->get_type()->clone());
     }
 
     return types;
@@ -263,7 +263,7 @@ std::unique_ptr<IAstNode> AstFunctionParameter::clone()
     return std::make_unique<AstFunctionParameter>(
         this->get_source_position(),
         this->get_name(),
-        this->get_type()->clone_ty()
+        this->get_type()->clone()
     );
 }
 
@@ -282,7 +282,7 @@ std::unique_ptr<IAstNode> IAstFunction::clone()
         this->get_function_name(),
         std::move(cloned_params),
         this->_body->clone_as<AstBlock>(),
-        this->_annotated_return_type->clone_ty(),
+        this->_annotated_return_type->clone(),
         this->_visibility,
         this->_flags,
         this->_generic_parameters
@@ -310,6 +310,6 @@ std::string IAstFunction::to_string()
         params,
         body_str,
         this->is_extern() ? " (extern)" : "",
-        this->get_return_type()->to_string()
+        this->get_return_type()->get_type_name()
     );
 }

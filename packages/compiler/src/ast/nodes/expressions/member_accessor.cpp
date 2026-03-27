@@ -292,10 +292,10 @@ llvm::Value* AstIndirectCall::codegen(
     }
 
     // Derive the LLVM function type from the callee's AST type
-    auto callee_ast_type = this->get_callee()->get_type()->clone_ty();
+    auto callee_ast_type = this->get_callee()->get_type()->clone();
     if (auto* alias_ty = cast_type<AstAliasType*>(callee_ast_type.get()))
     {
-        callee_ast_type = alias_ty->get_underlying_type()->clone_ty();
+        callee_ast_type = alias_ty->get_underlying_type()->clone();
     }
 
     const auto* fn_type = dynamic_cast<AstFunctionType*>(callee_ast_type.get());

@@ -261,10 +261,10 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
         );
     }
 
-    auto base_type = field_def->get_type()->clone_ty();
+    auto base_type = field_def->get_type()->clone();
     if (auto* alias_ty = cast_type<AstAliasType*>(base_type.get()))
     {
-        base_type = alias_ty->get_underlying_type()->clone_ty();
+        base_type = alias_ty->get_underlying_type()->clone();
     }
 
     if (const auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))

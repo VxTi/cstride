@@ -1,5 +1,4 @@
 #include "ast/casting.h"
-#include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
@@ -395,7 +394,7 @@ bool AstPrimitiveType::is_fp() const
     }
 }
 
-std::unique_ptr<IAstNode> AstPrimitiveType::clone()
+std::unique_ptr<IAstType> AstPrimitiveType::clone()
 {
     return std::make_unique<AstPrimitiveType>(
         this->get_source_position(),

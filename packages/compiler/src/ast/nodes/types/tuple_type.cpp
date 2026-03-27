@@ -62,11 +62,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
     );
 }
 
-llvm::Value* AstTupleType::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    return nullptr;
-}
-
 llvm::Type* AstTupleType::get_llvm_type_impl(llvm::Module* module)
 {
     std::vector<llvm::Type*> member_llvm_types;
@@ -80,13 +75,13 @@ llvm::Type* AstTupleType::get_llvm_type_impl(llvm::Module* module)
     return llvm::StructType::get(module->getContext(), member_llvm_types);
 }
 
-std::unique_ptr<IAstNode> AstTupleType::clone()
+std::unique_ptr<IAstType> AstTupleType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> members;
     members.reserve(this->_members.size());
     for (const auto& member : this->_members)
     {
-        members.push_back(member->clone_ty());
+        members.push_back(member->clone());
     }
 
     return std::make_unique<AstTupleType>(
@@ -123,14 +118,18 @@ bool AstTupleType::equals(IAstType* other)
     return true;
 }
 
-std::string AstTupleType::to_string()
+std::string AstTupleType::get_type_name()
 {
+    if (this->_members.empty())
+    {
+        return "()";
+    }
     std::vector<std::string> member_strings;
     member_strings.reserve(this->_members.size());
 
     for (const auto& member : this->_members)
     {
-        member_strings.push_back(member->to_string());
+        member_strings.push_back(member->get_type_name());
     }
 
     return std::format("({})", join(member_strings, ", "));

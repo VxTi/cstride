@@ -56,7 +56,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
 
     if (const auto* array = cast_type<AstArrayType*>(type.get()))
     {
-        auto element_type = array->get_element_type()->clone_ty();
+        auto element_type = array->get_element_type()->clone();
         auto resolved_element = resolve_nested_underlying_types(std::move(element_type), recursion_guard);
 
         return std::make_unique<AstArrayType>(
@@ -74,14 +74,14 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         {
             resolved_members.emplace_back(
                 name,
-                resolve_nested_underlying_types(member_type->clone_ty(), recursion_guard)
+                resolve_nested_underlying_types(member_type->clone(), recursion_guard)
             );
         }
 
         GenericTypeList resolved_generics;
         for (const auto& gen : object_type->get_instantiated_generics())
         {
-            resolved_generics.push_back(resolve_nested_underlying_types(gen->clone_ty(), recursion_guard));
+            resolved_generics.push_back(resolve_nested_underlying_types(gen->clone(), recursion_guard));
         }
 
         return std::make_unique<AstObjectType>(
@@ -98,7 +98,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         std::vector<std::unique_ptr<IAstType>> resolved_members;
         for (const auto& member : tuple->get_members())
         {
-            resolved_members.push_back(resolve_nested_underlying_types(member->clone_ty(), recursion_guard));
+            resolved_members.push_back(resolve_nested_underlying_types(member->clone(), recursion_guard));
         }
 
         return std::make_unique<AstTupleType>(
@@ -113,10 +113,10 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         std::vector<std::unique_ptr<IAstType>> resolved_params;
         for (const auto& param : func->get_parameter_types())
         {
-            resolved_params.push_back(resolve_nested_underlying_types(param->clone_ty(), recursion_guard));
+            resolved_params.push_back(resolve_nested_underlying_types(param->clone(), recursion_guard));
         }
 
-        auto resolved_return = resolve_nested_underlying_types(func->get_return_type()->clone_ty(), recursion_guard);
+        auto resolved_return = resolve_nested_underlying_types(func->get_return_type()->clone(), recursion_guard);
 
         return std::make_unique<AstFunctionType>(
             func->get_source_position(),
@@ -339,42 +339,18 @@ std::string AstAliasType::get_type_name()
     return this->_name;
 }
 
-std::unique_ptr<IAstNode> AstAliasType::clone()
+std::unique_ptr<IAstType> AstAliasType::clone()
 {
     GenericTypeList generic_types;
     generic_types.reserve(this->_generic_types.size());
     for (const auto& generic_type : this->_generic_types)
     {
-        generic_types.push_back(generic_type->clone_ty());
+        generic_types.push_back(generic_type->clone());
     }
     return std::make_unique<AstAliasType>(
         this->get_source_position(),
         this->_name,
         this->get_flags(),
         std::move(generic_types)
-    );
-}
-
-std::string AstAliasType::to_string()
-{
-    std::string name = this->get_name();
-    if (this->is_generic_overload())
-    {
-        name += "<";
-        for (size_t i = 0; i < this->_generic_types.size(); i++)
-        {
-            name += this->_generic_types[i]->to_string();
-            if (i < this->_generic_types.size() - 1)
-            {
-                name += ", ";
-            }
-        }
-        name += ">";
-    }
-    return std::format(
-        "{}{}{}",
-        this->is_pointer() ? "*" : "",
-        name,
-        this->is_optional() ? "?" : ""
     );
 }

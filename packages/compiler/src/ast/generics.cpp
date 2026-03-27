@@ -3,19 +3,12 @@
 #include "errors.h"
 #include "ast/casting.h"
 #include "ast/symbol_table.h"
-#include "ast/type_inference.h"
 #include "ast/nodes/blocks.h"
-#include "ast/nodes/conditional_statement.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/for_loop.h"
-#include "ast/nodes/function_declaration.h"
 #include "ast/nodes/return_statement.h"
 #include "ast/nodes/types.h"
-#include "ast/nodes/while_loop.h"
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
-
-#include <ranges>
 
 using namespace stride::ast;
 
@@ -88,7 +81,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         {
             if (param_names[i] == named_type->get_name())
             {
-                auto resolved = instantiated_types[i]->clone_ty();
+                auto resolved = instantiated_types[i]->clone();
                 resolved->set_flags(resolved->get_flags() | named_type->get_flags());
                 return resolved;
             }
@@ -110,7 +103,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
             );
         }
 
-        return named_type->clone_ty();
+        return named_type->clone();
     }
 
     if (const auto* array_type = cast_type<AstArrayType*>(type))
@@ -144,7 +137,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
             resolved_generics.reserve(instantiated_types.size());
             for (const auto& gen : instantiated_types)
             {
-                resolved_generics.push_back(gen->clone_ty());
+                resolved_generics.push_back(gen->clone());
             }
         }
         else
@@ -198,7 +191,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
         );
     }
 
-    return type->clone_ty();
+    return type->clone();
 }
 
 std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
@@ -260,7 +253,7 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Failed to instantiate generic type type '{}': expected {} parameters, got {}",
-                type->to_string(),
+                type->get_type_name(),
                 generic_param_names.size(),
                 instantiated_types.size()
             ),
@@ -283,7 +276,7 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
     resolved_args.reserve(instantiated_types.size());
     for (const auto& arg : instantiated_types)
     {
-        resolved_args.push_back(arg->clone_ty());
+        resolved_args.push_back(arg->clone());
     }
 
     return std::make_unique<AstObjectType>(

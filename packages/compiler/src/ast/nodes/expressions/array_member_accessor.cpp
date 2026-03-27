@@ -6,8 +6,8 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
-#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
@@ -56,7 +56,7 @@ void AstArrayMemberAccessor::validate(const SymbolTable* symbol_table)
                 ErrorType::SEMANTIC_ERROR,
                 std::format(
                     "Array index accessor must be of type int, got '{}'",
-                    primitive_type->to_string()),
+                    primitive_type->get_type_name()),
                 this->get_source_position());
         }
 
@@ -67,7 +67,7 @@ void AstArrayMemberAccessor::validate(const SymbolTable* symbol_table)
         ErrorType::SEMANTIC_ERROR,
         std::format(
             "Array index accessor must be of type int, got '{}'",
-            index_accessor_type->to_string()),
+            index_accessor_type->get_type_name()),
         this->get_source_position()
     );
 }
@@ -78,11 +78,11 @@ llvm::Value* AstArrayMemberAccessor::codegen(
     llvm::IRBuilderBase* builder
 )
 {
-    std::unique_ptr<IAstType> array_base_type = this->_array_base->get_type()->clone_ty();
+    std::unique_ptr<IAstType> array_base_type = this->_array_base->get_type()->clone();
 
     if (const auto named_ty = cast_type<AstAliasType*>(array_base_type.get()))
     {
-        array_base_type = named_ty->get_underlying_type()->clone_ty();
+        array_base_type = named_ty->get_underlying_type()->clone();
     }
 
     llvm::Value* base_val = this->_array_base->codegen(symbol_table, module, builder);

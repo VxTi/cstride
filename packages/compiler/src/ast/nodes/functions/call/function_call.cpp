@@ -168,7 +168,7 @@ std::string AstFunctionCall::format_function_name() const
 
     for (const auto& arg : this->_arguments)
     {
-        arg_types.push_back(arg->get_type()->to_string());
+        arg_types.push_back(arg->get_type()->get_type_name());
     }
 
     if (arg_types.empty())
@@ -195,7 +195,7 @@ std::vector<std::unique_ptr<IAstType>> AstFunctionCall::get_argument_types() con
         {
             break;
         }
-        param_types.push_back(arg->get_type()->clone_ty());
+        param_types.push_back(arg->get_type()->clone());
     }
     return param_types;
 }
@@ -252,7 +252,7 @@ std::unique_ptr<IAstNode> AstFunctionCall::clone()
 
     for (const auto& generic_arg : this->get_generic_type_arguments())
     {
-        generic_type_list_cloned.push_back(generic_arg->clone_ty());
+        generic_type_list_cloned.push_back(generic_arg->clone());
     }
 
     return std::make_unique<AstFunctionCall>(

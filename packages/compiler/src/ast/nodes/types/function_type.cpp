@@ -75,7 +75,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     );
 }
 
-std::unique_ptr<IAstNode> AstFunctionType::clone()
+std::unique_ptr<IAstType> AstFunctionType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> parameters;
     GenericParameterList generic_parameters_clone;
@@ -85,7 +85,7 @@ std::unique_ptr<IAstNode> AstFunctionType::clone()
 
     for (const auto& param_ty : this->_parameters)
     {
-        parameters.emplace_back(param_ty->clone_ty());
+        parameters.emplace_back(param_ty->clone());
     }
 
     generic_parameters_clone.insert(
@@ -96,7 +96,7 @@ std::unique_ptr<IAstNode> AstFunctionType::clone()
     return std::make_unique<AstFunctionType>(
         this->get_source_position(),
         std::move(parameters),
-        this->get_return_type()->clone_ty(),
+        this->get_return_type()->clone(),
         std::move(generic_parameters_clone),
         this->get_flags()
     );
@@ -164,10 +164,10 @@ std::string AstFunctionType::get_type_name()
     param_strings.reserve(this->_parameters.size());
 
     for (const auto& param_ty : this->_parameters)
-        param_strings.push_back(param_ty->to_string());
+        param_strings.push_back(param_ty->get_type_name());
 
     return std::format(
         "({}) -> {}",
         join(param_strings, ", "),
-        this->_return_type->to_string());
+        this->_return_type->get_type_name());
 }

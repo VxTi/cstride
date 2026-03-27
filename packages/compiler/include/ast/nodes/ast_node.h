@@ -19,7 +19,36 @@ namespace stride::ast
     class AstBlock;
     class SymbolTable;
 
+    template <class TBase>
+    class Cloneable
+    {
+    public:
+        virtual std::unique_ptr<TBase> clone()
+        {
+            throw std::runtime_error("clone() not implemented for this type");
+        }
+
+        template <typename T>
+        std::unique_ptr<T> clone_as()
+        {
+            static_assert(std::is_base_of_v<TBase, T>,
+                          "T must be a subclass of IAstNode");
+
+            auto base = this->clone();
+            if (const auto ptr = dynamic_cast<T*>(base.get()))
+            {
+                base.release();
+                return std::unique_ptr<T>(ptr);
+            }
+
+            throw std::bad_cast{};
+        }
+
+        virtual ~Cloneable() = default;
+    };
+
     class IAstNode
+        : public Cloneable<IAstNode>
     {
         const SourcePosition _source_position;
 
@@ -27,7 +56,7 @@ namespace stride::ast
         explicit IAstNode(const SourcePosition& source) :
             _source_position(source) {}
 
-        virtual ~IAstNode() = default;
+        ~IAstNode() override = default;
 
         virtual std::string to_string() = 0;
 
@@ -58,23 +87,7 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) {}
 
-        virtual std::unique_ptr<IAstNode> clone() = 0;
-
-        template <typename T>
-        std::unique_ptr<T> clone_as()
-        {
-            static_assert(std::is_base_of_v<IAstNode, T>,
-                          "T must be a subclass of IAstNode");
-
-            auto base = this->clone();
-            if (const auto ptr = dynamic_cast<T*>(base.get()))
-            {
-                base.release();
-                return std::unique_ptr<T>(ptr);
-            }
-
-            throw std::bad_cast{};
-        }
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class IAstStatement

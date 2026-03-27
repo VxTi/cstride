@@ -59,12 +59,6 @@ namespace stride::ast
 
     using SymbolNameSegments = std::vector<std::string>;
 
-    Symbol resolve_internal_function_name(
-        const std::shared_ptr<SymbolTable>& symbol_table,
-        const SourcePosition& position,
-        const SymbolNameSegments& function_name_segments,
-        const std::vector<IAstType*>& parameter_types);
-
     Symbol resolve_internal_name(
         const std::string& context_name,
         const SourcePosition& position,

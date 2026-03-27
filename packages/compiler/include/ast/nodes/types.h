@@ -57,21 +57,20 @@ namespace stride::ast
     size_t get_primitive_bit_count(PrimitiveType type);
 
     class IAstType
-        : public IAstNode
+        : public Cloneable<IAstType>
     {
         int _flags;
+        SourcePosition _source;
 
     public:
         explicit IAstType(
             const SourcePosition& source,
             const int flags
         ) :
-            IAstNode(source),
+            _source(source),
             _flags(flags) {}
 
-        ~IAstType() override = default;
-
-        std::unique_ptr<IAstType> clone_ty()
+        std::unique_ptr<IAstType> clone() override
         {
             return this->clone_as<IAstType>();
         }
@@ -141,6 +140,12 @@ namespace stride::ast
         [[nodiscard]]
         virtual bool equals(IAstType* other) = 0;
 
+        [[nodiscard]]
+        SourcePosition get_source_position() const
+        {
+            return this->_source;
+        }
+
         /// Checks whether other type is assignable to this one.
         /// Lower bit-count primitives are assignable to higher ones, e.g.,
         /// one can assign a 32-bit int to a i64 type, but not visa versa.
@@ -154,12 +159,9 @@ namespace stride::ast
             return false;
         }
 
-        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override
-        {
-            return nullptr;
-        }
-
         llvm::Type* get_llvm_type(llvm::Module* module);
+
+        ~IAstType() override = default;
 
     private:
         virtual bool is_assignable_to_impl(IAstType* other)
@@ -214,16 +216,11 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override;
+        std::unique_ptr<IAstType> clone() override;
 
         std::string get_type_name() override
         {
             return primitive_type_to_str(this->get_primitive_type(), this->get_flags());
-        }
-
-        std::string to_string() override
-        {
-            return this->get_type_name();
         }
 
         [[nodiscard]]
@@ -283,11 +280,9 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override;
+        std::unique_ptr<IAstType> clone() override;
 
         std::string get_type_name() override;
-
-        std::string to_string() override;
 
         [[nodiscard]]
         bool equals(IAstType* other) override;
@@ -312,9 +307,10 @@ namespace stride::ast
         [[nodiscard]]
         std::optional<std::unique_ptr<IAstType>> get_reference_type() const
         {
-            if (this->_base_reference_type == nullptr) return std::nullopt;
+            if (this->_base_reference_type == nullptr)
+                return std::nullopt;
 
-            return this->_base_reference_type->clone_ty();
+            return this->_base_reference_type->clone();
         }
 
         /// Returns the super base type of the reference, e.g., if we have:
@@ -337,7 +333,7 @@ namespace stride::ast
 
         void resolve_underlying_type();
 
-        void resolve_type_definition(const SymbolTable *symbol_table);
+        void resolve_type_definition(const SymbolTable* symbol_table);
 
     private:
         bool is_assignable_to_impl(IAstType* other) override;
@@ -392,14 +388,9 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override;
+        std::unique_ptr<IAstType> clone() override;
 
         std::string get_type_name() override;
-
-        std::string to_string() override
-        {
-            return get_type_name();
-        }
 
         [[nodiscard]]
         bool equals(IAstType* other) override;
@@ -444,7 +435,7 @@ namespace stride::ast
             _initial_length(initial_length) {}
 
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override;
+        std::unique_ptr<IAstType> clone() override;
 
         [[nodiscard]]
         IAstType* get_element_type() const
@@ -458,13 +449,8 @@ namespace stride::ast
             return this->_initial_length;
         }
 
-        std::string to_string() override;
-
         [[nodiscard]]
-        std::string get_type_name() override
-        {
-            return std::format("[{}]", this->_element_type->get_type_name());
-        }
+        std::string get_type_name() override;
 
         [[nodiscard]]
         bool equals(IAstType* other) override;
@@ -513,14 +499,11 @@ namespace stride::ast
 
         [[nodiscard]] std::string get_type_name() override;
 
-        std::string to_string() override;
-
         [[nodiscard]]
         bool equals(IAstType* other) override;
 
-
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override;
+        std::unique_ptr<IAstType> clone() override;
 
         [[nodiscard]]
         std::string get_internalized_name();
@@ -532,7 +515,6 @@ namespace stride::ast
     class AstEnumType
         : public IAstType
     {
-
         std::vector<EnumMemberPair> _members;
         std::string _name;
 
@@ -545,7 +527,7 @@ namespace stride::ast
         );
 
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override;
+        std::unique_ptr<IAstType> clone() override;
 
         [[nodiscard]]
         const std::vector<EnumMemberPair>& get_members() const
@@ -568,14 +550,11 @@ namespace stride::ast
         [[nodiscard]]
         bool equals(IAstType* other) override;
 
-        std::string to_string() override;
-
-        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
-
-        void resolve_forward_references(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
-
     private:
-        bool is_assignable_to_impl(IAstType* other) override;
+        bool is_assignable_to_impl(IAstType* other) override
+        {
+            return false;
+        }
 
         llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
     };
@@ -595,7 +574,7 @@ namespace stride::ast
             _members(std::move(members)) {}
 
         [[nodiscard]]
-        std::unique_ptr<IAstNode> clone() override;
+        std::unique_ptr<IAstType> clone() override;
 
         [[nodiscard]]
         const std::vector<std::unique_ptr<IAstType>>& get_members() const
@@ -603,17 +582,10 @@ namespace stride::ast
             return _members;
         }
 
-        std::string get_type_name() override
-        {
-            return "tuple";
-        }
-
-        std::string to_string() override;
+        std::string get_type_name() override;
 
         [[nodiscard]]
         bool equals(IAstType* other) override;
-
-        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
     private:
         bool is_assignable_to_impl(IAstType* other) override

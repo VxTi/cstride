@@ -55,7 +55,7 @@ llvm::Type* IAstType::get_llvm_type(llvm::Module* module)
 
     if (this->is_optional())
     {
-        const auto non_optional = this->clone_ty();
+        const auto non_optional = this->clone();
 
         // Remove the optional flag so that it doesn't recursively enter this same scope
         non_optional->set_flags(non_optional->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
@@ -195,7 +195,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     {
         if (lhs->equals(rhs))
         {
-            return lhs->clone_ty();
+            return lhs->clone();
         }
 
         // If one is a named type and the other is its base type, we can also return the dominant type
@@ -203,7 +203,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         {
             if (const auto base = lhs_named->get_underlying_type(); base->equals(rhs))
             {
-                return rhs->clone_ty();
+                return rhs->clone();
             }
         }
 
@@ -212,7 +212,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
             if (const auto base = rhs_named->get_underlying_type();
                 base->equals(lhs))
             {
-                return lhs->clone_ty();
+                return lhs->clone();
             }
         }
 
@@ -226,13 +226,13 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // If LHS is a nil primitive, we prefer the RHS type, since the LHS can be safely ignored in this context (e.g., optional types)
     if (lhs_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
     {
-        return rhs->clone_ty();
+        return rhs->clone();
     }
 
     // Same holds true here
     if (rhs_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
     {
-        return lhs->clone_ty();
+        return lhs->clone();
     }
 
     const bool are_both_sides_integers =
@@ -247,8 +247,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     if (are_both_sides_floats || are_both_sides_integers)
     {
         return lhs_primitive_ty->bit_count() >= rhs_primitive_ty->bit_count()
-            ? lhs->clone_ty()
-            : rhs->clone_ty();
+            ? lhs->clone()
+            : rhs->clone();
     }
 
     // If LHS is a float, but the RHS is not, we'll have to convert the resulting
@@ -271,11 +271,11 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
         // Otherwise, just return the LHS as the dominant type (f32 / f64)
         // LHS is dominant
-        return lhs->clone_ty();
+        return lhs->clone();
     }
 
     const std::vector references = {
-        ErrorSourceReference(lhs->to_string(), lhs->get_source_position()),
+        ErrorSourceReference(lhs->get_type_name(), lhs->get_source_position()),
         ErrorSourceReference(rhs->get_type_name(), rhs->get_source_position())
     };
 
@@ -308,7 +308,7 @@ std::optional<AstObjectType*> stride::ast::get_object_type_from_type(const Symbo
 
     // Fall back to raw struct type lookup
     base_struct_type = symbol_table->get_object_type(type->get_type_name())
-                            .value_or(nullptr);
+                                    .value_or(nullptr);
 
     if (!base_struct_type)
     {

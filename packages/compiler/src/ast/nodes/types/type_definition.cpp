@@ -36,25 +36,12 @@ std::unique_ptr<AstTypeDefinition> stride::ast::parse_type_definition(
     );
 }
 
-void AstTypeDefinition::resolve_forward_references(
-    SymbolTable* symbol_table,
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder)
-{
-    this->_type->resolve_forward_references(symbol_table, module, builder);
-}
-
-llvm::Value* AstTypeDefinition::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    return this->_type->codegen(symbol_table, module, builder);
-}
-
 std::unique_ptr<IAstNode> AstTypeDefinition::clone()
 {
     return std::make_unique<AstTypeDefinition>(
         this->get_source_position(),
         this->_name,
-        this->_type->clone_ty(),
+        this->_type->clone(),
         this->_visibility,
         this->_generic_parameters
     );

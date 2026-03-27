@@ -18,7 +18,7 @@ void TypeInferenceVisitor::accept_type_definition_node(SymbolTable* symbol_table
 
     symbol_table->define_type(
         type_symbol,
-        type_definition->get_type()->clone_ty(),
+        type_definition->get_type()->clone(),
         type_definition->get_generic_parameters(),
         type_definition->get_visibility()
     );
@@ -54,7 +54,7 @@ void TypeInferenceVisitor::accept_expression(SymbolTable* symbol_table, IAstExpr
 
         symbol_table->define_variable(
             variable_symbol,
-            inferred_type->clone_ty(),
+            inferred_type->clone(),
             var_decl->get_visibility()
         );
     }

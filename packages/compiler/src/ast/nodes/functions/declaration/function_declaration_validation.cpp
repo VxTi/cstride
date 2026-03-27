@@ -43,7 +43,7 @@ void IAstFunction::validate(const SymbolTable* symbol_table)
         {
             if (auto def = symbol_table->lookup_variable(param->get_name(), true))
             {
-                old_param_types.push_back({ def, def->get_type()->clone_ty() });
+                old_param_types.emplace_back(def, def->get_type()->clone());
                 def->set_type(resolve_generics(def->get_type(), this->_generic_parameters, instantiated_generic_types));
             }
 
@@ -152,7 +152,7 @@ void IAstFunction::validate_candidate(const SymbolTable* symbol_table, IAstFunct
                     std::format(
                         "Function '{}' returns a value of type '{}', but no return statement is present.",
                         candidate->is_anonymous() ? "<anonymous function>" : candidate->get_function_name(),
-                        ret_ty->to_string()),
+                        ret_ty->get_type_name()),
                     return_stmt->get_source_position()
                 );
             }
@@ -171,7 +171,7 @@ void IAstFunction::validate_candidate(const SymbolTable* symbol_table, IAstFunct
                     : candidate->get_return_type()->is_function()
                     ? "function-type "
                     : "struct-type ",
-                    candidate->get_return_type()->to_string()),
+                    candidate->get_return_type()->get_type_name()),
                 ret_expr->get_source_position()
             );
 

@@ -98,7 +98,7 @@ namespace stride::ast::definition
         {
             return std::make_unique<TypeDefinition>(
                 get_symbol(),
-                _type->clone_ty(),
+                _type->clone(),
                 get_generics_parameters(),
                 get_visibility());
         }
@@ -133,7 +133,7 @@ namespace stride::ast::definition
         [[nodiscard]]
         std::unique_ptr<IDefinition> clone() const override
         {
-            return std::make_unique<FieldDefinition>(get_symbol(), _type->clone_ty(), get_visibility());
+            return std::make_unique<FieldDefinition>(get_symbol(), _type->clone(), get_visibility());
         }
 
         void set_type(std::unique_ptr<IAstType> type)

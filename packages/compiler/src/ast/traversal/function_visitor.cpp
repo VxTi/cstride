@@ -18,7 +18,7 @@ void FunctionVisitor::accept_function_node(SymbolTable* symbol_table, IAstFuncti
         const auto param_symbol = Symbol(param->get_source_position(), param->get_name());
         symbol_table->define_variable(
             param_symbol,
-            param->get_type()->clone_ty(),
+            param->get_type()->clone(),
             VisibilityModifier::PRIVATE
         );
     }

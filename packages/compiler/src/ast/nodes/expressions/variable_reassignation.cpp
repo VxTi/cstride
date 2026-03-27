@@ -154,7 +154,7 @@ void AstVariableReassignment::validate(const SymbolTable* symbol_table)
             ErrorType::TYPE_ERROR,
             std::format(
                 "Bitwise mutative operations are not supported on floating point types, got type '{}'",
-                this->_value->get_type()->to_string()),
+                this->_value->get_type()->get_type_name()),
             this->get_source_position());
     }
 
@@ -175,8 +175,8 @@ void AstVariableReassignment::validate(const SymbolTable* symbol_table)
             std::format(
                 "Type mismatch when reassigning variable '{}', expected type '{}', got type '{}'",
                 this->get_variable_name(),
-                identifier_ty->to_string(),
-                this->get_value()->get_type()->to_string()
+                identifier_ty->get_type_name(),
+                this->get_value()->get_type()->get_type_name()
             ),
             this->get_source_position()
         );

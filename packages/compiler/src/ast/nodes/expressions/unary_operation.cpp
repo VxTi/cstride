@@ -2,7 +2,6 @@
 #include "ast/casting.h"
 #include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
-#include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
 #include <llvm/IR/IRBuilder.h>
@@ -181,7 +180,7 @@ void AstUnaryOp::validate(const SymbolTable* symbol_table)
             throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format("Invalid type '{}' for {} operand",
-                            operand_type->to_string(),
+                            operand_type->get_type_name(),
                             op == UnaryOpType::PLUS ? "unary plus" : "negation"
                 ),
                 this->get_source_position()
@@ -205,7 +204,7 @@ void AstUnaryOp::validate(const SymbolTable* symbol_table)
                     ErrorType::TYPE_ERROR,
                     std::format(
                         "Invalid type '{}' for {} operand",
-                        operand_type->to_string(),
+                        operand_type->get_type_name(),
                         op == UnaryOpType::PLUS ? "unary plus" : "negation"
                     ),
                     this->get_source_position());
@@ -217,7 +216,7 @@ void AstUnaryOp::validate(const SymbolTable* symbol_table)
                 throw stride_error(
                     ErrorType::TYPE_ERROR,
                     std::format("Invalid type '{}' for bitwise complement",
-                                operand_type->to_string()),
+                                operand_type->get_type_name()),
                     this->get_source_position());
             }
             break;
@@ -237,7 +236,7 @@ void AstUnaryOp::validate(const SymbolTable* symbol_table)
 
                 throw stride_error(
                     ErrorType::TYPE_ERROR,
-                    std::format("Invalid type '{}' for {} operand", operand_type->to_string(), operand_name),
+                    std::format("Invalid type '{}' for {} operand", operand_type->get_type_name(), operand_name),
                     this->get_source_position());
             }
             break;

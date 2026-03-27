@@ -51,12 +51,10 @@ namespace stride::ast
             return this->_visibility;
         }
 
-        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
-
-        void resolve_forward_references(
-            SymbolTable* symbol_table,
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
+        llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override
+        {
+            return nullptr;
+        }
 
         std::unique_ptr<IAstNode> clone() override;
 

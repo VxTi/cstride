@@ -10,6 +10,8 @@ namespace stride::ast
     public:
         explicit IAstControlFlowStatement(const SourcePosition& source) :
             IAstNode(source) {}
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class AstContinueStatement

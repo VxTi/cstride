@@ -46,29 +46,23 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
     return std::move(base_type);
 }
 
-std::unique_ptr<IAstNode> AstArrayType::clone()
+std::unique_ptr<IAstType> AstArrayType::clone()
 {
     return std::make_unique<AstArrayType>(
         this->get_source_position(),
-        this->_element_type->clone_ty(),
+        this->_element_type->clone(),
         this->_initial_length,
         this->get_flags()
     );
 }
 
-std::string AstArrayType::to_string()
+std::string AstArrayType::get_type_name()
 {
     if (cast_type<AstFunctionType*>(this->get_element_type()))
     {
-        return std::format(
-            "({}{})[]",
-            this->_element_type->to_string(),
-            (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
+        return std::format("({})[]", this->_element_type->get_type_name());
     }
-    return std::format(
-        "{}{}[]",
-        this->_element_type->to_string(),
-        (this->get_flags() & SRFLAG_TYPE_OPTIONAL) != 0 ? "?" : "");
+    return std::format("{}[]", this->_element_type->get_type_name());
 }
 
 bool AstArrayType::equals(IAstType* other)

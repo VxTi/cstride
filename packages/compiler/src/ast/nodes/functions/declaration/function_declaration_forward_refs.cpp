@@ -38,7 +38,7 @@ void IAstFunction::resolve_forward_references(
         {
             symbol_table->define_variable(
                 capture,
-                outer_var->get_type()->clone_ty(),
+                outer_var->get_type()->clone(),
                 VisibilityModifier::PRIVATE
             );
         }
@@ -156,7 +156,7 @@ void IAstFunction::resolve_forward_references(
             const auto param_symbol = Symbol(instantiated_param->get_source_position(), instantiated_param->get_name());
             symbol_table->define_variable(
                 param_symbol,
-                instantiated_param->get_type()->clone_ty(),
+                instantiated_param->get_type()->clone(),
                 VisibilityModifier::PRIVATE,
                 true
             );
@@ -267,7 +267,7 @@ void IAstFunction::collect_free_variables(
                 {
                     callable->get_body()->get_symbol_table()->define_variable(
                         nested_capture,
-                        var_def->get_type()->clone_ty(),
+                        var_def->get_type()->clone(),
                         VisibilityModifier::PRIVATE
                     );
                 }
