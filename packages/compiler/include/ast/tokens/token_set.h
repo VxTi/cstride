@@ -21,12 +21,20 @@ namespace stride::ast
         int64_t _size;
 
         std::vector<Token> _tokens;
+        std::shared_ptr<SourceFile> _source_file;
 
     public:
-        explicit TokenSet(std::vector<Token>& tokens) :
+        explicit TokenSet(std::shared_ptr<SourceFile> source_file, std::vector<Token>& tokens) :
             _cursor(0),
             _size(static_cast<int64_t>(tokens.size())),
-            _tokens(std::move(tokens)) {}
+            _tokens(std::move(tokens)),
+            _source_file(std::move(source_file)) {}
+
+        [[nodiscard]]
+        std::shared_ptr<SourceFile> get_source_file() const
+        {
+            return _source_file;
+        }
 
         [[nodiscard]]
         TokenSet create_subset(int64_t offset, int64_t length) const;
@@ -74,8 +82,8 @@ namespace stride::ast
 
         [[noreturn]]
         static void throw_error(const Token& token,
-                         ErrorType error_type,
-                         const std::string& message);
+                                ErrorType error_type,
+                                const std::string& message);
 
         [[noreturn]]
         void throw_error(ErrorType error_type,

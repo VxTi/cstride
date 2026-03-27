@@ -80,6 +80,7 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
 
         const auto rhs_expr_pos = rhs_expr->get()->get_source_position();
         const auto source = SourcePosition(
+            set.get_source_file(),
             op_type_pos.offset,
             rhs_expr_pos.offset + rhs_expr_pos.length - op_type_pos.offset
         );
@@ -109,6 +110,7 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_binary_unary_o
 
         const auto& expr_pos = expr->get_source_position();
         const auto source = SourcePosition(
+            set.get_source_file(),
             expr_pos.offset,
             expr_pos.offset + expr_pos.length - op_type_pos.offset
         );

@@ -59,7 +59,7 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
                     throw stride_error(
                         ErrorType::SYNTAX_ERROR,
                         "Expected expression for function argument",
-                        SourcePosition(preceding.get_source_position().offset + 1, len)
+                        SourcePosition(set.get_source_file(), preceding.get_source_position().offset + 1, len)
                     );
                 }
 

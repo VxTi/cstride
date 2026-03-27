@@ -37,51 +37,39 @@ namespace stride
     std::string make_source_error(
         ErrorType error_type,
         const std::string& error,
-        const std::vector<ErrorSourceReference>& references,
-        const std::string& src);
+        const std::vector<ErrorSourceReference>& references);
 
     class stride_error : public std::runtime_error
     {
-    public:
-        const ErrorType error_type;
-        std::string error;
-        std::vector<ErrorSourceReference> references;
+        std::string what_msg;
 
+    public:
         explicit stride_error(const char* str) :
             std::runtime_error(str),
-            error_type(ErrorType::COMPILATION_ERROR),
-            error(str),
-            references({}) {}
+            what_msg(str) {}
 
         explicit stride_error(const std::string& str) :
             stride_error(str.c_str()) {}
 
         explicit stride_error(
             const ErrorType error_type,
-            std::string error,
-            const std::vector<ErrorSourceReference>& references
+            const std::string& error,
+            const SourcePosition& source,
+            const std::string& suggestion = ""
         ) :
-            runtime_error(error.c_str()),
-            error_type(error_type),
-            error(std::move(error)),
-            references(references) {}
+            stride_error(make_source_error(error_type, error, { ErrorSourceReference{ suggestion, source } })) {}
 
         explicit stride_error(
             const ErrorType error_type,
             const std::string& error,
-            const SourcePosition& source
+            const std::vector<ErrorSourceReference>& references
         ) :
-            stride_error(
-                error_type,
-                error,
-                std::vector{ ErrorSourceReference("", source) }
-            ) {}
-
+            stride_error(make_source_error(error_type, error, references)) {}
 
         [[nodiscard]]
         const char* what() const noexcept override
         {
-            return this->error.c_str();
+            return what_msg.c_str();
         }
     };
 } // namespace stride

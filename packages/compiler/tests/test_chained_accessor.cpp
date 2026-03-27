@@ -1,17 +1,3 @@
-/// Tests for chained expression parsing and type inference.
-/// Covers:
-///   - Simple member access: a.b
-///   - Multi-step chains: a.b.c.d
-///   - Array subscript followed by member access: arr[i].field
-///   - Member access followed by array subscript: a.b[i]
-///   - Mixed chains: a[i].b.c[j].d
-///   - Function call returning struct, then member access: fn().field
-///   - Array of function pointers: arr[i]().field
-///   - AstChainedExpression type inference unit tests
-///   - AstArrayMemberAccessor with chained base type inference
-///   - AstIndirectCall type inference
-///   - Error cases: non-struct base, unknown member, non-function indirect call
-
 #include "utils.h"
 #include "ast/type_inference.h"
 #include "ast/nodes/expression.h"
@@ -29,9 +15,6 @@ using namespace stride;
 using namespace stride::ast;
 using namespace stride::tests;
 
-// =============================================================================
-// Integration (parse + codegen) tests
-// =============================================================================
 
 TEST(ChainedAccessor, SimpleMemberAccess)
 {
@@ -204,62 +187,62 @@ TEST(ChainedAccessor, ArraySubscriptInFunctionArg)
 class ChainedAccessorTypeTest : public ::testing::Test
 {
 protected:
-    std::shared_ptr<SymbolTable> context;
+    std::shared_ptr<SymbolTable> symbol_table;
     std::shared_ptr<SourceFile> source;
 
     void SetUp() override
     {
-        context = std::make_shared<SymbolTable>();
+        symbol_table = std::make_shared<SymbolTable>();
         source = std::make_shared<SourceFile>("test.sr", "");
 
         // Define a Point struct: { x: i32, y: f32 }
         std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> point_members;
-        point_members.emplace_back("x", std::make_unique<AstPrimitiveType>(sf(), context, PrimitiveType::INT32));
-        point_members.emplace_back("y", std::make_unique<AstPrimitiveType>(sf(), context, PrimitiveType::FLOAT32));
-        auto point_ty = std::make_unique<AstObjectType>(sf(), context, "Point", std::move(point_members));
-        context->define_type(sym("Point"), std::move(point_ty), {}, VisibilityModifier::PUBLIC);
+        point_members.emplace_back("x", std::make_unique<AstPrimitiveType>(sf(), PrimitiveType::INT32));
+        point_members.emplace_back("y", std::make_unique<AstPrimitiveType>(sf(), PrimitiveType::FLOAT32));
+        auto point_ty = std::make_unique<AstObjectType>(sf(), "Point", std::move(point_members));
+        symbol_table->define_type(sym("Point"), std::move(point_ty), {}, VisibilityModifier::PUBLIC);
 
         // Define a Wrapper struct: { pt: Point, values: i32[] }
         std::vector<std::pair<std::string, std::unique_ptr<IAstType>>> wrapper_members;
-        wrapper_members.emplace_back("pt", std::make_unique<AstAliasType>(sf(), context, "Point"));
+        wrapper_members.emplace_back("pt", std::make_unique<AstAliasType>(sf(), "Point"));
         wrapper_members.emplace_back(
             "values",
             std::make_unique<AstArrayType>(
                 sf(),
-                context,
+
                 std::make_unique<AstPrimitiveType>(
                     sf(),
-                    context,
+
                     PrimitiveType::INT32),
                 0));
-        auto wrapper_ty = std::make_unique<AstObjectType>(sf(), context, "Wrapper", std::move(wrapper_members));
-        context->define_type(sym("Wrapper"), std::move(wrapper_ty), {}, VisibilityModifier::PUBLIC);
+        auto wrapper_ty = std::make_unique<AstObjectType>(sf(), "Wrapper", std::move(wrapper_members));
+        symbol_table->define_type(sym("Wrapper"), std::move(wrapper_ty), {}, VisibilityModifier::PUBLIC);
 
         // Register variables
-        context->define_variable(
+        symbol_table->define_variable(
             sym("p"),
-            std::make_unique<AstAliasType>(sf(), context, "Point"),
+            std::make_unique<AstAliasType>(sf(), "Point"),
             VisibilityModifier::PUBLIC);
-        context->define_variable(
+        symbol_table->define_variable(
             sym("w"),
-            std::make_unique<AstAliasType>(sf(), context, "Wrapper"),
+            std::make_unique<AstAliasType>(sf(), "Wrapper"),
             VisibilityModifier::PUBLIC);
 
         // Register a Point[] array variable
-        context->define_variable(
+        symbol_table->define_variable(
             sym("pts"),
             std::make_unique<AstArrayType>(
                 sf(),
-                context,
-                std::make_unique<AstAliasType>(sf(), context, "Point"),
+
+                std::make_unique<AstAliasType>(sf(), "Point"),
                 0),
             VisibilityModifier::PUBLIC);
 
         // Register a function returning Point
         std::vector<std::unique_ptr<IAstType>> fn_params;
-        auto fn_ret = std::make_unique<AstAliasType>(sf(), context, "Point");
-        auto fn_ty = std::make_unique<AstFunctionType>(sf(), context, std::move(fn_params), std::move(fn_ret));
-        context->define_function(sym("make_point"), std::move(fn_ty), VisibilityModifier::PUBLIC, 0);
+        auto fn_ret = std::make_unique<AstAliasType>(sf(), "Point");
+        auto fn_ty = std::make_unique<AstFunctionType>(sf(), std::move(fn_params), std::move(fn_ret));
+        symbol_table->define_function(sym("make_point"), std::move(fn_ty), VisibilityModifier::PUBLIC, 0);
     }
 
     [[nodiscard]] SourcePosition sf() const
@@ -275,7 +258,7 @@ protected:
     /// Builds: Identifier(name)
     [[nodiscard]] std::unique_ptr<AstIdentifier> id(const std::string& name) const
     {
-        return std::make_unique<AstIdentifier>(context, sym(name));
+        return std::make_unique<AstIdentifier>(sym(name));
     }
 
     /// Builds: ChainedExpression(base, Identifier(member))
@@ -283,7 +266,7 @@ protected:
         std::unique_ptr<IAstExpression> base,
         const std::string& member) const
     {
-        return std::make_unique<AstChainedExpression>(sf(), context, std::move(base), id(member));
+        return std::make_unique<AstChainedExpression>(sf(), std::move(base), id(member));
     }
 
     /// Builds: ArrayAccess(base, IntLiteral(idx))
@@ -291,8 +274,8 @@ protected:
         std::unique_ptr<IAstExpression> base,
         int32_t idx) const
     {
-        auto index = std::make_unique<AstIntLiteral>(sf(), context, PrimitiveType::INT32, idx, 0);
-        return std::make_unique<AstArrayMemberAccessor>(sf(), context, std::move(base), std::move(index));
+        auto index = std::make_unique<AstIntLiteral>(sf(), PrimitiveType::INT32, idx, 0);
+        return std::make_unique<AstArrayMemberAccessor>(sf(), std::move(base), std::move(index));
     }
 };
 
@@ -301,13 +284,13 @@ protected:
 TEST_F(ChainedAccessorTypeTest, SimpleMemberAccess_i32)
 {
     const auto expr = chain(id("p"), "x");
-    EXPECT_EQ(infer_expression_type(expr.get())->to_string(), "i32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(),expr.get())->get_type_name(), "i32");
 }
 
 TEST_F(ChainedAccessorTypeTest, SimpleMemberAccess_f32)
 {
     const auto expr = chain(id("p"), "y");
-    EXPECT_EQ(infer_expression_type(expr.get())->to_string(), "f32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(),expr.get())->get_type_name(), "f32");
 }
 
 // --- Two-step chain: w.pt.x → i32
@@ -317,7 +300,7 @@ TEST_F(ChainedAccessorTypeTest, TwoStepChain)
     // ChainedExpression(ChainedExpression(w, pt), x)
     auto inner = chain(id("w"), "pt");
     const auto outer = chain(std::move(inner), "x");
-    EXPECT_EQ(infer_expression_type(outer.get())->to_string(), "i32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(), outer.get())->get_type_name(), "i32");
 }
 
 // --- Two-step chain resolves to correct second member: w.pt.y → f32
@@ -326,7 +309,7 @@ TEST_F(ChainedAccessorTypeTest, TwoStepChain_SecondMember)
 {
     auto inner = chain(id("w"), "pt");
     const auto outer = chain(std::move(inner), "y");
-    EXPECT_EQ(infer_expression_type(outer.get())->to_string(), "f32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(), outer.get())->get_type_name(), "f32");
 }
 
 // --- Array subscript then member: pts[0].x → i32
@@ -335,7 +318,7 @@ TEST_F(ChainedAccessorTypeTest, ArraySubscriptThenMember)
 {
     auto access = subscript(id("pts"), 0);
     const auto expr = chain(std::move(access), "x");
-    EXPECT_EQ(infer_expression_type(expr.get())->to_string(), "i32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(),expr.get())->get_type_name(), "i32");
 }
 
 // --- Array subscript then member (y): pts[0].y → f32
@@ -344,7 +327,7 @@ TEST_F(ChainedAccessorTypeTest, ArraySubscriptThenMember_f32)
 {
     auto access = subscript(id("pts"), 0);
     const auto expr = chain(std::move(access), "y");
-    EXPECT_EQ(infer_expression_type(expr.get())->to_string(), "f32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(),expr.get())->get_type_name(), "f32");
 }
 
 // --- Member then array subscript: w.values[0] → i32
@@ -353,7 +336,7 @@ TEST_F(ChainedAccessorTypeTest, MemberThenArraySubscript)
 {
     auto member = chain(id("w"), "values");
     const auto expr = subscript(std::move(member), 0);
-    EXPECT_EQ(infer_expression_type(expr.get())->to_string(), "i32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(),expr.get())->get_type_name(), "i32");
 }
 
 // --- Indirect call then member: make_point().x → i32
@@ -367,27 +350,25 @@ TEST_F(ChainedAccessorTypeTest, IndirectCallThenMember)
     // In practice, indirect call is used on non-named callees; here we test type inference
     // by constructing AstIndirectCall directly with a correctly-typed callee.
     std::vector<std::unique_ptr<IAstType>> fn_params;
-    auto fn_ret = std::make_unique<AstAliasType>(sf(), context, "Point");
-    auto fn_ast_ty = std::make_unique<AstFunctionType>(sf(), context, std::move(fn_params), std::move(fn_ret));
+    auto fn_ret = std::make_unique<AstAliasType>(sf(), "Point");
+    auto fn_ast_ty = std::make_unique<AstFunctionType>(sf(), std::move(fn_params), std::move(fn_ret));
     callee->set_type(std::move(fn_ast_ty));
 
-    auto call = std::make_unique<AstIndirectCall>(sf(), context, std::move(callee), ExpressionList{});
+    auto call = std::make_unique<AstIndirectCall>(sf(), std::move(callee), ExpressionList{});
     const auto expr = chain(std::move(call), "x");
-    EXPECT_EQ(infer_expression_type(expr.get())->to_string(), "i32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(), expr.get())->get_type_name(), "i32");
 }
-
-// --- Indirect call type inference: returns correct return type
 
 TEST_F(ChainedAccessorTypeTest, IndirectCallReturnsCorrectType)
 {
     auto callee = id("make_point");
     std::vector<std::unique_ptr<IAstType>> fn_params;
-    auto fn_ret = std::make_unique<AstAliasType>(sf(), context, "Point");
-    auto fn_ast_ty = std::make_unique<AstFunctionType>(sf(), context, std::move(fn_params), std::move(fn_ret));
+    auto fn_ret = std::make_unique<AstAliasType>(sf(), "Point");
+    auto fn_ast_ty = std::make_unique<AstFunctionType>(sf(), std::move(fn_params), std::move(fn_ret));
     callee->set_type(std::move(fn_ast_ty));
 
-    const auto call = std::make_unique<AstIndirectCall>(sf(), context, std::move(callee), ExpressionList{});
-    EXPECT_EQ(infer_expression_type(call.get())->to_string(), "Point");
+    const auto call = std::make_unique<AstIndirectCall>(sf(), std::move(callee), ExpressionList{});
+    EXPECT_EQ(infer_expression_type(symbol_table.get(), call.get())->get_type_name(), "Point");
 }
 
 // --- Array subscript followed by member followed by subscript (deep chain)
@@ -399,7 +380,7 @@ TEST_F(ChainedAccessorTypeTest, ChainedMemberThenSubscript_ReturnsElementType)
 {
     auto member_access = chain(id("w"), "values");                  // type: i32[]
     const auto arr_access = subscript(std::move(member_access), 2); // type: i32
-    EXPECT_EQ(infer_expression_type(arr_access.get())->to_string(), "i32");
+    EXPECT_EQ(infer_expression_type(symbol_table.get(), arr_access.get())->get_type_name(), "i32");
 }
 
 // =============================================================================
@@ -409,54 +390,50 @@ TEST_F(ChainedAccessorTypeTest, ChainedMemberThenSubscript_ReturnsElementType)
 TEST_F(ChainedAccessorTypeTest, ErrorMemberAccessOnNonStruct)
 {
     // Define an int variable, try to access .x on it → type error
-    context->define_variable(
+    symbol_table->define_variable(
         sym("n"),
-        std::make_unique<AstPrimitiveType>(sf(), context, PrimitiveType::INT32),
+        std::make_unique<AstPrimitiveType>(sf(), PrimitiveType::INT32),
         VisibilityModifier::PUBLIC);
 
     auto expr = chain(id("n"), "x");
-    EXPECT_THROW(infer_expression_type(expr.get()), stride_error);
+    EXPECT_THROW(infer_expression_type(symbol_table.get(), expr.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorUndefinedBaseVariable)
 {
     const auto expr = chain(id("does_not_exist"), "x");
-    EXPECT_THROW(infer_expression_type(expr.get()), stride_error);
+    EXPECT_THROW(infer_expression_type(symbol_table.get(),expr.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorMemberNotInStruct)
 {
     const auto expr = chain(id("p"), "z"); // Point has x, y — not z
-    EXPECT_THROW(infer_expression_type(expr.get()), stride_error);
+    EXPECT_THROW(infer_expression_type(symbol_table.get(), expr.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorMemberNotInStructAtDepth2)
 {
     auto inner = chain(id("w"), "pt");                   // w.pt is a Point
     auto outer = chain(std::move(inner), "nonexistent"); // Point has no such field
-    EXPECT_THROW(infer_expression_type(outer.get()), stride_error);
+    EXPECT_THROW(infer_expression_type(symbol_table.get(), outer.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorIndirectCallOnNonFunction)
 {
     auto callee = id("p");
     // Set type to a non-function type
-    callee->set_type(std::make_unique<AstAliasType>(sf(), context, "Point"));
-    auto call = std::make_unique<AstIndirectCall>(sf(), context, std::move(callee), ExpressionList{});
-    EXPECT_THROW(infer_expression_type(call.get()), stride_error);
+    callee->set_type(std::make_unique<AstAliasType>(sf(), "Point"));
+    auto call = std::make_unique<AstIndirectCall>(sf(), std::move(callee), ExpressionList{});
+    EXPECT_THROW(infer_expression_type(symbol_table.get(), call.get()), stride_error);
 }
 
 TEST_F(ChainedAccessorTypeTest, ErrorArraySubscriptOnNonArray)
 {
     // Access p[0] where p is a Point (not an array) → type error
-    auto index = std::make_unique<AstIntLiteral>(sf(), context, PrimitiveType::INT32, 0, 0);
-    auto expr = std::make_unique<AstArrayMemberAccessor>(sf(), context, id("p"), std::move(index));
-    EXPECT_THROW(infer_expression_type(expr.get()), stride_error);
+    auto index = std::make_unique<AstIntLiteral>(sf(), PrimitiveType::INT32, 0, 0);
+    auto expr = std::make_unique<AstArrayMemberAccessor>(sf(), id("p"), std::move(index));
+    EXPECT_THROW(infer_expression_type(symbol_table.get(), expr.get()), stride_error);
 }
-
-// =============================================================================
-// Integration error tests
-// =============================================================================
 
 TEST(ChainedAccessorErrors, AccessNonExistentMember)
 {

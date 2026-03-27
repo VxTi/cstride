@@ -11,7 +11,7 @@ namespace stride
         std::string path;
         std::string source;
 
-        SourceFile(std::string path, std::string source) :
+        explicit SourceFile(std::string path, std::string source) :
             path(std::move(path)),
             source(std::move(source)) {}
     };
@@ -24,11 +24,13 @@ namespace stride
         std::shared_ptr<SourceFile> source;
 
         SourcePosition(
+            const std::shared_ptr<SourceFile>& source,
             const size_t offset,
             const size_t length
         ) :
             offset(offset),
-            length(length) {}
+            length(length),
+            source(source) {}
 
         SourcePosition& operator=(const SourcePosition& other)
         {

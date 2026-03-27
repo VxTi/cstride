@@ -50,10 +50,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
         ? type_set->last().get_source_position()
         : reference_token.get_source_position();
 
-    const auto source = SourcePosition(
-        reference_token.get_source_position().offset,
-        last_pos.offset + last_pos.length - reference_token.get_source_position().offset
-    );
+    const auto source = SourcePosition::join(reference_token.get_source_position(), last_pos);
 
     return std::make_unique<AstTupleType>(
         source,

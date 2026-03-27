@@ -54,7 +54,7 @@ std::unique_ptr<Ast> Ast::parse_files(const std::vector<FilePath>& files)
 std::pair<FilePath, std::unique_ptr<AstBranch>> Ast::parse_file(const FilePath& path)
 {
     auto source_file = read_file(path);
-    auto tokens = tokenizer::tokenize(source_file.get());
+    auto tokens = tokenizer::tokenize(std::make_shared<SourceFile>(*source_file.release()));
 
     const auto context = std::make_shared<SymbolTable>();
 

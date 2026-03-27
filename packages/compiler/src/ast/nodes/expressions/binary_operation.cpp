@@ -146,6 +146,7 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_arithmetic_bin
             const auto& rhs_pos = rhs->get_source_position();
             lhs = std::make_unique<AstBinaryArithmeticOp>(
                 SourcePosition(
+                    lhs->get_source_position().source,
                     starting_offset,
                     rhs_pos.offset + rhs_pos.length - starting_offset
                 ),

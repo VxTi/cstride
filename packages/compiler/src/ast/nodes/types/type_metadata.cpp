@@ -26,7 +26,7 @@ std::unique_ptr<IAstType> stride::ast::parse_type_metadata(
         offset += 2;
         set.skip(2);
         base_type = std::make_unique<AstArrayType>(
-            SourcePosition(src_pos.offset, src_pos.length + offset),
+            SourcePosition(set.get_source_file(), src_pos.offset, src_pos.length + offset),
             std::move(base_type),
             0
         );

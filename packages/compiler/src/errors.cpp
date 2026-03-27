@@ -27,8 +27,7 @@ std::string stride::error_type_to_string(const ErrorType error_type)
 std::string stride::make_source_error(
     const ErrorType error_type,
     const std::string& error,
-    const std::vector<ErrorSourceReference>& references,
-    const std::string& src
+    const std::vector<ErrorSourceReference>& references
     )
 {
     if (references.empty())
@@ -50,6 +49,8 @@ std::string stride::make_source_error(
             source_file->path,
             error);
     }
+
+    const auto& src = source_file->source;
 
     // Compute line start, end, and 1-based number for a source offset.
     struct LineInfo

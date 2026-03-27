@@ -15,7 +15,7 @@
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-std::unique_ptr<IAstType> infer_alias_type(const SymbolTable* symbol_table, AstAliasType* alias_type, int flags = 0)
+std::unique_ptr<AstAliasType> infer_alias_type(const SymbolTable* symbol_table, AstAliasType* alias_type, int flags = 0)
 {
     alias_type->resolve_type_definition(symbol_table);
     alias_type->resolve_underlying_type();
@@ -108,19 +108,6 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(SymbolTable* symbol_
     if (lhs->equals(rhs.get()))
     {
         return std::move(lhs);
-    }
-
-    // If either operand is an unresolved generic parameter (e.g. T),
-    // return it as the result type — it will be resolved when the generic is instantiated.
-    if (const auto* lhs_alias = cast_type<AstAliasType*>(lhs.get());
-        lhs_alias && !lhs_alias->get_type_definition())
-    {
-        return std::move(lhs);
-    }
-    if (const auto* rhs_alias = cast_type<AstAliasType*>(rhs.get());
-        rhs_alias && !rhs_alias->get_type_definition())
-    {
-        return std::move(rhs);
     }
 
     // --- Pointers have priority
@@ -259,18 +246,20 @@ std::unique_ptr<IAstType> stride::ast::infer_indirect_call_type(
     SymbolTable* symbol_table,
     const AstIndirectCall* call_expr)
 {
-    auto callee_type = infer_expression_type(symbol_table, call_expr->get_callee());
+    const auto callee_type = infer_expression_type(symbol_table, call_expr->get_callee());
 
     // Unwrap alias
     IAstType* raw_type = callee_type.get();
     std::unique_ptr<IAstType> unwrapped;
-    if (auto* alias = cast_type<AstAliasType*>(raw_type))
+    if ( auto* alias = cast_type<AstAliasType*>(raw_type))
     {
-        unwrapped = alias->get_underlying_type()->clone();
+        const auto resolved_alias = infer_alias_type(symbol_table, alias);
+
+        unwrapped = resolved_alias->get_underlying_type()->clone();
         raw_type = unwrapped.get();
     }
 
-    const auto* fn_type = dynamic_cast<AstFunctionType*>(raw_type);
+    const auto* fn_type = cast_type<AstFunctionType*>(raw_type);
     if (!fn_type)
     {
         throw stride_error(
@@ -427,7 +416,7 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
     // It's possible that we're referring to a named type, in which case we'll have to extract the base type
     if (const auto alias_type = cast_type<AstAliasType*>(array_type.get()))
     {
-        if (const auto resolved = cast_type<AstAliasType*>(infer_alias_type(symbol_table, alias_type).get()))
+        if (const auto resolved = infer_alias_type(symbol_table, alias_type))
         {
             // Instantiate type if it contains generics
             if (const auto array_base_ty = cast_type<AstArrayType*>(resolved->get_underlying_type()))

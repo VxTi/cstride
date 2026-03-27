@@ -17,7 +17,6 @@
 #include "ast/nodes/type_definition.h"
 #include "ast/nodes/while_loop.h"
 
-#include <iostream>
 #include <ranges>
 
 using namespace stride::ast;
@@ -30,13 +29,7 @@ void AstNodeTraverser::traverse(IVisitor* visitor, const AstBranch* branch)
     this->_current_context_type = ContextType::GLOBAL;
     this->_current_symbol_table = this->_root_symbol_table;
 
-    try
-    {
-        this->visit(visitor, branch->get_node());
-    } catch (const stride_error& e)
-    {
-        std::cerr << make_source_error(e.error_type, e.error, e.references, branch->get_file_content()) << std::endl;
-    }
+    this->visit(visitor, branch->get_node());
 }
 
 void AstNodeTraverser::visit_block(IVisitor* visitor, AstBlock* node)

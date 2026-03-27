@@ -26,6 +26,7 @@ std::unique_ptr<SourceFile> stride::read_file(const std::string& path)
 SourcePosition SourcePosition::join(const SourcePosition& first, const SourcePosition& second)
 {
     return {
+        first.source,
         first.offset,
         (second.offset + second.length) - first.offset
     };

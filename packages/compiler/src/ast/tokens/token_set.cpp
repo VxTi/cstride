@@ -26,7 +26,7 @@ TokenSet TokenSet::create_subset(const int64_t offset,
         this->_tokens.begin() + offset,
         this->_tokens.begin() + offset + length);
 
-    return std::move(TokenSet(copied_tokens));
+    return std::move(TokenSet(this->get_source_file(), copied_tokens));
 }
 
 Token TokenSet::last() const
@@ -88,7 +88,7 @@ Token TokenSet::expect(const TokenType type)
             ErrorType::SYNTAX_ERROR,
             std::format("Expected '{}', but reached end of block",
                         token_type_to_str(type)),
-            SourcePosition(last_token_pos.offset + last_token_pos.length - 1,1));
+            SourcePosition(this->_source_file, last_token_pos.offset + last_token_pos.length - 1, 1));
     }
 
     if (const auto next_type = this->peek_next().get_type(); next_type != type)
@@ -113,7 +113,7 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
         throw stride_error(
             ErrorType::SYNTAX_ERROR,
             message,
-            SourcePosition(last_token_pos.offset + last_token_pos.length - 1,1));
+            SourcePosition(this->_source_file, last_token_pos.offset + last_token_pos.length - 1, 1));
     }
 
     if (this->peek_next().get_type() != type)

@@ -11,7 +11,8 @@ using namespace stride::runtime;
 
 void stride::runtime::register_runtime_symbols(const ast::SymbolTable* symbol_table)
 {
-    const auto position = SourcePosition(0, 0);
+    const auto source = std::make_shared<SourceFile>("unknown", "");
+    const auto position = SourcePosition(source, 0, 0);
     std::vector<std::unique_ptr<ast::IAstType>> args;
     args.push_back(std::make_unique<ast::AstPrimitiveType>(
         position,
