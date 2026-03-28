@@ -149,15 +149,20 @@ void AstAliasType::resolve_type_definition(const SymbolTable* symbol_table)
     );
 }
 
-void AstAliasType::resolve_underlying_type()
+IAstType* AstAliasType::get_underlying_type()
 {
+    if (this->_underlying_type)
+    {
+        return this->_underlying_type.get();
+    }
+
     const auto& type_def = this->get_type_definition();
 
     std::unique_ptr<IAstType> base_type = this->is_generic_overload()
         ? instantiate_generic_type(this, type_def)
         : this->get_reference_type().value_or(nullptr);
 
-    if (!base_type)
+    if (base_type == nullptr)
     {
         throw stride_error(
             ErrorType::COMPILATION_ERROR,
@@ -222,9 +227,7 @@ void AstAliasType::resolve_underlying_type()
         }
     }
 
-    this->_underlying_type = std::move(base_type);
-
-    if (!this->_underlying_type)
+    if (!base_type)
     {
         throw stride_error(
             ErrorType::COMPILATION_ERROR,
@@ -234,6 +237,10 @@ void AstAliasType::resolve_underlying_type()
             this->get_source_position()
         );
     }
+
+    this->_underlying_type = std::move(base_type);
+
+    return this->_underlying_type.get();
 }
 
 bool AstAliasType::is_castable_to_impl(IAstType* other)

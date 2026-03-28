@@ -18,7 +18,6 @@ using namespace stride::ast::definition;
 std::unique_ptr<AstAliasType> infer_alias_type(const SymbolTable* symbol_table, AstAliasType* alias_type, int flags = 0)
 {
     alias_type->resolve_type_definition(symbol_table);
-    alias_type->resolve_underlying_type();
 
     return std::make_unique<AstAliasType>(
         alias_type->get_source_position(),

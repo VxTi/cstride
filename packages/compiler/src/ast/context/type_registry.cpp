@@ -12,7 +12,7 @@ bool SymbolTable::is_type_defined(const std::string& type_name) const
     return get_type_definition(type_name).has_value();
 }
 
-bool SymbolTable::is_struct_type_defined(const std::string& struct_name) const
+bool SymbolTable::is_object_type_defined(const std::string& struct_name) const
 {
     const auto type_def = get_type_definition(struct_name);
 

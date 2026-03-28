@@ -51,7 +51,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     ast::AstNodeTraverser traverser(global_symbol_table); // Global symbol table
 
-    ast::TypeInferenceVisitor expression_visitor;
+    ast::TypeInferenceVisitor type_visitor;
     ast::ValidationVisitor validation_visitor;
     ast::FunctionVisitor function_visitor;
     ast::FunctionCallVisitor function_call_visitor;
@@ -89,7 +89,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
         // Type checker - this must be executed after all external symbols have been populated
-        traverser.traverse(&expression_visitor, branch.get());
+        traverser.traverse(&type_visitor, branch.get());
     }
 
     for (const auto& branch : this->_ast->get_branches() | std::views::values)

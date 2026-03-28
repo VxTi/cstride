@@ -43,9 +43,9 @@ std::unique_ptr<Ast> Ast::parse_files(const std::vector<FilePath>& files)
 
     for (auto& future : futures)
     {
-        auto [file_path, node] = future.get();
+        auto [file_path, branch] = future.get();
 
-        ast->_branches.emplace(file_path, std::move(node));
+        ast->_branches.emplace(file_path, std::move(branch));
     }
 
     return ast;
@@ -53,8 +53,9 @@ std::unique_ptr<Ast> Ast::parse_files(const std::vector<FilePath>& files)
 
 std::pair<FilePath, std::unique_ptr<AstBranch>> Ast::parse_file(const FilePath& path)
 {
-    auto source_file = read_file(path);
-    auto tokens = tokenizer::tokenize(std::make_shared<SourceFile>(*source_file.release()));
+    auto result = read_file(path);
+    auto source_file = std::make_shared<SourceFile>(*result.release());
+    auto tokens = tokenizer::tokenize(source_file);
 
     const auto context = std::make_shared<SymbolTable>();
 

@@ -228,7 +228,7 @@ namespace stride::ast
         definition::IDefinition* fuzzy_find(const std::string& symbol_name) const;
 
         [[nodiscard]]
-        bool is_struct_type_defined(const std::string& struct_name) const;
+        bool is_object_type_defined(const std::string& struct_name) const;
 
         [[nodiscard]]
         bool is_type_defined(const std::string& type_name) const;

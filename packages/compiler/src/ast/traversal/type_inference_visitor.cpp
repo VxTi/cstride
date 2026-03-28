@@ -48,7 +48,7 @@ void TypeInferenceVisitor::accept_expression(SymbolTable* symbol_table, IAstExpr
 
         const auto variable_symbol = Symbol(
             var_decl->get_source_position(),
-            is_global_variable ? "" : symbol_table->get_scope_name(),
+            symbol_table->get_scope_name(),
             var_decl->get_variable_name()
         );
 

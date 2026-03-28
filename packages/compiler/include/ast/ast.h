@@ -24,12 +24,12 @@ namespace stride::ast
     // A branch, representing a file in the AST
     class AstBranch
     {
-        std::unique_ptr<SourceFile> _source_file;
+        std::shared_ptr<SourceFile> _source_file;
         std::unique_ptr<AstBlock> _node;
 
     public:
         explicit AstBranch(
-            std::unique_ptr<SourceFile> source_file,
+            std::shared_ptr<SourceFile> source_file,
             std::unique_ptr<AstBlock> node
         ) :
             _source_file(std::move(source_file)),

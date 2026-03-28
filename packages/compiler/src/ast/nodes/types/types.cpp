@@ -300,6 +300,7 @@ std::optional<AstObjectType*> stride::ast::get_object_type_from_type(const Symbo
     // resolves to AstObjectType with concrete member types, not raw X/Y/Z params).
     if (auto* alias_type = cast_type<AstAliasType*>(type))
     {
+        alias_type->resolve_type_definition(symbol_table);
         if (auto* object_type = cast_type<AstObjectType*>(alias_type->get_underlying_type()))
         {
             return object_type;

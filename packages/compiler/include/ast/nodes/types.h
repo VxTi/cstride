@@ -320,18 +320,13 @@ namespace stride::ast
         /// Then, calling `get_base_reference_type` on `LeafType` will return `i32`.
         /// Throws an exception if no underlying type can be resolved.
         [[nodiscard]]
-        IAstType* get_underlying_type() const
-        {
-            return this->_underlying_type.get();
-        }
+        IAstType* get_underlying_type();
 
         [[nodiscard]]
         definition::TypeDefinition* get_type_definition() const
         {
             return this->_type_definition;
         }
-
-        void resolve_underlying_type();
 
         void resolve_type_definition(const SymbolTable* symbol_table);
 

@@ -37,7 +37,6 @@ namespace stride::ast
         ) :
             _root_symbol_table(std::move(root_symbol_table)),
             _current_symbol_table(root_symbol_table),
-            _context_name(""),
             _current_context_type(ContextType::GLOBAL) {}
 
         void traverse(IVisitor* visitor, const AstBranch *branch);
