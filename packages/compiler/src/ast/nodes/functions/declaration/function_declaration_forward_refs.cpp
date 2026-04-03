@@ -32,8 +32,8 @@ void IAstFunction::resolve_forward_references(
     }
 
     std::vector<Symbol> captures;
-    const auto outer_context = symbol_table->get_parent_context() != nullptr
-        ? symbol_table->get_parent_context()
+    const auto outer_context = symbol_table->get_parent_symbol_table() != nullptr
+        ? symbol_table->get_parent_symbol_table().get()
         : symbol_table;
 
     collect_free_variables(this->get_body(), symbol_table, outer_context, captures);
@@ -133,7 +133,10 @@ void IAstFunction::collect_free_variables(
                         return;
                     break;
                 }
-                ctx = ctx->get_parent_context();
+
+                if (!ctx->get_parent_symbol_table()) break;
+
+                ctx = ctx->get_parent_symbol_table().get();
             }
 
             // Check if we haven't already captured this variable

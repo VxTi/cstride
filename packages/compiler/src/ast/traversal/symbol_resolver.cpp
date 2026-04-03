@@ -13,12 +13,13 @@ using namespace stride::ast;
  */
 void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunction* function)
 {
+    printf("Accepting function %s\n", function->get_function_name().c_str());
     // This is fine here because we only need parameter types to infer the
     // function type, and parameter types are already set at this point.
     function->set_type(infer_function_type(function));
 
     // Generic functions aren't resolved fully here. A copy is created with the instantiated parameters.
-    if (!function->is_generic())
+    if (function->get_generic_parameters().empty())
     {
         for (const auto& param : function->get_parameters_ref())
         {
@@ -42,6 +43,7 @@ void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunctio
 
 /**
  * Registers variable declarations in the symbol table, assigning them an internalized symbol and appropriate flags.
+ * Safe to call more than once: already-registered variables are silently skipped.
  */
 void SymbolResolver::accept_expression(SymbolTable* symbol_table, IAstExpression* expr)
 {
@@ -81,9 +83,13 @@ void SymbolResolver::accept_expression(SymbolTable* symbol_table, IAstExpression
 
 /**
  * Registers a type definition in the symbol table so that it can be referenced in the current context.
+ * Safe to call more than once: already-registered types are silently skipped.
  */
 void SymbolResolver::accept_type_definition_node(SymbolTable* symbol_table, AstTypeDefinition* type_definition)
 {
+    if (symbol_table->is_type_defined(type_definition->get_name()))
+        return;
+
     // Register the type definition in the current context so that it can be referenced by subsequent expressions.
     const auto type_symbol = Symbol(
         type_definition->get_source_position(),

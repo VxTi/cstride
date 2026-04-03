@@ -226,6 +226,14 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(SymbolTable* symbol_tabl
 
     auto resolved_body = this->_body->clone_as<AstBlock>();
 
+    // Explicitly reset the symbol table after cloning to prevent duplicate symbol registration
+    resolved_body->set_symbol_table(std::make_unique<SymbolTable>(
+            resolved_body->get_symbol_table()->get_scope_name(),
+            resolved_body->get_symbol_table()->get_context_type(),
+            resolved_body->get_symbol_table()->get_parent_symbol_table()
+        )
+    );
+
     auto instantiation = std::make_shared<IAstFunction>(
         this->get_source_position(),
         this->get_function_name(),

@@ -83,6 +83,16 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     }
 
     //
+    // Second symbol resolution pass - Registers parameters and locals for generic
+    // instantiation bodies that were cloned after the first pass.
+    // SymbolResolver is idempotent: already-registered symbols are silently skipped.
+    //
+    for (const auto& branch : this->_ast->get_branches() | std::views::values)
+    {
+        traverser.traverse(&symbol_resolver, branch.get());
+    }
+
+    //
     // Third step - Type resolution
     //
     for (const auto& branch : this->_ast->get_branches() | std::views::values)

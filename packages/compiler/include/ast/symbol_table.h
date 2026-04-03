@@ -161,12 +161,9 @@ namespace stride::ast
             const std::string& internal_name) const;
 
         [[nodiscard]]
-        SymbolTable* get_parent_context() const
+        std::shared_ptr<SymbolTable> get_parent_symbol_table() const
         {
-            if (this->_parent_registry == nullptr)
-                return nullptr;
-
-            return this->_parent_registry.get();
+            return this->_parent_registry;
         }
 
         [[nodiscard]]
