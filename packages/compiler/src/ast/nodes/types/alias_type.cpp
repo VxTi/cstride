@@ -167,7 +167,7 @@ IAstType* AstAliasType::get_underlying_type()
     if (base_type == nullptr)
     {
         throw stride_error(
-            ErrorType::COMPILATION_ERROR,
+            ErrorType::TYPE_ERROR,
             std::format(
                 "Could not find underlying type for type '{}'",
                 this->get_name()),

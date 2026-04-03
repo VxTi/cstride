@@ -140,6 +140,7 @@ namespace stride::ast
         [[nodiscard]]
         std::optional<definition::FunctionDefinition*> get_generic_function_definition(
             const std::string& function_name,
+            size_t function_param_count,
             size_t instantiated_generic_count = 0
         );
 
