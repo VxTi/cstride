@@ -79,8 +79,8 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                 {
                     const auto& branch_with_exports = ast->get_branches().at(file_name_with_exports);
 
-                    definition = branch_with_exports->get_node()->get_symbol_table()->get_definition_by_internal_name(
-                        import_name);
+                    definition = branch_with_exports->get_node()->get_symbol_table()->
+                                                      get_definition_by_internal_name(import_name);
 
                     if (definition.has_value())
                         break;

@@ -28,35 +28,48 @@ void AstNodeTraverser::traverse(IVisitor* visitor, const AstBranch* branch)
     this->_context_name = "";
     this->_current_context_type = ContextType::GLOBAL;
     this->_current_symbol_table = this->_root_symbol_table;
+    this->_symbol_table_stack.clear();
+
+    // Bind the root block to the root symbol table so push_symbol_table
+    // does not create a second GLOBAL-typed scope on top of it.
+    if (auto* root_block = dynamic_cast<AstBlock*>(branch->get_node()))
+    {
+        if (!root_block->get_symbol_table())
+            root_block->set_symbol_table(_root_symbol_table);
+    }
 
     this->visit(visitor, branch->get_node());
 }
 
-void AstNodeTraverser::visit_block(IVisitor* visitor, AstBlock* node)
+void AstNodeTraverser::push_symbol_table(AstBlock* block)
 {
-    if (!node)
-        return;
-
-    const auto stored_symbol_table = _current_symbol_table;
-
-    if (node->get_symbol_table() == nullptr)
+    if (!block->get_symbol_table())
     {
-        node->set_symbol_table(
-            std::make_unique<SymbolTable>(_context_name, _current_context_type, _current_symbol_table)
+        block->set_symbol_table(
+            std::make_shared<SymbolTable>(_context_name, _current_context_type, _current_symbol_table)
         );
     }
+    _symbol_table_stack.push_back(_current_symbol_table);
+    _current_symbol_table = block->get_symbol_table();
+}
 
-    // Prevents creating duplicate GLOBAL context types
-    if (node->get_symbol_table()->get_context_type() != ContextType::GLOBAL)
-    {
-        _current_symbol_table = node->get_symbol_table();
-    }
+void AstNodeTraverser::pop_symbol_table()
+{
+    if (_symbol_table_stack.empty())
+        return;
 
+    this->_current_symbol_table = _symbol_table_stack.back();
+    _symbol_table_stack.pop_back();
+    this->_context_name = this->_current_symbol_table->get_scope_name();
+    this->_current_context_type = this->_current_symbol_table->get_context_type();
+}
+
+void AstNodeTraverser::visit_block(IVisitor* visitor, const AstBlock* node)
+{
     for (const auto& child : node->get_children())
     {
         visit(visitor, child.get());
     }
-    _current_symbol_table = stored_symbol_table;
 }
 
 void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
@@ -125,15 +138,24 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         {
             for (const auto& generic_instantiation : function_node->get_generic_instantiations())
             {
+                push_symbol_table(generic_instantiation->get_body());
+
                 visit_block(visitor, generic_instantiation->get_body());
-                visitor->accept_function_node(this->_current_symbol_table.get(), generic_instantiation.get());
+                visitor->accept_function_node(
+                    generic_instantiation->get_body()->get_symbol_table().get(),
+                    generic_instantiation.get());
+
+                pop_symbol_table();
             }
         }
         else
         {
-            // This ensures the function parameters are defined in the body's symbol table
+            push_symbol_table(function_node->get_body());
+
             visit_block(visitor, function_node->get_body());
-            visitor->accept_function_node(this->_current_symbol_table.get(), function_node);
+            visitor->accept_function_node(function_node->get_body()->get_symbol_table().get(), function_node);
+
+            pop_symbol_table();
         }
     }
     else if (const auto* type_cast = cast_expr<AstTypeCastOp*>(node))
@@ -179,6 +201,9 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     else if (auto* for_loop = dynamic_cast<AstForLoop*>(node))
     {
         this->_current_context_type = ContextType::CONTROL_FLOW;
+
+        push_symbol_table(for_loop->get_body());
+
         if (for_loop->get_initializer())
             visit(visitor, for_loop->get_initializer());
 
@@ -189,6 +214,8 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
             visit(visitor, for_loop->get_incrementor());
 
         visit_block(visitor, for_loop->get_body());
+
+        pop_symbol_table();
     }
     else if (const auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
     {
@@ -220,7 +247,11 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     }
     else if (auto* block = dynamic_cast<AstBlock*>(node))
     {
+        push_symbol_table(block);
+
         visit_block(visitor, block);
+
+        pop_symbol_table();
     }
     else if (auto* expr = dynamic_cast<IAstExpression*>(node))
     {

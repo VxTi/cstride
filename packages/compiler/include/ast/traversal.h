@@ -2,6 +2,7 @@
 #include "symbol_table.h"
 
 #include <memory>
+#include <vector>
 
 namespace stride::ast
 {
@@ -31,12 +32,14 @@ namespace stride::ast
         std::string _context_name;
         ContextType _current_context_type;
 
+        std::vector<std::shared_ptr<SymbolTable>> _symbol_table_stack;
+
     public:
         explicit AstNodeTraverser(
             std::shared_ptr<SymbolTable> root_symbol_table
         ) :
             _root_symbol_table(std::move(root_symbol_table)),
-            _current_symbol_table(root_symbol_table),
+            _current_symbol_table(_root_symbol_table),
             _current_context_type(ContextType::GLOBAL) {}
 
         void traverse(IVisitor* visitor, const AstBranch *branch);
@@ -46,6 +49,10 @@ namespace stride::ast
 
         void visit_expression(IVisitor* visitor, IAstExpression* node);
 
-        void visit_block(IVisitor* visitor, AstBlock* node);
+        void visit_block(IVisitor* visitor, const AstBlock* node);
+
+        void push_symbol_table(AstBlock *block);
+
+        void pop_symbol_table();
     };
 }
