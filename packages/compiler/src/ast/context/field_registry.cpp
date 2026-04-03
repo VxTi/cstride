@@ -39,40 +39,6 @@ bool SymbolTable::is_field_defined_in_scope(const std::string& variable_name) co
         });
 }
 
-bool SymbolTable::is_field_defined_globally(const std::string& field_name) const
-{
-    auto current = this;
-    while (current != nullptr)
-    {
-        if (current->is_field_defined_in_scope(field_name))
-        {
-            return true;
-        }
-        current = current->_parent_registry.get();
-    }
-    return false;
-}
-
-void SymbolTable::define_variable_globally(Symbol variable_symbol, VisibilityModifier visibility)
-{
-    if (is_field_defined_globally(variable_symbol.internal_name))
-    {
-        throw stride_error(
-            ErrorType::SEMANTIC_ERROR,
-            std::format("Variable '{}' is already defined in global scope", variable_symbol.name),
-            variable_symbol.symbol_position
-        );
-    }
-
-    const auto &global_scope = this->traverse_to_root();
-    global_scope->_symbols.push_back(
-        std::make_unique<definition::FieldDefinition>(
-            std::move(variable_symbol),
-            visibility
-        )
-    );
-}
-
 void SymbolTable::define_variable(Symbol variable_symbol, const VisibilityModifier visibility, const int flags)
 {
     define_variable(std::move(variable_symbol), nullptr, visibility, flags);
@@ -85,12 +51,6 @@ void SymbolTable::define_variable(
     int flags
 )
 {
-    if (this->is_global_scope())
-    {
-        this->define_variable_globally(std::move(variable_symbol), visibility);
-        return;
-    }
-
     if (is_field_defined_in_scope(variable_symbol.internal_name))
     {
         throw stride_error(
@@ -99,6 +59,8 @@ void SymbolTable::define_variable(
             variable_symbol.symbol_position
         );
     }
+
+    printf("defining variable \"%s\"\n", variable_symbol.name.c_str());
 
     this->_symbols.push_back(
         std::make_unique<definition::FieldDefinition>(

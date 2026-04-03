@@ -287,17 +287,16 @@ void AstVariableDeclaration::resolve_forward_references(
         !type->is_mutable(),
         llvm::GlobalValue::ExternalLinkage,
         default_init,
-        this->get_variable_name() // TODO: internalize
+        this->get_internalized_name()
     );
 }
 
-void global_var_declaration_codegen(
+void AstVariableDeclaration::global_var_declaration_codegen(
     SymbolTable* symbol_table,
-    const AstVariableDeclaration* self,
     llvm::GlobalVariable* global_var,
     llvm::Module* module,
     llvm::IRBuilderBase* ir_builder
-)
+) const
 {
     // All global dynamic initializers share a single __init_globals function so the
     // ctors list only ever gets one entry, rather than one per variable.
@@ -331,7 +330,7 @@ void global_var_declaration_codegen(
     llvm::IRBuilder tempBuilder(init_func->getEntryBlock().getTerminator());
 
     // Re-generate the initial value inside the constructor function.
-    llvm::Value* dynamic_init_value = self->get_initial_value()->codegen(
+    llvm::Value* dynamic_init_value = this->get_initial_value()->codegen(
         symbol_table,
         module,
         &tempBuilder
@@ -362,18 +361,18 @@ void global_var_declaration_codegen(
     }
 }
 
-std::optional<llvm::GlobalVariable*> get_global_var_decl(
+std::optional<llvm::GlobalVariable*> AstVariableDeclaration::get_global_var_decl(
     const SymbolTable* symbol_table,
-    const AstVariableDeclaration* self,
     llvm::Module* module,
-    llvm::Type* var_type)
+    llvm::Type* var_type
+)
 {
     if (!symbol_table->is_global_scope())
     {
         return std::nullopt;
     }
 
-    llvm::GlobalVariable* global_var = module->getNamedGlobal(self->get_variable_name());
+    llvm::GlobalVariable* global_var = module->getNamedGlobal(this->get_variable_name());
 
     if (!global_var)
     {
@@ -388,7 +387,7 @@ std::optional<llvm::GlobalVariable*> get_global_var_decl(
             false,
             llvm::GlobalValue::ExternalLinkage,
             default_init,
-            self->get_variable_name()); // TODO: Internalize
+            this->get_internalized_name());
     }
 
     // Ensure it's not constant so we can store to it in the constructor
@@ -429,11 +428,7 @@ llvm::Value* AstVariableDeclaration::codegen(
 
     // If we are generating a global, we might rely on constant initialization
     // or dynamic initialization handled later.
-    if (const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(
-            symbol_table,
-            this,
-            module,
-            variable_ty);
+    if (const std::optional<llvm::GlobalVariable*> global_var = get_global_var_decl(symbol_table, module, variable_ty);
         global_var.has_value())
     {
         llvm::Value* init_value = nullptr;
@@ -462,10 +457,9 @@ llvm::Value* AstVariableDeclaration::codegen(
                     auto* struct_ty = llvm::cast<llvm::StructType>(variable_ty);
                     llvm::Constant* has_value_const = llvm::ConstantInt::get(
                         llvm::Type::getInt1Ty(module->getContext()),
-                        OPT_HAS_VALUE);
-                    initializer = llvm::ConstantStruct::get(
-                        struct_ty,
-                        { has_value_const, constant });
+                        OPT_HAS_VALUE
+                    );
+                    initializer = llvm::ConstantStruct::get(struct_ty, { has_value_const, constant });
                 }
 
                 global_var.value()->setInitializer(initializer);
@@ -473,13 +467,7 @@ llvm::Value* AstVariableDeclaration::codegen(
         }
         else
         {
-            global_var_declaration_codegen(
-                symbol_table,
-                this,
-                global_var.value(),
-                module,
-                builder
-            );
+            global_var_declaration_codegen(symbol_table, global_var.value(), module, builder);
         }
         return global_var.value();
     }
@@ -492,7 +480,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     llvm::AllocaInst* alloca = entry_builder.CreateAlloca(
         variable_ty,
         nullptr,
-        this->get_variable_name() // This registers it in the SymbolTable. TODO: Internalize name
+        this->get_internalized_name()
     );
 
     // Generate code for the initial value at the current insertion point
@@ -537,7 +525,7 @@ llvm::Value* AstVariableDeclaration::codegen(
 
 std::unique_ptr<IAstNode> AstVariableDeclaration::clone()
 {
-    return std::make_unique<AstVariableDeclaration>(
+    auto cloned = std::make_unique<AstVariableDeclaration>(
         this->get_source_position(),
         this->get_variable_name(),
         this->has_annotated_type()
@@ -548,6 +536,8 @@ std::unique_ptr<IAstNode> AstVariableDeclaration::clone()
         this->_flags,
         this->clone_type()
     );
+    cloned->_variable_symbol = this->_variable_symbol;
+    return cloned;
 }
 
 std::string AstVariableDeclaration::to_string()

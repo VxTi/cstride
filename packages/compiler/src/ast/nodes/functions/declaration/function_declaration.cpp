@@ -22,10 +22,7 @@ using namespace stride::ast::definition;
 /**
  * Will attempt to parse the provided token stream into an AstFunctionDefinitionNode.
  */
-std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(
-    TokenSet& set,
-    VisibilityModifier modifier
-)
+std::unique_ptr<AstFunctionDeclaration> stride::ast::parse_fn_declaration(TokenSet& set, VisibilityModifier modifier)
 {
     int function_flags = 0;
     const auto reference_token = set.peek_next();
@@ -124,9 +121,7 @@ std::unique_ptr<AstBlock> consume_anonymous_fn_body(TokenSet& set)
     return parse_block(set);
 }
 
-std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
-    TokenSet& set
-)
+std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(TokenSet& set)
 {
     const auto reference_token = set.peek_next();
     std::vector<std::unique_ptr<AstFunctionParameter>> parameters = {};
@@ -180,21 +175,19 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     );
 }
 
-std::shared_ptr<IAstFunction> IAstFunction::instantiate(
-    SymbolTable* symbol_table,
-    const GenericTypeList& generic_instantiation_types)
+std::shared_ptr<IAstFunction> IAstFunction::instantiate(SymbolTable* symbol_table, const GenericTypeList& instantiated_types)
 {
     auto instantiated_return_ty = resolve_generics(
         this->_annotated_return_type.get(),
         this->_generic_parameters,
-        generic_instantiation_types
+        instantiated_types
     );
 
     std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
     instantiated_function_params.reserve(this->_parameters.size());
 
     printf("Adding instantiation for %s<", this->get_function_name().c_str());
-    for (const auto& type : generic_instantiation_types)
+    for (const auto& type : instantiated_types)
     {
         printf("%s", type->get_type_name().c_str());
     }
@@ -202,7 +195,7 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(
 
     for (const auto& param : this->_parameters)
     {
-        auto param_type = resolve_generics(param->get_type(), this->_generic_parameters, generic_instantiation_types);
+        auto param_type = resolve_generics(param->get_type(), this->_generic_parameters, instantiated_types);
 
         symbol_table->define_variable(
             param->get_symbol(),
@@ -221,12 +214,13 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(
     }
 
     // Define all generic parameters in the symbol table as reference type to the instantiation
-    // This makes type resolution easier, as any reference to a generic parameter in the function body will be resolved to the correct instantiation type.
+    // This makes type resolution easier, as any reference to a generic parameter in the function
+    // body will be resolved to the correct instantiation type.
     for (size_t i = 0; i < this->_generic_parameters.size(); ++i)
     {
         symbol_table->define_generic_type_alias(
             Symbol(this->_generic_parameters[i].position, this->_generic_parameters[i].name),
-            generic_instantiation_types[i]->clone()
+            instantiated_types[i]->clone()
         );
     }
 

@@ -210,11 +210,6 @@ namespace stride::ast
             int flags = 0
         );
 
-        void define_variable_globally(
-            Symbol variable_symbol,
-            VisibilityModifier visibility
-        );
-
         void set_variable_type(
             Symbol variable_symbol,
             std::unique_ptr<IAstType> type
@@ -234,10 +229,6 @@ namespace stride::ast
         /// Checks whether the provided variable name is defined in the current context.
         [[nodiscard]]
         bool is_field_defined_in_scope(const std::string& variable_name) const;
-
-        /// Checks whether the provided variable name is defined in the global context.
-        [[nodiscard]]
-        bool is_field_defined_globally(const std::string& field_name) const;
 
         /// Checks whether the provided internal function name is defined in the global context.
         /// Do note that the internal name is not the name that you would use in

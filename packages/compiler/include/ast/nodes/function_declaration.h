@@ -248,7 +248,7 @@ namespace stride::ast
 
         std::shared_ptr<IAstFunction> instantiate(
             SymbolTable* symbol_table,
-            const GenericTypeList& generic_instantiation_types
+            const GenericTypeList& instantiated_types
         );
 
     private:

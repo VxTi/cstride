@@ -11,6 +11,7 @@
 
 namespace llvm
 {
+    class GlobalVariable;
     class Function;
 }
 
@@ -587,7 +588,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-         Symbol get_symbol() const
+        Symbol get_symbol() const
         {
             if (this->_variable_symbol.has_value())
                 return this->_variable_symbol.value();
@@ -628,6 +629,24 @@ namespace stride::ast
             return this->_flags;
         }
 
+    private:
+        std::optional<llvm::GlobalVariable*> get_global_var_decl(
+            const SymbolTable* symbol_table,
+            llvm::Module* module,
+            llvm::Type* var_type);
+
+        void global_var_declaration_codegen(
+            SymbolTable* symbol_table,
+            llvm::GlobalVariable* global_var,
+            llvm::Module* module,
+            llvm::IRBuilderBase* ir_builder
+        ) const;
+
+        [[nodiscard]]
+        std::string get_internalized_name() const
+        {
+            return this->_variable_symbol.value().internal_name;
+        }
     };
 
     class IBinaryOp

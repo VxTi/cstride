@@ -17,14 +17,18 @@ void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunctio
     // function type, and parameter types are already set at this point.
     function->set_type(infer_function_type(function));
 
-    for (const auto& param : function->get_parameters_ref())
+    // Generic functions aren't resolved fully here. A copy is created with the instantiated parameters.
+    if (!function->is_generic())
     {
-        symbol_table->define_variable(
-            param->get_symbol(),
-            param->get_type()->clone(),
-            VisibilityModifier::PRIVATE,
-            param->get_type()->get_flags()
-        );
+        for (const auto& param : function->get_parameters_ref())
+        {
+            symbol_table->define_variable(
+                param->get_symbol(),
+                param->get_type()->clone(),
+                VisibilityModifier::PRIVATE,
+                param->get_type()->get_flags()
+            );
+        }
     }
 
     const auto function_symbol = Symbol(

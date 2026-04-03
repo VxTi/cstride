@@ -118,6 +118,8 @@ void SymbolTable::define_generic_type_alias(const Symbol& type_name, std::unique
         );
     }
 
+    printf("Defining generic type alias \"%s\" to \"%s\"\n", type_name.name.c_str(), type->get_type_name().c_str());
+
     this->_type_definitions.push_back(
         std::make_unique<TypeDefinition>(
             type_name,
@@ -151,6 +153,8 @@ void SymbolTable::define_type(
             }
         );
     }
+
+    printf("Defining type \"%s\"\n", type_name.name.c_str());
 
     root_context->_type_definitions.push_back(
         std::make_unique<TypeDefinition>(
