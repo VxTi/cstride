@@ -260,7 +260,6 @@ namespace stride::ast
 
         std::unique_ptr<IAstType> _underlying_type = nullptr;
         definition::TypeDefinition* _type_definition = nullptr;
-        std::unique_ptr<IAstType> _base_reference_type = nullptr;
 
     public:
         explicit AstAliasType(
@@ -305,12 +304,12 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        std::optional<std::unique_ptr<IAstType>> get_reference_type() const
+        std::optional<std::unique_ptr<IAstType>> get_underlying_type() const
         {
-            if (this->_base_reference_type == nullptr)
+            if (this->_underlying_type == nullptr)
                 return std::nullopt;
 
-            return this->_base_reference_type->clone();
+            return this->_underlying_type->clone();
         }
 
         /// Returns the super base type of the reference, e.g., if we have:

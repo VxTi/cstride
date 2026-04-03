@@ -183,12 +183,6 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        void resolve_forward_references(
-            SymbolTable* symbol_table,
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
-        ) override;
-
         std::string to_string() override;
 
         std::unique_ptr<IAstNode> clone() override;
@@ -486,11 +480,6 @@ namespace stride::ast
 
         [[nodiscard]]
         std::string get_formatted_call() const;
-
-        void resolve_forward_references(
-            SymbolTable* symbol_table,
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder) override;
 
         [[nodiscard]]
         const GenericTypeList& get_generic_type_arguments();
@@ -893,12 +882,6 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        void resolve_forward_references(
-            SymbolTable* symbol_table,
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
-        ) override;
-
         bool is_reducible() override;
 
         std::optional<std::unique_ptr<IAstNode>> reduce() override;
@@ -970,10 +953,6 @@ namespace stride::ast
         void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
-
-        void resolve_forward_references(SymbolTable* symbol_table,
-                                        llvm::Module* module,
-                                        llvm::IRBuilderBase* builder) override;
 
     private:
         std::unique_ptr<AstObjectType> get_instantiated_object_type(const SymbolTable* symbol_table);

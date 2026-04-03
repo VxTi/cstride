@@ -49,13 +49,6 @@ void AstModule::validate(SymbolTable* symbol_table)
     this->_body->validate(symbol_table);
 }
 
-void AstModule::resolve_forward_references(
-    SymbolTable* symbol_table,
-    llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    this->_body->resolve_forward_references(symbol_table, module, builder);
-}
-
 std::unique_ptr<IAstNode> AstModule::clone()
 {
     return std::make_unique<AstModule>(

@@ -41,7 +41,15 @@ SymbolTable* SymbolTable::traverse_to_root()
 
 void SymbolTable::define(std::unique_ptr<IDefinition> definition)
 {
+    if (dynamic_cast<FunctionDefinition*>(definition.get()) != nullptr
+        && this->_parent_registry != nullptr)
+    {
+        const auto root_registry = traverse_to_root();
+        root_registry->define(std::move(definition));
+        return;
+    }
     this->_symbols.push_back(std::move(definition));
+    printf("+ DEFINE SYM %s\n", this->_symbols.back()->get_symbol().internal_name.c_str());
 }
 
 std::optional<std::unique_ptr<IDefinition>> SymbolTable::get_definition_by_internal_name(const std::string& internal_name) const

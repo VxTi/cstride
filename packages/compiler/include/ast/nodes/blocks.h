@@ -34,12 +34,6 @@ namespace stride::ast
             llvm::IRBuilderBase* builder
         ) override;
 
-        void resolve_forward_references(
-            SymbolTable* symbol_table,
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
-        ) override;
-
         void aggregate_block(AstBlock* other);
 
         [[nodiscard]]

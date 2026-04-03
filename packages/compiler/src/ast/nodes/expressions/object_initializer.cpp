@@ -264,17 +264,6 @@ void AstObjectInitializer::validate(SymbolTable* symbol_table)
     }
 }
 
-void AstObjectInitializer::resolve_forward_references(
-    SymbolTable* symbol_table,
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder)
-{
-    for (const auto& val : this->_member_initializers | std::views::values)
-    {
-        val->resolve_forward_references(symbol_table, module, builder);
-    }
-}
-
 llvm::Value* AstObjectInitializer::codegen(
     SymbolTable* symbol_table,
     llvm::Module* module,

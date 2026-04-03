@@ -116,18 +116,6 @@ void AstBlock::aggregate_block(AstBlock* other)
     }
 }
 
-void AstBlock::resolve_forward_references(
-    SymbolTable* symbol_table,
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
-)
-{
-    for (const auto& child : this->_children)
-    {
-        child->resolve_forward_references(symbol_table, module, builder);
-    }
-}
-
 llvm::Value* AstBlock::codegen(
     SymbolTable* symbol_table,
     llvm::Module* module,

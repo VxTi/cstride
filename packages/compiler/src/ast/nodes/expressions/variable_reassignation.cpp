@@ -11,15 +11,6 @@
 
 using namespace stride::ast;
 
-void AstVariableReassignment::resolve_forward_references(
-    SymbolTable* symbol_table,
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
-)
-{
-    this->get_value()->resolve_forward_references(symbol_table, module, builder);
-}
-
 /**
  * @brief Checks if a given token type represents a mutative operation on a variable.
  *

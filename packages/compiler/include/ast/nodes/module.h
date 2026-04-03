@@ -43,10 +43,6 @@ namespace stride::ast
             llvm::Module* module, llvm::IRBuilderBase* builder
         ) override;
 
-        void resolve_forward_references(
-            SymbolTable* symbol_table,
-            llvm::Module* module, llvm::IRBuilderBase* builder) override;
-
         std::unique_ptr<IAstNode> clone() override;
 
         void validate(SymbolTable* symbol_table) override;

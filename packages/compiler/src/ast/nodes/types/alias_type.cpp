@@ -162,7 +162,7 @@ IAstType* AstAliasType::get_underlying_type()
 
     std::unique_ptr<IAstType> base_type = this->is_generic_overload()
         ? instantiate_generic_type(this, type_def)
-        : this->get_reference_type().value_or(nullptr);
+        : type_def->get_type()->clone();
 
     if (base_type == nullptr)
     {
@@ -205,7 +205,7 @@ IAstType* AstAliasType::get_underlying_type()
             }
             else
             {
-                if (auto next_type = named_reference->get_reference_type();
+                if (auto next_type = named_reference->get_underlying_type();
                     next_type.has_value())
                 {
                     base_type = std::move(next_type.value());

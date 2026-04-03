@@ -9,17 +9,6 @@
 
 using namespace stride::ast;
 
-void AstArray::resolve_forward_references(
-    SymbolTable* symbol_table,
-    llvm::Module* module, llvm::IRBuilderBase* builder
-)
-{
-    for (const auto& element : this->get_elements())
-    {
-        element->resolve_forward_references(symbol_table, module, builder);
-    }
-}
-
 std::unique_ptr<IAstNode> AstArray::clone()
 {
     ExpressionList elements_clone;

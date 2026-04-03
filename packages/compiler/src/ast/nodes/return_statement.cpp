@@ -69,17 +69,6 @@ std::string AstReturnStatement::to_string()
     );
 }
 
-void AstReturnStatement::resolve_forward_references(
-    SymbolTable* symbol_table,
-    llvm::Module* module, llvm::IRBuilderBase* builder
-)
-{
-    if (this->get_return_expression().has_value())
-    {
-        this->get_return_expression().value()->resolve_forward_references(symbol_table, module, builder);
-    }
-}
-
 llvm::Value* AstReturnStatement::codegen(
     SymbolTable* symbol_table,
     llvm::Module* module, llvm::IRBuilderBase* builder

@@ -81,6 +81,15 @@ namespace stride::ast
         void accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call) override;
     };
 
+    class ForwardReferenceInitializer : public IVisitor
+    {
+        llvm::Module* _module{};
+        llvm::IRBuilderBase* _ir_builder{};
+
+    public:
+        void accept(SymbolTable* symbol_table, IAstNode* node) override;
+    };
+
     class ImportVisitor : public IVisitor
     {
         std::string _current_file_name; // temporary values
