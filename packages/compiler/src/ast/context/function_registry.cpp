@@ -99,16 +99,6 @@ bool FunctionDefinition::matches_type_signature(
     if (this->get_type()->is_generic() && !signature->is_generic())
         return false;
 
-    // Handle matching for generic functions
-    if (this->get_type()->is_generic() && signature->is_generic())
-    {
-        return this->get_type()->get_generic_parameter_names().size() == signature->get_generic_parameter_names().size()
-            && this->get_type()->get_parameter_types().size() == signature->get_parameter_types().size();
-    }
-
-    if (!this->_function_type->get_return_type()->equals(signature->get_return_type().get()))
-        return false;
-
     const auto& other_params = signature->get_parameter_types();
 
     return matches_parameter_signature(
@@ -128,16 +118,6 @@ bool FunctionDefinition::matches_parameter_signature(
     if (this->get_internal_symbol_name() != internal_function_name)
         return false;
 
-    // Ensure we have the right generic overload variant of this function.
-    // This allows us to create several functions with the same signature / name, but with
-    // different generic parameter overloads.
-    //
-    // For generic overloads, we just check whether the name and generic count is equal.
-    if (!this->_function_type->get_generic_parameter_names().empty() &&
-        generic_argument_count > 0 &&
-        this->_function_type->get_generic_parameter_names().size() == generic_argument_count)
-        return true;
-
     const auto& self_params = this->_function_type->get_parameter_types();
 
     if (this->is_variadic())
@@ -151,6 +131,9 @@ bool FunctionDefinition::matches_parameter_signature(
         if (other_parameter_types.size() != self_params.size())
             return false;
     }
+
+    if (this->get_type()->is_generic() && generic_argument_count > 0)
+        return this->get_type()->get_generic_parameter_names().size() == generic_argument_count;
 
     for (size_t i = 0; i < self_params.size(); i++)
     {

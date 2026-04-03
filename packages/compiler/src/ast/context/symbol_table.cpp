@@ -31,7 +31,7 @@ std::string stride::ast::scope_type_to_str(const ContextType& scope_type)
 SymbolTable* SymbolTable::traverse_to_root()
 {
     auto current = this;
-    while (current != nullptr && current->_parent_registry)
+    while (current != nullptr && current->_parent_registry != nullptr)
     {
         current = current->_parent_registry.get();
     }
