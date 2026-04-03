@@ -27,11 +27,8 @@ void AstNodeTraverser::traverse(IVisitor* visitor, const AstBranch* branch)
 {
     this->_context_name = "";
     this->_current_context_type = ContextType::GLOBAL;
-    this->_current_symbol_table = this->_root_symbol_table;
+    this->_current_symbol_table = branch->get_symbol_table();
     this->_symbol_table_stack.clear();
-
-    if (!branch->get_node()->get_symbol_table())
-        branch->get_node()->set_symbol_table(_root_symbol_table);
 
     this->visit(visitor, branch->get_node());
 }
@@ -135,10 +132,10 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
             {
                 push_symbol_table(generic_instantiation->get_body());
 
-                visit_block(visitor, generic_instantiation->get_body());
                 visitor->accept_function_node(
                     generic_instantiation->get_body()->get_symbol_table().get(),
                     generic_instantiation.get());
+                visit_block(visitor, generic_instantiation->get_body());
 
                 pop_symbol_table();
             }
@@ -147,14 +144,13 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         {
             push_symbol_table(function_node->get_body());
 
+            visitor->accept_function_node(function_node->get_body()->get_symbol_table().get(), function_node);
             // We don't want to resolve the function body node if the function is generic, since it may
             // contain uninstantiated generic parameters that would fail to resolve.
             if (!function_node->is_generic())
             {
                 visit_block(visitor, function_node->get_body());
             }
-
-            visitor->accept_function_node(function_node->get_body()->get_symbol_table().get(), function_node);
 
             pop_symbol_table();
         }

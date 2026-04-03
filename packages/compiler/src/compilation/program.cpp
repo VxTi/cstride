@@ -47,9 +47,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     llvm::IRBuilder<> builder(context);
 
-    const auto global_symbol_table = std::make_shared<ast::SymbolTable>();
-
-    ast::AstNodeTraverser traverser(global_symbol_table); // Global symbol table
+    ast::AstNodeTraverser traverser;
 
     ast::TypeInferenceVisitor type_visitor;
     ast::ValidationVisitor validation_visitor;
@@ -57,18 +55,18 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     ast::GenericFunctionInstantiator generic_function_instantiator;
     ast::ImportVisitor import_visitor;
 
-    // Populate symbol table with stride runtime symbols
-    // These are externally available functions that are linked after codegen
-    runtime::register_runtime_symbols(global_symbol_table.get());
-
     //
     // First step - Cross-file symbol registration (imports and function signatures)
     //
     for (const auto& [file_name, branch] : this->_ast->get_branches())
     {
+        printf("--- Traversing %s ---\n", file_name.c_str());
         // Resolve imports and populate local registry - Used for cross registration step
         import_visitor.set_current_file_name(file_name);
 
+        // Populate symbol table with stride runtime symbols
+        // These are externally available functions that are linked after codegen
+        runtime::register_runtime_symbols(branch->get_symbol_table().get());
         traverser.traverse(&import_visitor, branch.get());
         traverser.traverse(&symbol_resolver, branch.get());
     }
@@ -77,19 +75,10 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     //
     // Generic template resolution - Instantiates functions that have generic arguments
     //
-    for (const auto& branch : this->_ast->get_branches() | std::views::values)
+    for (const auto& [file_name, branch] : this->_ast->get_branches())
     {
+        printf("--- Generic instantiation | Traversing %s ---\n", file_name.c_str());
         traverser.traverse(&generic_function_instantiator, branch.get());
-    }
-
-    //
-    // Second symbol resolution pass - Registers parameters and locals for generic
-    // instantiation bodies that were cloned after the first pass.
-    // SymbolResolver is idempotent: already-registered symbols are silently skipped.
-    //
-    for (const auto& branch : this->_ast->get_branches() | std::views::values)
-    {
-        traverser.traverse(&symbol_resolver, branch.get());
     }
 
     //
@@ -104,7 +93,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     {
         // Resolving forward references - Ensures symbols certain symbols are available before implementation
         branch->get_node()->resolve_forward_references(
-            global_symbol_table.get(),
+            branch->get_symbol_table().get(),
             module.get(),
             &builder
         );
@@ -114,7 +103,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
         traverser.traverse(&validation_visitor, branch.get());
-        branch->get_node()->codegen(global_symbol_table.get(), module.get(), &builder);
+        branch->get_node()->codegen(branch->get_symbol_table().get(), module.get(), &builder);
     }
 
     if (llvm::verifyModule(*module, &llvm::errs()))

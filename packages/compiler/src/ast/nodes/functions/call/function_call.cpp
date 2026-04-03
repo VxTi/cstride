@@ -83,6 +83,8 @@ std::unique_ptr<IAstExpression> stride::ast::parse_function_call(
     }
 
     return std::make_unique<AstFunctionCall>(
+        identifier->get_source_position(),
+        // TODO: Fix this. Currently only captures the name rather than generics + parenthesis
         identifier->clone_as<AstIdentifier>(),
         std::move(function_arg_nodes),
         std::move(generic_types),
@@ -256,6 +258,7 @@ std::unique_ptr<IAstNode> AstFunctionCall::clone()
     }
 
     return std::make_unique<AstFunctionCall>(
+        this->get_source_position(),
         this->get_function_name_identifier()->clone_as<AstIdentifier>(),
         std::move(cloned_args),
         std::move(generic_type_list_cloned),

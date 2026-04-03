@@ -11,7 +11,7 @@ void GenericFunctionInstantiator::accept_function_call_node(SymbolTable* symbol_
 
     auto* definition = symbol_table->get_generic_function_definition(
         function_call->get_function_name(),
-        function_call->get_argument_types().size(),
+        function_call->get_arguments().size(),
         function_call->get_generic_type_arguments().size()
     ).value_or(nullptr);
 

@@ -13,36 +13,25 @@ using namespace stride::ast;
  */
 void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunction* function)
 {
-    printf("+ FUNCTION - %s\n", function->get_function_name().c_str());
+    printf("+ %sFUNCTION DECL - %s\n", function->is_generic() ? "GENERIC " : "", function->get_function_name().c_str());
 
     const auto function_symbol = Symbol(
         function->get_source_position(),
         symbol_table->get_scope_name(),
         function->get_function_name()
     );
-    // This is fine here because we only need parameter types to infer the
-    // function type, and parameter types are already set at this point.
-    // We only want to do this for non-generic functions, as we can't resolve underlying generic type arguments yet
+
     function->set_type(infer_function_type(symbol_table, function));
 
-    if (!function->is_generic())
+    if (function->is_generic())
+    {
+        symbol_table->define_generic_function(function_symbol, function);
+    }
+    else
     {
         symbol_table->define_function(function_symbol, function);
-        return;
     }
 
-    // Generic functions aren't resolved fully here. A copy is created with the instantiated parameters further down the line
-    for (const auto& param : function->get_parameters_ref())
-    {
-        symbol_table->define_variable(
-            param->get_symbol(),
-            param->get_type()->clone(),
-            VisibilityModifier::PRIVATE,
-            param->get_type()->get_flags()
-        );
-    }
-
-    symbol_table->define_generic_function(function_symbol, function);
 }
 
 /**
@@ -64,9 +53,10 @@ void SymbolResolver::accept_expression(SymbolTable* symbol_table, IAstExpression
 
     static int var_counter = 0;
 
-    const auto internalized_name = is_global_variable
-        ? std::format("{}.{}", var_decl->get_variable_name(), ++var_counter)
-        : var_decl->get_variable_name();
+    const auto internalized_name =
+        is_global_variable
+        ? var_decl->get_variable_name()
+        : std::format("{}.{}", var_decl->get_variable_name(), ++var_counter);
 
     const auto variable_symbol = Symbol(
         var_decl->get_source_position(),

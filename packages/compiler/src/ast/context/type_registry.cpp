@@ -154,7 +154,7 @@ void SymbolTable::define_type(
         );
     }
 
-    printf("+ TYPE     - %s\n", type_name.name.c_str());
+    printf("+ TYPEDEF - %s\n", type_name.name.c_str());
 
     root_context->_type_definitions.push_back(
         std::make_unique<TypeDefinition>(

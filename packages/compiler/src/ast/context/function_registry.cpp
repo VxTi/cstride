@@ -97,13 +97,14 @@ bool FunctionDefinition::matches_type_signature(
         return false;
 
     if (this->get_type()->is_generic() && !signature->is_generic())
+        return false;
 
-        // Handle matching for generic functions
-        if (this->get_type()->is_generic() && signature->is_generic())
-        {
-            return this->get_type()->get_generic_parameter_names().size() == signature->get_generic_parameter_names().size()
-                && this->get_type()->get_parameter_types().size() == signature->get_parameter_types().size();
-        }
+    // Handle matching for generic functions
+    if (this->get_type()->is_generic() && signature->is_generic())
+    {
+        return this->get_type()->get_generic_parameter_names().size() == signature->get_generic_parameter_names().size()
+            && this->get_type()->get_parameter_types().size() == signature->get_parameter_types().size();
+    }
 
     if (!this->_function_type->get_return_type()->equals(signature->get_return_type().get()))
         return false;
@@ -215,7 +216,9 @@ void SymbolTable::define_function(
     {
         throw stride_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Function '{}' already defined globally", function_name.name),
+            node->is_anonymous()
+            ? "Anonymous function with same signature already defined globally"
+            : std::format("Function '{}' already defined globally", function_name.name),
             function_name.symbol_position
         );
     }

@@ -423,13 +423,14 @@ namespace stride::ast
 
     public:
         explicit AstFunctionCall(
+            const SourcePosition& position,
             std::unique_ptr<AstIdentifier> function_name_identifier,
             ExpressionList arguments,
             GenericTypeList generic_type_arguments,
             const int flags = SRFLAG_NONE,
             std::unique_ptr<IAstType> type = nullptr
         ) :
-            IAstExpression(function_name_identifier->get_source_position(), std::move(type)),
+            IAstExpression(position, std::move(type)),
             _arguments(std::move(arguments)),
             _function_name_identifier(std::move(function_name_identifier)),
             _generic_type_arguments(std::move(generic_type_arguments)),
