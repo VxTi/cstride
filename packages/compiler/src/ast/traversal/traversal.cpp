@@ -37,6 +37,8 @@ void AstNodeTraverser::visit_block(IVisitor* visitor, AstBlock* node)
     if (!node)
         return;
 
+    const auto stored_symbol_table = _current_symbol_table;
+
     if (node->get_symbol_table() == nullptr)
     {
         node->set_symbol_table(
@@ -54,6 +56,7 @@ void AstNodeTraverser::visit_block(IVisitor* visitor, AstBlock* node)
     {
         visit(visitor, child.get());
     }
+    _current_symbol_table = stored_symbol_table;
 }
 
 void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)

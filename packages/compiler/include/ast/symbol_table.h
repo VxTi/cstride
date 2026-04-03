@@ -206,9 +206,12 @@ namespace stride::ast
 
         void define_variable(
             Symbol variable_symbol,
-            VisibilityModifier visibility,
-            int flags = 0
-        );
+            const VisibilityModifier visibility,
+            const int flags = 0
+        )
+        {
+            this->define_variable(std::move(variable_symbol), nullptr, visibility, flags);
+        }
 
         void set_variable_type(
             Symbol variable_symbol,

@@ -39,11 +39,6 @@ bool SymbolTable::is_field_defined_in_scope(const std::string& variable_name) co
         });
 }
 
-void SymbolTable::define_variable(Symbol variable_symbol, const VisibilityModifier visibility, const int flags)
-{
-    define_variable(std::move(variable_symbol), nullptr, visibility, flags);
-}
-
 void SymbolTable::define_variable(
     Symbol variable_symbol,
     std::unique_ptr<IAstType> type,

@@ -12,7 +12,9 @@ fn arrayOf<T>(elements: T[], length: i32): Array<T> {
     return Array<T>::{
         elements,
         length,
-        at: (index: i32): T -> elements[index]
+        at: (index: i32): T -> {
+            return elements[index];
+        }
     };
 }
 
