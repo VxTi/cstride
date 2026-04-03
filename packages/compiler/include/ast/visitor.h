@@ -64,10 +64,12 @@ namespace stride::ast
         void accept(SymbolTable* symbol_table, IAstNode* node) override;
     };
 
-    class FunctionVisitor : public IVisitor
+    class SymbolResolver : public IVisitor
     {
     public:
         void accept_function_node(SymbolTable* symbol_table, IAstFunction* function) override;
+
+        void accept_expression(SymbolTable* symbol_table, IAstExpression* expr) override;
     };
 
     /// Intentionally separate from `FunctionVisitor`, as this step has to be performed after all functions have been defined.

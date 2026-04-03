@@ -114,7 +114,7 @@ std::optional<AstObjectType*> SymbolTable::get_object_type(const std::string& na
 void SymbolTable::define_type(
     const Symbol& type_name,
     std::unique_ptr<IAstType> type,
-    GenericParameterList generics,
+    GenericParameterList generic_parameter_names,
     const VisibilityModifier visibility
 ) const
 {
@@ -139,7 +139,7 @@ void SymbolTable::define_type(
         std::make_unique<TypeDefinition>(
             type_name,
             std::move(type),
-            std::move(generics),
+            std::move(generic_parameter_names),
             visibility
         )
     );

@@ -183,7 +183,7 @@ void IAstFunction::collect_free_variables(
 
     auto capture_variable = [&](const std::string& name)
     {
-        if (lambda_symbol_table->get_variable_def(name, true))
+        if (lambda_symbol_table->get_variable_definition(name, true))
         {
             // No need to collect any variables; they're readily available
             return;
@@ -197,7 +197,7 @@ void IAstFunction::collect_free_variables(
             const auto* ctx = outer_symbol_table;
             while (ctx != nullptr)
             {
-                if (ctx->get_variable_def(outer_symbol->get_internal_symbol_name()))
+                if (ctx->get_variable_definition(outer_symbol->get_internal_symbol_name()))
                 {
                     if (ctx->is_global_scope())
                         return;

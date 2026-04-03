@@ -34,12 +34,6 @@ std::unique_ptr<AstVariableDeclaration> stride::ast::parse_variable_declaration_
 {
     int flags = 0;
 
-    /* This information is now lost; must be done in validation step
-     if (symbol_table->is_global_scope())
-    {
-        flags |= SRFLAG_TYPE_GLOBAL;
-    }*/
-
     const auto reference_token = set.peek_next();
 
     if (set.peek_next_eq(TokenType::KEYWORD_LET))
@@ -369,7 +363,7 @@ void global_var_declaration_codegen(
 }
 
 std::optional<llvm::GlobalVariable*> get_global_var_decl(
-    SymbolTable* symbol_table,
+    const SymbolTable* symbol_table,
     const AstVariableDeclaration* self,
     llvm::Module* module,
     llvm::Type* var_type)

@@ -8,38 +8,6 @@
 
 using namespace stride::ast;
 
-void AstIdentifier::resolve_definition(const SymbolTable* symbol_table)
-{
-    const std::string internal_name = this->get_scoped_name();
-
-    if (const auto var_def = symbol_table->lookup_variable(internal_name, false))
-    {
-        this->_definition = var_def;
-        return;
-    }
-
-    // Fall back to name-based lookup, which resolves short names to their internal
-    // names (e.g. `x` → `x.0` for locals with a counter suffix).
-    if (const auto symbol_definition = symbol_table->lookup_symbol(internal_name))
-    {
-        this->_definition = symbol_definition;
-        return;
-    }
-
-    // Last resort: raw name match (handles captured variables).
-    if (const auto definition = symbol_table->lookup_variable(internal_name, true))
-    {
-        this->_definition = definition;
-        return;
-    }
-
-    throw stride_error(
-        ErrorType::REFERENCE_ERROR,
-        std::format("Identifier '{}' not found in this scope", this->get_name()),
-        this->get_source_position()
-    );
-}
-
 llvm::Value* AstIdentifier::codegen_ptr(
     llvm::Module* module,
     const llvm::IRBuilderBase* builder
@@ -142,6 +110,41 @@ llvm::Value* AstIdentifier::codegen(
     }
 
     return val;
+}
+
+void AstIdentifier::resolve_definition(const SymbolTable* symbol_table)
+{
+    if (this->_definition)
+        return;
+
+    const std::string internal_name = this->get_scoped_name();
+
+    if (const auto var_def = symbol_table->lookup_variable(internal_name, false))
+    {
+        this->_definition = var_def;
+        return;
+    }
+
+    // Fall back to name-based lookup, which resolves short names to their internal
+    // names (e.g. `x` → `x.0` for locals with a counter suffix).
+    if (const auto symbol_definition = symbol_table->lookup_symbol(internal_name))
+    {
+        this->_definition = symbol_definition;
+        return;
+    }
+
+    // Last resort: raw name match (handles captured variables).
+    if (const auto definition = symbol_table->lookup_variable(internal_name, true))
+    {
+        this->_definition = definition;
+        return;
+    }
+
+    throw stride_error(
+        ErrorType::REFERENCE_ERROR,
+        std::format("Identifier '{}' not found in this scope", this->get_name()),
+        this->get_source_position()
+    );
 }
 
 std::unique_ptr<IAstNode> AstIdentifier::clone()

@@ -110,6 +110,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     }
     else if (auto* function_node = cast_expr<IAstFunction*>(node))
     {
+        this->_current_context_type = ContextType::FUNCTION;
         visit_block(visitor, function_node->get_body());
         visitor->accept_function_node(this->_current_symbol_table.get(), function_node);
     }
@@ -147,6 +148,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     }
     else if (auto* while_loop = dynamic_cast<AstWhileLoop*>(node))
     {
+        this->_current_context_type = ContextType::CONTROL_FLOW;
         if (while_loop->get_condition())
             visit(visitor, while_loop->get_condition());
 
@@ -154,6 +156,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     }
     else if (auto* for_loop = dynamic_cast<AstForLoop*>(node))
     {
+        this->_current_context_type = ContextType::CONTROL_FLOW;
         if (for_loop->get_initializer())
             visit(visitor, for_loop->get_initializer());
 

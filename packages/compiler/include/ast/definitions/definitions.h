@@ -107,20 +107,33 @@ namespace stride::ast::definition
     class FieldDefinition : public IDefinition
     {
         std::unique_ptr<IAstType> _type;
+        int _flags;
 
         /// Can be either a variable or a field in a struct/class
     public:
         explicit FieldDefinition(
             const Symbol& symbol,
             std::unique_ptr<IAstType> type,
-            const VisibilityModifier visibility
+            const VisibilityModifier visibility,
+            const int flags = 0
         ) :
             IDefinition(symbol, visibility),
-            _type(std::move(type)) {}
+            _type(std::move(type)),
+            _flags(flags) {}
+
+        explicit FieldDefinition(
+            const Symbol& symbol,
+            const VisibilityModifier visibility,
+            const int flags = 0
+        ) :
+            FieldDefinition(symbol, nullptr, visibility, flags) {}
 
         [[nodiscard]]
         IAstType* get_type() const
         {
+            if (!this->_type)
+                return nullptr;
+
             return this->_type.get();
         }
 
@@ -139,6 +152,12 @@ namespace stride::ast::definition
         void set_type(std::unique_ptr<IAstType> type)
         {
             this->_type = std::move(type);
+        }
+
+        [[nodiscard]]
+        int get_flags() const
+        {
+            return this->_flags;
         }
     };
 } // namespace stride::ast::definition

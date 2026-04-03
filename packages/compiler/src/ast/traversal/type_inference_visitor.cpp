@@ -7,6 +7,9 @@
 
 using namespace stride::ast;
 
+/**
+ * Registers a type definition in the symbol table so that it can be referenced in the current context.
+ */
 void TypeInferenceVisitor::accept_type_definition_node(SymbolTable* symbol_table, AstTypeDefinition* type_definition)
 {
     // Register the type definition in the current context so that it can be referenced by subsequent expressions.
@@ -24,38 +27,17 @@ void TypeInferenceVisitor::accept_type_definition_node(SymbolTable* symbol_table
     );
 }
 
+/**
+ * Infers the type of an expression and updates it in the symbol table if it is a variable declaration.
+ */
 void TypeInferenceVisitor::accept_expression(SymbolTable* symbol_table, IAstExpression* expr)
 {
     expr->set_type(infer_expression_type(symbol_table, expr));
 
-    // --- Variable declaration: register the resolved type in the local context
-    // so that subsequent expressions in the same scope can look up the variable.
-    if (const auto* var_decl = dynamic_cast<AstVariableDeclaration*>(expr))
+    // If we've encountered a variable declaration, we must assign the inferred type to its definition
+    // in the symbol table. We know the variable is defined at this point, so we can safely
+    if (const auto *variable_def = dynamic_cast<AstVariableDeclaration *>(expr))
     {
-        // Use the initial value's type (already set by bottom-up traversal) as the
-        // canonical type registered in context, which is what identifier lookups rely on.
-        const auto inferred_type = var_decl->get_type();
-
-        const auto is_global_variable = symbol_table->get_context_type() == ContextType::GLOBAL;
-
-        // Ensure global variables keep their global name
-        if (is_global_variable)
-        {
-            inferred_type->set_flags(inferred_type->get_flags() | SRFLAG_TYPE_GLOBAL);
-        }
-
-        inferred_type->set_flags(var_decl->get_flags()); // Ensure type flags are preserved
-
-        const auto variable_symbol = Symbol(
-            var_decl->get_source_position(),
-            symbol_table->get_scope_name(),
-            var_decl->get_variable_name()
-        );
-
-        symbol_table->define_variable(
-            variable_symbol,
-            inferred_type->clone(),
-            var_decl->get_visibility()
-        );
+        symbol_table->set_variable_type(variable_def->get_symbol(), variable_def->get_type()->clone());
     }
 }

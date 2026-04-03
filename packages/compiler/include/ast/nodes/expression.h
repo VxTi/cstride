@@ -128,7 +128,8 @@ namespace stride::ast
         [[nodiscard]]
         std::unique_ptr<IAstType> clone_type() const
         {
-            if (!this->_type) return nullptr;
+            if (!this->_type)
+                return nullptr;
 
             return this->_type->clone();
         }
@@ -527,6 +528,8 @@ namespace stride::ast
 
         std::string _variable_name;
 
+        std::optional<Symbol> _variable_symbol = std::nullopt;
+
         const int _flags;
 
     public:
@@ -576,6 +579,25 @@ namespace stride::ast
         void set_annotated_type(std::unique_ptr<IAstType> type)
         {
             this->_annotated_type = std::move(type);
+        }
+
+        void set_symbol(Symbol symbol)
+        {
+            this->_variable_symbol = std::move(symbol);
+        }
+
+        [[nodiscard]]
+         Symbol get_symbol() const
+        {
+            if (this->_variable_symbol.has_value())
+                return this->_variable_symbol.value();
+
+            // This should never happen
+            throw stride_error(
+                ErrorType::COMPILATION_ERROR,
+                "Variable declaration has no symbol",
+                this->get_source_position()
+            );
         }
 
         [[nodiscard]]

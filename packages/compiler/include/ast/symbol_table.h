@@ -27,6 +27,12 @@ namespace stride::ast
         CONTROL_FLOW
     };
 
+    enum class SymbolScope
+    {
+        LOCAL,
+        GLOBAL
+    };
+
     // ----------------------------------------------------------------------------------- //
     //                                                                                     //
     //                          Template instantiation types                               //
@@ -140,10 +146,9 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        definition::FieldDefinition* get_variable_def(
+        definition::FieldDefinition* get_variable_definition(
             const std::string& variable_name,
-            bool use_raw_name = false
-        ) const;
+            bool is_internal_name = false) const;
 
         /// Primarily used for function invocations, where the parameter types are known,
         /// but we don't yet know what the return type is.
@@ -206,22 +211,31 @@ namespace stride::ast
         void define_type(
             const Symbol& type_name,
             std::unique_ptr<IAstType> type,
-            GenericParameterList generics,
+            GenericParameterList generic_parameter_names,
             VisibilityModifier visibility
         ) const;
 
         void define_variable(
-            Symbol variable_sym,
+            Symbol variable_symbol,
             std::unique_ptr<IAstType> type,
             VisibilityModifier visibility,
-            bool overwrite = false
+            int flags = 0
+        );
+
+        void define_variable(
+            Symbol variable_symbol,
+            VisibilityModifier visibility,
+            int flags = 0
         );
 
         void define_variable_globally(
             Symbol variable_symbol,
-            std::unique_ptr<IAstType> type,
-            VisibilityModifier visibility,
-            bool overwrite = false
+            VisibilityModifier visibility
+        ) const;
+
+        void set_variable_type(
+            Symbol variable_symbol,
+            std::unique_ptr<IAstType> type
         ) const;
 
         [[nodiscard]]
