@@ -176,7 +176,9 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(Token
     );
 }
 
-std::shared_ptr<IAstFunction> IAstFunction::instantiate(SymbolTable* symbol_table, const GenericTypeList& instantiated_types)
+std::shared_ptr<IAstFunction> IAstFunction::instantiate_generic_function_template(
+    SymbolTable* symbol_table,
+    const GenericTypeList& instantiated_types)
 {
     auto instantiated_return_ty = resolve_generics(
         this->_annotated_return_type.get(),
@@ -187,7 +189,7 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(SymbolTable* symbol_tabl
     std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
     instantiated_function_params.reserve(this->_parameters.size());
 
-    printf("Adding instantiation for %s<", this->get_function_name().c_str());
+    printf("+ INSTANTIATE GENERIC FUNCTION - %s<", this->get_function_name().c_str());
     for (const auto& type : instantiated_types)
     {
         printf("%s", type->get_type_name().c_str());
@@ -245,6 +247,14 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(SymbolTable* symbol_tabl
 
     this->_generic_instantiations.push_back(instantiation);
     instantiation->set_type(infer_function_type(resolved_symbol_table.get(), instantiation.get()));
+
+    const auto function_symbol = Symbol(
+        instantiation->get_source_position(),
+        symbol_table->get_scope_name(),
+        instantiation->get_function_name()
+    );
+
+    symbol_table->define_function(function_symbol, instantiation.get());
 
     return instantiation;
 }

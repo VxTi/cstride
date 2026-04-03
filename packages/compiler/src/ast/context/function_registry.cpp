@@ -294,7 +294,7 @@ void FunctionDefinition::add_generic_instantiation(SymbolTable* symbol_table, Ge
     if (has_generic_instantiation(generic_overload_types))
         return; // Already instantiated
 
-    auto instantiation = this->_reference_node->instantiate(symbol_table, generic_overload_types);
+    auto instantiation = this->_reference_node->instantiate_generic_function_template(symbol_table, generic_overload_types);
 
     // All other fields will be populated in later stages
     this->_generic_overloads.emplace_back(

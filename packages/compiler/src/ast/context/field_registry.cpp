@@ -55,7 +55,7 @@ void SymbolTable::define_variable(
         );
     }
 
-    printf("defining variable \"%s\"\n", variable_symbol.name.c_str());
+    printf("+ VARIABLE - %s\n", variable_symbol.name.c_str());
 
     this->_symbols.push_back(
         std::make_unique<definition::FieldDefinition>(

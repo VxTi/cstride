@@ -246,7 +246,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        std::shared_ptr<IAstFunction> instantiate(
+        std::shared_ptr<IAstFunction> instantiate_generic_function_template(
             SymbolTable* symbol_table,
             const GenericTypeList& instantiated_types
         );

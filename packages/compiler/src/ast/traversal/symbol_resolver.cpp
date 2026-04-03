@@ -13,7 +13,7 @@ using namespace stride::ast;
  */
 void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunction* function)
 {
-    printf("Accepting function %s\n", function->get_function_name().c_str());
+    printf("+ FUNCTION - %s\n", function->get_function_name().c_str());
 
     const auto function_symbol = Symbol(
         function->get_source_position(),
