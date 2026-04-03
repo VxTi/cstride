@@ -239,8 +239,6 @@ void FunctionDefinition::add_generic_instantiation(SymbolTable* symbol_table, Ge
         nullptr,
         std::move(instantiation)
     );
-
-    printf("Adding instantiation for %s", this->get_internal_symbol_name().c_str());
 }
 
 llvm::Function* FunctionDefinition::get_generic_overload_llvm_function(const GenericTypeList& generic_types) const

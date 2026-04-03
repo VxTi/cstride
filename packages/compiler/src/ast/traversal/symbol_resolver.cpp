@@ -19,9 +19,8 @@ void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunctio
 
     for (const auto& param : function->get_parameters_ref())
     {
-        const auto param_symbol = Symbol(param->get_source_position(), param->get_name());
         symbol_table->define_variable(
-            param_symbol,
+            param->get_symbol(),
             param->get_type()->clone(),
             VisibilityModifier::PRIVATE,
             param->get_type()->get_flags()

@@ -26,17 +26,17 @@ namespace stride::ast
     class AstFunctionParameter
         : public IAstNode
     {
-        const std::string _name;
+        Symbol _param_name_symbol;
         std::unique_ptr<IAstType> _type;
 
     public:
         explicit AstFunctionParameter(
             const SourcePosition& source,
-            std::string param_name,
+            const std::string& param_name,
             std::unique_ptr<IAstType> param_type
         ) :
             IAstNode(source),
-            _name(std::move(param_name)),
+            _param_name_symbol(Symbol(source, param_name)),
             _type(std::move(param_type)) {}
 
         std::string to_string() override
@@ -47,7 +47,13 @@ namespace stride::ast
         [[nodiscard]]
         const std::string& get_name() const
         {
-            return this->_name;
+            return this->_param_name_symbol.name;
+        }
+
+        [[nodiscard]]
+        const Symbol& get_symbol() const
+        {
+            return this->_param_name_symbol;
         }
 
         [[nodiscard]]

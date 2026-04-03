@@ -193,13 +193,29 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(
     std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
     instantiated_function_params.reserve(this->_parameters.size());
 
+    printf("Adding instantiation for %s<", this->get_function_name().c_str());
+    for (const auto& type : generic_instantiation_types)
+    {
+        printf("%s", type->get_type_name().c_str());
+    }
+    printf(">\n");
+
     for (const auto& param : this->_parameters)
     {
+        auto param_type = resolve_generics(param->get_type(), this->_generic_parameters, generic_instantiation_types);
+
+        symbol_table->define_variable(
+            param->get_symbol(),
+            param_type->clone(),
+            VisibilityModifier::PRIVATE,
+            param_type->get_flags()
+        );
+
         instantiated_function_params.push_back(
             std::make_unique<AstFunctionParameter>(
                 param->get_source_position(),
                 param->get_name(),
-                resolve_generics(param->get_type(), this->_generic_parameters, generic_instantiation_types)
+                std::move(param_type)
             )
         );
     }
