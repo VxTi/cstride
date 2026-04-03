@@ -157,6 +157,12 @@ namespace stride::ast
         std::optional<AstObjectType*> get_object_type(const std::string& name) const;
 
         [[nodiscard]]
+        std::shared_ptr<SymbolTable> empty_copy() const
+        {
+            return std::make_shared<SymbolTable>(this->_context_name, this->_context_type, this->_parent_registry);
+        }
+
+        [[nodiscard]]
         std::optional<std::unique_ptr<definition::IDefinition>> get_definition_by_internal_name(
             const std::string& internal_name) const;
 
@@ -176,6 +182,8 @@ namespace stride::ast
         definition::IDefinition* lookup_symbol(const std::string& symbol_name) const;
 
         void define_function(const Symbol& function_name, IAstFunction* node);
+
+        void define_generic_function(const Symbol& function_name, IAstFunction* node);
 
         void define_function(
             Symbol function_name,
@@ -234,10 +242,10 @@ namespace stride::ast
         /// Do note that the internal name is not the name that you would use in
         /// source code, but rather the mangled name used for code generation.
         [[nodiscard]]
-        bool is_function_defined_globally(
-            const std::string& function_name,
-            const AstFunctionType* function_type
-        );
+        bool is_function_defined(const std::string& function_name, const AstFunctionType* function_type);
+
+        [[nodiscard]]
+        bool is_generic_function_defined(const std::string& function_name, size_t instantiated_generic_count = 0);
 
         [[nodiscard]]
         std::string get_scope_name() const

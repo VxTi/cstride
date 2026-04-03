@@ -4,6 +4,7 @@
 #include "ast/closures.h"
 #include "ast/modifiers.h"
 #include "ast/symbol_table.h"
+#include "ast/type_inference.h"
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
@@ -193,11 +194,18 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(SymbolTable* symbol_tabl
     }
     printf(">\n");
 
+    auto resolved_body = this->_body->clone_as<AstBlock>();
+
+    const auto resolved_symbol_table = symbol_table->empty_copy();
+
+    // Explicitly reset the symbol table after cloning to prevent duplicate symbol registration
+    resolved_body->set_symbol_table(resolved_symbol_table);
+
     for (const auto& param : this->_parameters)
     {
         auto param_type = resolve_generics(param->get_type(), this->_generic_parameters, instantiated_types);
 
-        symbol_table->define_variable(
+        resolved_symbol_table->define_variable(
             param->get_symbol(),
             param_type->clone(),
             VisibilityModifier::PRIVATE,
@@ -218,21 +226,11 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(SymbolTable* symbol_tabl
     // body will be resolved to the correct instantiation type.
     for (size_t i = 0; i < this->_generic_parameters.size(); ++i)
     {
-        symbol_table->define_generic_type_alias(
+        resolved_symbol_table->define_generic_type_alias(
             Symbol(this->_generic_parameters[i].position, this->_generic_parameters[i].name),
             instantiated_types[i]->clone()
         );
     }
-
-    auto resolved_body = this->_body->clone_as<AstBlock>();
-
-    // Explicitly reset the symbol table after cloning to prevent duplicate symbol registration
-    resolved_body->set_symbol_table(std::make_unique<SymbolTable>(
-            resolved_body->get_symbol_table()->get_scope_name(),
-            resolved_body->get_symbol_table()->get_context_type(),
-            resolved_body->get_symbol_table()->get_parent_symbol_table()
-        )
-    );
 
     auto instantiation = std::make_shared<IAstFunction>(
         this->get_source_position(),
@@ -246,6 +244,7 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate(SymbolTable* symbol_tabl
     );
 
     this->_generic_instantiations.push_back(instantiation);
+    instantiation->set_type(infer_function_type(resolved_symbol_table.get(), instantiation.get()));
 
     return instantiation;
 }

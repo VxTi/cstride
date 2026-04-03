@@ -139,7 +139,9 @@ void AstAliasType::resolve_type_definition(const SymbolTable* symbol_table)
         ref_def.has_value())
     {
         this->_type_definition = ref_def.value();
+        return;
     }
+
     throw stride_error(
         ErrorType::COMPILATION_ERROR,
         std::format(

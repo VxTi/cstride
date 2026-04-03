@@ -90,6 +90,8 @@ namespace stride::ast::definition
 
         bool matches_type_signature(const std::string& name, const AstFunctionType* signature) const;
 
+        bool matches_generic_signature(const std::string& name, int generic_param_count) const;
+
         void set_llvm_function(llvm::Function* function)
         {
             this->_llvm_function = function;

@@ -30,13 +30,8 @@ void AstNodeTraverser::traverse(IVisitor* visitor, const AstBranch* branch)
     this->_current_symbol_table = this->_root_symbol_table;
     this->_symbol_table_stack.clear();
 
-    // Bind the root block to the root symbol table so push_symbol_table
-    // does not create a second GLOBAL-typed scope on top of it.
-    if (auto* root_block = dynamic_cast<AstBlock*>(branch->get_node()))
-    {
-        if (!root_block->get_symbol_table())
-            root_block->set_symbol_table(_root_symbol_table);
-    }
+    if (!branch->get_node()->get_symbol_table())
+        branch->get_node()->set_symbol_table(_root_symbol_table);
 
     this->visit(visitor, branch->get_node());
 }

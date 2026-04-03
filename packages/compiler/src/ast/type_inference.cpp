@@ -250,7 +250,7 @@ std::unique_ptr<IAstType> stride::ast::infer_indirect_call_type(
     // Unwrap alias
     IAstType* raw_type = callee_type.get();
     std::unique_ptr<IAstType> unwrapped;
-    if ( auto* alias = cast_type<AstAliasType*>(raw_type))
+    if (auto* alias = cast_type<AstAliasType*>(raw_type))
     {
         const auto resolved_alias = infer_alias_type(symbol_table, alias);
 
@@ -291,15 +291,22 @@ std::unique_ptr<IAstType> stride::ast::infer_object_initializer_type(const AstOb
     );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* function)
+std::unique_ptr<IAstType> stride::ast::infer_function_type(const SymbolTable* symbol_table, const IAstFunction* function)
 {
     std::vector<std::unique_ptr<IAstType>> param_types;
     param_types.reserve(function->get_parameters().size());
 
     for (const auto& param : function->get_parameters())
     {
+        if (const auto alias_ty = cast_type<AstAliasType*>(param->get_type()))
+        {
+            alias_ty->resolve_type_definition(symbol_table);
+        }
         param_types.emplace_back(param->get_type()->clone());
     }
+
+    if (const auto alias_ty = dynamic_cast<AstAliasType*>(function->get_return_type()))
+        alias_ty->resolve_type_definition(symbol_table);
 
     return std::make_unique<AstFunctionType>(
         function->get_source_position(),
@@ -535,7 +542,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     if (const auto* function_definition = cast_expr<IAstFunction*>(expr))
     {
-        return infer_function_type(function_definition);
+        return infer_function_type(symbol_table, function_definition);
     }
 
     if (const auto* tuple_init = cast_expr<AstTupleInitializer*>(expr))

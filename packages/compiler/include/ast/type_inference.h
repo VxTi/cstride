@@ -71,5 +71,6 @@ namespace stride::ast
     );
 
     std::unique_ptr<IAstType> infer_function_type(
+    const SymbolTable* symbol_table,
         const IAstFunction* function);
 }

@@ -36,7 +36,18 @@ std::optional<FunctionDefinition*> SymbolTable::get_generic_function_definition(
     const size_t instantiated_generic_count
 )
 {
-    return get_function_definition(function_name, {}, instantiated_generic_count);
+    for (const auto& global_scope = this->traverse_to_root();
+         const auto& symbol_def : global_scope->_symbols)
+    {
+        if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
+        {
+            if (fn_def->matches_generic_signature(function_name, instantiated_generic_count))
+            {
+                return fn_def;
+            }
+        }
+    }
+    return std::nullopt;
 }
 
 std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
@@ -48,9 +59,7 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     const auto signature = cast_type<AstFunctionType*>(function_type);
 
     if (!signature)
-    {
         return std::nullopt;
-    }
 
     for (const auto& global_scope = this->traverse_to_root();
          const auto& symbol_def : global_scope->_symbols)
@@ -66,6 +75,17 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     return std::nullopt;
 }
 
+bool FunctionDefinition::matches_generic_signature(const std::string& name, int generic_param_count) const
+{
+    if (this->get_internal_symbol_name() != name)
+        return false;
+
+    if (!this->get_type()->is_generic())
+        return false;
+
+    return this->get_type()->get_generic_parameter_names().size() == generic_param_count;
+}
+
 bool FunctionDefinition::matches_type_signature(
     const std::string& name,
     const AstFunctionType* signature
@@ -77,8 +97,7 @@ bool FunctionDefinition::matches_type_signature(
     // Handle matching for generic functions
     if (this->get_type()->is_generic() && signature->is_generic())
     {
-        return this->get_type()->get_generic_parameter_names().size() == signature->get_generic_parameter_names().
-            size();
+        return this->get_type()->get_generic_parameter_names().size() == signature->get_generic_parameter_names().size();
     }
 
     if (!this->_function_type->get_return_type()->equals(signature->get_return_type().get()))
@@ -92,6 +111,7 @@ bool FunctionDefinition::matches_type_signature(
         signature->get_generic_parameter_names().size()
     );
 }
+
 
 bool FunctionDefinition::matches_parameter_signature(
     const std::string& internal_function_name,
@@ -150,6 +170,32 @@ void SymbolTable::define_function(const Symbol& function_name, IAstFunction* nod
     );
 }
 
+void SymbolTable::define_generic_function(const Symbol& function_name, IAstFunction* node)
+{
+    const auto& global_scope = this->traverse_to_root();
+
+    if (is_generic_function_defined(function_name.internal_name, node->get_generic_parameters().size()))
+    {
+        throw stride_error(
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Generic function '{}' with {} generic parameters already defined globally",
+                        function_name.name,
+                        node->get_generic_parameters().size()),
+            function_name.symbol_position
+        );
+    }
+
+    global_scope->_symbols.push_back(
+        std::make_unique<FunctionDefinition>(
+            node->get_type()->clone_as<AstFunctionType>(),
+            function_name,
+            node,
+            node->get_visibility(),
+            node->get_flags()
+        )
+    );
+}
+
 void SymbolTable::define_function(
     Symbol function_name,
     std::unique_ptr<AstFunctionType> function_type,
@@ -160,7 +206,7 @@ void SymbolTable::define_function(
 {
     const auto& global_scope = this->traverse_to_root();
 
-    if (this->is_function_defined_globally(function_name.internal_name, function_type.get()))
+    if (this->is_function_defined(function_name.internal_name, function_type.get()))
     {
         throw stride_error(
             ErrorType::SEMANTIC_ERROR,
@@ -180,7 +226,24 @@ void SymbolTable::define_function(
     );
 }
 
-bool SymbolTable::is_function_defined_globally(
+bool SymbolTable::is_generic_function_defined(const std::string& function_name, const size_t instantiated_generic_count)
+{
+    return std::ranges::any_of(
+        this->traverse_to_root()->_symbols,
+        [&](const auto& symbol)
+        {
+            if (const auto* fn_def = dynamic_cast<const FunctionDefinition*>(symbol.get()))
+            {
+                return fn_def->get_internal_symbol_name() == function_name &&
+                    !fn_def->get_type()->get_generic_parameter_names().empty() &&
+                    fn_def->get_type()->get_generic_parameter_names().size() == instantiated_generic_count;
+            }
+            return false;
+        }
+    );
+}
+
+bool SymbolTable::is_function_defined(
     const std::string& function_name,
     const AstFunctionType* function_type
 )
