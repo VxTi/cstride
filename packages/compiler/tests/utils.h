@@ -15,6 +15,7 @@
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
 #include <llvm/Support/TargetSelect.h>
 
 namespace stride::tests
@@ -26,27 +27,35 @@ namespace stride::tests
         auto tokens = ast::tokenizer::tokenize(source);
         const auto context = std::make_shared<ast::SymbolTable>();
 
-        auto node = parse_sequential(context, tokens);
+        auto node = parse_sequential(tokens);
+        node->set_symbol_table(context);
 
-        ast::AstNodeTraverser traverser;
-        ast::TypeInferenceVisitor expression_visitor;
-        ast::SymbolResolver function_visitor;
-        ast::GenericFunctionInstantiator function_call_visitor;
+        ast::AstNodeTraverser traverser(context);
+        ast::TypeInferenceVisitor type_visitor;
+        ast::SymbolResolver symbol_resolver;
+        ast::GenericFunctionInstantiator generic_function_instantiator;
         ast::ImportVisitor import_visitor;
 
-        runtime::register_runtime_symbols(node->get_symbol_table());
+        // Populate symbol table with stride runtime symbols
+        runtime::register_runtime_symbols(context.get());
 
+        ast::AstBranch branch(source, std::move(node));
+
+        // First step - Cross-file symbol registration (imports and function signatures)
         import_visitor.set_current_file_name("test.sr");
-        traverser.visit_block(&import_visitor, node.get());
+        traverser.traverse(&import_visitor, &branch);
+        traverser.traverse(&symbol_resolver, &branch);
 
-        traverser.visit_block(&function_visitor, node.get());
-        traverser.visit_block(&function_call_visitor, node.get());
+        // Normally we'd call cross_register_symbols here, but for a single file test,
+        // it's usually not needed unless it's testing multi-file.
 
-        traverser.visit_block(&expression_visitor, node.get());
+        // Generic template resolution
+        traverser.traverse(&generic_function_instantiator, &branch);
 
-        node->validate(symbol_table);
+        // Third step - Type resolution
+        traverser.traverse(&type_visitor, &branch);
 
-        return std::make_pair(std::move(node), context);
+        return std::make_pair(branch.move_node(), context);
     }
 
     inline std::unique_ptr<ast::AstBlock> parse_code(const std::string& code)
@@ -69,19 +78,32 @@ namespace stride::tests
 
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
+        llvm::InitializeNativeTargetAsmParser();
 
         auto jtmb = llvm::cantFail(llvm::orc::JITTargetMachineBuilder::detectHost());
         const auto target_machine = llvm::cantFail(jtmb.createTargetMachine());
 
         llvm::LLVMContext llvm_context;
-        llvm::Module module("test_module", llvm_context);
-        module.setDataLayout(target_machine->createDataLayout());
-        module.setTargetTriple(target_machine->getTargetTriple());
+        auto module = std::make_unique<llvm::Module>("test_module", llvm_context);
+        module->setDataLayout(target_machine->createDataLayout());
+        module->setTargetTriple(target_machine->getTargetTriple());
         llvm::IRBuilder<> builder(llvm_context);
 
-        block->resolve_forward_references(symbol_table, &module, &builder);
-        block->validate(symbol_table);
-        block->codegen(symbol_table, &module, &builder);
+        ast::AstNodeTraverser traverser(context);
+        ast::ValidationVisitor validation_visitor;
+        const auto source = std::make_shared<SourceFile>("test.sr", code);
+        ast::AstBranch branch(source, std::move(block));
+
+        traverser.traverse(&validation_visitor, &branch);
+
+        branch.get_node()->resolve_forward_references(context.get(), module.get(), &builder);
+        branch.get_node()->codegen(context.get(), module.get(), &builder);
+
+        if (llvm::verifyModule(*module, &llvm::errs()))
+        {
+            module->print(llvm::errs(), nullptr);
+            throw std::runtime_error("LLVM IR verification failed");
+        }
     }
 
     inline void assert_throws(const std::string& code)

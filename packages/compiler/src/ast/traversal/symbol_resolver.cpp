@@ -13,6 +13,8 @@ using namespace stride::ast;
  */
 void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunction* function)
 {
+    // This is fine here because we only need parameter types to infer the
+    // function type, and parameter types are already set at this point.
     function->set_type(infer_function_type(function));
 
     for (const auto& param : function->get_parameters_ref())

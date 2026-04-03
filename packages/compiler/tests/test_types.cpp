@@ -216,9 +216,9 @@ TEST(TypeReferences, DeepFunctionReferential)
     EXPECT_NE(symbol, nullptr) << "Expected 'second_ref' to be found in the symbol table";
     EXPECT_NE(field, nullptr)
         << "Expected 'second_ref' to be a FieldDefinition, but it was not found or was of a different type";
-    EXPECT_EQ(field->get_type()->to_string(), "(i32) -> i32")
+    EXPECT_EQ(field->get_type()->get_type_name(), "(i32) -> i32")
     << "Expected 'second_ref' to have type '(i32) -> i32', but got '"
-    << field->get_type()->to_string() << "'";
+    << field->get_type()->get_type_name() << "'";
 }
 
 TEST(TypeReferences, ObjectTypeReference)
