@@ -21,6 +21,16 @@ void IAstFunction::resolve_forward_references(
     llvm::IRBuilderBase* builder
 )
 {
+    // If the function has generic instantiations, resolve them instead of self.
+    if (!this->_generic_instantiations.empty())
+    {
+        for (const auto& instantiation : this->_generic_instantiations)
+        {
+            instantiation->resolve_forward_references(symbol_table, module, builder);
+        }
+        return;
+    }
+
     std::vector<Symbol> captures;
     const auto outer_context = symbol_table->get_parent_context() != nullptr
         ? symbol_table->get_parent_context()
@@ -69,104 +79,24 @@ void IAstFunction::resolve_forward_references(
         ? llvm::Function::PrivateLinkage
         : llvm::Function::ExternalLinkage;
 
-    if (!this->is_generic())
-    {
-        llvm::FunctionType* generic_function_type = this->get_llvm_function_type(
-            module,
-            captured_types,
-            {}
-        );
+    llvm::FunctionType* generic_function_type = this->get_llvm_function_type(
+        module,
+        captured_types,
+        {}
+    );
 
-        auto* llvm_func = llvm::Function::Create(
-            generic_function_type,
-            linkage,
-            this->get_function_name(),
-            module
-        );
-        definition->set_llvm_function(llvm_func);
+    auto* llvm_func = llvm::Function::Create(
+        generic_function_type,
+        linkage,
+        this->get_function_name(),
+        module
+    );
+    definition->set_llvm_function(llvm_func);
 
-        if (this->is_anonymous())
-            llvm_func->addFnAttr("stride.anonymous");
+    if (this->is_anonymous())
+        llvm_func->addFnAttr("stride.anonymous");
 
-        this->_body->resolve_forward_references(symbol_table, module, builder);
-
-        return;
-    }
-
-    if (const auto& overloads = definition->get_generic_overloads();
-        overloads.empty())
-    {
-        return;
-    }
-
-    for (const auto& [instantiated_generic_types, llvm_function, node] : definition->get_generic_overloads())
-    {
-        auto instantiated_return_ty = resolve_generics(
-            this->_annotated_return_type.get(),
-            this->_generic_parameters,
-            instantiated_generic_types
-        );
-
-        std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
-        instantiated_function_params.reserve(this->_parameters.size());
-
-        for (const auto& param : this->_parameters)
-        {
-            instantiated_function_params.push_back(
-                std::make_unique<AstFunctionParameter>(
-                    param->get_source_position(),
-                    param->get_name(),
-                    resolve_generics(param->get_type(), this->_generic_parameters, instantiated_generic_types)
-                )
-            );
-        }
-
-        auto resolved_body = this->_body->clone_as<AstBlock>();
-
-        node = std::make_unique<AstFunctionDeclaration>(
-            this->get_source_position(),
-            this->get_function_name(),
-            std::move(instantiated_function_params),
-            std::move(resolved_body),
-            std::move(instantiated_return_ty),
-            this->get_visibility(),
-            this->get_flags(),
-            EMPTY_GENERIC_PARAMETER_LIST
-        );
-
-        const auto overloaded_fn_name = get_overloaded_function_name(
-            this->get_function_name(),
-            instantiated_generic_types
-        );
-        llvm::FunctionType* generic_function_type = this->get_llvm_function_type(
-            module,
-            captured_types,
-            instantiated_generic_types
-        );
-
-        llvm_function = llvm::Function::Create(
-            generic_function_type,
-            linkage,
-            overloaded_fn_name,
-            module
-        );
-
-        for (const auto& instantiated_param : instantiated_function_params)
-        {
-            const auto param_symbol = Symbol(instantiated_param->get_source_position(), instantiated_param->get_name());
-            symbol_table->define_variable(
-                param_symbol,
-                instantiated_param->get_type()->clone(),
-                VisibilityModifier::PRIVATE,
-                true
-            );
-        }
-
-        if (this->is_anonymous())
-            llvm_function->addFnAttr("stride.anonymous");
-
-        node->get_body()->resolve_forward_references(symbol_table, module, builder);
-    }
+    this->_body->resolve_forward_references(symbol_table, module, builder);
 }
 
 void IAstFunction::collect_free_variables(

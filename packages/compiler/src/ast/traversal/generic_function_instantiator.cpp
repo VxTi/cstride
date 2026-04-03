@@ -23,6 +23,7 @@ void GenericFunctionInstantiator::accept_function_call_node(SymbolTable* symbol_
         );
     }
     definition->add_generic_instantiation(
+        symbol_table,
         copy_generic_type_list(function_call->get_generic_type_arguments())
     );
 }

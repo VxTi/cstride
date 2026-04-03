@@ -12,7 +12,7 @@ namespace stride::ast::definition
     {
         std::vector<std::unique_ptr<IAstType>> generic_overload_types;
         mutable llvm::Function* function;
-        mutable std::unique_ptr<AstFunctionDeclaration> node;
+        mutable std::shared_ptr<IAstFunction> node;
     };
 
     class FunctionDefinition
@@ -22,9 +22,22 @@ namespace stride::ast::definition
         std::vector<GenericFunctionOverload> _generic_overloads{};
         int _flags;
 
+        IAstFunction* _reference_node;
         llvm::Function* _llvm_function = nullptr;
 
     public:
+        explicit FunctionDefinition(
+            std::unique_ptr<AstFunctionType> function_type,
+            const Symbol& symbol,
+            IAstFunction* reference_node,
+            const VisibilityModifier visibility,
+            const int flags
+        ) :
+            IDefinition(symbol, visibility),
+            _function_type(std::move(function_type)),
+            _flags(flags),
+            _reference_node(reference_node) {}
+
         explicit FunctionDefinition(
             std::unique_ptr<AstFunctionType> function_type,
             const Symbol& symbol,
@@ -33,7 +46,8 @@ namespace stride::ast::definition
         ) :
             IDefinition(symbol, visibility),
             _function_type(std::move(function_type)),
-            _flags(flags) {}
+            _flags(flags),
+            _reference_node(nullptr) {}
 
         [[nodiscard]]
         AstFunctionType* get_type() const
@@ -59,7 +73,7 @@ namespace stride::ast::definition
             return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
         }
 
-        void add_generic_instantiation(GenericTypeList generic_overload_types);
+        void add_generic_instantiation(SymbolTable* symbol_table, GenericTypeList generic_overload_types);
 
         [[nodiscard]]
         const std::vector<GenericFunctionOverload>& get_generic_overloads() const

@@ -37,9 +37,9 @@ void parse_object_member(
         && named_ty->is_generic_overload()
         && !options.generic_types.empty())
     {
-        for (const auto& generic_name : options.generic_types)
+        for (const auto& generic_param : options.generic_types)
         {
-            if (named_ty->get_name() == generic_name)
+            if (named_ty->get_name() == generic_param.name)
             {
                 struct_member_type->set_flags(struct_member_type->get_flags() | SRFLAG_TYPE_GENERIC_REF);
                 break;

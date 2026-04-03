@@ -12,22 +12,28 @@
 
 using namespace stride::ast;
 
+GenericParameterName parse_generic_parameter(TokenSet& set)
+{
+    const auto generic_param = set.expect(TokenType::IDENTIFIER, "Expected generic parameter name");
+
+    return {
+        generic_param.get_source_position(),
+        generic_param.get_lexeme()
+    };
+}
+
 GenericParameterList stride::ast::parse_generic_declaration(TokenSet& set)
 {
     GenericParameterList generic_params;
     if (set.peek_next_eq(TokenType::LT))
     {
         set.next();
-        generic_params.push_back(
-            set.expect(TokenType::IDENTIFIER, "Expected generic parameter name").get_lexeme()
-        );
+        generic_params.push_back(parse_generic_parameter(set));
 
         while (set.peek_next_eq(TokenType::COMMA))
         {
             set.next();
-            generic_params.push_back(
-                set.expect(TokenType::IDENTIFIER, "Expected generic parameter name").get_lexeme()
-            );
+            generic_params.push_back(parse_generic_parameter(set));
         }
 
         set.expect(TokenType::GT);
@@ -79,7 +85,7 @@ std::unique_ptr<IAstType> stride::ast::resolve_generics(
     {
         for (size_t i = 0; i < param_names.size(); i++)
         {
-            if (param_names[i] == named_type->get_name())
+            if (param_names[i].name == named_type->get_name())
             {
                 auto resolved = instantiated_types[i]->clone();
                 resolved->set_flags(resolved->get_flags() | named_type->get_flags());

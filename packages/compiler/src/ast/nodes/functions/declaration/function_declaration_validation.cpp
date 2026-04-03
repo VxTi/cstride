@@ -81,7 +81,6 @@ void IAstFunction::validate(SymbolTable* symbol_table)
 
 void IAstFunction::validate_candidate(SymbolTable* symbol_table, IAstFunction* candidate)
 {
-
     const auto& ret_ty = candidate->get_return_type();
     const auto return_statements = collect_return_statements(candidate->get_body());
 

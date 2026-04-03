@@ -97,8 +97,7 @@ bool FunctionDefinition::matches_parameter_signature(
     const std::string& internal_function_name,
     const std::vector<std::unique_ptr<IAstType>>& other_parameter_types,
     const size_t generic_argument_count
-)
-const
+) const
 {
     if (this->get_internal_symbol_name() != internal_function_name)
         return false;
@@ -140,14 +139,26 @@ const
     return true;
 }
 
+void SymbolTable::define_function(const Symbol& function_name, IAstFunction* node)
+{
+    define_function(
+        function_name,
+        node->get_type()->clone_as<AstFunctionType>(),
+        node->get_visibility(),
+        node,
+        node->get_flags()
+    );
+}
+
 void SymbolTable::define_function(
     Symbol function_name,
     std::unique_ptr<AstFunctionType> function_type,
     const VisibilityModifier visibility,
+    IAstFunction* node,
     const int flags
 )
 {
-    const auto &global_scope = this->traverse_to_root();
+    const auto& global_scope = this->traverse_to_root();
 
     if (this->is_function_defined_globally(function_name.internal_name, function_type.get()))
     {
@@ -159,7 +170,13 @@ void SymbolTable::define_function(
     }
 
     global_scope->_symbols.push_back(
-        std::make_unique<FunctionDefinition>(std::move(function_type), function_name, visibility, flags)
+        std::make_unique<FunctionDefinition>(
+            std::move(function_type),
+            function_name,
+            node,
+            visibility,
+            flags
+        )
     );
 }
 
@@ -209,15 +226,21 @@ bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique
     return false;
 }
 
-void FunctionDefinition::add_generic_instantiation(GenericTypeList generic_overload_types)
+void FunctionDefinition::add_generic_instantiation(SymbolTable* symbol_table, GenericTypeList generic_overload_types)
 {
     if (has_generic_instantiation(generic_overload_types))
         return; // Already instantiated
 
+    auto instantiation = this->_reference_node->instantiate(symbol_table, generic_overload_types);
+
     // All other fields will be populated in later stages
-    this->_generic_overloads.push_back({
-        std::move(generic_overload_types)
-    });
+    this->_generic_overloads.emplace_back(
+        std::move(generic_overload_types),
+        nullptr,
+        std::move(instantiation)
+    );
+
+    printf("Adding instantiation for %s", this->get_internal_symbol_name().c_str());
 }
 
 llvm::Function* FunctionDefinition::get_generic_overload_llvm_function(const GenericTypeList& generic_types) const

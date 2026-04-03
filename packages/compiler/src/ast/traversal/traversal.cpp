@@ -44,7 +44,11 @@ void AstNodeTraverser::visit_block(IVisitor* visitor, AstBlock* node)
         );
     }
 
-    _current_symbol_table = node->get_symbol_table();
+    // Prevents creating duplicate GLOBAL context types
+    if (node->get_symbol_table()->get_context_type() != ContextType::GLOBAL)
+    {
+        _current_symbol_table = node->get_symbol_table();
+    }
 
     for (const auto& child : node->get_children())
     {
@@ -111,8 +115,23 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     else if (auto* function_node = cast_expr<IAstFunction*>(node))
     {
         this->_current_context_type = ContextType::FUNCTION;
-        visit_block(visitor, function_node->get_body());
-        visitor->accept_function_node(this->_current_symbol_table.get(), function_node);
+
+        // If the function has generic instantiations, we wish to visit those nodes, rather than
+        // the function itself. This way, we can properly resolve the types within the function.
+        if (!function_node->get_generic_instantiations().empty())
+        {
+            for (const auto& generic_instantiation : function_node->get_generic_instantiations())
+            {
+                visit_block(visitor, generic_instantiation->get_body());
+                visitor->accept_function_node(this->_current_symbol_table.get(), generic_instantiation.get());
+            }
+        }
+        else
+        {
+            // This ensures the function parameters are defined in the body's symbol table
+            visit_block(visitor, function_node->get_body());
+            visitor->accept_function_node(this->_current_symbol_table.get(), function_node);
+        }
     }
     else if (const auto* type_cast = cast_expr<AstTypeCastOp*>(node))
     {

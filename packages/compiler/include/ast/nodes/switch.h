@@ -13,10 +13,8 @@ namespace stride::ast
         : public IAstNode
     {
     public:
-        AstSwitchBranch(
-            const SourcePosition& source,
-            const std::shared_ptr<SymbolTable>& context) :
-            IAstNode(source, context) {}
+        explicit AstSwitchBranch(const SourcePosition& source) :
+            IAstNode(source) {}
     };
 
     class AstSwitch
@@ -28,15 +26,16 @@ namespace stride::ast
     public:
         explicit AstSwitch(
             const SourcePosition& source,
-            const std::shared_ptr<SymbolTable>& context,
-            std::string name) :
-            IAstNode(source, context),
+            std::string name
+        ) :
+            IAstNode(source),
             _name(std::move(name)) {}
 
         std::string to_string() override;
 
         llvm::Value* codegen(
             SymbolTable* symbol_table,
-            llvm::Module* module, llvm::IRBuilderBase* builder) override;
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder) override;
     };
 } // namespace stride::ast

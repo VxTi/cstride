@@ -180,6 +180,58 @@ std::unique_ptr<IAstExpression> stride::ast::parse_anonymous_fn_expression(
     );
 }
 
+std::shared_ptr<IAstFunction> IAstFunction::instantiate(
+    SymbolTable* symbol_table,
+    const GenericTypeList& generic_instantiation_types)
+{
+    auto instantiated_return_ty = resolve_generics(
+        this->_annotated_return_type.get(),
+        this->_generic_parameters,
+        generic_instantiation_types
+    );
+
+    std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
+    instantiated_function_params.reserve(this->_parameters.size());
+
+    for (const auto& param : this->_parameters)
+    {
+        instantiated_function_params.push_back(
+            std::make_unique<AstFunctionParameter>(
+                param->get_source_position(),
+                param->get_name(),
+                resolve_generics(param->get_type(), this->_generic_parameters, generic_instantiation_types)
+            )
+        );
+    }
+
+    // Define all generic parameters in the symbol table as reference type to the instantiation
+    // This makes type resolution easier, as any reference to a generic parameter in the function body will be resolved to the correct instantiation type.
+    for (size_t i = 0; i < this->_generic_parameters.size(); ++i)
+    {
+        symbol_table->define_generic_type_alias(
+            Symbol(this->_generic_parameters[i].position, this->_generic_parameters[i].name),
+            generic_instantiation_types[i]->clone()
+        );
+    }
+
+    auto resolved_body = this->_body->clone_as<AstBlock>();
+
+    auto instantiation = std::make_shared<IAstFunction>(
+        this->get_source_position(),
+        this->get_function_name(),
+        std::move(instantiated_function_params),
+        std::move(resolved_body),
+        std::move(instantiated_return_ty),
+        this->get_visibility(),
+        this->get_flags(),
+        EMPTY_GENERIC_PARAMETER_LIST
+    );
+
+    this->_generic_instantiations.push_back(instantiation);
+
+    return instantiation;
+}
+
 std::vector<std::unique_ptr<AstFunctionParameter>> IAstFunction::get_parameters() const
 {
     std::vector<std::unique_ptr<AstFunctionParameter>> cloned_params;

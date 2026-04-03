@@ -601,13 +601,13 @@ namespace stride::ast
         std::string error_message;
         std::string type_name;
         int flags;
-        const std::vector<std::string>& generic_types;
+        const GenericParameterList& generic_types;
 
         TypeParsingOptions(
             std::string error_message,
             std::string type_name = "",
             const int flags = SRFLAG_NONE,
-            const std::vector<std::string>& generic_types = {}
+            const GenericParameterList& generic_types = {}
         ) :
             error_message(std::move(error_message)),
             type_name(std::move(type_name)),

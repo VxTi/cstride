@@ -96,6 +96,8 @@ namespace stride::ast
         friend class AstFunctionDeclaration;
         friend class AstFunctionParameter;
 
+        std::vector<std::shared_ptr<IAstFunction>> _generic_instantiations;
+
     public:
         explicit IAstFunction(
             const SourcePosition& source,
@@ -120,6 +122,12 @@ namespace stride::ast
         const std::string& get_function_name() const
         {
             return this->_function_name;
+        }
+
+        [[nodiscard]]
+        const std::vector<std::shared_ptr<IAstFunction>>& get_generic_instantiations() const
+        {
+            return this->_generic_instantiations;
         }
 
         [[nodiscard]]
@@ -191,7 +199,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const std::vector<std::string>& get_generic_parameters() const
+        const GenericParameterList& get_generic_parameters() const
         {
             return this->_generic_parameters;
         }
@@ -232,6 +240,11 @@ namespace stride::ast
 
         std::string to_string() override;
 
+        std::shared_ptr<IAstFunction> instantiate(
+            SymbolTable* symbol_table,
+            const GenericTypeList& generic_instantiation_types
+        );
+
     private:
         llvm::FunctionType* get_llvm_function_type(
             llvm::Module* module,
@@ -264,7 +277,7 @@ namespace stride::ast
             std::unique_ptr<IAstType> return_type,
             const VisibilityModifier visibility,
             const int flags,
-            const GenericParameterList& generic_parameters
+            const GenericParameterList& generic_parameters = EMPTY_GENERIC_PARAMETER_LIST
         ) :
             IAstFunction(
                 position,

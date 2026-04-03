@@ -18,6 +18,8 @@ namespace llvm
 
 namespace stride::ast
 {
+    class IAstFunction;
+
     enum class ContextType
     {
         GLOBAL,
@@ -31,29 +33,6 @@ namespace stride::ast
     {
         LOCAL,
         GLOBAL
-    };
-
-    // ----------------------------------------------------------------------------------- //
-    //                                                                                     //
-    //                          Template instantiation types                               //
-    //                                                                                     //
-    //     Generics types / functions are all represented as a template instantiation.     //
-    //     Their runtime types are known after template resolution, but they are still     //
-    //     represented as a template instantiation during parsing and semantic analysis.   //
-    //                                                                                     //
-    // ----------------------------------------------------------------------------------- //
-
-    enum class TemplateInstantiationType
-    {
-        GENERIC_FUNCTION,
-        GENERIC_TYPE
-    };
-
-    struct TemplateInstantiation
-    {
-        TemplateInstantiationType type;
-        std::string symbol_name;
-        std::vector<std::unique_ptr<IAstType>> instantiated_types;
     };
 
     // ----------------------------------------------------------------------------------- //
@@ -78,12 +57,11 @@ namespace stride::ast
         std::shared_ptr<SymbolTable> _parent_registry;
 
         std::vector<std::unique_ptr<definition::IDefinition>> _symbols;
+        std::vector<std::unique_ptr<definition::TypeDefinition>> _type_definitions;
 
         // Stack of loop blocks for break and continue: pair<continue_block, break_block>
         // This isn't used during parsing, hence it not needing to be moved when creating a new ParsingContext.
         static inline std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> control_flow_loop_blocks;
-
-        std::vector<TemplateInstantiation> _template_instantiations;
 
     public:
         explicit SymbolTable(
@@ -172,7 +150,7 @@ namespace stride::ast
 
         [[nodiscard]]
         std::optional<definition::TypeDefinition*> get_type_definition(
-            const std::string& name
+            const std::string& type_name
         ) const;
 
         [[nodiscard]]
@@ -200,11 +178,13 @@ namespace stride::ast
         [[nodiscard]]
         definition::IDefinition* lookup_symbol(const std::string& symbol_name) const;
 
-        /// Will attempt to define the function in the global context.
+        void define_function(const Symbol& function_name, IAstFunction* node);
+
         void define_function(
             Symbol function_name,
             std::unique_ptr<AstFunctionType> function_type,
             VisibilityModifier visibility,
+            IAstFunction* node = nullptr,
             int flags = SRFLAG_NONE
         );
 
@@ -214,6 +194,8 @@ namespace stride::ast
             GenericParameterList generic_parameter_names,
             VisibilityModifier visibility
         );
+
+        void define_generic_type_alias(const Symbol& type_name, std::unique_ptr<IAstType> type);
 
         void define_variable(
             Symbol variable_symbol,

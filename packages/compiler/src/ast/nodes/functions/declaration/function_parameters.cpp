@@ -74,7 +74,7 @@ void stride::ast::parse_standalone_fn_param(
 
     std::unique_ptr<IAstType> fn_param_type = parse_type(
         set,
-        { "Expected function parameter type", "", flags }
+        TypeParsingOptions{ "Expected function parameter type", "", flags }
     );
 
     const auto& param_name = reference_token.get_lexeme();

@@ -29,6 +29,7 @@ void stride::runtime::register_runtime_symbols(ast::SymbolTable* symbol_table)
             )
         ),
         ast::VisibilityModifier::PUBLIC,
+        nullptr,
         SRFLAG_FN_TYPE_VARIADIC
     );
 

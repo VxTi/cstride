@@ -1,5 +1,7 @@
 #pragma once
 
+#include "files.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -20,7 +22,13 @@ namespace stride::ast
     class IAstType;
     class TokenSet;
 
-    using GenericParameterList = std::vector<std::string>;
+    struct GenericParameterName
+    {
+        SourcePosition position;
+        std::string name;
+    };
+
+    using GenericParameterList = std::vector<GenericParameterName>;
     using GenericTypeList = std::vector<std::unique_ptr<IAstType>>;
 
 #define EMPTY_GENERIC_PARAMETER_LIST (GenericParameterList{})

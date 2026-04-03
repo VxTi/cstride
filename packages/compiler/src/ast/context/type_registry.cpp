@@ -20,27 +20,17 @@ bool SymbolTable::is_object_type_defined(const std::string& struct_name) const
         cast_type<AstObjectType*>(type_def.value()->get_type()) != nullptr;
 }
 
-std::optional<TypeDefinition*> SymbolTable::get_type_definition(const std::string& name) const
+std::optional<TypeDefinition*> SymbolTable::get_type_definition(const std::string& type_name) const
 {
     auto current = this;
 
     while (current != nullptr)
     {
-        if (current->get_context_type() != ContextType::GLOBAL &&
-            current->get_context_type() != ContextType::MODULE)
+        for (const auto& type_definition : current->_type_definitions)
         {
-            current = current->_parent_registry.get();
-            continue;
-        }
-
-        for (const auto& symbol_definition : current->_symbols)
-        {
-            if (auto* type_definition = dynamic_cast<TypeDefinition*>(symbol_definition.get()))
+            if (type_definition->get_type_name_symbol().internal_name == type_name)
             {
-                if (type_definition->get_internal_symbol_name() == name)
-                {
-                    return type_definition;
-                }
+                return type_definition.get();
             }
         }
 
@@ -111,6 +101,33 @@ std::optional<AstObjectType*> SymbolTable::get_object_type(const std::string& na
     return std::nullopt;
 }
 
+void SymbolTable::define_generic_type_alias(const Symbol& type_name, std::unique_ptr<IAstType> type)
+{
+    if (const auto existing_def = this->get_type_definition(type_name.internal_name);
+        existing_def.has_value())
+    {
+        throw stride_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Type '{}' is already defined in this scope", type_name.name),
+            {
+                ErrorSourceReference(
+                    "Previous definition here",
+                    existing_def.value()->get_type()->get_source_position()
+                )
+            }
+        );
+    }
+
+    this->_type_definitions.push_back(
+        std::make_unique<TypeDefinition>(
+            type_name,
+            std::move(type),
+            EMPTY_GENERIC_PARAMETER_LIST,
+            VisibilityModifier::PRIVATE
+        )
+    );
+}
+
 void SymbolTable::define_type(
     const Symbol& type_name,
     std::unique_ptr<IAstType> type,
@@ -135,7 +152,7 @@ void SymbolTable::define_type(
         );
     }
 
-    root_context->_symbols.push_back(
+    root_context->_type_definitions.push_back(
         std::make_unique<TypeDefinition>(
             type_name,
             std::move(type),
