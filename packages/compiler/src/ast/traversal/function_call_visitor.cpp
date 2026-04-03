@@ -4,7 +4,7 @@
 
 using namespace stride::ast;
 
-void FunctionCallVisitor::accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call)
+void GenericFunctionInstantiator::accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call)
 {
     if (function_call->get_generic_type_arguments().empty())
         return;

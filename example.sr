@@ -4,14 +4,14 @@ import System::{
 
 type Array<T> = {
     elements: T[];
-    count: i32;
+    length: i32;
     at: (i32) -> T;
 };
 
-fn arrayOf<T>(elements: T[], count: i32): Array<T> {
+fn arrayOf<T>(elements: T[], length: i32): Array<T> {
     return Array<T>::{
         elements,
-        count,
+        length,
         at: (index: i32): T -> elements[index]
     };
 }

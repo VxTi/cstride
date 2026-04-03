@@ -31,7 +31,7 @@ namespace stride::tests
         ast::AstNodeTraverser traverser;
         ast::TypeInferenceVisitor expression_visitor;
         ast::SymbolResolver function_visitor;
-        ast::FunctionCallVisitor function_call_visitor;
+        ast::GenericFunctionInstantiator function_call_visitor;
         ast::ImportVisitor import_visitor;
 
         runtime::register_runtime_symbols(node->get_symbol_table());

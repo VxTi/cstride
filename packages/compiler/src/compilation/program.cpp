@@ -54,7 +54,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     ast::TypeInferenceVisitor type_visitor;
     ast::ValidationVisitor validation_visitor;
     ast::SymbolResolver symbol_resolver;
-    ast::FunctionCallVisitor function_call_visitor;
+    ast::GenericFunctionInstantiator generic_function_instantiator;
     ast::ImportVisitor import_visitor;
 
     // Populate symbol table with stride runtime symbols
@@ -80,15 +80,14 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     //
     for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
-        traverser.traverse(&function_call_visitor, branch.get());
+        traverser.traverse(&generic_function_instantiator, branch.get());
     }
 
     //
-    // Third step - Type resolution and symbol forward declarations
+    // Third step - Type resolution
     //
     for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
-        // Type checker - this must be executed after all external symbols have been populated
         traverser.traverse(&type_visitor, branch.get());
     }
 

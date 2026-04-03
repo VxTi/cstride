@@ -117,7 +117,7 @@ void AstIdentifier::resolve_definition(const SymbolTable* symbol_table)
     if (this->_definition)
         return;
 
-    const std::string internal_name = this->get_scoped_name();
+    const std::string internal_name = this->_symbol.internal_name;
 
     if (const auto var_def = symbol_table->lookup_variable(internal_name, false))
     {

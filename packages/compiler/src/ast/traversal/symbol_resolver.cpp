@@ -4,6 +4,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/types.h"
+#include "ast/nodes/type_definition.h"
 
 using namespace stride::ast;
 
@@ -58,12 +59,16 @@ void SymbolResolver::accept_expression(SymbolTable* symbol_table, IAstExpression
 
     static int var_counter = 0;
 
+    // TODO: Validate whether this internalized name is sufficient
+    const auto internalized_name = is_global_variable
+        ? std::format("{}.{}", var_decl->get_variable_name(), ++var_counter)
+        : var_decl->get_variable_name();
+
     const auto variable_symbol = Symbol(
         var_decl->get_source_position(),
         symbol_table->get_scope_name(),
         var_decl->get_variable_name(),
-        // TODO: Validate whether this internalized name is sufficient
-        std::format("{}{}", var_decl->get_variable_name(), ++var_counter)
+        internalized_name
     );
 
     var_decl->set_symbol(variable_symbol);
@@ -72,5 +77,25 @@ void SymbolResolver::accept_expression(SymbolTable* symbol_table, IAstExpression
         variable_symbol,
         var_decl->get_visibility(),
         flags
+    );
+}
+
+/**
+ * Registers a type definition in the symbol table so that it can be referenced in the current context.
+ */
+void SymbolResolver::accept_type_definition_node(SymbolTable* symbol_table, AstTypeDefinition* type_definition)
+{
+    // Register the type definition in the current context so that it can be referenced by subsequent expressions.
+    const auto type_symbol = Symbol(
+        type_definition->get_source_position(),
+        symbol_table->get_scope_name(),
+        type_definition->get_name()
+    );
+
+    symbol_table->define_type(
+        type_symbol,
+        type_definition->get_type()->clone(),
+        type_definition->get_generic_parameters(),
+        type_definition->get_visibility()
     );
 }

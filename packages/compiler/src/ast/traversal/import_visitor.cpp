@@ -79,7 +79,9 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                 {
                     const auto& node_with_exports = ast->get_branches().at(file_name_with_exports);
 
-                    definition = node_with_exports->get_node()->get_symbol_table()->get_definition_by_internal_name(import_name);
+                    definition = node_with_exports->get_node()->get_symbol_table()->get_definition_by_internal_name(
+                        import_name);
+
                     if (definition.has_value())
                         break;
                 }
@@ -93,6 +95,7 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                     );
                 }
 
+
                 if (definition.value()->get_visibility() != VisibilityModifier::PUBLIC)
                 {
                     throw stride_error(
@@ -103,8 +106,8 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                 }
 
                 // Define only if not yet present
-                if (branch->get_node()->get_symbol_table()->get_definition_by_internal_name(definition.value()->get_internal_symbol_name())
-                    == std::nullopt)
+                if (branch->get_node()->get_symbol_table()->get_definition_by_internal_name(
+                    definition.value()->get_internal_symbol_name()) == std::nullopt)
                 {
                     branch->get_node()->get_symbol_table()->define(std::move(definition.value()));
                 }

@@ -37,7 +37,7 @@ namespace stride::ast
 
         virtual void accept(SymbolTable* symbol_table, IAstNode* node) {}
 
-        virtual void accept_type_definition_node(SymbolTable *symbol_table, AstTypeDefinition *type_definition) {}
+        virtual void accept_type_definition_node(SymbolTable* symbol_table, AstTypeDefinition* type_definition) {}
     };
 
     /// Visitor that infers and assigns types to every expression node in the AST.
@@ -54,8 +54,6 @@ namespace stride::ast
         /// For AstVariableDeclaration: also registers the variable in its context.
         /// For IAstFunction: also registers the function in its context.
         void accept_expression(SymbolTable* symbol_table, IAstExpression* expr) override;
-
-        void accept_type_definition_node(SymbolTable *symbol_table, AstTypeDefinition *type_definition) override;
     };
 
     class ValidationVisitor : public IVisitor
@@ -70,10 +68,12 @@ namespace stride::ast
         void accept_function_node(SymbolTable* symbol_table, IAstFunction* function) override;
 
         void accept_expression(SymbolTable* symbol_table, IAstExpression* expr) override;
+
+        void accept_type_definition_node(SymbolTable* symbol_table, AstTypeDefinition* type_definition) override;
     };
 
     /// Intentionally separate from `FunctionVisitor`, as this step has to be performed after all functions have been defined.
-    class FunctionCallVisitor : public IVisitor
+    class GenericFunctionInstantiator : public IVisitor
     {
     public:
         void accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call) override;
