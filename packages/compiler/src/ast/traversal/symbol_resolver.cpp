@@ -31,7 +31,6 @@ void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunctio
     {
         symbol_table->define_function(function_symbol, function);
     }
-
 }
 
 /**

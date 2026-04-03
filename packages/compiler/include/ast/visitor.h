@@ -54,6 +54,8 @@ namespace stride::ast
         /// For AstVariableDeclaration: also registers the variable in its context.
         /// For IAstFunction: also registers the function in its context.
         void accept_expression(SymbolTable* symbol_table, IAstExpression* expr) override;
+
+        void accept_function_node(SymbolTable* symbol_table, IAstFunction* function) override;
     };
 
     class ValidationVisitor : public IVisitor

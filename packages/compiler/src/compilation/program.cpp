@@ -84,8 +84,9 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     //
     // Third step - Type resolution
     //
-    for (const auto& branch : this->_ast->get_branches() | std::views::values)
+    for (const auto& [file_name, branch] : this->_ast->get_branches())
     {
+        printf("--- Type resolution | Traversing %s ---\n", file_name.c_str());
         traverser.traverse(&type_visitor, branch.get());
     }
 

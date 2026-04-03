@@ -305,7 +305,7 @@ bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique
     return false;
 }
 
-void FunctionDefinition::add_generic_instantiation(SymbolTable* symbol_table, GenericTypeList generic_overload_types)
+void FunctionDefinition::add_generic_instantiation(const SymbolTable* symbol_table, GenericTypeList generic_overload_types)
 {
     if (has_generic_instantiation(generic_overload_types))
         return; // Already instantiated

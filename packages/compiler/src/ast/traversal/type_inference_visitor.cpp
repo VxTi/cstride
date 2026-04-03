@@ -21,3 +21,17 @@ void TypeInferenceVisitor::accept_expression(SymbolTable* symbol_table, IAstExpr
         symbol_table->set_variable_type(variable_def->get_symbol(), variable_def->get_type()->clone());
     }
 }
+
+
+void TypeInferenceVisitor::accept_function_node(SymbolTable* symbol_table, IAstFunction* function)
+{
+    for (const auto &param : function->get_parameters())
+    {
+        symbol_table->define_variable(
+          param->get_symbol(),
+          param->get_type()->clone(),
+          VisibilityModifier::PRIVATE,
+          param->get_type()->get_flags()
+      );
+    }
+}

@@ -205,20 +205,11 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate_generic_function_templat
 
     for (const auto& param : this->_parameters)
     {
-        auto param_type = resolve_generics(param->get_type(), this->_generic_parameters, instantiated_types);
-
-        resolved_symbol_table->define_variable(
-            param->get_symbol(),
-            param_type->clone(),
-            VisibilityModifier::PRIVATE,
-            param_type->get_flags()
-        );
-
         instantiated_function_params.push_back(
             std::make_unique<AstFunctionParameter>(
                 param->get_source_position(),
                 param->get_name(),
-                std::move(param_type)
+                resolve_generics(param->get_type(), this->_generic_parameters, instantiated_types)
             )
         );
     }

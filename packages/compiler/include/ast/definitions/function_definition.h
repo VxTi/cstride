@@ -73,7 +73,7 @@ namespace stride::ast::definition
             return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
         }
 
-        void add_generic_instantiation(SymbolTable* symbol_table, GenericTypeList generic_overload_types);
+        void add_generic_instantiation(const SymbolTable* symbol_table, GenericTypeList generic_overload_types);
 
         [[nodiscard]]
         const std::vector<GenericFunctionOverload>& get_generic_overloads() const
