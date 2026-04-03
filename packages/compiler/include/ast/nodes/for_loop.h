@@ -58,7 +58,7 @@ namespace stride::ast
             return _incrementor.get();
         }
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };

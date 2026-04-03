@@ -251,7 +251,7 @@ std::unique_ptr<IAstNode> AstChainedExpression::clone()
     );
 }
 
-void AstChainedExpression::validate(const SymbolTable* symbol_table)
+void AstChainedExpression::validate(SymbolTable* symbol_table)
 {
     this->_base->validate(symbol_table);
     this->_followup->validate(symbol_table);
@@ -395,7 +395,7 @@ std::unique_ptr<IAstNode> AstIndirectCall::clone()
     );
 }
 
-void AstIndirectCall::validate(const SymbolTable* symbol_table)
+void AstIndirectCall::validate(SymbolTable* symbol_table)
 {
     this->get_callee()->validate(symbol_table);
     for (const auto& arg : this->get_args())

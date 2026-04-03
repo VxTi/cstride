@@ -33,7 +33,7 @@ std::optional<LogicalOpType> stride::ast::get_logical_op_type(const TokenType ty
     }
 }
 
-void AstLogicalOp::validate(const SymbolTable* symbol_table)
+void AstLogicalOp::validate(SymbolTable* symbol_table)
 {
     this->_lhs->validate(symbol_table);
     this->_rhs->validate(symbol_table);

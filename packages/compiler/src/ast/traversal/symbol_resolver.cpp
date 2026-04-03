@@ -28,10 +28,18 @@ void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunctio
         );
     }
 
+    // static int function_counter = 0;
+
+    const auto internalized_name = /*function->is_extern()
+        ? function->get_function_name()
+        : std::format("{}.{}", function->get_function_name(), ++function_counter);*/
+        function->get_function_name();
+
     const auto function_symbol = Symbol(
         function->get_source_position(),
         symbol_table->get_scope_name(),
-        function->get_function_name() // TODO: Internalize name
+        function->get_function_name(),
+        internalized_name
     );
 
     // Forward declare the function in the symbol registry

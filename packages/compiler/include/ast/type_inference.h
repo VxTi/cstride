@@ -39,7 +39,7 @@ namespace stride::ast
 
     /// Infers the return type of a function call expression
     std::unique_ptr<IAstType>
-    infer_function_call_return_type(const SymbolTable* symbol_table, AstFunctionCall* fn_call);
+    infer_function_call_return_type(SymbolTable* symbol_table, AstFunctionCall* fn_call);
 
     /// Infers the type produced by a struct initializer expression
     std::unique_ptr<IAstType> infer_object_initializer_type(const AstObjectInitializer* struct_initializer);

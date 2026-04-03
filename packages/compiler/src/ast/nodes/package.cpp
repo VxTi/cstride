@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-void AstPackage::validate(const SymbolTable* symbol_table) {}
+void AstPackage::validate(SymbolTable* symbol_table) {}
 
 std::string AstPackage::to_string()
 {

@@ -39,7 +39,7 @@ llvm::Value* AstFunctionCall::codegen(
     );
 }
 
-llvm::Function* AstFunctionCall::resolve_regular_callee(const SymbolTable* symbol_table, llvm::Module* module)
+llvm::Function* AstFunctionCall::resolve_regular_callee(SymbolTable* symbol_table, llvm::Module* module)
 {
     const auto& definition = this->get_function_definition(symbol_table);
 

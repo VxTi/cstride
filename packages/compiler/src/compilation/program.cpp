@@ -68,9 +68,8 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     {
         // Resolve imports and populate local registry - Used for cross registration step
         import_visitor.set_current_file_name(file_name);
-        traverser.traverse(&import_visitor, branch.get());
 
-        // Ensures functions are defined in our symbol table
+        traverser.traverse(&import_visitor, branch.get());
         traverser.traverse(&symbol_resolver, branch.get());
     }
     import_visitor.cross_register_symbols(this->_ast.get());

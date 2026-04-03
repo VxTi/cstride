@@ -11,7 +11,7 @@ namespace stride::ast {
 
 namespace stride::runtime
 {
-    void register_runtime_symbols(const ast::SymbolTable* symbol_table);
+    void register_runtime_symbols(ast::SymbolTable* symbol_table);
 
     void register_jit_symbols(llvm::orc::LLJIT* jit);
 }

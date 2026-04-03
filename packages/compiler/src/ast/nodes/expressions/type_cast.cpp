@@ -27,7 +27,7 @@ std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_type_cast_op(
     );
 }
 
-void AstTypeCastOp::validate(const SymbolTable* symbol_table)
+void AstTypeCastOp::validate(SymbolTable* symbol_table)
 {
     if (!this->_value)
     {

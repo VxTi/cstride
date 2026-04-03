@@ -206,7 +206,7 @@ std::vector<std::unique_ptr<IAstType>> IAstFunction::get_parameter_types() const
     return types;
 }
 
-FunctionDefinition* IAstFunction::get_function_definition(const SymbolTable* symbol_table)
+FunctionDefinition* IAstFunction::get_function_definition(SymbolTable* symbol_table)
 {
     if (this->_function_definition != nullptr)
         return this->_function_definition;
@@ -230,7 +230,7 @@ FunctionDefinition* IAstFunction::get_function_definition(const SymbolTable* sym
     return this->_function_definition;
 }
 
-std::vector<FunctionImplementation> IAstFunction::get_function_implementation_data(const SymbolTable* symbol_table)
+std::vector<FunctionImplementation> IAstFunction::get_function_implementation_data(SymbolTable* symbol_table)
 {
     const auto& definition = this->get_function_definition(symbol_table);
 

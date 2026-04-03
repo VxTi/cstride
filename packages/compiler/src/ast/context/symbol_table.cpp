@@ -28,14 +28,15 @@ std::string stride::ast::scope_type_to_str(const ContextType& scope_type)
     return "unknown";
 }
 
-const SymbolTable& SymbolTable::traverse_to_root() const
+SymbolTable* SymbolTable::traverse_to_root()
 {
     auto current = this;
     while (current != nullptr && current->_parent_registry)
     {
         current = current->_parent_registry.get();
     }
-    return *current;
+
+    return current;
 }
 
 void SymbolTable::define(std::unique_ptr<IDefinition> definition)

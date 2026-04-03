@@ -49,7 +49,7 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
     };
 
     std::unique_ptr<AstModule> parse_module_statement(

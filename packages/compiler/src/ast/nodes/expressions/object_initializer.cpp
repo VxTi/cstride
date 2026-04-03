@@ -183,7 +183,7 @@ std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
     );
 }
 
-void AstObjectInitializer::validate(const SymbolTable* symbol_table)
+void AstObjectInitializer::validate(SymbolTable* symbol_table)
 {
     const auto object_type = this->get_instantiated_object_type(symbol_table);
 

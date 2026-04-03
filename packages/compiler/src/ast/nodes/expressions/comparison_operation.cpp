@@ -51,7 +51,7 @@ std::string comparison_op_to_str(const ComparisonOpType op)
     }
 }
 
-void AstComparisonOp::validate(const SymbolTable* symbol_table)
+void AstComparisonOp::validate(SymbolTable* symbol_table)
 {
     this->_lhs->validate(symbol_table);
     this->_rhs->validate(symbol_table);

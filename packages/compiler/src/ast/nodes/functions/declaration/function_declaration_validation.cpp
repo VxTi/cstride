@@ -6,7 +6,7 @@
 
 using namespace stride::ast;
 
-void IAstFunction::validate(const SymbolTable* symbol_table)
+void IAstFunction::validate(SymbolTable* symbol_table)
 {
     // Extern functions have no body to validate
     if (this->is_extern())
@@ -79,7 +79,7 @@ void IAstFunction::validate(const SymbolTable* symbol_table)
     }
 }
 
-void IAstFunction::validate_candidate(const SymbolTable* symbol_table, IAstFunction* candidate)
+void IAstFunction::validate_candidate(SymbolTable* symbol_table, IAstFunction* candidate)
 {
 
     const auto& ret_ty = candidate->get_return_type();

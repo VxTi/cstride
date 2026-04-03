@@ -64,7 +64,7 @@ namespace stride::ast
 
         virtual std::string to_string() = 0;
 
-        virtual void validate(const SymbolTable* symbol_table) {}
+        virtual void validate(SymbolTable* symbol_table) {}
 
         [[nodiscard]]
         std::shared_ptr<SourceFile> get_source() const

@@ -40,7 +40,7 @@ std::unique_ptr<AstReturnStatement> stride::ast::parse_return_statement(TokenSet
     );
 }
 
-void AstReturnStatement::validate(const SymbolTable* symbol_table)
+void AstReturnStatement::validate(SymbolTable* symbol_table)
 {
     while (symbol_table->get_context_type() != ContextType::FUNCTION &&
         symbol_table->get_parent_context() != nullptr)

@@ -77,9 +77,9 @@ void stride::ast::ImportVisitor::cross_register_symbols(Ast* ast) const
                 std::optional<std::unique_ptr<definition::IDefinition>> definition;
                 for (const auto& file_name_with_exports : files_with_exports)
                 {
-                    const auto& node_with_exports = ast->get_branches().at(file_name_with_exports);
+                    const auto& branch_with_exports = ast->get_branches().at(file_name_with_exports);
 
-                    definition = node_with_exports->get_node()->get_symbol_table()->get_definition_by_internal_name(
+                    definition = branch_with_exports->get_node()->get_symbol_table()->get_definition_by_internal_name(
                         import_name);
 
                     if (definition.has_value())

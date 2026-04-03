@@ -205,7 +205,7 @@ const GenericTypeList& AstFunctionCall::get_generic_type_arguments()
     return this->_generic_type_arguments;
 }
 
-IDefinition* AstFunctionCall::get_function_definition(const SymbolTable* symbol_table)
+IDefinition* AstFunctionCall::get_function_definition(SymbolTable* symbol_table)
 {
     if (this->_definition)
         return this->_definition;

@@ -44,7 +44,7 @@ llvm::Value* AstModule::codegen(
     return this->_body->codegen(symbol_table, module, builder);
 }
 
-void AstModule::validate(const SymbolTable* symbol_table)
+void AstModule::validate(SymbolTable* symbol_table)
 {
     this->_body->validate(symbol_table);
 }

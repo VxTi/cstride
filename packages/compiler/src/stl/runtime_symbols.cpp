@@ -9,7 +9,7 @@
 
 using namespace stride::runtime;
 
-void stride::runtime::register_runtime_symbols(const ast::SymbolTable* symbol_table)
+void stride::runtime::register_runtime_symbols(ast::SymbolTable* symbol_table)
 {
     const auto source = std::make_shared<SourceFile>("unknown", "");
     const auto position = SourcePosition(source, 0, 0);

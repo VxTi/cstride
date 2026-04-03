@@ -52,7 +52,7 @@ namespace stride::ast
             return !this->_value.has_value();
         }
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         void resolve_forward_references(
             SymbolTable* symbol_table,

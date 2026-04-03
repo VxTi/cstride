@@ -41,7 +41,7 @@ std::unique_ptr<AstArrayMemberAccessor> stride::ast::parse_array_member_accessor
     );
 }
 
-void AstArrayMemberAccessor::validate(const SymbolTable* symbol_table)
+void AstArrayMemberAccessor::validate(SymbolTable* symbol_table)
 {
     this->_array_base->validate(symbol_table);
     this->_index_accessor_expr->validate(symbol_table);

@@ -139,7 +139,7 @@ llvm::Value* AstForLoop::codegen(
     return nullptr;
 }
 
-void AstForLoop::validate(const SymbolTable* symbol_table)
+void AstForLoop::validate(SymbolTable* symbol_table)
 {
     if (this->_initializer)
         this->_initializer->validate(symbol_table);

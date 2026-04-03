@@ -137,7 +137,7 @@ std::optional<std::unique_ptr<AstVariableReassignment>> stride::ast::parse_varia
     );
 }
 
-void AstVariableReassignment::validate(const SymbolTable* symbol_table)
+void AstVariableReassignment::validate(SymbolTable* symbol_table)
 {
     this->_value->validate(symbol_table);
 

@@ -57,7 +57,7 @@ llvm::Value* AstBreakStatement::codegen(SymbolTable* symbol_table, llvm::Module*
     return nullptr;
 }
 
-void AstBreakStatement::validate(const SymbolTable* symbol_table)
+void AstBreakStatement::validate(SymbolTable* symbol_table)
 {
     if (symbol_table->get_context_type() != ContextType::CONTROL_FLOW)
     {

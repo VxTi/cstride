@@ -46,7 +46,7 @@ namespace stride::ast
             return this->_import_list;
         }
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override
         {

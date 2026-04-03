@@ -12,10 +12,10 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     const std::string& function_name,
     const std::vector<std::unique_ptr<IAstType>>& parameter_types,
     const size_t instantiated_generic_count
-) const
+)
 {
     for (const auto& global_scope = this->traverse_to_root();
-         const auto& symbol_def : global_scope._symbols)
+         const auto& symbol_def : global_scope->_symbols)
     {
         if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
         {
@@ -34,7 +34,7 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
 std::optional<FunctionDefinition*> SymbolTable::get_generic_function_definition(
     const std::string& function_name,
     const size_t instantiated_generic_count
-) const
+)
 {
     return get_function_definition(function_name, {}, instantiated_generic_count);
 }
@@ -43,7 +43,7 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     const std::string& function_name,
     // We might call this function with an anonymous type, hence not having `AstFunctionType`
     IAstType* function_type
-) const
+)
 {
     const auto signature = cast_type<AstFunctionType*>(function_type);
 
@@ -53,7 +53,7 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     }
 
     for (const auto& global_scope = this->traverse_to_root();
-         const auto& symbol_def : global_scope._symbols)
+         const auto& symbol_def : global_scope->_symbols)
     {
         if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
         {
@@ -145,9 +145,9 @@ void SymbolTable::define_function(
     std::unique_ptr<AstFunctionType> function_type,
     const VisibilityModifier visibility,
     const int flags
-) const
+)
 {
-    auto& global_scope = const_cast<SymbolTable&>(this->traverse_to_root());
+    const auto &global_scope = this->traverse_to_root();
 
     if (this->is_function_defined_globally(function_name.internal_name, function_type.get()))
     {
@@ -158,7 +158,7 @@ void SymbolTable::define_function(
         );
     }
 
-    global_scope._symbols.push_back(
+    global_scope->_symbols.push_back(
         std::make_unique<FunctionDefinition>(std::move(function_type), function_name, visibility, flags)
     );
 }
@@ -166,10 +166,10 @@ void SymbolTable::define_function(
 bool SymbolTable::is_function_defined_globally(
     const std::string& function_name,
     const AstFunctionType* function_type
-) const
+)
 {
     return std::ranges::any_of(
-        this->traverse_to_root()._symbols,
+        this->traverse_to_root()->_symbols,
         [&](const auto& symbol)
         {
             if (const auto* fn_def = dynamic_cast<const FunctionDefinition*>(symbol.get()))

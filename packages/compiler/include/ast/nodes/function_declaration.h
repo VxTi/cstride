@@ -129,7 +129,7 @@ namespace stride::ast
         /// function is defined with generic parameters, there will be several overloads generated
         /// for each generic instantiation. This function returns the internalized name of each overload.
         [[nodiscard]]
-        std::vector<FunctionImplementation> get_function_implementation_data(const SymbolTable* symbol_table);
+        std::vector<FunctionImplementation> get_function_implementation_data(SymbolTable* symbol_table);
 
         [[nodiscard]]
         AstBlock* get_body() override
@@ -213,14 +213,14 @@ namespace stride::ast
             this->_captured_variables.push_back(symbol);
         }
 
-        definition::FunctionDefinition* get_function_definition(const SymbolTable* symbol_table);
+        definition::FunctionDefinition* get_function_definition(SymbolTable* symbol_table);
 
         llvm::Value* codegen(
             SymbolTable* symbol_table,
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         void resolve_forward_references(
             SymbolTable* symbol_table,
@@ -239,7 +239,7 @@ namespace stride::ast
             const GenericTypeList& generic_instantiation_types = {}
         ) const;
 
-        static void validate_candidate(const SymbolTable* symbol_table, IAstFunction* candidate);
+        static void validate_candidate(SymbolTable* symbol_table, IAstFunction* candidate);
 
         static void collect_free_variables(
             IAstNode* node,

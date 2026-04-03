@@ -23,7 +23,7 @@ namespace stride::ast
 
         llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -42,7 +42,7 @@ namespace stride::ast
 
         llvm::Value* codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder) override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
 

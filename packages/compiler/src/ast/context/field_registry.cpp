@@ -53,7 +53,7 @@ bool SymbolTable::is_field_defined_globally(const std::string& field_name) const
     return false;
 }
 
-void SymbolTable::define_variable_globally(Symbol variable_symbol, VisibilityModifier visibility) const
+void SymbolTable::define_variable_globally(Symbol variable_symbol, VisibilityModifier visibility)
 {
     if (is_field_defined_globally(variable_symbol.internal_name))
     {
@@ -64,8 +64,8 @@ void SymbolTable::define_variable_globally(Symbol variable_symbol, VisibilityMod
         );
     }
 
-    auto& global_scope = const_cast<SymbolTable&>(this->traverse_to_root());
-    global_scope._symbols.push_back(
+    const auto &global_scope = this->traverse_to_root();
+    global_scope->_symbols.push_back(
         std::make_unique<definition::FieldDefinition>(
             std::move(variable_symbol),
             visibility

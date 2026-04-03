@@ -140,7 +140,7 @@ bool stride::ast::is_variable_declaration(const TokenSet& set)
     );
 }
 
-void AstVariableDeclaration::validate(const SymbolTable* symbol_table)
+void AstVariableDeclaration::validate(SymbolTable* symbol_table)
 {
     this->_initial_value->validate(symbol_table);
 

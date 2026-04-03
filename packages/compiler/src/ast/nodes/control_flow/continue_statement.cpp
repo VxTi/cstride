@@ -32,7 +32,7 @@ llvm::Value* AstContinueStatement::codegen(SymbolTable* symbol_table, llvm::Modu
     return nullptr;
 }
 
-void AstContinueStatement::validate(const SymbolTable* symbol_table)
+void AstContinueStatement::validate(SymbolTable* symbol_table)
 {
     if (symbol_table->get_context_type() != ContextType::CONTROL_FLOW)
     {

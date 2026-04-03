@@ -295,7 +295,7 @@ namespace stride::ast
 
         std::optional<std::unique_ptr<IAstNode>> reduce() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -346,7 +346,7 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
     private:
         llvm::Value* codegen_global_member_accessor(
@@ -407,7 +407,7 @@ namespace stride::ast
 
         std::unique_ptr<IAstNode> clone() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
     };
 
     class AstFunctionCall
@@ -435,7 +435,7 @@ namespace stride::ast
             _flags(flags) {}
 
         [[nodiscard]]
-        definition::IDefinition* get_function_definition(const SymbolTable* symbol_table);
+        definition::IDefinition* get_function_definition(SymbolTable* symbol_table);
 
         [[nodiscard]]
         const ExpressionList& get_arguments() const
@@ -507,7 +507,7 @@ namespace stride::ast
 
         [[nodiscard]]
         llvm::Function* resolve_regular_callee(
-            const SymbolTable* symbol_table,
+            SymbolTable* symbol_table,
             llvm::Module* module
         );
 
@@ -618,7 +618,7 @@ namespace stride::ast
             llvm::Module* module,
             llvm::IRBuilderBase* builder) override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -729,7 +729,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -763,7 +763,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -816,7 +816,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -885,7 +885,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };
@@ -947,7 +947,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
 
@@ -1053,7 +1053,7 @@ namespace stride::ast
 
         std::string to_string() override;
 
-        void validate(const SymbolTable* symbol_table) override;
+        void validate(SymbolTable* symbol_table) override;
 
         std::unique_ptr<IAstNode> clone() override;
     };

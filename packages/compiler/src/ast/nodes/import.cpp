@@ -76,7 +76,7 @@ std::unique_ptr<AstImport> stride::ast::parse_import_statement(TokenSet& set)
     );
 }
 
-void AstImport::validate(const SymbolTable* symbol_table)
+void AstImport::validate(SymbolTable* symbol_table)
 {
     if (symbol_table->get_context_type() != ContextType::GLOBAL)
     {

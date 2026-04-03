@@ -116,11 +116,11 @@ void SymbolTable::define_type(
     std::unique_ptr<IAstType> type,
     GenericParameterList generic_parameter_names,
     const VisibilityModifier visibility
-) const
+)
 {
-    auto& root_context = const_cast<SymbolTable&>(this->traverse_to_root());
+    const auto& root_context = this->traverse_to_root();
 
-    if (const auto existing_def = root_context.get_type_definition(type_name.internal_name);
+    if (const auto existing_def = root_context->get_type_definition(type_name.internal_name);
         existing_def.has_value())
     {
         throw stride_error(
@@ -135,7 +135,7 @@ void SymbolTable::define_type(
         );
     }
 
-    root_context._symbols.push_back(
+    root_context->_symbols.push_back(
         std::make_unique<TypeDefinition>(
             type_name,
             std::move(type),

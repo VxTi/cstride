@@ -35,7 +35,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(const AstLi
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
-    const SymbolTable* symbol_table,
+    SymbolTable* symbol_table,
     AstFunctionCall* fn_call)
 {
     /// --- Basic function lookup, find based on parameter signature (ignoring return type)

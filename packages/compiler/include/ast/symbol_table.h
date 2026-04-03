@@ -157,18 +157,18 @@ namespace stride::ast
             const std::string& function_name,
             const std::vector<std::unique_ptr<IAstType>>& parameter_types,
             size_t instantiated_generic_count = 0
-        ) const;
+        );
 
         [[nodiscard]]
         std::optional<definition::FunctionDefinition*> get_generic_function_definition(
             const std::string& function_name,
             size_t instantiated_generic_count = 0
-        ) const;
+        );
 
         std::optional<definition::FunctionDefinition*> get_function_definition(
             const std::string& function_name,
             IAstType* function_type
-        ) const;
+        );
 
         [[nodiscard]]
         std::optional<definition::TypeDefinition*> get_type_definition(
@@ -206,14 +206,14 @@ namespace stride::ast
             std::unique_ptr<AstFunctionType> function_type,
             VisibilityModifier visibility,
             int flags = SRFLAG_NONE
-        ) const;
+        );
 
         void define_type(
             const Symbol& type_name,
             std::unique_ptr<IAstType> type,
             GenericParameterList generic_parameter_names,
             VisibilityModifier visibility
-        ) const;
+        );
 
         void define_variable(
             Symbol variable_symbol,
@@ -231,7 +231,7 @@ namespace stride::ast
         void define_variable_globally(
             Symbol variable_symbol,
             VisibilityModifier visibility
-        ) const;
+        );
 
         void set_variable_type(
             Symbol variable_symbol,
@@ -264,7 +264,7 @@ namespace stride::ast
         bool is_function_defined_globally(
             const std::string& function_name,
             const AstFunctionType* function_type
-        ) const;
+        );
 
         [[nodiscard]]
         std::string get_scope_name() const
@@ -273,7 +273,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const SymbolTable& traverse_to_root() const;
+        SymbolTable* traverse_to_root();
     };
 
     std::string scope_type_to_str(const ContextType& scope_type);
