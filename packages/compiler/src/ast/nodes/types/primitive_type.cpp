@@ -2,6 +2,7 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
 
@@ -258,7 +259,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     return parse_type_metadata(std::move(result.value()), set);
 }
 
-bool AstPrimitiveType::equals(IAstType* other)
+bool AstPrimitiveType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto* other_primitive = cast_type<const AstPrimitiveType*>(other))
     {
@@ -278,13 +279,13 @@ bool AstPrimitiveType::equals(IAstType* other)
             return true;
         }
 
-        return struct_type->equals(this);
+        return struct_type->equals(symbol_table, this);
     }
 
     return false;
 }
 
-bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
+bool AstPrimitiveType::is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
@@ -303,7 +304,7 @@ bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
 }
 
 // Casting can be done both ways - Low -> Hi, and Hi -> Low
-bool AstPrimitiveType::is_castable_to_impl(IAstType* other)
+bool AstPrimitiveType::is_castable_to_impl(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
@@ -313,7 +314,7 @@ bool AstPrimitiveType::is_castable_to_impl(IAstType* other)
     return false;
 }
 
-llvm::Type* AstPrimitiveType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstPrimitiveType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
     switch (this->_type)
     {

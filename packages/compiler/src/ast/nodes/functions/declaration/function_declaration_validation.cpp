@@ -159,8 +159,8 @@ void IAstFunction::validate_candidate(SymbolTable* symbol_table, IAstFunction* c
         }
 
         if (const auto& ret_expr = return_stmt->get_return_expression().value();
-            !ret_expr->get_type()->equals(ret_ty) &&
-            !ret_expr->get_type()->is_assignable_to(ret_ty))
+            !ret_expr->get_type()->equals(symbol_table, ret_ty) &&
+            !ret_expr->get_type()->is_assignable_to(symbol_table, ret_ty))
         {
             const auto error_fragment = ErrorSourceReference(
                 std::format(

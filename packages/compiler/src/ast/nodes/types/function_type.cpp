@@ -2,6 +2,7 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <ranges>
 #include <llvm/IR/DerivedTypes.h>
 
@@ -102,11 +103,11 @@ std::unique_ptr<IAstType> AstFunctionType::clone()
     );
 }
 
-bool AstFunctionType::equals(IAstType* other)
+bool AstFunctionType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto* other_func = cast_type<const AstFunctionType*>(other))
     {
-        if (!other_func->get_return_type()->equals(this->get_return_type().get()))
+        if (!other_func->get_return_type()->equals(symbol_table, this->get_return_type().get()))
             return false;
 
         if (this->_parameters.size() != other_func->_parameters.size())
@@ -114,7 +115,7 @@ bool AstFunctionType::equals(IAstType* other)
 
         for (size_t i = 0; i < this->_parameters.size(); i++)
         {
-            if (!this->_parameters[i]->equals(other_func->_parameters[i].get()))
+            if (!this->_parameters[i]->equals(symbol_table, other_func->_parameters[i].get()))
             {
                 return false;
             }
@@ -124,33 +125,33 @@ bool AstFunctionType::equals(IAstType* other)
 
     if (auto* other_named = dynamic_cast<AstAliasType*>(other))
     {
-        return other_named->equals(this);
+        return other_named->equals(symbol_table, this);
     }
 
     return false;
 }
 
-bool AstFunctionType::is_castable_to_impl(IAstType* other)
+bool AstFunctionType::is_castable_to_impl(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto other_named = cast_type<AstAliasType*>(other))
     {
-        return this->equals(other_named->get_underlying_type());
+        return this->equals(other_named->get_primitive_base_type());
     }
 
     return false;
 }
 
-llvm::Type* AstFunctionType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstFunctionType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(this->_parameters.size());
 
     for (const auto& param_ty : this->_parameters)
     {
-        param_types.push_back(param_ty->get_llvm_type(module));
+        param_types.push_back(param_ty->get_llvm_type(symbol_table, module));
     }
 
-    llvm::Type* ret_type = this->_return_type->get_llvm_type(module);
+    llvm::Type* ret_type = this->_return_type->get_llvm_type(symbol_table, module);
     return llvm::FunctionType::get(
         ret_type,
         param_types,

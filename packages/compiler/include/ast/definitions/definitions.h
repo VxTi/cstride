@@ -79,7 +79,13 @@ namespace stride::ast::definition
             _type_name_symbol(std::move(type_name_symbol)) {}
 
         [[nodiscard]]
-        IAstType* get_type() const
+        std::unique_ptr<IAstType> get_type() const
+        {
+            return this->_type->clone();
+        }
+
+        [[nodiscard]]
+        IAstType* get_type_ptr() const
         {
             return this->_type.get();
         }

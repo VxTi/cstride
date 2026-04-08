@@ -143,7 +143,7 @@ std::string AstObjectType::get_internalized_name()
     return this->get_type_name();
 }
 
-llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstObjectType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
     const auto internal_name = this->get_internalized_name();
     llvm::StructType* struct_type = llvm::StructType::getTypeByName(
@@ -167,7 +167,7 @@ llvm::Type* AstObjectType::get_llvm_type_impl(llvm::Module* module)
     // Case: type Name { members... }
     for (const auto& [member_name, member_type] : this->get_members())
     {
-        llvm::Type* llvm_type = member_type->get_llvm_type(module);
+        llvm::Type* llvm_type = member_type->get_llvm_type(symbol_table, module);
 
         if (!llvm_type)
         {
@@ -214,7 +214,7 @@ std::string AstObjectType::get_type_name()
     return this->_type_name;
 }
 
-bool AstObjectType::equals(IAstType* other)
+bool AstObjectType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto other_struct_ty = cast_type<const AstObjectType*>(other))
     {
@@ -242,7 +242,7 @@ bool AstObjectType::equals(IAstType* other)
                 continue;
             }
 
-            if (!first_type.get()->equals(second_type.get()))
+            if (!first_type.get()->equals(symbol_table, second_type.get()))
             {
                 return false;
             }
@@ -253,7 +253,7 @@ bool AstObjectType::equals(IAstType* other)
 
     if (auto* other_named = cast_type<AstAliasType*>(other))
     {
-        return other_named->equals(this);
+        return other_named->equals(symbol_table, this);
     }
 
     return false;

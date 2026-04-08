@@ -61,7 +61,10 @@ namespace stride::ast
     class ValidationVisitor : public IVisitor
     {
     public:
-        void accept(SymbolTable* symbol_table, IAstNode* node) override;
+        void accept(SymbolTable* symbol_table, IAstNode* node) override
+        {
+            node->validate(symbol_table);
+        }
     };
 
     class SymbolResolver : public IVisitor

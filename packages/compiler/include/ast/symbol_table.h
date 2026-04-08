@@ -59,6 +59,8 @@ namespace stride::ast
         std::vector<std::unique_ptr<definition::IDefinition>> _symbols;
         std::vector<std::unique_ptr<definition::TypeDefinition>> _type_definitions;
 
+        IAstFunction* _current_function = nullptr;
+
         // Stack of loop blocks for break and continue: pair<continue_block, break_block>
         // This isn't used during parsing, hence it not needing to be moved when creating a new ParsingContext.
         static inline std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> control_flow_loop_blocks;
@@ -223,6 +225,16 @@ namespace stride::ast
             Symbol variable_symbol,
             std::unique_ptr<IAstType> type
         ) const;
+
+        void set_current_function(IAstFunction* function)
+        {
+            this->_current_function = function;
+        }
+
+        IAstFunction* get_current_function() const
+        {
+            return this->_current_function;
+        }
 
         [[nodiscard]]
         definition::IDefinition* fuzzy_find(const std::string& symbol_name) const;

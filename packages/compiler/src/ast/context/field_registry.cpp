@@ -2,6 +2,7 @@
 #include "ast/symbol_table.h"
 
 #include <algorithm>
+#include <format>
 
 using namespace stride::ast;
 

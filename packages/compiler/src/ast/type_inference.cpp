@@ -10,16 +10,11 @@
 #include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
 
+#include <format>
 #include <memory>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
-
-void process_alias_type(const SymbolTable* symbol_table, AstAliasType* alias_type, const int flags = 0)
-{
-    alias_type->resolve_type_definition(symbol_table);
-    alias_type->set_flags(alias_type->get_flags() | flags);
-}
 
 std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(const AstLiteral* literal)
 {
@@ -29,9 +24,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_literal_type(const AstLi
     );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
-    SymbolTable* symbol_table,
-    AstFunctionCall* fn_call)
+std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(SymbolTable* symbol_table, AstFunctionCall* fn_call)
 {
     /// --- Basic function lookup, find based on parameter signature (ignoring return type)
     if (const auto fn_def = symbol_table->get_function_definition(
@@ -49,8 +42,8 @@ std::unique_ptr<IAstType> stride::ast::infer_function_call_return_type(
         if (const auto& generic_args = fn_call->get_generic_type_arguments();
             !generic_args.empty())
         {
-            const auto& param_names = fn_def.value()->get_type()->get_generic_parameter_names();
-            if (param_names.size() == generic_args.size())
+            if (const auto& param_names = fn_def.value()->get_type()->get_generic_parameter_names();
+                param_names.size() == generic_args.size())
             {
                 return_type = resolve_generics(return_type.get(), param_names, generic_args);
             }
@@ -99,7 +92,7 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(SymbolTable* symbol_
     auto lhs = infer_expression_type(symbol_table, operation->get_left());
     auto rhs = infer_expression_type(symbol_table, operation->get_right());
 
-    if (lhs->equals(rhs.get()))
+    if (lhs->equals(symbol_table, rhs.get()))
     {
         return std::move(lhs);
     }
@@ -115,7 +108,7 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(SymbolTable* symbol_
         return std::move(rhs);
     }
 
-    return get_dominant_field_type(lhs.get(), rhs.get());
+    return get_dominant_field_type(symbol_table, lhs.get(), rhs.get());
 }
 
 std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(SymbolTable* symbol_table, const AstUnaryOp* operation)
@@ -134,11 +127,10 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(SymbolTable* symbol_t
                 flags
             );
         }
-        if (auto* alias_type = cast_type<AstAliasType*>(type.get()))
-        {
-            process_alias_type(symbol_table, alias_type, flags);
 
-            return type;
+        if (type->is_alias_ty())
+        {
+            return type->as<AstAliasType>();
         }
     }
     else if (op_type == UnaryOpType::DEREFERENCE)
@@ -183,7 +175,8 @@ std::unique_ptr<IAstType> stride::ast::infer_array_member_type(SymbolTable* symb
 
 std::unique_ptr<IAstType> stride::ast::infer_chained_expression_type(
     SymbolTable* symbol_table,
-    const AstChainedExpression* chained_expr)
+    const AstChainedExpression* chained_expr
+)
 {
     // Infer the type of the base (left side)
     auto base_type = infer_expression_type(symbol_table, chained_expr->get_base());
@@ -238,24 +231,16 @@ std::unique_ptr<IAstType> stride::ast::infer_chained_expression_type(
     return field_type.value()->clone();
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_indirect_call_type(
-    SymbolTable* symbol_table,
-    const AstIndirectCall* call_expr)
+std::unique_ptr<IAstType> stride::ast::infer_indirect_call_type(SymbolTable* symbol_table, const AstIndirectCall* call_expr)
 {
-    const auto callee_type = infer_expression_type(symbol_table, call_expr->get_callee());
+    std::unique_ptr<IAstType> callee_type = infer_expression_type(symbol_table, call_expr->get_callee());
 
-    // Unwrap alias
-    IAstType* raw_type = callee_type.get();
-    std::unique_ptr<IAstType> unwrapped;
-    if (auto* alias = cast_type<AstAliasType*>(raw_type))
+    if (auto* alias = cast_type<AstAliasType*>(callee_type.get()))
     {
-        process_alias_type(symbol_table, alias);
-
-        unwrapped = alias->get_underlying_type()->clone();
-        raw_type = unwrapped.get();
+        callee_type = alias->get_primitive_base_type(symbol_table)->clone();
     }
 
-    const auto* fn_type = cast_type<AstFunctionType*>(raw_type);
+    const auto* fn_type = cast_type<AstFunctionType*>(callee_type.get());
     if (!fn_type)
     {
         throw stride_error(
@@ -295,14 +280,8 @@ std::unique_ptr<IAstType> stride::ast::infer_function_type(const SymbolTable* sy
 
     for (const auto& param : function->get_parameters())
     {
-        if (const auto alias_ty = cast_type<AstAliasType*>(param->get_type()))
-            process_alias_type(symbol_table, alias_ty);
-
         param_types.emplace_back(param->get_type()->clone());
     }
-
-    if (const auto alias_ty = dynamic_cast<AstAliasType*>(function->get_return_type()))
-        process_alias_type(symbol_table, alias_ty);
 
     return std::make_unique<AstFunctionType>(
         function->get_source_position(),
@@ -313,9 +292,7 @@ std::unique_ptr<IAstType> stride::ast::infer_function_type(const SymbolTable* sy
     );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_identifier_type(
-    const SymbolTable* symbol_table,
-    AstIdentifier* identifier)
+std::unique_ptr<IAstType> stride::ast::infer_identifier_type(const SymbolTable* symbol_table, AstIdentifier* identifier)
 {
     identifier->resolve_definition(symbol_table);
 
@@ -369,14 +346,14 @@ std::unique_ptr<IAstType> stride::ast::infer_variable_declaration_type(
         return value_type->clone();
     }
 
-    if (annotated_type.value()->equals(value_type.get()))
+    if (annotated_type.value()->equals(symbol_table, value_type.get()))
     {
         return annotated_type.value()->clone();
     }
 
-    if (value_type->is_assignable_to(annotated_type.value()))
+    if (value_type->is_assignable_to(symbol_table, annotated_type.value()))
     {
-        return get_dominant_field_type(annotated_type.value(), value_type.get());
+        return get_dominant_field_type(symbol_table, annotated_type.value(), value_type.get());
     }
 
     const auto references = {
@@ -418,10 +395,8 @@ std::unique_ptr<IAstType> stride::ast::infer_array_accessor_type(
     // It's possible that we're referring to a named type, in which case we'll have to extract the base type
     if (const auto alias_type = cast_type<AstAliasType*>(array_type.get()))
     {
-        process_alias_type(symbol_table, alias_type);
-
         // Instantiate type if it contains generics
-        if (const auto array_base_ty = cast_type<AstArrayType*>(alias_type->get_underlying_type()))
+        if (const auto array_base_ty = cast_type<AstArrayType*>(alias_type->get_primitive_base_type(symbol_table)))
         {
             return array_base_ty->get_element_type()->clone();
         }

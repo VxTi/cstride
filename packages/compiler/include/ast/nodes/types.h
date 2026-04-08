@@ -5,7 +5,6 @@
 #include "ast/flags.h"
 #include "ast/generics.h"
 
-#include <format>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -67,13 +66,16 @@ namespace stride::ast
             const SourcePosition& source,
             const int flags
         ) :
-            _source(source),
-            _flags(flags) {}
+            _flags(flags),
+            _source(source) {}
 
         std::unique_ptr<IAstType> clone() override
         {
             return this->clone_as<IAstType>();
         }
+
+        template <typename T>
+        std::unique_ptr<T> as();
 
         [[nodiscard]]
         bool is_pointer() const
@@ -135,10 +137,16 @@ namespace stride::ast
         }
 
         [[nodiscard]]
+        virtual bool is_alias_ty() const
+        {
+            return false;
+        }
+
+        [[nodiscard]]
         virtual std::string get_type_name() = 0;
 
         [[nodiscard]]
-        virtual bool equals(IAstType* other) = 0;
+        virtual bool equals(SymbolTable* symbol_table, IAstType* other) = 0;
 
         [[nodiscard]]
         SourcePosition get_source_position() const
@@ -149,9 +157,9 @@ namespace stride::ast
         /// Checks whether other type is assignable to this one.
         /// Lower bit-count primitives are assignable to higher ones, e.g.,
         /// one can assign a 32-bit int to a i64 type, but not visa versa.
-        bool is_assignable_to(IAstType* other);
+        bool is_assignable_to(SymbolTable* symbol_table, IAstType* other);
 
-        virtual bool is_castable_to(IAstType* other);
+        virtual bool is_castable_to(SymbolTable* symbol_table, IAstType* other);
 
         [[nodiscard]]
         virtual bool is_primitive() const
@@ -159,22 +167,22 @@ namespace stride::ast
             return false;
         }
 
-        llvm::Type* get_llvm_type(llvm::Module* module);
+        llvm::Type* get_llvm_type(SymbolTable* symbol_table, llvm::Module* module);
 
         ~IAstType() override = default;
 
     private:
-        virtual bool is_assignable_to_impl(IAstType* other)
+        virtual bool is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other)
         {
             return false;
         }
 
-        virtual bool is_castable_to_impl(IAstType* other)
+        virtual bool is_castable_to_impl(SymbolTable* symbol_table, IAstType* other)
         {
             return false;
         }
 
-        virtual llvm::Type* get_llvm_type_impl(llvm::Module* module) = 0;
+        virtual llvm::Type* get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module) = 0;
     };
 
     /// Types like int, float, char, etc.
@@ -224,7 +232,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool equals(IAstType* other) override;
+        bool equals(SymbolTable* symbol_table, IAstType* other) override;
 
         [[nodiscard]]
         bool is_primitive() const override
@@ -238,17 +246,17 @@ namespace stride::ast
             return this->_type == PrimitiveType::VOID;
         }
 
-        bool is_castable_to(IAstType* other) override
+        bool is_castable_to(SymbolTable* symbol_table, IAstType* other) override
         {
-            return IAstType::is_castable_to(other);
+            return IAstType::is_castable_to(symbol_table, other);
         }
 
     private:
-        bool is_assignable_to_impl(IAstType* other) override;
+        bool is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other) override;
 
-        bool is_castable_to_impl(IAstType* other) override;
+        bool is_castable_to_impl(SymbolTable* symbol_table, IAstType* other) override;
 
-        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+        llvm::Type* get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module) override;
     };
 
     /// References to other types
@@ -284,11 +292,11 @@ namespace stride::ast
         std::string get_type_name() override;
 
         [[nodiscard]]
-        bool equals(IAstType* other) override;
+        bool equals(SymbolTable* symbol_table, IAstType* other) override;
 
-        bool is_castable_to(IAstType* other) override
+        bool is_castable_to(SymbolTable* symbol_table, IAstType* other) override
         {
-            return IAstType::is_castable_to(other);
+            return IAstType::is_castable_to(symbol_table, other);
         }
 
         [[nodiscard]]
@@ -303,15 +311,6 @@ namespace stride::ast
             return this->_generic_types;
         }
 
-        [[nodiscard]]
-        std::optional<std::unique_ptr<IAstType>> get_underlying_type() const
-        {
-            if (this->_underlying_type == nullptr)
-                return std::nullopt;
-
-            return this->_underlying_type->clone();
-        }
-
         /// Returns the super base type of the reference, e.g., if we have:
         /// type RootType = i32;
         /// type MidType = RootType;
@@ -319,7 +318,7 @@ namespace stride::ast
         /// Then, calling `get_base_reference_type` on `LeafType` will return `i32`.
         /// Throws an exception if no underlying type can be resolved.
         [[nodiscard]]
-        IAstType* get_underlying_type();
+        IAstType* get_primitive_base_type(const SymbolTable* symbol_table);
 
         [[nodiscard]]
         definition::TypeDefinition* get_type_definition() const
@@ -327,14 +326,20 @@ namespace stride::ast
             return this->_type_definition;
         }
 
+        [[nodiscard]]
+        bool is_alias_ty() const override
+        {
+            return true;
+        }
+
         void resolve_type_definition(const SymbolTable* symbol_table);
 
     private:
-        bool is_assignable_to_impl(IAstType* other) override;
+        bool is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other) override;
 
-        bool is_castable_to_impl(IAstType* other) override;
+        bool is_castable_to_impl(SymbolTable* symbol_table, IAstType* other) override;
 
-        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+        llvm::Type* get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module) override;
     };
 
     class AstFunctionType
@@ -387,22 +392,22 @@ namespace stride::ast
         std::string get_type_name() override;
 
         [[nodiscard]]
-        bool equals(IAstType* other) override;
+        bool equals(SymbolTable* symbol_table, IAstType* other) override;
 
-        bool is_castable_to(IAstType* other) override
+        bool is_castable_to(SymbolTable* symbol_table, IAstType* other) override
         {
-            return IAstType::is_castable_to(other);
+            return IAstType::is_castable_to(symbol_table, other);
         }
 
     private:
-        bool is_assignable_to_impl(IAstType* other) override
+        bool is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other) override
         {
             return false;
         }
 
-        bool is_castable_to_impl(IAstType* other) override;
+        bool is_castable_to_impl(SymbolTable* symbol_table, IAstType* other) override;
 
-        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+        llvm::Type* get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module) override;
     };
 
     class AstArrayType
@@ -447,14 +452,14 @@ namespace stride::ast
         std::string get_type_name() override;
 
         [[nodiscard]]
-        bool equals(IAstType* other) override;
+        bool equals(SymbolTable* symbol_table, IAstType* other) override;
 
     private:
-        bool is_assignable_to_impl(IAstType* other) override;
+        bool is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other) override;
 
-        bool is_castable_to_impl(IAstType* other) override;
+        bool is_castable_to_impl(SymbolTable* symbol_table, IAstType* other) override;
 
-        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+        llvm::Type* get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module) override;
     };
 
     class AstObjectType
@@ -494,7 +499,7 @@ namespace stride::ast
         [[nodiscard]] std::string get_type_name() override;
 
         [[nodiscard]]
-        bool equals(IAstType* other) override;
+        bool equals(SymbolTable* symbol_table, IAstType* other) override;
 
         [[nodiscard]]
         std::unique_ptr<IAstType> clone() override;
@@ -503,7 +508,7 @@ namespace stride::ast
         std::string get_internalized_name();
 
     private:
-        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+        llvm::Type* get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module) override;
     };
 
     class AstEnumType
@@ -542,15 +547,15 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        bool equals(IAstType* other) override;
+        bool equals(SymbolTable* symbol_table, IAstType* other) override;
 
     private:
-        bool is_assignable_to_impl(IAstType* other) override
+        bool is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other) override
         {
             return false;
         }
 
-        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+        llvm::Type* get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module) override;
     };
 
     class AstTupleType
@@ -579,20 +584,20 @@ namespace stride::ast
         std::string get_type_name() override;
 
         [[nodiscard]]
-        bool equals(IAstType* other) override;
+        bool equals(SymbolTable* symbol_table, IAstType* other) override;
 
     private:
-        bool is_assignable_to_impl(IAstType* other) override
+        bool is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other) override
         {
             return false;
         }
 
-        bool is_castable_to_impl(IAstType* other) override
+        bool is_castable_to_impl(SymbolTable* symbol_table, IAstType* other) override
         {
             return false;
         }
 
-        llvm::Type* get_llvm_type_impl(llvm::Module* module) override;
+        llvm::Type* get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module) override;
     };
 
     struct TypeParsingOptions
@@ -618,7 +623,7 @@ namespace stride::ast
         TokenSet& set,
         const TypeParsingOptions& options);
 
-    std::unique_ptr<IAstType> get_dominant_field_type(IAstType* lhs, IAstType* rhs);
+    std::unique_ptr<IAstType> get_dominant_field_type(SymbolTable* symbol_table, IAstType* lhs, IAstType* rhs);
 
     std::unique_ptr<IAstType> parse_type_metadata(
         std::unique_ptr<IAstType> base_type,

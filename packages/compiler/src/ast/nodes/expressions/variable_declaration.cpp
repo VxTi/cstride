@@ -150,7 +150,7 @@ void AstVariableDeclaration::validate(SymbolTable* symbol_table)
     const auto annotated_type = this->get_annotated_type().value();
 
     if (const auto value_type = this->get_initial_value()->get_type();
-        !value_type->is_assignable_to(annotated_type))
+        !value_type->is_assignable_to(symbol_table, annotated_type))
     {
         if (const auto val_primitive_ty = cast_type<AstPrimitiveType*>(value_type);
             val_primitive_ty && val_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
@@ -264,7 +264,7 @@ void AstVariableDeclaration::resolve_forward_references(
         ? this->get_annotated_type().value()
         : this->get_initial_value()->get_type();
 
-    llvm::Type* var_type = type->get_llvm_type(module);
+    llvm::Type* var_type = type->get_llvm_type(symbol_table, module);
     if (!var_type)
     {
         return;
@@ -413,7 +413,7 @@ llvm::Value* AstVariableDeclaration::codegen(
     }
 
     // Get the LLVM type for the variable
-    llvm::Type* variable_ty = type->get_llvm_type(module);
+    llvm::Type* variable_ty = type->get_llvm_type(symbol_table, module);
 
     if (variable_ty == nullptr)
     {

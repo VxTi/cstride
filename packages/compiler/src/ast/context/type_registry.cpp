@@ -2,6 +2,7 @@
 #include "ast/casting.h"
 #include "ast/symbol_table.h"
 
+#include <format>
 #include <ranges>
 
 using namespace stride::ast;
@@ -17,7 +18,7 @@ bool SymbolTable::is_object_type_defined(const std::string& struct_name) const
     const auto type_def = get_type_definition(struct_name);
 
     return type_def.has_value() &&
-        cast_type<AstObjectType*>(type_def.value()->get_type()) != nullptr;
+        cast_type<AstObjectType*>(type_def.value()->get_type_ptr()) != nullptr;
 }
 
 std::optional<TypeDefinition*> SymbolTable::get_type_definition(const std::string& type_name) const
@@ -53,7 +54,7 @@ std::optional<AstObjectType*> SymbolTable::get_object_type(const std::string& na
 
     // It's an immediate struct definition (type K = { ... }),
     // so we're safe
-    if (const auto object_type = cast_type<AstObjectType*>(type_def.value()->get_type()))
+    if (const auto object_type = cast_type<AstObjectType*>(type_def.value()->get_type_ptr()))
     {
         return object_type;
     }
@@ -62,7 +63,7 @@ std::optional<AstObjectType*> SymbolTable::get_object_type(const std::string& na
     // e.g.,
     // type A = { ... };
     // type B = A; (named type)
-    const auto* named_type = cast_type<AstAliasType*>(type_def.value()->get_type());
+    const auto* named_type = cast_type<AstAliasType*>(type_def.value()->get_type_ptr());
     int recursion_depth = 0;
 
     while (named_type != nullptr)
@@ -74,12 +75,12 @@ std::optional<AstObjectType*> SymbolTable::get_object_type(const std::string& na
             return std::nullopt;
         }
 
-        if (const auto object_type = cast_type<AstObjectType*>(reference_type_def.value()->get_type()))
+        if (const auto object_type = cast_type<AstObjectType*>(reference_type_def.value()->get_type_ptr()))
         {
             return object_type;
         }
 
-        named_type = cast_type<AstAliasType*>(reference_type_def.value()->get_type());
+        named_type = cast_type<AstAliasType*>(reference_type_def.value()->get_type_ptr());
 
         if (++recursion_depth > MAX_RECURSION_DEPTH)
         {

@@ -4,6 +4,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token.h"
 
+#include <format>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;

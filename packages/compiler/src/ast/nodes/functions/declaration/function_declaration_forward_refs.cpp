@@ -66,7 +66,7 @@ void IAstFunction::resolve_forward_references(
     {
         if (const auto capture_def = symbol_table->lookup_variable(capture.name, true))
         {
-            if (llvm::Type* capture_type = capture_def->get_type()->get_llvm_type(module))
+            if (llvm::Type* capture_type = capture_def->get_type()->get_llvm_type(symbol_table, module))
             {
                 captured_types.push_back(capture_type);
             }
@@ -432,7 +432,7 @@ llvm::FunctionType* IAstFunction::get_llvm_function_type(
     {
         for (const auto& param : this->_parameters)
         {
-            if (llvm::Type* param_type = param->get_type()->get_llvm_type(module))
+            if (llvm::Type* param_type = param->get_type()->get_llvm_type(symbol_table, module))
             {
                 base_parameter_types.push_back(param_type);
             }
@@ -447,7 +447,7 @@ llvm::FunctionType* IAstFunction::get_llvm_function_type(
                 this->_generic_parameters,
                 generic_instantiation_types
             );
-            if (llvm::Type* param_type = resolved_generic_param_type->get_llvm_type(module))
+            if (llvm::Type* param_type = resolved_generic_param_type->get_llvm_type(symbol_table, module))
             {
                 base_parameter_types.push_back(param_type);
             }
@@ -469,11 +469,11 @@ llvm::FunctionType* IAstFunction::get_llvm_function_type(
             this->_generic_parameters,
             generic_instantiation_types
         );
-        return_type = resolved_return_ty->get_llvm_type(module);
+        return_type = resolved_return_ty->get_llvm_type(symbol_table, module);
     }
     else
     {
-        return_type = this->get_return_type()->get_llvm_type(module);
+        return_type = this->get_return_type()->get_llvm_type(symbol_table, module);
     }
 
     if (!return_type)

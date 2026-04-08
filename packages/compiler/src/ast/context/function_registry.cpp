@@ -4,6 +4,7 @@
 #include "ast/definitions/function_definition.h"
 
 #include <algorithm>
+#include <format>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
@@ -75,8 +76,8 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
 
 bool FunctionDefinition::matches_generic_signature(
     const std::string& name,
-    const int function_param_count,
-    const int generic_param_count) const
+    const size_t function_param_count,
+    const size_t generic_param_count) const
 {
     if (this->get_internal_symbol_name() != name)
         return false;
@@ -139,7 +140,7 @@ bool FunctionDefinition::matches_parameter_signature(
     {
         // Strict equality check - parameters must match exactly,
         // otherwise named overloading with different signatures wouldn't work.
-        if (!self_params[i]->equals(other_parameter_types[i].get()))
+        if (!self_params[i]->equals(symbol_table, other_parameter_types[i].get()))
         {
             return false;
         }
@@ -273,7 +274,7 @@ bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique
                 continue;
             }
 
-            if (!instantiated_generic_types[i]->equals(generic_types[i].get()))
+            if (!instantiated_generic_types[i]->equals(symbol_table, generic_types[i].get()))
             {
                 all_equal = false;
                 break;
@@ -315,7 +316,7 @@ llvm::Function* FunctionDefinition::get_generic_overload_llvm_function(const Gen
                 continue;
             }
 
-            if (!instantiated_generic_types[i]->equals(generic_types[i].get()))
+            if (!instantiated_generic_types[i]->equals(symbol_table, generic_types[i].get()))
             {
                 all_equal = false;
                 break;

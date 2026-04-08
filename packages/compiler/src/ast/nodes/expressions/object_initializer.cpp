@@ -120,7 +120,7 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
 
     if (auto* alias_def = cast_type<AstAliasType*>(type_def.value()->get_type()))
     {
-        const auto underlying_type = alias_def->get_underlying_type();
+        const auto underlying_type = alias_def->get_primitive_base_type();
 
         if (auto* object_def = cast_type<AstObjectType*>(underlying_type))
         {
@@ -221,7 +221,7 @@ void AstObjectInitializer::validate(SymbolTable* symbol_table)
                 this->get_source_position());
         }
 
-        if (!initializer_expr->get_type()->equals(member_type.value()))
+        if (!initializer_expr->get_type()->equals(symbol_table, member_type.value()))
         {
             throw stride_error(
                 ErrorType::TYPE_ERROR,
@@ -301,7 +301,7 @@ llvm::Value* AstObjectInitializer::codegen(
     // Retrieve the exist named struct type
     const auto object_type = this->get_instantiated_object_type(symbol_table);
 
-    auto* struct_type = llvm::cast<llvm::StructType>(object_type->get_llvm_type(module));
+    auto* struct_type = llvm::cast<llvm::StructType>(object_type->get_llvm_type(symbol_table, module));
 
     if (!struct_type)
     {

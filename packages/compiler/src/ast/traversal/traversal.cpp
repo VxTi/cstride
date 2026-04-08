@@ -123,6 +123,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     else if (auto* function_node = cast_expr<IAstFunction*>(node))
     {
         this->_current_context_type = ContextType::FUNCTION;
+        this->_current_symbol_table->set_current_function(function_node);
 
         // If the function has generic instantiations, we wish to visit those nodes, rather than
         // the function itself. This way, we can properly resolve the types within the function.
@@ -168,8 +169,8 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         visit_expression(visitor, indirect_call->get_callee());
     }
 
-    visitor->accept(this->_current_symbol_table.get(), node);
     visitor->accept_expression(this->_current_symbol_table.get(), node);
+    visitor->accept(this->_current_symbol_table.get(), node);
 }
 
 void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)

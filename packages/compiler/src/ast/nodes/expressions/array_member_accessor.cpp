@@ -6,6 +6,7 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
@@ -82,7 +83,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 
     if (const auto named_ty = cast_type<AstAliasType*>(array_base_type.get()))
     {
-        array_base_type = named_ty->get_underlying_type()->clone();
+        array_base_type = named_ty->get_primitive_base_type()->clone();
     }
 
     llvm::Value* base_val = this->_array_base->codegen(symbol_table, module, builder);
@@ -97,7 +98,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
             this->get_source_position());
     }
 
-    llvm::Type* elem_llvm_ty = array_ty->get_element_type()->get_llvm_type(module);
+    llvm::Type* elem_llvm_ty = array_ty->get_element_type()->get_llvm_type(symbol_table, module);
 
     // Ensure we have a pointer to GEP into. The base expression's codegen may
     // have produced a non-pointer value (e.g. identifier codegen loads the

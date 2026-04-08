@@ -87,20 +87,20 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(SymbolTable* symbol_tabl
         for (const auto& param : fn_type->get_parameter_types())
         {
             auto resolved = resolve_generics(param.get(), param_names, this->_generic_type_arguments);
-            param_types.push_back(resolved->get_llvm_type(module));
+            param_types.push_back(resolved->get_llvm_type(symbol_table, module));
         }
         auto resolved_ret = resolve_generics(fn_type->get_return_type().get(),
                                              param_names,
                                              this->_generic_type_arguments);
-        ret_type = resolved_ret->get_llvm_type(module);
+        ret_type = resolved_ret->get_llvm_type(symbol_table, module);
     }
     else
     {
         for (const auto& param : fn_type->get_parameter_types())
         {
-            param_types.push_back(param->get_llvm_type(module));
+            param_types.push_back(param->get_llvm_type(symbol_table, module));
         }
-        ret_type = fn_type->get_return_type()->get_llvm_type(module);
+        ret_type = fn_type->get_return_type()->get_llvm_type(symbol_table, module);
     }
 
     // When propagating varargs (call has '...'), the callee receives the caller's
@@ -264,7 +264,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     auto base_type = field_def->get_type()->clone();
     if (auto* alias_ty = cast_type<AstAliasType*>(base_type.get()))
     {
-        base_type = alias_ty->get_underlying_type()->clone();
+        base_type = alias_ty->get_primitive_base_type()->clone();
     }
 
     if (const auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))
@@ -321,7 +321,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
             const auto arg_type = this->get_arguments()[i]->get_type();
 
             if (const auto expected_type = fn_type->get_parameter_types()[i].get();
-                !arg_type->equals(expected_type))
+                !arg_type->equals(symbol_table, expected_type))
             {
                 throw stride_error(
                     ErrorType::TYPE_ERROR,
@@ -352,10 +352,10 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
         llvm_param_types.reserve(fn_type->get_parameter_types().size());
         for (const auto& param : fn_type->get_parameter_types())
         {
-            llvm_param_types.push_back(param->get_llvm_type(module));
+            llvm_param_types.push_back(param->get_llvm_type(symbol_table, module));
         }
         llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
-            fn_type->get_return_type()->get_llvm_type(module),
+            fn_type->get_return_type()->get_llvm_type(symbol_table, module),
             llvm_param_types,
             fn_type->is_variadic()
         );

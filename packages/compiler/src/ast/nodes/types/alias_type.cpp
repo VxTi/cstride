@@ -5,6 +5,8 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
+
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
@@ -35,7 +37,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_alias_type_optional(
     );
 }
 
-static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr<IAstType> type, int recursion_guard)
+static std::unique_ptr<IAstType> resolve_nested_underlying_types(IAstType* type, int recursion_guard)
 {
     if (++recursion_guard > MAX_RECURSION_DEPTH)
     {
@@ -46,18 +48,20 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         );
     }
 
-    if (cast_type<AstAliasType*>(type.get()))
+    if (cast_type<AstAliasType*>(type))
     {
         // Don't eagerly resolve alias types here — they may be self-referencing
         // (e.g., Promise<T> = { then: () -> Promise<T> }) and would cause infinite
         // recursion. Leave them as aliases to be lazily resolved when accessed.
-        return std::move(type);
+        return type->clone();
     }
 
-    if (const auto* array = cast_type<AstArrayType*>(type.get()))
+    if (const auto* array = cast_type<AstArrayType*>(type))
     {
-        auto element_type = array->get_element_type()->clone();
-        auto resolved_element = resolve_nested_underlying_types(std::move(element_type), recursion_guard);
+        auto resolved_element = resolve_nested_underlying_types(
+            array->get_element_type(),
+            recursion_guard
+        );
 
         return std::make_unique<AstArrayType>(
             array->get_source_position(),
@@ -67,21 +71,21 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         );
     }
 
-    if (const auto* object_type = cast_type<AstObjectType*>(type.get()))
+    if (const auto* object_type = cast_type<AstObjectType*>(type))
     {
         ObjectTypeMemberList resolved_members;
         for (const auto& [name, member_type] : object_type->get_members())
         {
             resolved_members.emplace_back(
                 name,
-                resolve_nested_underlying_types(member_type->clone(), recursion_guard)
+                resolve_nested_underlying_types(member_type.get(), recursion_guard)
             );
         }
 
         GenericTypeList resolved_generics;
         for (const auto& gen : object_type->get_instantiated_generics())
         {
-            resolved_generics.push_back(resolve_nested_underlying_types(gen->clone(), recursion_guard));
+            resolved_generics.push_back(resolve_nested_underlying_types(gen.get(), recursion_guard));
         }
 
         return std::make_unique<AstObjectType>(
@@ -93,12 +97,15 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         );
     }
 
-    if (const auto* tuple = cast_type<AstTupleType*>(type.get()))
+    if (const auto* tuple = cast_type<AstTupleType*>(type))
     {
         std::vector<std::unique_ptr<IAstType>> resolved_members;
         for (const auto& member : tuple->get_members())
         {
-            resolved_members.push_back(resolve_nested_underlying_types(member->clone(), recursion_guard));
+            auto resolved = resolve_nested_underlying_types(member.get(), recursion_guard);
+
+
+            resolved_members.push_back(resolve_nested_underlying_types(member.get(), recursion_guard));
         }
 
         return std::make_unique<AstTupleType>(
@@ -108,15 +115,15 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         );
     }
 
-    if (const auto* func = cast_type<AstFunctionType*>(type.get()))
+    if (const auto* func = cast_type<AstFunctionType*>(type))
     {
         std::vector<std::unique_ptr<IAstType>> resolved_params;
         for (const auto& param : func->get_parameter_types())
         {
-            resolved_params.push_back(resolve_nested_underlying_types(param->clone(), recursion_guard));
+            resolved_params.push_back(resolve_nested_underlying_types(param.get(), recursion_guard));
         }
 
-        auto resolved_return = resolve_nested_underlying_types(func->get_return_type()->clone(), recursion_guard);
+        auto resolved_return = resolve_nested_underlying_types(func->get_return_type().get(), recursion_guard);
 
         return std::make_unique<AstFunctionType>(
             func->get_source_position(),
@@ -127,7 +134,7 @@ static std::unique_ptr<IAstType> resolve_nested_underlying_types(std::unique_ptr
         );
     }
 
-    return std::move(type);
+    return type->clone();
 }
 
 void AstAliasType::resolve_type_definition(const SymbolTable* symbol_table)
@@ -151,18 +158,13 @@ void AstAliasType::resolve_type_definition(const SymbolTable* symbol_table)
     );
 }
 
-IAstType* AstAliasType::get_underlying_type()
+IAstType* AstAliasType::get_primitive_base_type(const SymbolTable* symbol_table)
 {
-    if (this->_underlying_type)
-    {
-        return this->_underlying_type.get();
-    }
-
-    const auto& type_def = this->get_type_definition();
+    this->resolve_type_definition(symbol_table);
 
     std::unique_ptr<IAstType> base_type = this->is_generic_overload()
-        ? instantiate_generic_type(this, type_def)
-        : type_def->get_type()->clone();
+        ? instantiate_generic_type(this, _type_definition)
+        : _type_definition->get_type();
 
     if (base_type == nullptr)
     {
@@ -190,7 +192,7 @@ IAstType* AstAliasType::get_underlying_type()
             );
         }
 
-        if (const auto* named_reference = cast_type<AstAliasType*>(base_type.get()))
+        if (auto* named_reference = cast_type<AstAliasType*>(base_type.get()))
         {
             if (named_reference->is_generic_overload())
             {
@@ -205,10 +207,9 @@ IAstType* AstAliasType::get_underlying_type()
             }
             else
             {
-                if (auto next_type = named_reference->get_underlying_type();
-                    next_type.has_value())
+                if (const auto next_type = named_reference->get_primitive_base_type(symbol_table))
                 {
-                    base_type = std::move(next_type.value());
+                    base_type = next_type->clone();
                 }
                 else
                 {
@@ -219,7 +220,7 @@ IAstType* AstAliasType::get_underlying_type()
         else
         {
             // If it's not a named type, it might still contain named types (like Wrap<T>[])
-            base_type = resolve_nested_underlying_types(std::move(base_type), recursion_guard);
+            base_type = resolve_nested_underlying_types(base_type.get(), recursion_guard);
 
             if (cast_type<AstAliasType*>(base_type.get()))
             {
@@ -245,18 +246,18 @@ IAstType* AstAliasType::get_underlying_type()
     return this->_underlying_type.get();
 }
 
-bool AstAliasType::is_castable_to_impl(IAstType* other)
+bool AstAliasType::is_castable_to_impl(SymbolTable* symbol_table, IAstType* other)
 {
-    const auto self_reference_type = get_underlying_type();
+    const auto self_reference_type = get_primitive_base_type(symbol_table);
 
     // Check our base type is a primitive, and whether that type is castable to `other`
     if (auto* other_primitive = cast_type<AstPrimitiveType*>(other))
     {
-        return self_reference_type->is_castable_to(other_primitive);
+        return self_reference_type->is_castable_to(symbol_table, other_primitive);
     }
 
     // A named type should be castable to its base type and vice versa
-    if (self_reference_type->is_castable_to(other))
+    if (self_reference_type->is_castable_to(symbol_table, other))
     {
         return true;
     }
@@ -264,15 +265,15 @@ bool AstAliasType::is_castable_to_impl(IAstType* other)
     // Final case would be to check whether both base types are the same
     if (auto* other_alias_ty = cast_type<AstAliasType*>(other))
     {
-        if (const auto second_reference_type = other_alias_ty->get_underlying_type())
+        if (const auto second_reference_type = other_alias_ty->get_primitive_base_type(symbol_table))
         {
-            return self_reference_type->equals(second_reference_type);
+            return self_reference_type->equals(symbol_table, second_reference_type);
         }
     }
     return false;
 }
 
-bool AstAliasType::is_assignable_to_impl(IAstType* other)
+bool AstAliasType::is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other)
 {
     // Basic name comparison is already done higher up.
     // Here we check other conditions that might have to be met to assign.
@@ -281,20 +282,20 @@ bool AstAliasType::is_assignable_to_impl(IAstType* other)
     // type SomePrimitive = i32[]
     // const someVar: SomePrimitive = [1, 2, 3];
     // In this case, `[1, 2, 3]` should be assignable to the base types of `SomePrimitive`
-    if (const auto self_base_type = get_underlying_type())
+    if (const auto self_base_type = get_primitive_base_type(symbol_table))
     {
-        return self_base_type->is_assignable_to(other);
+        return self_base_type->is_assignable_to(symbol_table, other);
     }
 
     return false;
 }
 
-llvm::Type* AstAliasType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstAliasType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
-    return this->get_underlying_type()->get_llvm_type(module);
+    return this->get_primitive_base_type(symbol_table)->get_llvm_type(symbol_table, module);
 }
 
-bool AstAliasType::equals(IAstType* other)
+bool AstAliasType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     // Simple naming checks, e.g., "Vec3 == Vec3"
     if (auto* other_named = cast_type<const AstAliasType*>(other))
@@ -317,7 +318,7 @@ bool AstAliasType::equals(IAstType* other)
         // If both are generic, they must have the same number of parameters
         for (size_t i = 0; i < self_generic_types.size(); i++)
         {
-            if (!self_generic_types[i]->equals(other_generic_types[i].get()))
+            if (!self_generic_types[i]->equals(symbol_table, other_generic_types[i].get()))
             {
                 return false;
             }
@@ -325,9 +326,9 @@ bool AstAliasType::equals(IAstType* other)
         return true;
     }
 
-    if (const auto self_base = this->get_underlying_type())
+    if (const auto self_base = this->get_primitive_base_type(symbol_table))
     {
-        return self_base->equals(other);
+        return self_base->equals(symbol_table, other);
     }
 
     return false;

@@ -3,6 +3,7 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
 
@@ -59,14 +60,14 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
     );
 }
 
-llvm::Type* AstTupleType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstTupleType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
     std::vector<llvm::Type*> member_llvm_types;
     member_llvm_types.reserve(this->_members.size());
 
     for (const auto& member : this->_members)
     {
-        member_llvm_types.push_back(member->get_llvm_type(module));
+        member_llvm_types.push_back(member->get_llvm_type(symbol_table, module));
     }
 
     return llvm::StructType::get(module->getContext(), member_llvm_types);
@@ -88,7 +89,7 @@ std::unique_ptr<IAstType> AstTupleType::clone()
     );
 }
 
-bool AstTupleType::equals(IAstType* other)
+bool AstTupleType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     const auto other_tuple = cast_type<AstTupleType*>(other);
 
@@ -96,7 +97,7 @@ bool AstTupleType::equals(IAstType* other)
     {
         if (auto* other_named = cast_type<AstAliasType*>(other))
         {
-            return other_named->equals(this);
+            return other_named->equals(symbol_table, this);
         }
         return false; // other type is not a tuple; no equality
     }
@@ -107,7 +108,7 @@ bool AstTupleType::equals(IAstType* other)
 
     for (size_t i = 0; i < this->_members.size(); ++i)
     {
-        if (!this->_members[i]->equals(other_tuple->_members[i].get()))
+        if (!this->_members[i]->equals(symbol_table, other_tuple->_members[i].get()))
         {
             return false; // Found a pair of members that are not equal
         }

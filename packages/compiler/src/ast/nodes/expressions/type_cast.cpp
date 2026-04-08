@@ -2,6 +2,7 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <llvm/IR/IRBuilder.h>
 
 using namespace stride::ast;
@@ -38,7 +39,7 @@ void AstTypeCastOp::validate(SymbolTable* symbol_table)
         );
     }
 
-    if (!this->_value->get_type()->is_castable_to(this->_target_type.get()))
+    if (!this->_value->get_type()->is_castable_to(symbol_table, this->_target_type.get()))
     {
         throw stride_error(
             ErrorType::TYPE_ERROR,
@@ -56,14 +57,14 @@ llvm::Value* AstTypeCastOp::codegen(SymbolTable* symbol_table, llvm::Module* mod
 {
     const auto value = this->_value->codegen(symbol_table, module, builder);
 
-    if (this->_value->get_type()->equals(this->_target_type.get()))
+    if (this->_value->get_type()->equals(symbol_table, this->_target_type.get()))
     {
         // No cast needed, return the original value.
         return value;
     }
 
     const auto value_ty = value->getType();
-    const auto target_ty = this->_target_type->get_llvm_type(module);
+    const auto target_ty = this->_target_type->get_llvm_type(symbol_table, module);
 
     if (value_ty->isIntegerTy() && target_ty->isIntegerTy())
     {

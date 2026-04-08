@@ -159,7 +159,7 @@ void AstVariableReassignment::validate(SymbolTable* symbol_table)
             this->get_source_position());
     }
 
-    if (!identifier_ty->is_assignable_to(this->get_value()->get_type()))
+    if (!identifier_ty->is_assignable_to(symbol_table, this->get_value()->get_type()))
     {
         throw stride_error(
             ErrorType::TYPE_ERROR,
@@ -207,7 +207,7 @@ llvm::Value* AstVariableReassignment::codegen(
         variable_def != nullptr &&
         variable_def->get_type()->is_optional())
     {
-        llvm::Type* optional_ty = variable_def->get_type()->get_llvm_type(module);
+        llvm::Type* optional_ty = variable_def->get_type()->get_llvm_type(symbol_table, module);
         llvm::Value* wrapped_val = wrap_optional_value(assign_val, optional_ty, builder);
         builder->CreateStore(wrapped_val, variable);
 

@@ -10,6 +10,8 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
+
 using namespace stride::ast;
 
 GenericParameterName parse_generic_parameter(TokenSet& set)
@@ -207,7 +209,7 @@ std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
     const auto& instantiated_types = alias_type->get_instantiated_generic_types();
     const auto& generic_param_names = type_definition->get_generics_parameters();
 
-    const auto& base_type = type_definition->get_type();
+    const auto& base_type = type_definition->get_type_ptr();
 
     // Ensure we instantiate the type with the correct amount of parameters
     if (instantiated_types.size() != generic_param_names.size())

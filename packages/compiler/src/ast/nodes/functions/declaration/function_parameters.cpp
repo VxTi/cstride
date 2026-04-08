@@ -2,6 +2,8 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
+
 using namespace stride::ast;
 
 void stride::ast::parse_function_parameters(
@@ -103,4 +105,9 @@ void stride::ast::parse_standalone_fn_param(
             std::move(fn_param_type)
         )
     );
+}
+
+std::string AstFunctionParameter::to_string()
+{
+    return std::format("{}({})", this->get_name(), this->get_type()->get_type_name());
 }

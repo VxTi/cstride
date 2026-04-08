@@ -6,6 +6,8 @@
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
+
 using namespace stride::ast;
 
 /**

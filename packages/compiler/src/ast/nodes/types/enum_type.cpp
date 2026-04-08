@@ -119,7 +119,7 @@ std::unique_ptr<IAstType> AstEnumType::clone()
 }
 
 
-bool AstEnumType::equals(IAstType* other)
+bool AstEnumType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto other_enum = cast_type<AstEnumType*>(other))
     {
@@ -128,7 +128,7 @@ bool AstEnumType::equals(IAstType* other)
     return false;
 }
 
-llvm::Type* AstEnumType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstEnumType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
     throw stride_error(
         ErrorType::COMPILATION_ERROR,

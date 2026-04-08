@@ -39,10 +39,7 @@ namespace stride::ast
             _param_name_symbol(Symbol(source, param_name)),
             _type(std::move(param_type)) {}
 
-        std::string to_string() override
-        {
-            return std::format("{}({})", this->get_name(), this->get_type()->get_type_name());
-        }
+        std::string to_string() override;
 
         [[nodiscard]]
         const std::string& get_name() const

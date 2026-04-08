@@ -227,7 +227,7 @@ llvm::Value* AstChainedExpression::codegen(
             );
         }
 
-        llvm::Type* final_llvm_type = member_field_type.value()->get_llvm_type(module);
+        llvm::Type* final_llvm_type = member_field_type.value()->get_llvm_type(symbol_table, module);
         return builder->CreateLoad(final_llvm_type, member_ptr, "val_member_access");
     }
 
@@ -296,7 +296,7 @@ llvm::Value* AstIndirectCall::codegen(
     auto callee_ast_type = this->get_callee()->get_type()->clone();
     if (auto* alias_ty = cast_type<AstAliasType*>(callee_ast_type.get()))
     {
-        callee_ast_type = alias_ty->get_underlying_type()->clone();
+        callee_ast_type = alias_ty->get_primitive_base_type()->clone();
     }
 
     const auto* fn_type = dynamic_cast<AstFunctionType*>(callee_ast_type.get());
@@ -313,11 +313,11 @@ llvm::Value* AstIndirectCall::codegen(
     llvm_param_types.reserve(fn_type->get_parameter_types().size());
     for (const auto& param : fn_type->get_parameter_types())
     {
-        llvm_param_types.push_back(param->get_llvm_type(module));
+        llvm_param_types.push_back(param->get_llvm_type(symbol_table, module));
     }
 
     llvm::FunctionType* llvm_fn_type = llvm::FunctionType::get(
-        fn_type->get_return_type()->get_llvm_type(module),
+        fn_type->get_return_type()->get_llvm_type(symbol_table, module),
         llvm_param_types,
         fn_type->is_variadic()
     );
