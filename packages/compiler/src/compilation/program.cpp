@@ -49,56 +49,11 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     ast::AstNodeTraverser traverser;
 
-    ast::TypeInferenceVisitor type_visitor;
-    ast::ValidationVisitor validation_visitor;
-    ast::SymbolResolver symbol_resolver;
-    ast::ForwardReferenceInitializer forward_reference_initializer(module.get(), &builder);
-    ast::GenericFunctionInstantiator generic_function_instantiator;
-    ast::ImportVisitor import_visitor;
-
-    //
-    // First step - Cross-file symbol registration (imports and function signatures)
-    //
-    for (const auto& [file_name, branch] : this->_ast->get_branches())
-    {
-        // Resolve imports and populate local registry - Used for cross registration step
-        import_visitor.set_current_file_name(file_name);
-
-        // Populate symbol table with stride runtime symbols
-        // These are externally available functions that are linked after codegen
-        runtime::register_runtime_symbols(branch->get_symbol_table().get());
-        traverser.traverse(&import_visitor, branch.get());
-        traverser.traverse(&symbol_resolver, branch.get());
-    }
-    import_visitor.cross_register_symbols(this->_ast.get());
-
-    //
-    // Generic template resolution - Instantiates functions that have generic arguments
-    //
-    for (const auto& branch : this->_ast->get_branches() | std::views::values)
-    {
-        traverser.traverse(&generic_function_instantiator, branch.get());
-    }
-
-    //
-    // Third step - Type resolution
-    //
-    for (const auto& branch : this->_ast->get_branches() | std::views::values)
-    {
-        traverser.traverse(&type_visitor, branch.get());
-    }
-
-    for (const auto& branch : this->_ast->get_branches() | std::views::values)
-    {
-        traverser.traverse(&forward_reference_initializer, branch.get());
-    }
-
-    /// --- Final step - LLVM IR validation and code generation
-    for (const auto& branch : this->_ast->get_branches() | std::views::values)
-    {
-        traverser.traverse(&validation_visitor, branch.get());
-        branch->get_node()->codegen(branch->get_symbol_table().get(), module.get(), &builder);
-    }
+    register_symbols(traverser);
+    resolve_generics(traverser);
+    resolve_types(traverser);
+    initialize_forward_references(traverser, module.get(), &builder);
+    generate_code(traverser, module.get(), &builder);
 
     if (llvm::verifyModule(*module, &llvm::errs()))
     {
@@ -134,4 +89,60 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     module_pass_manager.run(*module, module_analysis_manager);
 
     return module;
+}
+
+void Program::register_symbols(ast::AstNodeTraverser& traverser) const
+{
+    ast::ImportVisitor import_visitor;
+    ast::SymbolResolver symbol_resolver;
+
+    for (const auto& [file_name, branch] : this->_ast->get_branches())
+    {
+        import_visitor.set_current_file_name(file_name);
+        runtime::register_runtime_symbols(branch->get_symbol_table().get());
+        traverser.traverse(&import_visitor, branch.get());
+        traverser.traverse(&symbol_resolver, branch.get());
+    }
+    import_visitor.cross_register_symbols(this->_ast.get());
+}
+
+void Program::resolve_generics(ast::AstNodeTraverser& traverser) const
+{
+    ast::GenericFunctionInstantiator generic_function_instantiator;
+
+    for (const auto& branch : this->_ast->get_branches() | std::views::values)
+    {
+        traverser.traverse(&generic_function_instantiator, branch.get());
+    }
+}
+
+void Program::resolve_types(ast::AstNodeTraverser& traverser) const
+{
+    ast::TypeInferenceVisitor type_visitor;
+
+    for (const auto& branch : this->_ast->get_branches() | std::views::values)
+    {
+        traverser.traverse(&type_visitor, branch.get());
+    }
+}
+
+void Program::initialize_forward_references(ast::AstNodeTraverser& traverser, llvm::Module* module, llvm::IRBuilder<>* builder) const
+{
+    ast::ForwardReferenceInitializer forward_reference_initializer(module, builder);
+
+    for (const auto& branch : this->_ast->get_branches() | std::views::values)
+    {
+        traverser.traverse(&forward_reference_initializer, branch.get());
+    }
+}
+
+void Program::generate_code(ast::AstNodeTraverser& traverser, llvm::Module* module, llvm::IRBuilder<>* builder) const
+{
+    ast::ValidationVisitor validation_visitor;
+
+    for (const auto& branch : this->_ast->get_branches() | std::views::values)
+    {
+        traverser.traverse(&validation_visitor, branch.get());
+        branch->get_node()->codegen(branch->get_symbol_table().get(), module, builder);
+    }
 }
