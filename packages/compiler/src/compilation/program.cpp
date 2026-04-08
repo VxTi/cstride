@@ -52,6 +52,7 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     ast::TypeInferenceVisitor type_visitor;
     ast::ValidationVisitor validation_visitor;
     ast::SymbolResolver symbol_resolver;
+    ast::ForwardReferenceInitializer forward_reference_initializer(module.get(), &builder);
     ast::GenericFunctionInstantiator generic_function_instantiator;
     ast::ImportVisitor import_visitor;
 
@@ -92,12 +93,8 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
 
     for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
+        forward_reference_initializer.accept(branch->get_symbol_table().get(), branch->get_node());
         // Resolving forward references - Ensures symbols certain symbols are available before implementation
-        branch->get_node()->resolve_forward_references(
-            branch->get_symbol_table().get(),
-            module.get(),
-            &builder
-        );
     }
 
     /// --- Final step - LLVM IR validation and code generation

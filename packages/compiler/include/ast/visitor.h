@@ -93,10 +93,17 @@ namespace stride::ast
 
     class ForwardReferenceInitializer : public IVisitor
     {
-        llvm::Module* _module{};
-        llvm::IRBuilderBase* _ir_builder{};
+        llvm::Module* _module;
+        llvm::IRBuilderBase* _ir_builder;
 
     public:
+        explicit ForwardReferenceInitializer(
+            llvm::Module* module,
+            llvm::IRBuilderBase* ir_builder
+        ) :
+            _module(module),
+            _ir_builder(ir_builder) {}
+
         void accept(SymbolTable* symbol_table, IAstNode* node) override;
     };
 
