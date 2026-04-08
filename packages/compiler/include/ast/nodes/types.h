@@ -74,9 +74,6 @@ namespace stride::ast
             return this->clone_as<IAstType>();
         }
 
-        template <typename T>
-        std::unique_ptr<T> as();
-
         [[nodiscard]]
         bool is_pointer() const
         {

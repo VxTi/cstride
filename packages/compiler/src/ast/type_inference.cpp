@@ -130,7 +130,7 @@ std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(SymbolTable* symbol_t
 
         if (type->is_alias_ty())
         {
-            return type->as<AstAliasType>();
+            return type->clone_as<AstAliasType>();
         }
     }
     else if (op_type == UnaryOpType::DEREFERENCE)
@@ -273,7 +273,7 @@ std::unique_ptr<IAstType> stride::ast::infer_object_initializer_type(const AstOb
     );
 }
 
-std::unique_ptr<IAstType> stride::ast::infer_function_type(const SymbolTable* symbol_table, const IAstFunction* function)
+std::unique_ptr<IAstType> stride::ast::infer_function_type(const IAstFunction* function)
 {
     std::vector<std::unique_ptr<IAstType>> param_types;
     param_types.reserve(function->get_parameters().size());

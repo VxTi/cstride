@@ -319,10 +319,3 @@ std::optional<AstObjectType*> stride::ast::get_object_type_from_type(const Symbo
 
     return base_struct_type;
 }
-
-template <typename T>
-std::unique_ptr<T> IAstType::as()
-{
-    static_assert(std::is_base_of_v<IAstType, T>, "T must be a subclass of IAstType");
-    return this->clone_as<T>(this);
-}

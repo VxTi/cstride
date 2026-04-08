@@ -70,7 +70,5 @@ namespace stride::ast
         int recursion_guard
     );
 
-    std::unique_ptr<IAstType> infer_function_type(
-    const SymbolTable* symbol_table,
-        const IAstFunction* function);
+    std::unique_ptr<IAstType> infer_function_type(const IAstFunction* function);
 }
