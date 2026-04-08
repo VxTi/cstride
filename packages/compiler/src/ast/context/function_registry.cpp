@@ -15,8 +15,9 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     const size_t instantiated_generic_count
 )
 {
-    const auto& global_scope = this->traverse_to_root();
-    for (const auto& symbol_def : global_scope->_symbols)
+    const auto& global_symbol_table = this->traverse_to_root();
+
+    for (const auto& symbol_def : global_symbol_table->_symbols)
     {
         if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
         {

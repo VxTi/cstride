@@ -22,16 +22,6 @@ void IAstFunction::resolve_forward_references(
     llvm::IRBuilderBase* builder
 )
 {
-    // If the function has generic instantiations, resolve them instead of self.
-    if (!this->_generic_instantiations.empty())
-    {
-        for (const auto& instantiation : this->_generic_instantiations)
-        {
-            instantiation->resolve_forward_references(symbol_table, module, builder);
-        }
-        return;
-    }
-
     std::vector<Symbol> captures;
     const auto outer_context = symbol_table->get_parent_symbol_table() != nullptr
         ? symbol_table->get_parent_symbol_table().get()
@@ -96,6 +86,8 @@ void IAstFunction::resolve_forward_references(
 
     if (this->is_anonymous())
         llvm_func->addFnAttr("stride.anonymous");
+
+    printf("Define forward ref fucntion symbol %s\n", this->get_function_name().c_str());
 
     this->_body->resolve_forward_references(symbol_table, module, builder);
 }

@@ -292,34 +292,6 @@ FunctionDefinition* IAstFunction::get_function_definition(SymbolTable* symbol_ta
     return this->_function_definition;
 }
 
-std::vector<FunctionImplementation> IAstFunction::get_function_implementation_data(SymbolTable* symbol_table)
-{
-    const auto& definition = this->get_function_definition(symbol_table);
-
-    // If the function is generic, we return its instantiated overloads.
-    // If it's generic but has no overloads, return empty list.
-    if (this->is_generic())
-    {
-        std::vector<FunctionImplementation> implementations;
-
-        for (const auto& [types, llvm_function, node] : definition->get_generic_overloads())
-        {
-            implementations.emplace_back(
-                get_overloaded_function_name(node->get_function_name(), types),
-                llvm_function,
-                node->get_body()
-            );
-        }
-
-        return implementations;
-    }
-
-    // For non-generic functions, return the single implementation.
-    return {
-        FunctionImplementation{ this->get_function_name(), definition->get_llvm_function() }
-    };
-}
-
 std::unique_ptr<IAstNode> AstFunctionParameter::clone()
 {
     return std::make_unique<AstFunctionParameter>(

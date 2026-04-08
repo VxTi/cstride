@@ -61,7 +61,6 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     //
     for (const auto& [file_name, branch] : this->_ast->get_branches())
     {
-        printf("--- Traversing %s ---\n", file_name.c_str());
         // Resolve imports and populate local registry - Used for cross registration step
         import_visitor.set_current_file_name(file_name);
 
@@ -76,25 +75,22 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     //
     // Generic template resolution - Instantiates functions that have generic arguments
     //
-    for (const auto& [file_name, branch] : this->_ast->get_branches())
+    for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
-        printf("--- Generic instantiation | Traversing %s ---\n", file_name.c_str());
         traverser.traverse(&generic_function_instantiator, branch.get());
     }
 
     //
     // Third step - Type resolution
     //
-    for (const auto& [file_name, branch] : this->_ast->get_branches())
+    for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
-        printf("--- Type resolution | Traversing %s ---\n", file_name.c_str());
         traverser.traverse(&type_visitor, branch.get());
     }
 
     for (const auto& branch : this->_ast->get_branches() | std::views::values)
     {
-        forward_reference_initializer.accept(branch->get_symbol_table().get(), branch->get_node());
-        // Resolving forward references - Ensures symbols certain symbols are available before implementation
+        traverser.traverse(&forward_reference_initializer, branch.get());
     }
 
     /// --- Final step - LLVM IR validation and code generation

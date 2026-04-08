@@ -74,14 +74,6 @@ namespace stride::ast
      *                Function declaration definitions             *
      *                                                             *
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-    struct FunctionImplementation
-    {
-        std::string overload_function_name;
-        llvm::Function* llvm_function;
-        AstBlock* body = nullptr; // Non-null for generic overloads (resolved body)
-    };
-
     class IAstFunction
         : public IAstContainer,
           public IAstExpression
@@ -135,12 +127,6 @@ namespace stride::ast
 
         [[nodiscard]]
         std::vector<std::unique_ptr<IAstType>> get_parameter_types() const;
-
-        /// Returns a list of overloads for this function. For example, whenever the
-        /// function is defined with generic parameters, there will be several overloads generated
-        /// for each generic instantiation. This function returns the internalized name of each overload.
-        [[nodiscard]]
-        std::vector<FunctionImplementation> get_function_implementation_data(SymbolTable* symbol_table);
 
         [[nodiscard]]
         AstBlock* get_body() override
