@@ -28,7 +28,7 @@ void IAstFunction::validate(SymbolTable* symbol_table)
     // create a copy of this function with the parameters instantiated
     for (const auto& node : this->get_generic_instantiations())
     {
-        validate_function_overload(symbol_table, node.get());
+        validate_function_overload(node->get_body()->get_symbol_table().get(), node.get());
     }
 }
 
