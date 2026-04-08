@@ -113,7 +113,7 @@ std::unique_ptr<IAstType> stride::ast::infer_binary_op_type(SymbolTable* symbol_
 
 std::unique_ptr<IAstType> stride::ast::infer_unary_op_type(SymbolTable* symbol_table, const AstUnaryOp* operation)
 {
-    auto type = infer_expression_type(symbol_table, &operation->get_operand());
+    auto type = infer_expression_type(symbol_table, operation->get_operand());
 
     if (const auto op_type = operation->get_op_type();
         op_type == UnaryOpType::ADDRESS_OF)

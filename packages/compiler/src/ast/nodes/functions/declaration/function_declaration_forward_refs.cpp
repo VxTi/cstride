@@ -7,6 +7,7 @@
 #include "ast/nodes/return_statement.h"
 #include "ast/nodes/while_loop.h"
 
+#include <format>
 #include <ranges>
 #include <llvm/IR/Module.h>
 
@@ -80,9 +81,9 @@ void IAstFunction::resolve_forward_references(
         : llvm::Function::ExternalLinkage;
 
     llvm::FunctionType* generic_function_type = this->get_llvm_function_type(
+        symbol_table,
         module,
-        captured_types,
-        {}
+        captured_types, {}
     );
 
     auto* llvm_func = llvm::Function::Create(
@@ -274,7 +275,7 @@ void IAstFunction::collect_free_variables(
     // Handle unary ops
     if (const auto* unary_op = cast_expr<AstUnaryOp*>(node))
     {
-        collect_free_variables(&unary_op->get_operand(), lambda_symbol_table, outer_symbol_table, captures);
+        collect_free_variables(unary_op->get_operand(), lambda_symbol_table, outer_symbol_table, captures);
         return;
     }
 
@@ -421,9 +422,9 @@ void IAstFunction::collect_free_variables(
 }
 
 llvm::FunctionType* IAstFunction::get_llvm_function_type(
+    SymbolTable* symbol_table,
     llvm::Module* module,
-    std::vector<llvm::Type*> captured_variables,
-    const GenericTypeList& generic_instantiation_types
+    std::vector<llvm::Type*> captured_variables, const GenericTypeList& generic_instantiation_types
 ) const
 {
     std::vector<llvm::Type*> base_parameter_types;

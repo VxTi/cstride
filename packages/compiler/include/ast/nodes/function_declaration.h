@@ -250,9 +250,9 @@ namespace stride::ast
 
     private:
         llvm::FunctionType* get_llvm_function_type(
+            SymbolTable* symbol_table,
             llvm::Module* module,
-            std::vector<llvm::Type*> captured_variables,
-            const GenericTypeList& generic_instantiation_types = {}
+            std::vector<llvm::Type*> captured_variables, const GenericTypeList& generic_instantiation_types = {}
         ) const;
 
         static void validate_candidate(SymbolTable* symbol_table, IAstFunction* candidate);

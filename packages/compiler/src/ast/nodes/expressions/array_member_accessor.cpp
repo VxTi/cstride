@@ -83,7 +83,7 @@ llvm::Value* AstArrayMemberAccessor::codegen(
 
     if (const auto named_ty = cast_type<AstAliasType*>(array_base_type.get()))
     {
-        array_base_type = named_ty->get_primitive_base_type()->clone();
+        array_base_type = named_ty->get_primitive_base_type(symbol_table)->clone();
     }
 
     llvm::Value* base_val = this->_array_base->codegen(symbol_table, module, builder);

@@ -55,7 +55,7 @@ llvm::Function* AstFunctionCall::resolve_regular_callee(SymbolTable* symbol_tabl
                 return callee;
             }
         }
-        else if (auto* llvm_func = fn_definition->get_generic_overload_llvm_function(this->_generic_type_arguments))
+        else if (auto* llvm_func = fn_definition->get_generic_overload_llvm_function(symbol_table, this->_generic_type_arguments))
         {
             return llvm_func;
         }
@@ -264,7 +264,7 @@ llvm::Value* AstFunctionCall::codegen_anonymous_function_call(
     auto base_type = field_def->get_type()->clone();
     if (auto* alias_ty = cast_type<AstAliasType*>(base_type.get()))
     {
-        base_type = alias_ty->get_primitive_base_type()->clone();
+        base_type = alias_ty->get_primitive_base_type(symbol_table)->clone();
     }
 
     if (const auto* fn_type = dynamic_cast<AstFunctionType*>(base_type.get()))

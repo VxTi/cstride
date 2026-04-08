@@ -109,7 +109,7 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
         }
     }
 
-    if (const auto* object_def = cast_type<AstObjectType*>(type_def.value()->get_type()))
+    if (const auto* object_def = cast_type<AstObjectType*>(type_def.value()->get_type_ptr()))
     {
         auto resolved_type = instantiate_generic_type(this, const_cast<AstObjectType*>(object_def), type_def.value());
 
@@ -118,9 +118,9 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
         return this->_object_type->clone_as<AstObjectType>();
     }
 
-    if (auto* alias_def = cast_type<AstAliasType*>(type_def.value()->get_type()))
+    if (auto* alias_def = cast_type<AstAliasType*>(type_def.value()->get_type_ptr()))
     {
-        const auto underlying_type = alias_def->get_primitive_base_type();
+        const auto underlying_type = alias_def->get_primitive_base_type(symbol_table);
 
         if (auto* object_def = cast_type<AstObjectType*>(underlying_type))
         {

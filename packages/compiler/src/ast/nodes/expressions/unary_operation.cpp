@@ -4,6 +4,7 @@
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/ValueSymbolTable.h>
@@ -258,7 +259,7 @@ llvm::Value* AstUnaryOp::codegen(
     {
         // These operations require an LValue (address), effectively only working on variables
         // (identifiers)
-        const auto* identifier = cast_expr<AstIdentifier*>(&this->get_operand());
+        const auto* identifier = cast_expr<AstIdentifier*>(this->get_operand());
 
         if (!identifier)
         {
@@ -355,7 +356,7 @@ llvm::Value* AstUnaryOp::codegen(
         return this->is_postfix_operation() ? loaded_val : new_val;
     }
 
-    auto* val = get_operand().codegen(symbol_table, module, builder);
+    auto* val = get_operand()->codegen(symbol_table, module, builder);
 
     if (!val)
     {
@@ -428,12 +429,12 @@ std::unique_ptr<IAstNode> AstUnaryOp::clone()
 
 bool AstUnaryOp::is_reducible()
 {
-    return this->get_operand().is_reducible();
+    return this->get_operand()->is_reducible();
 }
 
 std::optional<std::unique_ptr<IAstNode>> AstUnaryOp::reduce()
 {
-    return this->get_operand().reduce();
+    return this->get_operand()->reduce();
 }
 
 std::string AstUnaryOp::to_string()
@@ -442,9 +443,9 @@ std::string AstUnaryOp::to_string()
         "UnaryOp({}{})",
         this->is_postfix_operation()
         ? unary_op_type_to_str(this->get_op_type())
-        : this->get_operand().to_string(),
+        : this->get_operand()->to_string(),
         this->is_postfix_operation()
-        ? this->get_operand().to_string()
+        ? this->get_operand()->to_string()
         : unary_op_type_to_str(this->get_op_type())
     );
 }

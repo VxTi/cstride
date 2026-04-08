@@ -76,7 +76,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
     }
     else if (const auto* unary = cast_expr<AstUnaryOp*>(node))
     {
-        visit_expression(visitor, &unary->get_operand());
+        visit_expression(visitor, unary->get_operand());
     }
     else if (const auto* var_decl = cast_expr<AstVariableDeclaration*>(node))
     {

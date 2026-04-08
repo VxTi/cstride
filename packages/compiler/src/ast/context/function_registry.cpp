@@ -20,7 +20,7 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     {
         if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
         {
-            if (fn_def->matches_parameter_signature(function_name, parameter_types, instantiated_generic_count))
+            if (fn_def->matches_parameter_signature(this, function_name, parameter_types, instantiated_generic_count))
             {
                 return fn_def;
             }
@@ -65,7 +65,7 @@ std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     {
         if (auto* fn_def = dynamic_cast<FunctionDefinition*>(symbol_def.get()))
         {
-            if (fn_def->matches_type_signature(function_name, signature))
+            if (fn_def->matches_type_signature(this, function_name, signature))
             {
                 return fn_def;
             }
@@ -90,6 +90,7 @@ bool FunctionDefinition::matches_generic_signature(
 }
 
 bool FunctionDefinition::matches_type_signature(
+    SymbolTable* symbol_table,
     const std::string& name,
     const AstFunctionType* signature
 ) const
@@ -103,14 +104,24 @@ bool FunctionDefinition::matches_type_signature(
     const auto& other_params = signature->get_parameter_types();
 
     return matches_parameter_signature(
+        symbol_table,
         name,
         other_params,
         signature->get_generic_parameter_names().size()
     );
 }
 
+std::unique_ptr<IDefinition> FunctionDefinition::clone() const
+{
+    return std::make_unique<FunctionDefinition>(
+        _function_type->clone_as<AstFunctionType>(),
+        get_symbol(),
+        get_visibility(),
+        _flags);
+}
 
 bool FunctionDefinition::matches_parameter_signature(
+    SymbolTable* symbol_table,
     const std::string& internal_function_name,
     const std::vector<std::unique_ptr<IAstType>>& other_parameter_types,
     const size_t generic_argument_count
@@ -254,15 +265,14 @@ bool SymbolTable::is_function_defined(
                         function_type->get_generic_parameter_names().size());
                 }
 
-                return fn_def->matches_type_signature(function_name, function_type);
+                return fn_def->matches_type_signature(this, function_name, function_type);
             }
             return false;
         }
     );
 }
 
-
-bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique_ptr<IAstType>>& generic_types) const
+bool FunctionDefinition::has_generic_instantiation(SymbolTable* symbol_table, const std::vector<std::unique_ptr<IAstType>>& generic_types) const
 {
     for (const auto& [instantiated_generic_types, llvm_function, _node] : this->_generic_overloads)
     {
@@ -289,9 +299,9 @@ bool FunctionDefinition::has_generic_instantiation(const std::vector<std::unique
     return false;
 }
 
-void FunctionDefinition::add_generic_instantiation(const SymbolTable* symbol_table, GenericTypeList generic_overload_types)
+void FunctionDefinition::add_generic_instantiation(SymbolTable* symbol_table, GenericTypeList generic_overload_types)
 {
-    if (has_generic_instantiation(generic_overload_types))
+    if (has_generic_instantiation(symbol_table, generic_overload_types))
         return; // Already instantiated
 
     auto instantiation = this->_reference_node->instantiate_generic_function_template(symbol_table, generic_overload_types);
@@ -304,7 +314,7 @@ void FunctionDefinition::add_generic_instantiation(const SymbolTable* symbol_tab
     );
 }
 
-llvm::Function* FunctionDefinition::get_generic_overload_llvm_function(const GenericTypeList& generic_types) const
+llvm::Function* FunctionDefinition::get_generic_overload_llvm_function(SymbolTable* symbol_table, const GenericTypeList& generic_types) const
 {
     for (const auto& [instantiated_generic_types, llvm_function, _node] : this->_generic_overloads)
     {

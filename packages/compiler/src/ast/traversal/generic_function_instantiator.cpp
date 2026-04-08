@@ -2,6 +2,8 @@
 #include "ast/definitions/function_definition.h"
 #include "ast/nodes/expression.h"
 
+#include <format>
+
 using namespace stride::ast;
 
 void GenericFunctionInstantiator::accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call)

@@ -5,6 +5,7 @@
 #include "ast/conditionals.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <memory>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>

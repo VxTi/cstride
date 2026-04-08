@@ -135,7 +135,7 @@ bool AstFunctionType::is_castable_to_impl(SymbolTable* symbol_table, IAstType* o
 {
     if (const auto other_named = cast_type<AstAliasType*>(other))
     {
-        return this->equals(other_named->get_primitive_base_type());
+        return this->equals(symbol_table, other_named->get_primitive_base_type(symbol_table));
     }
 
     return false;

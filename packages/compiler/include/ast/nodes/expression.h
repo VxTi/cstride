@@ -808,9 +808,9 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        IAstExpression& get_operand() const
+        IAstExpression* get_operand() const
         {
-            return *this->_operand;
+            return this->_operand.get();
         }
 
         llvm::Value* codegen(

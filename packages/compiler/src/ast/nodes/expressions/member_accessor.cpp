@@ -296,7 +296,7 @@ llvm::Value* AstIndirectCall::codegen(
     auto callee_ast_type = this->get_callee()->get_type()->clone();
     if (auto* alias_ty = cast_type<AstAliasType*>(callee_ast_type.get()))
     {
-        callee_ast_type = alias_ty->get_primitive_base_type()->clone();
+        callee_ast_type = alias_ty->get_primitive_base_type(symbol_table)->clone();
     }
 
     const auto* fn_type = dynamic_cast<AstFunctionType*>(callee_ast_type.get());

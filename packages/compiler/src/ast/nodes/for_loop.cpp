@@ -6,6 +6,7 @@
 #include "ast/tokens/token.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 

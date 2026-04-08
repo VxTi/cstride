@@ -73,7 +73,7 @@ namespace stride::ast::definition
             return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
         }
 
-        void add_generic_instantiation(const SymbolTable* symbol_table, GenericTypeList generic_overload_types);
+        void add_generic_instantiation(SymbolTable* symbol_table, GenericTypeList generic_overload_types);
 
         [[nodiscard]]
         const std::vector<GenericFunctionOverload>& get_generic_overloads() const
@@ -82,14 +82,16 @@ namespace stride::ast::definition
         }
 
         [[nodiscard]]
-        bool has_generic_instantiation(const GenericTypeList& generic_types) const;
+        bool has_generic_instantiation(SymbolTable* symbol_table, const GenericTypeList& generic_types) const;
 
-        llvm::Function* get_generic_overload_llvm_function(const GenericTypeList& generic_types) const;
+        [[nodiscard]]
+        llvm::Function* get_generic_overload_llvm_function(SymbolTable* symbol_table, const GenericTypeList& generic_types) const;
 
         ~FunctionDefinition() override = default;
 
-        bool matches_type_signature(const std::string& name, const AstFunctionType* signature) const;
+        bool matches_type_signature(SymbolTable* symbol_table, const std::string& name, const AstFunctionType* signature) const;
 
+        [[nodiscard]]
         bool matches_generic_signature(const std::string& name, size_t function_param_count, size_t generic_param_count) const;
 
         void set_llvm_function(llvm::Function* function)
@@ -105,19 +107,12 @@ namespace stride::ast::definition
 
         [[nodiscard]]
         bool matches_parameter_signature(
+            SymbolTable* symbol_table,
             const std::string& internal_function_name,
-            const std::vector<std::unique_ptr<IAstType>>& other_parameter_types,
-            size_t generic_argument_count
+            const std::vector<std::unique_ptr<IAstType>>& other_parameter_types, size_t generic_argument_count
         ) const;
 
         [[nodiscard]]
-        std::unique_ptr<IDefinition> clone() const override
-        {
-            return std::make_unique<FunctionDefinition>(
-                _function_type->clone_as<AstFunctionType>(),
-                get_symbol(),
-                get_visibility(),
-                _flags);
-        }
+        std::unique_ptr<IDefinition> clone() const override;
     };
 }

@@ -147,8 +147,7 @@ namespace stride::ast
         );
 
         std::optional<definition::FunctionDefinition*> get_function_definition(
-            const std::string& function_name,
-            IAstType* function_type
+            const std::string& function_name, IAstType* function_type
         );
 
         [[nodiscard]]

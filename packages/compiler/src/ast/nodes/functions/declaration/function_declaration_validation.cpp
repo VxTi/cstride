@@ -4,6 +4,8 @@
 #include "ast/nodes/function_declaration.h"
 #include "ast/nodes/return_statement.h"
 
+#include <format>
+
 using namespace stride::ast;
 
 void IAstFunction::validate(SymbolTable* symbol_table)

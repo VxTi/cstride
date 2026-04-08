@@ -5,6 +5,8 @@
 #include "ast/nodes/import.h"
 #include "ast/nodes/package.h"
 
+#include <format>
+
 void stride::ast::ImportVisitor::accept_import_node(SymbolTable* symbol_table, AstImport* node)
 {
     const auto& package_identifier = node->get_package_identifier();
