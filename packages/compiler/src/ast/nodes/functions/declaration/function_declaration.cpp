@@ -237,7 +237,7 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate_generic_function_templat
     );
 
     this->_generic_instantiations.push_back(instantiation);
-    instantiation->set_type(infer_function_type(resolved_symbol_table.get(), instantiation.get()));
+    instantiation->set_type(infer_function_type(instantiation.get()));
 
     return instantiation;
 }

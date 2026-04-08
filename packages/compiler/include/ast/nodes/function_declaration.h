@@ -255,7 +255,7 @@ namespace stride::ast
             std::vector<llvm::Type*> captured_variables, const GenericTypeList& generic_instantiation_types = {}
         ) const;
 
-        static void validate_candidate(SymbolTable* symbol_table, IAstFunction* candidate);
+        static void validate_function_overload(SymbolTable* symbol_table, IAstFunction* candidate_function);
 
         static void collect_free_variables(
             IAstNode* node,

@@ -21,7 +21,7 @@ void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunctio
         function->get_function_name()
     );
 
-    function->set_type(infer_function_type(symbol_table, function));
+    function->set_type(infer_function_type(function));
 
     if (function->is_generic())
     {

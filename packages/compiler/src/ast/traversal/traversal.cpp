@@ -33,19 +33,26 @@ void AstNodeTraverser::traverse(IVisitor* visitor, const AstBranch* branch)
     this->visit(visitor, branch->get_node());
 }
 
-void AstNodeTraverser::push_symbol_table(AstBlock* block)
+void AstNodeTraverser::start_block_visitation(AstBlock* block)
 {
     if (!block->get_symbol_table())
     {
-        block->set_symbol_table(
-            std::make_shared<SymbolTable>(_context_name, _current_context_type, _current_symbol_table)
-        );
+        if (this->_current_context_type == ContextType::GLOBAL)
+        {
+            block->set_symbol_table(this->_current_symbol_table);
+        }
+        else
+        {
+            block->set_symbol_table(
+                std::make_shared<SymbolTable>(_context_name, _current_context_type, _current_symbol_table)
+            );
+        }
     }
     _symbol_table_stack.push_back(_current_symbol_table);
     _current_symbol_table = block->get_symbol_table();
 }
 
-void AstNodeTraverser::pop_symbol_table()
+void AstNodeTraverser::end_block_visitation()
 {
     if (_symbol_table_stack.empty())
         return;
@@ -131,19 +138,19 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         {
             for (const auto& generic_instantiation : function_node->get_generic_instantiations())
             {
-                push_symbol_table(generic_instantiation->get_body());
+                start_block_visitation(generic_instantiation->get_body());
 
                 visitor->accept_function_node(
                     generic_instantiation->get_body()->get_symbol_table().get(),
                     generic_instantiation.get());
                 visit_block(visitor, generic_instantiation->get_body());
 
-                pop_symbol_table();
+                end_block_visitation();
             }
         }
         else
         {
-            push_symbol_table(function_node->get_body());
+            start_block_visitation(function_node->get_body());
 
             visitor->accept_function_node(function_node->get_body()->get_symbol_table().get(), function_node);
             // We don't want to resolve the function body node if the function is generic, since it may
@@ -153,7 +160,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
                 visit_block(visitor, function_node->get_body());
             }
 
-            pop_symbol_table();
+            end_block_visitation();
         }
     }
     else if (const auto* type_cast = cast_expr<AstTypeCastOp*>(node))
@@ -200,7 +207,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     {
         this->_current_context_type = ContextType::CONTROL_FLOW;
 
-        push_symbol_table(for_loop->get_body());
+        start_block_visitation(for_loop->get_body());
 
         if (for_loop->get_initializer())
             visit(visitor, for_loop->get_initializer());
@@ -213,7 +220,7 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
 
         visit_block(visitor, for_loop->get_body());
 
-        pop_symbol_table();
+        end_block_visitation();
     }
     else if (const auto* return_stmt = dynamic_cast<AstReturnStatement*>(node))
     {
@@ -245,11 +252,11 @@ void AstNodeTraverser::visit(IVisitor* visitor, IAstNode* node)
     }
     else if (auto* block = dynamic_cast<AstBlock*>(node))
     {
-        push_symbol_table(block);
+        start_block_visitation(block);
 
         visit_block(visitor, block);
 
-        pop_symbol_table();
+        end_block_visitation();
     }
     else if (auto* expr = dynamic_cast<IAstExpression*>(node))
     {

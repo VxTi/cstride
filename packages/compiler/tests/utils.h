@@ -25,12 +25,12 @@ namespace stride::tests
     {
         const auto source = std::make_shared<SourceFile>("test.sr", code);
         auto tokens = ast::tokenizer::tokenize(source);
-        const auto context = std::make_shared<ast::SymbolTable>();
+        auto context = std::make_shared<ast::SymbolTable>();
 
         auto node = parse_sequential(tokens);
         node->set_symbol_table(context);
 
-        ast::AstNodeTraverser traverser(context);
+        ast::AstNodeTraverser traverser;
         ast::TypeInferenceVisitor type_visitor;
         ast::SymbolResolver symbol_resolver;
         ast::GenericFunctionInstantiator generic_function_instantiator;

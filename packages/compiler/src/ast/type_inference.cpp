@@ -512,7 +512,7 @@ std::unique_ptr<IAstType> stride::ast::infer_expression_type(
 
     if (const auto* function_definition = cast_expr<IAstFunction*>(expr))
     {
-        return infer_function_type(symbol_table, function_definition);
+        return infer_function_type(function_definition);
     }
 
     if (const auto* tuple_init = cast_expr<AstTupleInitializer*>(expr))

@@ -6,6 +6,7 @@
 
 namespace stride::ast
 {
+    class AstFunctionDeclaration;
     class AstBranch;
     class IVisitor;
     class AstFunctionCall;
@@ -46,8 +47,8 @@ namespace stride::ast
 
         void visit_block(IVisitor* visitor, const AstBlock* node);
 
-        void push_symbol_table(AstBlock* block);
+        void start_block_visitation(AstBlock* block);
 
-        void pop_symbol_table();
+        void end_block_visitation();
     };
 }

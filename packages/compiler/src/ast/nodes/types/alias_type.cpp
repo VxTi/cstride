@@ -298,7 +298,7 @@ llvm::Type* AstAliasType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Mo
 bool AstAliasType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     // Simple naming checks, e.g., "Vec3 == Vec3"
-    if (auto* other_named = cast_type<const AstAliasType*>(other))
+    if (const auto* other_named = cast_type<AstAliasType*>(other))
     {
         if (this->get_name() != other_named->get_name())
             return false;
