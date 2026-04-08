@@ -141,8 +141,9 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
                 start_block_visitation(generic_instantiation->get_body());
 
                 visitor->accept_function_node(
-                    generic_instantiation->get_body()->get_symbol_table().get(),
-                    generic_instantiation.get());
+                    this->_current_symbol_table.get(),
+                    generic_instantiation.get()
+                );
                 visit_block(visitor, generic_instantiation->get_body());
 
                 end_block_visitation();
@@ -152,7 +153,7 @@ void AstNodeTraverser::visit_expression(IVisitor* visitor, IAstExpression* node)
         {
             start_block_visitation(function_node->get_body());
 
-            visitor->accept_function_node(function_node->get_body()->get_symbol_table().get(), function_node);
+            visitor->accept_function_node(this->_current_symbol_table.get(), function_node);
             // We don't want to resolve the function body node if the function is generic, since it may
             // contain uninstantiated generic parameters that would fail to resolve.
             if (!function_node->is_generic())
