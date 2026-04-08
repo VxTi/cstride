@@ -93,15 +93,15 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
         );
     }
 
-    if (!this->_generic_type_arguments.empty() && !type_def.value()->get_generics_parameters().empty())
+    if (!this->_generic_type_arguments.empty() && !type_def.value()->get_generics_parameter_names().empty())
     {
-        if (this->_generic_type_arguments.size() != type_def.value()->get_generics_parameters().size())
+        if (this->_generic_type_arguments.size() != type_def.value()->get_generics_parameter_names().size())
         {
             throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format("Invalid instantiation of object type '{}': expected {} generic arguments, got {}",
                             this->_object_type_name,
-                            type_def.value()->get_generics_parameters().size(),
+                            type_def.value()->get_generics_parameter_names().size(),
                             this->_generic_type_arguments.size()
                 ),
                 this->get_source_position()

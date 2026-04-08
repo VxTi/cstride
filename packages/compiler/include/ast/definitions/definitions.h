@@ -62,7 +62,7 @@ namespace stride::ast::definition
         : public Cloneable<TypeDefinition>
     {
         std::unique_ptr<IAstType> _type;
-        GenericParameterList _generics;
+        GenericParameterList _generic_parameter_names;
         VisibilityModifier _visibility;
         Symbol _type_name_symbol;
 
@@ -74,7 +74,7 @@ namespace stride::ast::definition
             const VisibilityModifier visibility
         ) :
             _type(std::move(type)),
-            _generics(std::move(generics)),
+            _generic_parameter_names(std::move(generics)),
             _visibility(visibility),
             _type_name_symbol(std::move(type_name_symbol)) {}
 
@@ -91,15 +91,15 @@ namespace stride::ast::definition
         }
 
         [[nodiscard]]
-        GenericParameterList get_generics_parameters() const
+        GenericParameterList get_generics_parameter_names() const
         {
-            return this->_generics;
+            return this->_generic_parameter_names;
         }
 
         [[nodiscard]]
         bool is_generic() const
         {
-            return !this->_generics.empty();
+            return !this->_generic_parameter_names.empty();
         }
 
         [[nodiscard]]
@@ -108,7 +108,7 @@ namespace stride::ast::definition
             return std::make_unique<TypeDefinition>(
                 this->_type_name_symbol,
                 _type->clone(),
-                get_generics_parameters(),
+                get_generics_parameter_names(),
                 this->_visibility
             );
         }

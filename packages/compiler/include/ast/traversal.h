@@ -27,17 +27,7 @@ namespace stride::ast
     /// ensuring that child expression types are available when the parent is visited.
     class AstNodeTraverser
     {
-        std::shared_ptr<SymbolTable> _current_symbol_table;
-
-        std::string _context_name;
-        ContextType _current_context_type;
-
-        std::vector<std::shared_ptr<SymbolTable>> _symbol_table_stack;
-
     public:
-        explicit AstNodeTraverser() :
-            _current_context_type(ContextType::GLOBAL) {}
-
         void traverse(IVisitor* visitor, const AstBranch* branch);
 
     private:
@@ -47,8 +37,8 @@ namespace stride::ast
 
         void visit_block(IVisitor* visitor, const AstBlock* node);
 
-        void start_block_visitation(AstBlock* block);
+        static void start_block_visitation(IVisitor* visitor, AstBlock* block);
 
-        void end_block_visitation();
+        static void end_block_visitation(IVisitor* visitor);
     };
 }

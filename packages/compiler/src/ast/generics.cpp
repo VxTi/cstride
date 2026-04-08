@@ -207,7 +207,7 @@ std::unique_ptr<IAstType> stride::ast::instantiate_generic_type(
     const definition::TypeDefinition* type_definition)
 {
     const auto& instantiated_types = alias_type->get_instantiated_generic_types();
-    const auto& generic_param_names = type_definition->get_generics_parameters();
+    const auto& generic_param_names = type_definition->get_generics_parameter_names();
 
     const auto& base_type = type_definition->get_type_ptr();
 
@@ -246,7 +246,7 @@ std::unique_ptr<AstObjectType> stride::ast::instantiate_generic_type(
     const definition::TypeDefinition* type_definition
 )
 {
-    const auto& generic_param_names = type_definition->get_generics_parameters();
+    const auto& generic_param_names = type_definition->get_generics_parameter_names();
     const auto& instantiated_types = object->get_generic_type_arguments();
 
     // If there's no generic parameters, we can just return the initially provided type.

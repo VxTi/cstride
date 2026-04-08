@@ -22,6 +22,13 @@ namespace stride::ast
     class IVisitor
     {
     public:
+        std::shared_ptr<SymbolTable> current_symbol_table{};
+
+        std::string context_name;
+        ContextType current_context_type = ContextType::GLOBAL;
+
+        std::vector<std::shared_ptr<SymbolTable>> symbol_table_stack{};
+
         virtual ~IVisitor() = default;
 
         /// Called for every expression node, after its sub-expressions have been visited.
