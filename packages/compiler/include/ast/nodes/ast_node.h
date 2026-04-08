@@ -15,9 +15,6 @@ namespace llvm
 
 namespace stride::ast
 {
-
-#define MARK_DEBUG(x) printf("[DEBUG] %s:%d: %s\n", __FILE__, __LINE__, x)
-
     class AstBlock;
     class SymbolTable;
 

@@ -13,8 +13,6 @@ using namespace stride::ast;
  */
 void SymbolResolver::accept_function_node(SymbolTable* symbol_table, IAstFunction* function)
 {
-    printf("+ %sFUNCTION DECL - %s\n", function->is_generic() ? "GENERIC " : "", function->get_function_name().c_str());
-
     const auto function_symbol = Symbol(
         function->get_source_position(),
         symbol_table->get_scope_name(),

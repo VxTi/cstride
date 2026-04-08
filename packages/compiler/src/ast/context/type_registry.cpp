@@ -119,8 +119,6 @@ void SymbolTable::define_generic_type_alias(const Symbol& type_name, std::unique
         );
     }
 
-    printf("+ GENERIC ALIAS TYPE - \"%s\" -> \"%s\"\n", type_name.name.c_str(), type->get_type_name().c_str());
-
     this->_type_definitions.push_back(
         std::make_unique<TypeDefinition>(
             type_name,

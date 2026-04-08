@@ -189,13 +189,6 @@ std::shared_ptr<IAstFunction> IAstFunction::instantiate_generic_function_templat
     std::vector<std::unique_ptr<AstFunctionParameter>> instantiated_function_params;
     instantiated_function_params.reserve(this->_parameters.size());
 
-    printf("+ FUNCTION INSTANTIATION - %s<", this->get_function_name().c_str());
-    for (const auto& type : instantiated_types)
-    {
-        printf("%s", type->get_type_name().c_str());
-    }
-    printf(">\n");
-
     auto resolved_body = this->_body->clone_as<AstBlock>();
 
     const auto resolved_symbol_table = symbol_table->empty_copy();
