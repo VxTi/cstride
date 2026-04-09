@@ -35,6 +35,12 @@ namespace stride::ast
         GLOBAL
     };
 
+    struct GenericFunctionInstantiation
+    {
+        std::string function_name;
+        std::vector<std::unique_ptr<IAstType>> generic_types;
+    };
+
     // ----------------------------------------------------------------------------------- //
     //                                                                                     //
     //                       Context for symbol definitions and lookups                    //

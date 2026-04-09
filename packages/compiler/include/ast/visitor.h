@@ -76,7 +76,14 @@ namespace stride::ast
 
     class SymbolResolver : public IVisitor
     {
+        std::vector<GenericFunctionInstantiation> _generic_function_instantiations;
+
     public:
+        explicit SymbolResolver(
+            std::vector<GenericFunctionInstantiation> generic_function_instantiations
+        ) :
+            _generic_function_instantiations(std::move(generic_function_instantiations)) {}
+
         void accept_function_node(SymbolTable* symbol_table, IAstFunction* function) override;
 
         void accept_expression(SymbolTable* symbol_table, IAstExpression* expr) override;
@@ -85,9 +92,30 @@ namespace stride::ast
     };
 
     /// Intentionally separate from `FunctionVisitor`, as this step has to be performed after all functions have been defined.
-    class GenericFunctionInstantiator : public IVisitor
+    class TemplateInstantiator : public IVisitor
     {
+        [[nodiscard]]
+        bool has_instantiation(
+            const std::string& function_name,
+            const std::vector<std::unique_ptr<IAstType>>& generic_parameter_types
+        ) const
+        {
+            return this->_instantiations.contains(format_generic_function_instantiation(function_name, generic_parameter_types));
+        }
+
+        void add_generic_instantiation(const std::string& function_name,
+                                       const std::vector<std::unique_ptr<IAstType>>& generic_types);
+
+        [[nodiscard]]
+        static std::string format_generic_function_instantiation(
+            std::string function_name,
+            const std::vector<std::unique_ptr<IAstType>>& generic_parameter_types
+        );
+
+        std::map<std::string, GenericFunctionInstantiation> _instantiations{};
     public:
+        std::vector<GenericFunctionInstantiation> get_instantiations() const;
+
         void accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call) override;
     };
 

@@ -65,12 +65,6 @@ namespace stride
         }
 
     private:
-        void register_symbols(ast::AstNodeTraverser& traverser) const;
-        void resolve_generics(ast::AstNodeTraverser& traverser) const;
-        void resolve_types(ast::AstNodeTraverser& traverser) const;
-        void initialize_forward_references(ast::AstNodeTraverser& traverser, llvm::Module* module, llvm::IRBuilder<>* builder) const;
-        void generate_code(ast::AstNodeTraverser& traverser, llvm::Module* module, llvm::IRBuilder<>* builder) const;
-
         std::unique_ptr<llvm::Module> prepare_module(
             llvm::LLVMContext& context,
             const cli::CompilationOptions& options,

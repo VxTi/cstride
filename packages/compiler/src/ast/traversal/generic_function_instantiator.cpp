@@ -3,15 +3,21 @@
 #include "ast/nodes/expression.h"
 
 #include <format>
+#include <ranges>
 
 using namespace stride::ast;
 
-void GenericFunctionInstantiator::accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call)
+void TemplateInstantiator::accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call)
 {
     if (function_call->get_generic_type_arguments().empty())
         return;
 
-    auto* definition = symbol_table->get_generic_function_definition(
+
+    add_generic_instantiation(
+        function_call->get_function_name(),
+        copy_generic_type_list(function_call->get_generic_type_arguments())
+    );
+    /*auto* definition = symbol_table->get_generic_function_definition(
         function_call->get_function_name(),
         function_call->get_arguments().size(),
         function_call->get_generic_type_arguments().size()
@@ -28,5 +34,46 @@ void GenericFunctionInstantiator::accept_function_call_node(SymbolTable* symbol_
     definition->add_generic_instantiation(
         symbol_table,
         copy_generic_type_list(function_call->get_generic_type_arguments())
-    );
+    );*/
+}
+
+std::string TemplateInstantiator::format_generic_function_instantiation(
+    std::string function_name,
+    const std::vector<std::unique_ptr<IAstType>>& generic_parameter_types
+)
+{
+    std::vector<std::string> type_names;
+    type_names.reserve(generic_parameter_types.size());
+
+    for (const auto& type : generic_parameter_types)
+        type_names.push_back(type->get_type_name());
+
+    return std::format("{}@{}", function_name, join(type_names, "_"));
+}
+
+void TemplateInstantiator::add_generic_instantiation(
+    const std::string& function_name,
+    const std::vector<std::unique_ptr<IAstType>>& generic_types
+)
+{
+    const auto instantiation_key = format_generic_function_instantiation(function_name, generic_types);
+    if (this->_instantiations.contains(instantiation_key))
+        return;
+
+    this->_instantiations[instantiation_key] = GenericFunctionInstantiation{
+        function_name,
+        copy_generic_type_list(generic_types) };
+}
+
+std::vector<GenericFunctionInstantiation> TemplateInstantiator::get_instantiations() const
+{
+    std::vector<GenericFunctionInstantiation> instantiations;
+    instantiations.reserve(this->_instantiations.size());
+
+    for (const auto& [function_name, generic_types] : this->_instantiations | std::views::values)
+    {
+        instantiations.emplace_back(function_name, copy_generic_type_list(generic_types));
+    }
+
+    return instantiations;
 }
