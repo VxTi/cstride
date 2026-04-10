@@ -8,25 +8,29 @@ type Array<T> = {
     at: (i32) -> T;
 };
 
-pub fn arrayOf<T>(elements: T[], length: i32): Array<T> {
-    return Array<T>::{
-        elements,
-        length,
-        at: (index: i32): T -> {
-            return elements[index];
-        }
-    };
+module SomeModule {
+    pub fn arrayOf<T>(elements: T[], length: i32): Array<T> {
+        return Array<T>::{
+            elements,
+            length,
+            at: (index: i32): T -> {
+                return elements[index];
+            }
+        };
+    }
 }
 
 pub type Callback = () -> void;
 
 fn makeCb(): Callback {
-    const names = arrayOf<string>(["Toyota", "Honda", "Ford", "Toyota"], 4);
+    const names = SomeModule::arrayOf<string>(["Toyota", "Honda", "Ford", "Toyota"], 4);
 
     return (): void -> io::print("\x1b[32mDriving the car: %s", names.at(1));
 }
 
 fn main(): i32 {
+    const names = SomeModule::arrayOf<i32>([1, 2, 3, 4], 4);
+
     makeCb()();
 
     return 0;

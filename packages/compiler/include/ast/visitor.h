@@ -38,7 +38,7 @@ namespace stride::ast
 
         virtual void accept_package_node(SymbolTable* symbol_table, AstPackage* node) {}
 
-        virtual void accept_function_node(SymbolTable* symbol_table, IAstFunction* function) {}
+        virtual void accept_function_declaration_node(SymbolTable* symbol_table, IAstFunction* function) {}
 
         virtual void accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call) {}
 
@@ -62,7 +62,7 @@ namespace stride::ast
         /// For IAstFunction: also registers the function in its context.
         void accept_expression(SymbolTable* symbol_table, IAstExpression* expr) override;
 
-        void accept_function_node(SymbolTable* symbol_table, IAstFunction* function) override;
+        void accept_function_declaration_node(SymbolTable* symbol_table, IAstFunction* function) override;
     };
 
     class ValidationVisitor : public IVisitor
@@ -76,19 +76,21 @@ namespace stride::ast
 
     class SymbolResolver : public IVisitor
     {
-        std::vector<GenericFunctionInstantiation> _generic_function_instantiations;
+        std::vector<GenericFunctionTemplate> _generic_function_instantiations;
 
     public:
         explicit SymbolResolver(
-            std::vector<GenericFunctionInstantiation> generic_function_instantiations
+            std::vector<GenericFunctionTemplate> generic_function_instantiations
         ) :
             _generic_function_instantiations(std::move(generic_function_instantiations)) {}
 
-        void accept_function_node(SymbolTable* symbol_table, IAstFunction* function) override;
+        void accept_function_declaration_node(SymbolTable* symbol_table, IAstFunction* function) override;
 
         void accept_expression(SymbolTable* symbol_table, IAstExpression* expr) override;
 
         void accept_type_definition_node(SymbolTable* symbol_table, AstTypeDefinition* type_definition) override;
+
+        void validate_generic_instantiations();
     };
 
     /// Intentionally separate from `FunctionVisitor`, as this step has to be performed after all functions have been defined.
@@ -103,8 +105,11 @@ namespace stride::ast
             return this->_instantiations.contains(format_generic_function_instantiation(function_name, generic_parameter_types));
         }
 
-        void add_generic_instantiation(const std::string& function_name,
-                                       const std::vector<std::unique_ptr<IAstType>>& generic_types);
+        void add_generic_instantiation(
+            const std::string& function_name,
+            const std::vector<std::unique_ptr<IAstType>>& generic_types,
+            IAstNode* node
+        );
 
         [[nodiscard]]
         static std::string format_generic_function_instantiation(
@@ -112,9 +117,12 @@ namespace stride::ast
             const std::vector<std::unique_ptr<IAstType>>& generic_parameter_types
         );
 
-        std::map<std::string, GenericFunctionInstantiation> _instantiations{};
+        std::map<std::string, GenericFunctionTemplate> _instantiations{};
+
     public:
-        std::vector<GenericFunctionInstantiation> get_instantiations() const;
+        std::vector<GenericFunctionTemplate> get_generic_function_templates() const;
+
+        std::vector<GenericTypeTemplate> get_generic_type_templates() const;
 
         void accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call) override;
     };

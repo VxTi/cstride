@@ -35,10 +35,17 @@ namespace stride::ast
         GLOBAL
     };
 
-    struct GenericFunctionInstantiation
+    struct GenericFunctionTemplate
     {
         std::string function_name;
         std::vector<std::unique_ptr<IAstType>> generic_types;
+        IAstNode* node = nullptr;
+    };
+
+    struct GenericTypeTemplate
+    {
+        std::string type_name;
+        std::unique_ptr<IAstType> type;
     };
 
     // ----------------------------------------------------------------------------------- //

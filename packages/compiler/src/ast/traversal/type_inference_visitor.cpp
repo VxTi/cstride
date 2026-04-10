@@ -23,7 +23,7 @@ void TypeInferenceVisitor::accept_expression(SymbolTable* symbol_table, IAstExpr
 }
 
 
-void TypeInferenceVisitor::accept_function_node(SymbolTable* symbol_table, IAstFunction* function)
+void TypeInferenceVisitor::accept_function_declaration_node(SymbolTable* symbol_table, IAstFunction* function)
 {
     for (const auto &param : function->get_parameters())
     {
