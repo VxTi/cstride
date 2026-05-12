@@ -1,46 +1,37 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
+#include <format>
 #include <ranges>
 
 using namespace stride::ast;
 using namespace stride::ast::definition;
 
-bool ParsingContext::is_type_defined(const std::string& type_name) const
+bool SymbolTable::is_type_defined(const std::string& type_name) const
 {
     return get_type_definition(type_name).has_value();
 }
 
-bool ParsingContext::is_struct_type_defined(const std::string& struct_name) const
+bool SymbolTable::is_object_type_defined(const std::string& struct_name) const
 {
     const auto type_def = get_type_definition(struct_name);
 
     return type_def.has_value() &&
-        cast_type<AstObjectType*>(type_def.value()->get_type()) != nullptr;
+        cast_type<AstObjectType*>(type_def.value()->get_type_ptr()) != nullptr;
 }
 
-std::optional<TypeDefinition*> ParsingContext::get_type_definition(const std::string& name) const
+std::optional<TypeDefinition*> SymbolTable::get_type_definition(const std::string& type_name) const
 {
     auto current = this;
 
     while (current != nullptr)
     {
-        if (current->get_context_type() != ContextType::GLOBAL &&
-            current->get_context_type() != ContextType::MODULE)
+        for (const auto& type_definition : current->_type_definitions)
         {
-            current = current->_parent_registry.get();
-            continue;
-        }
-
-        for (const auto& symbol_definition : current->_symbols)
-        {
-            if (auto* type_definition = dynamic_cast<TypeDefinition*>(symbol_definition.get()))
+            if (type_definition->get_type_name_symbol().internal_name == type_name)
             {
-                if (type_definition->get_internal_symbol_name() == name)
-                {
-                    return type_definition;
-                }
+                return type_definition.get();
             }
         }
 
@@ -52,7 +43,7 @@ std::optional<TypeDefinition*> ParsingContext::get_type_definition(const std::st
 
 /// Gets the root struct type layout for <code>name</code>.
 /// Will recursively look up the parent struct definition if <code>name</code> is a reference struct type.
-std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string& name) const
+std::optional<AstObjectType*> SymbolTable::get_object_type(const std::string& name) const
 {
     const auto type_def = get_type_definition(name);
 
@@ -63,7 +54,7 @@ std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string&
 
     // It's an immediate struct definition (type K = { ... }),
     // so we're safe
-    if (const auto object_type = cast_type<AstObjectType*>(type_def.value()->get_type()))
+    if (const auto object_type = cast_type<AstObjectType*>(type_def.value()->get_type_ptr()))
     {
         return object_type;
     }
@@ -72,7 +63,7 @@ std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string&
     // e.g.,
     // type A = { ... };
     // type B = A; (named type)
-    const auto* named_type = cast_type<AstAliasType*>(type_def.value()->get_type());
+    const auto* named_type = cast_type<AstAliasType*>(type_def.value()->get_type_ptr());
     int recursion_depth = 0;
 
     while (named_type != nullptr)
@@ -84,16 +75,16 @@ std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string&
             return std::nullopt;
         }
 
-        if (const auto object_type = cast_type<AstObjectType*>(reference_type_def.value()->get_type()))
+        if (const auto object_type = cast_type<AstObjectType*>(reference_type_def.value()->get_type_ptr()))
         {
             return object_type;
         }
 
-        named_type = cast_type<AstAliasType*>(reference_type_def.value()->get_type());
+        named_type = cast_type<AstAliasType*>(reference_type_def.value()->get_type_ptr());
 
         if (++recursion_depth > MAX_RECURSION_DEPTH)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 std::format("Exceeded maximum recursion depth of {} while resolving struct type '{}'",
                             MAX_RECURSION_DEPTH,
@@ -101,7 +92,7 @@ std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string&
                 {
                     ErrorSourceReference(
                         "Type definition here",
-                        type_def.value()->get_type()->get_source_fragment()
+                        type_def.value()->get_type()->get_source_position()
                     )
                 }
             );
@@ -111,35 +102,64 @@ std::optional<AstObjectType*> ParsingContext::get_object_type(const std::string&
     return std::nullopt;
 }
 
-void ParsingContext::define_type(
-    const Symbol& type_name,
-    std::unique_ptr<IAstType> type,
-    GenericParameterList generics,
-    const VisibilityModifier visibility
-) const
+void SymbolTable::define_generic_type_alias(const Symbol& type_name, std::unique_ptr<IAstType> type)
 {
-    auto& root_context = const_cast<ParsingContext&>(this->traverse_to_root());
-
-    if (const auto existing_def = root_context.get_type_definition(type_name.internal_name);
+    if (const auto existing_def = this->get_type_definition(type_name.internal_name);
         existing_def.has_value())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Type '{}' is already defined in this scope", type_name.name),
             {
                 ErrorSourceReference(
                     "Previous definition here",
-                    existing_def.value()->get_type()->get_source_fragment()
+                    existing_def.value()->get_type()->get_source_position()
                 )
             }
         );
     }
 
-    root_context._symbols.push_back(
+    this->_type_definitions.push_back(
         std::make_unique<TypeDefinition>(
             type_name,
             std::move(type),
-            std::move(generics),
+            EMPTY_GENERIC_PARAMETER_LIST,
+            VisibilityModifier::PRIVATE
+        )
+    );
+}
+
+void SymbolTable::define_type(
+    const Symbol& type_name,
+    std::unique_ptr<IAstType> type,
+    GenericParameterList generic_parameter_names,
+    const VisibilityModifier visibility
+)
+{
+    const auto& root_context = this->traverse_to_root();
+
+    if (const auto existing_def = root_context->get_type_definition(type_name.internal_name);
+        existing_def.has_value())
+    {
+        throw stride_error(
+            ErrorType::COMPILATION_ERROR,
+            std::format("Type '{}' is already defined in this scope", type_name.name),
+            {
+                ErrorSourceReference(
+                    "Previous definition here",
+                    existing_def.value()->get_type()->get_source_position()
+                )
+            }
+        );
+    }
+
+    printf("+ TYPEDEF - %s\n", type_name.name.c_str());
+
+    root_context->_type_definitions.push_back(
+        std::make_unique<TypeDefinition>(
+            type_name,
+            std::move(type),
+            std::move(generic_parameter_names),
             visibility
         )
     );

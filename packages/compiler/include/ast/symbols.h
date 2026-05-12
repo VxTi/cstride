@@ -1,15 +1,19 @@
 #pragma once
 
-#include "nodes/types.h"
+#include "files.h"
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #define MAIN_FN_NAME ("main")
 #define DELIMITER ("__")
 
 namespace stride::ast
 {
+    class IAstType;
+    class SymbolTable;
+
     struct Symbol
     {
         /// Human-readable name of this symbol
@@ -19,10 +23,10 @@ namespace stride::ast
         /// Can be the same as `name`, if there's no need for internalization.
         std::string internal_name;
 
-        SourceFragment symbol_position;
+        SourcePosition symbol_position;
 
         explicit Symbol(
-            const SourceFragment& position,
+            const SourcePosition& position,
             const std::string& context_name,
             std::string name,
             const std::string& internal_name
@@ -35,14 +39,14 @@ namespace stride::ast
             symbol_position(position) {}
 
         explicit Symbol(
-            const SourceFragment& position,
+            const SourcePosition& position,
             const std::string& context_name,
             const std::string& name
         ) :
             Symbol(position, context_name, name, name) {}
 
         explicit Symbol(
-            const SourceFragment& position,
+            const SourcePosition& position,
             const std::string& name
         ) :
             Symbol(position, "", name) {}
@@ -55,15 +59,9 @@ namespace stride::ast
 
     using SymbolNameSegments = std::vector<std::string>;
 
-    Symbol resolve_internal_function_name(
-        const std::shared_ptr<ParsingContext>& context,
-        const SourceFragment& position,
-        const SymbolNameSegments& function_name_segments,
-        const std::vector<IAstType*>& parameter_types);
-
     Symbol resolve_internal_name(
         const std::string& context_name,
-        const SourceFragment& position,
+        const SourcePosition& position,
         const SymbolNameSegments& segments);
 
     std::string resolve_internal_name(const SymbolNameSegments& segments);

@@ -429,14 +429,14 @@ namespace stride::ast
 
     class Token
     {
-        SourceFragment _position;
+        SourcePosition _position;
         std::string _lexeme{};
         TokenType _type;
 
     public:
         explicit Token(
             const TokenType type,
-            const SourceFragment& position,
+            const SourcePosition& position,
             std::string lexeme) :
             _position(position),
             _lexeme(std::move(lexeme)),
@@ -457,7 +457,7 @@ namespace stride::ast
         }
 
         [[nodiscard]]
-        const SourceFragment& get_source_fragment() const
+        const SourcePosition& get_source_position() const
         {
             return _position;
         }
@@ -466,12 +466,40 @@ namespace stride::ast
         {
             return _type == other;
         }
+
+        [[nodiscard]]
+        bool is_type_token() const
+        {
+            switch (this->_type)
+            {
+            case TokenType::PRIMITIVE_UINT8:
+            case TokenType::PRIMITIVE_UINT16:
+            case TokenType::PRIMITIVE_UINT32:
+            case TokenType::PRIMITIVE_UINT64:
+            case TokenType::PRIMITIVE_INT8:
+            case TokenType::PRIMITIVE_INT16:
+            case TokenType::PRIMITIVE_INT32:
+            case TokenType::PRIMITIVE_INT64:
+            case TokenType::PRIMITIVE_FLOAT32:
+            case TokenType::PRIMITIVE_FLOAT64:
+            case TokenType::PRIMITIVE_BOOL:
+            case TokenType::PRIMITIVE_STRING:
+            case TokenType::PRIMITIVE_CHAR:
+            case TokenType::PRIMITIVE_VOID:
+            case TokenType::PRIMITIVE_AUTO:
+            case TokenType::IDENTIFIER:
+                return true;
+            default:
+                return false;
+            }
+        }
     };
 
     extern std::vector<TokenDefinition> tokenTypes;
 
-    static auto END_OF_FILE =
-        Token(TokenType::END_OF_FILE,
-              { nullptr, static_cast<size_t>(-1), 0 },
-              "");
+    static auto END_OF_FILE = Token(
+        TokenType::END_OF_FILE,
+        { std::make_shared<SourceFile>("", ""), static_cast<size_t>(-1), 0 },
+        ""
+    );
 } // namespace stride::ast

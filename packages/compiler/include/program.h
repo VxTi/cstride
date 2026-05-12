@@ -1,14 +1,20 @@
 #pragma once
 #include "cli.h"
 #include "ast/ast.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/ast_node.h"
 #include "ast/nodes/blocks.h"
 
 #include <llvm/Target/TargetMachine.h>
+#include <llvm/IR/IRBuilder.h>
 
 namespace stride
 {
+    namespace ast
+    {
+        class AstNodeTraverser;
+    }
+
     class ProgramObject
     {
         std::unique_ptr<ast::IAstNode> _root;

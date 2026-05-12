@@ -1,22 +1,22 @@
 #include "errors.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include <algorithm>
+#include <format>
 
 using namespace stride::ast;
 
-const definition::FieldDefinition* ParsingContext::get_variable_def(
+definition::FieldDefinition* SymbolTable::get_variable_definition(
     const std::string& variable_name,
-    const bool use_raw_name
+    const bool is_internal_name
 ) const
 {
     for (const auto& symbol_def : this->_symbols)
     {
-        if (const auto* field_definition = dynamic_cast<const definition::FieldDefinition*>(
-            symbol_def.get()))
+        if (auto* field_definition = dynamic_cast<definition::FieldDefinition*>(symbol_def.get()))
         {
-            if (field_definition->get_internal_symbol_name() == variable_name
-                || (use_raw_name && field_definition->get_field_name() == variable_name))
+            if (field_definition->get_internal_symbol_name() == variable_name ||
+                (is_internal_name && field_definition->get_field_name() == variable_name))
             {
                 return field_definition;
             }
@@ -25,8 +25,7 @@ const definition::FieldDefinition* ParsingContext::get_variable_def(
     return nullptr;
 }
 
-bool ParsingContext::is_field_defined_in_scope(
-    const std::string& variable_name) const
+bool SymbolTable::is_field_defined_in_scope(const std::string& variable_name) const
 {
     return std::ranges::any_of(
         this->_symbols,
@@ -41,89 +40,54 @@ bool ParsingContext::is_field_defined_in_scope(
         });
 }
 
-bool ParsingContext::is_field_defined_globally(
-    const std::string& field_name) const
-{
-    auto current = this;
-    while (current != nullptr)
-    {
-        if (current->is_field_defined_in_scope(field_name))
-        {
-            return true;
-        }
-        current = current->_parent_registry.get();
-    }
-    return false;
-}
-
-void ParsingContext::define_variable_globally(
+void SymbolTable::define_variable(
     Symbol variable_symbol,
     std::unique_ptr<IAstType> type,
-    VisibilityModifier visibility
-) const
-{
-    if (is_field_defined_globally(variable_symbol.internal_name))
-    {
-        throw parsing_error(
-            ErrorType::SEMANTIC_ERROR,
-            std::format("Variable '{}' is already defined in global scope", variable_symbol.name),
-            type->get_source_fragment()
-        );
-    }
-
-    auto& global_scope = const_cast<ParsingContext&>(this->traverse_to_root());
-    global_scope._symbols.push_back(
-        std::make_unique<definition::FieldDefinition>(
-            std::move(variable_symbol),
-            std::move(type),
-            visibility
-        )
-    );
-}
-
-void ParsingContext::define_variable(
-    Symbol variable_sym,
-    std::unique_ptr<IAstType> type,
-    VisibilityModifier visibility
+    VisibilityModifier visibility,
+    int flags
 )
 {
-    if (this->is_global_scope())
+    if (is_field_defined_in_scope(variable_symbol.internal_name))
     {
-        this->define_variable_globally(
-            std::move(variable_sym),
-            std::move(type),
-            visibility
-        );
-        return;
-    }
-
-    if (is_field_defined_in_scope(variable_sym.internal_name))
-    {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::SEMANTIC_ERROR,
-            std::format("Variable '{}' is already defined in this scope", variable_sym.name),
-            type->get_source_fragment());
+            std::format("Variable '{}' is already defined in this scope", variable_symbol.name),
+            variable_symbol.symbol_position
+        );
     }
 
     this->_symbols.push_back(
         std::make_unique<definition::FieldDefinition>(
-            std::move(variable_sym),
+            std::move(variable_symbol),
             std::move(type),
-            visibility
+            visibility,
+            flags
         )
     );
 }
 
-const definition::FieldDefinition* ParsingContext::lookup_variable(
-    const std::string& name,
-    const bool use_raw_name
-)
-const
+void SymbolTable::set_variable_type(Symbol variable_symbol, std::unique_ptr<IAstType> type) const
+{
+    const auto definition = get_variable_definition(variable_symbol.internal_name, false);
+
+    if (!definition)
+    {
+        throw stride_error(
+            ErrorType::SEMANTIC_ERROR,
+            std::format("Variable '{}' is not defined", variable_symbol.name),
+            variable_symbol.symbol_position
+        );
+    }
+
+    definition->set_type(std::move(type));
+}
+
+definition::FieldDefinition* SymbolTable::lookup_variable(const std::string& name, const bool use_raw_name) const
 {
     auto current = this;
     while (current != nullptr)
     {
-        if (const auto def = current->get_variable_def(name, use_raw_name))
+        if (const auto def = current->get_variable_definition(name, use_raw_name))
         {
             return def;
         }

@@ -1,7 +1,6 @@
 #include "ast/nodes/blocks.h"
 
 #include "ast/ast.h"
-#include "ast/nodes/function_declaration.h"
 #include "ast/tokens/token_set.h"
 
 #include <iostream>
@@ -11,7 +10,6 @@
 using namespace stride::ast;
 
 std::unique_ptr<AstBlock> stride::ast::parse_block(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
@@ -19,10 +17,10 @@ std::unique_ptr<AstBlock> stride::ast::parse_block(
 
     if (!collected_subset.has_value())
     {
-        return AstBlock::create_empty(context, set.peek_next().get_source_fragment());
+        return AstBlock::create_empty(set.peek_next().get_source_position());
     }
 
-    return parse_sequential(context, collected_subset.value());
+    return parse_sequential(collected_subset.value());
 }
 
 std::optional<TokenSet> stride::ast::collect_until_token(
@@ -118,18 +116,8 @@ void AstBlock::aggregate_block(AstBlock* other)
     }
 }
 
-void AstBlock::resolve_forward_references(
-    llvm::Module* module,
-    llvm::IRBuilderBase* builder
-)
-{
-    for (const auto& child : this->_children)
-    {
-        child->resolve_forward_references(module, builder);
-    }
-}
-
 llvm::Value* AstBlock::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder)
 {
@@ -137,18 +125,10 @@ llvm::Value* AstBlock::codegen(
 
     for (const auto& child : this->_children)
     {
-        last_value = child->codegen(module, builder);
+        last_value = child->codegen(symbol_table, module, builder);
     }
 
     return last_value;
-}
-
-void AstBlock::validate()
-{
-    for (const auto& child : this->_children)
-    {
-        child->validate();
-    }
 }
 
 std::unique_ptr<IAstNode> AstBlock::clone()
@@ -161,11 +141,14 @@ std::unique_ptr<IAstNode> AstBlock::clone()
         cloned_children.push_back(child->clone());
     }
 
-    return std::make_unique<AstBlock>(
-        this->get_source_fragment(),
-        this->get_context(),
+    auto cloned = std::make_unique<AstBlock>(
+        this->get_source_position(),
         std::move(cloned_children)
     );
+
+    cloned->set_symbol_table(this->get_symbol_table());
+
+    return cloned;
 }
 
 std::string AstBlock::to_string()

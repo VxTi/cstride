@@ -2,7 +2,7 @@
 
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/literal_values.h"
 #include "ast/tokens/token_set.h"
 
@@ -13,36 +13,35 @@
 using namespace stride::ast;
 
 std::unique_ptr<IAstType> stride::ast::parse_type(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
 {
-    if (auto primitive = parse_primitive_type_optional(context, set, options);
+    if (auto primitive = parse_primitive_type_optional(set, options);
         primitive.has_value())
     {
         return std::move(primitive.value());
     }
 
-    if (auto named_type = parse_alias_type_optional(context, set, options);
+    if (auto named_type = parse_alias_type_optional(set, options);
         named_type.has_value())
     {
         return std::move(named_type.value());
     }
 
-    if (auto function_type = parse_function_type_optional(context, set, options);
+    if (auto function_type = parse_function_type_optional(set, options);
         function_type.has_value())
     {
         return std::move(function_type.value());
     }
 
-    if (auto tuple_type = parse_tuple_type_optional(context, set, options);
+    if (auto tuple_type = parse_tuple_type_optional(set, options);
         tuple_type.has_value())
     {
         return std::move(tuple_type.value());
     }
 
-    if (auto struct_type = parse_object_type_optional(context, set, options);
+    if (auto struct_type = parse_object_type_optional(set, options);
         struct_type.has_value())
     {
         return std::move(struct_type.value());
@@ -51,17 +50,17 @@ std::unique_ptr<IAstType> stride::ast::parse_type(
     set.throw_error(options.error_message);
 }
 
-llvm::Type* IAstType::get_llvm_type(llvm::Module* module)
+llvm::Type* IAstType::get_llvm_type(SymbolTable* symbol_table, llvm::Module* module)
 {
 
     if (this->is_optional())
     {
-        const auto non_optional = this->clone_ty();
+        const auto non_optional = this->clone();
 
         // Remove the optional flag so that it doesn't recursively enter this same scope
         non_optional->set_flags(non_optional->get_flags() & ~SRFLAG_TYPE_OPTIONAL);
 
-        llvm::Type* value_ty = non_optional->get_llvm_type(module);
+        llvm::Type* value_ty = non_optional->get_llvm_type(symbol_table, module);
 
         return llvm::StructType::get(
             module->getContext(),
@@ -76,10 +75,10 @@ llvm::Type* IAstType::get_llvm_type(llvm::Module* module)
         return llvm::PointerType::get(module->getContext(), 0);
     }
 
-    return this->get_llvm_type_impl(module);
+    return this->get_llvm_type_impl(symbol_table, module);
 }
 
-bool IAstType::is_assignable_to(IAstType* other)
+bool IAstType::is_assignable_to(SymbolTable* symbol_table, IAstType* other)
 {
     // A type is not assignable to another if the source is optional but the target is not.
     // E.g., `i32?` is not assignable to `i32`.
@@ -88,7 +87,7 @@ bool IAstType::is_assignable_to(IAstType* other)
         return false;
     }
 
-    if (this->equals(other))
+    if (this->equals(symbol_table, other))
     {
         return true;
     }
@@ -110,7 +109,7 @@ bool IAstType::is_assignable_to(IAstType* other)
     // Try to resolve named types on both sides to check assignability
     if (auto* self_alias_ty = cast_type<AstAliasType*>(this))
     {
-        if (self_alias_ty->get_underlying_type()->is_assignable_to(other))
+        if (self_alias_ty->get_primitive_base_type(symbol_table)->is_assignable_to(symbol_table, other))
         {
             return true;
         }
@@ -118,17 +117,17 @@ bool IAstType::is_assignable_to(IAstType* other)
 
     if (auto* other_alias_ty = cast_type<AstAliasType*>(other))
     {
-        if (this->is_assignable_to(other_alias_ty->get_underlying_type()))
+        if (this->is_assignable_to(symbol_table, other_alias_ty->get_primitive_base_type(symbol_table)))
         {
             return true;
         }
     }
 
     // Otherwise it's up to the other implementors to decide.
-    return this->is_assignable_to_impl(other);
+    return this->is_assignable_to_impl(symbol_table, other);
 }
 
-bool IAstType::is_castable_to(IAstType* other)
+bool IAstType::is_castable_to(SymbolTable* symbol_table, IAstType* other)
 {
     // A type is not castable to another if the source is optional but the target is not.
     // E.g., `i32?` is not castable to `i32`.
@@ -137,15 +136,15 @@ bool IAstType::is_castable_to(IAstType* other)
         return false;
     }
 
-    if (this->equals(other))
+    if (this->equals(symbol_table, other))
     {
         return true;
     }
 
-    return this->is_castable_to_impl(other);
+    return this->is_castable_to_impl(symbol_table, other);
 }
 
-AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
+AstPrimitiveType* extract_primitive_reference_types(SymbolTable* symbol_table, IAstType* type)
 {
     if (!type)
     {
@@ -154,14 +153,14 @@ AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
 
     if (const auto named = cast_type<AstAliasType*>(type))
     {
-        const auto ref_type = named->get_underlying_type();
+        const auto ref_type = named->get_primitive_base_type(symbol_table);
 
-        return extract_primitive_reference_types(ref_type);
+        return extract_primitive_reference_types(symbol_table, ref_type);
     }
 
     if (const auto* array_type = cast_type<AstArrayType*>(type))
     {
-        return extract_primitive_reference_types(array_type->get_element_type());
+        return extract_primitive_reference_types(symbol_table, array_type->get_element_type());
     }
 
     return cast_type<AstPrimitiveType*>(type);
@@ -170,25 +169,24 @@ AstPrimitiveType* extract_primitive_reference_types(IAstType* type)
 /// Dominant field comparison can only be done on primitive types, e.g., i32 vs f64, i32 vs i64, etc.
 /// If we have named types on either side, we have to extract their primitive types, if they reference so.
 std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
+    SymbolTable* symbol_table,
     IAstType* lhs,
     IAstType* rhs
 )
 {
-    const auto& context = lhs->get_context();
-
     // Resolves LHS and RHS into possibly primitive types, if they reference so
-    const auto& lhs_primitive_ty = extract_primitive_reference_types(lhs);
-    const auto& rhs_primitive_ty = extract_primitive_reference_types(rhs);
+    const auto& lhs_primitive_ty = extract_primitive_reference_types(symbol_table, lhs);
+    const auto& rhs_primitive_ty = extract_primitive_reference_types(symbol_table, rhs);
 
     // Check whether we're mixing types, e.g., `10 + <struct>`
     if ((!lhs_primitive_ty && rhs_primitive_ty) || (lhs_primitive_ty && !rhs_primitive_ty))
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             "Cannot mix primitive type with named type",
             {
-                ErrorSourceReference(lhs->get_type_name(), lhs->get_source_fragment()),
-                ErrorSourceReference(rhs->get_type_name(), rhs->get_source_fragment())
+                ErrorSourceReference(lhs->get_type_name(), lhs->get_source_position()),
+                ErrorSourceReference(rhs->get_type_name(), rhs->get_source_position())
             }
         );
     }
@@ -196,46 +194,46 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     // If LHS and RHS are not primitive, we can still compute a dominant type if they are equal
     if (!lhs_primitive_ty || !rhs_primitive_ty)
     {
-        if (lhs->equals(rhs))
+        if (lhs->equals(symbol_table, rhs))
         {
-            return lhs->clone_ty();
+            return lhs->clone();
         }
 
         // If one is a named type and the other is its base type, we can also return the dominant type
         if (const auto lhs_named = cast_type<AstAliasType*>(lhs))
         {
-            if (const auto base = lhs_named->get_underlying_type(); base->equals(rhs))
+            if (const auto base = lhs_named->get_primitive_base_type(symbol_table); base->equals(symbol_table, rhs))
             {
-                return rhs->clone_ty();
+                return rhs->clone();
             }
         }
 
         if (const auto rhs_named = cast_type<AstAliasType*>(rhs))
         {
-            if (const auto base = rhs_named->get_underlying_type();
-                base->equals(lhs))
+            if (const auto base = rhs_named->get_primitive_base_type(symbol_table);
+                base->equals(symbol_table, lhs))
             {
-                return lhs->clone_ty();
+                return lhs->clone();
             }
         }
 
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             "Cannot compute dominant type for non-primitive types",
-            !lhs_primitive_ty ? lhs->get_source_fragment() : rhs->get_source_fragment()
+            !lhs_primitive_ty ? lhs->get_source_position() : rhs->get_source_position()
         );
     }
 
     // If LHS is a nil primitive, we prefer the RHS type, since the LHS can be safely ignored in this context (e.g., optional types)
     if (lhs_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
     {
-        return rhs->clone_ty();
+        return rhs->clone();
     }
 
     // Same holds true here
     if (rhs_primitive_ty->get_primitive_type() == PrimitiveType::NIL)
     {
-        return lhs->clone_ty();
+        return lhs->clone();
     }
 
     const bool are_both_sides_integers =
@@ -250,8 +248,8 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
     if (are_both_sides_floats || are_both_sides_integers)
     {
         return lhs_primitive_ty->bit_count() >= rhs_primitive_ty->bit_count()
-            ? lhs->clone_ty()
-            : rhs->clone_ty();
+            ? lhs->clone()
+            : rhs->clone();
     }
 
     // If LHS is a float, but the RHS is not, we'll have to convert the resulting
@@ -266,8 +264,7 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
         {
             // RHS is dominant
             return std::make_unique<AstPrimitiveType>(
-                rhs->get_source_fragment(),
-                context,
+                rhs->get_source_position(),
                 PrimitiveType::FLOAT64,
                 rhs->get_flags()
             );
@@ -275,22 +272,22 @@ std::unique_ptr<IAstType> stride::ast::get_dominant_field_type(
 
         // Otherwise, just return the LHS as the dominant type (f32 / f64)
         // LHS is dominant
-        return lhs->clone_ty();
+        return lhs->clone();
     }
 
     const std::vector references = {
-        ErrorSourceReference(lhs->to_string(), lhs->get_source_fragment()),
-        ErrorSourceReference(rhs->get_type_name(), rhs->get_source_fragment())
+        ErrorSourceReference(lhs->get_type_name(), lhs->get_source_position()),
+        ErrorSourceReference(rhs->get_type_name(), rhs->get_source_position())
     };
 
-    throw parsing_error(
+    throw stride_error(
         ErrorType::TYPE_ERROR,
         "Cannot compute dominant type for incompatible primitive types",
         references
     );
 }
 
-std::optional<AstObjectType*> stride::ast::get_object_type_from_type(IAstType* type)
+std::optional<AstObjectType*> stride::ast::get_object_type_from_type(const SymbolTable* symbol_table, IAstType* type)
 {
     auto base_struct_type = cast_type<AstObjectType*>(type);
 
@@ -304,15 +301,16 @@ std::optional<AstObjectType*> stride::ast::get_object_type_from_type(IAstType* t
     // resolves to AstObjectType with concrete member types, not raw X/Y/Z params).
     if (auto* alias_type = cast_type<AstAliasType*>(type))
     {
-        if (auto* object_type = cast_type<AstObjectType*>(alias_type->get_underlying_type()))
+        alias_type->resolve_type_definition(symbol_table);
+        if (auto* object_type = cast_type<AstObjectType*>(alias_type->get_primitive_base_type(symbol_table)))
         {
             return object_type;
         }
     }
 
     // Fall back to raw struct type lookup
-    base_struct_type = type->get_context()->get_object_type(type->get_type_name())
-                            .value_or(nullptr);
+    base_struct_type = symbol_table->get_object_type(type->get_type_name())
+                                    .value_or(nullptr);
 
     if (!base_struct_type)
     {

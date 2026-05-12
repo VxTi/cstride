@@ -1,8 +1,8 @@
 #include "program.h"
 
 #include "ast/ast.h"
+#include "ast/traversal.h"
 #include "ast/visitor.h"
-#include "ast/nodes/traversal.h"
 #include "runtime/symbols.h"
 
 #include <iostream>
@@ -38,7 +38,8 @@ Program Program::from_sources(const std::vector<std::string>& files)
 std::unique_ptr<llvm::Module> Program::prepare_module(
     llvm::LLVMContext& context,
     const cli::CompilationOptions& options,
-    llvm::TargetMachine* target_machine) const
+    llvm::TargetMachine* target_machine
+) const
 {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
     auto module = std::make_unique<llvm::Module>("stride_module", context);
@@ -48,30 +49,53 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     llvm::IRBuilder<> builder(context);
 
     ast::AstNodeTraverser traverser;
-    ast::ExpressionVisitor type_visitor;
-    ast::FunctionVisitor function_visitor;
-    ast::ImportVisitor import_visitor;
 
-    for (const auto& [file_name, node] : this->_ast->get_files())
+    // --- Resolvers
+    // ast::TemplateInstantiator generic_function_instantiator;
+    ast::ImportVisitor import_visitor;
+    ast::ValidationVisitor validation_visitor;
+    ast::TypeInferenceVisitor type_visitor;
+    ast::ForwardReferenceInitializer forward_reference_initializer(module.get(), &builder);
+    ast::SymbolResolver symbol_resolver;
+
+    const auto branches = this->_ast->get_branches() | std::views::values;
+
+    // --- Generic template resolution
+    // This must be done first before any other traversals, since it may introduce new nodes into
+    // the AST that need to be visited by subsequent traversals (e.g. type inference, symbol resolution, codegen)
+    /*for (const auto& branch : branches)
+    {
+        traverser.traverse(&generic_function_instantiator, branch.get());
+    }*/
+
+    // --- Symbol resolution
+
+    for (const auto& [file_name, branch] : this->_ast->get_branches())
     {
         import_visitor.set_current_file_name(file_name);
-        traverser.visit_block(&import_visitor, node.get());
-
-        traverser.visit_block(&function_visitor, node.get());
+        runtime::register_runtime_symbols(branch->get_symbol_table().get());
+        traverser.traverse(&import_visitor, branch.get());
+        traverser.traverse(&symbol_resolver, branch.get());
     }
     import_visitor.cross_register_symbols(this->_ast.get());
+    // symbol_resolver.validate_generic_instantiations();
 
-    for (const auto& node : this->_ast->get_files() | std::views::values)
+    // --- Type resolution
+    for (const auto& branch : branches)
     {
-        runtime::register_runtime_symbols(node->get_context());
-        traverser.visit_block(&type_visitor, node.get());
+        traverser.traverse(&type_visitor, branch.get());
+    }
 
-        node->validate();
-        node->resolve_forward_references(
-            module.get(),
-            &builder
-        );
-        node->codegen(module.get(), &builder);
+    // --- Resolving forward references (function symbol definitions)
+    for (const auto& branch : branches)
+    {
+        traverser.traverse(&forward_reference_initializer, branch.get());
+    }
+
+    for (const auto& branch : branches)
+    {
+        traverser.traverse(&validation_visitor, branch.get());
+        branch->get_node()->codegen(branch->get_symbol_table().get(), module.get(), &builder);
     }
 
     if (llvm::verifyModule(*module, &llvm::errs()))

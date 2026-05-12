@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/casting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/blocks.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
@@ -9,7 +9,6 @@
 #include <ranges>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 
@@ -54,10 +53,7 @@ bool stride::ast::is_struct_initializer(const TokenSet& set)
         && set.peek_eq(TokenType::LBRACE, i + 1);
 }
 
-StructMemberInitializerPair parse_object_member_initializer(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+StructMemberInitializerPair parse_object_member_initializer(TokenSet& set)
 {
     const auto member_iden = set.expect(TokenType::IDENTIFIER, "Expected identifier in struct initializer");
 
@@ -65,55 +61,55 @@ StructMemberInitializerPair parse_object_member_initializer(
     if (!set.has_next() || set.peek_next_eq(TokenType::COMMA))
     {
         auto member_symbol = Symbol(
-            member_iden.get_source_fragment(),
+            member_iden.get_source_position(),
             member_iden.get_lexeme()
         );
-        return { member_iden.get_lexeme(), std::make_unique<AstIdentifier>(context, member_symbol) };
+        return { member_iden.get_lexeme(), std::make_unique<AstIdentifier>(member_symbol) };
     }
 
     set.expect(TokenType::COLON, "Expected ':' after identifier in struct initializer");
 
-    auto member_expr = parse_inline_expression(context, set);
+    auto member_expr = parse_inline_expression(set);
 
     return { member_iden.get_lexeme(), std::move(member_expr) };
 }
 
 
-std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_type()
+std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_type(const SymbolTable* symbol_table)
 {
     if (this->_object_type != nullptr)
     {
         return this->_object_type->clone_as<AstObjectType>();
     }
 
-    const auto type_def = this->get_context()->get_type_definition(this->_object_type_name);
+    const auto type_def = symbol_table->get_type_definition(this->_object_type_name);
 
     if (!type_def.has_value())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Object type '{}' is undefined", this->_object_type_name),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
-    if (!this->_generic_type_arguments.empty() && !type_def.value()->get_generics_parameters().empty())
+    if (!this->_generic_type_arguments.empty() && !type_def.value()->get_generics_parameter_names().empty())
     {
-        if (this->_generic_type_arguments.size() != type_def.value()->get_generics_parameters().size())
+        if (this->_generic_type_arguments.size() != type_def.value()->get_generics_parameter_names().size())
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format("Invalid instantiation of object type '{}': expected {} generic arguments, got {}",
                             this->_object_type_name,
-                            type_def.value()->get_generics_parameters().size(),
+                            type_def.value()->get_generics_parameter_names().size(),
                             this->_generic_type_arguments.size()
                 ),
-                this->get_source_fragment()
+                this->get_source_position()
             );
         }
     }
 
-    if (const auto* object_def = cast_type<AstObjectType*>(type_def.value()->get_type()))
+    if (const auto* object_def = cast_type<AstObjectType*>(type_def.value()->get_type_ptr()))
     {
         auto resolved_type = instantiate_generic_type(this, const_cast<AstObjectType*>(object_def), type_def.value());
 
@@ -122,9 +118,9 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
         return this->_object_type->clone_as<AstObjectType>();
     }
 
-    if (auto* alias_def = cast_type<AstAliasType*>(type_def.value()->get_type()))
+    if (auto* alias_def = cast_type<AstAliasType*>(type_def.value()->get_type_ptr()))
     {
-        const auto underlying_type = alias_def->get_underlying_type();
+        const auto underlying_type = alias_def->get_primitive_base_type(symbol_table);
 
         if (auto* object_def = cast_type<AstObjectType*>(underlying_type))
         {
@@ -136,28 +132,25 @@ std::unique_ptr<AstObjectType> AstObjectInitializer::get_instantiated_object_typ
         }
     }
 
-    throw parsing_error(
+    throw stride_error(
         ErrorType::COMPILATION_ERROR,
         std::format("Type '{}' is not an object", this->_object_type_name),
-        this->get_source_fragment()
+        this->get_source_position()
     );
 }
 
 std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set
 )
 {
     const auto reference_token = set.expect(TokenType::IDENTIFIER, "Expected object name in object initializer");
-    auto generic_types = parse_generic_type_arguments(context, set);
+    auto generic_types = parse_generic_type_arguments(set);
     set.expect(TokenType::DOUBLE_COLON, "Expected '::' after object name in initialization");
 
     std::vector<StructMemberInitializerPair> member_map;
     auto member_set = collect_block_required(set, "Expected object initializer body after '{'");
 
-    member_map.emplace_back(parse_object_member_initializer(context, member_set));
-
-    // TODO: Handle unnamed initialization, e.g., `SomeStruct::{ 1, 3, 3 }`
+    member_map.emplace_back(parse_object_member_initializer(member_set));
 
     // Subsequent member parsing
     while (member_set.has_next())
@@ -172,7 +165,7 @@ std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
         }
 
         auto [member_iden, member_expr] =
-            parse_object_member_initializer(context, member_set);
+            parse_object_member_initializer(member_set);
         member_map.emplace_back(std::move(member_iden), std::move(member_expr));
     }
 
@@ -183,24 +176,23 @@ std::unique_ptr<AstObjectInitializer> stride::ast::parse_object_initializer(
     }
 
     return std::make_unique<AstObjectInitializer>(
-        reference_token.get_source_fragment(),
-        context,
+        reference_token.get_source_position(),
         reference_token.get_lexeme(),
         std::move(member_map),
         std::move(generic_types)
     );
 }
 
-void AstObjectInitializer::validate()
+void AstObjectInitializer::validate(SymbolTable* symbol_table)
 {
-    const auto object_type = this->get_instantiated_object_type();
+    const auto object_type = this->get_instantiated_object_type(symbol_table);
 
     const auto object_members = object_type->get_members();
 
     // Quick check: Ensure the number of members matches (no type comparisons required)
     if (object_members.size() != this->_member_initializers.size())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::TYPE_ERROR,
             std::format(
                 "Too {} members found in object '{}': expected {}, got {}",
@@ -208,45 +200,45 @@ void AstObjectInitializer::validate()
                 this->_object_type_name,
                 object_members.size(),
                 this->_member_initializers.size()),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
     for (const auto& [field_name, initializer_expr] : this->_member_initializers)
     {
-        initializer_expr->validate();
+        initializer_expr->validate(symbol_table);
         auto member_type = object_type->get_member_field_type(field_name);
 
         if (!member_type.has_value())
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Object type '{}' has no member named '{}'",
                     this->_object_type_name,
                     field_name
                 ),
-                this->get_source_fragment());
+                this->get_source_position());
         }
 
-        if (!initializer_expr->get_type()->equals(member_type.value()))
+        if (!initializer_expr->get_type()->equals(symbol_table, member_type.value()))
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Type mismatch for member '{}' in object initializer '{}': expected '{}', got '{}'",
                     field_name,
-                    this->get_type()->to_string(),
-                    member_type.value()->to_string(),
-                    initializer_expr->get_type()->to_string()
+                    this->get_type()->get_type_name(),
+                    member_type.value()->get_type_name(),
+                    initializer_expr->get_type()->get_type_name()
                 ),
-                initializer_expr->get_source_fragment()
+                initializer_expr->get_source_position()
             );
         }
 
         // Further validate child nodes. It's possible that we have nested struct definitions,
         // which also have to conform to their types.
-        initializer_expr->validate();
+        initializer_expr->validate(symbol_table);
     }
 
     // Second quick check: Order validation - This is required to ensure a consistent data layout.
@@ -256,7 +248,7 @@ void AstObjectInitializer::validate()
         if (const auto& [field_name, field_type] = object_members[index];
             member_name != field_name)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::TYPE_ERROR,
                 std::format(
                     "Object member order mismatch at index {}: expected '{}', got '{}'",
@@ -264,7 +256,7 @@ void AstObjectInitializer::validate()
                     field_name,
                     member_name
                 ),
-                field_type->get_source_fragment()
+                field_type->get_source_position()
             );
         }
 
@@ -272,15 +264,8 @@ void AstObjectInitializer::validate()
     }
 }
 
-void AstObjectInitializer::resolve_forward_references(llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    for (const auto& val : this->_member_initializers | std::views::values)
-    {
-        val->resolve_forward_references(module, builder);
-    }
-}
-
 llvm::Value* AstObjectInitializer::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
@@ -292,13 +277,13 @@ llvm::Value* AstObjectInitializer::codegen(
 
     for (const auto& expr : this->_member_initializers | std::views::values)
     {
-        llvm::Value* val = expr->codegen(module, builder);
+        llvm::Value* val = expr->codegen(symbol_table, module, builder);
         if (!val)
         {
-            throw parsing_error(
+            throw stride_error(
                 ErrorType::COMPILATION_ERROR,
                 "Failed to codegen member initializer",
-                expr->get_source_fragment()
+                expr->get_source_position()
             );
         }
 
@@ -314,16 +299,16 @@ llvm::Value* AstObjectInitializer::codegen(
     }
 
     // Retrieve the exist named struct type
-    const auto object_type = this->get_instantiated_object_type();
+    const auto object_type = this->get_instantiated_object_type(symbol_table);
 
-    auto* struct_type = llvm::cast<llvm::StructType>(object_type->get_llvm_type(module));
+    auto* struct_type = llvm::cast<llvm::StructType>(object_type->get_llvm_type(symbol_table, module));
 
     if (!struct_type)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             std::format("Struct type '{}' is undefined", this->_object_type_name),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -413,15 +398,15 @@ std::unique_ptr<IAstNode> AstObjectInitializer::clone()
 
     for (const auto& type : this->_generic_type_arguments)
     {
-        member_generic_types.push_back(type->clone_ty());
+        member_generic_types.push_back(type->clone());
     }
 
     return std::make_unique<AstObjectInitializer>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_object_type_name,
         std::move(member_initializers),
-        std::move(member_generic_types)
+        std::move(member_generic_types),
+        this->clone_type()
     );
 }
 
@@ -440,7 +425,7 @@ std::string AstObjectInitializer::to_string()
         std::vector<std::string> generic_names;
         for (const auto& generic : this->_generic_type_arguments)
         {
-            generic_names.push_back(generic->to_string());
+            generic_names.push_back(generic->get_type_name());
         }
         return std::format("(Object) {}<{}>{{ {} }}", object_name, join(generic_names, ", "), members);
     }

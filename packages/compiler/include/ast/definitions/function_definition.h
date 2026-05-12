@@ -1,0 +1,120 @@
+#pragma once
+
+#include "ast/definitions/definitions.h"
+#include "ast/nodes/function_declaration.h"
+
+#include <memory>
+#include <vector>
+
+namespace stride::ast::definition
+{
+    struct GenericFunctionOverload
+    {
+        std::vector<std::unique_ptr<IAstType>> generic_overload_types;
+        mutable llvm::Function* function;
+        mutable std::shared_ptr<IAstFunction> node;
+    };
+
+    class FunctionDefinition
+        : public IDefinition
+    {
+        std::unique_ptr<AstFunctionType> _function_type;
+        std::vector<GenericFunctionOverload> _generic_overloads{};
+        int _flags;
+
+        IAstFunction* _reference_node;
+        llvm::Function* _llvm_function = nullptr;
+
+    public:
+        explicit FunctionDefinition(
+            std::unique_ptr<AstFunctionType> function_type,
+            const Symbol& symbol,
+            IAstFunction* reference_node,
+            const VisibilityModifier visibility,
+            const int flags
+        ) :
+            IDefinition(symbol, visibility),
+            _function_type(std::move(function_type)),
+            _flags(flags),
+            _reference_node(reference_node) {}
+
+        explicit FunctionDefinition(
+            std::unique_ptr<AstFunctionType> function_type,
+            const Symbol& symbol,
+            const VisibilityModifier visibility,
+            const int flags
+        ) :
+            IDefinition(symbol, visibility),
+            _function_type(std::move(function_type)),
+            _flags(flags),
+            _reference_node(nullptr) {}
+
+        [[nodiscard]]
+        AstFunctionType* get_type() const
+        {
+            return this->_function_type.get();
+        }
+
+        [[nodiscard]]
+        std::string get_function_name() const
+        {
+            return this->get_symbol().name;
+        }
+
+        [[nodiscard]]
+        int get_flags() const
+        {
+            return this->_flags;
+        }
+
+        [[nodiscard]]
+        bool is_variadic() const
+        {
+            return (this->_flags & SRFLAG_FN_TYPE_VARIADIC) != 0;
+        }
+
+        void add_generic_instantiation(SymbolTable* symbol_table, GenericTypeList generic_overload_types);
+
+        [[nodiscard]]
+        const std::vector<GenericFunctionOverload>& get_generic_overloads() const
+        {
+            return this->_generic_overloads;
+        }
+
+        [[nodiscard]]
+        bool has_generic_instantiation(SymbolTable* symbol_table, const GenericTypeList& generic_types) const;
+
+        [[nodiscard]]
+        llvm::Function* get_generic_overload_llvm_function(SymbolTable* symbol_table, const GenericTypeList& generic_types) const;
+
+        ~FunctionDefinition() override = default;
+
+        bool matches_type_signature(SymbolTable* symbol_table, const std::string& name, const AstFunctionType* signature) const;
+
+        [[nodiscard]]
+        bool matches_generic_signature(const std::string& name, size_t function_param_count, size_t generic_param_count) const;
+
+        void set_llvm_function(llvm::Function* function)
+        {
+            this->_llvm_function = function;
+        }
+
+        [[nodiscard]]
+        llvm::Function* get_llvm_function() const
+        {
+            return this->_llvm_function;
+        }
+
+        [[nodiscard]]
+        bool matches_parameter_signature(
+            SymbolTable* symbol_table,
+            const std::string& internal_function_name,
+            const std::vector<std::unique_ptr<IAstType>>& other_parameter_types,
+            size_t generic_argument_count
+
+        ) const;
+
+        [[nodiscard]]
+        std::unique_ptr<IDefinition> clone() const override;
+    };
+}

@@ -26,7 +26,7 @@ TokenSet TokenSet::create_subset(const int64_t offset,
         this->_tokens.begin() + offset,
         this->_tokens.begin() + offset + length);
 
-    return std::move(TokenSet(this->_source, copied_tokens));
+    return std::move(TokenSet(this->get_source_file(), copied_tokens));
 }
 
 Token TokenSet::last() const
@@ -82,16 +82,13 @@ Token TokenSet::expect(const TokenType type)
 {
     if (!this->has_next())
     {
-        const auto last_token_pos = this->last().get_source_fragment();
+        const auto last_token_pos = this->last().get_source_position();
 
-        throw parsing_error(
+        throw stride_error(
             ErrorType::SYNTAX_ERROR,
             std::format("Expected '{}', but reached end of block",
                         token_type_to_str(type)),
-            SourceFragment(
-                this->get_source(),
-                last_token_pos.offset + last_token_pos.length - 1,
-                1));
+            SourcePosition(this->_source_file, last_token_pos.offset + last_token_pos.length - 1, 1));
     }
 
     if (const auto next_type = this->peek_next().get_type(); next_type != type)
@@ -111,15 +108,12 @@ Token TokenSet::expect(const TokenType type, const std::string& message)
 {
     if (!this->has_next())
     {
-        const auto last_token_pos = this->last().get_source_fragment();
+        const auto last_token_pos = this->last().get_source_position();
 
-        throw parsing_error(
+        throw stride_error(
             ErrorType::SYNTAX_ERROR,
             message,
-            SourceFragment(
-                this->get_source(),
-                last_token_pos.offset + last_token_pos.length - 1,
-                1));
+            SourcePosition(this->_source_file, last_token_pos.offset + last_token_pos.length - 1, 1));
     }
 
     if (this->peek_next().get_type() != type)
@@ -159,17 +153,12 @@ bool TokenSet::has_next() const
     return this->remaining() > 0 && !this->peek_next_eq(TokenType::END_OF_FILE);
 }
 
-std::shared_ptr<stride::SourceFile> TokenSet::get_source() const
-{
-    return this->_source;
-}
-
 [[noreturn]] void TokenSet::throw_error(
     const Token& token,
     const ErrorType error_type,
     const std::string& message)
 {
-    throw parsing_error(error_type, message, token.get_source_fragment());
+    throw stride_error(error_type, message, token.get_source_position());
 }
 
 [[noreturn]] void TokenSet::throw_error(

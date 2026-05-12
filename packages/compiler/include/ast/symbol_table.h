@@ -1,0 +1,287 @@
+#pragma once
+
+#include "modifiers.h"
+#include "symbols.h"
+#include "ast/nodes/types.h"
+#include "definitions/definitions.h"
+
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+#include <llvm/IR/Function.h>
+
+namespace llvm
+{
+    class BasicBlock;
+}
+
+namespace stride::ast
+{
+    class IAstFunction;
+
+    enum class ContextType
+    {
+        GLOBAL,
+        MODULE,
+        FUNCTION,
+        CLASS,
+        CONTROL_FLOW
+    };
+
+    enum class SymbolScope
+    {
+        LOCAL,
+        GLOBAL
+    };
+
+    struct GenericFunctionTemplate
+    {
+        std::string function_name;
+        std::vector<std::unique_ptr<IAstType>> generic_types;
+        IAstNode* node = nullptr;
+    };
+
+    struct GenericTypeTemplate
+    {
+        std::string type_name;
+        std::unique_ptr<IAstType> type;
+    };
+
+    // ----------------------------------------------------------------------------------- //
+    //                                                                                     //
+    //                       Context for symbol definitions and lookups                    //
+    //                                                                                     //
+    //  The Context class represents a scope in the program, which can be a global scope,  //
+    //  a module, a function, a class, or a control flow block. Each context maintains a   //
+    //  registry of symbols defined within that scope, as well as a reference to its       //
+    //  parent context, allowing for nested scopes and symbol resolution.                  //
+    //                                                                                     //
+    // ----------------------------------------------------------------------------------- //
+
+    class SymbolTable
+    {
+        /**
+         * Name of the context. This can be used for function name mangling,
+         * e.g., in the context of modules.
+         */
+        std::string _context_name;
+        ContextType _context_type;
+        std::shared_ptr<SymbolTable> _parent_registry;
+
+        std::vector<std::unique_ptr<definition::IDefinition>> _symbols;
+        std::vector<std::unique_ptr<definition::TypeDefinition>> _type_definitions;
+
+        IAstFunction* _current_function = nullptr;
+
+        // Stack of loop blocks for break and continue: pair<continue_block, break_block>
+        // This isn't used during parsing, hence it not needing to be moved when creating a new ParsingContext.
+        static inline std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> control_flow_loop_blocks;
+
+    public:
+        explicit SymbolTable(
+            std::string context_name,
+            const ContextType type,
+            std::shared_ptr<SymbolTable> parent
+        ) :
+            _context_name(std::move(context_name)),
+            _context_type(type),
+            _parent_registry(std::move(parent)) {}
+
+        /// Non-specific scope context definitions, e.g., for/while-loop blocks
+        explicit SymbolTable(
+            std::shared_ptr<SymbolTable> parent,
+            const ContextType type
+        ) :
+            // Context gets the same name as the parent
+            SymbolTable(parent->_context_name, type, std::move(parent)) {}
+
+        /// Root node initialization
+        explicit SymbolTable() :
+            SymbolTable("", ContextType::GLOBAL, nullptr) {}
+
+        SymbolTable& operator=(const SymbolTable&) = delete;
+
+        [[nodiscard]]
+        ContextType get_context_type() const
+        {
+            return this->_context_type;
+        }
+
+        [[nodiscard]]
+        bool is_global_scope() const
+        {
+            // We deem module scope as global as well
+            return this->_context_type == ContextType::GLOBAL
+                || this->_context_type == ContextType::MODULE;
+        }
+
+        static void push_control_flow_block(
+            llvm::BasicBlock* continue_block,
+            llvm::BasicBlock* break_block)
+        {
+            control_flow_loop_blocks.emplace_back(continue_block, break_block);
+        }
+
+        static void pop_control_flow_block()
+        {
+            control_flow_loop_blocks.pop_back();
+        }
+
+        static std::pair<llvm::BasicBlock*, llvm::BasicBlock*> get_current_control_flow_block()
+        {
+            return control_flow_loop_blocks.back();
+        }
+
+        static std::vector<std::pair<llvm::BasicBlock*, llvm::BasicBlock*>> get_control_flow_blocks()
+        {
+            return control_flow_loop_blocks;
+        }
+
+        [[nodiscard]]
+        definition::FieldDefinition* get_variable_definition(
+            const std::string& variable_name,
+            bool is_internal_name = false) const;
+
+        /// Primarily used for function invocations, where the parameter types are known,
+        /// but we don't yet know what the return type is.
+        [[nodiscard]]
+        std::optional<definition::FunctionDefinition*> get_function_definition(
+            const std::string& function_name,
+            const std::vector<std::unique_ptr<IAstType>>& parameter_types,
+            size_t instantiated_generic_count = 0,
+            bool is_variadic = false
+        );
+
+        [[nodiscard]]
+        std::optional<definition::FunctionDefinition*> get_generic_function_definition(
+            const std::string& function_name,
+            size_t function_param_count,
+            size_t instantiated_generic_count = 0
+        );
+
+        std::optional<definition::FunctionDefinition*> get_function_definition(
+            const std::string& function_name, IAstType* function_type
+        );
+
+        [[nodiscard]]
+        std::optional<definition::TypeDefinition*> get_type_definition(
+            const std::string& type_name
+        ) const;
+
+        [[nodiscard]]
+        std::optional<AstObjectType*> get_object_type(const std::string& name) const;
+
+        [[nodiscard]]
+        std::shared_ptr<SymbolTable> empty_copy() const
+        {
+            return std::make_shared<SymbolTable>(this->_context_name, this->_context_type, this->_parent_registry);
+        }
+
+        [[nodiscard]]
+        std::optional<std::unique_ptr<definition::IDefinition>> get_definition_by_internal_name(
+            const std::string& internal_name) const;
+
+        [[nodiscard]]
+        std::shared_ptr<SymbolTable> get_parent_symbol_table() const
+        {
+            return this->_parent_registry;
+        }
+
+        [[nodiscard]]
+        definition::FieldDefinition* lookup_variable(
+            const std::string& name,
+            bool use_raw_name = false
+        ) const;
+
+        [[nodiscard]]
+        definition::IDefinition* lookup_symbol(const std::string& symbol_name) const;
+
+        void define_function(const Symbol& function_name, IAstFunction* node);
+
+        void define_generic_function(const Symbol& function_name, IAstFunction* node);
+
+        void define_function(
+            Symbol function_name,
+            std::unique_ptr<AstFunctionType> function_type,
+            VisibilityModifier visibility,
+            IAstFunction* node = nullptr,
+            int flags = SRFLAG_NONE
+        );
+
+        void define_type(
+            const Symbol& type_name,
+            std::unique_ptr<IAstType> type,
+            GenericParameterList generic_parameter_names,
+            VisibilityModifier visibility
+        );
+
+        void define_generic_type_alias(const Symbol& type_name, std::unique_ptr<IAstType> type);
+
+        void define_variable(
+            Symbol variable_symbol,
+            std::unique_ptr<IAstType> type,
+            VisibilityModifier visibility,
+            int flags = 0
+        );
+
+        void define_variable(
+            Symbol variable_symbol,
+            const VisibilityModifier visibility,
+            const int flags = 0
+        )
+        {
+            this->define_variable(std::move(variable_symbol), nullptr, visibility, flags);
+        }
+
+        void set_variable_type(
+            Symbol variable_symbol,
+            std::unique_ptr<IAstType> type
+        ) const;
+
+        void set_current_function(IAstFunction* function)
+        {
+            this->_current_function = function;
+        }
+
+        IAstFunction* get_current_function() const
+        {
+            return this->_current_function;
+        }
+
+        [[nodiscard]]
+        definition::IDefinition* fuzzy_find(const std::string& symbol_name) const;
+
+        [[nodiscard]]
+        bool is_object_type_defined(const std::string& struct_name) const;
+
+        [[nodiscard]]
+        bool is_type_defined(const std::string& type_name) const;
+
+        void define(std::unique_ptr<definition::IDefinition> definition);
+
+        /// Checks whether the provided variable name is defined in the current context.
+        [[nodiscard]]
+        bool is_field_defined_in_scope(const std::string& variable_name) const;
+
+        /// Checks whether the provided internal function name is defined in the global context.
+        /// Do note that the internal name is not the name that you would use in
+        /// source code, but rather the mangled name used for code generation.
+        [[nodiscard]]
+        bool is_function_defined(const std::string& function_name, const AstFunctionType* function_type);
+
+        [[nodiscard]]
+        bool is_generic_function_defined(const std::string& function_name, size_t instantiated_generic_count = 0);
+
+        [[nodiscard]]
+        std::string get_scope_name() const
+        {
+            return this->_context_name;
+        }
+
+        [[nodiscard]]
+        SymbolTable* traverse_to_root();
+    };
+
+    std::string scope_type_to_str(const ContextType& scope_type);
+} // namespace stride::ast

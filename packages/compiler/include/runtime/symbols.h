@@ -6,12 +6,12 @@ namespace llvm::orc {
 }
 
 namespace stride::ast {
-    class ParsingContext;
+    class SymbolTable;
 }
 
 namespace stride::runtime
 {
-    void register_runtime_symbols(const std::shared_ptr<ast::ParsingContext>& context);
+    void register_runtime_symbols(ast::SymbolTable* symbol_table);
 
     void register_jit_symbols(llvm::orc::LLJIT* jit);
 }

@@ -3,13 +3,13 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
@@ -31,7 +31,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
 
     members.push_back(
         parse_type(
-            context,
             type_set.value(),
             { "Expected types in tuple type declaration" }
         )
@@ -42,7 +41,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
         set.next();
         members.push_back(
             parse_type(
-                context,
                 type_set.value(),
                 { "Expected types in tuple type declaration" }
             )
@@ -50,59 +48,48 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_tuple_type_optional(
     }
 
     const auto last_pos = type_set.has_value()
-        ? type_set->last().get_source_fragment()
-        : reference_token.get_source_fragment();
+        ? type_set->last().get_source_position()
+        : reference_token.get_source_position();
 
-    const auto source = SourceFragment(
-        set.get_source(),
-        reference_token.get_source_fragment().offset,
-        last_pos.offset + last_pos.length - reference_token.get_source_fragment().offset
-    );
+    const auto source = SourcePosition::join(reference_token.get_source_position(), last_pos);
 
     return std::make_unique<AstTupleType>(
         source,
-        context,
         std::move(members),
         options.flags
     );
 }
 
-llvm::Value* AstTupleType::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
-{
-    return nullptr;
-}
-
-llvm::Type* AstTupleType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstTupleType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
     std::vector<llvm::Type*> member_llvm_types;
     member_llvm_types.reserve(this->_members.size());
 
     for (const auto& member : this->_members)
     {
-        member_llvm_types.push_back(member->get_llvm_type(module));
+        member_llvm_types.push_back(member->get_llvm_type(symbol_table, module));
     }
 
     return llvm::StructType::get(module->getContext(), member_llvm_types);
 }
 
-std::unique_ptr<IAstNode> AstTupleType::clone()
+std::unique_ptr<IAstType> AstTupleType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> members;
     members.reserve(this->_members.size());
     for (const auto& member : this->_members)
     {
-        members.push_back(member->clone_ty());
+        members.push_back(member->clone());
     }
 
     return std::make_unique<AstTupleType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         std::move(members),
         this->get_flags()
     );
 }
 
-bool AstTupleType::equals(IAstType* other)
+bool AstTupleType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     const auto other_tuple = cast_type<AstTupleType*>(other);
 
@@ -110,7 +97,7 @@ bool AstTupleType::equals(IAstType* other)
     {
         if (auto* other_named = cast_type<AstAliasType*>(other))
         {
-            return other_named->equals(this);
+            return other_named->equals(symbol_table, this);
         }
         return false; // other type is not a tuple; no equality
     }
@@ -121,7 +108,7 @@ bool AstTupleType::equals(IAstType* other)
 
     for (size_t i = 0; i < this->_members.size(); ++i)
     {
-        if (!this->_members[i]->equals(other_tuple->_members[i].get()))
+        if (!this->_members[i]->equals(symbol_table, other_tuple->_members[i].get()))
         {
             return false; // Found a pair of members that are not equal
         }
@@ -129,14 +116,18 @@ bool AstTupleType::equals(IAstType* other)
     return true;
 }
 
-std::string AstTupleType::to_string()
+std::string AstTupleType::get_type_name()
 {
+    if (this->_members.empty())
+    {
+        return "()";
+    }
     std::vector<std::string> member_strings;
     member_strings.reserve(this->_members.size());
 
     for (const auto& member : this->_members)
     {
-        member_strings.push_back(member->to_string());
+        member_strings.push_back(member->get_type_name());
     }
 
     return std::format("({})", join(member_strings, ", "));

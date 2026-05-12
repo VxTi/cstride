@@ -1,5 +1,5 @@
 #include "ast/flags.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "runtime/stride_runtime.h"
 #include "runtime/symbols.h"
 
@@ -9,70 +9,63 @@
 
 using namespace stride::runtime;
 
-void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::ParsingContext>& context)
+void stride::runtime::register_runtime_symbols(ast::SymbolTable* symbol_table)
 {
-    const auto fragment = SourceFragment(nullptr, 0, 0);
+    const auto source = std::make_shared<SourceFile>("unknown", "");
+    const auto position = SourcePosition(source, 0, 0);
     std::vector<std::unique_ptr<ast::IAstType>> args;
     args.push_back(std::make_unique<ast::AstPrimitiveType>(
-        fragment,
-        context,
+        position,
         ast::PrimitiveType::STRING
     ));
-    context->define_function(
-        ast::Symbol(fragment, "_printf_internal"),
+    symbol_table->define_function(
+        ast::Symbol(position, "_printf_internal"),
         std::make_unique<ast::AstFunctionType>(
-            fragment,
-            context,
+            position,
             std::move(args),
             std::make_unique<ast::AstPrimitiveType>(
-                fragment,
-                context,
+                position,
                 ast::PrimitiveType::INT32
             )
         ),
         ast::VisibilityModifier::PUBLIC,
+        nullptr,
         SRFLAG_FN_TYPE_VARIADIC
     );
 
-    context->define_function(
-        ast::Symbol(fragment, "_system_time_ns_internal"),
+    symbol_table->define_function(
+        ast::Symbol(position, "_system_time_ns_internal"),
         std::make_unique<ast::AstFunctionType>(
-            fragment,
-            context,
+            position,
             std::vector<std::unique_ptr<ast::IAstType>>{},
             std::make_unique<ast::AstPrimitiveType>(
-                fragment,
-                context,
+                position,
                 ast::PrimitiveType::UINT64
             )
         ),
         ast::VisibilityModifier::PUBLIC
     );
 
-    context->define_function(
-        ast::Symbol(fragment, "_system_time_us_internal"),
+    symbol_table->define_function(
+        ast::Symbol(position, "_system_time_us_internal"),
         std::make_unique<ast::AstFunctionType>(
-            fragment,
-            context,
+            position,
             std::vector<std::unique_ptr<ast::IAstType>>{},
             std::make_unique<ast::AstPrimitiveType>(
-                fragment,
-                context,
+                position,
                 ast::PrimitiveType::UINT64
             )
         ),
         ast::VisibilityModifier::PUBLIC
     );
 
-    context->define_function(
-        ast::Symbol(fragment, "_system_time_ms_internal"),
+    symbol_table->define_function(
+        ast::Symbol(position, "_system_time_ms_internal"),
         std::make_unique<ast::AstFunctionType>(
-            fragment,
-            context,
+            position,
             std::vector<std::unique_ptr<ast::IAstType>>{},
             std::make_unique<ast::AstPrimitiveType>(
-                fragment,
-                context,
+                position,
                 ast::PrimitiveType::UINT64
             )
         ),
@@ -81,19 +74,16 @@ void stride::runtime::register_runtime_symbols(const std::shared_ptr<ast::Parsin
 
     std::vector<std::unique_ptr<ast::IAstType>> read_in_params;
     read_in_params.push_back(std::make_unique<ast::AstPrimitiveType>(
-        fragment,
-        context,
+        position,
         ast::PrimitiveType::INT32
     ));
-    context->define_function(
-        ast::Symbol(fragment, "_read_in_internal"),
+    symbol_table->define_function(
+        ast::Symbol(position, "_read_in_internal"),
         std::make_unique<ast::AstFunctionType>(
-            fragment,
-            context,
+            position,
             std::move(read_in_params),
             std::make_unique<ast::AstPrimitiveType>(
-                fragment,
-                context,
+                position,
                 ast::PrimitiveType::STRING
             )
         ),

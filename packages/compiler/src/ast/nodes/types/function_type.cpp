@@ -2,12 +2,13 @@
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
+#include <ranges>
 #include <llvm/IR/DerivedTypes.h>
 
 using namespace stride::ast;
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
@@ -38,13 +39,10 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
 
     while (set.has_next() && !set.peek_next_eq(TokenType::RPAREN))
     {
-        parameters.push_back(
-            parse_type(
-                context,
-                set,
-                { "Expected parameter type", options.type_name, flags }
-            )
-        );
+        parameters.emplace_back(parse_type(
+            set,
+            { "Expected parameter type", options.type_name, flags }
+        ));
         if (set.peek_next_eq(TokenType::RPAREN))
         {
             break;
@@ -55,7 +53,6 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
     set.expect(TokenType::RPAREN, "Expected ')' after function type notation");
     set.expect(TokenType::RARROW, "Expected '->' between function parameters and return type");
     auto return_type = parse_type(
-        context,
         set,
         { "Expected return type", options.type_name, flags }
     );
@@ -65,41 +62,52 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_function_type_option
         set.expect(TokenType::RPAREN, "Expected secondary ')' after function type notation");
     }
 
+    // TODO: Resolve generic parameters in type resolution
+
     return parse_type_metadata(
         std::make_unique<AstFunctionType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             std::move(parameters),
             std::move(return_type),
+            EMPTY_GENERIC_PARAMETER_LIST,
             flags
         ),
         set
     );
 }
 
-std::unique_ptr<IAstNode> AstFunctionType::clone()
+std::unique_ptr<IAstType> AstFunctionType::clone()
 {
     std::vector<std::unique_ptr<IAstType>> parameters;
+    GenericParameterList generic_parameters_clone;
+
     parameters.reserve(this->_parameters.size());
-    for (const auto& p : this->_parameters)
+    generic_parameters_clone.reserve(this->_generic_param_names.size());
+
+    for (const auto& param_ty : this->_parameters)
     {
-        parameters.push_back(p->clone_ty());
+        parameters.emplace_back(param_ty->clone());
     }
 
+    generic_parameters_clone.insert(
+        generic_parameters_clone.end(),
+        this->_generic_param_names.begin(),
+        this->_generic_param_names.end());
+
     return std::make_unique<AstFunctionType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         std::move(parameters),
-        this->_return_type->clone_ty(),
+        this->get_return_type()->clone(),
+        std::move(generic_parameters_clone),
         this->get_flags()
     );
 }
 
-bool AstFunctionType::equals(IAstType* other)
+bool AstFunctionType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto* other_func = cast_type<const AstFunctionType*>(other))
     {
-        if (!other_func->get_return_type()->equals(this->get_return_type().get()))
+        if (!other_func->get_return_type()->equals(symbol_table, this->get_return_type().get()))
             return false;
 
         if (this->_parameters.size() != other_func->_parameters.size())
@@ -107,7 +115,7 @@ bool AstFunctionType::equals(IAstType* other)
 
         for (size_t i = 0; i < this->_parameters.size(); i++)
         {
-            if (!this->_parameters[i]->equals(other_func->_parameters[i].get()))
+            if (!this->_parameters[i]->equals(symbol_table, other_func->_parameters[i].get()))
             {
                 return false;
             }
@@ -117,33 +125,33 @@ bool AstFunctionType::equals(IAstType* other)
 
     if (auto* other_named = dynamic_cast<AstAliasType*>(other))
     {
-        return other_named->equals(this);
+        return other_named->equals(symbol_table, this);
     }
 
     return false;
 }
 
-bool AstFunctionType::is_castable_to_impl(IAstType* other)
+bool AstFunctionType::is_castable_to_impl(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto other_named = cast_type<AstAliasType*>(other))
     {
-        return this->equals(other_named->get_underlying_type());
+        return this->equals(symbol_table, other_named->get_primitive_base_type(symbol_table));
     }
 
     return false;
 }
 
-llvm::Type* AstFunctionType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstFunctionType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
     std::vector<llvm::Type*> param_types;
     param_types.reserve(this->_parameters.size());
 
-    for (const auto& param : this->_parameters)
+    for (const auto& param_ty : this->_parameters)
     {
-        param_types.push_back(param->get_llvm_type(module));
+        param_types.push_back(param_ty->get_llvm_type(symbol_table, module));
     }
 
-    llvm::Type* ret_type = this->_return_type->get_llvm_type(module);
+    llvm::Type* ret_type = this->_return_type->get_llvm_type(symbol_table, module);
     return llvm::FunctionType::get(
         ret_type,
         param_types,
@@ -156,11 +164,11 @@ std::string AstFunctionType::get_type_name()
     std::vector<std::string> param_strings;
     param_strings.reserve(this->_parameters.size());
 
-    for (const auto& p : this->_parameters)
-        param_strings.push_back(p->to_string());
+    for (const auto& param_ty : this->_parameters)
+        param_strings.push_back(param_ty->get_type_name());
 
     return std::format(
         "({}) -> {}",
         join(param_strings, ", "),
-        this->_return_type->to_string());
+        this->_return_type->get_type_name());
 }

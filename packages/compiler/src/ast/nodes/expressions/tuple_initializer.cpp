@@ -5,7 +5,7 @@
 using namespace stride::ast;
 
 
-llvm::Value* AstTupleInitializer::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstTupleInitializer::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
     const auto insertion_block = builder->GetInsertBlock();
 
@@ -14,7 +14,7 @@ llvm::Value* AstTupleInitializer::codegen(llvm::Module* module, llvm::IRBuilderB
 
     for (const auto& member : this->_members)
     {
-        member_values.push_back(member->codegen(module, builder));
+        member_values.push_back(member->codegen(symbol_table, module, builder));
     }
 
     return nullptr;
@@ -31,18 +31,10 @@ std::unique_ptr<IAstNode> AstTupleInitializer::clone()
     }
 
     return std::make_unique<AstTupleInitializer>(
-        this->get_source_fragment(),
-        this->get_context(),
-        std::move(cloned_members)
+        this->get_source_position(),
+        std::move(cloned_members),
+        this->clone_type()
     );
-}
-
-void AstTupleInitializer::validate()
-{
-    for (const auto& member : this->_members)
-    {
-        member->validate();
-    }
 }
 
 std::string AstTupleInitializer::to_string()

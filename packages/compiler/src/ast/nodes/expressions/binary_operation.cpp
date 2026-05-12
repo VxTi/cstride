@@ -78,15 +78,13 @@ std::string AstBinaryArithmeticOp::to_string()
  * This parses expressions that requires precedence, such as binary expressions.
  * These are binary expressions, e.g., 1 + 1, 1 - 1, 1 * 1, 1 / 1, 1 % 1
  */
-std::optional<std::unique_ptr<IAstExpression>>
-stride::ast::parse_arithmetic_binary_operation_optional(
-    const std::shared_ptr<ParsingContext>& context,
+std::optional<std::unique_ptr<IAstExpression>> stride::ast::parse_arithmetic_binary_operation_optional(
     TokenSet& set,
     std::unique_ptr<IAstExpression> lhs,
     const int min_precedence
 )
 {
-    const size_t starting_offset = lhs->get_source_fragment().offset;
+    const size_t starting_offset = lhs->get_source_position().offset;
     int recursion_depth = 0;
 
     while (set.has_next())
@@ -111,7 +109,7 @@ stride::ast::parse_arithmetic_binary_operation_optional(
             // If we're unable to parse the next expression part, for whatever reason,
             // we'll return nullopt. This will indicate that the expression is incomplete or
             // invalid.
-            auto rhs_opt_val = parse_binary_unary_op(context, set);
+            auto rhs_opt_val = parse_binary_unary_op(set);
             if (!rhs_opt_val)
             {
                 return std::nullopt;
@@ -128,7 +126,6 @@ stride::ast::parse_arithmetic_binary_operation_optional(
                     precedence < next_precedence)
                 {
                     auto rhs_opt = parse_arithmetic_binary_operation_optional(
-                        context,
                         set,
                         std::move(rhs),
                         precedence + 1
@@ -146,14 +143,13 @@ stride::ast::parse_arithmetic_binary_operation_optional(
                 }
             }
 
-            const auto& rhs_pos = rhs->get_source_fragment();
+            const auto& rhs_pos = rhs->get_source_position();
             lhs = std::make_unique<AstBinaryArithmeticOp>(
-                SourceFragment(
-                    set.get_source(),
+                SourcePosition(
+                    lhs->get_source_position().source,
                     starting_offset,
                     rhs_pos.offset + rhs_pos.length - starting_offset
                 ),
-                context,
                 std::move(lhs),
                 binary_op.value(),
                 std::move(rhs)
@@ -174,12 +170,13 @@ stride::ast::parse_arithmetic_binary_operation_optional(
 }
 
 llvm::Value* AstBinaryArithmeticOp::codegen(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder
 )
 {
-    llvm::Value* lhs = this->get_left()->codegen(module, builder);
-    llvm::Value* rhs = this->get_right()->codegen(module, builder);
+    llvm::Value* lhs = this->get_left()->codegen(symbol_table, module, builder);
+    llvm::Value* rhs = this->get_right()->codegen(symbol_table, module, builder);
 
     if (!lhs || !rhs)
     {
@@ -270,21 +267,14 @@ llvm::Value* AstBinaryArithmeticOp::codegen(
     }
 }
 
-void AstBinaryArithmeticOp::validate()
-{
-    this->_lhs->validate();
-    this->_rhs->validate();
-    // TODO: Further validation
-}
-
 std::unique_ptr<IAstNode> AstBinaryArithmeticOp::clone()
 {
     return std::make_unique<AstBinaryArithmeticOp>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_left()->clone_as<IAstExpression>(),
         this->get_op_type(),
-        this->get_right()->clone_as<IAstExpression>()
+        this->get_right()->clone_as<IAstExpression>(),
+        this->clone_type()
     );
 }
 

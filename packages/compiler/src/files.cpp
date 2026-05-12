@@ -6,13 +6,13 @@
 
 using namespace stride;
 
-std::shared_ptr<SourceFile> stride::read_file(const std::string& path)
+std::unique_ptr<SourceFile> stride::read_file(const std::string& path)
 {
     const std::ifstream file(path);
 
     if (!file)
     {
-        throw parsing_error("Failed to open file: " + path);
+        throw stride_error("Failed to open file: " + path);
     }
 
     std::stringstream buffer;
@@ -20,14 +20,14 @@ std::shared_ptr<SourceFile> stride::read_file(const std::string& path)
 
     auto content = buffer.str();
 
-    return std::make_shared<SourceFile>(path, std::move(content));
+    return std::make_unique<SourceFile>(path, std::move(content));
 }
 
-SourceFragment SourceFragment::combine(const SourceFragment& first, const SourceFragment& last)
+SourcePosition SourcePosition::join(const SourcePosition& first, const SourcePosition& second)
 {
-    return SourceFragment(
+    return {
         first.source,
         first.offset,
-        (last.offset + last.length) - first.offset
-    );
+        (second.offset + second.length) - first.offset
+    };
 }

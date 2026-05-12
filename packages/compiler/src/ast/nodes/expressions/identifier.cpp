@@ -1,6 +1,6 @@
 #include "errors.h"
 #include "ast/closures.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 
 #include <llvm/IR/Module.h>
@@ -8,48 +8,14 @@
 
 using namespace stride::ast;
 
-std::optional<const definition::IDefinition*> AstIdentifier::get_definition() const
-{
-    const std::string internal_name = this->get_scoped_name();
-
-    if (const auto var_def = this->get_context()->lookup_variable(internal_name, false))
-    {
-        return var_def;
-    }
-
-    // Fall back to name-based lookup, which resolves short names to their internal
-    // names (e.g. `x` → `x.0` for locals with a counter suffix).
-    if (const auto symbol_definition = this->get_context()->lookup_symbol(internal_name))
-    {
-        return symbol_definition;
-    }
-
-    // Last resort: raw name match (handles captured variables).
-    if (const auto definition = this->get_context()->lookup_variable(internal_name, true))
-    {
-        return definition;
-    }
-
-    return std::nullopt;
-}
-
-llvm::Value* AstIdentifier::codegen(
+llvm::Value* AstIdentifier::codegen_ptr(
     llvm::Module* module,
-    llvm::IRBuilderBase* builder
-)
+    const llvm::IRBuilderBase* builder
+) const
 {
     const auto definition = this->get_definition();
 
-    if (!definition.has_value())
-    {
-        throw parsing_error(
-            ErrorType::REFERENCE_ERROR,
-            std::format("Identifier '{}' not found in this scope", this->get_name()),
-            this->get_source_fragment()
-        );
-    }
-
-    const std::string internal_name = definition.value()->get_internal_symbol_name();
+    const std::string internal_name = definition->get_internal_symbol_name();
     llvm::Value* val = nullptr;
 
     if (const auto block = builder->GetInsertBlock())
@@ -75,35 +41,46 @@ llvm::Value* AstIdentifier::codegen(
 
                 if (auto* global = module->getNamedGlobal(internal_name))
                 {
-                    return builder->CreateLoad(
-                        global->getValueType(),
-                        global
-                    );
+                    return global;
                 }
 
-                if (auto* arg = llvm::dyn_cast_or_null<llvm::Argument>(val))
-                {
-                    return arg;
-                }
-
-                throw parsing_error(
+                throw stride_error(
                     ErrorType::REFERENCE_ERROR,
                     std::format("Identifier '{}' not found in this scope", this->get_name()),
-                    this->get_source_fragment());
+                    this->get_source_position());
             }
         }
     }
 
-    // Check if it's a function argument
-    if (auto* arg = llvm::dyn_cast_or_null<llvm::Argument>(val))
+    if (!val)
     {
-        return arg;
+        if (const auto global = module->getNamedGlobal(internal_name))
+        {
+            return global;
+        }
+
+        if (auto* function = module->getFunction(internal_name))
+        {
+            return function;
+        }
+
+        throw stride_error(
+            ErrorType::REFERENCE_ERROR,
+            std::format("Identifier '{}' not found in this scope", this->get_name()),
+            this->get_source_position()
+        );
     }
 
-    if (auto* load = llvm::dyn_cast_or_null<llvm::LoadInst>(val))
-    {
-        return load;
-    }
+    return val;
+}
+
+llvm::Value* AstIdentifier::codegen(
+    SymbolTable* symbol_table,
+    llvm::Module* module,
+    llvm::IRBuilderBase* builder
+)
+{
+    llvm::Value* val = this->codegen_ptr(module, builder);
 
     if (auto* alloca = llvm::dyn_cast_or_null<llvm::AllocaInst>(val))
     {
@@ -115,41 +92,64 @@ llvm::Value* AstIdentifier::codegen(
         );
     }
 
-    if (const auto global = module->getNamedGlobal(internal_name))
+    if (const auto* global = llvm::dyn_cast_or_null<llvm::GlobalVariable>(val))
     {
         // Only generate a Load instruction if we are inside a BasicBlock (Function context).
         if (builder->GetInsertBlock())
         {
             return builder->CreateLoad(
                 global->getValueType(),
-                global
+                val
             );
         }
 
         // If we are in Global context (initializing a global variable), we cannot generate
         // instructions. We return the GlobalVariable* itself. This allows parent nodes (like
         // MemberAccessor) to perform Constant Folding or ConstantExpr GEPs on the address.
-        return global;
+        return val;
     }
 
-    if (auto* function = module->getFunction(internal_name))
+    return val;
+}
+
+void AstIdentifier::resolve_definition(const SymbolTable* symbol_table)
+{
+    if (this->_definition)
+        return;
+
+    const std::string internal_name = this->_symbol.internal_name;
+
+    if (const auto var_def = symbol_table->lookup_variable(internal_name, false))
     {
-        return function;
+        this->_definition = var_def;
+        return;
     }
 
-    throw parsing_error(
+    // Fall back to name-based lookup, which resolves short names to their internal
+    // names (e.g. `x` → `x.0` for locals with a counter suffix).
+    if (const auto symbol_definition = symbol_table->lookup_symbol(internal_name))
+    {
+        this->_definition = symbol_definition;
+        return;
+    }
+
+    // Last resort: raw name match (handles captured variables).
+    if (const auto definition = symbol_table->lookup_variable(internal_name, true))
+    {
+        this->_definition = definition;
+        return;
+    }
+
+    throw stride_error(
         ErrorType::REFERENCE_ERROR,
         std::format("Identifier '{}' not found in this scope", this->get_name()),
-        this->get_source_fragment()
+        this->get_source_position()
     );
 }
 
 std::unique_ptr<IAstNode> AstIdentifier::clone()
 {
-    return std::make_unique<AstIdentifier>(
-        this->get_context(),
-        this->_symbol
-    );
+    return std::make_unique<AstIdentifier>(this->_symbol, this->clone_type(), this->_definition);
 }
 
 std::string AstIdentifier::to_string()

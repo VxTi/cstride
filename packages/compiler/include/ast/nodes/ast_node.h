@@ -15,64 +15,22 @@ namespace llvm
 
 namespace stride::ast
 {
-
     class AstBlock;
-    class ParsingContext;
+    class SymbolTable;
 
-    class IAstNode
+    template <class TBase>
+    class Cloneable
     {
-        const SourceFragment _source_position;
-        const std::shared_ptr<ParsingContext> _context;
-
     public:
-        explicit IAstNode(
-            const SourceFragment& source,
-            const std::shared_ptr<ParsingContext>& context
-        ) :
-            _source_position(source),
-            _context(context) {}
-
-        virtual ~IAstNode() = default;
-
-        virtual std::string to_string() = 0;
-
-        virtual void validate() {}
-
-        [[nodiscard]]
-        std::shared_ptr<SourceFile> get_source() const
+        virtual std::unique_ptr<TBase> clone()
         {
-            return this->_source_position.source;
+            throw std::runtime_error("clone() not implemented for this type");
         }
-
-        [[nodiscard]]
-        std::shared_ptr<ParsingContext> get_context() const
-        {
-            return this->_context;
-        }
-
-        [[nodiscard]]
-        SourceFragment get_source_fragment() const
-        {
-            return this->_source_position;
-        }
-
-        virtual llvm::Value* codegen(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
-        ) = 0;
-
-        /// Utility function for defining symbols before they're referenced.
-        virtual void resolve_forward_references(
-            llvm::Module* module,
-            llvm::IRBuilderBase* builder
-        ) {}
-
-        virtual std::unique_ptr<IAstNode> clone() = 0;
 
         template <typename T>
         std::unique_ptr<T> clone_as()
         {
-            static_assert(std::is_base_of_v<IAstNode, T>,
+            static_assert(std::is_base_of_v<TBase, T>,
                           "T must be a subclass of IAstNode");
 
             auto base = this->clone();
@@ -84,6 +42,53 @@ namespace stride::ast
 
             throw std::bad_cast{};
         }
+
+        virtual ~Cloneable() = default;
+    };
+
+    class IAstNode
+        : public Cloneable<IAstNode>
+    {
+        const SourcePosition _source_position;
+
+    public:
+        explicit IAstNode(const SourcePosition& source) :
+            _source_position(source) {}
+
+        IAstNode(const IAstNode& other) = default;
+
+        ~IAstNode() override = default;
+
+        virtual std::string to_string() = 0;
+
+        virtual void validate(SymbolTable* symbol_table) {}
+
+        [[nodiscard]]
+        std::shared_ptr<SourceFile> get_source() const
+        {
+            return this->_source_position.source;
+        }
+
+        [[nodiscard]]
+        SourcePosition get_source_position() const
+        {
+            return this->_source_position;
+        }
+
+        virtual llvm::Value* codegen(
+            SymbolTable* symbol_table,
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder
+        ) = 0;
+
+        /// Utility function for defining symbols before they're referenced.
+        virtual void resolve_forward_references(
+            SymbolTable* symbol_table,
+            llvm::Module* module,
+            llvm::IRBuilderBase* builder
+        ) {}
+
+        std::unique_ptr<IAstNode> clone() override;
     };
 
     class IAstStatement

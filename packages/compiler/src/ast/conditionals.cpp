@@ -5,11 +5,11 @@
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
 
 using namespace stride::ast;
 
 llvm::Value* stride::ast::codegen_conditional_value(
+    SymbolTable* symbol_table,
     llvm::Module* module,
     llvm::IRBuilderBase* builder,
     IAstExpression* condition
@@ -20,14 +20,14 @@ llvm::Value* stride::ast::codegen_conditional_value(
         return builder->getInt1(true);
     }
 
-    llvm::Value* condValue = condition->codegen(module, builder);
+    llvm::Value* condValue = condition->codegen(symbol_table, module, builder);
 
     if (condValue == nullptr)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             "Could not generate conditional value",
-            condition->get_source_fragment()
+            condition->get_source_position()
         );
     }
 
@@ -44,9 +44,9 @@ llvm::Value* stride::ast::codegen_conditional_value(
         return condValue;
     }
 
-    throw parsing_error(
+    throw stride_error(
         ErrorType::COMPILATION_ERROR,
         "Condition must be a boolean type",
-        condition->get_source_fragment()
+        condition->get_source_position()
     );
 }

@@ -1,18 +1,40 @@
 import System::{
-    io::print,
+    io::print
 };
 
-enum Test {
-    First: 123,
-    Second: 456,
-    Third: 789
+/*
+type Array<T> = {
+    elements: T[];
+    length: i32;
+    at: (i32) -> T;
+};
+
+module SomeModule {
+    pub fn arrayOf<T>(elements: T[], length: i32): Array<T> {
+        return Array<T>::{
+            elements,
+            length,
+            at: (index: i32): T -> {
+                return elements[index];
+            }
+        };
+    }
+} */
+
+/*
+pub type Callback = () -> void;
+
+fn makeCb(): Callback {
+    const names = SomeModule::arrayOf<string>(["Toyota", "Honda", "Ford", "Toyota"], 4);
+
+    return (): void -> io::print("\x1b[32mDriving the car: %s", names.at(1));
 }
-
+ */
 fn main(): i32 {
+    const names = (): i32 -> 123;
+    //SomeModule::arrayOf<i32>([1, 2, 3, 4], 4);
 
-    const k: Test = Test::First;
-
-    io::print("k[0] = %d", k);
+    io::print("\x1b[32mDriving the car: %d", names());
 
     return 0;
 }

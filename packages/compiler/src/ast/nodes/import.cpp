@@ -2,9 +2,11 @@
 
 #include "errors.h"
 #include "formatting.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/expression.h"
 #include "ast/tokens/token_set.h"
+
+#include <format>
 
 using namespace stride::ast;
 
@@ -14,17 +16,13 @@ using namespace stride::ast;
  * This function expects a double colon (::) followed by one or more identifiers.
  * It parses the identifiers and returns them as a vector of Symbol objects.
  */
-std::vector<std::unique_ptr<AstIdentifier>> consume_import_submodules(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::vector<std::unique_ptr<AstIdentifier>> consume_import_submodules(TokenSet& set)
 {
     set.expect(TokenType::DOUBLE_COLON, "Expected a '::' before import submodule list");
     set.expect(TokenType::LBRACE, "Expected opening brace with modules after '::'");
 
     std::vector<std::unique_ptr<AstIdentifier>> import_list;
     import_list.push_back(parse_segmented_identifier(
-        context,
         set,
         "Expected module name after '::' in import list"
     ));
@@ -36,7 +34,6 @@ std::vector<std::unique_ptr<AstIdentifier>> consume_import_submodules(
 
         import_list.emplace_back(
             parse_segmented_identifier(
-                context,
                 set,
                 "Expected module name after '::' in import list"
             )
@@ -63,41 +60,36 @@ std::vector<std::unique_ptr<AstIdentifier>> consume_import_submodules(
 /**
  * Attempts to parse an import expression from the given TokenSet.
  */
-std::unique_ptr<AstImport> stride::ast::parse_import_statement(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::unique_ptr<AstImport> stride::ast::parse_import_statement(TokenSet& set)
 {
     const auto reference_token = set.expect(TokenType::KEYWORD_IMPORT);
 
     auto package_identifier = parse_segmented_identifier(
-        context,
         set,
         "Expected module name after '::'"
     );
 
-    auto import_list = consume_import_submodules(context, set);
+    auto import_list = consume_import_submodules(set);
 
     return std::make_unique<AstImport>(
-        SourceFragment::combine(reference_token.get_source_fragment(), package_identifier->get_source_fragment()),
-        context,
+        SourcePosition::join(reference_token.get_source_position(), package_identifier->get_source_position()),
         std::move(package_identifier),
         std::move(import_list)
     );
 }
 
-void AstImport::validate()
+void AstImport::validate(SymbolTable* symbol_table)
 {
-    if (this->get_context()->get_context_type() != ContextType::GLOBAL)
+    if (symbol_table->get_context_type() != ContextType::GLOBAL)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::SYNTAX_ERROR,
             std::format(
                 "Import statements are only allowed in global scope, but was found in {} scope",
-                scope_type_to_str(this->get_context()->get_context_type()
+                scope_type_to_str(symbol_table->get_context_type()
                 )
             ),
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 }
@@ -113,8 +105,7 @@ std::unique_ptr<IAstNode> AstImport::clone()
     }
 
     return std::make_unique<AstImport>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->_package_identifier->clone_as<AstIdentifier>(),
         std::move(cloned_submodules)
     );

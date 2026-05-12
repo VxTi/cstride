@@ -1,5 +1,5 @@
 #include "errors.h"
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 #include "ast/nodes/control_flow_statements.h"
 
 #include <llvm/IR/IRBuilder.h>
@@ -7,25 +7,22 @@
 
 using namespace stride::ast;
 
-std::unique_ptr<AstBreakStatement> stride::ast::parse_break_statement(
-    const std::shared_ptr<ParsingContext>& context,
-    TokenSet& set
-)
+std::unique_ptr<AstBreakStatement> stride::ast::parse_break_statement(TokenSet& set)
 {
     const auto& reference_token = set.expect(TokenType::KEYWORD_BREAK);
     set.expect(TokenType::SEMICOLON, "Expected ';' after 'break' statement");
 
-    return std::make_unique<AstBreakStatement>(reference_token.get_source_fragment(), context);
+    return std::make_unique<AstBreakStatement>(reference_token.get_source_position());
 }
 
-llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilderBase* builder)
+llvm::Value* AstBreakStatement::codegen(SymbolTable* symbol_table, llvm::Module* module, llvm::IRBuilderBase* builder)
 {
-    if (ParsingContext::get_control_flow_blocks().empty())
+    if (SymbolTable::get_control_flow_blocks().empty())
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::COMPILATION_ERROR,
             "Break statement outside of loop or switch",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 
@@ -42,7 +39,7 @@ llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilderBas
         return nullptr;
     }
 
-    llvm::BasicBlock* break_target = ParsingContext::get_control_flow_blocks().back().second;
+    llvm::BasicBlock* break_target = SymbolTable::get_control_flow_blocks().back().second;
     if (!break_target)
     {
         return nullptr;
@@ -60,14 +57,14 @@ llvm::Value* AstBreakStatement::codegen(llvm::Module* module, llvm::IRBuilderBas
     return nullptr;
 }
 
-void AstBreakStatement::validate()
+void AstBreakStatement::validate(SymbolTable* symbol_table)
 {
-    if (this->get_context()->get_context_type() != ContextType::CONTROL_FLOW)
+    if (symbol_table->get_context_type() != ContextType::CONTROL_FLOW)
     {
-        throw parsing_error(
+        throw stride_error(
             ErrorType::SYNTAX_ERROR,
             "Break statement cannot appear outside of a loop or switch statement",
-            this->get_source_fragment()
+            this->get_source_position()
         );
     }
 }

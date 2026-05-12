@@ -1,10 +1,14 @@
 #pragma once
+
+#include "files.h"
+
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace stride::ast
 {
+    class IAstNode;
     class AstObjectInitializer;
     class AstObjectType;
 
@@ -14,12 +18,17 @@ namespace stride::ast
     }
 
     class AstAliasType;
-    class ParsingContext;
+    class SymbolTable;
     class IAstType;
     class TokenSet;
 
-    using GenericParameter = std::string;
-    using GenericParameterList = std::vector<GenericParameter>;
+    struct GenericParameterName
+    {
+        SourcePosition position;
+        std::string name;
+    };
+
+    using GenericParameterList = std::vector<GenericParameterName>;
     using GenericTypeList = std::vector<std::unique_ptr<IAstType>>;
 
 #define EMPTY_GENERIC_PARAMETER_LIST (GenericParameterList{})
@@ -27,7 +36,7 @@ namespace stride::ast
 
     GenericParameterList parse_generic_declaration(TokenSet& set);
 
-    GenericTypeList parse_generic_type_arguments(const std::shared_ptr<ParsingContext>& context, TokenSet& set);
+    GenericTypeList parse_generic_type_arguments(TokenSet& set);
 
     std::unique_ptr<IAstType> resolve_generics(
         IAstType* type,
@@ -45,4 +54,8 @@ namespace stride::ast
         AstObjectType* type,
         const definition::TypeDefinition* type_definition
     );
+
+    GenericTypeList copy_generic_type_list(const GenericTypeList& list);
+
+    std::string get_overloaded_function_name(std::string function_name, const GenericTypeList& overload_types);
 }

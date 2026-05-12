@@ -1,7 +1,8 @@
-#include "ast/parsing_context.h"
+#include "ast/symbol_table.h"
 
 #include "errors.h"
 #include "ast/symbols.h"
+#include "ast/definitions/function_definition.h"
 
 #include <algorithm>
 #include <ranges>
@@ -27,29 +28,30 @@ std::string stride::ast::scope_type_to_str(const ContextType& scope_type)
     return "unknown";
 }
 
-const ParsingContext& ParsingContext::traverse_to_root() const
+SymbolTable* SymbolTable::traverse_to_root()
 {
     auto current = this;
-    while (current->_parent_registry)
+    while (current != nullptr && current->_parent_registry != nullptr)
     {
         current = current->_parent_registry.get();
     }
-    return *current;
+
+    return current;
 }
 
-void ParsingContext::define_symbol(const Symbol& symbol_name, const SymbolType type)
+void SymbolTable::define(std::unique_ptr<IDefinition> definition)
 {
-    this->_symbols.push_back(
-        std::make_unique<IdentifiableSymbolDef>(type, symbol_name)
-    );
-}
-
-void ParsingContext::define(std::unique_ptr<IDefinition> definition)
-{
+    if (dynamic_cast<FunctionDefinition*>(definition.get()) != nullptr
+        && this->_parent_registry != nullptr)
+    {
+        const auto root_registry = traverse_to_root();
+        root_registry->define(std::move(definition));
+        return;
+    }
     this->_symbols.push_back(std::move(definition));
 }
 
-std::optional<std::unique_ptr<IDefinition>> ParsingContext::get_definition_by_internal_name(const std::string& internal_name) const
+std::optional<std::unique_ptr<IDefinition>> SymbolTable::get_definition_by_internal_name(const std::string& internal_name) const
 {
     auto current = this;
     while (current != nullptr)
@@ -64,23 +66,6 @@ std::optional<std::unique_ptr<IDefinition>> ParsingContext::get_definition_by_in
         current = current->_parent_registry.get();
     }
     return std::nullopt;
-}
-
-const IdentifiableSymbolDef* ParsingContext::get_symbol_def(
-    const std::string& symbol_name) const
-{
-    for (const auto& symbol_def : this->_symbols)
-    {
-        if (const auto* identifier_def =
-            dynamic_cast<const IdentifiableSymbolDef*>(symbol_def.get()))
-        {
-            if (identifier_def->get_internal_symbol_name() == symbol_name)
-            {
-                return identifier_def;
-            }
-        }
-    }
-    return nullptr;
 }
 
 static size_t levenshtein_distance(const std::string& a, const std::string& b)
@@ -108,7 +93,7 @@ static size_t levenshtein_distance(const std::string& a, const std::string& b)
     return prev[len_b];
 }
 
-IDefinition* ParsingContext::fuzzy_find(const std::string& symbol_name) const
+IDefinition* SymbolTable::fuzzy_find(const std::string& symbol_name) const
 {
     IDefinition* best_match = nullptr;
     size_t best_distance = std::numeric_limits<size_t>::max();
@@ -177,7 +162,7 @@ IDefinition* ParsingContext::fuzzy_find(const std::string& symbol_name) const
     return nullptr;
 }
 
-IDefinition* ParsingContext::lookup_symbol(const std::string& symbol_name) const
+IDefinition* SymbolTable::lookup_symbol(const std::string& symbol_name) const
 {
     auto current = this;
     while (current != nullptr)

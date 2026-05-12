@@ -1,8 +1,8 @@
 #include "ast/casting.h"
-#include "ast/nodes/literal_values.h"
 #include "ast/nodes/types.h"
 #include "ast/tokens/token_set.h"
 
+#include <format>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Module.h>
 
@@ -95,7 +95,6 @@ std::string stride::ast::primitive_type_to_str(const PrimitiveType type, const i
 }
 
 std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optional(
-    const std::shared_ptr<ParsingContext>& context,
     TokenSet& set,
     const TypeParsingOptions& options
 )
@@ -125,8 +124,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_INT8:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::INT8,
             flags
         );
@@ -135,8 +133,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_INT16:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::INT16,
             flags
         );
@@ -145,8 +142,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_INT32:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::INT32,
             flags
         );
@@ -155,8 +151,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_INT64:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::INT64,
             flags
         );
@@ -165,8 +160,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_UINT8:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::UINT8,
             flags
         );
@@ -175,8 +169,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_UINT16:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::UINT16,
             flags
         );
@@ -185,8 +178,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_UINT32:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::UINT32,
             flags
         );
@@ -195,8 +187,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_UINT64:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::UINT64,
             flags
         );
@@ -205,8 +196,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_FLOAT32:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::FLOAT32,
             flags
         );
@@ -215,8 +205,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_FLOAT64:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::FLOAT64,
             flags
         );
@@ -225,8 +214,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_BOOL:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::BOOL,
             flags
         );
@@ -235,8 +223,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_CHAR:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::CHAR,
             flags
         );
@@ -245,8 +232,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_STRING:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::STRING,
             flags
         );
@@ -255,8 +241,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     case TokenType::PRIMITIVE_VOID:
     {
         result = std::make_unique<AstPrimitiveType>(
-            reference_token.get_source_fragment(),
-            context,
+            reference_token.get_source_position(),
             PrimitiveType::VOID,
             flags
         );
@@ -274,7 +259,7 @@ std::optional<std::unique_ptr<IAstType>> stride::ast::parse_primitive_type_optio
     return parse_type_metadata(std::move(result.value()), set);
 }
 
-bool AstPrimitiveType::equals(IAstType* other)
+bool AstPrimitiveType::equals(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto* other_primitive = cast_type<const AstPrimitiveType*>(other))
     {
@@ -294,13 +279,13 @@ bool AstPrimitiveType::equals(IAstType* other)
             return true;
         }
 
-        return struct_type->equals(this);
+        return struct_type->equals(symbol_table, this);
     }
 
     return false;
 }
 
-bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
+bool AstPrimitiveType::is_assignable_to_impl(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
@@ -319,7 +304,7 @@ bool AstPrimitiveType::is_assignable_to_impl(IAstType* other)
 }
 
 // Casting can be done both ways - Low -> Hi, and Hi -> Low
-bool AstPrimitiveType::is_castable_to_impl(IAstType* other)
+bool AstPrimitiveType::is_castable_to_impl(SymbolTable* symbol_table, IAstType* other)
 {
     if (const auto other_primitive = cast_type<AstPrimitiveType*>(other))
     {
@@ -329,7 +314,7 @@ bool AstPrimitiveType::is_castable_to_impl(IAstType* other)
     return false;
 }
 
-llvm::Type* AstPrimitiveType::get_llvm_type_impl(llvm::Module* module)
+llvm::Type* AstPrimitiveType::get_llvm_type_impl(SymbolTable* symbol_table, llvm::Module* module)
 {
     switch (this->_type)
     {
@@ -410,11 +395,10 @@ bool AstPrimitiveType::is_fp() const
     }
 }
 
-std::unique_ptr<IAstNode> AstPrimitiveType::clone()
+std::unique_ptr<IAstType> AstPrimitiveType::clone()
 {
     return std::make_unique<AstPrimitiveType>(
-        this->get_source_fragment(),
-        this->get_context(),
+        this->get_source_position(),
         this->get_primitive_type(),
         this->get_flags()
     );
