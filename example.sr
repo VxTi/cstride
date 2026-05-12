@@ -2,6 +2,7 @@ import System::{
     io::print
 };
 
+/*
 type Array<T> = {
     elements: T[];
     length: i32;
@@ -18,8 +19,9 @@ module SomeModule {
             }
         };
     }
-}
+} */
 
+/*
 pub type Callback = () -> void;
 
 fn makeCb(): Callback {
@@ -27,11 +29,12 @@ fn makeCb(): Callback {
 
     return (): void -> io::print("\x1b[32mDriving the car: %s", names.at(1));
 }
-
+ */
 fn main(): i32 {
-    const names = SomeModule::arrayOf<i32>([1, 2, 3, 4], 4);
+    const names = (): i32 -> 123;
+    //SomeModule::arrayOf<i32>([1, 2, 3, 4], 4);
 
-    makeCb()();
+    io::print("\x1b[32mDriving the car: %d", names());
 
     return 0;
 }

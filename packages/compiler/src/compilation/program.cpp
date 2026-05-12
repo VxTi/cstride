@@ -51,24 +51,25 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
     ast::AstNodeTraverser traverser;
 
     // --- Resolvers
-    ast::TemplateInstantiator generic_function_instantiator;
+    // ast::TemplateInstantiator generic_function_instantiator;
     ast::ImportVisitor import_visitor;
     ast::ValidationVisitor validation_visitor;
     ast::TypeInferenceVisitor type_visitor;
     ast::ForwardReferenceInitializer forward_reference_initializer(module.get(), &builder);
+    ast::SymbolResolver symbol_resolver;
 
     const auto branches = this->_ast->get_branches() | std::views::values;
 
     // --- Generic template resolution
     // This must be done first before any other traversals, since it may introduce new nodes into
     // the AST that need to be visited by subsequent traversals (e.g. type inference, symbol resolution, codegen)
-    for (const auto& branch : branches)
+    /*for (const auto& branch : branches)
     {
         traverser.traverse(&generic_function_instantiator, branch.get());
-    }
+    }*/
 
     // --- Symbol resolution
-    ast::SymbolResolver symbol_resolver(generic_function_instantiator.get_generic_function_templates());
+
     for (const auto& [file_name, branch] : this->_ast->get_branches())
     {
         import_visitor.set_current_file_name(file_name);
@@ -76,8 +77,8 @@ std::unique_ptr<llvm::Module> Program::prepare_module(
         traverser.traverse(&import_visitor, branch.get());
         traverser.traverse(&symbol_resolver, branch.get());
     }
-    symbol_resolver.validate_generic_instantiations();
     import_visitor.cross_register_symbols(this->_ast.get());
+    // symbol_resolver.validate_generic_instantiations();
 
     // --- Type resolution
     for (const auto& branch : branches)

@@ -149,7 +149,8 @@ namespace stride::ast
         std::optional<definition::FunctionDefinition*> get_function_definition(
             const std::string& function_name,
             const std::vector<std::unique_ptr<IAstType>>& parameter_types,
-            size_t instantiated_generic_count = 0
+            size_t instantiated_generic_count = 0,
+            bool is_variadic = false
         );
 
         [[nodiscard]]

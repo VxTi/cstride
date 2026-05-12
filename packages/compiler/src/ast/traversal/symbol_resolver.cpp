@@ -94,25 +94,3 @@ void SymbolResolver::accept_type_definition_node(SymbolTable* symbol_table, AstT
         type_definition->get_visibility()
     );
 }
-
-void SymbolResolver::validate_generic_instantiations()
-{
-    if (!this->_generic_function_instantiations.empty())
-    {
-        std::vector<ErrorSourceReference> error_references;
-        error_references.reserve(this->_generic_function_instantiations.size());
-        for (const auto& [function_name, type, node] : this->_generic_function_instantiations)
-        {
-            error_references.emplace_back(
-                "Function definition not found",
-                node->get_source_position()
-            );
-        }
-
-        throw stride_error(
-            ErrorType::REFERENCE_ERROR,
-            "Generic function does not exist",
-            error_references
-        );
-    }
-}

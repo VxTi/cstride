@@ -12,7 +12,8 @@ using namespace stride::ast::definition;
 std::optional<FunctionDefinition*> SymbolTable::get_function_definition(
     const std::string& function_name,
     const std::vector<std::unique_ptr<IAstType>>& parameter_types,
-    const size_t instantiated_generic_count
+    const size_t instantiated_generic_count,
+    bool is_variadic
 )
 {
     const auto& global_symbol_table = this->traverse_to_root();

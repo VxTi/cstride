@@ -76,21 +76,12 @@ namespace stride::ast
 
     class SymbolResolver : public IVisitor
     {
-        std::vector<GenericFunctionTemplate> _generic_function_instantiations;
-
     public:
-        explicit SymbolResolver(
-            std::vector<GenericFunctionTemplate> generic_function_instantiations
-        ) :
-            _generic_function_instantiations(std::move(generic_function_instantiations)) {}
-
         void accept_function_declaration_node(SymbolTable* symbol_table, IAstFunction* function) override;
 
         void accept_expression(SymbolTable* symbol_table, IAstExpression* expr) override;
 
         void accept_type_definition_node(SymbolTable* symbol_table, AstTypeDefinition* type_definition) override;
-
-        void validate_generic_instantiations();
     };
 
     /// Intentionally separate from `FunctionVisitor`, as this step has to be performed after all functions have been defined.
@@ -120,8 +111,10 @@ namespace stride::ast
         std::map<std::string, GenericFunctionTemplate> _instantiations{};
 
     public:
+        [[nodiscard]]
         std::vector<GenericFunctionTemplate> get_generic_function_templates() const;
 
+        [[nodiscard]]
         std::vector<GenericTypeTemplate> get_generic_type_templates() const;
 
         void accept_function_call_node(SymbolTable* symbol_table, AstFunctionCall* function_call) override;

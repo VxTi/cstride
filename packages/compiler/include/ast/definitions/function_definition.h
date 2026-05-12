@@ -109,7 +109,9 @@ namespace stride::ast::definition
         bool matches_parameter_signature(
             SymbolTable* symbol_table,
             const std::string& internal_function_name,
-            const std::vector<std::unique_ptr<IAstType>>& other_parameter_types, size_t generic_argument_count
+            const std::vector<std::unique_ptr<IAstType>>& other_parameter_types,
+            size_t generic_argument_count
+
         ) const;
 
         [[nodiscard]]
